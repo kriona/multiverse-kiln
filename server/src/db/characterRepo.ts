@@ -1,13 +1,14 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
  * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
- * tell which characters are in a group, and universes only to name a profile's characters' universes
+ * tell which characters are in a group, universes only to name a profile's characters' universes, and
+ * players only to name and search for the players of the editor's list of a universe's characters
  */
-import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
-import { isPf1eRollMethod, type AbilityScores, type CharacterDraft, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type UniverseStage } from '@multiverse-kiln/shared';
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import { isPf1eRollMethod, type AbilityScores, type BarredOptions, type CharacterDraft, type EditorCharacterSortColumn, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type SortDirection, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, sf1eCharacters, universes } from './schema.js';
+import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, players, sf1eCharacters, universes } from './schema.js';
 
 /**
  * A character as the lobby lists it
@@ -44,6 +45,53 @@ export interface ProfileCharacterRecord
 	universeSlug: string;
 	universeName: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language the universe's text is written in, and the languages it is translated into
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
+}
+
+/**
+ * A character in a universe, as the editor's Character List tab lists them, with their player
+ */
+export interface UniverseCharacterRecord
+{
+	id: string;
+	name: string;
+	raceId: number;
+	classId: number;
+	playerUsername: string;
+	playerDisplayName: string;
+	createdAt: Date;
+
+	/**
+	 * When the character is deleted, once given their last rites; null otherwise
+	 */
+	deleteAt: Date | null;
+
+	inGroup: boolean;
+}
+
+/**
+ * Which of a universe's characters to list, in what order, and which page of them
+ */
+export interface UniverseCharacterFilter
+{
+	/**
+	 * Text to find in the character's name or the player's username or name, ignoring capitals, or in
+	 * the username only (parsePlayerSearch())
+	 */
+	search?: { text: string; usernameOnly: boolean };
+
+	raceId?: number;
+	classId?: number;
+	inGroup?: boolean;
+	sort: EditorCharacterSortColumn;
+	direction: SortDirection;
+	offset: number;
+	limit: number;
 }
 
 /**
@@ -93,6 +141,7 @@ export interface PlayableCharacter
 	id: string;
 	name: string;
 	raceId: number;
+	classId: number;
 }
 
 /**
@@ -210,11 +259,92 @@ export async function listCharacters(playerId: string, universeId: string, execu
 }
 
 /**
+ * A page of the characters made in a universe, as the editor's Character List tab lists them: those
+ * whose last rites aren't over, matching a filter
+ *
+ * @param universeId The universe's ID
+ * @param filter Which characters, in what order, and which page
+ * @param executor The database, or a transaction
+ * @return The page of characters, and how many match in all
+ */
+export async function listUniverseCharacters(universeId: string, filter: UniverseCharacterFilter, executor: Executor = db): Promise<{ characters: UniverseCharacterRecord[]; total: number }>
+{
+	const characterName = sql`lower(${characters.name})`;
+	const sortKeys: Record<EditorCharacterSortColumn, SQL> = {
+		name: characterName,
+		player: sql`lower(${players.username})`,
+		created: sql`${characters.createdAt}`
+	};
+	const direction = ((filter.direction === 'ascending') ? asc : desc);
+	const conditions = and(
+		eq(characters.universeId, universeId),
+		notExpired,
+		((filter.search === undefined) ? undefined : searchCondition(filter.search.text, filter.search.usernameOnly)),
+		((filter.raceId === undefined) ? undefined : eq(characters.raceId, filter.raceId)),
+		((filter.classId === undefined) ? undefined : eq(characters.classId, filter.classId)),
+		((filter.inGroup === undefined) ? undefined : (filter.inGroup ? isNotNull(groupMembers.groupId) : isNull(groupMembers.groupId)))
+	);
+	const rows = await executor
+		.select({
+			id: characters.id,
+			name: characters.name,
+			raceId: characters.raceId,
+			classId: characters.classId,
+			playerUsername: players.username,
+			playerDisplayName: players.displayName,
+			createdAt: characters.createdAt,
+			deleteAt: characters.deleteAt,
+			groupId: groupMembers.groupId
+		})
+		.from(characters)
+		.innerJoin(players, eq(players.id, characters.playerId))
+		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
+		.where(conditions)
+		.orderBy(direction(sortKeys[filter.sort]), asc(characterName), asc(characters.id))
+		.offset(filter.offset)
+		.limit(filter.limit);
+	const [counted] = await executor
+		.select({
+			total: count()
+		})
+		.from(characters)
+		.innerJoin(players, eq(players.id, characters.playerId))
+		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
+		.where(conditions);
+
+	return({
+		characters: rows.map(({ groupId, ...character }) => ({
+			...character,
+			inGroup: (groupId !== null)
+		})),
+		total: counted.total
+	});
+}
+
+/**
+ * Matches characters whose name, or whose player's username or name, holds some text, ignoring capitals
+ *
+ * @param text The text
+ * @param usernameOnly Whether to match the player's username only
+ * @return The condition
+ */
+function searchCondition(text: string, usernameOnly: boolean): SQL
+{
+	// % and _ are wildcards in LIKE, and _ is common in usernames; backslash is LIKE's escape character
+	const pattern = `%${text.toLowerCase().replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
+	const username = sql`lower(${players.username}) LIKE ${pattern}`;
+
+	return((usernameOnly
+		? username
+		: sql`(lower(${characters.name}) LIKE ${pattern} OR ${username} OR lower(${players.displayName}) LIKE ${pattern})`));
+}
+
+/**
  * A player's characters in every universe, as their profile lists them: those not given their last
  * rites, by universe name and then character name
  *
  * @param playerId The player's ID
- * @param filter Which to list: only those in universes at some stages (for others to see), and only those marked visible
+ * @param filter Which to list: only those in universes at some stages that aren't disabled (for others to see), and only those marked visible
  * @param executor The database, or a transaction
  * @return The characters
  */
@@ -230,14 +360,16 @@ export async function listProfileCharacters(playerId: string, filter: { stages?:
 			universeId: universes.id,
 			universeSlug: universes.slug,
 			universeName: universes.name,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages
 		})
 		.from(characters)
 		.innerJoin(universes, eq(universes.id, characters.universeId))
 		.where(and(
 			eq(characters.playerId, playerId),
 			isNull(characters.deleteAt),
-			((filter.stages === undefined) ? undefined : inArray(universes.stage, filter.stages)),
+			((filter.stages === undefined) ? undefined : and(inArray(universes.stage, filter.stages), isNull(universes.disabledAt))),
 			(filter.onlyVisible ? eq(characters.visibleOnProfile, true) : undefined)
 		))
 		.orderBy(asc(universes.name), asc(universes.id), asc(characters.name), asc(characters.id)));
@@ -315,7 +447,10 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 			quantity: characterItems.quantity
 		})
 		.from(characterItems)
-		.where(eq(characterItems.characterId, characterId))
+		.where(and(
+			eq(characterItems.characterId, characterId),
+			eq(characterItems.hidden, false)
+		))
 		.orderBy(asc(characterItems.itemId));
 
 	return({
@@ -404,7 +539,8 @@ async function findCharacterAbilities(ruleset: Ruleset, characterId: string, exe
 
 /**
  * A player's characters in a universe as the lobby plays them, leaving out those given their last rites
- * and those in a group, who play there
+ * and those in a group, who play there. Those whose race or class bars them are listed, for the lobby
+ * to pass over
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
@@ -417,7 +553,8 @@ export async function listPlayableCharacters(playerId: string, universeId: strin
 		.select({
 			id: characters.id,
 			name: characters.name,
-			raceId: characters.raceId
+			raceId: characters.raceId,
+			classId: characters.classId
 		})
 		.from(characters)
 		.leftJoin(groupMembers, eq(groupMembers.characterId, characters.id))
@@ -432,14 +569,15 @@ export async function listPlayableCharacters(playerId: string, universeId: strin
 
 /**
  * The character a player played or made most recently in a universe, in a group or not, leaving out
- * those given their last rites
+ * those given their last rites and those whose race or class bars them
  *
  * @param playerId The player's ID
  * @param universeId The universe's ID
+ * @param barred The races and classes whose characters can't play
  * @param executor The database, or a transaction
  * @return The character's ID, or undefined when the player has none to play
  */
-export async function findLastPlayedCharacterId(playerId: string, universeId: string, executor: Executor = db): Promise<string | undefined>
+export async function findLastPlayedCharacterId(playerId: string, universeId: string, barred: BarredOptions, executor: Executor = db): Promise<string | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -449,7 +587,9 @@ export async function findLastPlayedCharacterId(playerId: string, universeId: st
 		.where(and(
 			eq(characters.playerId, playerId),
 			eq(characters.universeId, universeId),
-			isNull(characters.deleteAt)
+			isNull(characters.deleteAt),
+			((barred.raceIds.size > 0) ? notInArray(characters.raceId, [...barred.raceIds]) : undefined),
+			((barred.classIds.size > 0) ? notInArray(characters.classId, [...barred.classIds]) : undefined)
 		))
 		.orderBy(desc(playedAt), asc(characters.id))
 		.limit(1);
@@ -609,7 +749,8 @@ export async function restoreCharacter(playerId: string, universeId: string, cha
 		.returning({
 			id: characters.id,
 			name: characters.name,
-			raceId: characters.raceId
+			raceId: characters.raceId,
+			classId: characters.classId
 		});
 
 	return(row);
@@ -776,6 +917,130 @@ export async function isCarriedItem(itemId: number, executor: Executor = db): Pr
 		.limit(1);
 
 	return(rows.length > 0);
+}
+
+/**
+ * How many of a universe's characters are each of some races, leaving out those past their last rites
+ *
+ * @param universeId The universe's ID
+ * @param raceIds The races, by the IDs characters hold
+ * @param executor The database, or a transaction
+ * @return How many are each race, by race ID; a race no character is is left out
+ */
+export async function countCharactersOfRaces(universeId: string, raceIds: readonly number[], executor: Executor = db): Promise<Map<number, number>>
+{
+	if (raceIds.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			raceId: characters.raceId,
+			total: count()
+		})
+		.from(characters)
+		.where(and(
+			eq(characters.universeId, universeId),
+			inArray(characters.raceId, [...raceIds]),
+			notExpired
+		))
+		.groupBy(characters.raceId);
+
+	return(new Map(rows.map((row) => [row.raceId, row.total])));
+}
+
+/**
+ * How many of a universe's characters are each of some classes, leaving out those past their last rites
+ *
+ * @param universeId The universe's ID
+ * @param classIds The classes, by the IDs characters hold
+ * @param executor The database, or a transaction
+ * @return How many are each class, by class ID; a class no character is is left out
+ */
+export async function countCharactersOfClasses(universeId: string, classIds: readonly number[], executor: Executor = db): Promise<Map<number, number>>
+{
+	if (classIds.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			classId: characters.classId,
+			total: count()
+		})
+		.from(characters)
+		.where(and(
+			eq(characters.universeId, universeId),
+			inArray(characters.classId, [...classIds]),
+			notExpired
+		))
+		.groupBy(characters.classId);
+
+	return(new Map(rows.map((row) => [row.classId, row.total])));
+}
+
+/**
+ * How many of a universe's characters carry each of some items, leaving out those past their last rites
+ * and items taken from them while disabled
+ *
+ * @param universeId The universe's ID
+ * @param itemIds The items, by their own IDs
+ * @param executor The database, or a transaction
+ * @return How many carry each item, by item ID; an item no character carries is left out
+ */
+export async function countCharactersCarrying(universeId: string, itemIds: readonly number[], executor: Executor = db): Promise<Map<number, number>>
+{
+	if (itemIds.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			itemId: characterItems.itemId,
+			total: count()
+		})
+		.from(characterItems)
+		.innerJoin(characters, eq(characters.id, characterItems.characterId))
+		.where(and(
+			eq(characters.universeId, universeId),
+			inArray(characterItems.itemId, [...itemIds]),
+			eq(characterItems.hidden, false),
+			notExpired
+		))
+		.groupBy(characterItems.itemId);
+
+	return(new Map(rows.map((row) => [row.itemId, row.total])));
+}
+
+/**
+ * Takes an item from every character of a universe carrying it, or gives it back: a taken item is
+ * hidden, keeping how many each character had
+ *
+ * @param universeId The universe's ID
+ * @param itemId The item, by its own ID
+ * @param hidden True to take it, false to give it back
+ * @param executor The database, or a transaction
+ */
+export async function setCarriedItemHidden(universeId: string, itemId: number, hidden: boolean, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(characterItems)
+		.set({
+			hidden
+		})
+		.where(and(
+			eq(characterItems.itemId, itemId),
+			eq(characterItems.hidden, !hidden),
+			inArray(characterItems.characterId, executor
+				.select({
+					id: characters.id
+				})
+				.from(characters)
+				.where(eq(characters.universeId, universeId)))
+		));
 }
 
 /**

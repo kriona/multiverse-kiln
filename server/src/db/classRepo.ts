@@ -3,11 +3,12 @@
  * class_starting_items and class_race_areas tables
  */
 import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
-import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
+import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { classes, classRaceAreas, classStartingItems, pf1eClasses, sf1eClasses } from './schema.js';
+import { inVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
  * The settings of a class a universe added, which always has a name of its own
@@ -46,15 +47,53 @@ export async function findDefaultClassIds(ruleset: Ruleset, executor: Executor =
 }
 
 /**
+ * What each class a universe can use is called, without its settings: a default class's key, and the
+ * name the universe gives it, if any
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return Each class's key and name, by its ID
+ */
+export async function loadClassNames(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, OptionName>>
+{
+	const rows = await executor
+		.select({
+			id: classes.id,
+			universeId: classes.universeId,
+			overridesClassId: classes.overridesClassId,
+			key: classes.key,
+			name: classes.name
+		})
+		.from(classes)
+		.where(usableClasses(version, ruleset));
+	const copies = new Map(rows
+		.filter((row) => (row.overridesClassId !== null))
+		.map((row) => [row.overridesClassId, row]));
+
+	return(new Map(rows
+		.filter((row) => (row.overridesClassId === null))
+		.map((row) =>
+		{
+			const custom = (row.universeId !== null);
+
+			return([row.id, {
+				key: (custom ? null : row.key),
+				name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+			}]);
+		})));
+}
+
+/**
  * Every class a universe can use, as the editor lists them: with whether each class is custom or
  * edited, and a default class's key in place of a name it kept
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The classes, by ID
  */
-export async function loadEditorClasses(universeId: string, ruleset: Ruleset, executor: Executor = db): Promise<EditorClass[]>
+export async function loadEditorClasses(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorClass[]>
 {
 	const rows = await executor
 		.select({
@@ -64,6 +103,7 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			key: classes.key,
 			name: classes.name,
 			enabled: classes.enabled,
+			keepPlaying: classes.keepPlaying,
 			startingPlatinum: classes.startingPlatinum,
 			startingGold: classes.startingGold,
 			startingSilver: classes.startingSilver,
@@ -74,11 +114,11 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 			startingRow: classes.startingRow
 		})
 		.from(classes)
-		.where(usableClasses(universeId, ruleset))
+		.where(usableClasses(version, ruleset))
 		.orderBy(asc(classes.id));
-	const rules = await loadClassRules(universeId, ruleset, executor);
-	const startingItems = await loadClassStartingItems(universeId, executor);
-	const raceAreas = await loadClassRaceAreas(universeId, executor);
+	const rules = await loadClassRules(version, ruleset, executor);
+	const startingItems = await loadClassStartingItems(version, executor);
+	const raceAreas = await loadClassRaceAreas(version, executor);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesClassId !== null))
 		.map((row) => [row.overridesClassId, row]));
@@ -102,6 +142,7 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
 				enabled: settings.enabled,
+				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
 				startingItems: (startingItems.get(settings.id) ?? []),
 				startingAreaId: settings.startingAreaId,
@@ -116,20 +157,46 @@ export async function loadEditorClasses(universeId: string, ruleset: Ruleset, ex
 }
 
 /**
+ * The classes whose characters can't play in a universe: those it has disabled without letting the
+ * characters already of them keep playing
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The classes, by the IDs characters hold (a default class's own ID for an edited copy)
+ */
+export async function listBarredClassIds(version: UniverseVersion, executor: Executor = db): Promise<Set<number>>
+{
+	// Default classes are always enabled, so only the universe's own rows can bar anyone
+	const rows = await executor
+		.select({
+			id: classes.id,
+			overridesClassId: classes.overridesClassId
+		})
+		.from(classes)
+		.where(and(
+			inVersion(classes, version),
+			eq(classes.enabled, false),
+			eq(classes.keepPlaying, false)
+		));
+
+	return(new Set(rows.map((row) => (row.overridesClassId ?? row.id))));
+}
+
+/**
  * Matches the rows of classes a universe can see: its ruleset's default classes, and its own classes
  * and edited copies
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @return The condition
  */
-function usableClasses(universeId: string, ruleset: Ruleset): SQL | undefined
+function usableClasses(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
 {
 	return(and(
 		eq(classes.ruleset, ruleset),
 		or(
 			isNull(classes.universeId),
-			eq(classes.universeId, universeId)
+			inVersion(classes, version)
 		)
 	));
 }
@@ -137,12 +204,12 @@ function usableClasses(universeId: string, ruleset: Ruleset): SQL | undefined
 /**
  * The rules of each row of classes a universe can see, from its ruleset's table
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
  * @return The rules, keyed by the ID of the row holding the class's settings
  */
-async function loadClassRules(universeId: string, ruleset: Ruleset, executor: Executor): Promise<Map<number, ClassRules>>
+async function loadClassRules(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<Map<number, ClassRules>>
 {
 	switch (ruleset)
 	{
@@ -157,7 +224,7 @@ async function loadClassRules(universeId: string, ruleset: Ruleset, executor: Ex
 				})
 				.from(pf1eClasses)
 				.innerJoin(classes, eq(classes.id, pf1eClasses.classId))
-				.where(usableClasses(universeId, ruleset));
+				.where(usableClasses(version, ruleset));
 
 			return(new Map(rows.map(({ classId, ...rules }): [number, Pf1eClassRules] => [classId, rules])));
 		}
@@ -173,7 +240,7 @@ async function loadClassRules(universeId: string, ruleset: Ruleset, executor: Ex
 				})
 				.from(sf1eClasses)
 				.innerJoin(classes, eq(classes.id, sf1eClasses.classId))
-				.where(usableClasses(universeId, ruleset));
+				.where(usableClasses(version, ruleset));
 
 			return(new Map(rows.map(({ classId, ...rules }): [number, Sf1eClassRules] => [classId, rules])));
 		}
@@ -183,11 +250,11 @@ async function loadClassRules(universeId: string, ruleset: Ruleset, executor: Ex
 /**
  * The extra starting equipment of each of a universe's rows of class settings
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The items and how many of each, by item ID, keyed by the ID of the row holding the class's settings
  */
-async function loadClassStartingItems(universeId: string, executor: Executor): Promise<Map<number, ItemQuantity[]>>
+async function loadClassStartingItems(version: UniverseVersion, executor: Executor): Promise<Map<number, ItemQuantity[]>>
 {
 	const rows = await executor
 		.select({
@@ -197,7 +264,7 @@ async function loadClassStartingItems(universeId: string, executor: Executor): P
 		})
 		.from(classStartingItems)
 		.innerJoin(classes, eq(classes.id, classStartingItems.classId))
-		.where(eq(classes.universeId, universeId))
+		.where(inVersion(classes, version))
 		.orderBy(asc(classStartingItems.itemId));
 	const byClass = new Map<number, ItemQuantity[]>();
 
@@ -212,11 +279,11 @@ async function loadClassStartingItems(universeId: string, executor: Executor): P
 /**
  * Where each of a universe's rows of class settings starts its characters of each race
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The areas, by race ID, keyed by the ID of the row holding the class's settings
  */
-async function loadClassRaceAreas(universeId: string, executor: Executor): Promise<Map<number, ClassRaceArea[]>>
+async function loadClassRaceAreas(version: UniverseVersion, executor: Executor): Promise<Map<number, ClassRaceArea[]>>
 {
 	const rows = await executor
 		.select({
@@ -228,7 +295,7 @@ async function loadClassRaceAreas(universeId: string, executor: Executor): Promi
 		})
 		.from(classRaceAreas)
 		.innerJoin(classes, eq(classes.id, classRaceAreas.classId))
-		.where(eq(classes.universeId, universeId))
+		.where(inVersion(classes, version))
 		.orderBy(asc(classRaceAreas.raceId));
 	const byClass = new Map<number, ClassRaceArea[]>();
 
@@ -243,14 +310,14 @@ async function loadClassRaceAreas(universeId: string, executor: Executor): Promi
 /**
  * Whether a class ID is one of a ruleset's default classes or one of a universe's own classes
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param classId The class's ID
  * @param executor The database, or a transaction
  * @return The kind of class, or undefined when the universe can't use a class with that ID (an edited
  * copy's own ID included)
  */
-export async function findClassKind(universeId: string, ruleset: Ruleset, classId: number, executor: Executor = db): Promise<ClassKind | undefined>
+export async function findClassKind(version: UniverseVersion, ruleset: Ruleset, classId: number, executor: Executor = db): Promise<ClassKind | undefined>
 {
 	const [row] = await executor
 		.select({
@@ -263,7 +330,7 @@ export async function findClassKind(universeId: string, ruleset: Ruleset, classI
 			isNull(classes.overridesClassId),
 			or(
 				isNull(classes.universeId),
-				eq(classes.universeId, universeId)
+				inVersion(classes, version)
 			)
 		))
 		.limit(1);
@@ -279,11 +346,11 @@ export async function findClassKind(universeId: string, ruleset: Ruleset, classI
 /**
  * How many classes a universe has added, not counting its edited copies of default classes
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param executor The database, or a transaction
  * @return The number of classes
  */
-export async function countCustomClasses(universeId: string, executor: Executor = db): Promise<number>
+export async function countCustomClasses(version: UniverseVersion, executor: Executor = db): Promise<number>
 {
 	const [row] = await executor
 		.select({
@@ -291,7 +358,7 @@ export async function countCustomClasses(universeId: string, executor: Executor 
 		})
 		.from(classes)
 		.where(and(
-			eq(classes.universeId, universeId),
+			inVersion(classes, version),
 			isNull(classes.overridesClassId)
 		));
 
@@ -301,19 +368,20 @@ export async function countCustomClasses(universeId: string, executor: Executor 
 /**
  * Adds a class to a universe. Call it inside a transaction, so the class is never left without its rules
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param settings The class's settings
  * @param executor A transaction
  * @return The new class's ID
  */
-export async function createCustomClass(universeId: string, ruleset: Ruleset, settings: CustomClassSettings, executor: Executor): Promise<number>
+export async function createCustomClass(version: UniverseVersion, ruleset: Ruleset, settings: CustomClassSettings, executor: Executor): Promise<number>
 {
 	const [created] = await executor
 		.insert(classes)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			...classColumns(settings)
 		})
 		.returning({ id: classes.id });
@@ -326,20 +394,20 @@ export async function createCustomClass(universeId: string, ruleset: Ruleset, se
 /**
  * Changes one of a universe's own classes. Call it inside a transaction
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param classId The class's ID, from findClassKind() as custom
  * @param settings The class's new settings
  * @param executor A transaction
  */
-export async function updateCustomClass(universeId: string, ruleset: Ruleset, classId: number, settings: CustomClassSettings, executor: Executor): Promise<void>
+export async function updateCustomClass(version: UniverseVersion, ruleset: Ruleset, classId: number, settings: CustomClassSettings, executor: Executor): Promise<void>
 {
 	await executor
 		.update(classes)
 		.set(classColumns(settings))
 		.where(and(
 			eq(classes.id, classId),
-			eq(classes.universeId, universeId)
+			inVersion(classes, version)
 		));
 	await saveClassDetails(classId, ruleset, settings, executor);
 }
@@ -347,25 +415,26 @@ export async function updateCustomClass(universeId: string, ruleset: Ruleset, cl
 /**
  * Stores a universe's edited copy of a default class, replacing any copy it had. Call it inside a transaction
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultClassId The default class's ID, from findClassKind() as default
  * @param settings The copy's settings; a null name keeps the default class's
  * @param executor A transaction
  */
-export async function saveEditedDefaultClass(universeId: string, ruleset: Ruleset, defaultClassId: number, settings: ClassSettings, executor: Executor): Promise<void>
+export async function saveEditedDefaultClass(version: UniverseVersion, ruleset: Ruleset, defaultClassId: number, settings: ClassSettings, executor: Executor): Promise<void>
 {
 	const columns = classColumns(settings);
 	const [copy] = await executor
 		.insert(classes)
 		.values({
 			ruleset,
-			universeId,
+			universeId: version.universeId,
+			draft: version.draft,
 			overridesClassId: defaultClassId,
 			...columns
 		})
 		.onConflictDoUpdate({
-			target: [classes.universeId, classes.overridesClassId],
+			target: [classes.universeId, classes.draft, classes.overridesClassId],
 			set: columns
 		})
 		.returning({ id: classes.id });
@@ -376,16 +445,16 @@ export async function saveEditedDefaultClass(universeId: string, ruleset: Rulese
 /**
  * Discards a universe's edited copy of a default class, so the universe sees the default again
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param defaultClassId The default class's ID
  * @param executor The database, or a transaction
  */
-export async function restoreDefaultClass(universeId: string, defaultClassId: number, executor: Executor = db): Promise<void>
+export async function restoreDefaultClass(version: UniverseVersion, defaultClassId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(classes)
 		.where(and(
-			eq(classes.universeId, universeId),
+			inVersion(classes, version),
 			eq(classes.overridesClassId, defaultClassId)
 		));
 }
@@ -393,29 +462,29 @@ export async function restoreDefaultClass(universeId: string, defaultClassId: nu
 /**
  * Deletes one of a universe's own classes
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param classId The class's ID, from findClassKind() as custom
  * @param executor The database, or a transaction
  */
-export async function deleteCustomClass(universeId: string, classId: number, executor: Executor = db): Promise<void>
+export async function deleteCustomClass(version: UniverseVersion, classId: number, executor: Executor = db): Promise<void>
 {
 	await executor
 		.delete(classes)
 		.where(and(
 			eq(classes.id, classId),
-			eq(classes.universeId, universeId)
+			inVersion(classes, version)
 		));
 }
 
 /**
  * Whether the extra starting equipment of any of a universe's classes holds an item
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param itemId The item's ID
  * @param executor The database, or a transaction
  * @return True when it does
  */
-export async function isClassStartingItem(universeId: string, itemId: number, executor: Executor = db): Promise<boolean>
+export async function isClassStartingItem(version: UniverseVersion, itemId: number, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
 		.select({
@@ -424,7 +493,7 @@ export async function isClassStartingItem(universeId: string, itemId: number, ex
 		.from(classStartingItems)
 		.innerJoin(classes, eq(classes.id, classStartingItems.classId))
 		.where(and(
-			eq(classes.universeId, universeId),
+			inVersion(classes, version),
 			eq(classStartingItems.itemId, itemId)
 		))
 		.limit(1);
@@ -438,13 +507,14 @@ export async function isClassStartingItem(universeId: string, itemId: number, ex
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
 		enabled: settings.enabled,
+		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),
 		startingAreaId: settings.startingAreaId,
 		startingColumn: (hasArea ? settings.startingColumn : 0),

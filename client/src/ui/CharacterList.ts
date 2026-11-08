@@ -4,7 +4,7 @@ import sheetIcon from 'virtual:icon/ph:scroll';
 import { t } from '../localization';
 import { characterMessages } from './characterMessages';
 import { setButtonLabel } from './dom';
-import { className, raceName } from './raceAndClassNames';
+import { characterDescription } from './raceAndClassNames';
 
 /**
  * What a character list asks the app to do
@@ -76,22 +76,26 @@ export class CharacterList
 
 		name.textContent = character.name;
 		description.className = 'character-description';
-		description.textContent = t(characterMessages.raceAndClass, {
-			race: raceName(character.race, characters.ruleset),
-			class: className(character.characterClass, characters.ruleset)
-		});
+		description.textContent = characterDescription(character, characters.ruleset);
 
 		button.type = 'button';
 		button.className = 'character-choice';
 		button.setAttribute('aria-pressed', String(isPlaying));
 		button.append(name, ' ', description);
 
-		// Kept focusable, so a screen reader still reads the character and when they go
+		// Kept focusable, so a screen reader still reads the character and when they go, or why they can't play
 		if (character.deleteAt !== null)
 		{
 			button.setAttribute('aria-disabled', 'true');
 			button.append(' ', this.note('character-leaving', t(characterMessages.leaving, {
 				deleteAt: Date.parse(character.deleteAt)
+			})));
+		}
+		else if (character.barredBy !== null)
+		{
+			button.setAttribute('aria-disabled', 'true');
+			button.append(' ', this.note('character-leaving', t(characterMessages.barred, {
+				bar: character.barredBy
 			})));
 		}
 		else if ((character.groupId !== null) && (character.groupId === groupId))
@@ -104,11 +108,7 @@ export class CharacterList
 		}
 		else if (character.groupId !== null)
 		{
-			button.append(' ', this.note('character-group', t({
-				id: 'characters.inGroup',
-				defaultMessage: 'In a group',
-				description: 'In the list of the player\'s characters, beside one who is in a group (characters playing together); choosing them goes to that group'
-			})));
+			button.append(' ', this.note('character-group', t(characterMessages.inGroup)));
 		}
 
 		// Said in words as well as by the outline, for players who can't see it
@@ -123,7 +123,7 @@ export class CharacterList
 
 		button.addEventListener('click', () =>
 		{
-			if (!isPlaying && (character.deleteAt === null))
+			if (!isPlaying && (character.deleteAt === null) && (character.barredBy === null))
 			{
 				this.actions.choose(character);
 			}

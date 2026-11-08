@@ -9,9 +9,10 @@
 import type { Request, Response } from 'express';
 
 import type { Executor } from '../db/client.js';
+import { saveLastLogin } from '../db/playerRepo.js';
 import { createSession, deleteSession, findSessionByTokenHash, findSessionWithPlayer, touchSession } from '../db/sessionRepo.js';
 import { clearCookie, readCookie, SESSION_COOKIE, setCookie } from '../http/cookies.js';
-import { isSessionExpired, SESSION_LIFETIMES, shouldTouchSession } from '../logic/sessionLifetimes.js';
+import { isSessionExpired, sessionExpiresAt, SESSION_LIFETIMES, shouldTouchSession } from '../logic/sessionLifetimes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { markKnownBrowser } from './knownBrowsers.js';
 import { createToken, hashToken, isTokenForm } from './tokens.js';
@@ -36,6 +37,11 @@ export interface SessionIdentity
 	 * The language the player chose on their profile, or null when they haven't
 	 */
 	locale: string | null;
+
+	/**
+	 * When the session ends if it isn't used again
+	 */
+	expiresAt: Date;
 }
 
 /**
@@ -69,7 +75,9 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 		return(undefined);
 	}
 
-	if (shouldTouchSession(session, now))
+	const touched = shouldTouchSession(session, now);
+
+	if (touched)
 	{
 		await touchSession(session.id, now);
 	}
@@ -79,14 +87,19 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 		playerId: session.playerId,
 		username: session.username,
 		name: session.displayName,
-		locale: session.locale
+		locale: session.locale,
+		expiresAt: sessionExpiresAt({
+			createdAt: session.createdAt,
+			lastUsedAt: (touched ? now : session.lastUsedAt),
+			rememberMe: session.rememberMe
+		})
 	});
 }
 
 /**
  * Logs a browser in: starts a session and gives the browser its cookie. Without "Remember me" the
  * cookie goes when the browser closes; with it, the browser keeps it as long as the session can last.
- * The browser is marked as known to the account too (knownBrowsers.ts). A session the browser was
+ * The account's last login is recorded, and the browser is marked as known to it (knownBrowsers.ts). A session the browser was
  * already logged in with ends, so a copy of its old token stops working rather than lasting until it
  * expires
  *
@@ -109,10 +122,12 @@ export async function startSession(request: Request, response: Response, playerI
 	}
 
 	const token = createToken();
+	const now = new Date();
 	const session = await createSession(playerId, hashToken(token), rememberMe, executor);
 
+	await saveLastLogin(playerId, now, executor);
 	setCookie(response, SESSION_COOKIE, token, (rememberMe ? SESSION_LIFETIMES.remembered.totalMs : undefined));
-	markKnownBrowser(response, playerId, new Date());
+	markKnownBrowser(response, playerId, now);
 
 	return(session.id);
 }

@@ -12,6 +12,7 @@ import { formatMoney, readMoneyField } from '../moneyField';
 import { className, raceName } from '../raceAndClassNames';
 import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
+import { FollowedDialog } from './otherSaves';
 import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
 import { AreaChoice } from './AreaChoice';
@@ -68,6 +69,11 @@ export class ClassDialog
 	 * Whether the class has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
+
+	/**
+	 * How the dialog follows saves made in other windows to the class it shows
+	 */
+	readonly following: FollowedDialog;
 
 	private universe: EditableUniverse | undefined;
 
@@ -147,6 +153,7 @@ export class ClassDialog
 			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell, [...this.raceAreas].sort(([a], [b]) => (a - b))]
 		});
 		this.changes.guardDialog(this.dialog);
+		this.following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 		for (const input of [this.name, this.startingMoney])
 		{
@@ -223,7 +230,7 @@ export class ClassDialog
 		this.name.value = name;
 		this.enabled.checked = (characterClass?.enabled ?? true);
 		this.showRules(rules);
-		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset);
+		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset, universe.coinAbbreviations);
 		this.startingArea.show(universe, (characterClass?.startingAreaId ?? null), {
 			column: (characterClass?.startingColumn ?? 0),
 			row: (characterClass?.startingRow ?? 0)
@@ -261,7 +268,7 @@ export class ClassDialog
 		clearFieldErrors(this.dialog);
 		void this.startingItems.show(universe, (characterClass?.startingItems ?? []));
 		void this.loadRacesAndAreas(universe, editable);
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 	}
 
@@ -434,7 +441,7 @@ export class ClassDialog
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset, universe.coinAbbreviations);
 
 		if (startingMoney === undefined)
 		{
@@ -451,6 +458,8 @@ export class ClassDialog
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
+			// Chosen in the dialog Save opens when disabling the class affects characters (ImpactDialog)
+			keepPlaying: (this.characterClass?.keepPlaying ?? true),
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId,

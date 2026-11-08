@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
+import { outlineRuns, type OutlineRun } from '../editor/cellOutlines';
 import { AreaRenderer } from '../rendering/AreaRenderer';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 
@@ -18,6 +19,16 @@ const MAX_ZOOM = 2;
  * How much one turn of the mouse wheel zooms
  */
 const ZOOM_STEP = 1.25;
+
+/**
+ * How far the wheel pans for each line it turns, in screen pixels, when the browser measures the turn in lines
+ */
+const WHEEL_LINE_PIXELS = 16;
+
+/**
+ * How far the map pans for each pixel the wheel turns: half, since a whole turn moves the map too far to follow
+ */
+const WHEEL_PAN_SCALE = 0.25;
 
 /**
  * How far beyond the view, in cells, chunks are asked for, so they are there before they scroll in
@@ -158,8 +169,8 @@ export interface MapEditorSceneData
  * its links and the brush outlined on top
  *
  * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
- * and Ctrl+wheel zooms around the pointer. MapCanvas does the same from the keyboard with a
- * cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
+ * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. MapCanvas
+ * does the same from the keyboard with a cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
  */
 export class MapEditorScene extends Phaser.Scene
@@ -172,12 +183,33 @@ export class MapEditorScene extends Phaser.Scene
 	private areaRenderer?: AreaRenderer;
 	private overlay?: Phaser.GameObjects.Graphics;
 	private links: LinkMarker[] = [];
-	private highlights: CellHighlight[] = [];
+
+	/**
+	 * The highlighted cells' outlines, drawn apart from the overlay, which is drawn again every frame:
+	 * there can be tens of thousands of them, as when another editor paints a large part of the map
+	 */
+	private highlightOverlay?: Phaser.GameObjects.Graphics;
+
+	/**
+	 * The highlighted cells' outlines, joined into runs
+	 */
+	private highlightRuns: OutlineRun[] = [];
+
+	/**
+	 * The zoom the highlights were last drawn at, since their lines stay the same width on screen; 0 when
+	 * they must be drawn again
+	 */
+	private highlightZoom = 0;
 
 	/**
 	 * The cell under the pointer, while it is over the canvas
 	 */
 	private hovered: BrushCell | undefined;
+
+	/**
+	 * Whether the mouse is over the canvas
+	 */
+	private pointerOver = false;
 
 	/**
 	 * The last cell dabbed in the stroke being painted, or undefined when no stroke is under way
@@ -198,6 +230,12 @@ export class MapEditorScene extends Phaser.Scene
 	 * The chunk range last reported to the host, as a string, so it is only reported when it changes
 	 */
 	private lastViewKey = '';
+
+	/**
+	 * Whether the wheel pans the map, as when the map fills the window and the page can't scroll;
+	 * otherwise the wheel scrolls the page
+	 */
+	wheelPans = false;
 
 	constructor()
 	{
@@ -223,8 +261,11 @@ export class MapEditorScene extends Phaser.Scene
 		this.areaRenderer = undefined;
 		this.overlay = undefined;
 		this.links = [];
-		this.highlights = [];
+		this.highlightOverlay = undefined;
+		this.highlightRuns = [];
+		this.highlightZoom = 0;
 		this.hovered = undefined;
+		this.pointerOver = false;
 		this.lastDab = undefined;
 		this.panStart = undefined;
 		this.lastViewKey = '';
@@ -244,6 +285,9 @@ export class MapEditorScene extends Phaser.Scene
 	create(): void
 	{
 		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks);
+
+		// Added first, so the brush is outlined over the highlights
+		this.highlightOverlay = this.add.graphics().setDepth(1);
 		this.overlay = this.add.graphics().setDepth(1);
 
 		// Tiles with uploaded graphics are drawn in their colors until the graphics arrive
@@ -276,9 +320,16 @@ export class MapEditorScene extends Phaser.Scene
 		this.input.on(Phaser.Input.Events.GAME_OUT, this.onPointerOut);
 		this.input.on(Phaser.Input.Events.POINTER_WHEEL, this.onWheel);
 
+		// Capturing hears the scrolling of any element the canvas is in, as well as the page's
+		window.addEventListener('scroll', this.onPageScroll, {
+			capture: true,
+			passive: true
+		});
+
 		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
 		{
 			this.finishStroke();
+			window.removeEventListener('scroll', this.onPageScroll, { capture: true });
 			this.input.removeAllListeners();
 			this.areaRenderer?.destroy();
 			this.areaRenderer = undefined;
@@ -297,6 +348,11 @@ export class MapEditorScene extends Phaser.Scene
 		this.areaRenderer?.update(view);
 		this.reportView(view);
 		this.drawOverlay();
+
+		if (this.highlightZoom !== this.cameras.main.zoom)
+		{
+			this.drawHighlights();
+		}
 	}
 
 	/**
@@ -326,7 +382,8 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	setHighlights(highlights: CellHighlight[]): void
 	{
-		this.highlights = highlights;
+		this.highlightRuns = outlineRuns(highlights);
+		this.highlightZoom = 0;
 	}
 
 	/**
@@ -432,6 +489,8 @@ export class MapEditorScene extends Phaser.Scene
 	{
 		const cell = this.cellUnder(pointer);
 
+		this.pointerOver = true;
+
 		if (this.panStart)
 		{
 			const camera = this.cameras.main;
@@ -476,26 +535,103 @@ export class MapEditorScene extends Phaser.Scene
 	 */
 	private readonly onPointerOut = (): void =>
 	{
+		this.pointerOver = false;
 		this.hovered = undefined;
 		this.host.hover(undefined);
 	};
 
 	/**
-	 * Zooms in or out while Ctrl is held, keeping the point under the pointer where it is. Without Ctrl
-	 * the wheel scrolls the page
-	 *
-	 * @param pointer The pointer
-	 * @param _over Game objects under the pointer
-	 * @param _deltaX Horizontal wheel movement
-	 * @param deltaY Vertical wheel movement: negative zooms in
+	 * Finds where the mouse is on the canvas when the page scrolls under it, which moves the canvas
+	 * without moving the mouse, so the outlined cell stays under the mouse
 	 */
-	private readonly onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, _deltaX: number, deltaY: number): void =>
+	private readonly onPageScroll = (): void =>
 	{
-		if (!pointer.event.ctrlKey)
+		const pointer = this.input.activePointer;
+		const event = pointer.event;
+
+		if (!this.pointerOver || !(event instanceof MouseEvent))
 		{
 			return;
 		}
 
+		// The mouse stays at the same place in the window, which is somewhere else on the page now
+		this.scale.updateBounds();
+		this.game.input.transformPointer(pointer, event.clientX + window.scrollX, event.clientY + window.scrollY, false);
+
+		if ((pointer.x < 0) || (pointer.y < 0) || (pointer.x >= this.scale.width) || (pointer.y >= this.scale.height))
+		{
+			this.onPointerOut();
+			return;
+		}
+
+		this.onPointerMove(pointer);
+	};
+
+	/**
+	 * Zooms in or out while Ctrl is held, and otherwise pans the map when wheelPans is set. Without
+	 * either the wheel scrolls the page
+	 *
+	 * @param pointer The pointer
+	 * @param _over Game objects under the pointer
+	 * @param deltaX Horizontal wheel movement
+	 * @param deltaY Vertical wheel movement: negative zooms in
+	 */
+	private readonly onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, deltaX: number, deltaY: number): void =>
+	{
+		const event = pointer.event;
+
+		if (event.ctrlKey)
+		{
+			this.zoomAround(pointer, deltaY);
+		}
+		else if (this.wheelPans && (event instanceof WheelEvent))
+		{
+			this.pan(event, deltaX, deltaY);
+
+			// The map moved under the pointer, so it is over another cell, and a stroke being painted follows it
+			this.onPointerMove(pointer);
+		}
+	};
+
+	/**
+	 * Pans the map by a turn of the wheel. Shift turns the wheel's vertical movement sideways, for a
+	 * mouse without a sideways wheel
+	 *
+	 * @param event The wheel event, which says what the movement is measured in
+	 * @param deltaX Horizontal wheel movement
+	 * @param deltaY Vertical wheel movement
+	 */
+	private pan(event: WheelEvent, deltaX: number, deltaY: number): void
+	{
+		const camera = this.cameras.main;
+		const sideways = (event.shiftKey && (deltaX === 0));
+		let pixels = 1;
+
+		if (event.deltaMode === WheelEvent.DOM_DELTA_LINE)
+		{
+			pixels = WHEEL_LINE_PIXELS;
+		}
+		else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE)
+		{
+			pixels = camera.height;
+		}
+
+		const scale = (pixels * WHEEL_PAN_SCALE) / camera.zoom;
+
+		camera.setScroll(
+			camera.scrollX + ((sideways ? deltaY : deltaX) * scale),
+			camera.scrollY + ((sideways ? 0 : deltaY) * scale)
+		);
+	}
+
+	/**
+	 * Zooms in or out one step, keeping the point under the pointer where it is
+	 *
+	 * @param pointer The pointer
+	 * @param deltaY Vertical wheel movement: negative zooms in
+	 */
+	private zoomAround(pointer: Phaser.Input.Pointer, deltaY: number): void
+	{
 		const camera = this.cameras.main;
 		const zoom = Phaser.Math.Clamp(((deltaY < 0) ? camera.zoom * ZOOM_STEP : camera.zoom / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM);
 		const halfWidth = camera.width / 2;
@@ -510,7 +646,7 @@ export class MapEditorScene extends Phaser.Scene
 			worldX - halfWidth - ((pointer.x - halfWidth) / zoom),
 			worldY - halfHeight - ((pointer.y - halfHeight) / zoom)
 		);
-	};
+	}
 
 	/**
 	 * Ends the stroke being painted, if there is one
@@ -564,7 +700,53 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Outlines the map's edges, its center cell, its links, the highlighted cells and the brush
+	 * Outlines the highlighted cells, a line along each run of their edges
+	 */
+	private drawHighlights(): void
+	{
+		const overlay = this.highlightOverlay;
+
+		if (!overlay)
+		{
+			return;
+		}
+
+		const zoom = this.cameras.main.zoom;
+
+		// As thick as the overlay's lines and a half, and the same width on screen however far the camera
+		// zooms. Each run reaches half a line past its ends, so the corners where runs meet are filled
+		const line = 3 / zoom;
+		const overhang = line / 2;
+		let color: number | undefined;
+
+		this.highlightZoom = zoom;
+		overlay.clear();
+
+		for (const run of this.highlightRuns)
+		{
+			if (run.color !== color)
+			{
+				color = run.color;
+				overlay.lineStyle(line, color, 1);
+			}
+
+			const at = run.line * GRID_CELL_SIZE;
+			const start = (run.start * GRID_CELL_SIZE) - overhang;
+			const end = (run.end * GRID_CELL_SIZE) + overhang;
+
+			if (run.vertical)
+			{
+				overlay.lineBetween(at, start, at, end);
+			}
+			else
+			{
+				overlay.lineBetween(start, at, end, at);
+			}
+		}
+	}
+
+	/**
+	 * Outlines the map's edges, its center cell, its links and the brush
 	 */
 	private drawOverlay(): void
 	{
@@ -591,12 +773,6 @@ export class MapEditorScene extends Phaser.Scene
 			overlay.fillRect(link.column * GRID_CELL_SIZE, link.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 			overlay.lineStyle(line, LINK_COLORS[link.mode], 1);
 			overlay.strokeRect(link.column * GRID_CELL_SIZE, link.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
-		}
-
-		for (const highlight of this.highlights)
-		{
-			overlay.lineStyle(line * 1.5, highlight.color, 1);
-			overlay.strokeRect(highlight.column * GRID_CELL_SIZE, highlight.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 		}
 
 		const mode = this.host.pointerMode();

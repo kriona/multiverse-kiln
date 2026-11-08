@@ -7,11 +7,13 @@ import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { deleteArea } from '../../src/db/areaRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse, addArea } from './fixtures.js';
 
 const gunslinger: CustomClassSettings = {
 	name: 'Gunslinger',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -51,7 +53,7 @@ async function defaultClassId(key: string): Promise<number>
  */
 async function findClass(universeId: string, classId: number): Promise<EditorClass | undefined>
 {
-	return((await loadEditorClasses(universeId, 'pf1e')).find((characterClass) => (characterClass.id === classId)));
+	return((await loadEditorClasses(liveVersion(universeId), 'pf1e')).find((characterClass) => (characterClass.id === classId)));
 }
 
 describe('classRepo', () =>
@@ -61,7 +63,7 @@ describe('classRepo', () =>
 		it('are the Pathfinder 1E classes, each with its name message and rules', async () =>
 		{
 			const universeId = await addUniverse();
-			const classes = await loadEditorClasses(universeId, 'pf1e');
+			const classes = await loadEditorClasses(liveVersion(universeId), 'pf1e');
 
 			assert.deepStrictEqual(classes.map((characterClass) => characterClass.key), Object.keys(PF1E_CLASSES));
 
@@ -75,6 +77,7 @@ describe('classRepo', () =>
 					key,
 					name: null,
 					enabled: true,
+					keepPlaying: true,
 					startingMoney: emptyMoney(),
 					startingItems: [],
 					startingAreaId: null,
@@ -95,11 +98,11 @@ describe('classRepo', () =>
 		const areaId = await addArea(universeId);
 		const elfId = (await findDefaultRaceIds('pf1e')).get('elf') as number;
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
-		const classId = await inTransaction((transaction) => createCustomClass(universeId, 'pf1e', gunslinger, transaction));
+		const classId = await inTransaction((transaction) => createCustomClass(liveVersion(universeId), 'pf1e', gunslinger, transaction));
 
-		assert.strictEqual(await findClassKind(universeId, 'pf1e', classId), 'custom');
-		assert.strictEqual(await findClassKind(await addUniverse('Other'), 'pf1e', classId), undefined);
-		assert.strictEqual(await countCustomClasses(universeId), 1);
+		assert.strictEqual(await findClassKind(liveVersion(universeId), 'pf1e', classId), 'custom');
+		assert.strictEqual(await findClassKind(liveVersion(await addUniverse('Other')), 'pf1e', classId), undefined);
+		assert.strictEqual(await countCustomClasses(liveVersion(universeId)), 1);
 		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...gunslinger, custom: true, edited: false });
 
 		const changed: CustomClassSettings = {
@@ -117,17 +120,17 @@ describe('classRepo', () =>
 			}
 		};
 
-		await inTransaction((transaction) => updateCustomClass(universeId, 'pf1e', classId, changed, transaction));
+		await inTransaction((transaction) => updateCustomClass(liveVersion(universeId), 'pf1e', classId, changed, transaction));
 		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...changed, custom: true, edited: false });
-		assert.strictEqual(await isClassStartingItem(universeId, daggerId), true);
+		assert.strictEqual(await isClassStartingItem(liveVersion(universeId), daggerId), true);
 
 		// Deleting an area drops the per-race entries that start there
 		await deleteArea(areaId);
 		assert.deepStrictEqual((await findClass(universeId, classId))?.raceAreas, []);
 
-		await deleteCustomClass(universeId, classId);
+		await deleteCustomClass(liveVersion(universeId), classId);
 		assert.strictEqual(await findClass(universeId, classId), undefined);
-		assert.strictEqual(await isClassStartingItem(universeId, daggerId), false);
+		assert.strictEqual(await isClassStartingItem(liveVersion(universeId), daggerId), false);
 	});
 
 	it('edits a default class for one universe only, and restores it', async () =>
@@ -146,9 +149,9 @@ describe('classRepo', () =>
 			}
 		};
 
-		assert.strictEqual(await findClassKind(universeId, 'pf1e', wizardId), 'default');
+		assert.strictEqual(await findClassKind(liveVersion(universeId), 'pf1e', wizardId), 'default');
 
-		await inTransaction((transaction) => saveEditedDefaultClass(universeId, 'pf1e', wizardId, edited, transaction));
+		await inTransaction((transaction) => saveEditedDefaultClass(liveVersion(universeId), 'pf1e', wizardId, edited, transaction));
 		assert.deepStrictEqual(await findClass(universeId, wizardId), { ...original, ...edited, edited: true });
 		assert.deepStrictEqual(await findClass(otherId, wizardId), original);
 
@@ -156,7 +159,7 @@ describe('classRepo', () =>
 		await deleteArea(areaId);
 		assert.strictEqual((await findClass(universeId, wizardId))?.startingAreaId, null);
 
-		await restoreDefaultClass(universeId, wizardId);
+		await restoreDefaultClass(liveVersion(universeId), wizardId);
 		assert.deepStrictEqual(await findClass(universeId, wizardId), original);
 	});
 });

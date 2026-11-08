@@ -3,6 +3,13 @@
 @use 'shared' as *;
 @use 'characterSheet';
 
+// Everything on Home below its toolbar, scrolling between the toolbar and the footer
+.home-page
+{
+	flex: 1;
+	overflow-y: auto;
+}
+
 // The logo above Home's lists of universes. The toolbar names the game engine, so screen readers skip it
 .home-logo
 {
@@ -10,22 +17,83 @@
 	margin: 16px auto;
 }
 
+// Home's lists of universes, one above another
 .home-body
 {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	gap: 16px;
-	margin: 16px;
+	flex-direction: column;
+	align-items: center;
+	gap: 75px;
+	margin: 75px 35px;
 }
 
-.universes
+// Each list of universes on Home, without a panel's background and border around it
+.home-body .universes
 {
-	flex: 1;
-	min-width: 280px;
+	box-sizing: border-box;
+	width: 100%;
 	max-width: 720px;
+	padding: 0;
+	border: none;
+	background: none;
 }
 
+
+// The headings of Home's lists, and of the message shown in their place
+.home-body h2
+{
+	font-size: 22pt;
+	text-align: center;
+}
+
+// A universe's name in its entry in Home's lists, in the accent color to set it apart from the description
+.universe-item h3
+{
+	margin: 0;
+	font-size: 16pt;
+	color: $accent-text;
+}
+
+// The universes the player can edit, in the drafts' purple to set them apart from the universes to play
+#own-universes .universe-item
+{
+	&:hover
+	{
+		border-color: $draft;
+	}
+
+	h3
+	{
+		color: $draft-text;
+	}
+}
+
+// Under the player's own universes, or under the question asking them to create one
+.home-create
+{
+	display: block;
+	margin: 16px auto 0;
+}
+
+// In place of Home's lists while there is no universe to play and none can be created
+.home-empty
+{
+	max-width: 720px;
+	text-align: center;
+
+	p
+	{
+		color: $text-faint;
+	}
+}
+
+// Under the heading of Home's universes in testing, saying who sees them
+.universe-hint
+{
+	color: $text-faint;
+}
+// The map, with the side panels beside it, or under it when the window is too narrow for both; then
+// they scroll together between the toolbar and the footer
 .lobby-body
 {
 	display: flex;
@@ -34,8 +102,11 @@
 	gap: 16px;
 	min-height: 0;
 	padding: 16px;
+	overflow-y: auto;
 }
 
+// A wrapping row is as tall as its content, so the side panels are kept to the body's height, and a
+// long chat scrolls in its own panel rather than stretching the page
 .lobby-side
 {
 	display: flex;
@@ -44,6 +115,7 @@
 	gap: 16px;
 	min-width: 280px;
 	min-height: 0;
+	max-height: 100%;
 }
 
 .chat
@@ -55,50 +127,13 @@
 	min-height: 200px;
 }
 
-.chat-log
+// Above a group's chat, the members whose players are in the game
+.chat-here
 {
-	flex: 1;
-	overflow-y: auto;
-	margin: 0 0 12px;
-	padding: 0;
-	list-style: none;
-	overflow-wrap: anywhere;
-
-	li
-	{
-		padding: 2px 0;
-	}
-}
-
-.chat-time
-{
-	margin-right: 6px;
-	font-size: 12px;
+	margin: 0 0 8px;
+	font-size: 14px;
 	color: $text-dim;
-}
-
-.chat-name
-{
-	margin-right: 6px;
-	font-weight: bold;
-	color: $chat-name;
-
-	.chat-own &
-	{
-		color: $accent;
-	}
-}
-
-.chat-form
-{
-	display: flex;
-	gap: 8px;
-}
-
-.chat-form input
-{
-	flex: 1;
-	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .members

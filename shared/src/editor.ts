@@ -6,17 +6,21 @@
  * change, 404 for something that doesn't exist and 409 for a change that conflicts with what is
  * there. Writes from a browser must come from an origin in the server's ALLOWED_ORIGINS
  */
+import type { OptionName } from './characters.js';
 import type { LocalizedMessage } from './localization.js';
 import type { MapBounds } from './maps.js';
 import type { AreaChunk } from './messages.js';
-import type { Money } from './money.js';
-import type { ClassRules, RaceRules } from './racesAndClasses.js';
+import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
+import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
+import type { Pf1eCastingStyle, Pf1eMagicTradition } from './rulesets/pf1e/classes.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
+import type { Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eSettings } from './rulesets/sf1e/settings.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { SortDirection } from './sorting.js';
-import type { TileGraphicFormat } from './tileGraphics.js';
-import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import type { TileGraphic, TileGraphicFormat } from './tileGraphics.js';
+import type { Darkvision } from './vision.js';
+import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -25,6 +29,10 @@ import type { DisplayTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Rul
  * - POST   /                                       NewUniverseRequest -> CreatedPayload: a universe the player creates
  * - GET    /:universeId                            EditableUniverse
  * - POST   /:universeId/changes                    SaveChangesRequest -> SaveChangesPayload: saves the editor's changes, all or nothing (see editorChanges.ts)
+ * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
+ * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
+ * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
+ * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
  * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
@@ -253,8 +261,20 @@ export interface EditableUniverseSummary
 
 	shortDescription: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language its text is written in, and the languages it is translated into, by tag
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
+
 	stage: UniverseStage;
 	role: UniverseRole;
+
+	/**
+	 * Whether a server admin has disabled the universe
+	 */
+	disabled: boolean;
 }
 
 /**
@@ -285,6 +305,12 @@ export interface NewUniverseRequest
 	name: string;
 	shortDescription: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language the pages are shown in, by tag. The universe's source language is the language the
+	 * player chose on their profile, then this (universeLanguageOf())
+	 */
+	locale?: string;
 }
 
 /**
@@ -299,6 +325,17 @@ export interface UniverseSettings
 	 * Markdown
 	 */
 	longDescription: string;
+
+	/**
+	 * The language the universe's editors write its text in, by tag (the Translations tab)
+	 */
+	sourceLanguage: string;
+
+	/**
+	 * The languages its text is translated into, by tag, in the order they were added: up to
+	 * MAX_UNIVERSE_LANGUAGES, never the source language. Taking one off deletes its translations
+	 */
+	translationLanguages: string[];
 
 	stage: UniverseStage;
 	passageOfTime: PassageOfTime;
@@ -335,6 +372,20 @@ export interface UniverseSettings
 	lobbyNoVisionCost: boolean;
 
 	/**
+	 * The area players walk around in the lobby: one of the universe's areas other than a starting area
+	 * (the universe's, a race's or a class's). While it is null or disabled, the lobby has no map, and
+	 * its players only chat and choose their characters
+	 */
+	lobbyAreaId: string | null;
+
+	/**
+	 * The cell of the lobby's area players start nearest (see StartingCell); 0 while lobbyAreaId is null
+	 */
+	lobbyColumn: number;
+
+	lobbyRow: number;
+
+	/**
 	 * Most characters in one group, from MIN_GROUP_SIZE to MAX_GROUP_PLAYERS
 	 */
 	groupSize: number;
@@ -343,6 +394,21 @@ export interface UniverseSettings
 	 * The coins every character starts with: up to MAX_COINS of each of the ruleset's coins, and none of others
 	 */
 	startingMoney: Money;
+
+	/**
+	 * The names the universe gives its ruleset's coins in place of the engine's, in its source language:
+	 * only the ruleset's coins, each 1 to MAX_COIN_NAME_LENGTH characters. Changing it replaces them all,
+	 * and a coin taken out loses its name's translations
+	 */
+	coinNames: UniverseCoinNames;
+
+	/**
+	 * The abbreviations the universe gives its ruleset's coins in place of the engine's, in its source
+	 * language: only the ruleset's coins, each isValidCoinAbbreviation(), and no two coins shown with the
+	 * same abbreviation (with the engine's English one for each coin left out). Changing it replaces
+	 * them all, and a coin taken out loses its abbreviation's translations
+	 */
+	coinAbbreviations: UniverseCoinAbbreviations;
 
 	/**
 	 * The items every character starts with, by item ID: up to MAX_STARTING_ITEMS items the universe
@@ -365,6 +431,20 @@ export interface UniverseSettings
 }
 
 /**
+ * The copies of a universe the editor works on: its live version, which players play, and its draft, which
+ * reaches players once it is applied (see Universe versions in STRUCTURE-OVERVIEW.md)
+ */
+export const UNIVERSE_VERSIONS = ['live', 'draft'] as const;
+
+export type UniverseVersionName = typeof UNIVERSE_VERSIONS[number];
+
+/**
+ * The query parameter every route under EDITOR_UNIVERSES_PATH/:universeId takes, naming the version it
+ * reads or changes (UniverseVersionName); left out, the live version
+ */
+export const EDITOR_VERSION_PARAM = 'version';
+
+/**
  * Response of GET EDITOR_UNIVERSES_PATH/:universeId
  */
 export interface EditableUniverse extends UniverseSettings
@@ -372,17 +452,593 @@ export interface EditableUniverse extends UniverseSettings
 	id: string;
 
 	/**
+	 * The version the settings are of: the one the request asked for
+	 */
+	version: UniverseVersionName;
+
+	/**
+	 * Whether the universe has a draft
+	 */
+	hasDraft: boolean;
+
+	/**
 	 * The name in the form its page's address uses (universeSlug)
 	 */
 	slug: string;
 
 	ruleset: Ruleset;
-	lobbyAreaId: string | null;
 
 	/**
-	 * The player's role, which decides what they may change
+	 * Why a server admin disabled the universe, or null while it isn't disabled. A disabled universe
+	 * can't be played, and the editor can't save
 	 */
+	disabledReason: string | null;
+
+	/**
+	 * The player's role in the editor, which decides what they may change: ADMIN_ROLE for a server admin
+	 * without a stronger role in the universe
+	 */
+	role: EditorRole;
+
+	/**
+	 * The languages the player may translate the universe into, as a translator; empty for other roles
+	 */
+	languages: string[];
+
+	/**
+	 * The player's own ID, which the Editors tab finds them by
+	 */
+	playerId: string;
+
+	/**
+	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
+	 */
+	serverAdmin: boolean;
+
+	/**
+	 * How many translations the universe has in each language, by tag, leaving out languages with none
+	 */
+	translationCounts: Record<string, number>;
+}
+
+/**
+ * A universe as the server reads it, before it is told whose editor it is for
+ */
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'translationCounts'>;
+
+/**
+ * Someone with a role in a universe, as the Editors tab lists them
+ */
+export interface UniverseEditorSummary
+{
+	playerId: string;
+	username: string;
+	displayName: string;
 	role: UniverseRole;
+
+	/**
+	 * The languages a translator may translate into, by tag; empty for other roles
+	 */
+	languages: string[];
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/editors, by username
+ */
+export interface UniverseEditorListPayload
+{
+	editors: UniverseEditorSummary[];
+}
+
+/**
+ * Most players one search for players returns
+ */
+export const MAX_PLAYER_SEARCH_RESULTS = 10;
+
+/**
+ * Fewest characters a search for players needs, not counting a leading @, so a search narrows the
+ * players down rather than listing them
+ */
+export const MIN_PLAYER_SEARCH_LENGTH = 3;
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/editors/search: what was typed, matched
+ * against usernames and names, ignoring capitals. Text starting with @ is matched against usernames
+ * only, without the @ (see parsePlayerSearch())
+ */
+export interface PlayerSearchQuery
+{
+	query: string;
+}
+
+/**
+ * A player a search found
+ */
+export interface PlayerMatch
+{
+	playerId: string;
+	username: string;
+	displayName: string;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/editors/search, which answers 400 for a query with
+ * fewer than MIN_PLAYER_SEARCH_LENGTH characters besides a leading @: up to MAX_PLAYER_SEARCH_RESULTS
+ * players whose username or name holds what was typed, other than the universe's editors. The player
+ * with exactly that username comes first, then those whose username starts with it, then the rest, each
+ * by username
+ */
+export interface PlayerSearchPayload
+{
+	players: PlayerMatch[];
+}
+
+/**
+ * What a search for players looks for: text typed starting with @ is a username, and anything else
+ * a username or a name
+ *
+ * @param query What was typed
+ * @return The text to match, trimmed and without the @, and whether only usernames are matched
+ */
+export function parsePlayerSearch(query: string): { text: string; usernameOnly: boolean }
+{
+	const trimmed = query.trim();
+	const usernameOnly = trimmed.startsWith('@');
+
+	return({
+		text: (usernameOnly ? trimmed.slice(1).trim() : trimmed),
+		usernameOnly
+	});
+}
+
+/**
+ * Most characters one page of the Character List tab lists
+ */
+export const MAX_CHARACTERS_PER_PAGE = 500;
+
+/**
+ * Longest search the Character List tab sends
+ */
+export const MAX_CHARACTER_SEARCH_LENGTH = 100;
+
+/**
+ * The columns the Character List tab can sort characters by
+ */
+export const EDITOR_CHARACTER_SORT_COLUMNS = ['name', 'player', 'created'] as const;
+
+export type EditorCharacterSortColumn = typeof EDITOR_CHARACTER_SORT_COLUMNS[number];
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/characters. Each filter left out matches
+ * every character
+ */
+export interface EditorCharacterListQuery
+{
+	/**
+	 * Part of a character's name, or of their player's username or name, ignoring capitals. Text
+	 * starting with @ is matched against usernames only, without the @ (see parsePlayerSearch())
+	 */
+	search?: string;
+
+	/**
+	 * The race, by the ID characters have it by (an EditorRace's ID)
+	 */
+	raceId?: number;
+
+	/**
+	 * The class, by the ID characters have it by (an EditorClass's ID)
+	 */
+	classId?: number;
+
+	/**
+	 * Whether the character is in a group
+	 */
+	inGroup?: boolean;
+
+	/**
+	 * The column to sort the matches by before paging, with characters that tie sorted by name: the
+	 * character's name, their player's username, or when they were made. Names sort ignoring capitals
+	 */
+	sort?: EditorCharacterSortColumn;
+
+	/**
+	 * Which way to sort, ascending when left out
+	 */
+	direction?: SortDirection;
+
+	/**
+	 * How many matching characters to skip
+	 */
+	offset?: number;
+
+	/**
+	 * Most characters to return, up to MAX_CHARACTERS_PER_PAGE (the default)
+	 */
+	limit?: number;
+}
+
+/**
+ * A character in the universe, as the Character List tab lists them
+ */
+export interface EditorCharacter
+{
+	id: string;
+	name: string;
+	race: OptionName;
+	characterClass: OptionName;
+
+	/**
+	 * The player who made the character
+	 */
+	player: {
+		username: string;
+		displayName: string;
+	};
+
+	/**
+	 * When the character was made, as an ISO 8601 time
+	 */
+	createdAt: string;
+
+	/**
+	 * When the character is deleted (an ISO 8601 time), once given their last rites; null otherwise
+	 */
+	deleteAt: string | null;
+
+	/**
+	 * Whether the character is in a group
+	 */
+	inGroup: boolean;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/characters (canEditWorld()): a page of the
+ * matching characters, leaving out those whose last rites are over
+ */
+export interface EditorCharacterListPayload
+{
+	characters: EditorCharacter[];
+
+	/**
+	 * How many characters match, on every page
+	 */
+	total: number;
+}
+
+/**
+ * Most saves one page of the Audit tab lists
+ */
+export const MAX_UNIVERSE_EDITS_PER_PAGE = 100;
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/audit
+ */
+export interface UniverseEditListQuery
+{
+	/**
+	 * How many saves to skip, newest first
+	 */
+	offset?: number;
+
+	/**
+	 * Most saves to return, up to MAX_UNIVERSE_EDITS_PER_PAGE (the default)
+	 */
+	limit?: number;
+}
+
+/**
+ * The settings the Audit tab names when a save changes them. Settings the editor shows as one field are
+ * one here: a starting area and its cell are startingArea (lobbyArea for the lobby's area), a passage of time and its faerie morning are
+ * passageOfTime (lobbyPassageOfTime for the lobby's), and a tile's graphic or uploaded graphic is graphic
+ */
+export const AUDIT_FIELDS = [
+	'name',
+	'shortDescription',
+	'longDescription',
+	'sourceLanguage',
+	'translationLanguages',
+	'stage',
+	'passageOfTime',
+	'displayTime',
+	'lobbyPassageOfTime',
+	'lobbyDayHours',
+	'lobbyNoVisionCost',
+	'lobbyArea',
+	'groupSize',
+	'startingMoney',
+	'coinNames',
+	'coinAbbreviations',
+	'startingItems',
+	'startingArea',
+	'statMethod',
+	'customPointBuyBudget',
+	'abilityPoints',
+	'needsSleep',
+	'coinsHaveWeight',
+	'tracksAmmo',
+	'role',
+	'languages',
+	'indoors',
+	'outdoors',
+	'color',
+	'graphic',
+	'visionCost',
+	'walkSeconds',
+	'enabled',
+	'keepPlaying',
+	'type',
+	'abilityModifiers',
+	'floatingBonus',
+	'darkvision',
+	'lightSensitivity',
+	'size',
+	'hitPoints',
+	'raceAreas',
+	'primaryAbility',
+	'tradition',
+	'castingStyle',
+	'keyAbility',
+	'hitPointsPerLevel',
+	'staminaPointsPerLevel',
+	'ability',
+	'isDefault',
+	'mobScale',
+	'permadeath',
+	'parentArea',
+	'indoorsOrOutdoors',
+	'lightLevel',
+	'defaultTile',
+	'loopsEastWest',
+	'loopsNorthSouth'
+] as const;
+
+export type AuditField = typeof AUDIT_FIELDS[number];
+
+/**
+ * A place characters start: an area, by its name when saved, and a cell of its map
+ */
+export interface AuditPlace
+{
+	area: string;
+	column: number;
+	row: number;
+}
+
+/**
+ * A passage of time, with where morning is when it is faerie (null otherwise)
+ */
+export interface AuditPassageOfTime
+{
+	time: AreaPassageOfTime | LobbyPassageOfTime;
+	morning: FaerieMorning | null;
+}
+
+/**
+ * The value each audit field holds once a save changed it. What a setting names (an area, a tile, an
+ * item, a race, an uploaded tileset) is held by its name as it was when saved; a long description is
+ * held by how many characters it has, rather than its text
+ */
+export interface AuditFieldValues
+{
+	/**
+	 * Null for one of the ruleset's defaults given its default name back
+	 */
+	name: string | null;
+	shortDescription: string;
+
+	/**
+	 * How many characters it has
+	 */
+	longDescription: number;
+
+	/**
+	 * Language tags
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
+	stage: UniverseStage;
+	passageOfTime: AuditPassageOfTime;
+	displayTime: DisplayTime;
+	lobbyPassageOfTime: AuditPassageOfTime;
+	lobbyDayHours: number;
+	lobbyNoVisionCost: boolean;
+
+	/**
+	 * Null when the universe has no lobby area
+	 */
+	lobbyArea: AuditPlace | null;
+	groupSize: number;
+	startingMoney: Money;
+	coinNames: UniverseCoinNames;
+	coinAbbreviations: UniverseCoinAbbreviations;
+	startingItems: {
+		item: OptionName;
+		quantity: number;
+	}[];
+
+	/**
+	 * Null for a race or class with no starting area of its own
+	 */
+	startingArea: AuditPlace | null;
+	statMethod: Pf1eStatMethod;
+	customPointBuyBudget: number;
+	abilityPoints: number;
+	needsSleep: boolean;
+	coinsHaveWeight: boolean;
+	tracksAmmo: boolean;
+	role: UniverseRole;
+
+	/**
+	 * Language tags
+	 */
+	languages: string[];
+	indoors: boolean;
+	outdoors: boolean;
+
+	/**
+	 * As 0xRRGGBB
+	 */
+	color: number;
+
+	/**
+	 * One of the graphics that ship with the engine, or an uploaded tileset by name; both null for none
+	 */
+	graphic: {
+		graphic: TileGraphic | null;
+		uploaded: string | null;
+	};
+	visionCost: number;
+	walkSeconds: number;
+	enabled: boolean;
+	keepPlaying: boolean;
+
+	/**
+	 * An item type's key (ITEM_KINDS)
+	 */
+	type: string;
+	abilityModifiers: Partial<Record<Ability, number>>;
+	floatingBonus: boolean;
+	darkvision: Darkvision;
+	lightSensitivity: boolean;
+	size: Size;
+	hitPoints: number;
+	raceAreas: {
+		race: OptionName;
+		place: AuditPlace;
+	}[];
+	primaryAbility: Ability;
+	tradition: Pf1eMagicTradition;
+	castingStyle: Pf1eCastingStyle;
+	keyAbility: Ability;
+	hitPointsPerLevel: number;
+	staminaPointsPerLevel: number;
+	ability: Ability;
+	isDefault: boolean;
+	mobScale: number;
+	permadeath: boolean;
+
+	/**
+	 * Null for an area inside no other
+	 */
+	parentArea: string | null;
+
+	/**
+	 * True for indoors
+	 */
+	indoorsOrOutdoors: boolean;
+	lightLevel: AreaLightLevel;
+	defaultTile: OptionName;
+	loopsEastWest: boolean;
+	loopsNorthSouth: boolean;
+}
+
+/**
+ * One setting a save changed, and the value it changed it to
+ */
+export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: AuditFieldValues[Field] } }[AuditField];
+
+/**
+ * What one part of a save changed, as the Audit tab lists it
+ *
+ * - editor: a player's role in the universe (added, changed, deleted)
+ * - settings, ruleset: the universe's settings, or how it plays under its ruleset (changed)
+ * - tileset: an uploaded tileset (added, deleted)
+ * - tile, item, race, class, theme, difficultyLevel: added, changed, deleted, or restored (one of the
+ *   ruleset's defaults that had been edited, given its default settings again)
+ * - area: added, changed, resized or deleted
+ * - cells: cells painted on an area's map (changed)
+ * - links: an area's links, added or replaced (changed) or deleted
+ * - translations: translations into one language added, changed or deleted (changed), whose target
+ *   holds the language's tag as its name
+ * - translatorNotes: notes for translators written or deleted (changed)
+ * - noTranslation: pieces of text marked as needing no translation (added) or as needing one again (deleted)
+ * - draft: the universe's draft, started (added), applied to the live version (applied) or discarded
+ *   (deleted); see Universe versions in STRUCTURE-OVERVIEW.md
+ */
+export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links', 'translations', 'translatorNotes', 'noTranslation', 'draft'] as const;
+
+export type AuditSubject = typeof AUDIT_SUBJECTS[number];
+
+export type AuditAction = 'added' | 'changed' | 'deleted' | 'restored' | 'resized' | 'applied';
+
+/**
+ * One thing a save changed
+ */
+export interface UniverseEditDetail
+{
+	subject: AuditSubject;
+	action: AuditAction;
+
+	/**
+	 * What it changed, by name as it was when saved: an editor's username, an area's or tileset's name,
+	 * or a tile's, item's, race's, class's, theme's or difficulty level's name, with the key of one of the
+	 * ruleset's defaults, whose name players read in their language while its name is null. Null for
+	 * settings and ruleset, which name nothing
+	 */
+	target: OptionName | null;
+
+	/**
+	 * The settings it changed, with their new values, for changed (empty for every other action, and for
+	 * cells and links)
+	 */
+	fields: AuditFieldChange[];
+
+	/**
+	 * How many cells it painted, for cells, links it changed, for links, translations, for translations,
+	 * notes, for translatorNotes, or pieces of text marked, for noTranslation; 1 for every other subject
+	 */
+	count: number;
+}
+
+/**
+ * One save made in a universe's editor, as the Audit tab lists them
+ */
+export interface UniverseEdit
+{
+	id: string;
+
+	/**
+	 * The player who saved, or null once their account is deleted
+	 */
+	player: {
+		username: string;
+		displayName: string;
+	} | null;
+
+	/**
+	 * The role they saved with, ADMIN_ROLE included
+	 */
+	role: EditorRole;
+
+	/**
+	 * Whether the save changed the universe's draft rather than its live version
+	 */
+	draft: boolean;
+
+	/**
+	 * What the save changed, thing by thing, in the order it changed them, or null for a save made
+	 * before they were recorded
+	 */
+	details: UniverseEditDetail[] | null;
+
+	/**
+	 * When the save was made, as an ISO 8601 time
+	 */
+	savedAt: string;
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/audit (canManageEditors()): a page of the saves
+ * made in the universe's editor, newest first
+ */
+export interface UniverseEditListPayload
+{
+	edits: UniverseEdit[];
+
+	/**
+	 * How many saves there are, on every page
+	 */
+	total: number;
 }
 
 /**
@@ -635,8 +1291,9 @@ export interface TileGraphicUploadRequest
 	drawOrder: number | null;
 
 	/**
-	 * The PNG, base64-encoded: its format's size (TILE_GRAPHIC_SIZES) and at most MAX_TILE_GRAPHIC_BYTES.
-	 * The server stores it re-encoded, without anything but the picture
+	 * The PNG, base64-encoded: its format's size (TILE_GRAPHIC_SIZES) and at most MAX_TILE_GRAPHIC_BYTES,
+	 * a Dual-Grid sheet's frames in the game's order (DUAL_GRID_FRAME_CORNERS). The server stores it
+	 * re-encoded, without anything but the picture
 	 */
 	image: string;
 
@@ -831,6 +1488,13 @@ export interface RaceSettings extends StartingExtras
 	enabled: boolean;
 
 	/**
+	 * While the race is disabled, whether characters already of the race may keep playing, so only new
+	 * characters can't choose it; false turns them out of the lobby and their groups until it is enabled
+	 * again. It has no effect while the race is enabled
+	 */
+	keepPlaying: boolean;
+
+	/**
 	 * The race's rules under the universe's ruleset
 	 */
 	rules: RaceRules;
@@ -909,6 +1573,12 @@ export interface ClassSettings extends StartingExtras
 	 * Whether new characters can be this class. A universe always has at least one enabled class
 	 */
 	enabled: boolean;
+
+	/**
+	 * While the class is disabled, whether characters already of the class may keep playing, as for
+	 * races (RaceSettings.keepPlaying)
+	 */
+	keepPlaying: boolean;
 
 	/**
 	 * Where the class's characters of each race listed start, each race listed once. Must be empty while
@@ -1074,6 +1744,12 @@ export interface AreaListPayload
 	areas: EditorAreaSummary[];
 	lobbyAreaId: string | null;
 	startingAreaId: string | null;
+
+	/**
+	 * Every area that is a starting area: the universe's, its races' and classes', and its classes' for
+	 * each race. None of them may be the lobby's area
+	 */
+	startingAreaIds: string[];
 }
 
 /**

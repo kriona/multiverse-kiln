@@ -45,6 +45,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 			}),
 			name: raceName,
 			describe: describeRace,
+			dialog: dialog.following,
 			openDialog: (universe, race, edit, onChanged) =>
 			{
 				dialog.open(universe, race, edit, onChanged);

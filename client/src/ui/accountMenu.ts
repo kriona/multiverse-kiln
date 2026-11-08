@@ -1,23 +1,28 @@
+import { SessionServerMessageType, type AccountPayload, type AccountPlayer } from '@multiverse-kiln/shared';
+
 import { t } from '../localization';
 import { AuthApi } from '../network/authApi';
-import { createClient } from '../network/serverConnection';
+import { createClient, type ServerConnection } from '../network/serverConnection';
+import { forgetPlayerValues, playerStorageKey, readPlayerValue, rememberPlayerValue } from '../rememberedValues';
 import { showToast } from './toast';
 
 /**
  * Shows the logged-in player's name at the end of each of the page's toolbars (partials/account.html),
- * as a button that opens a menu: Edit profile, and Log out. The menus stay hidden while the browser
+ * as a button that opens a menu: Edit profile, Site admin for server admins, and Log out. The menus stay hidden while the browser
  * isn't logged in, or when the server can't be reached
  *
  * The name the server last gave is remembered in the browser, and public/remembered-account.js draws the
  * menus with it before the page's scripts run, so nothing in the toolbars moves once the server answers.
- * This takes over from it, and the server's answer then corrects the name, or hides the menus when the
- * browser is no longer logged in
+ * This takes over from it, and the session room's Account messages then correct the name, or hide the
+ * menus when the browser isn't logged in, including when it logs out in another window
  *
  * The menu follows the WAI-ARIA menu button pattern: Enter, Space or the down arrow opens it on its first
  * item and the up arrow on its last, the arrows, Home and End move between items, and Escape closes it
  * and goes back to the button
+ *
+ * @param server The page's connection to the server (startPage())
  */
-export async function startAccountMenu(): Promise<void>
+export function startAccountMenu(server: Promise<ServerConnection>): void
 {
 	const api = new AuthApi(createClient());
 
@@ -25,7 +30,7 @@ export async function startAccountMenu(): Promise<void>
 
 	for (const menu of menus)
 	{
-		menu.showName(readRememberedName());
+		menu.showName(readPlayerValue(NAME_KEY));
 	}
 
 	// The menus show the name themselves now, so the head script's stand-in stops
@@ -36,7 +41,7 @@ export async function startAccountMenu(): Promise<void>
 	// (logging in or out) is left to the session, which tells this window itself
 	window.addEventListener('storage', (event) =>
 	{
-		if ((event.key === NAME_STORAGE_KEY) && (event.newValue !== null))
+		if ((event.key === playerStorageKey(NAME_KEY)) && (event.newValue !== null))
 		{
 			for (const menu of menus)
 			{
@@ -45,23 +50,36 @@ export async function startAccountMenu(): Promise<void>
 		}
 	});
 
-	let name: string | null;
-
-	try
+	void server.then(({ session }) =>
 	{
-		name = ((await api.getSession())?.name ?? null);
-	}
-	catch (error)
+		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
+		{
+			showAccount(account.player);
+		});
+	}, (error: unknown) =>
 	{
 		console.error('Could not find who is logged in:', error);
-		return;
-	}
+	});
+}
 
-	rememberName(name);
+/**
+ * Shows who the session room says the window's player is in the page's account menus, remembering
+ * their name for the next page. connectToServer() remembers the session, and forgets the player's
+ * values once the browser isn't logged in
+ *
+ * @param player The player, or null when the browser isn't logged in
+ */
+function showAccount(player: AccountPlayer | null): void
+{
+	if (player)
+	{
+		rememberPlayerValue(NAME_KEY, player.name);
+	}
 
 	for (const menu of menus)
 	{
-		menu.showName(name);
+		menu.showName(player?.name ?? null);
+		menu.showAdminLink(player?.serverAdmin ?? false);
 	}
 }
 
@@ -78,7 +96,7 @@ let menus: AccountMenu[] = [];
  */
 export function showAccountName(name: string): void
 {
-	rememberName(name);
+	rememberPlayerValue(NAME_KEY, name);
 
 	for (const menu of menus)
 	{
@@ -87,60 +105,10 @@ export function showAccountName(name: string): void
 }
 
 /**
- * Where the browser keeps the logged-in player's name between pages, which public/remembered-account.js
- * reads too
+ * The key the browser keeps the logged-in player's name under between pages (a player value, see
+ * rememberedValues.ts), which public/remembered-account.js reads too
  */
-const NAME_STORAGE_KEY = 'kiln-account-name';
-
-/**
- * The name the server last gave for the logged-in player
- *
- * @return The name, or null when there is none, or the browser won't keep it
- */
-function readRememberedName(): string | null
-{
-	try
-	{
-		return(localStorage.getItem(NAME_STORAGE_KEY));
-	}
-	catch
-	{
-		return(null);
-	}
-}
-
-/**
- * Forgets the remembered name, as logging in does, so the next page doesn't show another player's
- * while it waits for the server
- */
-export function forgetAccountName(): void
-{
-	rememberName(null);
-}
-
-/**
- * Keeps the logged-in player's name for the next page, or forgets it
- *
- * @param name The name, or null when the browser isn't logged in
- */
-function rememberName(name: string | null): void
-{
-	try
-	{
-		if (name === null)
-		{
-			localStorage.removeItem(NAME_STORAGE_KEY);
-		}
-		else
-		{
-			localStorage.setItem(NAME_STORAGE_KEY, name);
-		}
-	}
-	catch
-	{
-		// Without storage, the menus show once the server answers
-	}
-}
+const NAME_KEY = 'name';
 
 /**
  * One toolbar's account menu
@@ -149,7 +117,7 @@ class AccountMenu
 {
 	private readonly button: HTMLButtonElement;
 	private readonly list: HTMLElement;
-	private readonly items: HTMLElement[];
+	private readonly adminItem: HTMLElement;
 
 	private readonly name: HTMLElement;
 
@@ -165,7 +133,7 @@ class AccountMenu
 		this.button = requireChild(menu, '.account-menu-button', HTMLButtonElement);
 		this.list = requireChild(menu, '.account-menu-list', HTMLElement);
 		this.name = requireChild(menu, '.account-menu-name', HTMLElement);
-		this.items = [...this.list.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+		this.adminItem = requireChild(menu, '.account-menu-admin', HTMLElement);
 		this.list.id = `account-menu-${index}`;
 		this.button.setAttribute('aria-controls', this.list.id);
 
@@ -244,6 +212,26 @@ class AccountMenu
 		this.button.setAttribute('aria-label', label);
 		this.button.title = label;
 		this.menu.hidden = false;
+	}
+
+	/**
+	 * Shows or hides the Site admin item
+	 *
+	 * @param shown Whether the player is a server admin
+	 */
+	showAdminLink(shown: boolean): void
+	{
+		this.adminItem.hidden = !shown;
+	}
+
+	/**
+	 * The menu's items that are shown, in order
+	 *
+	 * @return The items
+	 */
+	private get items(): HTMLElement[]
+	{
+		return([...this.list.querySelectorAll<HTMLElement>('li:not([hidden]) > [role="menuitem"]')]);
 	}
 
 	/**
@@ -347,7 +335,7 @@ class AccountMenu
 			return;
 		}
 
-		rememberName(null);
+		forgetPlayerValues();
 		window.location.reload();
 	}
 }

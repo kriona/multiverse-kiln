@@ -27,10 +27,21 @@ export const SESSION_ROOM_NAME = 'session';
 export const LOBBY_ROOM_NAME = 'lobby';
 
 /**
+ * Name of a universe's editor room: who has its editor open, and the editors' chat
+ *
+ * Clients join with EditorJoinOptions, and every window with the same universe's editor open joins the
+ * same room
+ */
+export const EDITOR_ROOM_NAME = 'editor';
+
+/**
  * Server route listing the universes Home shows (GET, answered with UniverseListPayload)
  *
  * Takes optional `offset` and `limit` query parameters; limit is at most MAX_UNIVERSES_PER_PAGE.
- * GET UNIVERSES_PATH/:id answers with one of them as UniverseDetails
+ * GET UNIVERSES_PATH/:id answers with one of them as UniversePagePayload, and GET UNIVERSES_PATH/:id/text
+ * with the names its rooms leave to the client as UniverseTextPayload. Universe text in these, and in
+ * the other routes players read it from, is in the request's language: the player's profile's, then
+ * the Accept-Language header the client sends
  */
 export const UNIVERSES_PATH = '/universes';
 
@@ -50,7 +61,7 @@ export const MAX_GROUP_PLAYERS = 6;
 export const MAX_PLAYER_NAME_LENGTH = 20;
 
 /**
- * Most characters in one lobby chat message
+ * Most characters in one chat message
  */
 export const MAX_CHAT_MESSAGE_LENGTH = 500;
 

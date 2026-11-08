@@ -8,6 +8,7 @@ import { defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type 
 
 import { hasCharactersOfTheme } from '../db/characterRepo.js';
 import { countCustomThemes, createCustomTheme, deleteCustomTheme, findThemeKind, loadEditorThemes, restoreDefaultTheme, saveEditedDefaultTheme, updateCustomTheme } from '../db/themeRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { sendError } from './errors.js';
@@ -80,8 +81,8 @@ function requireThemes(request: Request, response: Response, next: NextFunction)
  */
 async function listThemes(request: Request, response: Response): Promise<void>
 {
-	const { universe } = universeContextOf(request);
-	const payload: ThemeListPayload = { themes: await loadEditorThemes(universe.id, universe.ruleset) };
+	const { universe, version } = universeContextOf(request);
+	const payload: ThemeListPayload = { themes: await loadEditorThemes(version, universe.ruleset) };
 
 	response.json(payload);
 }
@@ -108,7 +109,7 @@ function requireThemesFor(context: ChangeContext): void
  */
 export async function createThemeChange(context: ChangeContext, ref: NewRef, settings: ThemeSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const { name } = settings;
 
 	requireThemesFor(context);
@@ -118,7 +119,7 @@ export async function createThemeChange(context: ChangeContext, ref: NewRef, set
 		refuse(400, messages.themeNeedsName);
 	}
 
-	if (await countCustomThemes(universe.id, transaction) >= MAX_CUSTOM_THEMES)
+	if (await countCustomThemes(version, transaction) >= MAX_CUSTOM_THEMES)
 	{
 		refuse(409, {
 			id: 'error.themeLimit',
@@ -130,7 +131,7 @@ export async function createThemeChange(context: ChangeContext, ref: NewRef, set
 	}
 
 	await checkTheme(context, undefined, settings);
-	recordRef(context, ref, await createCustomTheme(universe.id, universe.ruleset, { ...settings, name }, transaction));
+	recordRef(context, ref, await createCustomTheme(version, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
@@ -142,12 +143,12 @@ export async function createThemeChange(context: ChangeContext, ref: NewRef, set
  */
 export async function saveThemeChange(context: ChangeContext, id: NumberRef, settings: ThemeSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 
 	requireThemesFor(context);
 
 	const themeId = resolveNumberRef(context, id);
-	const kind = await findThemeKind(universe.id, universe.ruleset, themeId, transaction);
+	const kind = await findThemeKind(version, universe.ruleset, themeId, transaction);
 	const { name } = settings;
 
 	if (kind === undefined)
@@ -164,11 +165,11 @@ export async function saveThemeChange(context: ChangeContext, id: NumberRef, set
 
 	if (kind === 'default')
 	{
-		await saveEditedDefaultTheme(universe.id, universe.ruleset, themeId, settings, transaction);
+		await saveEditedDefaultTheme(version, universe.ruleset, themeId, settings, transaction);
 	}
 	else if (name !== null)
 	{
-		await updateCustomTheme(universe.id, themeId, { ...settings, name }, transaction);
+		await updateCustomTheme(version, themeId, { ...settings, name }, transaction);
 	}
 }
 
@@ -180,12 +181,12 @@ export async function saveThemeChange(context: ChangeContext, id: NumberRef, set
  */
 export async function removeThemeChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 
 	requireThemesFor(context);
 
 	const themeId = resolveNumberRef(context, id);
-	const kind = await findThemeKind(universe.id, universe.ruleset, themeId, transaction);
+	const kind = await findThemeKind(version, universe.ruleset, themeId, transaction);
 
 	if (kind === undefined)
 	{
@@ -195,7 +196,8 @@ export async function removeThemeChange(context: ChangeContext, id: NumberRef): 
 	// Default themes are enabled, so restoring one never leaves the universe without an enabled theme
 	if (kind === 'default')
 	{
-		await restoreDefaultTheme(universe.id, themeId, transaction);
+		await restoreDefaultTheme(version, themeId, transaction);
+		await deleteUniverseTextOf(version, 'theme', themeId, transaction);
 		return;
 	}
 
@@ -205,14 +207,15 @@ export async function removeThemeChange(context: ChangeContext, id: NumberRef): 
 		refuse(409, messages.themeInUse);
 	}
 
-	const others = (await loadEditorThemes(universe.id, universe.ruleset, transaction)).filter((theme) => (theme.id !== themeId));
+	const others = (await loadEditorThemes(version, universe.ruleset, transaction)).filter((theme) => (theme.id !== themeId));
 
 	if (!others.some((theme) => theme.enabled))
 	{
 		refuse(409, messages.noEnabledTheme);
 	}
 
-	await deleteCustomTheme(universe.id, themeId, transaction);
+	await deleteCustomTheme(version, themeId, transaction);
+	await deleteUniverseTextOf(version, 'theme', themeId, transaction);
 }
 
 /**
@@ -224,9 +227,9 @@ export async function removeThemeChange(context: ChangeContext, id: NumberRef): 
  */
 async function checkTheme(context: ChangeContext, themeId: number | undefined, settings: ThemeSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 
-	if (!settings.enabled && !(await loadEditorThemes(universe.id, universe.ruleset, transaction)).some((theme) => ((theme.id !== themeId) && theme.enabled)))
+	if (!settings.enabled && !(await loadEditorThemes(version, universe.ruleset, transaction)).some((theme) => ((theme.id !== themeId) && theme.enabled)))
 	{
 		refuse(409, messages.noEnabledTheme);
 	}

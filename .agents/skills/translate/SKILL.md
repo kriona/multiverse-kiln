@@ -45,4 +45,4 @@ Pirate is a joke translation that ships with the engine, for testing how languag
 
 ## Real languages
 
-Don't machine-translate a real language unless the user asks for it. List what it needs, from step 2, so a translator can work on it, and stop there.
+Don't machine-translate a real language unless the user asks for it. List what it needs, from step 2, so a translator can work on it, and stop there. Translators working in their own tools can use the admin page's Translations tool (`/admin/translations`) instead: it exports the English as a PO, XLIFF, CSV or JSON file, and turns the translated file back into the language's file to commit.

@@ -1,5 +1,5 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember, type UniverseSummary } from '@multiverse-kiln/shared';
+import { ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type ChatMessage, type LobbyMember, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
@@ -7,6 +7,7 @@ import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
+import { ChatLog } from './ChatLog';
 import { getElement, setPageTitle, showMessage, titleLink } from './dom';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
@@ -22,11 +23,6 @@ const MAX_LISTED_PLAYERS = 100;
  * Most chat messages kept on screen
  */
 const MAX_CHAT_LINES = 200;
-
-/**
- * How close to the bottom, in pixels, the chat must be scrolled to keep following new messages
- */
-const CHAT_FOLLOW_THRESHOLD = 40;
 
 /**
  * What the lobby screen asks the app to do
@@ -52,7 +48,7 @@ export interface LobbyScreenActions
 	createGroup: (character: CharacterSummary) => void;
 
 	/**
-	 * Go back to Home
+	 * Go back to the universe's page
 	 */
 	leaveLobby: () => void;
 }
@@ -77,10 +73,7 @@ export class LobbyScreen
 	private readonly leaveButton = getElement('leave-lobby', HTMLButtonElement);
 	private readonly map = getElement('lobby-map', HTMLElement);
 	private readonly notice = getElement('lobby-notice', HTMLElement);
-	private readonly chatLog = getElement('chat-log', HTMLOListElement);
-	private readonly chatForm = getElement('chat-form', HTMLFormElement);
-	private readonly chatInput = getElement('chat-input', HTMLInputElement);
-	private readonly chatSendButton = getElement('chat-send', HTMLButtonElement);
+	private readonly chat: ChatLog;
 	private readonly memberCount = getElement('member-count', HTMLElement);
 	private readonly memberList = getElement('member-list', HTMLUListElement);
 	private readonly memberMore = getElement('member-more', HTMLElement);
@@ -94,6 +87,17 @@ export class LobbyScreen
 	 * The lobby the screen is drawing, if any
 	 */
 	private attached: LobbyConnection | undefined;
+
+	/**
+	 * Whether the attached lobby's map is drawn: only while the lobby has one (LobbyState.hasMap)
+	 */
+	private mapShown = false;
+
+	/**
+	 * The area the player was last sent while the map wasn't drawn, which the map starts with once the
+	 * lobby has one. The area arrives before the state says the lobby has a map
+	 */
+	private pendingArea: AreaPayload | undefined;
 
 	/**
 	 * Stops following the attached lobby's state
@@ -113,7 +117,6 @@ export class LobbyScreen
 	private readonly characterChoices: CharacterList;
 
 	private ownPlayerId: string | undefined;
-	private lastSentChat = '';
 	private memberListQueued = false;
 
 	/**
@@ -122,7 +125,15 @@ export class LobbyScreen
 	 */
 	constructor(private readonly mapView: MapView, private readonly actions: LobbyScreenActions)
 	{
-		this.chatInput.maxLength = MAX_CHAT_MESSAGE_LENGTH;
+		this.chat = new ChatLog({
+			log: 'chat-log',
+			form: 'chat-form',
+			input: 'chat-input',
+			sendButton: 'chat-send'
+		}, MAX_CHAT_LINES, (text) =>
+		{
+			actions.sendChat(text);
+		});
 		this.characterChoices = new CharacterList(this.characterList, this.characterNone, {
 			choose: (character) =>
 			{
@@ -133,22 +144,6 @@ export class LobbyScreen
 			{
 				actions.openCharacterSheet(character);
 			}
-		});
-
-		this.chatForm.addEventListener('submit', (event) =>
-		{
-			event.preventDefault();
-
-			const text = this.chatInput.value.trim();
-
-			if ((text === '') || DISALLOWED_TEXT_CHARACTERS.test(text))
-			{
-				return;
-			}
-
-			actions.sendChat(text);
-			this.lastSentChat = text;
-			this.chatInput.value = '';
 		});
 
 		this.createCharacterButton.addEventListener('click', () =>
@@ -211,7 +206,30 @@ export class LobbyScreen
 
 		this.detach();
 		this.attached = connection;
-		this.mapView.show(this.map, connection);
+		this.pendingArea = connection.area;
+
+		// While the map is drawn, it follows the areas sent itself
+		this.unbinds.push(connection.room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
+		{
+			if (!this.mapShown)
+			{
+				this.pendingArea = area;
+				this.showMap();
+			}
+		}));
+
+		// Fires for the lobby's state on joining too
+		this.unbinds.push(callbacks.listen('hasMap', (hasMap: boolean) =>
+		{
+			if (!hasMap)
+			{
+				this.pendingArea = undefined;
+			}
+
+			this.showMap();
+		}));
+
+		this.showMap();
 
 		// Fires for members already in the lobby too
 		this.unbinds.push(callbacks.onAdd('members', (member: LobbyMember, playerId: string) =>
@@ -228,24 +246,50 @@ export class LobbyScreen
 	}
 
 	/**
+	 * Draws the attached lobby's map while it has one, once its area has arrived, and takes the map away
+	 * while it has none (its universe has no lobby area, or it is disabled) or no lobby is attached
+	 */
+	private showMap(): void
+	{
+		const connection = this.attached;
+		const hasMap = (connection?.room.state.hasMap ?? false);
+
+		if (hasMap && !this.mapShown && connection && this.pendingArea)
+		{
+			this.mapView.show(this.map, {
+				room: connection.room,
+				playerId: connection.playerId,
+				area: this.pendingArea
+			});
+			this.mapShown = true;
+			this.pendingArea = undefined;
+		}
+		else if (!hasMap && this.mapShown)
+		{
+			this.mapView.hide();
+			this.mapShown = false;
+		}
+
+		this.map.hidden = !this.mapShown;
+	}
+
+	/**
 	 * Stops drawing and following the attached lobby, and empties the chat, the list of who's here and
 	 * the list of the player's characters
 	 */
 	detach(): void
 	{
-		if (this.attached)
-		{
-			this.mapView.hide();
-			this.attached = undefined;
-		}
-
 		for (const unbind of this.unbinds.splice(0))
 		{
 			unbind();
 		}
 
+		this.attached = undefined;
+		this.pendingArea = undefined;
+		this.showMap();
+
 		this.members.clear();
-		this.chatLog.replaceChildren();
+		this.chat.clear();
 		this.characters = undefined;
 		this.playingId = undefined;
 		this.renderCharacters();
@@ -263,6 +307,7 @@ export class LobbyScreen
 	show(universe: UniverseSummary, playerId: string): void
 	{
 		this.ownPlayerId = playerId;
+		this.chat.setOwnPlayer(playerId);
 		this.title.replaceChildren(titleLink(universe.name, universePageUrl(universe.slug)));
 		setPageTitle(t({
 			id: 'lobby.pageTitle',
@@ -330,14 +375,7 @@ export class LobbyScreen
 	 */
 	setChatHistory(messages: ChatMessage[]): void
 	{
-		this.chatLog.replaceChildren();
-
-		for (const message of messages)
-		{
-			this.addChatMessage(message);
-		}
-
-		this.chatLog.scrollTop = this.chatLog.scrollHeight;
+		this.chat.setHistory(messages);
 	}
 
 	/**
@@ -347,31 +385,17 @@ export class LobbyScreen
 	 */
 	addChatMessage(message: ChatMessage): void
 	{
-		const following = (this.chatLog.scrollHeight - this.chatLog.scrollTop - this.chatLog.clientHeight < CHAT_FOLLOW_THRESHOLD);
-		const line = document.createElement('li');
-		const time = document.createElement('span');
-		const name = document.createElement('span');
-		const text = document.createElement('span');
+		this.chat.add(message);
+	}
 
-		time.className = 'chat-time';
-		time.textContent = new Date(message.sentAt).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' });
-		name.className = 'chat-name';
-		name.textContent = message.name;
-		text.textContent = message.text;
-
-		line.classList.toggle('chat-own', (message.playerId === this.ownPlayerId));
-		line.append(time, name, text);
-		this.chatLog.append(line);
-
-		while (this.chatLog.childElementCount > MAX_CHAT_LINES)
-		{
-			this.chatLog.firstElementChild?.remove();
-		}
-
-		if (following)
-		{
-			this.chatLog.scrollTop = this.chatLog.scrollHeight;
-		}
+	/**
+	 * Shows the chat messages a player sent without their name, once their account is deleted
+	 *
+	 * @param playerId The player's ID
+	 */
+	forgetChatAuthor(playerId: string): void
+	{
+		this.chat.forgetAuthor(playerId);
 	}
 
 	/**
@@ -386,14 +410,12 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Puts the player's last chat message back in the input, when the server dropped it
+	 * Says the player's last chat message was sent too quickly, which the server dropped, and puts it back
+	 * in the field
 	 */
-	restoreLastChat(): void
+	refuseChatTooFast(): void
 	{
-		if (this.chatInput.value === '')
-		{
-			this.chatInput.value = this.lastSentChat;
-		}
+		this.chat.refuseTooFast();
 	}
 
 	/**
@@ -421,12 +443,11 @@ export class LobbyScreen
 		const isGhost = (this.playingId === null);
 
 		this.ghostNote.hidden = !isGhost;
-		this.chatInput.disabled = isGhost;
-		this.chatSendButton.disabled = isGhost;
+		this.chat.setEnabled(!isGhost);
 		this.createButton.disabled = (typeof this.playingId !== 'string');
 		this.createCharacterButton.classList.toggle('secondary', (typeof this.playingId === 'string'));
 
-		for (const control of [this.chatInput, this.chatSendButton, this.createButton])
+		for (const control of [...this.chat.controls(), this.createButton])
 		{
 			if (isGhost)
 			{

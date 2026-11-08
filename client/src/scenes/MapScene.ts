@@ -12,6 +12,7 @@ import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
 import { tileName } from '../ui/tileNames';
+import type { UniverseText } from '../ui/universeText';
 
 /**
  * Key the scene is registered under
@@ -132,6 +133,12 @@ export interface MapSceneData
 	 * The joined room; whoever starts the scene owns the room and leaves it
 	 */
 	connection: MapConnection<MapRoom>;
+
+	/**
+	 * The universe's names in the player's language, which the scene loads again when the room says they
+	 * changed, or undefined to show the names the room sends
+	 */
+	text: UniverseText | undefined;
 }
 
 /**
@@ -170,6 +177,11 @@ export class MapScene extends Phaser.Scene
 	private ownPlayerId!: string;
 	private area!: AreaPayload;
 	private areaRenderer?: AreaRenderer;
+
+	/**
+	 * The universe's names in the player's language, or undefined to use the names the room sends
+	 */
+	private text: UniverseText | undefined;
 
 	/**
 	 * The area's chunks received so far that aren't all the default tile, by chunkKey(); the renderer draws from it
@@ -230,6 +242,7 @@ export class MapScene extends Phaser.Scene
 		this.room = data.connection.room as unknown as GameRoom;
 		this.ownPlayerId = data.connection.playerId;
 		this.area = data.connection.area;
+		this.text = data.text;
 		this.areaRenderer = undefined;
 		this.players.clear();
 		this.unbinds.length = 0;
@@ -259,7 +272,7 @@ export class MapScene extends Phaser.Scene
 		const mapElement = this.game.canvas.parentElement;
 
 		this.enterArea(this.area);
-		this.announcer.enteredArea(this.area.name);
+		this.announcer.enteredArea(this.areaName(this.area));
 
 		this.unbinds.push(this.room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
 		{
@@ -271,8 +284,14 @@ export class MapScene extends Phaser.Scene
 			if (!sameArea)
 			{
 				this.forgetOwnPosition();
-				this.announcer.enteredArea(area.name);
+				this.announcer.enteredArea(this.areaName(area));
 			}
+		}));
+
+		// Names are looked up when they are read out, so the next one read is in the new text
+		this.unbinds.push(this.room.onMessage(ServerMessageType.UniverseText, () =>
+		{
+			this.text?.reloadSoon();
 		}));
 
 		this.unbinds.push(this.room.onMessage(ServerMessageType.Chunks, (payload: ChunksPayload) =>
@@ -708,6 +727,17 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
+	 * An area's name in the player's language
+	 *
+	 * @param area The area as the room sent it
+	 * @return The name
+	 */
+	private areaName(area: AreaPayload): string
+	{
+		return((this.text?.areaName(area) ?? area.name));
+	}
+
+	/**
 	 * Makes the player's next position from the server be drawn immediately, rather than reached
 	 * smoothly from where they were in the area they have just left
 	 *
@@ -1017,10 +1047,10 @@ export class MapScene extends Phaser.Scene
 		});
 
 		this.announcer.describePosition({
-			areaName: this.area.name,
+			areaName: this.areaName(this.area),
 			column,
 			row,
-			tileName: (tile ? tileName(tile, this.area.ruleset) : undefined),
+			tileName: (tile ? (this.text?.tileName(tile, this.area.ruleset) ?? tileName(tile, this.area.ruleset)) : undefined),
 			secondOfDay: seconds,
 			displayTime: this.area.displayTime,
 			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own, this.area.fullVision))

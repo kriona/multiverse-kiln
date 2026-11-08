@@ -3,15 +3,18 @@ import type { GroupCharacter, Membership } from '../db/groupRepo.js';
 /**
  * A change to who is in a group
  *
- * - joined: a character joined the group
+ * - joined: a character joined the group, or created it as its anchor being (created set)
  * - left: a character left the group, or was deleted
  * - disbanded: the anchor being left or was deleted, so the group is no more; members lists every
  *   character who was in it
+ *
+ * A character taken out, or a group disbanded, because the universe's group size was lowered has
+ * groupSizeLowered set, so the room can tell its players why
  */
 export type GroupChange =
-	| { kind: 'joined'; groupId: string; universeId: string; character: GroupCharacter }
-	| { kind: 'left'; groupId: string; universeId: string; character: GroupCharacter }
-	| { kind: 'disbanded'; groupId: string; universeId: string; members: GroupCharacter[] };
+	| { kind: 'joined'; groupId: string; universeId: string; character: GroupCharacter; created?: true }
+	| { kind: 'left'; groupId: string; universeId: string; character: GroupCharacter; groupSizeLowered?: true }
+	| { kind: 'disbanded'; groupId: string; universeId: string; members: GroupCharacter[]; groupSizeLowered?: true };
 
 /**
  * The change a character's deletion makes to their group
@@ -38,11 +41,12 @@ export function deletionChange(membership: Membership, characterId: string, memb
 			kind: 'disbanded',
 			groupId,
 			universeId,
-			members: members.map(({ characterId: id, playerId, name, raceId, playable }) => ({
+			members: members.map(({ characterId: id, playerId, name, raceId, classId, playable }) => ({
 				characterId: id,
 				playerId,
 				name,
 				raceId,
+				classId,
 				playable: (playable && (id !== characterId))
 			}))
 		});
@@ -57,6 +61,7 @@ export function deletionChange(membership: Membership, characterId: string, memb
 			playerId: member.playerId,
 			name: member.name,
 			raceId: member.raceId,
+			classId: member.classId,
 			playable: false
 		}
 	});

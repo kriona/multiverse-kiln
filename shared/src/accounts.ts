@@ -206,6 +206,18 @@ export const RECOVERY_CODE_LENGTH = 10;
 export const TWO_FACTOR_CODE_LENGTH = 6;
 
 /**
+ * The dev code for a code of a length: all 1s. On a local development server with ENABLE_DEV_CODES=true
+ * it is right for any email or authenticator code of that length (server/src/auth/devCodes.ts)
+ *
+ * @param length How many characters the code has
+ * @return The dev code
+ */
+export function devCode(length: number): string
+{
+	return('1'.repeat(length));
+}
+
+/**
  * How many recovery codes an account with 2FA gets: each works once, in place of an authenticator code
  */
 export const RECOVERY_CODE_COUNT = 10;
@@ -258,6 +270,19 @@ export interface SessionPlayer
 	 * null when they haven't chosen one
 	 */
 	locale: string | null;
+
+	/**
+	 * Whether the player is a server admin, who sees the link to the admin pages. They can use them only
+	 * with 2FA on
+	 */
+	serverAdmin: boolean;
+
+	/**
+	 * How long until the browser's session ends if it isn't used again, in milliseconds. A length of
+	 * time rather than a time, so the browser's clock being wrong doesn't matter; the pages forget what
+	 * they remembered for the player once it passes (client/src/rememberedValues.ts)
+	 */
+	sessionExpiresInMs: number;
 }
 
 /**

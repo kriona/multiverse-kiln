@@ -1,4 +1,4 @@
-import { sortRows, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -6,6 +6,7 @@ import { showMessage } from '../dom';
 import { TableSorter } from '../tableSorter';
 import { createOptionRow, optionTags } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
+import { ChangedSinceNotes, DialogFollower, type FollowingDialog, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedEdit, type StagedState } from './stagedChanges';
 
@@ -85,6 +86,11 @@ export interface OptionListSetup<T extends EditorOption, S>
 	describe(option: T, ruleset: Ruleset): string;
 
 	/**
+	 * The option's editor dialog, as it follows saves made in other windows
+	 */
+	dialog: FollowingDialog;
+
+	/**
 	 * Opens the option's editor dialog
 	 *
 	 * @param universe The universe
@@ -94,6 +100,15 @@ export interface OptionListSetup<T extends EditorOption, S>
 	 */
 	openDialog(universe: EditableUniverse, option: T | undefined, edit: StagedEdit<S>, onChanged: () => void): void;
 }
+
+/**
+ * What each list holds, as the Audit tab names it
+ */
+const LIST_SUBJECTS: Readonly<Record<OptionListSetup<EditorOption, unknown>['list'], AuditSubject>> = {
+	Race: 'race',
+	Class: 'class',
+	Theme: 'theme'
+};
 
 /**
  * The columns a list of races, classes or themes can be sorted by
@@ -114,12 +129,22 @@ const rowComparers: RowComparers<{ name: string; notes: string }, OptionSortColu
  * A list of races, classes or themes on an editor tab, sorted by name or notes (see TableSorter), opening
  * the editor dialog of each. Changes made in the dialog wait on the page until the tab is saved
  */
-export class OptionList<T extends EditorOption & S, S> implements SavableTab
+export class OptionList<T extends EditorOption & S, S> implements SavableTab, FollowsOtherSaves
 {
 	/**
 	 * The changes made since the list was last saved
 	 */
 	readonly changes = new StagedChanges<S>();
+
+	/**
+	 * The options other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince: ChangedSinceNotes;
+
+	/**
+	 * Keeps the editor dialog up with saves made in other windows to the option it shows
+	 */
+	private readonly dialogFollower: DialogFollower;
 
 	/**
 	 * The changes the save being sent holds
@@ -151,6 +176,9 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 			throw new Error('An option list\'s rows must be in a table');
 		}
 
+		this.changedSince = new ChangedSinceNotes(LIST_SUBJECTS[setup.list]);
+		this.dialogFollower = new DialogFollower(setup.dialog, LIST_SUBJECTS[setup.list]);
+
 		this.sorter = new TableSorter(table, OPTION_SORT_COLUMNS, {
 			column: 'name',
 			direction: 'ascending'
@@ -176,6 +204,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 		this.setup.addButton.hidden = (!universe || !this.setup.canEdit(universe));
 		this.options = [];
 		this.changes.clear();
+		this.changedSince.clear();
 		this.sorter.reset();
 		this.setup.rows.replaceChildren();
 		showMessage(this.setup.error, undefined);
@@ -228,6 +257,35 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 		this.changes.markSaved(this.collected, (id) => ids.number(listRef(this.setup.list, id)));
 		this.collected = [];
 		await this.refresh();
+	}
+
+	/**
+	 * Loads the list again after another window saved changes to it, keeping the changes made here and
+	 * marking the options they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed an option with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
+
+		this.changedSince.move(this.changes.followDeleted(save, LIST_SUBJECTS[this.setup.list]));
+
+		if (changed)
+		{
+			void this.refresh().then(() =>
+			{
+				this.dialogFollower.reopen(dialog.reopen, (id) => this.view().find(({ item }) => (item.id === id))?.item, (option) =>
+				{
+					this.openOption(option);
+				});
+			});
+		}
+
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -314,6 +372,8 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 					row.classList.add('staged-deleted');
 				}
 
+				this.changedSince.mark(row.cells[0], item.id, (state !== undefined));
+
 				return(row);
 			}));
 	}
@@ -327,7 +387,8 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab
 	{
 		if (this.universe)
 		{
-			this.setup.openDialog(this.universe, option, this.changes.edit(option?.id), () =>
+			this.dialogFollower.opened(option?.id);
+			this.setup.openDialog(this.universe, option, this.changes.edit(option?.id, loadedFrom(this.options.find((saved) => (saved.id === option?.id)))), () =>
 			{
 				this.render();
 			});

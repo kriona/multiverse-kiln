@@ -74,7 +74,13 @@ export const GameState = schema({
 	 * The group's game clock: seconds of game time since its world began. Areas whose time flows
 	 * normally take their time of day from it (see secondOfDay)
 	 */
-	clock: t.number()
+	clock: t.number(),
+
+	/**
+	 * Whether the universe has reached the end of time: the group can look at its map, but nothing in
+	 * the game changes, so the room refuses moving and links
+	 */
+	locked: t.boolean()
 }, 'GameState');
 export type GameState = SchemaType<typeof GameState>;
 
@@ -91,10 +97,73 @@ export type LobbyMember = SchemaType<typeof LobbyMember>;
  * Root state of a universe's lobby room
  *
  * players works as in GameState: a client sees only the players in its own player's area, and never
- * another player's ghost. members lists everyone in the lobby playing a character, whichever area they are in
+ * another player's ghost. members lists everyone in the lobby playing a character, whichever area they
+ * are in, and whether or not the lobby has a map
  */
 export const LobbyState = schema({
 	players: t.map(Player).view(),
-	members: t.map(LobbyMember)
+	members: t.map(LobbyMember),
+
+	/**
+	 * Whether the lobby has a map to walk around: its universe has a lobby area, and it is enabled.
+	 * Without one, players is empty, and players only chat and choose their characters
+	 */
+	hasMap: t.boolean()
 }, 'LobbyState');
 export type LobbyState = SchemaType<typeof LobbyState>;
+
+/**
+ * What one window with a universe's editor open has open, keyed in EditorPresence.windows by a number
+ * the room gives each window
+ */
+export const EditorWindow = schema({
+	/**
+	 * The version of the universe open (UniverseVersionName)
+	 */
+	version: t.string(),
+
+	/**
+	 * The tab showing (EditorTab)
+	 */
+	tab: t.string(),
+
+	/**
+	 * The area open in the area editor, or empty when none is
+	 */
+	areaId: t.string(),
+
+	/**
+	 * Whether the window holds work not yet saved, which applying or discarding the draft would leave it
+	 * unable to save when the draft is open
+	 */
+	unsaved: t.boolean()
+}, 'EditorWindow');
+export type EditorWindow = SchemaType<typeof EditorWindow>;
+
+/**
+ * A player with a universe's editor open, keyed by player ID in EditorState.editors, however many
+ * windows they have open
+ */
+export const EditorPresence = schema({
+	/**
+	 * The player's display name and username
+	 */
+	name: t.string(),
+	username: t.string(),
+
+	/**
+	 * Their role in the editor (EditorRole), the site admin role included
+	 */
+	role: t.string(),
+
+	windows: t.map(EditorWindow)
+}, 'EditorPresence');
+export type EditorPresence = SchemaType<typeof EditorPresence>;
+
+/**
+ * Root state of a universe's editor room: who has the editor open
+ */
+export const EditorState = schema({
+	editors: t.map(EditorPresence)
+}, 'EditorState');
+export type EditorState = SchemaType<typeof EditorState>;

@@ -7,18 +7,23 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { accountExportFileName, DEFAULT_CLASS_NAMES, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, MAX_LOCALE_LENGTH, type AccountDeletionPayload, type AccountExport, type ExportedCharacter, type MessageDescriptor, type Ruleset, type Translator } from '@multiverse-kiln/shared';
 
+import { findPlayerAdminEvents } from '../db/adminEventRepo.js';
 import { findPlayerAuthEvents } from '../db/authEventRepo.js';
+import { listOwnChatMessages, listOwnChatReads } from '../db/chatRepo.js';
 import { findCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
-import { findMembership } from '../db/groupRepo.js';
+import { anchorsAnyGroup, findMembership } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { findOwnProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
+import { isLastServerAdmin } from '../db/serverAdminRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { listPlayerSessions } from '../db/sessionRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { findTwoFactorState, hasTwoFactor } from '../db/twoFactorRepo.js';
+import { listEditorChanges, listPlayerUniverseEdits } from '../db/universeEditRepo.js';
 import { listEditableUniverses, listOtherUniverseEditors, listSoleCreatedUniverses } from '../db/universeEditorRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { emailTranslator } from '../email/emailLocales.js';
 import { playerIdOf } from './editorAccess.js';
 import { errorMessages, sendError } from './errors.js';
@@ -61,7 +66,8 @@ function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDe
 
 /**
  * GET PROFILE_DELETION_PATH: the universes the logged-in player is the only creator of, with the
- * editors each could be handed to, and how the player confirms deleting their account
+ * editors each could be handed to, whether it disbands any groups, how the player confirms deleting
+ * their account, and whether they can't because they are the site's only server admin
  *
  * @param request The request
  * @param response The response: an AccountDeletionPayload
@@ -69,10 +75,12 @@ function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDe
 export async function deletionRoute(request: Request, response: Response): Promise<void>
 {
 	const playerId = playerIdOf(request);
-	const [profile, universes, twoFactor] = await Promise.all([
+	const [profile, universes, anchorsGroups, twoFactor, lastServerAdmin] = await Promise.all([
 		findOwnProfile(playerId),
 		listSoleCreatedUniverses(playerId),
-		hasTwoFactor(playerId)
+		anchorsAnyGroup(playerId),
+		hasTwoFactor(playerId),
+		isLastServerAdmin(playerId)
 	]);
 
 	if (!profile)
@@ -85,10 +93,13 @@ export async function deletionRoute(request: Request, response: Response): Promi
 		universes: await Promise.all(universes.map(async (universe) => ({
 			id: universe.id,
 			name: universe.name,
+			deletionPrevented: universe.deletionPrevented,
 			editors: await listOtherUniverseEditors(universe.id, playerId)
 		}))),
+		anchorsGroups,
 		hasPassword: profile.hasPassword,
-		twoFactor
+		twoFactor,
+		lastServerAdmin
 	};
 
 	response.json(payload);
@@ -108,10 +119,10 @@ async function exportCharacters(playerId: string, records: readonly ProfileChara
 	const options = new Map(await Promise.all([...universes].map(async ([universeId, ruleset]) =>
 	{
 		const [races, classes, themes, items] = await Promise.all([
-			loadEditorRaces(universeId, ruleset),
-			loadEditorClasses(universeId, ruleset),
-			loadEditorThemes(universeId, ruleset),
-			loadEditorItems(universeId, ruleset)
+			loadEditorRaces(liveVersion(universeId), ruleset),
+			loadEditorClasses(liveVersion(universeId), ruleset),
+			loadEditorThemes(liveVersion(universeId), ruleset),
+			loadEditorItems(liveVersion(universeId), ruleset)
 		]);
 
 		return([universeId, { races, classes, themes, items }] as const);
@@ -174,7 +185,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 	const now = new Date();
 	const locale = exportLocale.safeParse(request.query.locale);
 	const translator = emailTranslator((locale.success ? locale.data : 'en'));
-	const [profile, providers, twoFactor, sessions, events, universes, records, drafts] = await Promise.all([
+	const [profile, providers, twoFactor, sessions, events, universes, records, drafts, chats, reads, edits, editorChanges, adminEvents] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
 		findTwoFactorState(playerId, now),
@@ -182,7 +193,12 @@ export async function exportRoute(request: Request, response: Response): Promise
 		findPlayerAuthEvents(playerId),
 		listEditableUniverses(playerId),
 		listProfileCharacters(playerId, {}),
-		listCharacterDrafts(playerId)
+		listCharacterDrafts(playerId),
+		listOwnChatMessages(playerId),
+		listOwnChatReads(playerId),
+		listPlayerUniverseEdits(playerId),
+		listEditorChanges(playerId),
+		findPlayerAdminEvents(playerId)
 	]);
 
 	if (!profile)
@@ -206,7 +222,8 @@ export async function exportRoute(request: Request, response: Response): Promise
 			locale: profile.locale,
 			socials: profile.socials,
 			showCharacters: profile.showCharacters,
-			createdAt: profile.createdAt.toISOString()
+			createdAt: profile.createdAt.toISOString(),
+			lastLoginAt: (profile.lastLoginAt?.toISOString() ?? null)
 		},
 		providers,
 		twoFactor,
@@ -221,7 +238,39 @@ export async function exportRoute(request: Request, response: Response): Promise
 		})),
 		universes: universes.map(({ id, name, role }) => ({ id, name, role })),
 		characters: await exportCharacters(playerId, records, translator),
-		characterDrafts: drafts
+		characterDrafts: drafts,
+		chatMessages: chats.map((message) => ({
+			...message,
+			sentAt: message.sentAt.toISOString()
+		})),
+		chatReads: reads.map((read) => ({
+			...read,
+			readAt: read.readAt.toISOString()
+		})),
+		universeEdits: edits.map(({ changeDetails, savedAt, ...edit }) => ({
+			...edit,
+			changes: changeDetails,
+			savedAt: savedAt.toISOString()
+		})),
+		editorChanges: editorChanges.map(({ changeDetails, savedAt, ...change }) => ({
+			...change,
+			changes: changeDetails,
+			savedAt: savedAt.toISOString()
+		})),
+		adminEvents: adminEvents.map((event) => ({
+			kind: event.kind,
+			byPlayer: (event.adminId === playerId),
+			playerId: event.playerId,
+			universe: (((event.universeId === null) || (event.universeName === null))
+				? null
+				: {
+					id: event.universeId,
+					name: event.universeName
+				}),
+			reason: event.reason,
+			preventsDeletion: event.preventsDeletion,
+			occurredAt: event.occurredAt.toISOString()
+		}))
 	};
 
 	response.attachment(accountExportFileName(profile.username));

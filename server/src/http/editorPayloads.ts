@@ -6,9 +6,26 @@
  * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
+
+/**
+ * The longest window ID a save may name: an editor room session ID, which Colyseus keeps far shorter
+ */
+const MAX_WINDOW_ID_LENGTH = 64;
+
+/**
+ * The settings a change was made from, as the editor loaded them (LoadedSettings). They are only compared
+ * with what is saved, never saved themselves, so any object will do
+ */
+const loadedSettings = z.record(z.string(), z.unknown()).optional();
+
+/**
+ * A translation or note for translators as the editor loaded it, null for none, only compared with what
+ * is saved as loadedSettings are
+ */
+const loadedText = z.string().max(MAX_LONG_DESCRIPTION_LENGTH).nullable().optional();
 
 /**
  * A cell's column or row: generous enough for any map, and small enough for the database
@@ -73,6 +90,38 @@ function money(ruleset: Ruleset)
 }
 
 /**
+ * The names a universe gives its ruleset's coins (UniverseCoinNames): only the ruleset's coins, each
+ * trimmed and up to MAX_COIN_NAME_LENGTH characters
+ *
+ * @param ruleset The universe's ruleset
+ * @return The validator
+ */
+function coinNames(ruleset: Ruleset)
+{
+	return(z.partialRecord(z.enum(RULESET_COINS[ruleset]), z.string()
+		.trim()
+		.min(1)
+		.max(MAX_COIN_NAME_LENGTH)
+		.refine((name) => !DISALLOWED_TEXT_CHARACTERS.test(name), 'Contains disallowed characters')));
+}
+
+/**
+ * The abbreviations a universe gives its ruleset's coins (UniverseCoinAbbreviations): only the ruleset's
+ * coins, each one a money field can read, and no two coins shown alike, counting the engine's English
+ * abbreviation for each coin left out
+ *
+ * @param ruleset The universe's ruleset
+ * @return The validator
+ */
+function coinAbbreviations(ruleset: Ruleset)
+{
+	return(z.partialRecord(z.enum(RULESET_COINS[ruleset]), z.string()
+		.trim()
+		.refine(isValidCoinAbbreviation, 'Not an abbreviation a money field can read'))
+		.refine((abbreviations) => (duplicateCoinAbbreviation(ruleset, shownCoinAbbreviations(ruleset, abbreviations, (coin) => COIN_ABBREVIATIONS[coin].defaultMessage)) === undefined), 'Two coins have the same abbreviation'));
+}
+
+/**
  * A validator for each ruleset
  *
  * @param make Makes the validator for one ruleset
@@ -105,9 +154,108 @@ export const tileIdParameter = z.coerce.number().int().min(1).max(2147483647);
 const itemKindKey = z.string().trim().min(1).max(40);
 
 /**
- * A universe's name, which needs a letter or digit for its slug (the part of its page's address that names it)
+ * A universe's name, which needs a letter or digit for its slug (the part of its page's address that
+ * names it), and can't make a slug in the form of a universe's ID
  */
-const universeName = displayText(MAX_UNIVERSE_NAME_LENGTH).refine((name) => (universeSlug(name) !== ''), 'Has no letters or digits');
+const universeName = displayText(MAX_UNIVERSE_NAME_LENGTH)
+	.refine((name) => (universeSlug(name) !== ''), 'Has no letters or digits')
+	.refine((name) => !hasIdShapedSlug(name), 'Has the form of a universe\'s ID');
+
+/**
+ * A language tag, such as de or pt-BR, in its canonical form
+ */
+const languageTag = z.string()
+	.max(MAX_LOCALE_LENGTH)
+	.transform((tag, context) =>
+	{
+		try
+		{
+			const [canonical] = Intl.getCanonicalLocales(tag);
+
+			return(canonical);
+		}
+		catch
+		{
+			context.addIssue({
+				code: 'custom',
+				message: 'Not a language tag'
+			});
+
+			return(z.NEVER);
+		}
+	});
+
+/**
+ * The languages a universe is translated into, each listed once. Whether its source language is among
+ * them is checked as they are saved, since a change may send either without the other
+ */
+const translationLanguages = z.array(languageTag)
+	.max(MAX_UNIVERSE_LANGUAGES)
+	.refine((languages) => (new Set(languages.map((language) => language.toLowerCase())).size === languages.length), 'Each language can be listed only once');
+
+/**
+ * A piece of universe text (UniverseTextRef): a field the kind of thing has. Whether the universe holds
+ * the thing is checked as the change is saved
+ */
+const universeTextRef = z.object({
+	kind: z.enum(UNIVERSE_TEXT_KINDS),
+	thingId: z.string().min(1).max(64),
+	field: z.enum(UNIVERSE_TEXT_FIELDS)
+})
+	.refine((ref) => UNIVERSE_TEXT_KIND_FIELDS[ref.kind].includes(ref.field), 'Not a field that kind of thing has') satisfies z.ZodType<UniverseTextRef>;
+
+/**
+ * A translation of a piece of universe text as it is saved: a name or short description trimmed, a long
+ * description (markdown) as it is, with line breaks and tabs; empty is no translation
+ *
+ * @param ref The piece of text
+ * @param translation The translation as sent, or null for none
+ * @return The translation, null for none, or undefined when it is too long or holds disallowed characters,
+ * or for a coin's abbreviation, one a money field can't read
+ */
+function universeTextTranslation(ref: UniverseTextRef, translation: string | null): string | null | undefined
+{
+	if (translation === null)
+	{
+		return(null);
+	}
+
+	const markdown = (ref.field === 'longDescription');
+	const text = (markdown ? translation : translation.trim());
+	const checked = (markdown ? text.replace(/[\t\n\r]/g, '') : text);
+
+	if ((text.length > maxUniverseTextLength(ref.kind, ref.field)) || DISALLOWED_TEXT_CHARACTERS.test(checked))
+	{
+		return(undefined);
+	}
+
+	if ((ref.field === 'abbreviation') && (text !== '') && !isValidCoinAbbreviation(text))
+	{
+		return(undefined);
+	}
+
+	return(((text.trim() === '') ? null : text));
+}
+
+/**
+ * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/translations/all: the language
+ */
+export const universeTextLanguageQuery = z.object({
+	language: languageTag
+});
+
+/**
+ * UniverseTextListQuery
+ */
+export const universeTextListQuery = z.object({
+	language: languageTag,
+	search: z.string().trim().max(MAX_LONG_DESCRIPTION_LENGTH).optional(),
+	missing: booleanText.optional(),
+	outOfDate: booleanText.optional(),
+	...sortParameters(UNIVERSE_TEXT_SORT_COLUMNS),
+	offset: z.coerce.number().int().min(0).default(0),
+	limit: z.coerce.number().int().min(1).max(MAX_UNIVERSE_TEXT_PER_PAGE).default(MAX_UNIVERSE_TEXT_PER_PAGE)
+}) satisfies z.ZodType<UniverseTextListQuery, unknown>;
 
 /**
  * NewUniverseRequest
@@ -115,7 +263,8 @@ const universeName = displayText(MAX_UNIVERSE_NAME_LENGTH).refine((name) => (uni
 export const newUniverseRequest = z.object({
 	name: universeName,
 	shortDescription,
-	ruleset: z.enum(RULESETS)
+	ruleset: z.enum(RULESETS),
+	locale: z.string().max(MAX_LOCALE_LENGTH).optional()
 }) satisfies z.ZodType<NewUniverseRequest>;
 
 /**
@@ -125,6 +274,8 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	name: universeName.optional(),
 	shortDescription: shortDescription.optional(),
 	longDescription: longDescription.optional(),
+	sourceLanguage: languageTag.optional(),
+	translationLanguages: translationLanguages.optional(),
 	stage: z.enum(UNIVERSE_STAGES).optional(),
 	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
@@ -133,8 +284,13 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	lobbyDayHours: z.number().int().min(MIN_LOBBY_DAY_HOURS).max(MAX_LOBBY_DAY_HOURS).optional(),
 	lobbyFaerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
 	lobbyNoVisionCost: z.boolean().optional(),
+	lobbyAreaId: z.uuid().nullable().optional(),
+	lobbyColumn: cellCoordinate.optional(),
+	lobbyRow: cellCoordinate.optional(),
 	groupSize: z.number().int().min(MIN_GROUP_SIZE).max(MAX_GROUP_PLAYERS).optional(),
 	startingMoney: money(ruleset).optional(),
+	coinNames: coinNames(ruleset).optional(),
+	coinAbbreviations: coinAbbreviations(ruleset).optional(),
 	startingItems: startingItemList.optional(),
 	startingAreaId: z.uuid().optional(),
 	startingColumn: cellCoordinate.optional(),
@@ -324,6 +480,7 @@ function startingExtrasFields(ruleset: Ruleset)
 {
 	return({
 		enabled: z.boolean(),
+		keepPlaying: z.boolean(),
 		startingMoney: money(ruleset),
 		startingItems: startingItemList,
 		startingAreaId: z.uuid().nullable(),
@@ -437,9 +594,10 @@ const areaChangeFields = {
  *
  * @param name The list's name in the changes' kinds, e.g. Item for createItem
  * @param settings The validator of a thing's settings
+ * @param saveFields Validators of the fields a save change has on top of its ID and settings
  * @return The changes' validators
  */
-function listChanges<const Name extends string, Settings extends z.ZodType>(name: Name, settings: Settings)
+function listChanges<const Name extends string, Settings extends z.ZodType, const SaveFields extends z.ZodRawShape = Record<never, never>>(name: Name, settings: Settings, saveFields?: SaveFields)
 {
 	return([
 		z.object({
@@ -450,7 +608,9 @@ function listChanges<const Name extends string, Settings extends z.ZodType>(name
 		z.object({
 			kind: z.literal(`save${name}`),
 			id: numberRef,
-			settings
+			settings,
+			loaded: loadedSettings,
+			...(saveFields ?? ({} as SaveFields))
 		}),
 		z.object({
 			kind: z.literal(`remove${name}`),
@@ -460,18 +620,89 @@ function listChanges<const Name extends string, Settings extends z.ZodType>(name
 }
 
 /**
+ * An editor's role and languages: a translator needs at least one language, and other roles have none
+ */
+const editorRoleSettings = z.object({
+	role: z.enum(UNIVERSE_ROLES),
+	languages: z.array(languageTag)
+		.max(MAX_TRANSLATOR_LANGUAGES)
+		.transform((languages) => [...new Set(languages)])
+})
+	.refine((settings) => ((settings.role === 'translator') === (settings.languages.length > 0)), 'A translator needs languages, and other roles have none') satisfies z.ZodType<EditorRoleSettings>;
+
+/**
+ * Query parameters of GET /:universeId/editors/search: at least MIN_PLAYER_SEARCH_LENGTH characters
+ * besides a leading @, and no longer than the longest name with an @
+ */
+export const playerSearchQuery = z.object({
+	query: z.string()
+		.trim()
+		.max(MAX_PLAYER_NAME_LENGTH + 1)
+		.refine((query) => ([...parsePlayerSearch(query).text].length >= MIN_PLAYER_SEARCH_LENGTH), `Needs at least ${MIN_PLAYER_SEARCH_LENGTH} characters besides a leading @`)
+}) satisfies z.ZodType<PlayerSearchQuery>;
+
+/**
+ * A race's or class's ID in a query string
+ */
+const optionIdText = z.coerce.number().int().min(1).max(2147483647);
+
+/**
+ * Query parameters of GET /:universeId/characters
+ */
+export const editorCharacterListQuery = z.object({
+	search: z.string().trim().max(MAX_CHARACTER_SEARCH_LENGTH).optional(),
+	raceId: optionIdText.optional(),
+	classId: optionIdText.optional(),
+	inGroup: booleanText.optional(),
+	...sortParameters(EDITOR_CHARACTER_SORT_COLUMNS),
+	offset: z.coerce.number().int().min(0).default(0),
+	limit: z.coerce.number().int().min(1).max(MAX_CHARACTERS_PER_PAGE).default(MAX_CHARACTERS_PER_PAGE)
+}) satisfies z.ZodType<EditorCharacterListQuery, unknown>;
+
+/**
+ * Query parameters of GET /:universeId/audit
+ */
+export const universeEditListQuery = z.object({
+	offset: z.coerce.number().int().min(0).default(0),
+	limit: z.coerce.number().int().min(1).max(MAX_UNIVERSE_EDITS_PER_PAGE).default(MAX_UNIVERSE_EDITS_PER_PAGE)
+}) satisfies z.ZodType<UniverseEditListQuery, unknown>;
+
+/**
+ * A numeric ID written as text, as a JSON object's keys are
+ */
+const numericIdKey = z.string().regex(/^[1-9][0-9]{0,9}$/);
+
+/**
  * SaveChangesRequest, by the universe's ruleset. Whether what each change names exists in the universe
  * is checked as the change is saved
  */
 export const saveChangesRequest = byRuleset((ruleset) => z.object({
 	changes: z.array(z.discriminatedUnion('kind', [
 		z.object({
+			kind: z.literal('addEditor'),
+			username: z.string().trim().min(1).max(MAX_USERNAME_LENGTH),
+			settings: editorRoleSettings
+		}),
+		z.object({
+			kind: z.literal('saveEditor'),
+			playerId: z.uuid(),
+			settings: editorRoleSettings,
+			loaded: loadedSettings
+		}),
+		z.object({
+			kind: z.literal('removeEditor'),
+			playerId: z.uuid()
+		}),
+		z.object({
 			kind: z.literal('universe'),
-			update: universeSettingsUpdate[ruleset]
+			update: universeSettingsUpdate[ruleset],
+			loaded: loadedSettings,
+			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
 		}),
 		z.object({
 			kind: z.literal('ruleset'),
-			settings: rulesetSettings
+			settings: rulesetSettings,
+			loaded: loadedSettings
 		}),
 		z.object({
 			kind: z.literal('uploadTileGraphic'),
@@ -490,14 +721,17 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 		z.object({
 			kind: z.literal('saveTile'),
 			id: numberRef,
-			settings: tileChangeSettings
+			settings: tileChangeSettings,
+			loaded: loadedSettings
 		}),
 		z.object({
 			kind: z.literal('removeTile'),
 			id: numberRef,
 			replaceWith: numberRef.nullable()
 		}),
-		...listChanges('Item', itemSettings),
+		...listChanges('Item', itemSettings, {
+			whenDisabled: z.enum(ITEM_DISABLINGS).optional()
+		}),
 		...listChanges('Race', raceSettings[ruleset]),
 		...listChanges('Class', classSettings[ruleset]),
 		...listChanges('Theme', themeSettings),
@@ -513,7 +747,9 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 		z.object({
 			kind: z.literal('updateArea'),
 			areaId: stringRef,
-			update: z.object(areaChangeFields)
+			update: z.object(areaChangeFields),
+			loaded: loadedSettings,
+			moveTo: z.enum(AREA_EVACUATIONS).optional()
 		}),
 		z.object({
 			kind: z.literal('deleteArea'),
@@ -542,6 +778,64 @@ export const saveChangesRequest = byRuleset((ruleset) => z.object({
 			areaId: stringRef,
 			column: cellCoordinate,
 			row: cellCoordinate
+		}),
+		z.object({
+			kind: z.literal('saveTranslation'),
+			text: universeTextRef,
+			language: languageTag,
+			translation: z.string().nullable(),
+			sourceHash: z.string().regex(/^[0-9a-f]{64}$/),
+			loaded: loadedText
 		})
-	])).max(MAX_CHANGES_PER_SAVE)
+			.transform((change, context) =>
+			{
+				const translation = universeTextTranslation(change.text, change.translation);
+
+				if (translation === undefined)
+				{
+					context.addIssue({
+						code: 'custom',
+						path: ['translation'],
+						message: `Too long for ${change.text.field}, contains disallowed characters, or isn't a coin abbreviation a money field can read`
+					});
+
+					return(z.NEVER);
+				}
+
+				return({ ...change, translation });
+			}),
+		z.object({
+			kind: z.literal('saveTranslatorNote'),
+			text: universeTextRef,
+			note: z.string()
+				.trim()
+				.max(MAX_TRANSLATOR_NOTE_LENGTH)
+				.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replace(/[\t\n\r]/g, '')), 'Contains disallowed characters')
+				.transform((note) => ((note === '') ? null : note))
+				.nullable(),
+			loaded: loadedText
+		}),
+		z.object({
+			kind: z.literal('saveNoTranslation'),
+			text: universeTextRef,
+			noTranslation: z.boolean()
+		}),
+		z.object({
+			kind: z.literal('startDraft')
+		}),
+		z.object({
+			kind: z.literal('applyDraft'),
+			choices: z.object({
+				races: z.record(numericIdKey, z.boolean()),
+				classes: z.record(numericIdKey, z.boolean()),
+				items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
+				areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
+				largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+			})
+		}),
+		z.object({
+			kind: z.literal('discardDraft')
+		})
+	])).max(MAX_CHANGES_PER_SAVE),
+	windowId: z.string().min(1).max(MAX_WINDOW_ID_LENGTH).optional()
 }) satisfies z.ZodType<SaveChangesRequest>);

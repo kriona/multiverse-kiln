@@ -4,15 +4,20 @@ import { defineMessages } from '@multiverse-kiln/shared';
  * Text about the player's characters that more than one screen shows (see src/localization.ts)
  */
 export const characterMessages = defineMessages({
-	raceAndClass: {
-		id: 'character.raceAndClass',
-		defaultMessage: '{race} {class}',
-		description: 'A character\'s race and class, e.g. "Dwarf Fighter": under the name at the top of their sheet, and after their name in the lists of the player\'s characters in the lobby, on a universe\'s page, on an invite and on profiles. Reorder them as your language needs'
-	},
 	leaving: {
 		id: 'characters.leaving',
 		defaultMessage: 'To be deleted on {deleteAt, date, medium}',
-		description: 'In the list of the player\'s characters, in a universe\'s lobby and on its page, beside one given their last rites, who can\'t be played until restored from their sheet; {deleteAt} is the day they will be deleted'
+		description: 'Beside a character given their last rites, who can\'t be played until restored from their sheet: in the list of the player\'s characters in a universe\'s lobby and on its page, and in the world editor\'s list of every character in the universe; {deleteAt} is the day they will be deleted'
+	},
+	barred: {
+		id: 'characters.barred',
+		defaultMessage: '{bar, select, race {Can\'t play: your race is disabled} other {Can\'t play: your class is disabled}}',
+		description: 'Beside a character who can\'t play because the universe\'s creators disabled their race (bar is race) or class (bar is class) for characters already of it, until it is enabled again: in the list of the player\'s characters in a universe\'s lobby and on its page, and on the screen an invite link opens'
+	},
+	inGroup: {
+		id: 'characters.inGroup',
+		defaultMessage: 'In a group',
+		description: 'Beside a character who is in a group (characters playing together): in the list of the player\'s characters, where choosing them goes to that group, and in the world editor\'s list of every character in the universe'
 	},
 	loadFailed: {
 		id: 'characters.loadFailed',

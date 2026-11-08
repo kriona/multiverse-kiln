@@ -93,27 +93,59 @@
 	color: $text;
 }
 
+// The editors' chat's width, and its distance from the window's right edge
+$editor-chat-width: min(360px, calc(100vw - 32px));
+$editor-chat-inset: 16px;
+
+// The editor's tabs and the arrows over their ends (see ui/scrollingTabs.ts). While the chat is open, the
+// tabs end where it begins, so none are hidden under it
+.tab-strip
+{
+	position: relative;
+}
+
+// The screen keeps to the window's width rather than growing to fit every tab, so the tabs scroll
+#editor-screen
+{
+	min-width: 0;
+}
+
+#editor-screen:has(> .editor-chat:not([hidden])) .tab-strip
+{
+	padding-right: calc(#{$editor-chat-width} + #{$editor-chat-inset});
+}
+
+// The tabs stay on one line and scroll sideways when they don't fit. A scrolling list cuts off whatever
+// reaches past its edges, so the line under the tabs is drawn inside it, along its bottom, for the tab
+// showing to cover
 .tabs
 {
 	display: flex;
 	gap: 4px;
 	padding: 12px 16px 0;
-	border-bottom: 1px solid $border;
+	overflow-x: auto;
+	scrollbar-width: none;
+	// A tab the keyboard moves to is scrolled clear of the arrows over the ends
+	scroll-padding: 0 40px;
+	background: linear-gradient(to top, $border 1px, transparent 1px);
 
 	button
 	{
+		flex-shrink: 0;
+		margin-bottom: 1px;
 		border-color: $border;
 		border-bottom: none;
 		border-radius: 4px 4px 0 0;
 		background: $background-field;
 		color: $text-muted;
+		white-space: nowrap;
 
-		// The tab showing reaches 1px further down, covering the line under the tabs so it opens onto its panel
+		// The tab showing reaches over the line under the tabs, so it opens onto its panel
 		&[aria-selected="true"]
 		{
-			margin-bottom: -1px;
+			margin-bottom: 0;
 			padding-bottom: 7px;
-			background: $background-panel;
+			background: $background-page;
 			color: $text;
 		}
 	}
@@ -132,6 +164,171 @@
 	}
 }
 
+// An arrow over an end of the tabs with tabs hidden past it, fading the tabs out under it. It stops short
+// of the line under the tabs, which stays drawn across the whole strip
+.tab-scroll
+{
+	position: absolute;
+	top: 0;
+	bottom: 1px;
+	display: flex;
+	align-items: center;
+	width: 40px;
+	padding: 12px 0 0;
+	border: none;
+	border-radius: 0;
+	color: $text-muted;
+
+	&:hover
+	{
+		color: $text;
+	}
+
+	&[hidden]
+	{
+		display: none;
+	}
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
+.tab-scroll-back
+{
+	left: 0;
+	justify-content: flex-start;
+	padding-left: 4px;
+	background: linear-gradient(to right, $background-page 50%, transparent);
+
+	&:hover
+	{
+		background: linear-gradient(to right, $background-page 50%, transparent);
+	}
+}
+
+.tab-scroll-forward
+{
+	right: 0;
+	justify-content: flex-end;
+	padding-right: 4px;
+	background: linear-gradient(to left, $background-page 50%, transparent);
+
+	&:hover
+	{
+		background: linear-gradient(to left, $background-page 50%, transparent);
+	}
+}
+
+#editor-screen:has(> .editor-chat:not([hidden])) .tab-scroll-forward
+{
+	right: calc(#{$editor-chat-width} + #{$editor-chat-inset});
+}
+
+// The notice above the tabs keeps the line breaks in a disabled universe's reason
+#editor-notice
+{
+	white-space: pre-line;
+}
+
+// The Chat button in the toolbar, with how many messages came while the chat was hidden in a badge
+// covering its icon
+.editor-chat-toggle
+{
+	position: relative;
+	display: inline-flex;
+
+	// The badge takes the icon's place; the icon keeps its space so the button's width doesn't change
+	&:has(.chat-unread:not([hidden])) .icon
+	{
+		visibility: hidden;
+	}
+}
+
+.chat-unread
+{
+	position: absolute;
+	top: 50%;
+	// The middle of the icon: the button's 1px border and 14px padding, then half the 18px icon
+	left: 24px;
+	transform: translate(-50%, -50%);
+	box-sizing: border-box;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: $danger;
+	color: $text-on-accent;
+	font-size: 11px;
+	font-weight: bold;
+	line-height: 18px;
+	text-align: center;
+	// Clicks go through to the button under it
+	pointer-events: none;
+}
+
+// The editors' chat: over the right of the tabs, and over a map editor filling the window, until it is closed
+.editor-chat
+{
+	position: fixed;
+	top: 72px;
+	right: $editor-chat-inset;
+	bottom: 72px;
+	z-index: 12;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	width: $editor-chat-width;
+	box-shadow: 0 4px 16px $backdrop;
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+.editor-chat-header
+{
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+
+	h2
+	{
+		margin: 0;
+		font-size: 18px;
+	}
+}
+
+.editor-chat-here
+{
+	margin: 12px 0;
+
+	h3
+	{
+		margin: 0 0 4px;
+		font-size: 14px;
+		color: $text-muted;
+	}
+}
+
+.editor-chat-here-list
+{
+	max-height: 120px;
+	overflow-y: auto;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	overflow-wrap: anywhere;
+
+	li
+	{
+		padding: 2px 0;
+	}
+}
+
 .editor-body
 {
 	flex: 1;
@@ -147,7 +344,6 @@ $save-bar-height: 56px;
 .editor-save-bar
 {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
 	justify-content: flex-end;
 	gap: 12px;
@@ -162,6 +358,48 @@ $save-bar-height: 56px;
 	&[hidden]
 	{
 		display: none;
+	}
+
+	> button
+	{
+		flex-shrink: 0;
+	}
+}
+
+// The other editors who have the editor open, and where each is, on the left of the save bar: one line,
+// cut short with an ellipsis rather than making the bar taller, and the first thing in the bar to shrink
+.editor-presence
+{
+	flex: 1 1 0;
+	min-width: 0;
+	margin-right: auto;
+	overflow: hidden;
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.editor-presence-label
+{
+	margin-right: 8px;
+	color: $text-muted;
+}
+
+.editor-presence-list
+{
+	display: inline;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li
+	{
+		display: inline;
+	}
+
+	li + li
+	{
+		margin-left: 16px;
 	}
 }
 
@@ -180,9 +418,12 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	bottom: $save-bar-height;
 }
 
+// How wide a tab's settings and lists grow
+$editor-panel-width: 960px;
+
 .editor-panel
 {
-	max-width: 960px;
+	max-width: $editor-panel-width;
 
 	> p:first-child
 	{
@@ -197,8 +438,8 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	max-width: 100%;
 }
 
-// The area's name on the left and Back to Areas on the right, or the button above the name on a
-// narrow screen
+// The area's name on the left and Back to Areas on the right, with Back to Lobby under it for the
+// lobby's area, or the buttons above the name on a narrow screen
 .area-editor-top
 {
 	display: flex;
@@ -216,11 +457,31 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 		flex-direction: column;
 		align-items: stretch;
 
-		button
+		.area-back-buttons
 		{
 			align-self: flex-end;
 		}
 	}
+}
+
+.area-back-buttons
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+// Stands out in the area editor, so nobody edits the lobby's area thinking it is any other
+.lobby-notice
+{
+	margin: 0;
+	padding: 8px 12px;
+	align-self: flex-start;
+	border: 1px solid $accent;
+	border-radius: 4px;
+	background: $accent-background;
+	color: $text-on-accent;
+	font-weight: bold;
 }
 
 // Max widths: each field about as wide as the longest text it takes, and a number field as its
@@ -281,6 +542,16 @@ html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
 	max-width: 8ch;
 }
 
+#resize-north,
+#resize-east,
+#resize-south,
+#resize-west,
+#resize-extend-by
+{
+	// Up to MAX_MAP_SIDE - 1
+	max-width: 9ch;
+}
+
 fieldset
 {
 	&.ability-modifiers
@@ -302,6 +573,13 @@ fieldset
 	gap: 16px;
 }
 
+// The Editors tab's note that editors belong to every version, at the top of its panel rather than under
+// the toolbar, where notices sit
+#editors-draft-note
+{
+	margin: 0 0 12px;
+}
+
 // A row in an editor list that will be deleted when its tab is saved (markStagedRow)
 tr.staged-deleted
 {
@@ -321,6 +599,34 @@ tr.staged-deleted
 	}
 }
 
+// What another editor saved to something with unsaved changes here (otherSaves.ts): under its name in a
+// list, or at the top of its form; and who else is editing the area open, above its map (areaClaims.ts).
+// Its words say so, so it isn't told by color alone
+.changed-since,
+.area-claim
+{
+	margin: 4px 0 0;
+	padding: 4px 8px;
+	border: 1px solid $notice-border;
+	border-radius: 4px;
+	background: $notice-background;
+	color: $notice-text;
+	font-size: 12px;
+	font-style: normal;
+}
+
+form > .changed-since,
+.map-editor > .area-claim
+{
+	margin: 0 0 12px;
+}
+
+// The map editor's column stretches what it holds, so the line keeps to its text
+.map-editor > .area-claim
+{
+	align-self: flex-start;
+}
+
 // An area in the list of areas that will be deleted when the tab is saved
 .area-list .staged-deleted
 {
@@ -334,39 +640,17 @@ tr.staged-deleted
 	}
 }
 
-// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the difficulty levels card on the Ruleset tab
+// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the coins and difficulty levels cards on the Ruleset tab
 .races,
 .classes,
 .themes,
+.coins,
 .difficulty-levels
 {
 	h2
 	{
 		margin: 0 0 8px;
 		font-size: 1.15em;
-	}
-}
-
-.filters
-{
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	gap: 12px;
-	margin-bottom: 12px;
-
-	label
-	{
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		color: $text-muted;
-	}
-
-	input[type="search"]
-	{
-		flex: 1;
-		min-width: 180px;
 	}
 }
 
@@ -389,6 +673,15 @@ tr.staged-deleted
 		padding: 6px 8px;
 		border-bottom: 1px solid $border-subtle;
 	}
+}
+
+// A role's name on the Editors tab, which shows what the role does when the pointer is over it
+.role-name
+{
+	text-decoration: underline dotted;
+	text-underline-offset: 3px;
+	text-decoration-thickness: from-font;
+	cursor: help;
 }
 
 // An item's picture: its category's icon until items have art of their own
@@ -428,11 +721,12 @@ tr.staged-deleted
 		image-rendering: pixelated;
 	}
 
-	// A blob sheet is 8 frames by 6, and the 47th, second from the right on the bottom row, is the tile on every side
+	// A blob sheet is 7 frames by 7, and the second frame of the second row is the tile on every side
+	// (BLOB_SHEET_MASKS)
 	&.graphic.blob
 	{
-		background-size: 100% 100%, 800% 600%;
-		background-position: 0 0, calc(600% / 7) 100%;
+		background-size: 100% 100%, 700% 700%;
+		background-position: 0 0, calc(100% / 6) calc(100% / 6);
 	}
 }
 
@@ -486,16 +780,6 @@ tr.staged-deleted
 	}
 }
 
-.pager
-{
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 12px;
-	color: $text-muted;
-}
-
 .area-list
 {
 	display: flex;
@@ -506,12 +790,30 @@ tr.staged-deleted
 	list-style: none;
 }
 
+// The Areas tab uses the page's width, so the map editor's card can fill it; its other cards are as
+// wide as the other tabs
+#editor-panel-areas
+{
+	max-width: none;
+}
+
+#area-list-view,
+#area-form,
+#area-children
+{
+	max-width: $editor-panel-width;
+}
+
+#area-children h3
+{
+	margin-top: 0;
+}
+
 .map-editor
 {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-top: 16px;
 
 	.hint
 	{
@@ -548,49 +850,27 @@ tr.staged-deleted
 	{
 		width: 72px;
 	}
-}
 
-.map-frame
-{
-	display: grid;
-	grid-template-areas:
-		". north ."
-		"west canvas east"
-		". south .";
-	grid-template-columns: auto minmax(0, auto) auto;
-	justify-content: start;
-	align-items: center;
-	justify-items: center;
-	gap: 4px;
-
-	.map-expand-north
+	// The editing tools take the row but Full Page, wrapping onto more lines when they don't fit
+	.map-editing-tools
 	{
-		grid-area: north;
+		display: flex;
+		flex: 1;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px;
 	}
 
-	.map-expand-west
+	.map-full-page
 	{
-		grid-area: west;
-	}
-
-	.map-expand-east
-	{
-		grid-area: east;
-	}
-
-	.map-expand-south
-	{
-		grid-area: south;
+		margin-left: auto;
 	}
 }
 
-// The map's view, as wide as MapEditor sets --map-view-width or as the page has room for; MapEditor
-// sizes the canvas to fill it
+// The map's view, as wide as the map editor; MapEditor sizes the canvas to fill it
 .map-canvas
 {
-	grid-area: canvas;
-	width: var(--map-view-width);
-	max-width: calc(100% - 2px);
+	position: relative;
 	overflow: hidden;
 	line-height: 0;
 	border: 1px solid $border;
@@ -601,6 +881,25 @@ tr.staged-deleted
 	}
 }
 
+// The hovered cell, over the map's corner so it never changes the map's size
+.map-cursor
+{
+	position: absolute;
+	left: 4px;
+	bottom: 4px;
+	padding: 2px 6px;
+	border-radius: 4px;
+	background: $backdrop;
+	color: $text;
+	line-height: normal;
+	pointer-events: none;
+
+	&:empty
+	{
+		display: none;
+	}
+}
+
 .map-status
 {
 	display: flex;
@@ -608,23 +907,6 @@ tr.staged-deleted
 	align-items: center;
 	gap: 16px;
 	color: $text-muted;
-
-	label
-	{
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	input[type="number"]
-	{
-		width: 72px;
-	}
-
-	.map-full-page
-	{
-		margin-left: auto;
-	}
 }
 
 // Full page: the map editor covers the window, and MapEditor sizes the canvas to fill the space left
@@ -641,6 +923,8 @@ html:has(.map-editor.full-page) body
 	z-index: 10;
 	margin: 0;
 	padding: 16px;
+	border: none;
+	border-radius: 0;
 	background: $background-page;
 
 	.hint
@@ -648,21 +932,10 @@ html:has(.map-editor.full-page) body
 		display: none;
 	}
 
-	.map-frame
+	.map-canvas
 	{
 		flex: 1;
 		min-height: 0;
-		grid-template-columns: auto minmax(0, 1fr) auto;
-		grid-template-rows: auto minmax(0, 1fr) auto;
-		justify-content: stretch;
-	}
-
-	.map-canvas
-	{
-		width: auto;
-		max-width: none;
-		align-self: stretch;
-		justify-self: stretch;
 	}
 }
 
@@ -675,7 +948,13 @@ html:has(.map-editor.full-page) body
 		". south .";
 	grid-template-columns: repeat(3, 1fr);
 	align-items: center;
+	justify-items: center;
 	gap: 8px;
+
+	label
+	{
+		align-items: center;
+	}
 
 	.resize-north
 	{
@@ -701,6 +980,11 @@ html:has(.map-editor.full-page) body
 	{
 		grid-area: center;
 		text-align: center;
+	}
+
+	// The center cell's coordinates, between the fields
+	span.resize-center
+	{
 		color: $text-faint;
 	}
 }
@@ -755,6 +1039,42 @@ html:has(.map-editor.full-page) body
 	{
 		margin: 0;
 		font-size: 1em;
+	}
+}
+
+// Sized to its columns, rather than stretched across the card by the form's flex column
+.coin-table
+{
+	align-self: flex-start;
+	border-collapse: collapse;
+	width: auto;
+
+	th,
+	td
+	{
+		padding: 4px 12px 4px 0;
+		text-align: start;
+	}
+
+	thead th
+	{
+		font-weight: normal;
+		color: $text-muted;
+	}
+
+	tbody th
+	{
+		font-weight: normal;
+	}
+
+	.coin-name
+	{
+		width: 24ch;
+	}
+
+	.coin-abbreviation
+	{
+		width: 10ch;
 	}
 }
 
@@ -863,6 +1183,12 @@ div.ability-modifiers
 	gap: 8px;
 }
 
+// The hint and buttons under the lobby's area, indented to show they belong to it
+.lobby-area-details
+{
+	margin-left: 24px;
+}
+
 // Where a class's members of each race start: the race, its area, and buttons to change it
 .race-areas
 {
@@ -889,4 +1215,84 @@ div.ability-modifiers
 		align-items: center;
 		gap: 8px;
 	}
+}
+
+// The Audit tab's table uses the page's width, so the Changes column has room for each change's line
+#editor-panel-audit
+{
+	max-width: none;
+}
+
+// What a save changed in the Audit tab's Changes column: a line for each thing it changed, and under
+// each, a line for each setting it changed
+.audit-details
+{
+	margin: 0;
+	padding-left: 20px;
+
+	li + li
+	{
+		margin-top: 2px;
+	}
+
+	.audit-details
+	{
+		margin-top: 2px;
+	}
+}
+
+// The Translations tab's table of the universe's text, below its languages
+.translations-text
+{
+	margin-top: 24px;
+
+	h2
+	{
+		margin: 0 0 12px;
+	}
+}
+
+.translations-table td
+{
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+// A translation not written yet, which says so in words
+.translation-missing
+{
+	color: $text-faint;
+	font-style: italic;
+}
+
+// The source text in the dialog that translates it: as written, or rendered for a long description
+.translation-source
+{
+	max-height: 240px;
+	overflow-y: auto;
+	padding: 8px 12px;
+	border: 1px solid $border;
+	border-radius: 4px;
+
+	&:not(.markdown)
+	{
+		white-space: pre-wrap;
+	}
+}
+
+// The choice in the toolbar of the version of the universe to edit, while it has a draft
+.editor-version
+{
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 6px;
+}
+
+// Starting, applying and discarding the draft, under the Universe tab's settings
+.universe-draft
+{
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid $border;
 }

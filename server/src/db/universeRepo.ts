@@ -1,14 +1,16 @@
 /**
  * Universes: the only module that reads or writes the universes table
  */
-import { and, eq, or, sql } from 'drizzle-orm';
-import { nameKey, universeSlug, type EditableUniverse, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
+import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
+import { fromCoinAbbreviationColumns, fromCoinColumns, fromCoinNameColumns, toCoinAbbreviationColumns, toCoinColumns, toCoinNameColumns } from './coinColumns.js';
 import { addDefaultDifficultyLevels } from './difficultyRepo.js';
-import { universes } from './schema.js';
+import { players, universeDrafts, universeEditors, universes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
+import { anyColumnContains } from './textSearch.js';
+import type { UniverseVersion } from './universeVersions.js';
 
 /**
  * The unique index that keeps two universes from having the same slug, and so the same name
@@ -107,12 +109,6 @@ async function settingName<T>(name: string, universeId: string | undefined, exec
 }
 
 /**
- * The form of a universe's ID. Only text in this form is compared with the ID column, which refuses
- * anything else, so a slug is only compared with the slug column
- */
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
  * A universe as the rest of the server sees it
  */
 export interface UniverseRecord
@@ -125,9 +121,16 @@ export interface UniverseRecord
 	passageOfTime: PassageOfTime;
 
 	/**
-	 * Undefined until the universe's areas exist
+	 * Undefined until the universe's areas exist, and while it has no lobby area
 	 */
 	lobbyAreaId: string | undefined;
+
+	/**
+	 * The cell of the lobby's area players start nearest
+	 */
+	lobbyColumn: number;
+
+	lobbyRow: number;
 
 	/**
 	 * Undefined until the universe's areas exist
@@ -140,13 +143,18 @@ export interface UniverseRecord
 	startingColumn: number;
 
 	startingRow: number;
+
+	/**
+	 * Whether a server admin has disabled it, so no one may play it
+	 */
+	disabled: boolean;
 }
 
 /**
  * What a new universe needs. Its slug comes from its name, and its lobby and starting areas are set
  * once they exist (setUniverseAreas)
  */
-export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'ruleset' | 'passageOfTime'>;
+export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset' | 'passageOfTime'>;
 
 /**
  * Adds a universe, with the default difficulty levels
@@ -221,14 +229,17 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		ruleset: row.ruleset,
 		passageOfTime: row.passageOfTime,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
+		lobbyColumn: row.lobbyColumn,
+		lobbyRow: row.lobbyRow,
 		startingAreaId: row.startingAreaId ?? undefined,
 		startingColumn: row.startingColumn,
-		startingRow: row.startingRow
+		startingRow: row.startingRow,
+		disabled: (row.disabledAt !== null)
 	});
 }
 
 /**
- * A page of the universes in a stage, by name
+ * A page of the universes in a stage that aren't disabled, by name
  *
  * @param stage The stage
  * @param offset How many universes to skip
@@ -244,26 +255,33 @@ export async function listUniverses(stage: UniverseStage, offset: number, limit:
 			name: universes.name,
 			slug: universes.slug,
 			shortDescription: universes.shortDescription,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages
 		})
 		.from(universes)
-		.where(eq(universes.stage, stage))
+		.where(and(
+			eq(universes.stage, stage),
+			isNull(universes.disabledAt)
+		))
 		.orderBy(universes.name, universes.id)
 		.offset(offset)
 		.limit(limit));
 }
 
 /**
- * A universe's details, if it is in a stage
+ * A universe's details, with its stage, if it isn't disabled. The caller decides whether the stage
+ * lets the player see it
  *
  * @param key The universe's ID or slug
- * @param stage The stage it must be in
  * @param executor The database, or a transaction
- * @return The universe, or undefined when there is none with that ID or slug in that stage
+ * @return The universe, or undefined when there is none with that ID or slug, or it is disabled
  */
-export async function findUniverseDetails(key: string, stage: UniverseStage, executor: Executor = db): Promise<UniverseDetails | undefined>
+export async function findUniverseDetails(key: string, executor: Executor = db): Promise<UniverseDetails | undefined>
 {
-	const bySlug = eq(universes.slug, key);
+	// A key in the form of an ID is only compared with the ID column, which refuses anything else; no
+	// slug has that form (hasIdShapedSlug), so one universe at most matches either way
+	const byKey = (UNIVERSE_ID_PATTERN.test(key) ? eq(universes.id, key) : eq(universes.slug, key));
 	const [row] = await executor
 		.select({
 			id: universes.id,
@@ -271,12 +289,15 @@ export async function findUniverseDetails(key: string, stage: UniverseStage, exe
 			slug: universes.slug,
 			shortDescription: universes.shortDescription,
 			longDescription: universes.longDescription,
-			ruleset: universes.ruleset
+			ruleset: universes.ruleset,
+			sourceLanguage: universes.sourceLanguage,
+			translationLanguages: universes.translationLanguages,
+			stage: universes.stage
 		})
 		.from(universes)
 		.where(and(
-			(UUID_PATTERN.test(key) ? or(eq(universes.id, key), bySlug) : bySlug),
-			eq(universes.stage, stage)
+			byKey,
+			isNull(universes.disabledAt)
 		))
 		.limit(1);
 
@@ -284,112 +305,218 @@ export async function findUniverseDetails(key: string, stage: UniverseStage, exe
 }
 
 /**
- * A universe with every setting the editor shows
+ * The columns of a version's own settings (universeVersionColumns() in schema.ts), as the editor shows them
  *
- * @param universeId The universe's ID
- * @param executor The database, or a transaction
- * @return The universe without the player's role, or undefined when there is none with that ID
+ * @param table The live version's table (universes) or the draft's (universe_drafts)
+ * @return The columns
  */
-export async function findEditableUniverse(universeId: string, executor: Executor = db): Promise<Omit<EditableUniverse, 'role'> | undefined>
+function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 {
-	const [row] = await executor
-		.select({
-			id: universes.id,
-			name: universes.name,
-			slug: universes.slug,
-			shortDescription: universes.shortDescription,
-			longDescription: universes.longDescription,
-			stage: universes.stage,
-			ruleset: universes.ruleset,
-			passageOfTime: universes.passageOfTime,
-			faerieMorning: universes.faerieMorning,
-			displayTime: universes.displayTime,
-			lobbyPassageOfTime: universes.lobbyPassageOfTime,
-			lobbyDayHours: universes.lobbyDayHours,
-			lobbyFaerieMorning: universes.lobbyFaerieMorning,
-			lobbyNoVisionCost: universes.lobbyNoVisionCost,
-			lobbyAreaId: universes.lobbyAreaId,
-			startingAreaId: universes.startingAreaId,
-			startingColumn: universes.startingColumn,
-			startingRow: universes.startingRow,
-			groupSize: universes.groupSize,
-			startingPlatinum: universes.startingPlatinum,
-			startingGold: universes.startingGold,
-			startingSilver: universes.startingSilver,
-			startingCopper: universes.startingCopper,
-			startingCredits: universes.startingCredits
-		})
-		.from(universes)
-		.where(eq(universes.id, universeId))
-		.limit(1);
-
-	if (!row)
-	{
-		return(undefined);
-	}
-
-	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, ...settings } = row;
-
 	return({
-		...settings,
-		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits }),
-		startingItems: await loadStartingItems(universeId, executor)
+		name: table.name,
+		shortDescription: table.shortDescription,
+		longDescription: table.longDescription,
+		sourceLanguage: table.sourceLanguage,
+		translationLanguages: table.translationLanguages,
+		passageOfTime: table.passageOfTime,
+		faerieMorning: table.faerieMorning,
+		displayTime: table.displayTime,
+		lobbyPassageOfTime: table.lobbyPassageOfTime,
+		lobbyDayHours: table.lobbyDayHours,
+		lobbyFaerieMorning: table.lobbyFaerieMorning,
+		lobbyNoVisionCost: table.lobbyNoVisionCost,
+		lobbyAreaId: table.lobbyAreaId,
+		lobbyColumn: table.lobbyColumn,
+		lobbyRow: table.lobbyRow,
+		startingAreaId: table.startingAreaId,
+		startingColumn: table.startingColumn,
+		startingRow: table.startingRow,
+		groupSize: table.groupSize,
+		startingPlatinum: table.startingPlatinum,
+		startingGold: table.startingGold,
+		startingSilver: table.startingSilver,
+		startingCopper: table.startingCopper,
+		startingCredits: table.startingCredits,
+		platinumName: table.platinumName,
+		goldName: table.goldName,
+		silverName: table.silverName,
+		copperName: table.copperName,
+		creditsName: table.creditsName,
+		platinumAbbreviation: table.platinumAbbreviation,
+		goldAbbreviation: table.goldAbbreviation,
+		silverAbbreviation: table.silverAbbreviation,
+		copperAbbreviation: table.copperAbbreviation,
+		creditsAbbreviation: table.creditsAbbreviation
 	});
 }
 
 /**
- * Changes some of a universe's settings
+ * A version's own settings
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The settings, or undefined when the universe doesn't exist or has no draft
+ */
+async function findVersionSettings(version: UniverseVersion, executor: Executor)
+{
+	const [row] = await (version.draft
+		? executor
+			.select(versionSettingColumns(universeDrafts))
+			.from(universeDrafts)
+			.where(eq(universeDrafts.universeId, version.universeId))
+			.limit(1)
+		: executor
+			.select(versionSettingColumns(universes))
+			.from(universes)
+			.where(eq(universes.id, version.universeId))
+			.limit(1));
+
+	return(row);
+}
+
+/**
+ * Whether a universe has a draft
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return True when it has one
+ */
+export async function hasDraft(universeId: string, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.select({
+			universeId: universeDrafts.universeId
+		})
+		.from(universeDrafts)
+		.where(eq(universeDrafts.universeId, universeId))
+		.limit(1);
+
+	return(rows.length > 0);
+}
+
+/**
+ * A version of a universe with every setting the editor shows: the universe's own, and the version's
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The universe without the player's role, or undefined when there is none with that ID, or it
+ * has no draft when the draft is asked for
+ */
+export async function findEditableUniverse(version: UniverseVersion, executor: Executor = db): Promise<EditableUniverseDetails | undefined>
+{
+	const [row] = await executor
+		.select({
+			id: universes.id,
+			slug: universes.slug,
+			stage: universes.stage,
+			ruleset: universes.ruleset,
+			disabledReason: universes.disabledReason
+		})
+		.from(universes)
+		.where(eq(universes.id, version.universeId))
+		.limit(1);
+	const versionSettings = (row ? await findVersionSettings(version, executor) : undefined);
+
+	if (!row || !versionSettings)
+	{
+		return(undefined);
+	}
+
+	const { startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits, platinumName, goldName, silverName, copperName, creditsName, platinumAbbreviation, goldAbbreviation, silverAbbreviation, copperAbbreviation, creditsAbbreviation, ...settings } = versionSettings;
+
+	return({
+		...row,
+		version: (version.draft ? 'draft' : 'live'),
+		hasDraft: (version.draft || await hasDraft(version.universeId, executor)),
+		...settings,
+		startingMoney: fromCoinColumns({ startingPlatinum, startingGold, startingSilver, startingCopper, startingCredits }),
+		coinNames: fromCoinNameColumns({ platinumName, goldName, silverName, copperName, creditsName }),
+		coinAbbreviations: fromCoinAbbreviationColumns({ platinumAbbreviation, goldAbbreviation, silverAbbreviation, copperAbbreviation, creditsAbbreviation }),
+		startingItems: await loadStartingItems(version, executor)
+	});
+}
+
+/**
+ * Changes some of a universe's settings: its stage, which the universe has once for both versions,
+ * whichever version is given, and the rest in that version
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
  * faerie time (for the universe and for its lobby), and a lobby day length, group size or starting
- * money out of range. The caller checks that a starting area
- * is one of the universe's, and that the starting items are items it can use. A new name changes the
- * universe's slug with it
+ * money out of range. The caller checks that a starting area is one of the version's, and that the
+ * starting items are items it can use. A new name is checked against other universes' names; the live
+ * version's changes the universe's slug with it, and the draft's waits until the draft is applied
  *
- * @param universeId The universe's ID
+ * @param version The universe's live version or draft
  * @param update The settings to change; a name must have a letter or digit
  * @param executor A transaction when the update holds starting items, otherwise the database or a transaction
  * @throws UniverseNameTakenError when another universe has the new name, or one too much like it
  */
-export async function updateUniverseSettings(universeId: string, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
+export async function updateUniverseSettings(version: UniverseVersion, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
 {
-	const { startingMoney, startingItems, ...settings } = update;
+	const { startingMoney, coinNames, coinAbbreviations, startingItems, name, stage, ...settings } = update;
+	const versionSettings = {
+		...settings,
+		...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney)),
+		...((coinNames === undefined) ? {} : toCoinNameColumns(coinNames)),
+		...((coinAbbreviations === undefined) ? {} : toCoinAbbreviationColumns(coinAbbreviations))
+	};
 
 	if (startingItems !== undefined)
 	{
-		await replaceStartingItems(universeId, startingItems, executor);
+		await replaceStartingItems(version, startingItems, executor);
 	}
 
-	if ((Object.keys(settings).length === 0) && (startingMoney === undefined))
+	if (stage !== undefined)
 	{
-		return;
-	}
-
-	const { name } = settings;
-
-	/**
-	 * Changes the settings
-	 *
-	 * @param transaction The database, or a transaction
-	 */
-	const save = async (transaction: Executor): Promise<void> =>
-	{
-		await transaction
+		await executor
 			.update(universes)
 			.set({
-				...settings,
-				...((name === undefined) ? {} : { slug: universeSlug(name) }),
-				...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney))
+				stage
 			})
-			.where(eq(universes.id, universeId));
+			.where(eq(universes.id, version.universeId));
+	}
+
+	/**
+	 * Changes the version's settings, with its name when given
+	 *
+	 * @param transaction The database, or a transaction
+	 * @param named The settings, with the name when it changes
+	 */
+	const save = async (transaction: Executor, named: Record<string, unknown>): Promise<void> =>
+	{
+		if (Object.keys(named).length === 0)
+		{
+			return;
+		}
+
+		await (version.draft
+			? transaction
+				.update(universeDrafts)
+				.set(named)
+				.where(eq(universeDrafts.universeId, version.universeId))
+			: transaction
+				.update(universes)
+				.set({
+					...named,
+					...((name === undefined) ? {} : { slug: universeSlug(name) })
+				})
+				.where(eq(universes.id, version.universeId)));
 	};
 
-	await ((name === undefined) ? save(executor) : settingName(name, universeId, executor, save));
+	await ((name === undefined)
+		? save(executor, versionSettings)
+		: settingName(name, version.universeId, executor, (transaction) => save(transaction, {
+			...versionSettings,
+			name
+		})));
 }
 
 /**
  * Locks a universe's row until the transaction ends, so limits on what it holds (such as its number
  * of areas) are checked by one transaction at a time
+ *
+ * FOR NO KEY UPDATE doesn't block the key share lock foreign key checks take, so rows that refer to
+ * the universe (chat messages, characters, groups) can still be added while a long save holds it
  *
  * @param universeId The universe's ID
  * @param executor A transaction
@@ -403,9 +530,174 @@ export async function lockUniverse(universeId: string, executor: Executor): Prom
 		})
 		.from(universes)
 		.where(eq(universes.id, universeId))
-		.for('update');
+		.for('no key update');
 
 	return(rows.length > 0);
+}
+
+/**
+ * Why a server admin disabled a universe
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The reason, or null when it isn't disabled or doesn't exist
+ */
+export async function findDisabledReason(universeId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			disabledReason: universes.disabledReason
+		})
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.limit(1);
+
+	return((row?.disabledReason ?? null));
+}
+
+/**
+ * Whether a server admin who disabled a universe kept its creators from deleting it
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return Whether they did: false when it isn't disabled or doesn't exist
+ */
+export async function isUniverseDeletionPrevented(universeId: string, executor: Executor = db): Promise<boolean>
+{
+	const [row] = await executor
+		.select({
+			deletionPrevented: universes.deletionPrevented
+		})
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.limit(1);
+
+	return((row?.deletionPrevented ?? false));
+}
+
+/**
+ * A universe as the Universes admin page lists it
+ */
+export interface AdminUniverseRecord
+{
+	id: string;
+	name: string;
+	slug: string;
+	stage: UniverseStage;
+	ruleset: Ruleset;
+	createdAt: Date;
+
+	/**
+	 * Its creators, by username ignoring case
+	 */
+	creators: AdminUniverseCreator[];
+
+	disabledAt: Date | null;
+	disabledReason: string | null;
+	deletionPrevented: boolean;
+}
+
+/**
+ * A page of every universe, for the Universes admin page, by name ignoring case
+ *
+ * @param filter Only universes whose name holds the search, ignoring capitals, and only those disabled or not
+ * @param page How many matching universes to skip, and the most to return
+ * @param executor The database, or a transaction
+ * @return The page, and how many universes match
+ */
+export async function listUniversesForAdmin(filter: { search?: string; disabled?: boolean }, page: { offset: number; limit: number }, executor: Executor = db): Promise<{ universes: AdminUniverseRecord[]; total: number }>
+{
+	const where = and(
+		((filter.search === undefined) ? undefined : anyColumnContains([universes.name], filter.search)),
+		((filter.disabled === undefined) ? undefined : (filter.disabled ? isNotNull(universes.disabledAt) : isNull(universes.disabledAt)))
+	);
+	// A query with a join names each column's table, which a single-table select leaves out
+	const creatorList = executor
+		.select({
+			creators: sql`json_agg(json_build_object('username', ${players.username}, 'displayName', ${players.displayName}) ORDER BY lower(${players.username}))`
+		})
+		.from(universeEditors)
+		.innerJoin(players, eq(players.id, universeEditors.playerId))
+		.where(and(
+			eq(universeEditors.universeId, universes.id),
+			eq(universeEditors.role, 'creator')
+		));
+	const creators = sql<AdminUniverseCreator[]>`coalesce((${creatorList}), '[]'::json)`;
+	const [rows, [counted]] = await Promise.all([
+		executor
+			.select({
+				id: universes.id,
+				name: universes.name,
+				slug: universes.slug,
+				stage: universes.stage,
+				ruleset: universes.ruleset,
+				createdAt: universes.createdAt,
+				creators,
+				disabledAt: universes.disabledAt,
+				disabledReason: universes.disabledReason,
+				deletionPrevented: universes.deletionPrevented
+			})
+			.from(universes)
+			.where(where)
+			.orderBy(sql`lower(${universes.name})`, universes.id)
+			.offset(page.offset)
+			.limit(page.limit),
+		executor
+			.select({
+				total: count()
+			})
+			.from(universes)
+			.where(where)
+	]);
+
+	return({
+		universes: rows,
+		total: counted.total
+	});
+}
+
+/**
+ * How a server admin disables a universe
+ */
+export interface UniverseDisabling
+{
+	/**
+	 * Why it is disabled, from 1 to MAX_DISABLED_REASON_LENGTH characters
+	 */
+	reason: string;
+
+	/**
+	 * Whether its creators are kept from deleting it while it is disabled
+	 */
+	preventDeletion: boolean;
+}
+
+/**
+ * Disables a universe, or enables it again
+ *
+ * @param universeId The universe's ID
+ * @param disabling Why it is disabled and whether its creators may delete it; null enables it
+ * @param executor The database, or a transaction
+ * @return Whether it changed: false when it doesn't exist, or was already disabled (or enabled)
+ */
+export async function setUniverseDisabled(universeId: string, disabling: UniverseDisabling | null, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.update(universes)
+		.set({
+			disabledAt: ((disabling === null) ? null : new Date()),
+			disabledReason: (disabling?.reason ?? null),
+			deletionPrevented: (disabling?.preventDeletion ?? false)
+		})
+		.where(and(
+			eq(universes.id, universeId),
+			((disabling === null) ? isNotNull(universes.disabledAt) : isNull(universes.disabledAt))
+		))
+		.returning({
+			id: universes.id
+		});
+
+	return((rows.length > 0));
 }
 
 /**

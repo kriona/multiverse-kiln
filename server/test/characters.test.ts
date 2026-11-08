@@ -1,13 +1,17 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
+import { countCharacters } from '../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
-import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { changeWhileWaitingForUniverse } from './universeLock.js';
 
 /**
  * A logged-in browser
@@ -267,6 +271,7 @@ describe('Character routes', () =>
 				race: { key: 'dwarf', name: null },
 				characterClass: { key: 'fighter', name: null },
 				deleteAt: null,
+				barredBy: null,
 				groupId: null
 			}],
 			lastPlayedId: created.body.id
@@ -300,7 +305,8 @@ describe('Character routes', () =>
 			characterClass: { key: 'fighter', name: null },
 			deleteAt: null,
 			deletionDays: DEFAULT_SITE_SETTINGS.characterDeletionDays,
-			inGroup: false,
+			group: null,
+			barredBy: null,
 			size: 'medium',
 			darkvision: 'normal',
 			lightSensitivity: false,
@@ -312,7 +318,9 @@ describe('Character routes', () =>
 				constitution: (baseScores.constitution + 2),
 				wisdom: (baseScores.wisdom + 2),
 				charisma: (baseScores.charisma - 2)
-			}
+			},
+			coinNames: {},
+			coinAbbreviations: {}
 		});
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
 		assert.deepStrictEqual(items.map(({ key, type, quantity }) => ({ key, type, quantity })), [{ key: 'dagger', type: 'dagger', quantity: 1 }]);
@@ -324,6 +332,39 @@ describe('Character routes', () =>
 		assert.strictEqual((await send(grace, 'GET', path)).status, 404);
 		assert.strictEqual((await send(ada, 'GET', characterPath(universeId, randomUUID()))).status, 404);
 		assert.strictEqual((await send(ada, 'GET', characterPath(universeId, 'brokk'))).status, 404);
+	});
+
+	it('names the universe\'s coins on the sheet the way the universe does, in the player\'s language', async () =>
+	{
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), await rolledDwarf());
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const path = characterPath(universeId, created.body.id);
+		const renamed = await saveEditorChange(ada, universeId, { kind: 'universe', update: { coinNames: { cp: 'Bronze kits' }, coinAbbreviations: { cp: 'bk' }, translationLanguages: ['fr'] } });
+
+		assert.strictEqual(renamed.status, 200, JSON.stringify(renamed.body));
+
+		for (const [field, translation, source] of [['name', 'Kits de bronze', 'Bronze kits'], ['abbreviation', 'kb', 'bk']] as const)
+		{
+			const translated = await saveEditorChange(ada, universeId, { kind: 'saveTranslation', text: { kind: 'coin', thingId: 'cp', field }, language: 'fr', translation, sourceHash: sourceTextHash(source) });
+
+			assert.strictEqual(translated.status, 200, JSON.stringify(translated.body));
+		}
+
+		const english = (await send<CharacterSheet>(ada, 'GET', path)).body;
+
+		assert.deepStrictEqual([english.coinNames, english.coinAbbreviations], [{ cp: 'Bronze kits' }, { cp: 'bk' }]);
+
+		const french = await fetch(`${testServerUrl}${path}`, {
+			headers: {
+				'Cookie': ada.cookie,
+				'Accept-Language': 'fr'
+			}
+		});
+		const frenchSheet = (await french.json()) as CharacterSheet;
+
+		assert.deepStrictEqual([frenchSheet.coinNames, frenchSheet.coinAbbreviations], [{ cp: 'Kits de bronze' }, { cp: 'kb' }]);
 	});
 
 	it('gives a character their last rites, restores them, and deletes them', async () =>
@@ -361,6 +402,66 @@ describe('Character routes', () =>
 		assert.strictEqual((await send(ada, 'GET', path)).status, 404);
 		assert.strictEqual((await send(ada, 'DELETE', path)).status, 404);
 		assert.deepStrictEqual((await send<CharacterListPayload>(ada, 'GET', charactersPath(universeId))).body.characters, []);
+	});
+
+	it('lists characters and shows their sheets at the end of time, but makes and deletes none', async () =>
+	{
+		const request = await rolledDwarf();
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), request);
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const path = characterPath(universeId, created.body.id);
+
+		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'end_of_time' } });
+
+		assert.deepStrictEqual((await send<CharacterListPayload>(ada, 'GET', charactersPath(universeId))).body.characters.map((character) => character.id), [created.body.id]);
+		assert.strictEqual((await send(ada, 'GET', path)).status, 200);
+		assert.strictEqual((await send(ada, 'GET', `${charactersPath(universeId)}/new`)).status, 404);
+		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 404);
+		assert.strictEqual((await send(ada, 'PUT', `${charactersPath(universeId)}/draft`, { step: 'race' })).status, 404);
+		assert.strictEqual((await send(ada, 'PUT', `${path}/deletion`)).status, 404);
+		assert.strictEqual((await send(ada, 'DELETE', path)).status, 404);
+
+		// Anyone may look at a universe at the end of time, so a player without a role in it lists their none
+		const grace = await logIn('Grace');
+		const list = await send<CharacterListPayload>(grace, 'GET', charactersPath(universeId));
+
+		assert.strictEqual(list.status, 200);
+		assert.deepStrictEqual(list.body.characters, []);
+	});
+
+	it('makes no character in a universe disabled, moved to the end of time, or the player\'s role in it removed while the request waited for it', async () =>
+	{
+		const request = await rolledDwarf();
+		const create = (): Promise<Answer<unknown>> => send(ada, 'POST', charactersPath(universeId), request);
+		const disabled = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
+		{
+			await setUniverseDisabled(universeId, {
+				reason: 'Spam',
+				preventDeletion: false
+			}, transaction);
+		});
+
+		assert.strictEqual(disabled.status, 404);
+		await setUniverseDisabled(universeId, null);
+
+		const ended = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
+		{
+			await updateUniverseSettings(liveVersion(universeId), { stage: 'end_of_time' }, transaction);
+		});
+
+		assert.strictEqual(ended.status, 404);
+		await updateUniverseSettings(liveVersion(universeId), { stage: 'in_the_beginning' });
+
+		// In the beginning only the universe's world editors may play it
+		const removed = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
+		{
+			await removeUniverseEditor(universeId, ada.playerId, transaction);
+		});
+
+		assert.strictEqual(removed.status, 404);
+		assert.strictEqual(await countCharacters(ada.playerId, universeId), 0);
 	});
 
 	it('waits the days the site sets after last rites, and refuses them when it sets none', async () =>
@@ -464,6 +565,7 @@ describe('Character routes', () =>
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
 			enabled: false,
+			keepPlaying: true,
 			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,
@@ -492,6 +594,7 @@ describe('Character routes', () =>
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
 			enabled: true,
+			keepPlaying: true,
 			startingMoney: emptyMoney(),
 			startingItems: [],
 			startingAreaId: null,

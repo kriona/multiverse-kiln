@@ -2,7 +2,7 @@
 
 An engine for making multiplayer browser-based role-playing games.
 
-See `PLAN.md` for the roadmap and current phase, and `CLAUDE.md` for architecture and coding rules.
+See `PLAN.md` for the roadmap and `CLAUDE.md` for architecture and coding rules.
 
 ## Technology overview
 
@@ -32,7 +32,8 @@ There is a single `node_modules` and `package-lock.json` at the root. `shared` i
 
 ### 1. Install the tools
 
-- **Node.js 24.14.0 or newer** (LTS recommended). Check with `node -v`. npm comes with it.
+- **Node.js 24.22.1 or newer** (LTS recommended). Check with `node -v`.
+- **npm 12 or newer**, so `package-lock.json` is written the same way Dependabot writes it. Node comes with an older npm: update it with `npm install -g npm@latest`, and check with `npm -v`.
 - **Git**.
 - **gitleaks**, which the pre-commit hook uses to block commits containing secrets (see [Secret scanning](#secret-scanning)). On Windows: `winget install Gitleaks.Gitleaks`; on macOS: `brew install gitleaks`. Open a new terminal (and restart VS Code or your Git client) afterwards so it's on your `PATH`.
 - **Docker Desktop**, for the local Postgres database. On Windows: `winget install Docker.DockerDesktop`, then start Docker Desktop once and let it finish setting up.
@@ -82,13 +83,31 @@ cp client/.env.example client/.env
 cp server/.env.example server/.env
 ```
 
-The root `.env` holds the local database passwords (used by `docker-compose.yml`). Replace each `replace-me` with a generated password:
+Each `replace-me` needs a generated secret. The quickest way is to let a script make `.env` and `server/.env` for you:
+
+```bash
+npm run secrets -w server
+```
+
+It copies each `.env.example` with a new secret in place of each placeholder, each value the two files share already the same in both. It never replaces a file that exists: it writes the new version next to it as `.env.generated` instead (git-ignored), for you to copy settings from. `client/.env` has no secrets, so copy it from its example as above.
+
+To make them by hand instead, use one of two formats. Use the right one for each setting: a base64 value in a hex setting breaks it.
+
+**Hex** - the database passwords and storage keys: `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`, in the root `.env`:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
 ```
 
-Then put the same passwords into the connection strings in `server/.env`: `KILN_APP_PASSWORD` goes in `DATABASE_URL`, and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL`. Hex passwords don't need escaping in a URL. Generate the two storage keys the same way, and put the same pair in both `.env` and `server/.env`.
+Hex has only letters and digits, which these settings need: the passwords go in connection strings, where `/`, `+` and `=` would need escaping, and the storage's request signing splits the access key ID on `/`.
+
+**Base64** - the server's secret keys: `AUTH_HMAC_KEY` and `TOTP_ENCRYPTION_KEY`, in `server/.env`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_APP_PASSWORD` in `DATABASE_URL` and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL` (and the same passwords in `TEST_DATABASE_URL` and `TEST_MIGRATION_DATABASE_URL`), and the same `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY` pair in both files.
 
 | Variable | File | Purpose |
 |---|---|---|
@@ -105,11 +124,12 @@ Then put the same passwords into the connection strings in `server/.env`: `KILN_
 | `VITE_SOURCE_URL` | `client/.env` | Where players can get the game engine's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
 | `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor`, the playground, and the bot login the load test uses (`POST /dev/bot-login`, which makes an account without email and logs it in). Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
+| `ENABLE_DEV_CODES` | `server/.env` | Set to `true` on your own computer to take the dev code (`111111`) for any email or authenticator code, so testing logins doesn't need a mailbox or an authenticator app. It lets anyone who knows an account's email address log in to it, so `.env.example` leaves it off and `ENABLE_DEV_TOOLS` doesn't turn it on. Off unless exactly `true`, and always off when `NODE_ENV` is set to anything but `development` and on Colyseus Cloud. Never set it on a server others can reach. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
 | `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
-| `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that `npm test` uses. The tests empty it before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
+| `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that the tests use. `npm test` runs them in parallel, each worker with a database of its own named after this one (`kiln_test_1` to `kiln_test_8`). The tests empty their database before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
 | `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_FORCE_PATH_STYLE` | `server/.env` | Object storage for uploads such as tilesets: any S3-compatible service. Locally the storage container (`http://127.0.0.1:8333`, path-style, the keys from `.env`); in production Cloudflare R2, AWS S3, Backblaze B2 or similar, with a bucket made in its own tools. |
 | `TEST_STORAGE_BUCKET` | `server/.env` | The bucket `npm test` uploads to, on the same storage (`kiln-test`). The tests create it if it doesn't exist. |
@@ -172,16 +192,16 @@ Nobody can open Kilnhaven in the world editor unless you name its creator: `npm 
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
-The first start runs the scripts in `docker/postgres/init/`, which create two roles and two databases: `kiln` for the game, and `kiln_test` for the test suite.
+The first start runs the scripts in `docker/postgres/init/`, which create two roles and the databases: `kiln` for the game, and `kiln_test` and `kiln_test_1` to `kiln_test_8` for the test suite (one for each of its parallel workers).
 
 | Role | Used by | Can |
 |---|---|---|
 | `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
 | `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
 
-`npm test` rebuilds `kiln_test` from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so it never needs migrating by hand.
+`npm test` rebuilds each test database it uses from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so they never need migrating by hand.
 
-The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before `kiln_test` existed can add it without losing data:
+The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before the test databases existed can add them without losing data:
 
 ```bash
 docker compose exec postgres sh /docker-entrypoint-initdb.d/02-databases.sh
@@ -249,6 +269,7 @@ All commands run from the repository root.
 | `npm run lint` | Lint everything |
 | `npm run lint:fix` | Lint everything and fix what can be fixed automatically |
 | `docker compose up -d` / `docker compose stop` | Start / stop the local Postgres |
+| `npm run secrets -w server` | Make `.env` and `server/.env` from their examples with new secrets; a file that exists is left alone and the new one written as `.env.generated` |
 | `npm run db:generate -w server` | Create a migration from changes to `server/src/db/schema.ts` |
 | `npm run db:migrate -w server` | Apply pending migrations (as `MIGRATION_DATABASE_URL`) |
 | `npm run db:seed -w server` | Add or replace the sample universe (as `DATABASE_URL`); add `-- --creator <username>` to make that account its creator |

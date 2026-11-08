@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="admin.admins.title" data-translation-context="The browser tab's title for the admin page listing the site's server admins, before the game engine's name">Server Admins</title>
+		<link rel="stylesheet" href="/src/admin.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="admin-page">
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<!-- include admin-crumb.html -->
+					<h1 data-message="admin.admins.heading" data-translation-context="Heading of the admin page listing the site's server admins, where admins add and remove other admins">Server Admins</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="admin-body admin-body-wide">
+					<!-- include admin-refusal.html -->
+					<div id="admin-content" class="panel admin-stack">
+						<p class="hint" data-message="admin.admins.hint" data-translation-context="Explains the admin page listing the site's server admins, above the list">Server admins can use these pages once they turn on two-factor authentication.</p>
+						<form id="admin-add-form" class="form admin-add-form" novalidate>
+							<div class="form-group">
+								<div class="field-label">
+									<span id="admin-player-label" data-message="admin.admins.player" data-translation-context="Label of the field on the admin page listing the site's server admins that finds a player to make an admin by name or username">Player to add</span>
+									<div class="field-beside">
+										<div class="combobox-field">
+											<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
+											<input id="admin-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="admin-player-options" aria-labelledby="admin-player-label" aria-describedby="admin-player-hint" data-untracked data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
+											<ul id="admin-player-options" class="combobox-options" role="listbox" aria-labelledby="admin-player-label" hidden></ul>
+										</div>
+										<p id="admin-player-error" class="field-error field-message-slot"></p>
+									</div>
+								</div>
+								<p id="admin-player-hint" class="hint" data-message="admin.admins.playerHint" data-translation-context="Under the field on the admin page listing the site's server admins that finds a player to make an admin">Type the user's name, or @ and their username, then choose them from the list.</p>
+							</div>
+							<div class="form-buttons">
+								<button id="admin-add" type="submit" aria-describedby="admin-add-error" data-shortcut="Alt+N" data-message="admin.admins.add" data-translation-context="Button on the admin page listing the site's server admins that makes the player chosen in the field beside it a server admin"><!-- icon ph:user-plus -->Add Admin</button>
+							</div>
+							<p id="admin-add-error" class="form-error" role="alert" hidden></p>
+						</form>
+						<div class="admin-table-scroll">
+							<table class="admin-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="admin.column.player" data-translation-context="Heading of the column of players' names and usernames in the admin pages' lists of sessions, players and server admins">Player</th>
+										<th scope="col" data-message="admin.admins.added" data-translation-context="Heading of the column in the admin page's list of server admins for when each became one">Admin since</th>
+										<th scope="col" data-message="admin.column.notes" data-translation-context="Heading of the column in the admin pages' lists of sessions, players, server admins and universes that says more about each, such as whether a session is connected now, a player is a server admin or a universe is disabled">Notes</th>
+										<th scope="col"><span class="visually-hidden" data-message="admin.column.actions" data-translation-context="Heading, read only by screen readers, of the column of buttons in the admin pages' lists of server admins and universes, such as Remove or Disable">Actions</span></th>
+									</tr>
+								</thead>
+								<tbody id="admin-rows"></tbody>
+							</table>
+						</div>
+						<p id="admin-loading" class="admin-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
+						<p id="admin-list-error" class="form-error" role="alert" hidden></p>
+					</div>
+				</div>
+			</section>
+			<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
+				<form id="confirm-form" class="form">
+					<h2 id="confirm-title"></h2>
+					<p id="confirm-question"></p>
+					<p id="confirm-note" hidden></p>
+					<div class="dialog-buttons">
+						<button id="confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="confirm-submit" type="submit" class="danger"></button>
+					</div>
+				</form>
+			</dialog>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/adminAdmins.ts"></script>
+	</body>
+</html>

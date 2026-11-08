@@ -2,10 +2,12 @@
  * What saving the editor's changes passes each change: the universe, the transaction they share, and
  * the IDs of the things made earlier in the same save (see editorChanges.ts)
  */
-import { isNewRef, type EditableUniverse, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type StringRef, type UniverseRole } from '@multiverse-kiln/shared';
+import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type SaveConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
+import type { UniverseVersion } from '../db/universeVersions.js';
 import type { AreaChange } from '../world/areaChanges.js';
+import type { SaveDisablings } from './editorDisablings.js';
 import { errorMessages, type Refusal } from './errors.js';
 
 /**
@@ -25,11 +27,30 @@ export interface ChangeContext
 	readonly playerId: string;
 
 	/**
-	 * The universe as the changes before this one left it
+	 * The universe as the changes before this one left it, with the settings of the version the save changes
 	 */
-	universe: Omit<EditableUniverse, 'role'>;
+	universe: EditableUniverseDetails;
 
-	readonly role: UniverseRole;
+	/**
+	 * The version the save changes. A save to the draft reaches no player, so it tells no room anything
+	 */
+	readonly version: UniverseVersion;
+
+	/**
+	 * The player's role in the editor (ADMIN_ROLE included), as it was when the save took the universe's lock
+	 */
+	readonly role: EditorRole;
+
+	/**
+	 * The editors whose role the save changes, with their role once it is saved, or undefined for those
+	 * it removes
+	 */
+	readonly editorRoles: Map<string, UniverseRole | undefined>;
+
+	/**
+	 * The players the save gives a role in the universe, emailed once it commits
+	 */
+	readonly addedEditors: string[];
 
 	/**
 	 * The save's transaction, which holds the universe's lock
@@ -52,9 +73,27 @@ export interface ChangeContext
 	readonly published: AreaChange[];
 
 	/**
+	 * Called once the save commits, in order, to tell the rooms about changes other than the world's,
+	 * such as groups the save disbanded
+	 */
+	readonly onCommit: (() => void)[];
+
+	/**
+	 * The items and areas the save enables or disables and the group size it lowers, for what happens to
+	 * the players using them once every change is saved
+	 */
+	readonly disablings: SaveDisablings;
+
+	/**
 	 * Images of deleted tilesets, removed from storage once the save commits
 	 */
 	readonly deletedImages: string[];
+
+	/**
+	 * Set once the save applies the universe's draft, which reaches the rooms then as a save to the live
+	 * version does
+	 */
+	draftApplied: boolean;
 }
 
 /**
@@ -65,8 +104,9 @@ export class ChangeRefusal extends Error
 	/**
 	 * @param refusal The status and the reason
 	 * @param resizeConflict For a resize refused because it would discard something, what it would discard
+	 * @param conflicts For a save refused because other editors changed settings it changes, each such setting
 	 */
-	constructor(readonly refusal: Refusal, readonly resizeConflict?: ResizeConflict)
+	constructor(readonly refusal: Refusal, readonly resizeConflict?: ResizeConflict, readonly conflicts?: SaveConflict[])
 	{
 		super(refusal.message.id);
 	}

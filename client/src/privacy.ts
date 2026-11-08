@@ -1,26 +1,20 @@
-import type { SiteSettings } from '@multiverse-kiln/shared';
+import type { PublicSiteSettings } from '@multiverse-kiln/shared';
 
-import { currentLocale, startLocalization, t } from './localization';
+import { currentLocale, t } from './localization';
 import { AdminApi } from './network/adminApi';
 import { createClient } from './network/serverConnection';
-import { startAccountMenu } from './ui/accountMenu';
+import { startPage } from './pageStart';
 import { scrollToFragment, setPageTitle } from './ui/dom';
-import { startLanguagePicker } from './ui/languagePicker';
-import { startShortcuts } from './ui/shortcuts';
-import { startSiteSocials } from './ui/siteSocials';
 
 /**
- * Shows the privacy policy in the player's language
+ * Shows the privacy policy in the player's language. It works without the session room, so it doesn't
+ * wait for the connection
  */
 async function start(): Promise<void>
 {
-	await startLocalization();
+	await startPage();
 	setPageTitle(document.title);
-	void startAccountMenu();
 	formatDate();
-	startLanguagePicker();
-	void startSiteSocials();
-	startShortcuts();
 	scrollToFragment();
 	await showSiteSettings();
 }
@@ -31,11 +25,11 @@ async function start(): Promise<void>
  */
 async function showSiteSettings(): Promise<void>
 {
-	let settings: SiteSettings;
+	let settings: PublicSiteSettings;
 
 	try
 	{
-		settings = await new AdminApi(createClient()).getSiteSettings();
+		settings = await new AdminApi(createClient()).getPublicSiteSettings();
 	}
 	catch
 	{

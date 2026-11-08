@@ -2,13 +2,17 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, invitePath, playerProfilePath, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseStage } from '@multiverse-kiln/shared';
 
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
+import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createUniverse } from '../src/db/universeRepo.js';
 import { DEV_BOT_LOGIN_PATH } from '../src/http/devLogin.js';
 import { HEALTH_PATH } from '../src/http/health.js';
+import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { turnOnTwoFactor } from './twoFactorAccounts.js';
 
 const otherOrigin = 'https://evil.example';
 
@@ -79,7 +83,35 @@ describe('HTTP responses', () =>
 
 	it('sends nosniff on Express routes, Colyseus routes and 404s', async () =>
 	{
-		for (const route of [HEALTH_PATH, AUTH_SESSION_PATH, AUTH_PROVIDERS_PATH, PROFILE_PATH, playerProfilePath('nobody_here'), '/__healthcheck', '/nothing-here', invitePath('no-such-invite-token')])
+		const editorUniversePath = `${EDITOR_UNIVERSES_PATH}/${randomUUID()}`;
+		const routes = [
+			HEALTH_PATH,
+			AUTH_SESSION_PATH,
+			AUTH_PROVIDERS_PATH,
+			PROFILE_PATH,
+			playerProfilePath('nobody_here'),
+			PUBLIC_SITE_SETTINGS_PATH,
+			ADMIN_PATH,
+			SITE_SETTINGS_PATH,
+			ADMIN_SESSIONS_PATH,
+			ADMIN_PLAYERS_PATH,
+			ADMIN_ADMINS_PATH,
+			`${ADMIN_ADMINS_SEARCH_PATH}?query=ada`,
+			ADMIN_UNIVERSES_PATH,
+			`${UNIVERSES_PATH}/no-such-universe/text`,
+			EDITOR_UNIVERSES_PATH,
+			`${editorUniversePath}/editors`,
+			`${editorUniversePath}/editors/search?query=ada`,
+			`${editorUniversePath}/characters`,
+			`${editorUniversePath}/audit`,
+			`${editorUniversePath}/translations`,
+			`${editorUniversePath}/translations/all`,
+			'/__healthcheck',
+			'/nothing-here',
+			invitePath('no-such-invite-token')
+		];
+
+		for (const route of routes)
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 
@@ -186,8 +218,8 @@ describe('Universe list', () =>
 		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
 		assert.deepStrictEqual(body, {
 			universes: [
-				{ id: appleId, name: 'Apple', slug: 'apple', shortDescription: 'About Apple.', ruleset: 'pf1e' },
-				{ id: zebraId, name: 'Zebra', slug: 'zebra', shortDescription: 'About Zebra.', ruleset: 'pf1e' }
+				{ id: appleId, name: 'Apple', slug: 'apple', shortDescription: 'About Apple.', ruleset: 'pf1e', sourceLanguage: 'en', translationLanguages: [] },
+				{ id: zebraId, name: 'Zebra', slug: 'zebra', shortDescription: 'About Zebra.', ruleset: 'pf1e', sourceLanguage: 'en', translationLanguages: [] }
 			],
 			hasMore: false
 		});
@@ -223,6 +255,7 @@ describe('Universe list', () =>
 			name: 'Kilnhaven',
 			shortDescription: 'A small town.',
 			longDescription: 'A **small** town.',
+			sourceLanguage: 'de',
 			ruleset: 'pf1e',
 			stage: 'let_there_be_light'
 		});
@@ -236,8 +269,81 @@ describe('Universe list', () =>
 			slug: 'kilnhaven',
 			shortDescription: 'A small town.',
 			longDescription: 'A **small** town.',
-			ruleset: 'pf1e'
+			ruleset: 'pf1e',
+			sourceLanguage: 'de',
+			translationLanguages: [],
+			stage: 'let_there_be_light',
+			editable: false
 		});
+	});
+
+	it('says a universe is editable only to its creators, builders and translators, and to server admins with 2FA on', async () =>
+	{
+		const universeId = await addUniverseIn('Kilnhaven', 'let_there_be_light');
+		const creator = await logInBrowser((await addPlayer('Cora')).id);
+		const builder = await logInBrowser((await addPlayer('Bob')).id);
+		const tester = await logInBrowser((await addPlayer('Tess')).id);
+		const translator = await logInBrowser((await addPlayer('Tran')).id);
+		const stranger = await logInBrowser((await addPlayer('Sam')).id);
+		const admin = await logInBrowser((await addPlayer('Ada')).id);
+		const adminWithout2fa = await logInBrowser((await addPlayer('Abe')).id);
+
+		await setUniverseRole(universeId, creator.playerId, 'creator');
+		await setUniverseRole(universeId, builder.playerId, 'builder');
+		await setUniverseRole(universeId, tester.playerId, 'beta_tester');
+		await setUniverseRole(universeId, translator.playerId, 'translator');
+		await addServerAdmin(admin.playerId);
+		await turnOnTwoFactor(admin.playerId);
+		await addServerAdmin(adminWithout2fa.playerId);
+
+		/**
+		 * Whether a browser is told it may edit the universe
+		 *
+		 * @param browser The browser, or undefined for one that isn't logged in
+		 * @return The response's editable
+		 */
+		const editableFor = async (browser?: TestBrowser): Promise<boolean> =>
+		{
+			const response = await fetch(`${testServerUrl}${UNIVERSES_PATH}/${universeId}`, { headers: (browser ? { Cookie: browser.cookie } : {}) });
+
+			return(((await response.json()) as UniversePagePayload).editable);
+		};
+
+		assert.deepStrictEqual(await Promise.all([undefined, creator, builder, tester, translator, stranger, admin, adminWithout2fa].map((browser) => editableFor(browser))), [false, true, true, false, true, false, true, false]);
+	});
+
+	it('gives a universe at the end of time to anyone, and one not open to everyone only to players whose role lets them play it', async () =>
+	{
+		const retiredId = await addUniverseIn('Retired', 'end_of_time');
+		const testingId = await addUniverseIn('Testing', 'prologue');
+		const unfinishedId = await addUniverseIn('Unfinished', 'in_the_beginning');
+		const tester = await logInBrowser((await addPlayer('Tess')).id);
+		const builder = await logInBrowser((await addPlayer('Bob')).id);
+		const stranger = await logInBrowser((await addPlayer('Sam')).id);
+
+		await setUniverseRole(testingId, tester.playerId, 'beta_tester');
+		await setUniverseRole(unfinishedId, tester.playerId, 'beta_tester');
+		await setUniverseRole(unfinishedId, builder.playerId, 'builder');
+
+		/**
+		 * Fetches a universe's page as a browser
+		 *
+		 * @param universeId The universe's ID
+		 * @param browser The browser, or undefined for one that isn't logged in
+		 * @return The response's status
+		 */
+		const statusFor = async (universeId: string, browser?: TestBrowser): Promise<number> =>
+		{
+			const response = await fetch(`${testServerUrl}${UNIVERSES_PATH}/${universeId}`, { headers: (browser ? { Cookie: browser.cookie } : {}) });
+
+			await response.body?.cancel();
+
+			return(response.status);
+		};
+
+		assert.strictEqual(((await fetchUniverses(`/${retiredId}`)).body as UniverseDetails).stage, 'end_of_time');
+		assert.deepStrictEqual(await Promise.all([undefined, stranger, tester].map((browser) => statusFor(testingId, browser))), [404, 404, 200]);
+		assert.deepStrictEqual(await Promise.all([undefined, stranger, tester, builder].map((browser) => statusFor(unfinishedId, browser))), [404, 404, 404, 200]);
 	});
 
 	it('finds a listed universe by its slug as well as its ID', async () =>
@@ -251,6 +357,19 @@ describe('Universe list', () =>
 			assert.strictEqual(response.status, 200, path);
 			assert.strictEqual((body as UniverseDetails).id, universeId, path);
 		}
+	});
+
+	it('takes a key in the form of an ID as an ID, even when a universe\'s slug is the same', async () =>
+	{
+		const universeId = await addUniverseIn('Kilnhaven', 'let_there_be_light');
+
+		// The repository leaves checking names to the editor's routes, so it can save a slug they refuse
+		await addUniverseIn(universeId, 'let_there_be_light');
+
+		const { response, body } = await fetchUniverses(`/${universeId}`);
+
+		assert.strictEqual(response.status, 200);
+		assert.strictEqual((body as UniverseDetails).name, 'Kilnhaven');
 	});
 
 	it('answers 404 for a universe that is not listed, does not exist or has no such slug', async () =>
@@ -305,6 +424,63 @@ describe('CORS', () =>
 		});
 
 		assert.strictEqual(preflight.headers.get('access-control-allow-origin'), allowedTestOrigin);
+	});
+});
+
+describe('Changes from other websites', () =>
+{
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	/**
+	 * Sends a change to a route with an empty JSON body, from a browser that isn't logged in
+	 *
+	 * @param method The HTTP method
+	 * @param route The route's path
+	 * @param origin The Origin header to send
+	 * @return The response's status
+	 */
+	async function statusOfChange(method: string, route: string, origin: string): Promise<number>
+	{
+		const response = await fetch(`${testServerUrl}${route}`, {
+			method,
+			headers: {
+				'Origin': origin,
+				'Content-Type': 'application/json'
+			},
+			body: '{}'
+		});
+
+		await response.body?.cancel();
+
+		return(response.status);
+	}
+
+	it('refuses changes to the admin, editor and profile routes from other origins, before asking who is logged in', async () =>
+	{
+		const universeId = randomUUID();
+		const changes: [string, string][] = [
+			['PUT', PROFILE_PATH],
+			['PUT', PROFILE_LOCALE_PATH],
+			['PUT', SITE_SETTINGS_PATH],
+			['POST', ADMIN_ADMINS_PATH],
+			['DELETE', `${ADMIN_ADMINS_PATH}/ada`],
+			['PUT', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`],
+			['DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`],
+			['POST', EDITOR_UNIVERSES_PATH],
+			['POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/changes`],
+			['POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/changes/impact`]
+		];
+
+		for (const [method, route] of changes)
+		{
+			assert.strictEqual(await statusOfChange(method, route, otherOrigin), 403, `${method} ${route}`);
+
+			// From the client's own origin the same change gets as far as asking for a login
+			assert.strictEqual(await statusOfChange(method, route, allowedTestOrigin), 401, `${method} ${route}`);
+		}
 	});
 });
 

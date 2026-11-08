@@ -1,0 +1,748 @@
+import assert from 'assert';
+import { randomUUID } from 'crypto';
+import type { ColyseusTestServer } from '@colyseus/testing';
+import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
+
+import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload, type UniverseRole } from '@multiverse-kiln/shared';
+import type appConfig from '../src/app.config.js';
+import { findChatRead, listChatMessages } from '../src/db/chatRepo.js';
+import { pool } from '../src/db/client.js';
+import { deletePlayer } from '../src/db/playerRepo.js';
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
+import { deleteTwoFactor } from '../src/db/twoFactorRepo.js';
+import { listUniverseEdits } from '../src/db/universeEditRepo.js';
+import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { accountDeletions } from '../src/players/accountDeletions.js';
+import { connectedSessions } from '../src/players/connectedSessions.js';
+import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
+import { universeAccessChanges } from '../src/players/universeAccess.js';
+import type { EditorRoom } from '../src/rooms/EditorRoom.js';
+import { areaChanges } from '../src/world/areaChanges.js';
+import { editorUpdates } from '../src/world/editorUpdates.js';
+import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
+import { Inbox } from './inbox.js';
+import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
+import { usernameFor } from './players.js';
+import { getTestServer, testServerUrl } from './testServer.js';
+import { turnOnTwoFactor } from './twoFactorAccounts.js';
+import { waitUntil } from './waitUntil.js';
+
+/**
+ * A browser window with a universe's editor open
+ */
+interface EditorWindow
+{
+	room: ClientRoom<unknown, EditorState>;
+	inbox: Inbox<EditorServerMessageType>;
+	playerId: string;
+}
+
+/**
+ * Connects to a universe's editor room like a browser window holding its browser's session cookie
+ *
+ * @param cookie The Cookie header the window sends
+ * @param options The join options
+ * @return The client-side room
+ */
+function connect(cookie: string, options: unknown): Promise<ClientRoom<unknown, EditorState>>
+{
+	const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie } });
+
+	return(sdk.joinOrCreate<EditorState>(EDITOR_ROOM_NAME, options, EditorState));
+}
+
+/**
+ * Opens a window of a logged-in browser on a universe's editor
+ *
+ * @param editor The browser
+ * @param universeId The universe
+ * @return The window, with the chat it was sent on joining still in its inbox
+ */
+async function openEditor(editor: Editor, universeId: string): Promise<EditorWindow>
+{
+	const options: EditorJoinOptions = { universeId };
+	const room = await connect(editor.cookie, options);
+
+	return({
+		room,
+		inbox: new Inbox<EditorServerMessageType>(room, Object.values(EditorServerMessageType)),
+		playerId: editor.playerId
+	});
+}
+
+/**
+ * Waits for a window to be turned away
+ *
+ * @param window The window
+ * @return The close code it was turned away with
+ */
+function closeOf(window: EditorWindow): Promise<number>
+{
+	return(new Promise<number>((resolve) =>
+	{
+		window.room.onLeave(resolve);
+	}));
+}
+
+describe('EditorRoom', () =>
+{
+	let colyseus: ColyseusTestServer<typeof appConfig>;
+	let ada: Editor;
+	let universeId: string;
+
+	/**
+	 * The server-side room a window is in
+	 *
+	 * @param window The window
+	 * @return The room
+	 */
+	function roomOf(window: EditorWindow): EditorRoom
+	{
+		return(colyseus.getRoomById<EditorRoom>(window.room.roomId));
+	}
+
+	/**
+	 * Gives a new player a role in the universe and logs a browser in as them
+	 *
+	 * @param name The player's name
+	 * @param role Their role
+	 * @return The browser
+	 */
+	async function addEditor(name: string, role: 'creator' | 'builder' | 'beta_tester' | 'translator'): Promise<Editor>
+	{
+		const editor = await logIn(name);
+
+		await setUniverseRole(universeId, editor.playerId, role);
+
+		return(editor);
+	}
+
+	before(async () =>
+	{
+		colyseus = await getTestServer();
+	});
+
+	beforeEach(async () =>
+	{
+		await colyseus.cleanup();
+		ada = await logIn('Ada');
+		universeId = await createUniverse(ada);
+	});
+
+	describe('joining', () =>
+	{
+		it('turns away a browser that is not logged in, a player without a role, and a universe that does not exist', async () =>
+		{
+			const alan = await logIn('Alan');
+
+			await assert.rejects(connect('', { universeId }));
+			await assert.rejects(connect(alan.cookie, { universeId }));
+			await assert.rejects(connect(ada.cookie, { universeId: randomUUID() }));
+			await assert.rejects(connect(ada.cookie, {}));
+
+			// The chat keeps no record of how far a player turned away from an open room has read it
+			const window = await openEditor(ada, universeId);
+
+			await assert.rejects(connect(alan.cookie, { universeId }));
+			await roomOf(window).saveChat();
+			assert.strictEqual(await findChatRead({ kind: 'editors', universeId }, alan.playerId), undefined);
+		});
+
+		it('admits a server admin with 2FA on with the site admin role, but not one without 2FA', async () =>
+		{
+			const admin = await logIn('Grace');
+
+			await addServerAdmin(admin.playerId);
+			await assert.rejects(connect(admin.cookie, { universeId }));
+			await turnOnTwoFactor(admin.playerId);
+
+			const window = await openEditor(admin, universeId);
+
+			assert.strictEqual(roomOf(window).state.editors.get(admin.playerId)?.role, 'admin');
+		});
+
+		it('lists each player once with their name, username and role, and what each of their windows has open', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const first = await openEditor(ada, universeId);
+			const second = await openEditor(ada, universeId);
+			const other = await openEditor(grace, universeId);
+			const room = roomOf(first);
+			const place: EditorPlacePayload = {
+				version: 'draft',
+				tab: 'areas',
+				areaId: randomUUID(),
+				unsaved: true
+			};
+
+			assert.strictEqual(roomOf(other), room);
+			second.room.send(EditorMessageType.Place, place);
+			await waitUntil(() => [...(room.state.editors.get(ada.playerId)?.windows.values() ?? [])].some((window) => (window.tab === 'areas')));
+
+			const presence = room.state.editors.get(ada.playerId);
+
+			assert.deepStrictEqual([presence?.name, presence?.username, presence?.role], ['Ada', usernameFor('Ada'), 'creator']);
+			assert.deepStrictEqual([...(presence?.windows.values() ?? [])].map((window) => [window.version, window.tab, window.areaId, window.unsaved]).sort(), [['draft', 'areas', place.areaId, true], ['live', 'universe', '', false]]);
+			assert.strictEqual(room.state.editors.get(grace.playerId)?.role, 'builder');
+
+			await second.room.leave();
+			await waitUntil(() => (room.state.editors.get(ada.playerId)?.windows.size === 1));
+			await first.room.leave();
+			await waitUntil(() => !room.state.editors.has(ada.playerId));
+			assert.ok(room.state.editors.has(grace.playerId));
+		});
+
+		it('shows other windows the area a window has open, as its claim, until it closes the area or leaves', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const claiming = await openEditor(grace, universeId);
+			const watching = await openEditor(ada, universeId);
+			const areaId = randomUUID();
+
+			/**
+			 * The areas Grace's windows have open, as the watching window's synced state has them
+			 *
+			 * @return The areas' IDs, empty for a window with none open
+			 */
+			const claimed = (): string[] => [...(watching.room.state.editors.get(grace.playerId)?.windows.values() ?? [])].map((window) => window.areaId);
+
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId, unsaved: false });
+			await waitUntil(() => claimed().includes(areaId));
+
+			// A window on another tab keeps its area open
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId, unsaved: false });
+			await waitUntil(() => [...(watching.room.state.editors.get(grace.playerId)?.windows.values() ?? [])].some((window) => (window.tab === 'items')));
+			assert.deepStrictEqual(claimed(), [areaId]);
+
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId: null, unsaved: false });
+			await waitUntil(() => claimed().every((each) => (each === '')));
+
+			claiming.room.send(EditorMessageType.Place, { version: 'live', tab: 'areas', areaId, unsaved: false });
+			await waitUntil(() => claimed().includes(areaId));
+			await claiming.room.leave();
+			await waitUntil(() => !watching.room.state.editors.has(grace.playerId));
+		});
+
+		it('ignores a place that names no tab or version it has', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+			const room = roomOf(window);
+
+			window.room.send(EditorMessageType.Place, { version: 'old', tab: 'areas', areaId: null, unsaved: false });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'secrets', areaId: null, unsaved: false });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId: 'not an ID', unsaved: false });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'items', areaId: null, unsaved: 'yes' });
+			window.room.send(EditorMessageType.Place, { version: 'live', tab: 'lobby', areaId: null, unsaved: false });
+			await waitUntil(() => [...(room.state.editors.get(ada.playerId)?.windows.values() ?? [])].some((each) => (each.tab === 'lobby')));
+		});
+	});
+
+	describe('chat', () =>
+	{
+		it('sends a message to every window as the player, and the chat to windows joining later', async () =>
+		{
+			const grace = await addEditor('Grace', 'translator');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+
+			assert.deepStrictEqual((await adaWindow.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).messages, []);
+			adaWindow.room.send(EditorMessageType.Chat, { text: '  The dwarves need a start area  ' });
+
+			const received = await graceWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+
+			assert.deepStrictEqual([received.playerId, received.name, received.username, received.text], [ada.playerId, 'Ada', usernameFor('Ada'), 'The dwarves need a start area']);
+			assert.strictEqual((await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat)).text, received.text);
+
+			const later = await openEditor(ada, universeId);
+
+			assert.deepStrictEqual((await later.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).messages, [received]);
+		});
+
+		it('drops messages that are empty, too long or hold disallowed characters, and tells a player sending too fast', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+
+			window.room.send(EditorMessageType.Chat, { text: '   ' });
+			window.room.send(EditorMessageType.Chat, { text: 'x'.repeat(MAX_CHAT_MESSAGE_LENGTH + 1) });
+			window.room.send(EditorMessageType.Chat, { text: 'right‮to left' });
+
+			for (let sent = 0; sent < 6; sent++)
+			{
+				window.room.send(EditorMessageType.Chat, { text: `Line ${sent}` });
+			}
+
+			const notice = await window.inbox.take<NoticePayload>(EditorServerMessageType.Notice);
+
+			assert.strictEqual(notice.reason, NoticeReason.ChatTooFast);
+			assert.strictEqual((await window.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat)).text, 'Line 0');
+			assert.strictEqual(window.inbox.pending(EditorServerMessageType.Chat), 4);
+		});
+
+		it('keeps a player sending too fast held back when they close their last window and open another, and when the room closes and opens again', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const graceWindow = await openEditor(grace, universeId);
+			const first = await openEditor(ada, universeId);
+			const room = roomOf(first);
+
+			for (let sent = 0; sent < 5; sent++)
+			{
+				first.room.send(EditorMessageType.Chat, { text: `Line ${sent}` });
+				await first.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			}
+
+			await first.room.leave();
+			await waitUntil(() => !room.state.editors.has(ada.playerId));
+
+			const second = await openEditor(ada, universeId);
+
+			second.room.send(EditorMessageType.Chat, { text: 'One more' });
+			assert.strictEqual((await second.inbox.take<NoticePayload>(EditorServerMessageType.Notice)).reason, NoticeReason.ChatTooFast);
+
+			await second.room.leave();
+			await graceWindow.room.leave();
+			await waitUntil(() => !colyseus.getRoomById(room.roomId));
+
+			const reopened = await openEditor(ada, universeId);
+
+			assert.notStrictEqual(reopened.room.roomId, room.roomId);
+			reopened.room.send(EditorMessageType.Chat, { text: 'And another' });
+			assert.strictEqual((await reopened.inbox.take<NoticePayload>(EditorServerMessageType.Notice)).reason, NoticeReason.ChatTooFast);
+		});
+
+		it('keeps the chat in the database, written as the room closes, for the room that opens next', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+
+			window.room.send(EditorMessageType.Chat, { text: 'Saved for later' });
+			await window.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			assert.deepStrictEqual(await listChatMessages({ kind: 'editors', universeId }), []);
+			await window.room.leave();
+			await waitUntil(async () => ((await listChatMessages({ kind: 'editors', universeId })).length === 1));
+
+			const reopened = await openEditor(ada, universeId);
+			const [kept] = (await reopened.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).messages;
+
+			assert.deepStrictEqual([kept.playerId, kept.name, kept.username, kept.text], [ada.playerId, 'Ada', usernameFor('Ada'), 'Saved for later']);
+		});
+
+		it('takes a deleted account\'s name off its messages, telling the windows, and still writes them with the others\'', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+
+			graceWindow.room.send(EditorMessageType.Chat, { text: 'Leaving soon' });
+			await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			adaWindow.room.send(EditorMessageType.Chat, { text: 'Goodbye' });
+			await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			await graceWindow.room.leave();
+			await deletePlayer(grace.playerId);
+			accountDeletions.publish(grace.playerId);
+
+			assert.deepStrictEqual(await adaWindow.inbox.take<ChatAuthorDeletedPayload>(EditorServerMessageType.ChatAuthorDeleted), { playerId: grace.playerId });
+
+			const later = await openEditor(ada, universeId);
+			const expected = [[null, '', null, 'Leaving soon'], [ada.playerId, 'Ada', usernameFor('Ada'), 'Goodbye']];
+
+			assert.deepStrictEqual((await later.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).messages.map(({ playerId, name, username, text }) => [playerId, name, username, text]), expected);
+			await roomOf(adaWindow).saveChat();
+			assert.deepStrictEqual((await listChatMessages({ kind: 'editors', universeId })).map(({ playerId, name, username, text }) => [playerId, name, username, text]), expected);
+		});
+
+		it('writes new messages every few seconds while the room is open', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+
+			window.room.send(EditorMessageType.Chat, { text: 'Checkpoint' });
+			await window.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			await roomOf(window).saveChat();
+			assert.deepStrictEqual((await listChatMessages({ kind: 'editors', universeId })).map((message) => message.text), ['Checkpoint']);
+		});
+
+		it('remembers how far each player has read, telling their other windows and the room that opens next', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const joinedAt = Date.now();
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const chat = { kind: 'editors', universeId } as const;
+
+			// A player new to the chat starts with what it held as they joined read
+			assert.ok(((await adaWindow.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).readAt ?? 0) >= joinedAt);
+			await graceWindow.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory);
+			graceWindow.room.send(EditorMessageType.Chat, { text: 'Read me' });
+
+			const message = await adaWindow.inbox.take<KeptChatMessage>(EditorServerMessageType.Chat);
+			const adaSecond = await openEditor(ada, universeId);
+
+			assert.ok(((await adaSecond.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).readAt ?? Infinity) < message.sentAt);
+
+			adaWindow.room.send(EditorMessageType.ChatRead, { readAt: message.sentAt });
+			assert.strictEqual((await adaSecond.inbox.take<ChatReadPayload>(EditorServerMessageType.ChatRead)).readAt, message.sentAt);
+			assert.strictEqual(adaWindow.inbox.pending(EditorServerMessageType.ChatRead), 0);
+			assert.strictEqual(graceWindow.inbox.pending(EditorServerMessageType.ChatRead), 0);
+
+			// Reading back to an older message, or one the server can't have sent yet, never moves it back
+			adaWindow.room.send(EditorMessageType.ChatRead, { readAt: 0 });
+			adaWindow.room.send(EditorMessageType.ChatRead, { readAt: 'soon' });
+			await roomOf(adaWindow).saveChat();
+			assert.deepStrictEqual(await findChatRead(chat, ada.playerId), new Date(message.sentAt));
+
+			await adaWindow.room.leave();
+			await adaSecond.room.leave();
+			await graceWindow.room.leave();
+
+			const reopened = await openEditor(ada, universeId);
+
+			assert.strictEqual((await reopened.inbox.take<KeptChatHistoryPayload>(EditorServerMessageType.ChatHistory)).readAt, message.sentAt);
+		});
+	});
+
+	describe('save notices', () =>
+	{
+		it('tells every other window who saved what, but not the window that saved', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const saving = await openEditor(ada, universeId);
+			const other = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const saved = await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3 } }], saving.room.sessionId);
+
+			assert.strictEqual(saved.status, 200);
+
+			const notice = await graceWindow.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
+
+			assert.deepStrictEqual([notice.playerId, notice.name, notice.username, notice.version], [ada.playerId, 'Ada', usernameFor('Ada'), 'live']);
+			assert.deepStrictEqual(notice.details, [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1, id: null }]);
+			assert.deepStrictEqual((await other.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details, notice.details);
+			await assert.rejects(saving.inbox.take(EditorServerMessageType.Saved, 200));
+		});
+
+		it('tells a window with the other version open everything its role shows, with the version saved, since the window decides what it follows', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+			const room = roomOf(window);
+			const place: EditorPlacePayload = {
+				version: 'draft',
+				tab: 'universe',
+				areaId: null,
+				unsaved: false
+			};
+
+			window.room.send(EditorMessageType.Place, place);
+			await waitUntil(() => [...(room.state.editors.get(ada.playerId)?.windows.values() ?? [])].some((each) => (each.version === 'draft')));
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3 } }])).status, 200);
+
+			const notice = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
+
+			assert.deepStrictEqual([notice.version, notice.details], ['live', [{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1, id: null }]]);
+			assert.strictEqual(window.inbox.pending(EditorServerMessageType.Saved), 0);
+		});
+
+		it('tells each window only of what its player\'s role shows', async () =>
+		{
+			const grace = await addEditor('Grace', 'beta_tester');
+			const alan = await addEditor('Alan', 'translator');
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+			const elf = races.find((race) => (race.key === 'elf'))!;
+
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout', enabled: !dwarf.enabled } },
+				{ kind: 'saveRace', id: elf.id, settings: { ...elf, enabled: !elf.enabled } },
+				{ kind: 'universe', update: { groupSize: 3 } }
+			])).status, 200);
+
+			const settings = { subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 3 }], count: 1, id: null };
+			const alanNotice = await alanWindow.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
+
+			assert.deepStrictEqual((await graceWindow.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details, [settings]);
+			assert.deepStrictEqual(alanNotice.details.map((detail) => [detail.subject, detail.id, detail.fields.map((change) => change.field)]), [
+				['race', dwarf.id, ['name']],
+				['settings', null, ['groupSize']]
+			]);
+		});
+
+		it('tells a window by the role its player has once a save changes it', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const window = await openEditor(grace, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveEditor', playerId: grace.playerId, settings: { role: 'beta_tester', languages: [] } }
+			])).status, 200);
+			await window.inbox.take(EditorServerMessageType.AccessChanged);
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } }
+			])).status, 200);
+			assert.deepStrictEqual((await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details, []);
+		});
+
+		it('tells no window of a save that changed nothing', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3 } }])).status, 200);
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { groupSize: 3 } }])).status, 200);
+			await assert.rejects(window.inbox.take(EditorServerMessageType.Saved, 200));
+		});
+
+		it('names each thing changed by its ID, and nothing added, so other windows can find it', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+			const areaId = await createArea(ada, universeId);
+
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } },
+				{ kind: 'editCells', areaId, changes: [[0, 0, VOID_CELL]] },
+				{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave' } }
+			])).status, 200);
+
+			const notice = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);
+
+			assert.deepStrictEqual(notice.details.map((detail) => [detail.subject, detail.action, detail.id]), [
+				['race', 'changed', dwarf.id],
+				['cells', 'changed', areaId],
+				['area', 'added', null]
+			]);
+		});
+
+		it('names the chunks each area\'s painting touched, without keeping them for the Audit tab', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+			const areaId = await createArea(ada, universeId);
+
+			await window.inbox.take(EditorServerMessageType.Saved);
+			assert.strictEqual((await saveChanges(ada, universeId, [
+				{ kind: 'editCells', areaId, changes: [[0, 0, VOID_CELL], [1, 0, VOID_CELL], [-1, -1, VOID_CELL]] }
+			])).status, 200);
+
+			const [painted] = (await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved)).details;
+
+			assert.deepStrictEqual([painted.subject, painted.count, painted.chunks], ['cells', 3, [{ chunkColumn: 0, chunkRow: 0 }, { chunkColumn: -1, chunkRow: -1 }]]);
+
+			const [recorded] = (await listUniverseEdits(universeId, { offset: 0, limit: 1 })).edits;
+
+			assert.ok((recorded.changeDetails ?? []).every((detail) => !('chunks' in detail)));
+		});
+	});
+
+	describe('changes to who may edit', () =>
+	{
+		it('turns away the windows of a player whose role a save takes away, and tells a player whose role it changes', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const alan = await addEditor('Alan', 'builder');
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const adaWindow = await openEditor(ada, universeId);
+			const room = roomOf(adaWindow);
+			const left = closeOf(graceWindow);
+			const saved = await saveChanges(ada, universeId, [
+				{ kind: 'removeEditor', playerId: grace.playerId },
+				{ kind: 'saveEditor', playerId: alan.playerId, settings: { role: 'beta_tester', languages: [] } }
+			]);
+
+			assert.strictEqual(saved.status, 200);
+			assert.strictEqual(await left, ServerCloseCode.AccessLost);
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'beta_tester');
+			await waitUntil(() => !room.state.editors.has(grace.playerId));
+			assert.strictEqual(adaWindow.inbox.pending(EditorServerMessageType.AccessChanged), 0);
+		});
+
+		it('keeps a server admin whose role is taken away, with the site admin role', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+
+			await addServerAdmin(grace.playerId);
+			await turnOnTwoFactor(grace.playerId);
+
+			const window = await openEditor(grace, universeId);
+
+			editorUpdates.publish({
+				kind: 'roles',
+				universeId,
+				roles: new Map([[grace.playerId, undefined]])
+			});
+			await window.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual(roomOf(window).state.editors.get(grace.playerId)?.role, 'admin');
+		});
+
+		it('turns away a player who is no longer a server admin when they have no role, and gives one with a role theirs', async () =>
+		{
+			const grace = await logIn('Grace');
+			const alan = await addEditor('Alan', 'builder');
+
+			for (const admin of [grace, alan, ada])
+			{
+				await addServerAdmin(admin.playerId);
+				await turnOnTwoFactor(admin.playerId);
+			}
+
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const adaWindow = await openEditor(ada, universeId);
+			const room = roomOf(adaWindow);
+			const left = closeOf(graceWindow);
+
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'admin');
+			serverAdminChanges.publishLost(grace.playerId);
+			serverAdminChanges.publishLost(alan.playerId);
+			assert.strictEqual(await left, ServerCloseCode.AccessLost);
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'builder');
+
+			// A creator keeps the role they have without being a server admin, so nothing changes for them
+			serverAdminChanges.publishLost(ada.playerId);
+			await assert.rejects(adaWindow.inbox.take(EditorServerMessageType.AccessChanged, 200));
+			assert.strictEqual(room.state.editors.get(ada.playerId)?.role, 'creator');
+
+			// They edit with their own role from then on, so losing it turns them away
+			const alanLeft = closeOf(alanWindow);
+
+			editorUpdates.publish({
+				kind: 'roles',
+				universeId,
+				roles: new Map([[alan.playerId, undefined]])
+			});
+			assert.strictEqual(await alanLeft, ServerCloseCode.AccessLost);
+		});
+
+		it('turns away a window whose player stops being a server admin while it joins, when they have no role', async () =>
+		{
+			const grace = await logIn('Grace');
+			const adaWindow = await openEditor(ada, universeId);
+			const room = roomOf(adaWindow);
+
+			await addServerAdmin(grace.playerId);
+			await turnOnTwoFactor(grace.playerId);
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				await deleteTwoFactor(grace.playerId);
+				serverAdminChanges.publishLost(grace.playerId);
+			});
+
+			await assert.rejects(openEditor(grace, universeId), refusedWith(ServerCloseCode.AccessLost));
+			await waitUntil(() => (room.clients.length === 1));
+			assert.deepStrictEqual([...room.state.editors.keys()], [ada.playerId]);
+		});
+
+		it('gives a window the role its player is given while it joins, and has it load the universe again', async () =>
+		{
+			const alan = await addEditor('Alan', 'builder');
+			const room = roomOf(await openEditor(ada, universeId));
+
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				await setUniverseRole(universeId, alan.playerId, 'translator');
+				editorUpdates.publish({
+					kind: 'roles',
+					universeId,
+					roles: new Map([[alan.playerId, 'translator']])
+				});
+			});
+
+			const alanWindow = await openEditor(alan, universeId);
+
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual(room.state.editors.get(alan.playerId)?.role, 'translator');
+		});
+
+		it('turns away a window whose session ends while it joins', async () =>
+		{
+			const alan = await addEditor('Alan', 'builder');
+			const room = roomOf(await openEditor(ada, universeId));
+
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				await pool.query('DELETE FROM sessions WHERE player_id = $1', [alan.playerId]);
+				connectedSessions.end([alan.sessionId]);
+			});
+
+			await assert.rejects(openEditor(alan, universeId), refusedWith(ServerCloseCode.LoggedOut));
+			assert.deepStrictEqual([...room.state.editors.keys()], [ada.playerId]);
+			assert.ok(!connectedSessions.ids().includes(alan.sessionId));
+		});
+
+		it('tells only the windows of players a stage change changes what they may do for', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const alan = await addEditor('Alan', 'translator');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const alanWindow = await openEditor(alan, universeId);
+			const roles = new Map<string, UniverseRole>([
+				[ada.playerId, 'creator'],
+				[grace.playerId, 'builder'],
+				[alan.playerId, 'translator']
+			]);
+
+			// Leaving in the beginning lets translators look at the universe's page, and changes nothing for builders
+			universeAccessChanges.publishStage({
+				universeId,
+				stage: 'prologue',
+				previousStage: 'in_the_beginning',
+				roles
+			});
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+
+			// The end of time locks the universe to everyone but its creators
+			universeAccessChanges.publishStage({
+				universeId,
+				stage: 'end_of_time',
+				previousStage: 'prologue',
+				roles
+			});
+			await graceWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			await alanWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			await assert.rejects(adaWindow.inbox.take(EditorServerMessageType.AccessChanged, 200));
+			assert.strictEqual(graceWindow.inbox.pending(EditorServerMessageType.AccessChanged), 0);
+		});
+
+		it('tells every window when the universe is disabled or enabled, and ignores other universes', async () =>
+		{
+			const window = await openEditor(ada, universeId);
+
+			editorUpdates.publish({
+				kind: 'access',
+				universeId
+			});
+			await window.inbox.take(EditorServerMessageType.AccessChanged);
+			editorUpdates.publish({
+				kind: 'access',
+				universeId: randomUUID()
+			});
+			await assert.rejects(window.inbox.take(EditorServerMessageType.AccessChanged, 200));
+		});
+
+		it('turns away every window when the universe is deleted, and a browser\'s windows when its session ends', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const loggedOut = closeOf(adaWindow);
+
+			connectedSessions.end([ada.sessionId]);
+			assert.strictEqual(await loggedOut, ServerCloseCode.LoggedOut);
+
+			const deleted = closeOf(graceWindow);
+
+			areaChanges.publish({
+				kind: 'universeDeleted',
+				universeId
+			});
+			assert.strictEqual(await deleted, ServerCloseCode.UniverseDeleted);
+		});
+	});
+});

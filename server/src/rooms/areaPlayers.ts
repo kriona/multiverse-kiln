@@ -284,14 +284,22 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Loads the chunks a new player needs to be placed in an area, around a cell. Call it before add() or join()
+	 * Loads the chunks a new player needs to be placed in an area, around a cell. Call it before add() or
+	 * join(), with what it returns
 	 *
-	 * @param area The area
+	 * @param area The area, as the cache holds it
 	 * @param near The cell, the area's center by default
+	 * @return The area, or undefined when the cache was holding another copy of it or reloaded or forgot
+	 * it while the chunks loaded, as after an editor changed or disabled it: the caller looks for where
+	 * the player starts again
 	 */
-	async prepareStart(area: ActiveArea, near: Cell = { column: 0, row: 0 }): Promise<void>
+	async prepareStart(area: ActiveArea, near: Cell = { column: 0, row: 0 }): Promise<ActiveArea | undefined>
 	{
-		await this.areas.loadChunks(area.loaded.area.id, chunksNear([near], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+		const areaId = area.loaded.area.id;
+
+		await this.areas.loadChunks(areaId, chunksNear([near], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+
+		return(((this.areas.get(areaId) === area) ? area : undefined));
 	}
 
 	/**
@@ -300,7 +308,7 @@ export class AreaPlayers
 	 *
 	 * @param playerId The player's ID
 	 * @param appearance How they show
-	 * @param area Where they start, with prepareStart() done
+	 * @param area Where they start, as prepareStart() returned it
 	 * @param near The cell to start nearest
 	 */
 	add(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell): void
@@ -331,22 +339,24 @@ export class AreaPlayers
 
 	/**
 	 * Adds a joining client controlling a player. A player new to the room is first placed on the free
-	 * cell nearest the start area's center; a player already here gets another window. Either way the
-	 * client is told which player it controls and which area it is in
+	 * cell nearest a cell of the start area; a player already here gets another window. Either way the
+	 * client is told which player it controls and which area it is in. Without a start area, as in a
+	 * lobby with no map, a new player is in no area until placeAll()
 	 *
 	 * @param client The joining client
 	 * @param playerId The player the client controls
 	 * @param appearance How a player new to the room shows
-	 * @param startArea Where a player new to the room starts, with prepareStart() done
+	 * @param startArea Where a player new to the room starts, as prepareStart() returned it, or undefined for nowhere
+	 * @param near The cell of the start area to start nearest, its center by default
 	 * @return Whether the player is new to the room
 	 */
-	join(client: Client, playerId: string, appearance: Appearance, startArea: ActiveArea): boolean
+	join(client: Client, playerId: string, appearance: Appearance, startArea: ActiveArea | undefined, near: Cell = { column: 0, row: 0 }): boolean
 	{
 		const isNewPlayer = !this.players.has(playerId);
 
-		if (isNewPlayer)
+		if (isNewPlayer && startArea)
 		{
-			this.add(playerId, appearance, startArea, { column: 0, row: 0 });
+			this.add(playerId, appearance, startArea, near);
 		}
 
 		this.sessions.add(client.sessionId, playerId);
@@ -429,6 +439,50 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Takes every player off the map, keeping the clients that control them, as when a lobby loses its
+	 * map. Players stay in no area until placeAll()
+	 */
+	clearMap(): void
+	{
+		this.stopAll();
+		this.areaIds.clear();
+		this.refreshViews();
+		this.players.clear();
+		this.steps.clear();
+		this.presses.clear();
+		this.travelling.clear();
+		this.sentChunks.clear();
+	}
+
+	/**
+	 * Puts every player that clients control on the free cell nearest a cell of an area, wherever they
+	 * were, as when a lobby gets a map or moves to another, and sends their clients the area
+	 *
+	 * @param area The area, as prepareStart() returned it for the cell
+	 * @param near The cell to start nearest
+	 * @param appearanceOf How each player shows
+	 */
+	placeAll(area: ActiveArea, near: Cell, appearanceOf: (playerId: string) => Appearance): void
+	{
+		const playerIds = this.sessions.getPlayerIds();
+
+		this.clearMap();
+
+		for (const playerId of playerIds)
+		{
+			this.add(playerId, appearanceOf(playerId), area, near);
+		}
+
+		for (const playerId of playerIds)
+		{
+			for (const client of this.getClients(playerId))
+			{
+				this.attach(client, playerId);
+			}
+		}
+	}
+
+	/**
 	 * Where a player is
 	 *
 	 * @param playerId The player's ID
@@ -481,6 +535,17 @@ export class AreaPlayers
 		if (area)
 		{
 			this.sendArea(playerId, area, [client]);
+		}
+	}
+
+	/**
+	 * Stops every player at the end of their current step, as when the room stops taking moves
+	 */
+	stopAll(): void
+	{
+		for (const playerId of this.players.keys())
+		{
+			this.stop(playerId);
 		}
 	}
 
@@ -742,7 +807,7 @@ export class AreaPlayers
 				await this.applyAreaChange(area.loaded.area.id, true);
 			}
 		}
-		else if (change.kind !== 'universeDeleted')
+		else if ((change.kind === 'area') || (change.kind === 'deleted'))
 		{
 			await this.applyAreaChange(change.areaId, false);
 		}
@@ -899,6 +964,29 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Sends everyone in an area to a cell of another, for an area that has been disabled. They arrive on
+	 * the free cell nearest it, even when that area is disabled too, so nobody is left behind
+	 *
+	 * @param areaId The area they leave
+	 * @param target Where they go
+	 */
+	evacuate(areaId: string, target: { areaId: string; column: number; row: number }): void
+	{
+		for (const playerId of this.playersIn(areaId).filter((each) => !this.travelling.has(each)))
+		{
+			this.travel(playerId, {
+				column: 0,
+				row: 0,
+				targetAreaId: target.areaId,
+				targetColumn: target.column,
+				targetRow: target.row,
+				mode: 'automatic',
+				requiresWholeGroup: false
+			}, true);
+		}
+	}
+
+	/**
 	 * Sends players to the center of the fallback area, for when their area has been deleted
 	 *
 	 * @param playerIds The players
@@ -967,8 +1055,9 @@ export class AreaPlayers
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link
+	 * @param intoDisabled Whether they may arrive in a disabled area, as when they are sent out of one
 	 */
-	private travel(playerId: string, link: AreaLink): void
+	private travel(playerId: string, link: AreaLink, intoDisabled = false): void
 	{
 		const targetCell = { column: link.targetColumn, row: link.targetRow };
 
@@ -986,7 +1075,7 @@ export class AreaPlayers
 					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkMapOf(target)));
 				}
 
-				this.arrive(playerId, link, this.areas.get(link.targetAreaId));
+				this.arrive(playerId, link, this.areas.get(link.targetAreaId), intoDisabled);
 			})
 			.catch((error: unknown) =>
 			{
@@ -1001,8 +1090,9 @@ export class AreaPlayers
 	 * @param playerId The player's ID
 	 * @param link The link they took
 	 * @param target The link's area, or undefined when it doesn't exist
+	 * @param intoDisabled Whether they may arrive in it while it is disabled
 	 */
-	private arrive(playerId: string, link: AreaLink, target: ActiveArea | undefined): void
+	private arrive(playerId: string, link: AreaLink, target: ActiveArea | undefined, intoDisabled: boolean): void
 	{
 		// The player may have left the room while the area loaded
 		if (!this.travelling.delete(playerId))
@@ -1012,7 +1102,7 @@ export class AreaPlayers
 
 		const player = this.players.get(playerId);
 
-		if (!player || !target || !target.loaded.area.enabled)
+		if (!player || !target || (!target.loaded.area.enabled && !intoDisabled))
 		{
 			return;
 		}

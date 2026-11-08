@@ -1,0 +1,1 @@
+CREATE INDEX "universe_edits_saved_at_index" ON "universe_edits" USING btree ("saved_at");

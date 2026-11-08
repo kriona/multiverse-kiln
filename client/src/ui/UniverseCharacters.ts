@@ -6,7 +6,7 @@ import { describeEditorError } from '../network/editorApi';
 import { characterMessages } from './characterMessages';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { getElement, showMessage } from './dom';
-import { className, raceName } from './raceAndClassNames';
+import { characterDescription } from './raceAndClassNames';
 
 /**
  * The list of the player's characters on a universe's page: shown while the browser is logged in, and
@@ -89,10 +89,7 @@ export class UniverseCharacters
 
 			name.textContent = character.name;
 			description.className = 'universe-character-description';
-			description.textContent = t(characterMessages.raceAndClass, {
-				race: raceName(character.race, characters.ruleset),
-				class: className(character.characterClass, characters.ruleset)
-			});
+			description.textContent = characterDescription(character, characters.ruleset);
 			button.type = 'button';
 			button.className = 'universe-character-choice';
 			button.append(name, ' ', description);
@@ -106,6 +103,16 @@ export class UniverseCharacters
 					deleteAt: Date.parse(character.deleteAt)
 				});
 				button.append(' ', leaving);
+			}
+			else if (character.barredBy !== null)
+			{
+				const barred = document.createElement('span');
+
+				barred.className = 'universe-character-leaving';
+				barred.textContent = t(characterMessages.barred, {
+					bar: character.barredBy
+				});
+				button.append(' ', barred);
 			}
 			button.addEventListener('click', () =>
 			{

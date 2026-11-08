@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 import { pool } from '../../src/db/client.js';
-import { AccountTakenError, createPlayer, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
+import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, replaceProfileLocale, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
 
 /**
  * A local account with an email address and password
@@ -110,6 +110,33 @@ describe('playerRepo', () =>
 			assert.strictEqual(await findLocalLogin('grace@example.com'), undefined);
 			assert.strictEqual(await findLocalLogin('nobody@example.com'), undefined);
 		});
+
+		it('finds where to email an account that has an address, its name and its language', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'Ada@example.com'));
+			const grace = await createPlayer({
+				username: 'Grace',
+				displayName: 'Grace',
+				email: null,
+				passwordHash: null
+			});
+
+			assert.deepStrictEqual(await findEmailRecipient(ada.id), {
+				email: 'Ada@example.com',
+				displayName: 'Ada',
+				locale: null
+			});
+
+			await pool.query('UPDATE players SET locale = $1 WHERE id = $2', ['fr', ada.id]);
+
+			assert.deepStrictEqual(await findEmailRecipient(ada.id), {
+				email: 'Ada@example.com',
+				displayName: 'Ada',
+				locale: 'fr'
+			});
+			assert.strictEqual(await findEmailRecipient(grace.id), undefined);
+			assert.strictEqual(await findEmailRecipient('00000000-0000-4000-8000-000000000001'), undefined);
+		});
 	});
 
 	describe('changing an account', () =>
@@ -178,7 +205,8 @@ describe('playerRepo', () =>
 				...changes,
 				email: 'ada@example.com',
 				hasPassword: true,
-				createdAt: own.createdAt
+				createdAt: own.createdAt,
+				lastLoginAt: null
 			});
 			assert.deepStrictEqual(await findProfileByUsername('ADA_L'), {
 				id: ada.id,
@@ -210,6 +238,19 @@ describe('playerRepo', () =>
 
 			await assert.rejects(saveProfile(ada.id, { ...changes, pronouns: 'x'.repeat(41) }));
 			await assert.rejects(saveProfile(ada.id, { ...changes, socials: { ...changes.socials, tiktok: 'x'.repeat(51) } }));
+		});
+
+		it('changes the profile\'s language only when it names one', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+			const grace = await createPlayer(localAccount('Grace', 'grace@example.com'));
+
+			await saveProfile(ada.id, changes);
+
+			assert.strictEqual(await replaceProfileLocale(ada.id, 'de'), true);
+			assert.strictEqual((await findOwnProfile(ada.id))?.locale, 'de');
+			assert.strictEqual(await replaceProfileLocale(grace.id, 'de'), false);
+			assert.strictEqual((await findOwnProfile(grace.id))?.locale, null);
 		});
 	});
 });

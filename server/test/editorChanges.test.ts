@@ -29,6 +29,7 @@ const missingRace: EditorChange = {
 	settings: {
 		name: 'Nobody',
 		enabled: true,
+		keepPlaying: true,
 		startingMoney: emptyMoney(),
 		startingItems: [],
 		startingAreaId: null,
@@ -95,7 +96,7 @@ describe('Saving editor changes', () =>
 		assert.deepStrictEqual(links.links.map((link) => link.targetAreaId), [caveId]);
 	});
 
-	it('saves nothing when a change is refused, and says which one', async () =>
+	it('nothing saves when a change is refused, and says which one', async () =>
 	{
 		const universeId = await createUniverse(ada);
 		const response = await saveChanges(ada, universeId, [
@@ -167,8 +168,12 @@ describe('Saving editor changes', () =>
 		assert.strictEqual(refused.body.changeIndex, 1);
 		assert.deepStrictEqual(await customTileNames(ada, universeId), []);
 
-		await saveAll(builder, universeId, [{ kind: 'createTile', ref: 'new:lava', settings: lava }]);
+		await saveAll(builder, universeId, [
+			{ kind: 'createTile', ref: 'new:lava', settings: lava },
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } }
+		]);
 		assert.deepStrictEqual(await customTileNames(ada, universeId), ['Lava']);
+		assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body.items.map((item) => item.name), ['Torch']);
 	});
 
 	it('names the change that isn\'t valid', async () =>
@@ -250,7 +255,7 @@ describe('Saving editor changes', () =>
 				{ kind: 'createTile', ref: 'new:basalt', settings: { ...lava, name: 'Basalt' } },
 				{ kind: 'editCells', areaId, changes: [[0, 0, 'new:lava']] }
 			]);
-			assert.deepStrictEqual(heard.map((change) => change.kind), ['tiles', 'cells']);
+			assert.deepStrictEqual(heard.map((change) => change.kind), ['tiles', 'cells', 'text']);
 		}
 		finally
 		{

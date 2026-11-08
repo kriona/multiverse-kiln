@@ -16,12 +16,12 @@ export const startingAreaMessages = defineMessages({
 	},
 	at: {
 		id: 'editor.startingArea.at',
-		defaultMessage: '{area}, from {column}, {row}',
-		description: 'Shown as a starting area chosen on the Characters tab or in the race or class editor: the area and the square characters start on; {area} is the area\'s name, {column} and {row} the square\'s coordinates'
+		defaultMessage: '{area} at ({column}, {row})',
+		description: 'Shown as a starting area chosen on the Characters tab or in the race or class editor, or as the lobby\'s area on the Lobby tab: the area and the square characters start on; {area} is the area\'s name, {column} and {row} the square\'s coordinates'
 	},
 	loadFailed: {
 		id: 'editor.startingArea.loadFailed',
 		defaultMessage: 'Could not load the areas\' names.',
-		description: 'Shown in the race or class editor when the names of the areas characters start in couldn\'t be loaded'
+		description: 'Shown in the race or class editor when the names of the areas characters start in couldn\'t be loaded, and on the Lobby tab when the name of the lobby\'s area couldn\'t be'
 	}
 });

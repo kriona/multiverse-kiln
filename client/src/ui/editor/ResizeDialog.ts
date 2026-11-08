@@ -2,8 +2,20 @@ import { MAX_MAP_SIDE, type MapBounds } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
+import { announce } from '../announcer';
 import { getElement, setButtonText, showMessage } from '../dom';
-import { mapMessages } from './mapMessages';
+
+/**
+ * The sides of a map, as the dialog's fields and Extend Size buttons name them
+ */
+type Side = 'north' | 'east' | 'south' | 'west';
+
+const sides: Side[] = [
+	'north',
+	'east',
+	'south',
+	'west'
+];
 
 /**
  * What a smaller map would cut off
@@ -40,8 +52,9 @@ interface ResizeTarget
 }
 
 /**
- * Edit Size: how far a map reaches from its center cell in each direction, with the total size, and a
- * warning before a smaller map cuts off painted cells or links
+ * Edit Size: how far a map reaches from its center cell in each direction, with the total size, Extend
+ * Size buttons that add a number of cells to one side's field, and a warning before a smaller map cuts
+ * off painted cells or links
  */
 export class ResizeDialog
 {
@@ -51,6 +64,7 @@ export class ResizeDialog
 	private readonly east = getElement('resize-east', HTMLInputElement);
 	private readonly south = getElement('resize-south', HTMLInputElement);
 	private readonly west = getElement('resize-west', HTMLInputElement);
+	private readonly extendBy = getElement('resize-extend-by', HTMLInputElement);
 	private readonly total = getElement('resize-total', HTMLElement);
 	private readonly warning = getElement('resize-warning', HTMLElement);
 	private readonly submit = getElement('resize-submit', HTMLButtonElement);
@@ -74,6 +88,16 @@ export class ResizeDialog
 			input.addEventListener('input', () =>
 			{
 				this.updateTotal();
+			});
+		}
+
+		this.extendBy.max = String(MAX_MAP_SIDE - 1);
+
+		for (const side of sides)
+		{
+			getElement(`resize-extend-${side}`, HTMLButtonElement).addEventListener('click', () =>
+			{
+				this.extend(side);
 			});
 		}
 
@@ -103,6 +127,58 @@ export class ResizeDialog
 		this.east.value = String(target.bounds.maxColumn);
 		this.updateTotal();
 		this.dialog.showModal();
+	}
+
+	/**
+	 * Adds the number of cells in Extend by to one side's field, and reads out the new total size
+	 *
+	 * @param side The side
+	 */
+	private extend(side: Side): void
+	{
+		const field = this.sideField(side);
+		const cells = this.extendBy.valueAsNumber;
+		const current = field.valueAsNumber;
+
+		// reportValidity() shows the field's problem; an empty field has none to show
+		if (!this.extendBy.reportValidity() || !Number.isInteger(cells))
+		{
+			this.extendBy.focus();
+			return;
+		}
+
+		field.value = String((Number.isInteger(current) ? current : 0) + cells);
+		this.updateTotal();
+
+		// The warning is an alert, read out by itself
+		if (this.warning.hidden)
+		{
+			announce(this.total.textContent ?? '');
+		}
+	}
+
+	/**
+	 * The field for how far the map reaches on one side
+	 *
+	 * @param side The side
+	 * @return The field
+	 */
+	private sideField(side: Side): HTMLInputElement
+	{
+		if (side === 'north')
+		{
+			return(this.north);
+		}
+		else if (side === 'east')
+		{
+			return(this.east);
+		}
+		else if (side === 'south')
+		{
+			return(this.south);
+		}
+
+		return(this.west);
 	}
 
 	/**
@@ -148,7 +224,15 @@ export class ResizeDialog
 				width
 			})
 			: '');
-		showMessage(this.warning, (tooLarge ? t(mapMessages.tooLarge, { max: MAX_MAP_SIDE }) : undefined));
+		showMessage(this.warning, (tooLarge
+			? t({
+				id: 'editor.map.tooLarge',
+				defaultMessage: 'A map can be at most {max, number} cells in each direction.',
+				description: 'Shown when the size asked for a map is larger than allowed; {max} is the most cells on a side'
+			}, {
+				max: MAX_MAP_SIDE
+			})
+			: undefined));
 	}
 
 	/**

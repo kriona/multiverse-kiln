@@ -1,8 +1,10 @@
 import { randomUUID } from 'crypto';
+import { sql } from 'drizzle-orm';
 
 import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
+import type { Executor } from '../../src/db/client.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
@@ -12,6 +14,7 @@ import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseAreas } from '../../src/db/universeRepo.js';
 import { createArea, createAreaLink, loadChunks, loadArea, saveGroundChunk } from '../../src/db/areaRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import type { AreaMap } from '../../src/logic/areaGrid.js';
 
 /**
@@ -114,7 +117,7 @@ export async function addCharacter(playerId: string, universeId: string, name: s
  */
 export async function addGroup(universeId: string, anchorCharacterId: string, startingAreaId: string | null, name: string = ''): Promise<string>
 {
-	const difficultyLevel = await findDefaultDifficultyLevel(universeId);
+	const difficultyLevel = await findDefaultDifficultyLevel(liveVersion(universeId));
 
 	if (!difficultyLevel)
 	{
@@ -122,6 +125,23 @@ export async function addGroup(universeId: string, anchorCharacterId: string, st
 	}
 
 	return(inTransaction((transaction) => createGroup({ universeId, anchorCharacterId, name, startingAreaId, startingColumn: 0, startingRow: 0, difficultyLevelId: difficultyLevel.id }, transaction)));
+}
+
+/**
+ * Runs repository calls in a transaction that fails rather than wait for a lock, to show that a lock
+ * another transaction holds doesn't block them
+ *
+ * @param work The calls to make
+ * @return What work resolves with
+ */
+export function inTransactionWithoutWaiting<T>(work: (executor: Executor) => Promise<T>): Promise<T>
+{
+	return(inTransaction(async (transaction) =>
+	{
+		await transaction.execute(sql`SET LOCAL lock_timeout = '200ms'`);
+
+		return(work(transaction));
+	}));
 }
 
 /**
@@ -155,6 +175,24 @@ export async function defaultRaceId(key: string): Promise<number>
 	if (id === undefined)
 	{
 		throw new Error(`The default race "${key}" is missing from the test database`);
+	}
+
+	return(id);
+}
+
+/**
+ * The ID of one of the Pathfinder 1E default classes
+ *
+ * @param key The class's key, e.g. fighter
+ * @return The class's ID
+ */
+export async function defaultClassId(key: string): Promise<number>
+{
+	const id = (await findDefaultClassIds('pf1e')).get(key);
+
+	if (id === undefined)
+	{
+		throw new Error(`The default class "${key}" is missing from the test database`);
 	}
 
 	return(id);

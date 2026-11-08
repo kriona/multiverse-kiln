@@ -4,24 +4,28 @@
  * The player confirms with their password, and their authenticator or recovery code when the account
  * has 2FA, or with their username when the account has no password. Each universe they are the only
  * creator of is handed to another of its editors or deleted first, as they chose (GET
- * PROFILE_DELETION_PATH lists them). Groups whose anchor being was one of their characters disband, and
+ * PROFILE_DELETION_PATH lists them); one a server admin disabled and kept from being deleted can only be
+ * handed on. Groups whose anchor being was one of their characters disband, and
  * every window of theirs is turned away
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type AccountDeleteRequest } from '@multiverse-kiln/shared';
+import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_UNIVERSE_DELETION, type AccountDeleteRequest } from '@multiverse-kiln/shared';
 
+import { forgetChatAuthor } from '../db/chatRepo.js';
 import type { Executor } from '../db/client.js';
 import { lockContinuation } from '../db/emailCodeRepo.js';
 import { listMembersOfGroups, listPlayerMemberships } from '../db/groupRepo.js';
-import { deletePlayer, findPasswordHash, findPlayerEmail, lockPlayer } from '../db/playerRepo.js';
+import { deletePlayer, findEmailRecipient, findPasswordHash, findPlayerEmail, lockPlayer, type EmailRecipient } from '../db/playerRepo.js';
+import { isLastServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { listOtherUniverseEditors, listSoleCreatedUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
-import { deleteUniverse, lockUniverse } from '../db/universeRepo.js';
+import { deleteUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
 import { accountDeletedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
+import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { accountDeletionChanges, groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { deleteObject } from '../storage/objectStorage.js';
@@ -44,6 +48,11 @@ const deletionMessages = defineMessages({
 		id: 'error.auth.deleteUniversesChanged',
 		defaultMessage: 'The universes you alone create have changed. Look at them again before deleting your account.',
 		description: 'Why deleting an account was refused: the universes the player is the only creator of, or their editors, changed since the deletion dialog listed them'
+	},
+	universeDeletionPrevented: {
+		id: 'error.auth.deleteUniversePrevented',
+		defaultMessage: 'The site\'s admins disabled {universe} and kept it from being deleted. Make another of its editors its creator.',
+		description: 'Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but the site\'s admins disabled it and kept it from being deleted, perhaps a moment ago; {universe} is its name'
 	}
 });
 
@@ -63,7 +72,11 @@ const accountDeleteRequest = z.object({
  */
 interface Deletion
 {
-	email: string | null;
+	/**
+	 * Where the account was emailed and the name it had, or undefined when it had no address
+	 */
+	recipient: EmailRecipient | undefined;
+
 	sessionIds: string[];
 	changes: GroupChange[];
 	deletedUniverseIds: string[];
@@ -177,6 +190,7 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
 	connectedSessions.end(outcome.sessionIds);
+	accountDeletions.publish(playerId);
 
 	for (const universeId of outcome.deletedUniverseIds)
 	{
@@ -203,11 +217,11 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 		}
 	}
 
-	if (outcome.email !== null)
+	if (outcome.recipient)
 	{
 		sendEmailInBackground({
-			to: outcome.email,
-			...accountDeletedEmail(emailLocale)
+			to: outcome.recipient.email,
+			...accountDeletedEmail(outcome.recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -218,7 +232,8 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
  * @param playerId The account
  * @param decisions The new creator of each universe the player is the only creator of, by universe ID; null deletes it
  * @param executor A transaction that has locked the player
- * @return What was deleted, or the refusal when the decisions don't match the player's universes
+ * @return What was deleted, or the refusal when the player is the site's only server admin, the
+ * decisions don't match the player's universes, or one chosen to be deleted is kept from being deleted
  */
 async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, string | null>, executor: Executor): Promise<AuthRefusal | Deletion>
 {
@@ -226,7 +241,16 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 	const storageKeys: string[] = [];
 	const universes: { id: string; newCreatorId: string | null }[] = [];
 
-	// Every decision is checked before any is carried out: the transaction is committed even when refused
+	// Every check comes before anything changes: the transaction is committed even when refused. Deleting
+	// the player deletes their server admin row with them, so the site's only admin can't go
+	if (await isLastServerAdmin(playerId, executor))
+	{
+		return({
+			status: 409,
+			message: LAST_SERVER_ADMIN_DELETION
+		});
+	}
+
 	for (const universe of await listSoleCreatedUniverses(playerId, executor))
 	{
 		await lockUniverse(universe.id, executor);
@@ -239,6 +263,18 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 			return({
 				status: 409,
 				message: deletionMessages.universesChanged
+			});
+		}
+
+		// Read again once locked: an admin may have disabled it since it was listed
+		if ((newCreatorId === null) && await isUniverseDeletionPrevented(universe.id, executor))
+		{
+			return({
+				status: 409,
+				message: ((editors.length === 0) ? UNHANDABLE_UNIVERSE_DELETION : deletionMessages.universeDeletionPrevented),
+				values: {
+					universe: universe.name
+				}
 			});
 		}
 
@@ -265,13 +301,14 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 	// Read after the universes are deleted: groups that went with them need no change, since their rooms close
 	const memberships = await listPlayerMemberships(playerId, executor);
 	const members = await listMembersOfGroups(memberships.map(({ groupId }) => groupId), executor);
-	const email = await findPlayerEmail(playerId, executor);
+	const recipient = await findEmailRecipient(playerId, executor);
 	const sessionIds = await deletePlayerSessions(playerId, executor);
 
+	await forgetChatAuthor(playerId, executor);
 	await deletePlayer(playerId, executor);
 
 	return({
-		email,
+		recipient,
 		sessionIds,
 		changes: accountDeletionChanges(memberships, members),
 		deletedUniverseIds,

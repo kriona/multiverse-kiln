@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, loadedFrom, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -7,6 +7,7 @@ import { getElement, showMessage } from '../dom';
 import { DifficultyDialog } from './DifficultyDialog';
 import { createOptionRow } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -14,12 +15,22 @@ import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, St
  * The difficulty levels on the Ruleset tab: every level a new group can choose, easiest first,
  * opening the difficulty level editor. Changes wait on the page until the tab is saved
  */
-export class DifficultySection implements SavableTab
+export class DifficultySection implements SavableTab, FollowsOtherSaves
 {
 	private readonly addButton = getElement('difficulty-add', HTMLButtonElement);
 	private readonly rows = getElement('difficulty-rows', HTMLTableSectionElement);
 	private readonly error = getElement('difficulty-list-error', HTMLElement);
 	private readonly dialog = new DifficultyDialog();
+
+	/**
+	 * The levels other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince = new ChangedSinceNotes('difficultyLevel');
+
+	/**
+	 * Keeps the difficulty level editor up with saves made in other windows to the level it shows
+	 */
+	private readonly dialogFollower = new DialogFollower(this.dialog.following, 'difficultyLevel');
 
 	/**
 	 * The changes made since the levels were last saved
@@ -65,6 +76,7 @@ export class DifficultySection implements SavableTab
 		this.addButton.hidden = !canEditUniverseSettings(universe.role);
 		this.levels = [];
 		this.changes.clear();
+		this.changedSince.clear();
 		this.rows.replaceChildren();
 		showMessage(this.error, undefined);
 		void this.refresh();
@@ -109,6 +121,35 @@ export class DifficultySection implements SavableTab
 		this.changes.markSaved(this.collected, (id) => ids.number(listRef('DifficultyLevel', id)));
 		this.collected = [];
 		await this.refresh();
+	}
+
+	/**
+	 * Loads the levels again after another window saved changes to them, keeping the changes made here
+	 * and marking the levels they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed a level with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
+
+		this.changedSince.move(this.changes.followDeleted(save, 'difficultyLevel'));
+
+		if (changed)
+		{
+			void this.refresh().then(() =>
+			{
+				this.dialogFollower.reopen(dialog.reopen, (id) => this.view().find(({ item }) => (item.id === id))?.item, (level) =>
+				{
+					this.openLevel(level);
+				});
+			});
+		}
+
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -189,10 +230,17 @@ export class DifficultySection implements SavableTab
 	{
 		this.rows.replaceChildren(...this.view()
 			.sort((a, b) => ((a.item.mobScale - b.item.mobScale) || (Math.abs(a.item.id) - Math.abs(b.item.id))))
-			.map(({ item, state }) => markStagedRow(createOptionRow(difficultyName(item), describeMobScale(item.mobScale), joinTags(levelTags(item), stagedTag(state, false)), () =>
+			.map(({ item, state }) =>
 			{
-				this.openLevel(item);
-			}), state, false)));
+				const row = markStagedRow(createOptionRow(difficultyName(item), describeMobScale(item.mobScale), joinTags(levelTags(item), stagedTag(state, false)), () =>
+				{
+					this.openLevel(item);
+				}), state, false);
+
+				this.changedSince.mark(row.cells[0], item.id, (state !== undefined));
+
+				return(row);
+			}));
 	}
 
 	/**
@@ -204,7 +252,8 @@ export class DifficultySection implements SavableTab
 	{
 		if (this.universe)
 		{
-			this.dialog.open(this.universe, level, this.changes.edit(level?.id), () =>
+			this.dialogFollower.opened(level?.id);
+			this.dialog.open(this.universe, level, this.changes.edit(level?.id, loadedFrom(this.levels.find((saved) => (saved.id === level?.id)))), () =>
 			{
 				this.render();
 			});

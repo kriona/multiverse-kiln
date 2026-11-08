@@ -1,16 +1,21 @@
 import assert from 'assert';
-import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type ErrorPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
+import { listChatMessages, type KeptChat } from '../src/db/chatRepo.js';
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
 import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo.js';
 import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { updateUniverseSettings } from '../src/db/universeRepo.js';
+import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
-import { addCharacter, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, defaultClassId, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { changeWhileWaitingForUniverse } from './universeLock.js';
+import { waitUntil } from './waitUntil.js';
 
 /**
  * A logged-in browser, and a character its player has in the test universe
@@ -152,7 +157,7 @@ describe('group routes', () =>
 	beforeEach(async () =>
 	{
 		universe = await addPlayableUniverse();
-		defaultLevelId = (await findDefaultDifficultyLevel(universe.universeId))?.id ?? 0;
+		defaultLevelId = (await findDefaultDifficultyLevel(liveVersion(universe.universeId)))?.id ?? 0;
 		ada = await logIn('Ada');
 		grace = await logIn('Grace');
 		changes = [];
@@ -210,13 +215,33 @@ describe('group routes', () =>
 				kind: 'joined',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), playable: true }
+				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true },
+				created: true
 			}]);
+		});
+
+		it('refuses a character whose race is disabled for characters already of it', async () =>
+		{
+			const dwarfId = await defaultRaceId('dwarf');
+			const dwarf = (await loadEditorRaces(liveVersion(universe.universeId), 'pf1e')).find((race) => (race.id === dwarfId));
+
+			assert.ok(dwarf);
+			await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universe.universeId), 'pf1e', dwarfId, {
+				...dwarf,
+				enabled: false,
+				keepPlaying: false
+			}, transaction));
+
+			const refused = await send<ErrorPayload>(ada, 'POST', groupsPath(universe.universeId), groupRequest(ada.characterId));
+
+			assert.strictEqual(refused.status, 409);
+			assert.strictEqual(refused.body.error.id, 'error.groupCharacterBarred');
+			assert.strictEqual(await findMembership(ada.characterId), undefined);
 		});
 
 		it('starts at the universe\'s starting cell when the character has no starting area of their own', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { startingColumn: 6, startingRow: 4 });
+			await updateUniverseSettings(liveVersion(universe.universeId), { startingColumn: 6, startingRow: 4 });
 
 			const group = await findGroup(await createGroup(ada));
 
@@ -228,10 +253,10 @@ describe('group routes', () =>
 		it('starts where the character\'s race starts as the group is made, not as the character was', async () =>
 		{
 			const dwarfId = await defaultRaceId('dwarf');
-			const dwarf = (await loadEditorRaces(universe.universeId, 'pf1e')).find((race) => (race.id === dwarfId));
+			const dwarf = (await loadEditorRaces(liveVersion(universe.universeId), 'pf1e')).find((race) => (race.id === dwarfId));
 
 			assert.ok(dwarf);
-			await inTransaction((transaction) => saveEditedDefaultRace(universe.universeId, 'pf1e', dwarfId, {
+			await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universe.universeId), 'pf1e', dwarfId, {
 				...dwarf,
 				startingAreaId: universe.houseAreaId,
 				startingColumn: 3,
@@ -300,7 +325,7 @@ describe('group routes', () =>
 
 		it('saves the difficulty level chosen to the group', async () =>
 		{
-			const levels = await listDifficultyLevels(universe.universeId);
+			const levels = await listDifficultyLevels(liveVersion(universe.universeId));
 			const hardcore = levels.find((level) => (level.key === 'hardcore'));
 			const created = await send<GroupCreatedPayload>(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: hardcore?.id });
 
@@ -311,7 +336,7 @@ describe('group routes', () =>
 		it('refuses a difficulty level of another universe, and a missing one', async () =>
 		{
 			const other = await addPlayableUniverse();
-			const othersLevel = await findDefaultDifficultyLevel(other.universeId);
+			const othersLevel = await findDefaultDifficultyLevel(liveVersion(other.universeId));
 			const fromOther = await send(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: othersLevel?.id });
 			const missing = await send(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: 2147483647 });
 			const none = await send(ada, 'POST', groupsPath(universe.universeId), { characterId: ada.characterId, name: '' });
@@ -362,7 +387,7 @@ describe('group routes', () =>
 
 		it('say what difficulty the group plays at', async () =>
 		{
-			const hardcore = (await listDifficultyLevels(universe.universeId)).find((level) => (level.key === 'hardcore'));
+			const hardcore = (await listDifficultyLevels(liveVersion(universe.universeId))).find((level) => (level.key === 'hardcore'));
 			const created = await send<GroupCreatedPayload>(ada, 'POST', groupsPath(universe.universeId), { ...groupRequest(ada.characterId), difficultyLevelId: hardcore?.id });
 			const token = await invite(ada, created.body.groupId);
 			const details = await send<InviteDetails>(grace, 'GET', invitePath(token));
@@ -407,7 +432,7 @@ describe('group routes', () =>
 
 		it('refuse a character once the group has the universe\'s group size', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { groupSize: 2 });
+			await updateUniverseSettings(liveVersion(universe.universeId), { groupSize: 2 });
 
 			const groupId = await createGroup(ada);
 			const token = await invite(ada, groupId, true);
@@ -434,6 +459,63 @@ describe('group routes', () =>
 		});
 	});
 
+	it('refuses making groups, invites, joining and leaving at the end of time', async () =>
+	{
+		const groupId = await createGroup(ada);
+		const token = await invite(ada, groupId);
+		const alan = await logIn('Alan');
+
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+
+		assert.strictEqual((await send(grace, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId))).status, 404);
+		assert.strictEqual((await send(ada, 'POST', `${groupPath(universe.universeId, groupId)}/invites`, { multiUse: false, duration: 'day' })).status, 404);
+		assert.strictEqual((await send(alan, 'GET', invitePath(token))).status, 404);
+		assert.strictEqual((await send(alan, 'POST', invitePath(token), { characterId: alan.characterId })).status, 404);
+		assert.strictEqual((await send(ada, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: ada.characterId })).status, 404);
+		assert.strictEqual((await findMembership(ada.characterId))?.groupId, groupId);
+		assert.strictEqual(await findMembership(alan.characterId), undefined);
+	});
+
+	it('makes no group in a universe disabled while the request waited for it', async () =>
+	{
+		const answer = await changeWhileWaitingForUniverse(universe.universeId, () => send(grace, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId)), async (transaction) =>
+		{
+			await setUniverseDisabled(universe.universeId, {
+				reason: 'Spam',
+				preventDeletion: false
+			}, transaction);
+		});
+
+		assert.strictEqual(answer.status, 404);
+		assert.strictEqual(await findMembership(grace.characterId), undefined);
+	});
+
+	it('lets no character follow an invite into a universe moved to the end of time, or one their role no longer lets them play, while the request waited for it', async () =>
+	{
+		const groupId = await createGroup(ada);
+		const token = await invite(ada, groupId, true);
+		const alan = await logIn('Alan');
+		const follow = (): Promise<Answer<unknown>> => send(alan, 'POST', invitePath(token), { characterId: alan.characterId });
+		const ended = await changeWhileWaitingForUniverse(universe.universeId, follow, async (transaction) =>
+		{
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' }, transaction);
+		});
+
+		assert.strictEqual(ended.status, 404);
+
+		// In the prologue only players with a role in the universe may play it
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'prologue' });
+		await setUniverseRole(universe.universeId, alan.playerId, 'beta_tester');
+
+		const removed = await changeWhileWaitingForUniverse(universe.universeId, follow, async (transaction) =>
+		{
+			await removeUniverseEditor(universe.universeId, alan.playerId, transaction);
+		});
+
+		assert.strictEqual(removed.status, 404);
+		assert.strictEqual(await findMembership(alan.characterId), undefined);
+	});
+
 	describe('leaving', () =>
 	{
 		it('takes a member out of the group', async () =>
@@ -451,8 +533,28 @@ describe('group routes', () =>
 				kind: 'left',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', raceId: await defaultRaceId('dwarf'), playable: true }
+				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true }
 			});
+		});
+
+		it('says in the group\'s chat who created it, who joined and who left, with no room open', async () =>
+		{
+			const groupId = await createGroup(ada);
+			const chat: KeptChat = {
+				kind: 'group',
+				universeId: universe.universeId,
+				groupId
+			};
+
+			await send(grace, 'POST', invitePath(await invite(ada, groupId)), { characterId: grace.characterId });
+			await send(grace, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: grace.characterId });
+			await waitUntil(async () => ((await listChatMessages(chat)).length === 3));
+
+			assert.deepStrictEqual((await listChatMessages(chat)).map(({ playerId, name, notice, text }) => [playerId, name, notice, text]), [
+				[ada.playerId, 'Ada', 'created', ''],
+				[grace.playerId, 'Grace', 'joined', ''],
+				[grace.playerId, 'Grace', 'left', '']
+			]);
 		});
 
 		it('disbands the group when the anchor being leaves, freeing every member', async () =>
@@ -468,6 +570,36 @@ describe('group routes', () =>
 			assert.strictEqual(await findMembership(grace.characterId), undefined);
 			assert.strictEqual(changes.at(-1)?.kind, 'disbanded');
 			assert.deepStrictEqual((changes.at(-1) as Extract<GroupChange, { kind: 'disbanded' }>).members.map(({ characterId }) => characterId).sort(), [ada.characterId, grace.characterId].sort());
+		});
+
+		it('lets a character whose race is disabled for characters already of it leave, as their sheet offers', async () =>
+		{
+			const groupId = await createGroup(ada);
+			const dwarfId = await defaultRaceId('dwarf');
+			const path = characterPath(universe.universeId, grace.characterId);
+
+			await send(grace, 'POST', invitePath(await invite(ada, groupId)), { characterId: grace.characterId });
+
+			const dwarf = (await loadEditorRaces(liveVersion(universe.universeId), 'pf1e')).find((race) => (race.id === dwarfId));
+
+			assert.ok(dwarf);
+			await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universe.universeId), 'pf1e', dwarfId, {
+				...dwarf,
+				enabled: false,
+				keepPlaying: false
+			}, transaction));
+
+			const { group, barredBy } = (await send<CharacterSheet>(grace, 'GET', path)).body;
+
+			assert.deepStrictEqual({ group, barredBy }, {
+				group: {
+					groupId,
+					isAnchor: false
+				},
+				barredBy: 'race'
+			});
+			assert.strictEqual((await send(grace, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: grace.characterId })).status, 204);
+			assert.strictEqual((await send<CharacterSheet>(grace, 'GET', path)).body.group, null);
 		});
 
 		it('refuses another player\'s character, and a character not in the group', async () =>
@@ -491,7 +623,10 @@ describe('group routes', () =>
 
 				assert.strictEqual((await send(member, 'DELETE', path)).status, 409);
 				assert.strictEqual((await send(member, 'PUT', `${path}/deletion`)).status, 409);
-				assert.strictEqual((await send<CharacterSheet>(member, 'GET', path)).body.inGroup, true);
+				assert.deepStrictEqual((await send<CharacterSheet>(member, 'GET', path)).body.group, {
+					groupId,
+					isAnchor: (member === ada)
+				});
 			}
 
 			assert.ok(await findGroup(groupId));

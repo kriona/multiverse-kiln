@@ -1,14 +1,15 @@
 /**
  * The routes for a player's characters in a universe (listed in shared/src/characters.ts)
  *
- * Every route needs a logged-in browser and a universe the player may play in its stage. The server
+ * Every route needs a logged-in browser and a universe the player may play in its stage, except listing
+ * the player's characters and their sheets, which a universe at the end of time still allows. The server
  * rolls ability scores and keeps them until a character is made with them, so asking again doesn't
  * roll again; the player only chooses which ability gets which score
  */
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, canPlayUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverse, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage, type UniverseTextKind } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -23,17 +24,20 @@ import { loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
 import { displayText } from '../rooms/payloads.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { requestLanguages } from './requestLanguages.js';
+import { UniverseTextTranslator } from './universeTextTranslator.js';
 
 /**
  * The universe a character request is about
  */
-export type PlayableUniverse = Omit<EditableUniverse, 'role'>;
+export type PlayableUniverse = EditableUniverseDetails;
 
 /**
  * A base ability score as sent: no rolled, bought or raised score is outside this
@@ -150,53 +154,83 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 	router.use(refuseWritesFromOtherOrigins(allowedOrigins));
 	router.use(express.json());
 	router.use(requireLogin);
-	router.use(loadPlayableUniverse);
 
-	router.get('/', listRoute);
-	router.get('/new', newCharacterRoute);
-	router.put('/draft', saveDraftRoute);
-	router.delete('/draft', deleteDraftRoute);
-	router.post('/', createRoute);
-	router.get('/:characterId', sheetRoute);
-	router.delete('/:characterId', deleteRoute);
-	router.put('/:characterId/deletion', scheduleDeletionRoute);
-	router.delete('/:characterId/deletion', restoreRoute);
+	// Characters can be listed and looked at in a universe at the end of time, but not made or deleted
+	router.get('/', loadViewableUniverse, listRoute);
+	router.get('/new', loadPlayableUniverse, newCharacterRoute);
+	router.put('/draft', loadPlayableUniverse, saveDraftRoute);
+	router.delete('/draft', loadPlayableUniverse, deleteDraftRoute);
+	router.post('/', loadPlayableUniverse, createRoute);
+	router.get('/:characterId', loadViewableUniverse, sheetRoute);
+	router.delete('/:characterId', loadPlayableUniverse, deleteRoute);
+	router.put('/:characterId/deletion', loadPlayableUniverse, scheduleDeletionRoute);
+	router.delete('/:characterId/deletion', loadPlayableUniverse, restoreRoute);
 	router.use(handleCharacterError);
 
 	app.use(`${UNIVERSES_PATH}/:universeId/characters`, router);
 }
 
 /**
- * Middleware that loads the universe, answering 404 unless the player may play it
+ * Makes middleware that loads the universe, answering 404 unless it isn't disabled and its stage and
+ * the player's role in it pass a check
  *
- * @param request The request
- * @param response The response
- * @param next Continues to the next handler
+ * @param allows The check, given the universe's stage and the player's role in it
+ * @return The middleware
  */
-export async function loadPlayableUniverse(request: Request, response: Response, next: NextFunction): Promise<void>
+function universeLoader(allows: (stage: UniverseStage, role: UniverseRole | undefined) => boolean): (request: Request, response: Response, next: NextFunction) => Promise<void>
 {
-	const universeId = z.uuid().safeParse(request.params.universeId);
-
-	if (universeId.success)
+	return(async (request, response, next) =>
 	{
-		const [universe, role] = await Promise.all([
-			findEditableUniverse(universeId.data),
-			findUniverseRole(universeId.data, playerIdOf(request))
-		]);
+		const universeId = z.uuid().safeParse(request.params.universeId);
+		const universe = (universeId.success ? await findAllowedUniverse(universeId.data, playerIdOf(request), allows) : undefined);
 
-		if (universe && canPlayUniverse(universe.stage, role))
+		if (universe)
 		{
 			universes.set(request, universe);
 			next();
 			return;
 		}
-	}
 
-	sendError(response, 404, errorMessages.noSuchUniverse);
+		sendError(response, 404, errorMessages.noSuchUniverse);
+	});
 }
 
 /**
- * The universe of a request that has passed loadPlayableUniverse
+ * Loads a universe's live version when it isn't disabled and its stage and the player's role in it pass
+ * a check. Disabling a universe, changing its stage and changing roles all take the universe's lock, so
+ * a transaction holding it reads what stays true until it commits
+ *
+ * @param universeId The universe's ID
+ * @param playerId The player's ID
+ * @param allows The check, given the universe's stage and the player's role in it
+ * @param executor The database, or a transaction
+ * @return The universe, or undefined when there is none or the player may not
+ */
+export async function findAllowedUniverse(universeId: string, playerId: string, allows: (stage: UniverseStage, role: UniverseRole | undefined) => boolean, executor?: Executor): Promise<PlayableUniverse | undefined>
+{
+	const [universe, role] = await Promise.all([
+		findEditableUniverse(liveVersion(universeId), executor),
+		findUniverseRole(universeId, playerId, executor)
+	]);
+
+	return(((universe && (universe.disabledReason === null) && allows(universe.stage, role)) ? universe : undefined));
+}
+
+/**
+ * Middleware that loads the universe, answering 404 unless the player may play it: it isn't disabled, and
+ * its stage and the player's role in it allow them to
+ */
+export const loadPlayableUniverse = universeLoader(canPlayUniverse);
+
+/**
+ * Middleware that loads the universe, answering 404 unless the player may look at it: it isn't
+ * disabled, and its stage and the player's role in it allow them to (canViewUniverse), which a universe
+ * at the end of time allows everyone
+ */
+export const loadViewableUniverse = universeLoader(canViewUniverse);
+
+/**
+ * The universe of a request that has passed loadPlayableUniverse or loadViewableUniverse
  *
  * @param request The request
  * @return The universe
@@ -207,10 +241,23 @@ export function universeOf(request: Request): PlayableUniverse
 
 	if (!universe)
 	{
-		throw new Error(`${request.method} ${request.path} reached a handler without loadPlayableUniverse`);
+		throw new Error(`${request.method} ${request.path} reached a handler without loading its universe`);
 	}
 
 	return(universe);
+}
+
+/**
+ * Loads a universe's translations of some kinds of text, for the languages a request asks for
+ *
+ * @param request The request
+ * @param universe The universe
+ * @param kinds The kinds of text the response shows
+ * @return The translator
+ */
+export async function loadTranslator(request: Request, universe: PlayableUniverse, kinds: readonly UniverseTextKind[]): Promise<UniverseTextTranslator>
+{
+	return(UniverseTextTranslator.load(universe, await requestLanguages(request), kinds));
 }
 
 /**
@@ -223,14 +270,16 @@ async function listRoute(request: Request, response: Response): Promise<void>
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [characters, lastPlayedId, races, classes] = await Promise.all([
+	const [characters, races, classes, translator] = await Promise.all([
 		listCharacters(playerId, universe.id),
-		findLastPlayedCharacterId(playerId, universe.id),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset)
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadTranslator(request, universe, ['race', 'class'])
 	]);
-	const raceNames = new Map(races.map(({ id, key, name }) => [id, { key, name }]));
-	const classNames = new Map(classes.map(({ id, key, name }) => [id, { key, name }]));
+	const barred = barredOptionsOf(races, classes);
+	const lastPlayedId = await findLastPlayedCharacterId(playerId, universe.id, barred);
+	const raceNames = new Map(races.map(({ id, key, name }) => [id, translator.name('race', id, { key, name })]));
+	const classNames = new Map(classes.map(({ id, key, name }) => [id, translator.name('class', id, { key, name })]));
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: CharacterListPayload = {
 		ruleset: universe.ruleset,
@@ -240,6 +289,7 @@ async function listRoute(request: Request, response: Response): Promise<void>
 			race: (raceNames.get(raceId) ?? unnamed),
 			characterClass: (classNames.get(classId) ?? unnamed),
 			deleteAt: (deleteAt?.toISOString() ?? null),
+			barredBy: characterBar({ raceId, classId }, barred),
 			groupId
 		})),
 		lastPlayedId: (lastPlayedId ?? null)
@@ -264,14 +314,15 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, membership, races, classes, themes, items, siteSettings] = await Promise.all([
+	const [character, membership, races, classes, themes, items, siteSettings, translator] = await Promise.all([
 		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
 		findMembership(characterId),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset),
-		loadEditorThemes(universe.id, universe.ruleset),
-		loadEditorItems(universe.id, universe.ruleset),
-		findSiteSettings()
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadEditorItems(liveVersion(universe.id), universe.ruleset),
+		findSiteSettings(),
+		loadTranslator(request, universe, ['race', 'class', 'theme', 'item', 'coin'])
 	]);
 
 	if (!character)
@@ -291,41 +342,51 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		ruleset: universe.ruleset,
 		id: character.id,
 		name: character.name,
-		race: {
+		race: translator.name('race', character.raceId, {
 			key: (race?.key ?? null),
 			name: (race?.name ?? null)
-		},
-		characterClass: {
+		}),
+		characterClass: translator.name('class', character.classId, {
 			key: (characterClass?.key ?? null),
 			name: (characterClass?.name ?? null)
-		},
+		}),
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
-		inGroup: (membership !== undefined),
+		group: ((membership === undefined)
+			? null
+			: {
+				groupId: membership.groupId,
+				isAnchor: membership.isAnchor
+			}),
+		barredBy: characterBar(character, barredOptionsOf(races, classes)),
 		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
 		darkvision: (race?.rules.darkvision ?? NEW_RACE_RULES[universe.ruleset].darkvision),
 		lightSensitivity: (race?.rules.lightSensitivity ?? NEW_RACE_RULES[universe.ruleset].lightSensitivity),
 		theme: ((character.themeId === null)
 			? null
-			: {
+			: translator.name('theme', character.themeId, {
 				key: (theme?.key ?? null),
 				name: (theme?.name ?? null)
-			}),
+			})),
 		hitPoints,
 		staminaPoints,
 		abilityScores: character.abilityScores,
 		money: character.money,
+		coinNames: Object.fromEntries(Object.entries(universe.coinNames)
+			.map(([coin, name]) => [coin, translator.text('coin', coin, 'name', name)])),
+		coinAbbreviations: Object.fromEntries(Object.entries(universe.coinAbbreviations)
+			.map(([coin, abbreviation]) => [coin, translator.text('coin', coin, 'abbreviation', abbreviation)])),
 		items: character.items.map(({ itemId, quantity }) =>
 		{
 			const item = itemsById.get(itemId);
 
-			return({
+			return(translator.name('item', itemId, {
 				id: itemId,
 				key: (item?.key ?? null),
 				name: (item?.name ?? null),
 				type: (item?.type ?? ''),
 				quantity
-			});
+			}));
 		})
 	};
 
@@ -551,30 +612,31 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [abilities, races, classes, themes, characterCount, storedDraft] = await Promise.all([
+	const [abilities, races, classes, themes, characterCount, storedDraft, translator] = await Promise.all([
 		offerAbilities(universe, playerId),
-		loadEditorRaces(universe.id, universe.ruleset),
-		loadEditorClasses(universe.id, universe.ruleset),
-		loadEditorThemes(universe.id, universe.ruleset),
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
 		countCharacters(playerId, universe.id),
-		findCharacterDraft(playerId, universe.id)
+		findCharacterDraft(playerId, universe.id),
+		loadTranslator(request, universe, ['universe', 'race', 'class', 'theme'])
 	]);
 
 	// Progress saved by an older version of Create Character is dropped rather than refused
 	const draft = characterDraft.safeParse(storedDraft);
 	const payload: NewCharacterOptions = {
-		universeName: universe.name,
+		universeName: translator.text('universe', universe.id, 'name', universe.name),
 		ruleset: universe.ruleset,
 		abilities,
 		races: races
 			.filter((race) => race.enabled)
-			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+			.map(({ id, key, name, rules }) => translator.name('race', id, { id, key, name, rules })),
 		classes: classes
 			.filter((characterClass) => characterClass.enabled)
-			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+			.map(({ id, key, name, rules }) => translator.name('class', id, { id, key, name, rules })),
 		themes: themes
 			.filter((theme) => theme.enabled)
-			.map(({ id, key, name, rules }) => ({ id, key, name, rules })),
+			.map(({ id, key, name, rules }) => translator.name('theme', id, { id, key, name, rules })),
 		characterCount,
 		draft: (draft.success ? draft.data : null)
 	};
@@ -596,11 +658,11 @@ async function offerAbilities(universe: PlayableUniverse, playerId: string): Pro
 	{
 		return({
 			kind: 'abilityPoints',
-			points: (await findSf1eSettings(universe.id)).abilityPoints
+			points: (await findSf1eSettings(liveVersion(universe.id))).abilityPoints
 		});
 	}
 
-	const settings = await findPf1eSettings(universe.id);
+	const settings = await findPf1eSettings(liveVersion(universe.id));
 	const { statMethod } = settings;
 
 	if (isPf1eRollMethod(statMethod))
@@ -690,7 +752,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		await lockPlayer(playerId, transaction);
 		await lockUniverse(universeId, transaction);
 
-		const universe = await findEditableUniverse(universeId, transaction);
+		const universe = await findAllowedUniverse(universeId, playerId, canPlayUniverse, transaction);
 
 		if (!universe)
 		{
@@ -719,7 +781,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const race = (await loadEditorRaces(universeId, universe.ruleset, transaction)).find((option) => ((option.id === raceId) && option.enabled));
+		const race = (await loadEditorRaces(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === raceId) && option.enabled));
 
 		if (!race)
 		{
@@ -729,7 +791,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const characterClass = (await loadEditorClasses(universeId, universe.ruleset, transaction)).find((option) => ((option.id === classId) && option.enabled));
+		const characterClass = (await loadEditorClasses(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === classId) && option.enabled));
 
 		if (!characterClass)
 		{
@@ -740,7 +802,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const theme = (rulesetHasThemes(universe.ruleset)
-			? (await loadEditorThemes(universeId, universe.ruleset, transaction)).find((option) => ((option.id === themeId) && option.enabled))
+			? (await loadEditorThemes(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === themeId) && option.enabled))
 			: undefined);
 
 		if (rulesetHasThemes(universe.ruleset) ? !theme : (themeId !== null))
@@ -769,7 +831,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const enabledItemIds = new Set((await loadEditorItems(universeId, universe.ruleset, transaction))
+		const enabledItemIds = new Set((await loadEditorItems(liveVersion(universeId), universe.ruleset, transaction))
 			.filter((item) => item.enabled)
 			.map((item) => item.id));
 		const characterId = await createCharacter({
@@ -821,11 +883,11 @@ async function findScoreSource(universe: PlayableUniverse, playerId: string, exe
 	{
 		return({
 			kind: 'abilityPoints',
-			points: (await findSf1eSettings(universe.id, executor)).abilityPoints
+			points: (await findSf1eSettings(liveVersion(universe.id), executor)).abilityPoints
 		});
 	}
 
-	const settings = await findPf1eSettings(universe.id, executor);
+	const settings = await findPf1eSettings(liveVersion(universe.id), executor);
 
 	if (!isPf1eRollMethod(settings.statMethod))
 	{

@@ -8,19 +8,23 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
+import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
 import { listProfileCharacters, setCharacterVisibility, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
-import { AccountTakenError, findOwnProfile, findProfileByUsername, saveProfile } from '../db/playerRepo.js';
+import { AccountTakenError, findOwnProfile, findProfileByUsername, replaceProfileLocale, saveProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { findTwoFactorState } from '../db/twoFactorRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { displayText } from '../rooms/payloads.js';
 import { deletionRoute, exportRoute } from './accountData.js';
 import { authMessages, checkDisplayName, checkUsername, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
+import { requestLanguages } from './requestLanguages.js';
+import { UniverseTextTranslator } from './universeTextTranslator.js';
 
 /**
  * Reasons the profile routes give (see shared/src/localization.ts)
@@ -112,6 +116,10 @@ const profileUpdateRequest = z.object({
 	showCharacters: z.boolean()
 }) satisfies z.ZodType<ProfileUpdateRequest, unknown>;
 
+const profileLocaleRequest = z.object({
+	locale: z.string().max(MAX_LOCALE_LENGTH)
+}) satisfies z.ZodType<ProfileLocaleRequest>;
+
 const characterVisibilityRequest = z.object({
 	visibleOnProfile: z.boolean()
 }) satisfies z.ZodType<CharacterVisibilityRequest>;
@@ -169,6 +177,7 @@ export function addProfileRoutes(app: Application, allowedOrigins: Set<string>):
 	own.use(requireLogin);
 	own.get('/', ownProfileRoute);
 	own.put('/', updateProfileRoute);
+	own.put('/locale', profileLocaleRoute);
 	own.put('/characters/:characterId', characterVisibilityRoute);
 	own.get('/export', exportRoute);
 	own.get('/deletion', deletionRoute);
@@ -190,19 +199,27 @@ export function addProfileRoutes(app: Application, allowedOrigins: Set<string>):
 }
 
 /**
- * Names the races and classes of a profile's characters, as their universes call them
+ * Names the universes, races and classes of a profile's characters, as their universes call them, in
+ * the languages the request asks for
  *
+ * @param request The request
  * @param records The characters, with their universes
  * @return The characters as the profile lists them, in the same order
  */
-async function nameCharacters(records: ProfileCharacterRecord[]): Promise<(ProfileCharacter & { visibleOnProfile: boolean })[]>
+async function nameCharacters(request: Request, records: ProfileCharacterRecord[]): Promise<(ProfileCharacter & { visibleOnProfile: boolean })[]>
 {
-	const universes = new Map(records.map((record) => [record.universeId, record.ruleset]));
-	const names = new Map(await Promise.all([...universes].map(async ([universeId, ruleset]) =>
+	const universes = new Map(records.map((record) => [record.universeId, {
+		id: record.universeId,
+		ruleset: record.ruleset,
+		sourceLanguage: record.sourceLanguage,
+		translationLanguages: record.translationLanguages
+	}]));
+	const translators = await UniverseTextTranslator.loadAll([...universes.values()], await requestLanguages(request), ['universe', 'race', 'class']);
+	const names = new Map(await Promise.all([...universes.values()].map(async ({ id: universeId, ruleset }) =>
 	{
 		const [races, classes] = await Promise.all([
-			loadEditorRaces(universeId, ruleset),
-			loadEditorClasses(universeId, ruleset)
+			loadEditorRaces(liveVersion(universeId), ruleset),
+			loadEditorClasses(liveVersion(universeId), ruleset)
 		]);
 
 		return([universeId, {
@@ -212,19 +229,26 @@ async function nameCharacters(records: ProfileCharacterRecord[]): Promise<(Profi
 	})));
 	const unnamed: OptionName = { key: null, name: null };
 
-	return(records.map((record) => ({
-		id: record.id,
-		name: record.name,
-		race: (names.get(record.universeId)?.races.get(record.raceId) ?? unnamed),
-		characterClass: (names.get(record.universeId)?.classes.get(record.classId) ?? unnamed),
-		universe: {
-			id: record.universeId,
-			slug: record.universeSlug,
-			name: record.universeName,
-			ruleset: record.ruleset
-		},
-		visibleOnProfile: record.visibleOnProfile
-	})));
+	return(records.map((record) =>
+	{
+		const translator = translators.get(record.universeId);
+		const race = (names.get(record.universeId)?.races.get(record.raceId) ?? unnamed);
+		const characterClass = (names.get(record.universeId)?.classes.get(record.classId) ?? unnamed);
+
+		return({
+			id: record.id,
+			name: record.name,
+			race: (translator?.name('race', record.raceId, race) ?? race),
+			characterClass: (translator?.name('class', record.classId, characterClass) ?? characterClass),
+			universe: {
+				id: record.universeId,
+				slug: record.universeSlug,
+				name: (translator?.text('universe', record.universeId, 'name', record.universeName) ?? record.universeName),
+				ruleset: record.ruleset
+			},
+			visibleOnProfile: record.visibleOnProfile
+		});
+	}));
 }
 
 /**
@@ -244,7 +268,7 @@ async function playerProfileRoute(request: Request, response: Response): Promise
 		return;
 	}
 
-	const characters = await nameCharacters(await listProfileCharacters(profile.id, {
+	const characters = await nameCharacters(request, await listProfileCharacters(profile.id, {
 		stages: PUBLIC_STAGES,
 		onlyVisible: !profile.showCharacters
 	}));
@@ -272,10 +296,11 @@ async function playerProfileRoute(request: Request, response: Response): Promise
 async function ownProfileRoute(request: Request, response: Response): Promise<void>
 {
 	const playerId = playerIdOf(request);
-	const [profile, providers, twoFactor, records] = await Promise.all([
+	const [profile, providers, twoFactor, serverAdmin, records] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
 		findTwoFactorState(playerId, new Date()),
+		isServerAdmin(playerId),
 		listProfileCharacters(playerId, {})
 	]);
 
@@ -298,8 +323,9 @@ async function ownProfileRoute(request: Request, response: Response): Promise<vo
 		hasPassword: profile.hasPassword,
 		providers,
 		twoFactor,
+		serverAdmin,
 		showCharacters: profile.showCharacters,
-		characters: await nameCharacters(records)
+		characters: await nameCharacters(request, records)
 	};
 
 	response.json(payload);
@@ -386,6 +412,36 @@ async function updateProfileRoute(request: Request, response: Response): Promise
 		return;
 	}
 
+	response.sendStatus(204);
+}
+
+/**
+ * PUT PROFILE_LOCALE_PATH: changes the language the logged-in player's profile names, when it names one
+ *
+ * @param request The request, with a ProfileLocaleRequest
+ * @param response The response: 204, whether or not the profile named a language
+ */
+async function profileLocaleRoute(request: Request, response: Response): Promise<void>
+{
+	const body = profileLocaleRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	if (!isLanguageTag(body.data.locale))
+	{
+		sendRefusal<ProfileField>(response, {
+			status: 400,
+			message: profileMessages.locale,
+			field: 'locale'
+		});
+		return;
+	}
+
+	await replaceProfileLocale(playerIdOf(request), Intl.getCanonicalLocales(body.data.locale)[0]);
 	response.sendStatus(204);
 }
 

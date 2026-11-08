@@ -10,6 +10,7 @@ import { formatMoney, readMoneyField } from '../moneyField';
 import { raceName } from '../raceAndClassNames';
 import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
+import { FollowedDialog } from './otherSaves';
 import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
 import { AreaChoice } from './AreaChoice';
@@ -58,6 +59,11 @@ export class RaceDialog
 	 * Whether the race has changes that haven't been applied
 	 */
 	private readonly changes: ChangeTracker;
+
+	/**
+	 * How the dialog follows saves made in other windows to the race it shows
+	 */
+	readonly following: FollowedDialog;
 
 	private universe: EditableUniverse | undefined;
 
@@ -121,6 +127,7 @@ export class RaceDialog
 			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell]
 		});
 		this.changes.guardDialog(this.dialog);
+		this.following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 		for (const input of [this.name, this.startingMoney, this.hitPoints, ...Object.values(this.modifiers)])
 		{
@@ -212,7 +219,7 @@ export class RaceDialog
 		this.size.value = rules.size;
 		this.hitPointsField.hidden = !isSf1eRaceRules(rules);
 		this.hitPoints.value = (isSf1eRaceRules(rules) ? String(rules.hitPoints) : '');
-		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset);
+		this.startingMoney.value = formatMoney((race?.startingMoney ?? emptyMoney()), universe.ruleset, universe.coinAbbreviations);
 		this.startingArea.show(universe, (race?.startingAreaId ?? null), {
 			column: (race?.startingColumn ?? 0),
 			row: (race?.startingRow ?? 0)
@@ -243,7 +250,7 @@ export class RaceDialog
 		clearFieldErrors(this.dialog);
 		void this.startingItems.show(universe, (race?.startingItems ?? []));
 		void this.loadAreaNames(universe);
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 	}
 
@@ -310,7 +317,7 @@ export class RaceDialog
 			return;
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset, universe.coinAbbreviations);
 
 		if (startingMoney === undefined)
 		{
@@ -323,6 +330,8 @@ export class RaceDialog
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			enabled: this.enabled.checked,
+			// Chosen in the dialog Save opens when disabling the race affects characters (ImpactDialog)
+			keepPlaying: (this.race?.keepPlaying ?? true),
 			startingMoney,
 			startingItems: this.startingItems.value,
 			startingAreaId: this.startingArea.value,

@@ -1,8 +1,8 @@
-import { canEditUniverseSettings, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, loadedFor, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseCoinAbbreviations, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { ChangeTracker } from '../changeTracker';
+import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
@@ -15,8 +15,8 @@ import { startingAreaMessages } from './startingAreaMessages';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
- * The Characters tab: how many characters play together in a group, and the money, equipment and
- * area every character starts with
+ * The Characters tab: how many characters play together in a group, and the money, equipment and area
+ * every character starts with
  */
 export class CharactersTab implements SavableTab
 {
@@ -33,9 +33,9 @@ export class CharactersTab implements SavableTab
 	private universe: EditableUniverse | undefined;
 
 	/**
-	 * The settings the save being sent holds
+	 * The settings the save being sent holds, and the form as it collected them
 	 */
-	private collected: UniverseSettingsUpdate | undefined;
+	private collected: { update: UniverseSettingsUpdate; form: FormSnapshot } | undefined;
 
 	/**
 	 * The starting area the form shows, which may not be saved yet
@@ -71,9 +71,10 @@ export class CharactersTab implements SavableTab
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing the starting area
 	 * @param itemSelect The dialog for choosing the starting equipment
+	 * @param coinAbbreviations The abbreviations the Ruleset tab gives the coins, which may not be saved yet
 	 * @param onSaved Called with the settings saved, once they are
 	 */
-	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, private readonly onSaved: (update: UniverseSettingsUpdate) => void)
+	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, private readonly coinAbbreviations: () => UniverseCoinAbbreviations, private readonly onSaved: (update: UniverseSettingsUpdate) => void)
 	{
 		this.startingItems = new StartingItemsField(api, itemSelect, {
 			list: getElement('characters-items', HTMLUListElement),
@@ -122,14 +123,8 @@ export class CharactersTab implements SavableTab
 	{
 		this.universe = universe;
 		this.groupSize.value = String(universe.groupSize);
-		this.startingMoney.value = formatMoney(universe.startingMoney, universe.ruleset);
-		this.startingMoneyHint.textContent = t({
-			id: 'editor.characters.startingMoneyHint',
-			defaultMessage: 'Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.',
-			description: 'Explains the starting money field on the editor\'s Characters tab; {example} is an amount of money, e.g. 1pp 2gp 2sp 4cp or 250cr. Coins are never changed into other coins automatically'
-		}, {
-			example: exampleMoney(universe.ruleset)
-		});
+		this.startingMoney.value = formatMoney(universe.startingMoney, universe.ruleset, this.coinAbbreviations());
+		this.showStartingMoneyHint();
 		this.fields.disabled = !this.canSave();
 		this.chooseAreaButton.hidden = this.fields.disabled;
 		this.chooseItemsButton.hidden = this.fields.disabled;
@@ -142,6 +137,52 @@ export class CharactersTab implements SavableTab
 		});
 		void this.startingItems.show(universe, universe.startingItems);
 		this.changes.markSaved();
+	}
+
+	/**
+	 * Shows the abbreviations the Ruleset tab gives the coins: in the starting money hint, and in the
+	 * starting money field once those abbreviations are saved, while the tab has no changes of its own
+	 *
+	 * @param saved Whether the abbreviations were just saved
+	 */
+	coinsChanged(saved: boolean): void
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		if (saved && !this.changes.hasUnsavedChanges())
+		{
+			this.startingMoney.value = formatMoney(universe.startingMoney, universe.ruleset, this.coinAbbreviations());
+			this.changes.markSaved();
+		}
+
+		this.showStartingMoneyHint();
+	}
+
+	/**
+	 * Explains the starting money field, with an amount written in the coins' abbreviations as the
+	 * Ruleset tab shows them
+	 */
+	private showStartingMoneyHint(): void
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		this.startingMoneyHint.textContent = t({
+			id: 'editor.characters.startingMoneyHint',
+			defaultMessage: 'Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more.',
+			description: 'Explains the starting money field on the editor\'s Characters tab; {example} is an amount of money, e.g. 1pp 2gp 2sp 4cp or 250cr. Coins are never changed into other coins automatically'
+		}, {
+			example: exampleMoney(universe.ruleset, this.coinAbbreviations())
+		});
 	}
 
 	/**
@@ -260,7 +301,7 @@ export class CharactersTab implements SavableTab
 			return(false);
 		}
 
-		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset);
+		const startingMoney = readMoneyField(this.startingMoney, universe.ruleset, this.coinAbbreviations());
 
 		if (startingMoney === undefined)
 		{
@@ -280,8 +321,11 @@ export class CharactersTab implements SavableTab
 		};
 
 		showMessage(this.error, undefined);
-		this.collected = update;
-		save.add({ kind: 'universe', update }, (refusal) =>
+		this.collected = {
+			update,
+			form: this.changes.snapshot()
+		};
+		save.add({ kind: 'universe', update, loaded: loadedFor(this.universe, update) }, (refusal) =>
 		{
 			showMessage(this.error, describeEditorError(refusal.error, {
 				id: 'editor.characters.saveFailed',
@@ -294,21 +338,31 @@ export class CharactersTab implements SavableTab
 	}
 
 	/**
-	 * Takes the settings as saved
+	 * Takes the settings as saved. Changes made while the save was sent stay unsaved
 	 */
 	saved(): void
 	{
 		const universe = this.universe;
-		const update = this.collected;
+		const collected = this.collected;
 
 		this.collected = undefined;
 
-		if (universe && update)
+		if (universe && collected)
 		{
-			this.universe = { ...universe, ...update };
-			this.startingMoney.value = formatMoney(this.universe.startingMoney, universe.ruleset);
-			this.changes.markSaved();
-			this.onSaved(update);
+			this.universe = { ...universe, ...collected.update };
+
+			if (this.changes.changedSince(collected.form))
+			{
+				this.changes.markSaved(collected.form);
+			}
+			else
+			{
+				this.startingMoney.value = formatMoney(this.universe.startingMoney, universe.ruleset, this.coinAbbreviations());
+				this.changes.markSaved();
+			}
+
+			this.showStartingMoneyHint();
+			this.onSaved(collected.update);
 		}
 	}
 }

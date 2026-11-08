@@ -37,6 +37,11 @@ export const errorMessages = defineMessages({
 		defaultMessage: 'The universe doesn\'t exist, or you can\'t see it.',
 		description: 'Why a request about a universe failed: it was deleted, or the player has no access to it'
 	},
+	noSuchDraft: {
+		id: 'error.noSuchDraft',
+		defaultMessage: 'The universe has no draft. It may have been applied or discarded.',
+		description: 'Why a request about a universe\'s draft failed: the universe has no draft (see Universe versions), perhaps because another editor applied or discarded it'
+	},
 	noSuchArea: {
 		id: 'error.noSuchArea',
 		defaultMessage: 'The area doesn\'t exist.',

@@ -100,13 +100,13 @@ export class SearchSelect
 
 	/**
 	 * Chooses a value. One that isn't a choice is added to the end of the list under its own name, so a
-	 * value saved earlier stays chosen
+	 * value saved earlier stays chosen; '' chooses nothing, leaving the field empty
 	 *
 	 * @param value The value
 	 */
 	set value(value: string)
 	{
-		if (!this.choices.some((choice) => (choice.value === value)))
+		if ((value !== '') && !this.choices.some((choice) => (choice.value === value)))
 		{
 			this.choices.push({
 				value,
@@ -116,6 +116,36 @@ export class SearchSelect
 
 		this.chosen = value;
 		this.showChosen();
+	}
+
+	/**
+	 * Replaces what can be chosen, as when the field moves to another thing whose choices differ. The
+	 * value chosen stays chosen, under its new name, and is added under its own name if it is no longer a
+	 * choice
+	 *
+	 * @param choices The choices, in the order they're listed
+	 */
+	setChoices(choices: readonly ComboboxChoice[]): void
+	{
+		this.choices = [...choices];
+		this.value = this.chosen;
+	}
+
+	/**
+	 * Gives a choice another value, keeping it chosen if it was, as when something made on the page is
+	 * saved with its lasting ID
+	 *
+	 * @param from The choice's value
+	 * @param to Its new value
+	 */
+	replaceValue(from: string, to: string): void
+	{
+		this.choices = this.choices.map((choice) => ((choice.value === from) ? { ...choice, value: to } : choice));
+
+		if (this.chosen === from)
+		{
+			this.chosen = to;
+		}
 	}
 
 	/**

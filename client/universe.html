@@ -22,8 +22,20 @@
 						<p id="universe-ruleset" class="universe-ruleset"></p>
 						<p id="universe-summary" class="universe-summary"></p>
 						<div id="universe-description" class="markdown"></div>
-						<a id="universe-enter" class="button universe-enter" href="/game" data-shortcut="Alt+U" data-message="universePage.enter" data-translation-context="Button on a universe's page that takes the player into the universe, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</a>
+						<p id="universe-locked" class="notice" data-message="universePage.locked" data-translation-context="On the page of a universe in the stage end of time, above Enter Universe: what being locked means" hidden>This universe has reached the end of time, so it is locked. Its lobby can't be entered and no characters can be made, but characters in a group can still open it to look around.</p>
+						<div class="universe-actions">
+							<a id="universe-enter" class="button" href="/game" data-shortcut="Alt+U" data-message="universePage.enter" data-translation-context="Button on a universe's page that takes the player into the universe, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</a>
+							<a id="universe-edit" class="button draft" href="/edit" data-shortcut="Alt+I" hidden data-message="universePage.edit" data-translation-context="Button on a universe's page, beside Enter Universe and shown only to its creators, builders and translators and the site's admins, that opens the universe in the world editor"><!-- icon ph:pencil-simple -->Edit Universe</a>
+						</div>
 					</article>
+					<section class="panel universe-languages" aria-labelledby="universe-languages-heading">
+						<h2 id="universe-languages-heading" data-message="universePage.languagesHeading" data-translation-context="Heading of the section of a universe's page that lists the languages the universe can be played in, and lets the player choose one">Languages</h2>
+						<p class="universe-languages-intro" data-message="universePage.languagesIntro" data-translation-context="Under the Languages heading on a universe's page, above the list of the languages it can be played in, each a button">Choose the language to play this universe in.</p>
+						<ul id="universe-language-list" class="universe-language-list"></ul>
+						<p id="universe-languages-pages-note" class="universe-languages-note" hidden></p>
+						<p id="universe-languages-profile-note" class="universe-languages-note" data-message="universePage.languagesProfileNote" data-translation-context="Under the list in the Languages section of a universe's page, while the player is logged in and their profile names a language: choosing a language in the list changes the one on their profile too" hidden>Choosing a language also makes it the language on your profile.</p>
+						<p id="universe-language-error" class="form-error" role="alert" hidden></p>
+					</section>
 					<section id="universe-characters" class="panel universe-characters" aria-labelledby="universe-characters-heading" hidden>
 						<h2 id="universe-characters-heading" data-message="characters.heading" data-translation-context="Heading of the list of characters the player has made in a universe, in its lobby and on its page">Your characters</h2>
 						<ul id="universe-character-list" class="universe-character-list"></ul>

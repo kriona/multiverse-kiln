@@ -22,7 +22,7 @@
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
  */
 import { UNIVERSES_PATH } from './constants.js';
-import type { Money } from './money.js';
+import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
@@ -73,6 +73,76 @@ export interface OptionName
 }
 
 /**
+ * Why a character can't play: their race, or their class, is disabled for characters already of it
+ * (RaceSettings.keepPlaying and ClassSettings.keepPlaying)
+ */
+export type CharacterBar = 'race' | 'class';
+
+/**
+ * The races and classes whose characters can't play, by the IDs characters hold
+ */
+export interface BarredOptions
+{
+	raceIds: ReadonlySet<number>;
+	classIds: ReadonlySet<number>;
+}
+
+/**
+ * Barred options that bar nobody
+ */
+export const NOTHING_BARRED: BarredOptions = {
+	raceIds: new Set(),
+	classIds: new Set()
+};
+
+/**
+ * The races and classes whose characters can't play, from a universe's races and classes
+ *
+ * @param races The races the universe can use
+ * @param classes The classes it can use
+ * @return Those disabled without letting the characters already of them keep playing
+ */
+export function barredOptionsOf(races: readonly BarringOption[], classes: readonly BarringOption[]): BarredOptions
+{
+	const barredIds = (options: readonly BarringOption[]): Set<number> => new Set(options
+		.filter((option) => (!option.enabled && !option.keepPlaying))
+		.map((option) => option.id));
+
+	return({
+		raceIds: barredIds(races),
+		classIds: barredIds(classes)
+	});
+}
+
+/**
+ * A race or class, as far as whether it bars its characters goes
+ */
+export interface BarringOption
+{
+	id: number;
+	enabled: boolean;
+	keepPlaying: boolean;
+}
+
+/**
+ * Why a character can't play, if anything stops them
+ *
+ * @param character The character's race and class
+ * @param barred The races and classes whose characters can't play
+ * @return Their race when it bars them (even when their class does too), then their class; null when
+ * neither does
+ */
+export function characterBar(character: { raceId: number; classId: number }, barred: BarredOptions): CharacterBar | null
+{
+	if (barred.raceIds.has(character.raceId))
+	{
+		return('race');
+	}
+
+	return((barred.classIds.has(character.classId) ? 'class' : null));
+}
+
+/**
  * One of the player's characters, as the lobby lists them
  */
 export interface CharacterSummary
@@ -87,6 +157,12 @@ export interface CharacterSummary
 	 * Until then they can be restored but not played
 	 */
 	deleteAt: string | null;
+
+	/**
+	 * What stops the character playing while the universe's creators have disabled their race or class
+	 * for characters already of it, or null when nothing does
+	 */
+	barredBy: CharacterBar | null;
 
 	/**
 	 * The group the character is in, or null when they are in none. A character in a group plays there,
@@ -115,8 +191,9 @@ export interface CharacterListPayload
 	characters: CharacterSummary[];
 
 	/**
-	 * The character the player played or made most recently, leaving out those given their last rites;
-	 * null when they have none. Entering the universe plays them, in their group if they are in one
+	 * The character the player played or made most recently, leaving out those given their last rites
+	 * and those barred from playing; null when they have none. Entering the universe plays them, in their
+	 * group if they are in one
 	 */
 	lastPlayedId: string | null;
 }
@@ -310,6 +387,19 @@ export interface CharacterSheetItem extends OptionName
 }
 
 /**
+ * The group a character on their sheet is in
+ */
+export interface CharacterSheetGroup
+{
+	groupId: string;
+
+	/**
+	 * Whether the character is the group's anchor being, whose leaving disbands it
+	 */
+	isAnchor: boolean;
+}
+
+/**
  * Response of GET characterPath(universeId, characterId): one of the player's characters, as their
  * character sheet shows them
  */
@@ -333,9 +423,16 @@ export interface CharacterSheet
 	deletionDays: number;
 
 	/**
-	 * Whether the character is in a group, and so can't be deleted until they leave it
+	 * The group the character is in, who can't be deleted until they leave it, or null when they are in none
 	 */
-	inGroup: boolean;
+	group: CharacterSheetGroup | null;
+
+	/**
+	 * What stops the character playing while the universe's creators have disabled their race or class
+	 * for characters already of it, or null when nothing does. Such a character in a group can leave it
+	 * from their sheet, since they can't play there to leave it
+	 */
+	barredBy: CharacterBar | null;
 
 	/**
 	 * The race's size, darkvision and light sensitivity, as the universe sets them now
@@ -362,6 +459,13 @@ export interface CharacterSheet
 	abilityScores: AbilityScores;
 
 	money: Money;
+
+	/**
+	 * The names and abbreviations the universe gives its coins, in the player's language; the coins
+	 * left out have the engine's
+	 */
+	coinNames: UniverseCoinNames;
+	coinAbbreviations: UniverseCoinAbbreviations;
 
 	/**
 	 * The items the character carries, by ID

@@ -37,6 +37,11 @@ export class MapCanvas
 	private bounds?: MapBounds;
 
 	/**
+	 * Whether the wheel pans the map instead of scrolling the page (see setWheelPans)
+	 */
+	private wheelPans = false;
+
+	/**
 	 * The keyboard's cursor, once the map has had focus
 	 */
 	private cursor: BrushCell | undefined;
@@ -103,6 +108,7 @@ export class MapCanvas
 				onReady: (scene: MapEditorScene) =>
 				{
 					this.current = scene;
+					scene.wheelPans = this.wheelPans;
 
 					if (this.cursor && (document.activeElement === this.parent))
 					{
@@ -116,7 +122,8 @@ export class MapCanvas
 			if (!this.game)
 			{
 				// The canvas's element handles the keyboard itself (see onKeyDown), so the game mustn't take
-				// keys from the page's text fields. The wheel scrolls the page unless Ctrl is held (see onWheel)
+				// keys from the page's text fields. The wheel scrolls the page unless Ctrl is held or the
+				// wheel pans the map (see onWheel)
 				this.game = new Phaser.Game({
 					type: Phaser.WEBGL,
 					parent: this.parent,
@@ -146,6 +153,22 @@ export class MapCanvas
 		this.current = undefined;
 		this.host = undefined;
 		this.game?.scene.stop(MAP_EDITOR_SCENE_KEY);
+	}
+
+	/**
+	 * Makes the wheel pan the map instead of scrolling the page, for a map that fills the window, or
+	 * scroll the page again
+	 *
+	 * @param pans Whether the wheel pans the map
+	 */
+	setWheelPans(pans: boolean): void
+	{
+		this.wheelPans = pans;
+
+		if (this.current)
+		{
+			this.current.wheelPans = pans;
+		}
 	}
 
 	/**
@@ -246,14 +269,14 @@ export class MapCanvas
 	};
 
 	/**
-	 * Keeps Ctrl+wheel, which the scene zooms the map with, from zooming the page. The wheel alone
-	 * scrolls the page
+	 * Keeps Ctrl+wheel, which the scene zooms the map with, from zooming the page, and the wheel from
+	 * scrolling the page while it pans the map. Otherwise the wheel alone scrolls the page
 	 *
 	 * @param event The wheel turn over the map
 	 */
 	private readonly onWheel = (event: WheelEvent): void =>
 	{
-		if (event.ctrlKey)
+		if (event.ctrlKey || this.wheelPans)
 		{
 			event.preventDefault();
 		}

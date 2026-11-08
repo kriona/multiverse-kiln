@@ -15,28 +15,47 @@ export type SessionEndListener = (sessionIds: ReadonlySet<string>) => void;
 export class ConnectedSessions
 {
 	private readonly windows = new Map<string, number>();
+
+	/**
+	 * The session each counted window connected with. A window leaving is uncounted only when it was
+	 * counted, so a room can uncount every window that leaves, even one turned away before it was counted
+	 */
+	private readonly sessionOfWindow = new WeakMap<object, string>();
+
 	private readonly listeners = new Set<SessionEndListener>();
 
 	/**
-	 * Counts a window connecting with a session
+	 * Counts a window connecting with a session; a window already counted stays counted once
 	 *
+	 * @param window The window, such as its room client
 	 * @param sessionId The session
 	 */
-	connect(sessionId: string): void
+	connect(window: object, sessionId: string): void
 	{
+		if (this.sessionOfWindow.has(window))
+		{
+			return;
+		}
+
+		this.sessionOfWindow.set(window, sessionId);
 		this.windows.set(sessionId, ((this.windows.get(sessionId) ?? 0) + 1));
 	}
 
 	/**
-	 * Counts a window leaving. A session that has ended is no longer counted, so this does nothing for it
+	 * Counts a window leaving. A window that wasn't counted, or whose session has ended and is no longer
+	 * counted, changes nothing
 	 *
-	 * @param sessionId The session
+	 * @param window The window, as it was counted
 	 */
-	disconnect(sessionId: string): void
+	disconnect(window: object): void
 	{
-		const count = this.windows.get(sessionId);
+		const sessionId = this.sessionOfWindow.get(window);
 
-		if (count === undefined)
+		this.sessionOfWindow.delete(window);
+
+		const count = ((sessionId === undefined) ? undefined : this.windows.get(sessionId));
+
+		if ((sessionId === undefined) || (count === undefined))
 		{
 			return;
 		}

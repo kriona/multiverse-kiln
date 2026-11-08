@@ -1,8 +1,8 @@
-import { chunkKey, createVisionMap, GRID_CELL_SIZE, IMPASSABLE_WALK_SECONDS, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
+import { chunkKey, createVisionMap, GRID_CELL_SIZE, IMPASSABLE_WALK_SECONDS, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaLinkCell, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../db/areaRepo.js';
 import type { Grid } from '../logic/movement.js';
-import { createAreaGrid, type AreaMap } from '../logic/areaGrid.js';
+import { createAreaGrid, type AreaLink, type AreaMap } from '../logic/areaGrid.js';
 
 /**
  * An area a room has loaded, ready to play in: its settings, links and tiles, and the chunks of its
@@ -450,14 +450,27 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 		})),
 		chunks: toChunkUpdates(area, chunkKeys, memory)
 			.filter((chunk): chunk is AreaChunk => (chunk.cells !== null)),
-		links: loaded.links
-			.filter((link) => (memory?.has(loaded.area.id, link.column, link.row) ?? true))
-			.map((link) => ({
-				column: link.column,
-				row: link.row,
-				mode: link.mode
-			}))
+		links: toLinkCells(loaded, (link) => (memory?.has(loaded.area.id, link.column, link.row) ?? true))
 	});
+}
+
+/**
+ * Links on an area's cells as clients are told about them: where they are and how they are taken, but
+ * not where they lead. Links to disabled areas are left out, since nobody can go through them
+ *
+ * @param loaded The area
+ * @param include Whether to tell about a link, such as one on a cell the group has seen
+ * @return The links
+ */
+export function toLinkCells(loaded: LoadedArea, include: (link: AreaLink) => boolean): AreaLinkCell[]
+{
+	return(loaded.links
+		.filter((link) => (!loaded.disabledTargetIds.has(link.targetAreaId) && include(link)))
+		.map((link) => ({
+			column: link.column,
+			row: link.row,
+			mode: link.mode
+		})));
 }
 
 /**

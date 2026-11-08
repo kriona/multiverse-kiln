@@ -38,6 +38,7 @@ function loadedArea(): LoadedArea
 		loopsEastWest: false,
 		loopsNorthSouth: false,
 		links: [],
+		disabledTargetIds: new Set(),
 		tiles: [
 			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, graphic: 'grass', uploadedGraphic: null, visionCost: 0, walkSeconds: 10 },
 			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x008800, graphic: null, uploadedGraphic: null, visionCost: 50, walkSeconds: 20 }
@@ -269,5 +270,26 @@ describe('AreaCache', () =>
 		assert.deepStrictEqual(first.cells.slice(0, 3), [FOREST, DEFAULT_TILE_CELL, UNSEEN_CELL]);
 		assert.ok(second.cells.every((value) => (value === UNSEEN_CELL)));
 		assert.deepStrictEqual(payload.links, [{ column: 0, row: 0, mode: 'automatic' }]);
+	});
+
+	it('leaves links to disabled areas out of an area\'s payload', async () =>
+	{
+		const database = new FakeDatabase();
+		const loadedArea = await database.cache.load(AREA_ID);
+
+		database.finishReads();
+		assert.ok(loadedArea);
+
+		const link = { targetColumn: 0, targetRow: 0, mode: 'manual' as const, requiresWholeGroup: false };
+		const area = {
+			...loadedArea,
+			loaded: {
+				...loadedArea.loaded,
+				links: [{ ...link, targetAreaId: 'open', column: 0, row: 0 }, { ...link, targetAreaId: 'closed', column: 1, row: 0 }],
+				disabledTargetIds: new Set(['closed'])
+			}
+		};
+
+		assert.deepStrictEqual(toAreaPayload(area, []).links, [{ column: 0, row: 0, mode: 'manual' }]);
 	});
 });

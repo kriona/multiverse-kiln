@@ -96,6 +96,7 @@ export class InviteDialog
 		this.singleUse.checked = true;
 		this.duration.value = 'day';
 		this.createButton.disabled = false;
+		this.createButton.hidden = false;
 		this.linkRow.hidden = true;
 		this.copyButton.hidden = true;
 		this.link.value = '';
@@ -112,7 +113,7 @@ export class InviteDialog
 	{
 		const current = this.current;
 
-		if (!current || this.createButton.disabled)
+		if (!current || this.createButton.disabled || this.createButton.hidden)
 		{
 			return;
 		}
@@ -149,6 +150,7 @@ export class InviteDialog
 				}));
 			this.linkRow.hidden = false;
 			this.copyButton.hidden = false;
+			this.createButton.hidden = true;
 			this.link.focus();
 			this.link.select();
 		}

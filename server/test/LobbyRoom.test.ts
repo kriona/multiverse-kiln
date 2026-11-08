@@ -3,22 +3,27 @@ import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
-import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NoticeReason, ServerCloseCode, ServerMessageType, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { createUniverse, setUniverseAreas, updateUniverseSettings } from '../src/db/universeRepo.js';
-import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
+import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { deleteArea, editCells, resizeArea, updateAreaSettings } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
+import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
+import { universeAccessChanges } from '../src/players/universeAccess.js';
+import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addPlayableUniverse, addArea, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
+import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -121,6 +126,17 @@ describe('LobbyRoom', () =>
 	function lobbyOf(window: LobbyWindow): LobbyRoom
 	{
 		return(colyseus.getRoomById<LobbyRoom>(window.room.roomId));
+	}
+
+	/**
+	 * The object a lobby places its players with, for making a change while a player joining is placed
+	 *
+	 * @param room The server-side room
+	 * @return Its AreaPlayers
+	 */
+	function areaPlayersOf(room: LobbyRoom): object
+	{
+		return((room as unknown as { areaPlayers: object }).areaPlayers);
 	}
 
 	/**
@@ -228,6 +244,159 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(lobbyOf(alan).clients.length, 1);
 		});
 
+		it('refuses windows while a server admin has disabled the universe, and turns away those already in', async () =>
+		{
+			const other = await addPlayableUniverse();
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const alan = await joinAsNewPlayer(other.universeId, 'Alan');
+			const { cookie } = await logInBrowser((await addPlayer('Grace')).id);
+			const left = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+
+			await setUniverseDisabled(universe.universeId, {
+				reason: 'Breaks the rules',
+				preventDeletion: false
+			});
+			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
+
+			areaChanges.publish({
+				kind: 'universeDisabled',
+				universeId: universe.universeId
+			});
+
+			assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
+			assert.strictEqual(lobbyOf(alan).clients.length, 1);
+
+			await setUniverseDisabled(universe.universeId, null);
+			await openWindow(cookie, universe.universeId);
+		});
+
+		it('turns away the windows of players who may no longer play the universe', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const room = lobbyOf(ada);
+			const left = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+
+			universeAccessChanges.publish({
+				universeId: universe.universeId,
+				playerIds: new Set([ada.playerId])
+			});
+
+			assert.strictEqual(await left, ServerCloseCode.AccessLost);
+			await waitUntil(() => (room.clients.length === 1));
+			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
+		});
+
+		it('turns away a window whose session ends while it joins', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+			const playerId = (await addPlayer('Grace')).id;
+
+			await addCharacter(playerId, universe.universeId, 'Grace');
+
+			const grace = await logInBrowser(playerId);
+
+			changeDuringNextLookup(room, 'lookUp', async () =>
+			{
+				await pool.query('DELETE FROM sessions WHERE id = $1', [grace.sessionId]);
+				connectedSessions.end([grace.sessionId]);
+			});
+
+			await assert.rejects(connect(grace.cookie, { universeId: universe.universeId }), refusedWith(ServerCloseCode.LoggedOut));
+			await waitUntil(() => (room.clients.length === 1));
+			assert.ok(!room.state.players.has(playerId));
+			assert.ok(!connectedSessions.ids().includes(grace.sessionId));
+		});
+
+		it('turns away a window whose player the universe\'s new stage shuts out while it joins', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+			const playerId = (await addPlayer('Grace')).id;
+
+			await addCharacter(playerId, universe.universeId, 'Grace');
+
+			const grace = await logInBrowser(playerId);
+
+			changeDuringNextLookup(room, 'lookUp', async () =>
+			{
+				await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'prologue' });
+				universeAccessChanges.publishStage({
+					universeId: universe.universeId,
+					stage: 'prologue',
+					previousStage: 'let_there_be_light',
+					roles: new Map()
+				});
+			});
+
+			await assert.rejects(connect(grace.cookie, { universeId: universe.universeId }), refusedWith(ServerCloseCode.StageChanged));
+			await waitUntil(() => (room.clients.length === 0));
+		});
+
+		it('turns out the players a new stage doesn\'t let play, and everyone at the end of time', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const room = lobbyOf(ada);
+			const adaLeft = new Promise<number>((resolve) =>
+			{
+				ada.room.onLeave(resolve);
+			});
+			const graceLeft = new Promise<number>((resolve) =>
+			{
+				grace.room.onLeave(resolve);
+			});
+
+			universeAccessChanges.publishStage({
+				universeId: universe.universeId,
+				stage: 'prologue',
+				previousStage: 'let_there_be_light',
+				roles: new Map([[grace.playerId, 'beta_tester']])
+			});
+
+			assert.strictEqual(await adaLeft, ServerCloseCode.StageChanged);
+			await waitUntil(() => (room.clients.length === 1));
+			assert.strictEqual(room.clients[0].sessionId, grace.room.sessionId);
+
+			universeAccessChanges.publishStage({
+				universeId: universe.universeId,
+				stage: 'end_of_time',
+				previousStage: 'prologue',
+				roles: new Map([[grace.playerId, 'creator']])
+			});
+
+			assert.strictEqual(await graceLeft, ServerCloseCode.UniverseLocked);
+		});
+
+		it('refuses everyone at the end of time', async () =>
+		{
+			const playerId = (await addPlayer('Ada')).id;
+			const { cookie } = await logInBrowser(playerId);
+
+			await setUniverseRole(universe.universeId, playerId, 'creator');
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
+		});
+
+		it('refuses players the universe\'s stage and their role don\'t let play', async () =>
+		{
+			const playerId = (await addPlayer('Ada')).id;
+			const { cookie } = await logInBrowser(playerId);
+
+			await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'prologue' });
+			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
+
+			await setUniverseRole(universe.universeId, playerId, 'beta_tester');
+			await openWindow(cookie, universe.universeId);
+		});
+
 		it('is one room per universe', async () =>
 		{
 			const other = await addPlayableUniverse();
@@ -279,6 +448,45 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(second.playerId, ada.playerId);
 			assert.strictEqual(lobbyOf(ada).state.members.size, 1);
+		});
+
+		it('puts a player who joins while the lobby moves to another area in the new one', async () =>
+		{
+			const { universeId, houseAreaId } = universe;
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
+			{
+				await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: houseAreaId, lobbyColumn: 2, lobbyRow: 2 });
+				areaChanges.publish({ kind: 'lobby', universeId });
+				await waitUntil(() => (room.getAreaId(ada.playerId) === houseAreaId));
+			});
+
+			const grace = await joinAsNewPlayer(universeId, 'Grace');
+
+			assert.strictEqual(room.getAreaId(grace.playerId), houseAreaId);
+			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, houseAreaId);
+		});
+
+		it('puts a player who joins while the lobby\'s area is disabled in no area', async () =>
+		{
+			const { universeId, squareAreaId } = universe;
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
+			{
+				await updateAreaSettings(squareAreaId, { enabled: false });
+				areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+				await waitUntil(() => !room.state.hasMap);
+			});
+
+			const grace = await joinAsNewPlayer(universeId, 'Grace');
+
+			assert.strictEqual(room.getAreaId(grace.playerId), undefined);
+			assert.strictEqual(room.state.players.size, 0);
+			assert.ok(room.state.members.has(grace.playerId));
 		});
 	});
 
@@ -355,7 +563,7 @@ describe('LobbyRoom', () =>
 
 		it('shows each window only the players its character can see, not past mountains or beyond their sight', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -379,7 +587,7 @@ describe('LobbyRoom', () =>
 
 		it('lets a character with darkvision see twelve squares at night', async () =>
 		{
-			await updateUniverseSettings(universe.universeId, { lobbyPassageOfTime: 'always_midnight', lobbyFaerieMorning: null });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_midnight', lobbyFaerieMorning: null });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -472,6 +680,35 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(history.messages[CHAT_HISTORY_LENGTH - 1].text, `message ${sent}`);
 		});
 
+		it('takes a deleted account\'s name off its messages, telling the windows and those joining later', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			ada.room.send(LobbyMessageType.Chat, { text: 'Off I go' });
+
+			const { playerId } = await grace.inbox.take<ChatMessage>(LobbyServerMessageType.Chat);
+
+			grace.room.send(LobbyMessageType.Chat, { text: 'Farewell' });
+			await grace.inbox.take<ChatMessage>(LobbyServerMessageType.Chat);
+
+			if (playerId === null)
+			{
+				assert.fail('The message has no writer');
+			}
+
+			accountDeletions.publish(playerId);
+			assert.deepStrictEqual(await grace.inbox.take<ChatAuthorDeletedPayload>(LobbyServerMessageType.ChatAuthorDeleted), { playerId });
+
+			const late = await joinAsNewPlayer(universe.universeId, 'Late');
+			const history = await late.inbox.take<ChatHistoryPayload>(LobbyServerMessageType.ChatHistory);
+
+			assert.deepStrictEqual(history.messages.slice(-2).map((message) => [(message.playerId === null), message.name, message.text]), [
+				[true, '', 'Off I go'],
+				[false, 'Grace', 'Farewell']
+			]);
+		});
+
 		it('drops messages sent too quickly, and says so', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
@@ -489,6 +726,117 @@ describe('LobbyRoom', () =>
 		});
 	});
 
+	describe('barred characters', () =>
+	{
+		it('switches a player off a character whose race is barred, refuses choosing them, and plays them again once allowed', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const [character] = await listPlayableCharacters(ada.playerId, universe.universeId);
+
+			await ada.inbox.take(LobbyServerMessageType.PlayingAs);
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: { raceIds: new Set([character.raceId]), classIds: new Set() } });
+
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			assert.strictEqual((await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.CharacterBarred);
+			await ada.inbox.take(LobbyServerMessageType.CharactersChanged);
+
+			ada.room.send(LobbyMessageType.ChooseCharacter, { characterId: character.id });
+			assert.strictEqual((await ada.inbox.take<NoticePayload>(LobbyServerMessageType.Notice)).reason, NoticeReason.CharacterBarred);
+			assert.strictEqual(playerOf(ada).ghost, true);
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: NOTHING_BARRED });
+			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, character.id);
+		});
+
+		it('starts a player who joins as a ghost when their only character is barred', async () =>
+		{
+			const playerId = (await addPlayer('Grace')).id;
+
+			await addCharacter(playerId, universe.universeId, 'Grace');
+
+			// Someone already in the lobby keeps its room open to hear what is barred
+			const room = lobbyOf(await joinAsNewPlayer(universe.universeId, 'Opener'));
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: { raceIds: new Set(), classIds: new Set([await defaultClassId('fighter')]) } });
+			await room.waitForNextPatch();
+
+			const grace = await openWindow((await logInBrowser(playerId)).cookie, universe.universeId);
+
+			assert.strictEqual((await grace.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+		});
+
+		it('sends players in a disabled area to the lobby area, or where they are sent', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.squareAreaId, destination: { areaId: universe.houseAreaId, column: 2, row: 2 } });
+			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.houseAreaId));
+
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
+			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+	});
+
+	describe('without a map', () =>
+	{
+		it('lets players chat with no lobby area, then puts everyone on its starting square once it has one', async () =>
+		{
+			const { universeId, squareAreaId } = universe;
+
+			await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: null });
+
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			assert.strictEqual(room.state.hasMap, false);
+			assert.strictEqual(room.state.players.size, 0);
+			assert.ok(room.state.members.has(ada.playerId));
+
+			ada.room.send(LobbyMessageType.Chat, { text: 'Anyone here?' });
+			assert.strictEqual((await ada.inbox.take<ChatMessage>(LobbyServerMessageType.Chat)).text, 'Anyone here?');
+
+			// Moving is ignored while there is nowhere to walk
+			ada.room.send(MessageType.Move, { x: 1, y: 0 });
+
+			await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: squareAreaId, lobbyColumn: 4, lobbyRow: 7 });
+			areaChanges.publish({ kind: 'lobby', universeId });
+
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
+			await waitUntil(() => room.state.hasMap);
+
+			const player = playerOf(ada);
+
+			assert.deepStrictEqual([Math.floor(player.x / GRID_CELL_SIZE), Math.floor(player.y / GRID_CELL_SIZE)], [4, 7]);
+		});
+
+		it('takes the map away while the lobby\'s area is disabled, and gives it back once it is enabled', async () =>
+		{
+			const { universeId, squareAreaId } = universe;
+			const ada = await joinAsNewPlayer(universeId, 'Ada');
+			const room = lobbyOf(ada);
+
+			await ada.inbox.take(ServerMessageType.Area);
+			await updateAreaSettings(squareAreaId, { enabled: false });
+			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+			await waitUntil(() => !room.state.hasMap);
+			assert.strictEqual(room.state.players.size, 0);
+
+			// A window joining meanwhile isn't sent an area
+			const grace = await joinAsNewPlayer(universeId, 'Grace');
+
+			assert.strictEqual(grace.room.state.hasMap, false);
+			assert.ok(room.state.members.has(grace.playerId));
+
+			await updateAreaSettings(squareAreaId, { enabled: true });
+			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
+			await waitUntil(() => room.state.hasMap);
+			assert.ok(playerOf(ada));
+			assert.ok(playerOf(grace));
+		});
+	});
+
 	describe('groups', () =>
 	{
 		it('stops a player playing a character here once the character joins a group, and lets them again once it is disbanded', async () =>
@@ -501,6 +849,7 @@ describe('LobbyRoom', () =>
 				playerId: ada.playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			};
 
@@ -531,6 +880,7 @@ describe('LobbyRoom', () =>
 				playerId: ada.playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			};
 
@@ -696,7 +1046,8 @@ describe('LobbyRoom', () =>
 				character: {
 					id: lovelaceId,
 					name: 'Lovelace',
-					raceId: await defaultRaceId('dwarf')
+					raceId: await defaultRaceId('dwarf'),
+					classId: await defaultClassId('fighter')
 				},
 				inGroup: false
 			});
@@ -872,13 +1223,22 @@ describe('LobbyRoom', () =>
 			await waitUntil(() => (lobbyOf(ada).getAreaId(ada.playerId) === universe.squareAreaId));
 		});
 
+		it('tells its windows to fetch the universe\'s text again when an editor changes it', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			areaChanges.publish({ kind: 'text', universeId: universe.universeId });
+
+			assert.strictEqual(await ada.inbox.take(ServerMessageType.UniverseText), undefined);
+		});
+
 		it('sends the area again with the universe\'s edited tiles', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grass = await defaultTileId('grass');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await saveEditedDefaultTile(universe.universeId, 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true });
+			await saveEditedDefaultTile(liveVersion(universe.universeId), 'pf1e', grass, { name: 'Autumn Grass', indoors: false, outdoors: true, color: 0xc08030, graphic: 'grass', uploadedGraphicId: null, visionCost: 0, walkSeconds: 600, enabled: true });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
@@ -892,7 +1252,7 @@ describe('LobbyRoom', () =>
 			const forest = await defaultTileId('forest');
 
 			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await updateUniverseSettings(universe.universeId, { lobbyNoVisionCost: false });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyNoVisionCost: false });
 			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
 
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);

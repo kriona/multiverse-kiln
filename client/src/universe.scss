@@ -1,4 +1,5 @@
-// A universe's page (universe.html): its name, ruleset and descriptions, and Enter Universe
+// A universe's page (universe.html): its name, ruleset and descriptions, Enter Universe and Edit
+// Universe, its languages and the player's characters in it
 
 @use 'shared' as *;
 @use 'characterSheet';
@@ -36,12 +37,23 @@
 	font-size: 17px;
 }
 
-.universe-enter
+// Enter Universe, and Edit Universe beside it for players who work on the universe
+.universe-actions
 {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 	margin-top: 8px;
 }
 
-// The player's characters in the universe, shown while they are logged in
+// That a universe at the end of time is locked
+.universe-overview .notice
+{
+	margin: 8px 0 0;
+}
+
+// The languages the universe can be played in, and the player's characters in it, shown while they are logged in
+.universe-languages,
 .universe-characters
 {
 	max-width: 760px;
@@ -52,6 +64,85 @@
 		margin: 0;
 		font-size: 16px;
 	}
+}
+
+.universe-languages-intro,
+.universe-languages-note
+{
+	margin: 8px 0 0;
+	line-height: 1.5;
+}
+
+.universe-languages-note
+{
+	font-size: 13px;
+	color: $text-faint;
+}
+
+.universe-languages .form-error
+{
+	margin: 8px 0 0;
+}
+
+.universe-language-list
+{
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+	overflow-wrap: anywhere;
+
+	li
+	{
+		padding: 2px 0;
+	}
+}
+
+// Each language is a button that plays the universe in it; the one in use has an outline and says so in words
+.universe-language-choice
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 6px;
+	align-items: baseline;
+	width: 100%;
+	padding: 4px 8px;
+	border-color: transparent;
+	background: none;
+	color: $text;
+	text-align: left;
+
+	&:hover
+	{
+		background: $background-control-hover;
+	}
+
+	&[aria-pressed="true"]
+	{
+		border-color: $accent;
+		cursor: default;
+
+		&:hover
+		{
+			background: none;
+		}
+	}
+}
+
+.universe-language-detail
+{
+	color: $text-faint;
+}
+
+.universe-language-only,
+.universe-language-shown
+{
+	font-size: 12px;
+	color: $text-faint;
+}
+
+.universe-language-shown
+{
+	margin-inline-start: auto;
 }
 
 .universe-character-list

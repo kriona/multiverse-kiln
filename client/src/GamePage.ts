@@ -1,13 +1,14 @@
-import { CloseCode } from '@colyseus/sdk';
-import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { Callbacks, CloseCode } from '@colyseus/sdk';
+import { GameMessageType, GameServerMessageType, INVITE_QUERY_PARAMETER, LobbyMessageType, LobbyServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type AccountPlayer, type CharacterListPayload, type CharacterSummary, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type PlayingAsPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { CharacterApi } from './network/characterApi';
-import { describeEditorError, EditorApi } from './network/editorApi';
+import { describeEditorError } from './network/editorApi';
 import { GroupApi } from './network/groupApi';
 import { getUniverseDetails, joinGroup, joinLobby, type GameConnection, type LobbyConnection, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { characterPageUrl, currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath } from './pages';
+import { characterPageUrl, currentPageAddress, gamePageUrl, HOME_PAGE_URL, loginPageUrl, readGameUniverseKey, readPageParameter, replacePageParameters, replacePagePath, universePageUrl } from './pages';
+import { readPlayerValue, rememberPlayerValue } from './rememberedValues';
 import { announce } from './ui/announcer';
 import { characterMessages } from './ui/characterMessages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
@@ -16,14 +17,16 @@ import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { InviteDialog } from './ui/InviteDialog';
 import { InviteScreen } from './ui/InviteScreen';
+import { takeOutOfGroup } from './ui/leavingGroup';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { MapView } from './ui/MapView';
+import { UniverseText } from './ui/universeText';
 import { pageMessages } from './ui/pageMessages';
 
 /**
- * How long a refused link's message stays in the group's toolbar, in milliseconds
+ * How long a notice, such as a refused link, stays in the group's toolbar, in milliseconds
  */
-const LINK_NOTICE_MS = 5000;
+const GROUP_NOTICE_MS = 5000;
 
 /**
  * Where a window plays
@@ -71,7 +74,6 @@ interface JoinedLobby
  */
 export class GamePage
 {
-	private readonly editorApi: EditorApi;
 	private readonly characterApi: CharacterApi;
 	private readonly groupApi: GroupApi;
 	private readonly characterSheet: CharacterSheetDialog;
@@ -90,6 +92,17 @@ export class GamePage
 	 * The universe the page's address names, once it has been looked up
 	 */
 	private universe: UniverseSummary | undefined;
+
+	/**
+	 * The map the lobby and group screens show
+	 */
+	private readonly mapView = new MapView();
+
+	/**
+	 * Whether the universe has reached the end of time, so its lobby can't be entered and its groups
+	 * open read-only
+	 */
+	private universeLocked = false;
 
 	/**
 	 * The universe the page's address names, by slug or ID, until it has been looked up once the player has logged in
@@ -128,20 +141,25 @@ export class GamePage
 	constructor(private readonly server: ServerConnection)
 	{
 		const { client, session } = server;
-		const mapView = new MapView();
 
-		this.editorApi = new EditorApi(client);
 		this.characterApi = new CharacterApi(client);
 		this.groupApi = new GroupApi(client);
 		this.linkUniverseKey = readGameUniverseKey();
 
 		// In the lobby, the lobby tells every window of the player to list the characters again; a group's room doesn't
-		this.characterSheet = new CharacterSheetDialog(this.characterApi, () =>
+		this.characterSheet = new CharacterSheetDialog(this.characterApi, this.groupApi, () =>
 		{
 			if (this.destination.kind !== 'lobby')
 			{
 				void this.loadCharacters();
 			}
+		}, (universeId, groupId, characterId) =>
+		{
+			const destination = this.destination;
+			const playingThem = ((destination.kind === 'group') && (destination.characterId === characterId) && (this.joinedGroup?.groupId === groupId));
+
+			// The window playing them in the group goes to the lobby with them, as the group's Leave group does
+			return((playingThem ? this.leaveGroup(characterId) : takeOutOfGroup(this.groupApi, universeId, groupId, characterId)));
 		});
 
 		this.createGroupDialog = new CreateGroupDialog(this.groupApi, (groupId, characterId) =>
@@ -152,7 +170,7 @@ export class GamePage
 
 		this.inviteDialog = new InviteDialog(this.groupApi);
 
-		this.lobbyScreen = new LobbyScreen(mapView, {
+		this.lobbyScreen = new LobbyScreen(this.mapView, {
 			sendChat: (text) =>
 			{
 				const chat: ChatPayload = { text };
@@ -180,11 +198,11 @@ export class GamePage
 			},
 			leaveLobby: () =>
 			{
-				window.location.assign(HOME_PAGE_URL);
+				window.location.assign((this.universe ? universePageUrl(this.universe.slug) : HOME_PAGE_URL));
 			}
 		});
 
-		this.groupScreen = new GroupScreen(mapView, {
+		this.groupScreen = new GroupScreen(this.mapView, {
 			chooseCharacter: (character) =>
 			{
 				this.chooseCharacter(character);
@@ -208,7 +226,13 @@ export class GamePage
 			{
 				void this.loadCharacters();
 			},
-			leave: (characterId) => this.leaveGroup(characterId)
+			leave: (characterId) => this.leaveGroup(characterId),
+			sendChat: (text) =>
+			{
+				const chat: ChatPayload = { text };
+
+				this.joinedGroup?.connection.room.send(GameMessageType.Chat, chat);
+			}
 		});
 
 		this.inviteScreen = new InviteScreen({
@@ -238,7 +262,6 @@ export class GamePage
 		{
 			this.onAccount(account.player);
 		});
-
 		session.onLeave(() =>
 		{
 			this.player = null;
@@ -304,7 +327,16 @@ export class GamePage
 
 		try
 		{
-			this.universe = await this.findUniverse(key);
+			const { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages, stage } = await getUniverseDetails(this.server.client, key);
+
+			this.universe = { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages };
+			this.universeLocked = (stage === 'end_of_time');
+
+			// The rooms name areas and tiles by ID, so the map looks their names up in this
+			const text = new UniverseText(this.server.client, id);
+
+			await text.load();
+			this.mapView.useText(text);
 		}
 		catch (error)
 		{
@@ -328,7 +360,7 @@ export class GamePage
 
 		const characters = await this.loadCharacters();
 		const remembered = this.rememberedCharacterId();
-		const playable = characters?.characters.filter((character) => (character.deleteAt === null)) ?? [];
+		const playable = characters?.characters.filter((character) => ((character.deleteAt === null) && (character.barredBy === null))) ?? [];
 		const character = (playable.find((each) => (each.id === remembered))
 			?? playable.find((each) => (each.id === characters?.lastPlayedId)));
 
@@ -340,37 +372,6 @@ export class GamePage
 		{
 			this.lobbyCharacterId = character?.id;
 			this.goToLobby();
-		}
-	}
-
-	/**
-	 * A universe as Home lists it. A universe that isn't listed yet is found among the universes the
-	 * player has a role in, the only ones they could play
-	 *
-	 * @param key The universe's slug or ID
-	 * @return The universe
-	 */
-	private async findUniverse(key: string): Promise<UniverseSummary>
-	{
-		try
-		{
-			const { id, name, slug, shortDescription, ruleset } = await getUniverseDetails(this.server.client, key);
-
-			return({ id, name, slug, shortDescription, ruleset });
-		}
-		catch
-		{
-			const { universes } = await this.editorApi.listUniverses();
-			const own = universes.find((universe) => ((universe.slug === key) || (universe.id === key)));
-
-			if (!own)
-			{
-				throw new Error(`The player has no universe with the slug or ID ${key}`);
-			}
-
-			const { id, name, slug, shortDescription, ruleset } = own;
-
-			return({ id, name, slug, shortDescription, ruleset });
 		}
 	}
 
@@ -492,6 +493,12 @@ export class GamePage
 	 */
 	private goToLobby(notice?: string): void
 	{
+		if (this.universeLocked)
+		{
+			this.showUniverseLocked((this.universe?.name ?? ''));
+			return;
+		}
+
 		this.destination = { kind: 'lobby' };
 
 		if (notice !== undefined)
@@ -571,6 +578,75 @@ export class GamePage
 	}
 
 	/**
+	 * Says the player was turned out of the universe because a server admin disabled it
+	 *
+	 * @param universe The universe's name
+	 */
+	private showUniverseDisabled(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.universeDisabled',
+			defaultMessage: 'The site\'s admins have disabled {universe}, so it can\'t be played for now.',
+			description: 'Shown on the game\'s page when the universe being played was disabled by one of the site\'s admins; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
+	 * Says the player was turned out of the universe because their role in it changed
+	 *
+	 * @param universe The universe's name
+	 */
+	private showAccessLost(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.accessLost',
+			defaultMessage: 'Your role in {universe} was changed or taken away, so you can\'t play it while it is in its current stage.',
+			description: 'Shown on the game\'s page when the player was turned out of a universe they were playing because one of its creators changed or removed their role, or they left it; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
+	 * Says the player was turned out of the universe because its stage changed to one their role doesn't
+	 * let them play it in
+	 *
+	 * @param universe The universe's name
+	 */
+	private showStageChanged(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.stageChanged',
+			defaultMessage: 'The stage of {universe} was changed, and your role doesn\'t let you play it in its new stage.',
+			description: 'Shown on the game\'s page when the player was turned out of a universe they were playing because one of its creators changed its stage (e.g. from open to everyone back to testing); {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
+	 * Says the universe's lobby can't be entered because the universe has reached the end of time
+	 *
+	 * @param universe The universe's name
+	 */
+	private showUniverseLocked(universe: string): void
+	{
+		this.destination = { kind: 'none' };
+		this.showOutside(t({
+			id: 'game.universeLocked',
+			defaultMessage: '{universe} has reached the end of time, so it is locked and its lobby can\'t be entered. Characters in a group can still open it to look around.',
+			description: 'Shown on the game\'s page instead of a universe\'s lobby when the universe is in the stage end of time, which locks it, or when it reached that stage while the player was in the lobby; {universe} is its name'
+		}, {
+			universe
+		}));
+	}
+
+	/**
 	 * Explains to the player why something they asked for didn't happen
 	 *
 	 * @param reason Why
@@ -579,12 +655,14 @@ export class GamePage
 	{
 		if (reason === NoticeReason.ChatTooFast)
 		{
-			this.lobbyScreen.restoreLastChat();
-			this.lobbyScreen.showNotice(t({
-				id: 'lobby.chat.tooFast',
-				defaultMessage: 'You are sending messages too quickly. Wait a moment and try again.',
-				description: 'Shown in the lobby when the player sends chat messages faster than allowed'
-			}));
+			if (this.joinedGroup)
+			{
+				this.groupScreen.refuseChatTooFast();
+			}
+			else
+			{
+				this.lobbyScreen.refuseChatTooFast();
+			}
 		}
 		else if (reason === NoticeReason.GroupNotTogether)
 		{
@@ -594,8 +672,16 @@ export class GamePage
 				description: 'Shown in a group\'s toolbar, and read out, when a character tries a door or path that needs every member of the group, and one isn\'t playing, is in another area, or is on their way somewhere'
 			});
 
-			this.groupScreen.setStatus(message, LINK_NOTICE_MS);
+			this.groupScreen.setStatus(message, GROUP_NOTICE_MS);
 			announce(message);
+		}
+		else if (reason === NoticeReason.CharacterBarred)
+		{
+			this.lobbyScreen.showNotice(t({
+				id: 'lobby.characterBarred',
+				defaultMessage: 'The universe\'s creators disabled that character\'s race or class, so they can\'t play until it is enabled again.',
+				description: 'Shown in the lobby when the character the player was playing, or chose, can\'t play because the universe\'s creators disabled their race or class for characters already of it; the lobby switches to another of their characters, or makes them a ghost'
+			}));
 		}
 	}
 
@@ -708,16 +794,12 @@ export class GamePage
 
 		try
 		{
-			await this.groupApi.leaveGroup(this.universe.id, joined.groupId, characterId);
+			await takeOutOfGroup(this.groupApi, this.universe.id, joined.groupId, characterId);
 		}
 		catch (error)
 		{
 			this.leavingCharacterId = undefined;
-			throw new Error(describeEditorError(error, {
-				id: 'group.leaveFailed',
-				defaultMessage: 'Could not leave the group.',
-				description: 'Shown when the character couldn\'t be taken out of their group'
-			}), { cause: error });
+			throw error;
 		}
 
 		// Loaded first, so the lobby knows the character is free to play there
@@ -827,6 +909,11 @@ export class GamePage
 			this.lobbyScreen.addChatMessage(message);
 		});
 
+		room.onMessage(LobbyServerMessageType.ChatAuthorDeleted, (deleted: ChatAuthorDeletedPayload) =>
+		{
+			this.lobbyScreen.forgetChatAuthor(deleted.playerId);
+		});
+
 		// The lobby starts a player as their most recent character there; a window that came to play
 		// another asks for them. A character the screen doesn't list was made in another window since the list loaded
 		room.onMessage(LobbyServerMessageType.PlayingAs, (playingAs: PlayingAsPayload) =>
@@ -876,7 +963,8 @@ export class GamePage
 	}
 
 	/**
-	 * Whether the lobby can play one of the player's characters: they aren't in a group or given their last rites
+	 * Whether the lobby can play one of the player's characters: they aren't in a group, given their last
+	 * rites or barred by their race or class
 	 *
 	 * @param characterId The character's ID
 	 * @return True when it can
@@ -885,7 +973,7 @@ export class GamePage
 	{
 		const character = this.characters?.characters.find((each) => (each.id === characterId));
 
-		return((character !== undefined) && (character.groupId === null) && (character.deleteAt === null));
+		return((character !== undefined) && (character.groupId === null) && (character.deleteAt === null) && (character.barredBy === null));
 	}
 
 	/**
@@ -934,6 +1022,31 @@ export class GamePage
 		if (code === ServerCloseCode.UniverseDeleted.valueOf())
 		{
 			this.showUniverseDeleted(joined.universe.name);
+			return;
+		}
+
+		if (code === ServerCloseCode.AccessLost.valueOf())
+		{
+			this.showAccessLost(joined.universe.name);
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseDisabled.valueOf())
+		{
+			this.showUniverseDisabled(joined.universe.name);
+			return;
+		}
+
+		if (code === ServerCloseCode.StageChanged.valueOf())
+		{
+			this.showStageChanged(joined.universe.name);
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseLocked.valueOf())
+		{
+			this.universeLocked = true;
+			this.showUniverseLocked(joined.universe.name);
 			return;
 		}
 
@@ -992,9 +1105,30 @@ export class GamePage
 
 		this.joinedGroup = { groupId, connection };
 
+		// The room locks when the universe reaches the end of time, and unlocks when it leaves it
+		Callbacks.get(connection.room).listen('locked', (locked: boolean) =>
+		{
+			this.universeLocked = locked;
+		});
+
 		connection.room.onMessage(GameServerMessageType.Notice, (notice: NoticePayload) =>
 		{
 			this.onNotice(notice.reason);
+		});
+
+		connection.room.onMessage(GameServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
+		{
+			this.groupScreen.setChatHistory(history.messages);
+		});
+
+		connection.room.onMessage(GameServerMessageType.Chat, (message: KeptChatMessage) =>
+		{
+			this.groupScreen.addChatMessage(message);
+		});
+
+		connection.room.onMessage(GameServerMessageType.ChatAuthorDeleted, (deleted: ChatAuthorDeletedPayload) =>
+		{
+			this.groupScreen.forgetChatAuthor(deleted.playerId);
 		});
 
 		connection.room.onLeave((code: number) =>
@@ -1060,6 +1194,24 @@ export class GamePage
 			return;
 		}
 
+		if (code === ServerCloseCode.AccessLost.valueOf())
+		{
+			this.showAccessLost((this.universe?.name ?? ''));
+			return;
+		}
+
+		if (code === ServerCloseCode.UniverseDisabled.valueOf())
+		{
+			this.showUniverseDisabled((this.universe?.name ?? ''));
+			return;
+		}
+
+		if (code === ServerCloseCode.StageChanged.valueOf())
+		{
+			this.showStageChanged((this.universe?.name ?? ''));
+			return;
+		}
+
 		// The room can close on a character the window is taking out of the group before the server has answered
 		if (characterId === this.leavingCharacterId)
 		{
@@ -1079,6 +1231,26 @@ export class GamePage
 				id: 'group.characterLeft',
 				defaultMessage: '{name} is no longer in the group, or can\'t be played.',
 				description: 'Shown in the lobby when the character a window played left the group from another window, or was deleted; {name} is the character\'s name'
+			}, {
+				name
+			});
+		}
+		else if (code === ServerCloseCode.CharacterBarred.valueOf())
+		{
+			notice = t({
+				id: 'group.characterBarred',
+				defaultMessage: 'The universe\'s creators disabled the race or class of {name}, so they can\'t play until it is enabled again. They are still in the group.',
+				description: 'Shown in the lobby when the character a window played in a group was taken off its map because the universe\'s creators disabled their race or class for characters already of it; {name} is the character\'s name'
+			}, {
+				name
+			});
+		}
+		else if (code === ServerCloseCode.GroupSizeLowered.valueOf())
+		{
+			notice = t({
+				id: 'group.sizeLowered',
+				defaultMessage: 'The universe\'s creators made groups smaller, so {name} is no longer in the group, or the group was disbanded.',
+				description: 'Shown in the lobby when the universe\'s creators lowered its group size, which took the character a window played out of their group or disbanded it; {name} is the character\'s name'
 			}, {
 				name
 			});
@@ -1109,17 +1281,19 @@ export class GamePage
 	}
 
 	/**
-	 * The storage key of the character the tab plays in the universe
+	 * The key of the character the tab plays in the universe, a player value in the tab's own storage
+	 * (rememberedValues.ts)
 	 *
 	 * @return The key, or undefined before the universe is known
 	 */
 	private characterStorageKey(): string | undefined
 	{
-		return(this.universe ? `kiln.playing.${this.universe.id}` : undefined);
+		return(this.universe ? `playing.${this.universe.id}` : undefined);
 	}
 
 	/**
-	 * Remembers which character the tab plays, so reloading the page plays them again
+	 * Remembers which character the tab plays, so reloading the page plays them again. Without storage,
+	 * the tab plays the player's most recent character next time
 	 *
 	 * @param characterId The character's ID
 	 */
@@ -1127,16 +1301,9 @@ export class GamePage
 	{
 		const key = this.characterStorageKey();
 
-		try
+		if (key !== undefined)
 		{
-			if (key !== undefined)
-			{
-				sessionStorage.setItem(key, characterId);
-			}
-		}
-		catch
-		{
-			// Without storage, the tab plays the player's most recent character next time
+			rememberPlayerValue(key, characterId, 'session');
 		}
 	}
 
@@ -1149,13 +1316,6 @@ export class GamePage
 	{
 		const key = this.characterStorageKey();
 
-		try
-		{
-			return(((key !== undefined) ? (sessionStorage.getItem(key) ?? undefined) : undefined));
-		}
-		catch
-		{
-			return(undefined);
-		}
+		return(((key !== undefined) ? (readPlayerValue(key, 'session') ?? undefined) : undefined));
 	}
 }

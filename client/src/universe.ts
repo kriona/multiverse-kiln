@@ -1,53 +1,89 @@
 import { ServerError } from '@colyseus/sdk';
-import { RULESET_NAMES, SessionServerMessageType, type AccountPayload, type UniverseDetails } from '@multiverse-kiln/shared';
+import { RULESET_NAMES, SessionServerMessageType, type AccountPayload, type UniverseDetails, type UniversePagePayload } from '@multiverse-kiln/shared';
 
-import { startLocalization, t } from './localization';
+import { t } from './localization';
+import { AuthApi } from './network/authApi';
 import { CharacterApi } from './network/characterApi';
-import { connectToServer, createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
-import { startPageLifecycle } from './pageLifecycle';
-import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
-import { startAccountMenu } from './ui/accountMenu';
+import { GroupApi } from './network/groupApi';
+import { ProfileApi } from './network/profileApi';
+import { createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
+import { startPage } from './pageStart';
+import { editPageUrl, gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } from './ui/dom';
-import { startLanguagePicker } from './ui/languagePicker';
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
-import { startShortcuts } from './ui/shortcuts';
-import { startSiteSocials } from './ui/siteSocials';
 import { UniverseCharacters } from './ui/UniverseCharacters';
+import { reportSiteLanguageChange, UniverseLanguageChooser } from './ui/UniverseLanguageChooser';
 
 /**
- * Shows a universe: its name, ruleset and descriptions, and Enter Universe, which goes to its lobby.
- * The address ends with the slug, so one opened by ID changes to it
+ * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, Enter
+ * Universe, which goes to its lobby, or to the player's group in a locked universe, and Edit Universe,
+ * which opens it in the world editor, for players who work on it (creators, builders, translators and
+ * server admins with 2FA on). The address ends with the slug, so one opened by ID changes to it
  *
  * @param universe The universe
  */
-function showUniverse(universe: UniverseDetails): void
+function showUniverse(universe: UniversePagePayload): void
 {
 	getElement('universe-name', HTMLElement).textContent = universe.name;
 	getElement('universe-ruleset', HTMLElement).textContent = t(RULESET_NAMES[universe.ruleset]);
 	getElement('universe-summary', HTMLElement).textContent = universe.shortDescription;
 	showMarkdown(getElement('universe-description', HTMLElement), universe.longDescription);
+	getElement('universe-locked', HTMLElement).hidden = (universe.stage !== 'end_of_time');
 	getElement('universe-enter', HTMLAnchorElement).href = gamePageUrl(universe.slug);
+	getElement('universe-edit', HTMLAnchorElement).href = editPageUrl(universe.id);
+	getElement('universe-edit', HTMLAnchorElement).hidden = !universe.editable;
 	replacePagePath(universePageUrl(universe.slug));
 	setPageTitle(universe.name);
 	showScreen('universe');
 }
 
 /**
- * Lists the player's characters in the universe while the browser is logged in, following the session
- * as the player logs in or out in any window. The page works without it, so a failed connection only
+ * Hides Edit Universe once the browser is no longer logged in. Whether it shows before then is what the
+ * server said as the page loaded (UniversePagePayload.editable)
+ */
+function hideEditLink(): void
+{
+	getElement('universe-edit', HTMLAnchorElement).hidden = true;
+}
+
+/**
+ * A universe shown on the page, with its Languages section
+ */
+interface ShownUniverse
+{
+	universe: UniverseDetails;
+	languages: UniverseLanguageChooser;
+}
+
+/**
+ * The parts of the page that follow the player logging in and out
+ */
+interface PlayerFollowers
+{
+	characters: UniverseCharacters;
+	languages: UniverseLanguageChooser;
+	auth: AuthApi;
+	profiles: ProfileApi;
+}
+
+/**
+ * Lists the player's characters in the universe while the browser is logged in, hides Edit Universe once
+ * it isn't, and tells the Languages section about their profile's language, following the session as
+ * the player logs in or out in any window. The page works without it, so a failed connection only
  * leaves the list hidden
  *
- * @param universe The universe
+ * @param shown The universe once it is shown, or undefined when it couldn't be
+ * @param connection The page's connection to the server (startPage())
  */
-async function followPlayer(universe: UniverseDetails): Promise<void>
+async function followPlayer(shown: Promise<ShownUniverse | undefined>, connection: Promise<ServerConnection>): Promise<void>
 {
 	let server: ServerConnection;
 
 	try
 	{
-		server = await connectToServer();
+		server = await connection;
 	}
 	catch (error)
 	{
@@ -55,22 +91,91 @@ async function followPlayer(universe: UniverseDetails): Promise<void>
 		return;
 	}
 
-	const api = new CharacterApi(server.client);
-	const sheet = new CharacterSheetDialog(api, () =>
-	{
-		void characters.follow(true);
-	});
-	const characters = new UniverseCharacters(api, universe.id, sheet);
+	// The session room's first message can come before the universe has loaded, and the room doesn't
+	// keep messages for listeners added later, so these listen at once and wait for the universe
+	const followers = shown.then((page) => ((page === undefined) ? undefined : createFollowers(page, server)));
 
 	server.session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 	{
-		void characters.follow(account.player !== null);
+		void followers.then((parts) =>
+		{
+			if (parts)
+			{
+				if (account.player === null)
+				{
+					hideEditLink();
+				}
+
+				void parts.characters.follow(account.player !== null);
+				void followProfileLocale(parts.languages, parts.auth, ((account.player === null) ? undefined : parts.profiles));
+			}
+		});
 	});
 
 	server.session.onLeave(() =>
 	{
-		void characters.follow(false);
+		void followers.then((parts) =>
+		{
+			if (parts)
+			{
+				hideEditLink();
+				void parts.characters.follow(false);
+				parts.languages.setPlayer(undefined, null);
+			}
+		});
 	});
+}
+
+/**
+ * Makes the parts of the page that follow the player
+ *
+ * @param page The universe shown
+ * @param server The page's connection to the server
+ * @return The parts
+ */
+function createFollowers(page: ShownUniverse, server: ServerConnection): PlayerFollowers
+{
+	const api = new CharacterApi(server.client);
+	const sheet = new CharacterSheetDialog(api, new GroupApi(server.client), () =>
+	{
+		void characters.follow(true);
+	});
+	const characters = new UniverseCharacters(api, page.universe.id, sheet);
+
+	return({
+		characters,
+		languages: page.languages,
+		auth: new AuthApi(server.client),
+		profiles: new ProfileApi(server.client)
+	});
+}
+
+/**
+ * Tells the Languages section whether the browser is logged in, and the language the profile names. A
+ * profile that can't be read is taken to name none, which only leaves out the note that choosing a
+ * language changes it
+ *
+ * @param languages The Languages section
+ * @param auth The login routes
+ * @param profiles The profile routes while the browser is logged in, or undefined while it isn't
+ */
+async function followProfileLocale(languages: UniverseLanguageChooser, auth: AuthApi, profiles: ProfileApi | undefined): Promise<void>
+{
+	if (profiles === undefined)
+	{
+		languages.setPlayer(undefined, null);
+		return;
+	}
+
+	try
+	{
+		languages.setPlayer(profiles, ((await auth.getSession())?.locale ?? null));
+	}
+	catch (error)
+	{
+		console.error('Could not find the language your profile names:', error);
+		languages.setPlayer(profiles, null);
+	}
 }
 
 /**
@@ -87,15 +192,22 @@ async function start(): Promise<void>
 		return;
 	}
 
-	startPageLifecycle();
-	await startLocalization();
-	void startAccountMenu();
-	startLanguagePicker();
-	void startSiteSocials();
-	startShortcuts();
-	showStatus(t(pageMessages.loading));
+	const { server } = await startPage();
 
-	let universe: UniverseDetails;
+	reportSiteLanguageChange();
+	showStatus(t(pageMessages.loading));
+	void followPlayer(loadUniverse(key), server);
+}
+
+/**
+ * Loads and shows the universe an address names, or says why it can't be shown
+ *
+ * @param key The universe's slug or ID
+ * @return The universe shown, or undefined when it couldn't be
+ */
+async function loadUniverse(key: string): Promise<ShownUniverse | undefined>
+{
+	let universe: UniversePagePayload;
 
 	try
 	{
@@ -117,11 +229,15 @@ async function start(): Promise<void>
 			defaultMessage: 'Universe',
 			description: 'The browser tab\'s title on a universe\'s page when the universe couldn\'t be shown, before the game engine\'s name'
 		}));
-		return;
+		return(undefined);
 	}
 
 	showUniverse(universe);
-	void followPlayer(universe);
+
+	return({
+		universe,
+		languages: new UniverseLanguageChooser(universe)
+	});
 }
 
 void start();

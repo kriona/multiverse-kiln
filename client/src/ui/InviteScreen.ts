@@ -4,7 +4,7 @@ import { t } from '../localization';
 import { characterMessages } from './characterMessages';
 import { describeMobScale, difficultyName } from './difficultyNames';
 import { getElement, setPageTitle, showMessage } from './dom';
-import { className, raceName } from './raceAndClassNames';
+import { characterDescription } from './raceAndClassNames';
 
 /**
  * What the invite screen asks the app to do
@@ -184,14 +184,15 @@ export class InviteScreen
 					defaultMessage: 'To be deleted',
 					description: 'On the screen an invite link opens, beside a character who can\'t join because they have been given their last rites (are waiting to be deleted)'
 				})
-				: undefined));
+				: ((character.barredBy !== null)
+					? t(characterMessages.barred, {
+						bar: character.barredBy
+					})
+					: undefined)));
 
 		name.textContent = character.name;
 		description.className = 'character-description';
-		description.textContent = t(characterMessages.raceAndClass, {
-			race: raceName(character.race, characters.ruleset),
-			class: className(character.characterClass, characters.ruleset)
-		});
+		description.textContent = characterDescription(character, characters.ruleset);
 
 		button.type = 'button';
 		button.className = 'character-choice';

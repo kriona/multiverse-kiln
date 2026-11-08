@@ -14,40 +14,47 @@
 					<h1>
 						<!-- include site-name.html -->
 					</h1>
-					<a class="button secondary toolbar-link" href="/admin" data-message="home.siteSettings" data-translation-context="Link in Home's toolbar to the page where the site's admins change settings for the whole site"><!-- icon ph:gear -->Site Settings</a>
 					<a id="home-log-in" class="button toolbar-link" href="/login" data-message="home.logIn" data-translation-context="Link in Home's toolbar to the page for logging in or creating an account" hidden><!-- icon ph:sign-in -->Log in</a>
 					<!-- include account.html -->
 				</header>
-				<p id="home-notice" class="notice" role="status" hidden></p>
-				<img class="home-logo" src="/src/assets/layout/multiverse-kiln.png" alt="" width="256" height="256" />
-				<div class="home-body">
-					<div class="panel universes">
-						<h2 data-message="home.universes" data-translation-context="Heading of the list of universes anyone can play">Universes</h2>
-						<ul id="universe-list" class="universe-list"></ul>
-						<p id="universe-empty" class="universe-empty" data-message="home.noUniverses" data-translation-context="Shown instead of the list of universes when there are none to play" hidden>There are no universes to play in yet.</p>
-						<button id="universe-more" type="button" data-message="home.showMore" data-translation-context="Button that adds the next page of universes to the list" hidden>Show more</button>
-					</div>
-					<div id="own-universes" class="panel universes" hidden>
-						<div class="panel-heading">
-							<h2 data-message="home.ownUniverses" data-translation-context="Heading of the list of universes the player can edit">Your universes</h2>
-							<button id="create-universe" type="button" data-shortcut="Alt+N" data-message="home.createUniverse" data-translation-context="Button that opens the dialog for making a new universe"><!-- icon ph:plus -->Create Universe</button>
+				<div class="home-page">
+					<p id="home-notice" class="notice" role="status" hidden></p>
+					<img class="home-logo" src="/src/assets/layout/multiverse-kiln.png" alt="" width="256" height="256" />
+					<div class="home-body">
+						<div id="home-empty" class="home-empty" hidden>
+							<h2 data-message="home.empty.title" data-translation-context="Heading Home shows in place of its lists when there are no universes to play, the player has none of their own, and the site's admins have turned off creating universes">The stars are still being forged.</h2>
+							<p data-message="home.empty.text" data-translation-context="Under the heading Home shows when there are no universes to play yet and none can be created">Come back later to see the light of the first universe.</p>
 						</div>
-						<ul id="own-universe-list" class="universe-list"></ul>
-						<p id="own-universe-empty" class="universe-empty" data-message="home.noOwnUniverses" data-translation-context="Shown instead of the list of universes the player can edit when there are none" hidden>You haven't made a universe yet.</p>
+						<div id="public-universes" class="panel universes" hidden>
+							<h2 data-message="home.universes" data-translation-context="Heading of the list of universes anyone can play">Universes</h2>
+							<ul id="universe-list" class="universe-list"></ul>
+							<button id="universe-more" type="button" data-message="home.showMore" data-translation-context="Button that adds the next page of universes to the list" hidden>Show more</button>
+						</div>
+						<div id="testing-universes" class="panel universes" hidden>
+							<h2 data-message="home.testingUniverses" data-translation-context="Heading of Home's list of universes in the stage prologue, open for testing before everyone can play, shown only to players with a role in one">Open for testing</h2>
+							<p class="universe-hint" data-message="home.testingHint" data-translation-context="Under the heading of Home's list of universes open for testing, saying who sees them">Universes you have a role in that are open for testing. Only their editors and beta testers see them here.</p>
+							<ul id="testing-universe-list" class="universe-list"></ul>
+						</div>
+						<div id="own-universes" class="panel universes" hidden>
+							<h2 id="own-universes-heading" data-message="home.ownUniverses" data-translation-context="Heading of the list of universes the player can edit">Your universes</h2>
+							<h2 id="own-universes-invite" data-message="home.ownUniversesNone" data-translation-context="Heading Home shows in place of the list of universes the player can edit when they have none, above the Create Universe button" hidden>Try your hand at the act of creation?</h2>
+							<ul id="own-universe-list" class="universe-list"></ul>
+							<button id="create-universe" type="button" class="home-create" data-shortcut="Alt+N" data-message="home.createUniverse" data-translation-context="Button that opens the dialog for making a new universe"><!-- icon ph:plus -->Create Universe</button>
+						</div>
 					</div>
 				</div>
 				<dialog id="create-universe-dialog" class="panel dialog" aria-labelledby="create-universe-title">
 					<form id="create-universe-form" class="form">
 						<h2 id="create-universe-title" data-message="home.create.title" data-translation-context="Title of the dialog for making a new universe">Create Universe</h2>
-						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
 							<input id="create-universe-name" required />
 						</label>
-						<label data-message="universe.shortDescription" data-translation-context="Label of the field for a universe's description in one sentence">
+						<label data-message="universe.shortDescription" data-translation-context="Label of the field for a universe's description in one sentence; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							1-sentence description
 							<input id="create-universe-description" />
 						</label>
-						<label data-message="universe.ruleset" data-translation-context="Label of the field for a universe's game rules, e.g. Pathfinder 1E">
+						<label data-message="universe.ruleset" data-translation-context="Label of the field for a universe's game rules, e.g. Pathfinder 1E, in the Create Universe dialog, and heading of the column in the admin page's list of universes for each one's game rules">
 							Ruleset
 							<select id="create-universe-ruleset" required></select>
 						</label>

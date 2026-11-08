@@ -1,7 +1,7 @@
 import type { MapBounds } from './maps.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
-import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode } from './universes.js';
+import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode, UniverseStage } from './universes.js';
 
 /**
  * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
@@ -41,7 +41,13 @@ export enum ServerMessageType
 	/**
 	 * Chunks of the area's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
 	 */
-	Chunks = 'chunks'
+	Chunks = 'chunks',
+
+	/**
+	 * A save in the editor changed the universe's text (names, translations or languages), so clients
+	 * fetch it again (UniverseTextPayload). No payload
+	 */
+	UniverseText = 'universeText'
 }
 
 /**
@@ -53,7 +59,12 @@ export enum GameMessageType
 	 * Control another of the player's characters in the group, in this window only
 	 * (payload: ControlPayload). The room answers with Welcome and Area, as on joining
 	 */
-	Control = 'control'
+	Control = 'control',
+
+	/**
+	 * Say something in the group's chat, as the character the window controls (payload: ChatPayload)
+	 */
+	Chat = 'chat'
 }
 
 /**
@@ -70,7 +81,23 @@ export enum GameServerMessageType
 	 * The group has seen cells of the client's area for the first time: their tiles, which were sent as
 	 * UNSEEN_CELL until now (payload: CellsSeenPayload)
 	 */
-	CellsSeen = 'cellsSeen'
+	CellsSeen = 'cellsSeen',
+
+	/**
+	 * The group's kept chat, sent to a window as it joins (payload: KeptChatHistoryPayload)
+	 */
+	ChatHistory = 'chatHistory',
+
+	/**
+	 * A new message in the group's chat, sent to every window in the room (payload: KeptChatMessage)
+	 */
+	Chat = 'chat',
+
+	/**
+	 * A player who wrote messages in the group's chat deleted their account (payload:
+	 * ChatAuthorDeletedPayload)
+	 */
+	ChatAuthorDeleted = 'chatAuthorDeleted'
 }
 
 /**
@@ -171,8 +198,9 @@ export interface AreaTile
 	key: string | null;
 
 	/**
-	 * The universe's name for the tile, or null for a default tile's name, which the client shows in
-	 * the player's language from key
+	 * The universe's name for the tile in its source language, or null for a default tile's name, which
+	 * the client shows in the player's language from key. The game looks the universe's names up in the
+	 * player's language by id (UniverseTextPayload)
 	 */
 	name: string | null;
 
@@ -262,6 +290,11 @@ export interface AreaLinkCell
 export interface AreaPayload
 {
 	areaId: string;
+
+	/**
+	 * The area's name in the universe's source language. A room sends the same payload to every player,
+	 * so the game looks the name up in the player's language by areaId (UniverseTextPayload)
+	 */
 	name: string;
 
 	/**
@@ -358,6 +391,11 @@ export enum LobbyServerMessageType
 	Chat = 'chat',
 
 	/**
+	 * A player who wrote messages in the chat deleted their account (payload: ChatAuthorDeletedPayload)
+	 */
+	ChatAuthorDeleted = 'chatAuthorDeleted',
+
+	/**
 	 * Which character the player is playing, sent to a window as it joins and to every window of the
 	 * player when it changes (payload: PlayingAsPayload)
 	 */
@@ -384,7 +422,7 @@ export interface LobbyJoinOptions
 }
 
 /**
- * Payload of LobbyMessageType.Chat
+ * Payload of LobbyMessageType.Chat, GameMessageType.Chat and EditorMessageType.Chat
  */
 export interface ChatPayload
 {
@@ -425,6 +463,17 @@ export interface AccountPlayer
 	playerId: string;
 
 	name: string;
+
+	/**
+	 * Whether the player is a server admin, as of when the window joined (SessionPlayer.serverAdmin)
+	 */
+	serverAdmin: boolean;
+
+	/**
+	 * How long until the browser's session ends if it isn't used again, in milliseconds, as of when the
+	 * window joined (SessionPlayer.sessionExpiresInMs)
+	 */
+	sessionExpiresInMs: number;
 }
 
 /**
@@ -443,10 +492,13 @@ export interface AccountPayload
  */
 export interface ChatMessage
 {
-	playerId: string;
+	/**
+	 * The player who sent it, or null once their account is deleted
+	 */
+	playerId: string | null;
 
 	/**
-	 * The sender's name when they sent it: in a lobby, their character's
+	 * The sender's name when they sent it: in a lobby, their character's. Empty once their account is deleted
 	 */
 	name: string;
 
@@ -467,6 +519,101 @@ export interface ChatHistoryPayload
 }
 
 /**
+ * Most messages a kept chat holds (the editors' chat and each group's); writing another deletes the oldest
+ */
+export const MAX_KEPT_CHAT_MESSAGES = 200;
+
+/**
+ * What the server can say in a kept chat, in a notice of its own rather than a message a player wrote:
+ *
+ * - created: a character created the group, as its anchor being
+ * - joined: a character joined the group
+ * - left: a character left the group
+ */
+export const CHAT_NOTICES = [
+	'created',
+	'joined',
+	'left'
+] as const;
+
+export type ChatNotice = typeof CHAT_NOTICES[number];
+
+/**
+ * One message of a chat that is kept: a group's or the editors'
+ */
+export interface KeptChatMessage
+{
+	/**
+	 * The player who wrote it, or null once their account is deleted. For a notice, the player of the
+	 * character it is about
+	 */
+	playerId: string | null;
+
+	/**
+	 * The writer's name: in a group's chat, their character's when they wrote it, and in the editors'
+	 * chat the player's display name. Empty once their account is deleted. For a notice, the name of the
+	 * character it is about
+	 */
+	name: string;
+
+	/**
+	 * For a notice the server wrote, what it says, which each window writes in its player's language,
+	 * with text empty; null for a message a player wrote
+	 */
+	notice: ChatNotice | null;
+
+	/**
+	 * In the editors' chat, the writer's username; null in a group's chat, and once their account is deleted
+	 */
+	username: string | null;
+
+	text: string;
+
+	/**
+	 * When the server received it, in milliseconds since the epoch
+	 */
+	sentAt: number;
+}
+
+/**
+ * Payload of LobbyServerMessageType.ChatAuthorDeleted, GameServerMessageType.ChatAuthorDeleted and
+ * EditorServerMessageType.ChatAuthorDeleted: a player who wrote messages in the chat has deleted their
+ * account, so the window shows those messages without their name
+ */
+export interface ChatAuthorDeletedPayload
+{
+	playerId: string;
+}
+
+/**
+ * Payload of GameServerMessageType.ChatHistory and EditorServerMessageType.ChatHistory: the messages the
+ * chat keeps, oldest first
+ */
+export interface KeptChatHistoryPayload
+{
+	messages: KeptChatMessage[];
+
+	/**
+	 * In a chat that remembers how far each player has read it (the editors' chat), when the newest
+	 * message the window's player has seen was sent, in milliseconds since the epoch. Others' messages
+	 * sent after it are unread. Absent in other chats, whose kept messages all count as read
+	 */
+	readAt?: number;
+}
+
+/**
+ * Payload of EditorMessageType.ChatRead and EditorServerMessageType.ChatRead: how far the player has
+ * read the chat
+ */
+export interface ChatReadPayload
+{
+	/**
+	 * When the newest message the player has seen was sent, in milliseconds since the epoch
+	 */
+	readAt: number;
+}
+
+/**
  * Why a request to a lobby or a group's room was turned down
  */
 export enum NoticeReason
@@ -478,13 +625,20 @@ export enum NoticeReason
 	GroupNotTogether = 'groupNotTogether',
 
 	/**
-	 * The player sent chat messages faster than the lobby allows; the message was dropped
+	 * The player sent chat messages faster than the room allows; the message was dropped
 	 */
-	ChatTooFast = 'chatTooFast'
+	ChatTooFast = 'chatTooFast',
+
+	/**
+	 * The universe's creators disabled the race or class of the character the player was playing in the
+	 * lobby, for characters already of it, so the lobby switched them to another character or made them
+	 * a ghost; or the player chose a character who is barred like that
+	 */
+	CharacterBarred = 'characterBarred'
 }
 
 /**
- * Payload of LobbyServerMessageType.Notice and GameServerMessageType.Notice
+ * Payload of LobbyServerMessageType.Notice, GameServerMessageType.Notice and EditorServerMessageType.Notice
  */
 export interface NoticePayload
 {
@@ -506,6 +660,31 @@ export interface UniverseSummary
 
 	shortDescription: string;
 	ruleset: Ruleset;
+
+	/**
+	 * The language its text is written in, and the languages it is translated into, by tag
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
+}
+
+/**
+ * Response of GET UNIVERSES_PATH/:universeId/text: the names the rooms leave the client to look up by
+ * ID, in the player's language, like a universe's page. Sent with an ETag that changes with the text,
+ * so the client asks again cheaply when a room says it changed (ServerMessageType.UniverseText)
+ */
+export interface UniverseTextPayload
+{
+	/**
+	 * Each enabled area's name, by ID
+	 */
+	areas: Record<string, string>;
+
+	/**
+	 * Each tile's name by ID, for tiles the universe has named; a default tile it hasn't is named in
+	 * the player's language by its key
+	 */
+	tiles: Record<string, string>;
 }
 
 /**
@@ -517,6 +696,24 @@ export interface UniverseDetails extends UniverseSummary
 	 * Markdown
 	 */
 	longDescription: string;
+
+	/**
+	 * Its stage: let_there_be_light or end_of_time for everyone, and the others for players whose role
+	 * lets them play it there
+	 */
+	stage: UniverseStage;
+}
+
+/**
+ * Response of GET UNIVERSES_PATH/:key: the universe, and what the browser asking may do with it
+ */
+export interface UniversePagePayload extends UniverseDetails
+{
+	/**
+	 * Whether the browser's player may work on the universe in the editor: a creator, builder or
+	 * translator, or a server admin with 2FA on
+	 */
+	editable: boolean;
 }
 
 /**

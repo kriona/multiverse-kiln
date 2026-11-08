@@ -2,10 +2,7 @@
 
 Phased roadmap for building the game locally, then deploying to Colyseus Cloud + Neon.
 Each phase ends with a "Done when" check. Tick boxes as work completes and keep the
-**Current phase** line updated so each new session knows where to pick up.
 `STRUCTURE-OVERVIEW.md` describes the pages, editors and game rules these phases build.
-
-**Current phase:** 14
 
 ---
 
@@ -58,7 +55,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 4: Repository security
 
-- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 16) doesn't need `'unsafe-inline'`
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 17) doesn't need `'unsafe-inline'`
 - [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
 - [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
@@ -112,7 +109,7 @@ Built in four steps: the server API, the editor pages, the map editor, then load
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 18). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 19). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
 - [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
@@ -218,11 +215,11 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
-- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 18. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 19. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
-- [✅] Blob graphics (the 47-Tile Blob Set) drawn in a walls layer over the ground, each cell's frame picked from its 8 neighbors, with a sample hedge sheet (`client/src/assets/tilesets/hedge.png`) used by the sample universe's Hedge; its Stone Wall uses a Dual-Grid sheet of a wall top (`stoneWall.png`)
+- [✅] Blob graphics (the 47-Tile Blob Set) drawn in a walls layer over the ground, each cell's frame picked from its 8 neighbors, with a sample hedge sheet (`client/src/assets/tilesets/hedge.png`) used by the sample universe's Hedge, and a wood wall blob sheet (`woodWall.png`) used by its Wood Wall, for the cottage's and cellar's walls; its Stone Wall, the cottage's outside, uses a Dual-Grid sheet of a wall top (`stoneWall.png`)
 - [✅] Uploading blob tilesets: the upload dialog chooses the layout (matched to the image's size), each upload stores its format, and the server checks the image against that format's size; a blob sheet has no draw order
 - [✅] `AreaRenderer` draws a tile's Dual-Grid graphic, falling back to its color: frames picked from each corner's 4 cells, wrapping on areas that loop, with void, unseen and out-of-bounds cells counting as another tile
 - [✅] Several tiles meeting: each graphic has a draw order in `TILE_GRAPHICS` (which graphic's edges overlap which; tiles drawn in their colors go below every graphic), and one frame is drawn for each combination of 4 corner tiles as it appears, cached in an atlas, so each piece stays one layer
@@ -231,7 +228,7 @@ Decided:
 - [✅] A tile's graphic chosen from sheets that ship with the engine or the universe's uploaded tilesets, shown in the tile editor with its day and night preview
 - [✅] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing maps with them once they load (tiles show their colors until then)
 - [✅] Deleting an uploaded tileset from the tile editor, after asking, staged until the tab is saved; tiles drawn with it go back to their colors
-- [ ] Removing a universe's uploads from storage when the universe is deleted (once universes can be deleted)
+- [✅] Removing a universe's uploads from storage when the universe is deleted (deleting an account deletes the universes it chose to, `server/src/http/accountDeletion.ts`)
 - [✅] The editor's Save saves every tab's changes together, all or nothing, as `STRUCTURE-OVERVIEW.md` describes: one request (POST `/:universeId/changes`, `server/src/http/editorChanges.ts`) saves them in one transaction, in place of a route for each change, and a change can name what an earlier one in the same save makes
 - [✅] The Areas tab's maps draw the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices offer new tiles and stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
 - [✅] The area previews in the link and starting area dialogs draw the Tilesets tab's staged changes too
@@ -244,14 +241,14 @@ Decided:
 
 Decided:
 - Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
-- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 16's hosting choice has to keep.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 17's hosting choice has to keep.
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
-- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 16), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 16 sets them for the host.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 17), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 17 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
@@ -286,20 +283,135 @@ Built in two steps: logins (sessions, providers, local accounts, email codes, re
 
 ## Phase 15: Universe management
 
-- [ ] Editors tab: creators, builders, beta testers and translators (with their languages), with permissions checked on the server
-- [ ] Stages: who can play in each (`in the beginning`: creators and builders; `prologue`: beta testers; `end of time`: view only) and which are listed on Home
-- [ ] Disabling things players are using: the warnings and options for races, classes, areas, items and group size
-- [ ] Universe languages: a source language and the languages it's translated into, shown on Home
-- [ ] Translations stored in one table (universe, what the text belongs to, field, language, text, and a hash of the source text it was made from) through a repository, with the fallback order from `STRUCTURE-OVERVIEW.md` as a pure function with tests
-- [ ] Universe text reaches each client in its own language outside the Schema (which sends the same state to everyone in a room): synced state carries IDs, and the client fetches the universe's text in its language once, cached with an ETag
-- [ ] Translations tab: the table of universe text with its filters, editors' notes for translators, and updating or confirming out-of-date translations
-- [ ] Universe versions: build a new version while players play the current one, then switch to it. A version includes its translations
-- [ ] Server admins: disable universes, and edit universes that have gone dormant
-- [ ] Only server admins can see and use the admin page (`admin.html` and `/admin/settings`), which anyone can use until then. The privacy policy reads the character deletion days from `/admin/settings`, so anyone must still be able to read that setting
+Already in place: the `creator`, `builder` and `beta_tester` roles in `universe_editors`, who may play in each stage (`canPlayUniverse()` in `shared/src/universes.ts`, checked by Create Character and the rooms), Home and the universe page showing only `let there be light`, and removing a universe's uploads from storage when deleting an account deletes it.
+
+Decided (see `STRUCTURE-OVERVIEW.md`):
+- Every change made in the editor, the Editors and Translations tabs included, is staged until Save, and saved through `POST /:universeId/changes` in one transaction like the other tabs.
+- Universe text is the universe's name and descriptions and the names of its areas, tiles, items, races, classes, themes and difficulty levels. A ruleset default the universe hasn't renamed stays engine text. Character, group and player names and chat are never translated.
+- A translation is found in the player's language, then that language without its region, then the source text. Each translation keeps a hash of the source text it was made from; when the source changes it is still shown, marked out of date on the Translations tab.
+- Server admins are site-wide and separate from universe roles. Who is one is stored in the database; a script run by hand makes the first, and admins add and remove other admins on the admin page. Admins must have 2FA on.
+- `prologue` universes aren't listed on Home for everyone: a player with a role in any sees them in a section of Home of their own.
+- `end of time`: the universe page can be reached and says the universe is locked, only creators can edit it, the lobby can't be entered, and groups can be opened read-only, with group chat still working.
+- The only engine text a universe can rename is its ruleset's coins, each coin's name and abbreviation ("bronze kits" and "bk" for copper pieces), which are then universe text, translated like the rest. Other engine terms (race, class, group and the like) stay the engine's.
+- A universe has a live version and at most one draft, a copy of the live content in the same tables with IDs of its own, each row remembering the live row it came from. The editor edits whichever is chosen in its bar; only the live version is played. Only creators start, apply and discard the draft. Applying can't be undone: it writes the draft back under the live IDs (so characters, items and groups never change their references), treats what the draft deletes while it's in use as disabled, with the step 4 warnings, and removes the draft.
+
+- Every editor window joins its universe's editor room, which says who has the editor open and where, carries the editors' chat, and tells each editor what the others save. Changes stay staged until Save: nothing is edited together live, keystroke by keystroke, since that would blur who is saving what.
+- Chats that are kept (the editors' and each group's) keep their newest 200 messages. Lobby chat is in memory only.
+- A save sends only the fields it changed, each with the value the editor loaded. Changes to different fields of the same thing both save; only one field changed by two editors is a conflict, which the second to save resolves. The live version and the draft are separate rows, so an edit to one never conflicts with the other.
+- An area open in the area editor is claimed softly: others opening it are told who is editing it, but can still edit it.
+
+Built in ten steps: roles, stages, server admins, disabling things in use, then translations (storage, delivery, the tab), versions, editing together, and finishing. Regions follow in Phase 16.
+
+1. Editors tab and roles
+	- [✅] A `translator` role, and the languages each translator may translate into (`universe_editors.languages`)
+	- [✅] What each role may do as pure functions in `/shared`, beside `canEditWorld()`: managing editors (creators), the universe's settings (creators), the world (creators and builders), translating (creators, and translators in their languages), and playing (by stage, as now). The editor routes check them through `requireRole()`, and each `EditorChange` kind names the check it needs (`EDITOR_CHANGE_CHECKS`)
+	- [✅] Editors tab: lists each editor's username, display name, role and languages; adds a player with a role, found by searching names and usernames (`@` for usernames only) with the reusable `PlayerSearch` control; changes a role; removes an editor. Staged until Save, as `EditorChange` kinds. A universe always keeps at least one creator, and the server refuses a save that leaves none
+	- [✅] Leaving a universe: any editor can remove themself, except its last creator (Leave Universe on the Editors tab, staged like the rest)
+	- [✅] The editor shows only the tabs a role may use (beta testers and translators see the Editors tab and read-only settings; the Translations tab comes in step 7), and refuses changes it may not make, server-side as well
+	- [✅] Losing a role takes effect at once: an open editor's next save is refused, and a player who may no longer play the universe in its stage is turned out of its lobby and groups (published through `server/src/players/universeAccess.ts`, like a session ending), with a message saying why. The rooms also check that a joining player may play
+	- [✅] Tests: each role's checks, the last creator, adding a username that doesn't exist, a translator saving a world change (saving another language waits for translations, step 5; `canTranslate()` is tested)
+2. Stages
+	- [✅] Home's section for universes in `prologue`, shown only to players with a role in one, and the universe page for those players
+	- [✅] Changing the stage takes effect at once in open rooms: players who may no longer play are turned out with a message, as when losing a role
+	- [✅] `end of time`: the universe page says the universe is locked; the editor refuses saves from anyone but creators; the lobby refuses players, and Enter Universe without a group says why; groups open read-only (moving, links and every other input refused on the server, the client saying it's locked) while group chat still works. Create Character, Create Group and invites are refused
+	- [✅] Moving out of `in the beginning` warns that new areas will start disabled (the area editor's rule)
+	- [✅] Tests for each stage's listing and play rules, and for players turned out when the stage changes
+3. Server admins
+	- [✅] Who is a server admin, stored in the database (a migration), and a script that makes a player one by username (`npm run admin:add -w server -- <username>`), run by hand like the seed script
+	- [✅] Only server admins with 2FA on can see and use the admin pages (`/admin`, linking to the tools in `client/admin/`, the settings at `/admin/settings`), and only they see its link in the toolbar (Site admin in the account menu); an admin without 2FA is told to turn it on. Anyone can still read the character deletion days, social sites and privacy contact, which the footer and privacy policy show, through a public route of their own (`PUBLIC_SITE_SETTINGS_PATH`)
+	- [✅] Admin pages listing the login sessions still going (`/admin/sessions`) and every player account (`/admin/players`), each searchable, filtered and paged
+	- [✅] Admins add other admins by username and remove them on the admin page (`/admin/admins`); the last admin can't be removed. Turning 2FA off asks an admin to confirm they'll lose the admin page until it's back on
+	- [✅] Disabling a universe: a list of universes on the admin page (`/admin/universes`, searchable and paged, since there may be thousands) with Disable and Enable and a reason. A disabled universe isn't listed or playable, its editors see why and can't save, and its open rooms turn their players out
+	- [✅] Admins open any universe's editor from the Universes admin page (its name links there), with the site admin role (`ADMIN_ROLE`, never stored) whenever it allows more than their own: everything a creator can do, saving even while the universe is disabled
+	- [✅] Admin actions (adding and removing admins, disabling and enabling universes) are logged in `admin_events`, like auth events
+	- [✅] Every save in the world editor, the site admin role's included, is recorded in `universe_edits` (who, which role, each thing changed by name with the value given each setting changed, when), kept 90 days, and listed on the editor's Audit tab for creators and site admins
+	- [✅] Tests: the admin routes refuse other players and admins without 2FA, the last admin can't be removed, the public setting stays readable, a disabled universe can't be joined or saved
+4. Disabling things players are using
+	- [✅] Counting what a change affects, for the editor's warnings: characters of a race or class, characters holding an item, characters (playing or saved) in an area, groups larger than a new group size. A route the editor asks before Save, through repositories (`POST /:universeId/changes/impact`, `server/src/http/editorImpact.ts`; the rooms list where their characters are through `server/src/world/areaOccupants.ts`), and one dialog on Save (`ImpactDialog`)
+	- [✅] Races and classes: "only for new characters" or "prevent them from playing", stored with the race or class (`keepPlaying`). The lobby, groups and character choice refuse characters who can't play, saying why (`characterBar()`, `CharacterSummary.barredBy`), and those playing are turned out (published as `universeAccessChanges.publishBarred()`)
+	- [✅] Areas: "move everyone to the parent area" or "move everyone back to their start area", for players in open rooms and the saved positions of groups no one is playing. The parent is the nearest enabled area holding it, arriving on a link back in; the start is the lobby's area, or the group's starting area
+	- [✅] Items: "keep using it, no new copies" or "remove it from characters, re-added when re-enabled": removed items are hidden rather than deleted (`character_items.hidden`), so re-enabling brings them back
+	- [✅] Group size: "keep those groups", "disband larger groups" or "remove members, most recently joined first" (`group_members.joined_at`); never the anchor being
+	- [✅] Each warning's choice travels with its `EditorChange` and is applied in the save's transaction, then published to the rooms. Who moves, leaves or is hidden is worked out by pure functions in `server/src/logic/` (`disabling.ts`), with tests
+5. Universe languages and translation storage
+	- [✅] A source language (the creator's language when the universe is made) and the languages it's translated into, on the Translations tab, staged like everything else (saved as a `universe` change, `sourceLanguage` and `translationLanguages`)
+	- [✅] Home and the universe page show the source language and the translations
+	- [✅] `universe_translations`: universe, what the text belongs to (kind and ID), field, language, text, and the hash of the source text it was made from, through a repository (`server/src/db/universeTextRepo.ts`). Deleting what a translation belongs to (or restoring one of the ruleset's defaults) deletes its translations in the same transaction, and deleting a language deletes its translations, after asking
+	- [✅] Notes for translators, one per piece of universe text, in a table beside it (`universe_translator_notes`)
+	- [✅] Finding the translation (the fallback order) and whether one is out of date as pure functions in `/shared` (`shared/src/universeText.ts`), with tests. The hash is SHA-256, which Postgres can work out too, for step 7's "is out of date" filter
+6. Universe text in the player's language
+	- [✅] The server finds a request's language (the profile's, then what the client sends as Accept-Language; `server/src/http/requestLanguages.ts`), and Home, the universe page, Create Character, the character sheet, the character lists, profiles, Create Group's difficulty levels and invites show universe text in it (`UniverseTextTranslator`)
+	- [✅] In the rooms, synced state carries IDs rather than universe text, since the Schema sends the same state to everyone. The client fetches the universe's text in its language once (`GET UNIVERSES_PATH/:key/text`, cached with an ETag that changes when the text does) and looks names up by ID; a change saved in the editor tells clients to fetch again (`ServerMessageType.UniverseText`). Area payloads keep the source names, as the editor's previews use them and the game falls back to them
+	- [✅] The editor always shows the source text (its routes never translate); the Translations tab shows the translation being made with its table (step 7)
+	- [✅] Tests: the fallback through the route, the ETag changing with the text and the translations
+7. Translations tab
+	- [✅] The table of universe text for a chosen language: where it comes from ("Area: Waterdeep, name"), the source text, the note and the translation, paged on the server with search, "is missing" and "is out of date" filters, and sortable like other tables (`server/src/http/editorTranslations.ts`, `client/src/ui/editor/TranslationTable.ts`)
+	- [✅] Editing translations and notes, staged until Save (`saveTranslation` and `saveTranslatorNote`, saved after every other tab's changes); updating an out-of-date translation, or confirming it's still correct (which stores the current source hash). Notes are written by creators and builders
+	- [✅] Long descriptions translated as markdown, with a preview sanitized like the source's
+	- [✅] Marking text as needing no translation (such as a proper name), by creators, builders and translators, for every language; players see it as written, and its translations are kept
+	- [✅] Exporting and importing translation files as Gettext PO, XLIFF 2.0, CSV or JSON (`shared/src/translationFiles.ts`), imports staged until Save
+	- [✅] Translators see only their languages; creators see every language
+	- [✅] Coin names and abbreviations of the universe's own, in the Ruleset tab's Coins table (`coinNames` and `coinAbbreviations`, staged until Save), shown in money fields and on the character sheet, and translated on the Translations tab as universe text (`coin`); a coin given back the engine's name or abbreviation loses its translations
+8. Universe versions
+	- [✅] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions), and close its open question: a live version and at most one draft, applied once and for good
+	- [✅] Schema: a `draft` flag and the live row it was copied from (`origin`) on every content table (tiles and tile graphics, items, races, classes, themes, difficulty levels, areas, and the ruleset settings, starting items, translations and translator notes), in the unique keys that name the universe; tables hanging off a row (ruleset rows, starting items of a race or class, class race areas, map chunks, links) follow their row. `universe_drafts` holds the draft's own copy of the settings `universes` holds for the live version
+	- [✅] Every repository reads and writes either the live version or the draft (`UniverseVersion`, `server/src/db/universeVersions.ts`): the rooms, Home, the universe page, Create Character and the other player-facing routes the live one, the editor's routes the one it sends
+	- [✅] Starting a draft copies the live content (`server/src/db/universeDraftRepo.ts`, in the save's transaction), mapping every reference inside it, map cells included, to the copies; discarding deletes it and the files of tilesets only it used
+	- [✅] The editor's choice of live or draft beside the role in its toolbar, asking first over unsaved changes, and `?version=draft` in its address; every request names the version (`EDITOR_VERSION_PARAM`), saves to the draft tell no room anything, a notice says which is open and warns while the live version is open with a draft, and the Audit tab marks draft saves and lists starting, applying and discarding
+	- [✅] Start Draft, Apply Draft and Discard Draft in the toolbar, each asking first and saving at once: Start Draft's dialog explains drafts and saves any unsaved changes with it (`client/src/ui/editor/StartDraftDialog.ts`), while applying and discarding wait until nothing else is unsaved; all for creators (`canManageVersions()`), as `EditorChange` kinds saved after every other change (`client/src/ui/editor/DraftSection.ts`)
+	- [✅] Applying asks the step 4 warnings, comparing the draft with the live version (`draftImpacts()` in `server/src/http/editorImpact.ts`), with what the draft deletes while in use kept disabled. It writes the draft back under the live IDs in the save's transaction (`server/src/http/editorDrafts.ts`); once committed, open rooms load the new world and clients fetch the text
+	- [✅] Tests: starting a draft copies everything and leaves the live version alone, saving to the draft changes nothing players see, applying keeps live IDs and characters' references, an apply that is refused changes nothing, discarding removes the draft and its uploads (`server/test/db/universeDraftRepo.test.ts`, `server/test/editorDrafts.test.ts`)
+9. Editing together
+	- [✅] Write the design into `STRUCTURE-OVERVIEW.md` (Editing together, and group chat under Create Group)
+	- [✅] An `EditorRoom` per universe (`filterBy` the universe ID), joined by each editor window once the editor has loaded. onAuth finds the player from the session cookie and refuses anyone without a role in the universe (server admins join with the site admin role). Its synced state lists who has the editor open: each player once, with their role and, for each of their windows, the version, tab and area it has open. Losing a role, the universe being disabled and the stage changing reach open editors through it at once, rather than on their next save (`server/src/world/editorUpdates.ts` and the stage changes; the editor loads the universe again, or says to once its changes are saved)
+	- [✅] Kept chats in the database: one table for every chat that is kept (`chat_messages`, through a repository), holding the newest 200 messages of each (`MAX_KEPT_CHAT_MESSAGES`), with older ones deleted as new ones are written. A room keeps new messages in memory and writes them as a periodic checkpoint every few seconds and as it closes, never inside a tick. A chat is deleted with its universe or group; deleting an account empties the author of its messages, shown as "[deleted user]". The data download includes the player's kept messages, and the privacy policy says what is kept and for how long
+	- [✅] The editors' chat, in a panel of the editor opened with the toolbar's Chat button (Alt+H, `client/src/ui/editor/EditorChat.ts`): out of character, as the player (display name and @username), rate-limited like the lobby's, with a list above it naming who has the editor open
+	- [✅] Group chat on the group screen, kept the same way (`server/src/rooms/keptChat.ts`, shared with the editor room): as the character the window plays, working while the universe is locked, with a line naming the members who are here (`client/src/ui/ChatLog.ts`, shared by every chat)
+	- [✅] Save notices: once a save commits, the change route publishes the audit's details (`editorUpdates`, kind `saved`) to the universe's editor room, which tells every other editor window (`EditorServerMessageType.Saved`; the saving window names itself with `windowId`): everything to windows on the same version, and only the editors, stage and draft to windows on the other (`server/src/logic/saveNotices.ts`), with no details when the save changed nothing else, so their Audit tab still lists it again. A toast says who saved what ("Bea saved: Changed race Dwarf, Painted 40 cells in Cave"), read out by screen readers (`client/src/ui/editor/saveNotices.ts`). Each thing's changed fields, by ID, for keeping views current, come with the next item
+	- [✅] Keeping views current: the editor fetches what a save changed, and updates whatever it has no unsaved changes to (lists, an open dialog, the area editor's map). Something it does have unsaved changes to gets a note inline ("Bea changed Name and Speed since you opened this"), and the toast stays until dismissed, naming the tab
+		- [✅] Each detail a save notice carries names the ID of what it changed (`SavedEditDetail`), and each tab follows the save (`FollowsOtherSaves`, `client/src/ui/editor/otherSaves.ts`): the lists of races, classes, themes, difficulty levels, items, tiles and editors load again keeping their staged changes, marking each row both changed (`ChangedSinceNotes`); the settings forms (Universe, Lobby, Characters, Coins, Translations and Ruleset) load again when they have no unsaved changes, and otherwise say at their top who changed which settings (`FormFollower`); the Areas tab loads its list, and the area open when it has no unsaved changes, or says what changed above its settings; the translation table loads again keeping its changes. Starting, applying or discarding the draft loads the universe again, or says to reload. The toast names the tabs with unsaved changes the save touched and stays until clicked away
+		- [✅] An open dialog (race, class, theme, difficulty level, item, tile, editor) showing something a save changed shows it afresh, keeping the focus, while neither it nor its tab has unsaved changes to it, and closes when the save deleted it; otherwise it says under its title what changed (`FollowedDialog` and `DialogFollower`). An item or tile on another page than the list shows gets the note. A link dialog with changes not yet applied keeps the area open from loading again under it; one without them closes as the area loads
+	- [✅] Saving only what changed: changes to the universe's and the ruleset's settings, items, races, classes, themes, difficulty levels, tiles, areas, editors and translations carry only the fields changed, each with the value the editor loaded. A list (starting equipment, a class's races) is one field. The server compares each with what is saved, and when another editor changed the same field since, refuses with 409 and a `SaveRefusedPayload` naming the thing, the field, its saved value and who saved it. The editor then asks, for each: keep mine, or take theirs. Painting: each cell takes the latest save, and the area editor marks cells another editor painted while it was open
+		- [✅] Settings: each change to settings (`MERGED_CHANGE_KINDS`) carries `loaded`, the settings as the editor loaded them (as the change before it left them, for a second change to the same thing in one save), beside the settings it sends. The server merges them a setting at a time, as the Audit tab groups them (`mergeSettings()` in `shared/src/fieldMerge.ts`, `server/src/http/editorSaveMerge.ts`): what the change changed is saved, the rest keeps what is saved, and a setting another editor changed since to something else is refused with 409 and `SaveRefusedPayload.conflicts`, naming the thing, the setting, both values as the Audit tab shows them and who saved it last (`findLastSaver()`, from the IDs `universe_edits` records with each detail). The save bar asks Keep Mine or Take Theirs for each (`ConflictDialog`), settles the changes (`settleConflict()`) and sends the save again. After a save, the forms with no unsaved changes load again, showing what the merge kept
+		- [✅] Translations: `saveTranslation` and `saveTranslatorNote` carry `loaded`, the translation or note as the Translations tab listed it, and conflict as a whole when another editor saved a different one since (`SaveMerge.mergeText()`), naming the text, both versions and who saved it (`universe_translations.saved_by`, `universe_translator_notes.note_saved_by`). One that saves what is saved is skipped, so taking theirs (`settleTextConflict()`) saves nothing
+		- [✅] Painting: the save notice's cells details name the chunks each area's painting touched (`SavedEditDetail.chunks`, left out of `universe_edits`). The area editor loads those it has loaded again (`ChunkLoader.reload()`) and takes in each changed cell, keeping cells painted here and not yet saved, with the undo history following the saved values (`EditHistory.rebase()`), and outlines them with the cell text naming who painted them (`MapEditor.followPainting()`), unsaved changes or not. Cells painted here since the area opened, saved or not, are outlined in orange, and the save notice waits for the painting to say how many, as a warning kept until clicked away (`AreasTab.followPainting()`); clicking the toast away takes that save's marks off (`FollowedPainting.unmark()`). A save changing the open area's settings with no unsaved changes here shows them again keeping the map, rather than loading the area afresh
+	- [✅] Soft claims on areas: opening an area in the area editor claims it for that window, in the room's state, until the window closes it or disconnects. Another editor opening it sees "Bea is editing this area" above the map, without being locked out, and the Areas tab tags the area with who is editing it. The claim is each window's `EditorWindow.areaId`, kept while the window shows another tab; the editor reads other players' claims on its version from the room's state (`areaClaims()`, `client/src/ui/editor/areaClaims.ts`), says above the map who else is editing the area open, read out when that changes, and tags the areas in the lists (`AreasTab.setClaims()`)
+	- [✅] Tests: the room refuses players without a role and turns out one who loses theirs; a chat keeps its newest 200 messages, through the room closing; saves to different fields of one race both land; a save to a field changed since is refused naming who changed it; edits to a race in the draft and in the live version don't conflict; a claim ends when its window leaves (`server/test/EditorRoom.test.ts`, `server/test/db/chatRepo.test.ts`, `server/test/editorMerge.test.ts`, `server/test/shared/fieldMerge.test.ts`)
+10. Finishing
+	- [✅] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
+	- [✅] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
+	- [✅] Review the new routes against `SECURITY-PRACTICES.md`, and cover them in `server/test/http.test.ts`
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 
-## Phase 16: Cloud deployment
+## Phase 16: Regions and map editing
+
+1. Regions
+	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without a map of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
+	- [ ] Build it, with tests
+2. Map editor
+	- [ ] Edit Size: a field whose value differs from the map's size now shows in a changed color
+	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
+	- [ ] Middle click on a cell picks its tile as the tile to paint with
+3. Site fonts and text sizes
+	Decided, and already done in the static placeholder site (`C:\dev\multiverse-kiln-html`: `css/fonts.css`, `css/shared.css`), which can be copied from:
+	- Nunito for body text and every control; Alegreya (calligraphic serif) for headings (`h1` to `h6`) and the site's name. If Alegreya looks too jagged at small heading sizes, Alegreya Sans is the fallback, then Texturina. Both are under the SIL Open Font License
+	- Both are hosted with the site, never loaded from Google's servers (which would send every visitor's address to Google, a service the privacy policy doesn't list)
+	- Text sizes are in `rem`, so they follow the base size a player sets in their browser; no `px` or `pt` font sizes. Body text is `1rem`, and each heading size 1.25 times the one below
+	- [ ] The font files: Google Fonts' variable woff2 files for weights 400 to 700, upright and italic, split by character set (Nunito: Latin, Latin Extended, Cyrillic, Cyrillic Extended, Vietnamese; Alegreya: the same and Greek), with one `@font-face` per file and its `unicode-range`, so a browser downloads only the sets a page's text uses. Kept in the client's public folder (e.g. `client/public/fonts/<font>/`), each with its `OFL.txt`
+	- [ ] In `client/src/_shared.scss`: the fonts as `--font-body: 'Nunito', sans-serif` and `--font-heading: 'Alegreya', serif`, and the size scale as variables: `--font-size-small` `0.875rem` (14px at the default: hints, field errors, the footer and every other 12px text), `--font-size-h3` `1.25rem`, `--font-size-h2` `1.5625rem`, `--font-size-h1` `1.953rem`
+	- [ ] Headings: `line-height: 1.25`, margins in `em` so the space grows with the heading. A page's `h1` (its title in the toolbar) and the site's name are `--font-size-h2`; rendered markdown's `h1` to `h3` follow the scale, `h4` `1.125rem`, `h5` `1rem`, `h6` small. Big page headings, like Home's, can shrink on phones with `clamp()` between the `h2` and `h1` sizes
+	- [ ] Replace every `px` and `pt` font size in the client's styles with the scale or a `rem` value
+	- [ ] Nunito's regular weight is light on the dark background: check small text, and use weight 500 where it looks faint
+	- [ ] 2FA code fields and other monospace text keep their current font (Consolas, Menlo, monospace)
+	- [ ] Phaser draws canvas text with the font it has when the text is made, and doesn't redraw it when the font arrives: wait for the fonts (`document.fonts.load()`) before the map's scenes create text, and change `MapScene`'s `fontFamily: 'sans-serif'` to the body font
+	- [ ] Credit Nunito (copyright 2014 The Nunito Project Authors) and Alegreya (copyright 2011 The Alegreya Project Authors) in a Fonts section of `client/license.html`, linking to each font's `OFL.txt`
+	- [ ] Check the pages in the pseudo-language (`?locale=en-XA`), whose accented letters use the Latin Extended files, and with the browser's base text size raised
+	- [ ] Consider a second monospace font for usernames, one that tells 0 from O and 1 from l
+
+**Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the map with the middle button. Every page shows Nunito and Alegreya from the site's own server, and its text grows with the browser's base text size.
+
+## Phase 17: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -313,6 +425,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Run migrations against Neon `prod`
 - [ ] Deploy server with `npx @colyseus/cloud deploy`; set env vars in the dashboard (pooled Neon URL, `ALLOWED_ORIGINS` = the production client origin)
 - [ ] Set `CLIENT_ADDRESS_HEADER` (and `TRUSTED_PROXY_HOPS` for X-Forwarded-For) for the game server's host, then check it once deployed (see TODO at the end of this file)
+- [ ] Before running more than one game server process: Redis presence and driver, and the in-memory publishers (`server/src/players/`, `server/src/world/`) carried over it, so the rooms and routes of one universe (editor rooms, lobbies, groups and the change routes) reach each other across processes
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
 	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets)
@@ -321,7 +434,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 17: Robustness and polish
+## Phase 18: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -335,11 +448,11 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 18: Images and moderation
+## Phase 19: Images and moderation
 
 Needed before universes are open to the public.
 
-- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 16)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 17)
 - [ ] "I have the rights to use this image" on every upload (tilesets have it)
 - [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
@@ -347,7 +460,7 @@ Needed before universes are open to the public.
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 19: Messages
+## Phase 20: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -368,6 +481,7 @@ Needed before universes are open to the public.
 - Walls as a layer of their own, so a cell holds a ground tile and a wall over it, rather than walls drawn over the area's default tile
 - Tall walls with a front face: blob frames 32x64 drawn over the row south of the wall, and over players standing there
 - Exporting and importing a universe's translations (JSON or XLIFF), and a translation service such as Weblate for the engine's catalogs
+- Playing a universe's draft, so creators, builders and beta testers can test it before it is applied: choosing it, and which characters play it without changing their progress in the live version
 
 ---
 
@@ -375,21 +489,23 @@ Needed before universes are open to the public.
 
 - Whether character names must be unique within a universe (Phase 10)
 - How groups are listed in the lobby (Phase 11)
+- How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
+- What regions are and what they set (Phase 16)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
-- Which S3-compatible service stores uploads in production, and its bucket (Phase 16)
-- Telling users with the same name apart (Phase 19)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 17)
+- Telling users with the same name apart (Phase 20)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for map text in scripts the default font doesn't cover (Phase 17)
+- Fonts for map text in scripts the default font doesn't cover (Phase 18)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
-- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 16). The host's proxies decide which forwarding header the server trusts for clients' addresses
-- Client host, and a subdomain or separate domain for QA/staging (Phase 16)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 17). The host's proxies decide which forwarding header the server trusts for clients' addresses
+- Client host, and a subdomain or separate domain for QA/staging (Phase 17)
 
 ---
 
 ## TODO
 
-- [ ] Confirm the client address header on the game server's host (Phase 16; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+- [ ] Confirm the client address header on the game server's host (Phase 17; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
 	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
 	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
 	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header

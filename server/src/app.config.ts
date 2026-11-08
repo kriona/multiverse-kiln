@@ -5,13 +5,16 @@ import {
 	playground,
 } from 'colyseus';
 
-import { GAME_ROOM_NAME, LOBBY_ROOM_NAME, SESSION_ROOM_NAME } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, GAME_ROOM_NAME, LOBBY_ROOM_NAME, SESSION_ROOM_NAME } from '@multiverse-kiln/shared';
+import { EditorRoom } from './rooms/EditorRoom.js';
 import { GameRoom } from './rooms/GameRoom.js';
+import { startGroupChatNotices } from './rooms/groupChatNotices.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
 import { startAuthSweep } from './authSweep.js';
 import { startCharacterSweep } from './characterSweep.js';
+import { startUniverseEditSweep } from './universeEditSweep.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addAdminRoutes } from './http/admin.js';
 import { addAuthRoutes } from './http/auth.js';
@@ -48,12 +51,16 @@ const server = defineServer({
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
 
 	/**
-	 * Deletes characters whose last rites are over, now and every hour, and tidies the login records
-	 * (expired sessions, old email codes and rate limit records) now and every few minutes
+	 * Starts writing a notice in a group's chat when a character leaves the group. Deletes characters
+	 * whose last rites are over and audit records of editor saves 90 days old, now and every hour, and
+	 * tidies the login records (expired sessions, old email codes and rate limit records) now and every
+	 * few minutes
 	 */
 	beforeListen: () =>
 	{
+		startGroupChatNotices();
 		startCharacterSweep();
+		startUniverseEditSweep();
 		startAuthSweep();
 	},
 
@@ -68,6 +75,9 @@ const server = defineServer({
 
 		// One game room per group: clients asking for the same groupId share a room
 		[GAME_ROOM_NAME]: defineRoom(GameRoom).filterBy(['groupId']),
+
+		// One editor room per universe: windows asking for the same universeId share a room
+		[EDITOR_ROOM_NAME]: defineRoom(EditorRoom).filterBy(['universeId']),
 	},
 
 	/**

@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, isLocalizedMessage, MAX_TILES_PER_PAGE, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type SaveChangesPayload, type SaveChangesRequest } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -28,6 +28,24 @@ export class EditorApiError extends Error
  */
 export class EditorApi
 {
+	/**
+	 * The version of the universe the editor has open (see Universe versions in STRUCTURE-OVERVIEW.md),
+	 * which every request about a universe reads or changes
+	 */
+	version: UniverseVersionName = 'live';
+
+	/**
+	 * The window's session ID in the universe's editor room while it is joined, sent with each save so the
+	 * room doesn't tell this window of its own saves
+	 */
+	windowId: string | undefined;
+
+	/**
+	 * The lists several tabs and dialogs read (areas, races and classes), by version and path, each
+	 * loaded once until forgetLists() or a save from this window
+	 */
+	private readonly sharedLists = new Map<string, Promise<unknown>>();
+
 	/**
 	 * @param client Client for the server
 	 */
@@ -153,25 +171,75 @@ export class EditorApi
 	}
 
 	/**
-	 * Every race a universe can use
+	 * A page of a universe's text with its translations into one language and its notes for translators
+	 *
+	 * @param universeId The universe's ID
+	 * @param query The language, search, filters, order and page
+	 * @return The page, and how many pieces of text match
+	 */
+	async listTranslations(universeId: string, query: UniverseTextListQuery): Promise<UniverseTextListPayload>
+	{
+		return(this.send<UniverseTextListPayload>('GET', `${universePath(universeId)}/translations?${queryString(query)}`));
+	}
+
+	/**
+	 * Every piece of a universe's text with its translation into one language, for translation files
+	 *
+	 * @param universeId The universe's ID
+	 * @param language The language's tag
+	 * @return The text, by where it comes from
+	 */
+	async listAllTranslations(universeId: string, language: string): Promise<UniverseTextListPayload>
+	{
+		return(this.send<UniverseTextListPayload>('GET', `${universePath(universeId)}/translations/all?${queryString({ language })}`));
+	}
+
+	/**
+	 * A page of the characters made in a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @param query The search, filters, order and page
+	 * @return The page, and how many characters match
+	 */
+	async listCharacters(universeId: string, query: EditorCharacterListQuery): Promise<EditorCharacterListPayload>
+	{
+		return(this.send<EditorCharacterListPayload>('GET', `${universePath(universeId)}/characters?${queryString(query)}`));
+	}
+
+	/**
+	 * A page of the saves made in a universe's editor, newest first
+	 *
+	 * @param universeId The universe's ID
+	 * @param query The page
+	 * @return The page, and how many saves there are
+	 */
+	async listEdits(universeId: string, query: UniverseEditListQuery): Promise<UniverseEditListPayload>
+	{
+		return(this.send<UniverseEditListPayload>('GET', `${universePath(universeId)}/audit?${queryString(query)}`));
+	}
+
+	/**
+	 * Every race a universe can use, shared with every other caller until the next save (see
+	 * sendShared()), so callers don't change it
 	 *
 	 * @param universeId The universe's ID
 	 * @return The races, by ID
 	 */
 	async listRaces(universeId: string): Promise<EditorRace[]>
 	{
-		return((await this.send<RaceListPayload>('GET', `${universePath(universeId)}/races`)).races);
+		return((await this.sendShared<RaceListPayload>(`${universePath(universeId)}/races`)).races);
 	}
 
 	/**
-	 * Every class a universe can use
+	 * Every class a universe can use, shared with every other caller until the next save (see
+	 * sendShared()), so callers don't change it
 	 *
 	 * @param universeId The universe's ID
 	 * @return The classes, by ID
 	 */
 	async listClasses(universeId: string): Promise<EditorClass[]>
 	{
-		return((await this.send<ClassListPayload>('GET', `${universePath(universeId)}/classes`)).classes);
+		return((await this.sendShared<ClassListPayload>(`${universePath(universeId)}/classes`)).classes);
 	}
 
 	/**
@@ -197,14 +265,38 @@ export class EditorApi
 	}
 
 	/**
-	 * Every area of a universe
+	 * Everyone with a role in a universe
+	 *
+	 * @param universeId The universe's ID
+	 * @return The editors, by username
+	 */
+	async listEditors(universeId: string): Promise<UniverseEditorSummary[]>
+	{
+		return((await this.send<UniverseEditorListPayload>('GET', `${universePath(universeId)}/editors`)).editors);
+	}
+
+	/**
+	 * Players who could be added to a universe's editors, by username or name
+	 *
+	 * @param universeId The universe's ID
+	 * @param query What was typed; starting with @, usernames only
+	 * @return The players, best matches first
+	 */
+	async searchPlayers(universeId: string, query: PlayerSearchQuery): Promise<PlayerMatch[]>
+	{
+		return((await this.send<PlayerSearchPayload>('GET', `${universePath(universeId)}/editors/search?${queryString(query)}`)).players);
+	}
+
+	/**
+	 * Every area of a universe, shared with every other caller until the next save (see sendShared()),
+	 * so callers don't change it
 	 *
 	 * @param universeId The universe's ID
 	 * @return The areas, and which are the lobby and starting areas
 	 */
 	async listAreas(universeId: string): Promise<AreaListPayload>
 	{
-		return(this.send<AreaListPayload>('GET', `${universePath(universeId)}/areas`));
+		return(this.sendShared<AreaListPayload>(`${universePath(universeId)}/areas`));
 	}
 
 	/**
@@ -256,13 +348,79 @@ export class EditorApi
 	 */
 	async saveChanges(universeId: string, changes: EditorChange[]): Promise<SaveChangesPayload['ids']>
 	{
-		const body: SaveChangesRequest = { changes };
+		const body: SaveChangesRequest = {
+			changes,
+			windowId: this.windowId
+		};
 
-		return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
+		try
+		{
+			return((await this.send<SaveChangesPayload>('POST', `${universePath(universeId)}/changes`, body)).ids);
+		}
+		finally
+		{
+			// Before the tabs take the save, so the lists they load again are the saved ones
+			this.forgetLists();
+		}
 	}
 
 	/**
-	 * Sends a request to an editor route
+	 * Finds out what saving changes would do to players, saving nothing
+	 *
+	 * @param universeId The universe's ID
+	 * @param changes The changes, as they would be saved
+	 * @return What each change affecting players would do, in the changes' order
+	 */
+	async findImpacts(universeId: string, changes: EditorChange[]): Promise<ChangeImpact[]>
+	{
+		const body: SaveChangesRequest = { changes };
+
+		return((await this.send<SaveImpactPayload>('POST', `${universePath(universeId)}/changes/impact`, body)).impacts);
+	}
+
+	/**
+	 * Loads the shared lists afresh the next time they are asked for, after they may have changed: a
+	 * universe is opened, or another window saved
+	 */
+	forgetLists(): void
+	{
+		this.sharedLists.clear();
+	}
+
+	/**
+	 * Sends a GET request that every caller shares, about the version open, until forgetLists() or a
+	 * save from this window: the tabs and dialogs that read the same list when the editor opens send one
+	 * request between them. A request that fails is sent again by the next caller
+	 *
+	 * @param path The path under EDITOR_UNIVERSES_PATH
+	 * @return The response body
+	 */
+	private sendShared<T>(path: string): Promise<T>
+	{
+		const key = `${this.version} ${path}`;
+		const shared = this.sharedLists.get(key);
+
+		if (shared)
+		{
+			return(shared as Promise<T>);
+		}
+
+		const request = this.send<T>('GET', path);
+
+		this.sharedLists.set(key, request);
+		request.catch(() =>
+		{
+			if (this.sharedLists.get(key) === request)
+			{
+				this.sharedLists.delete(key);
+			}
+		});
+
+		return(request);
+	}
+
+	/**
+	 * Sends a request to an editor route, about the version open when it is about a universe
 	 *
 	 * @param method The HTTP method
 	 * @param path The path under EDITOR_UNIVERSES_PATH
@@ -271,7 +429,9 @@ export class EditorApi
 	 */
 	private async send<T = unknown>(method: HttpMethod, path: string, body?: object): Promise<T>
 	{
-		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${path}`, body));
+		const versioned = (((path === '') || (this.version === 'live')) ? path : `${path}${path.includes('?') ? '&' : '?'}${EDITOR_VERSION_PARAM}=${this.version}`);
+
+		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${versioned}`, body));
 	}
 }
 
@@ -354,7 +514,7 @@ function universePath(universeId: string): string
  * @param query The filters, and which page
  * @return The query string, without the ?
  */
-function queryString(query: object): string
+export function queryString(query: object): string
 {
 	const parameters = new URLSearchParams();
 

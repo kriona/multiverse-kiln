@@ -343,13 +343,15 @@ export type AreaLinkMode = typeof AREA_LINK_MODES[number];
  * What a user may do with a universe (see STRUCTURE-OVERVIEW.md, Tab: Editors)
  *
  * - creator: change everything
- * - builder: change the world: tiles, areas, maps and links
+ * - builder: change the world: tiles, items, areas, maps and links
  * - beta_tester: play while the universe is in prologue
+ * - translator: translate the universe's text into the languages they are given
  */
 export const UNIVERSE_ROLES = [
 	'creator',
 	'builder',
-	'beta_tester'
+	'beta_tester',
+	'translator'
 ] as const;
 
 export type UniverseRole = typeof UNIVERSE_ROLES[number];
@@ -366,35 +368,219 @@ export const UNIVERSE_ROLE_NAMES: Record<UniverseRole, MessageDescriptor> = defi
 	builder: {
 		id: 'universe.role.builder',
 		defaultMessage: 'builder',
-		description: 'Role of someone who can change a universe\'s world: its tiles, areas, maps and links'
+		description: 'Role of someone who can change a universe\'s world: its tiles, items, areas, maps and links'
 	},
 	beta_tester: {
 		id: 'universe.role.beta_tester',
 		defaultMessage: 'beta tester',
 		description: 'Role of someone who can play a universe before it opens to everyone'
+	},
+	translator: {
+		id: 'universe.role.translator',
+		defaultMessage: 'translator',
+		description: 'Role of someone who can translate a universe\'s text, such as the names of its areas and items, into the languages they are given, and change nothing else'
 	}
 });
 
 /**
- * Whether a role may change a universe's settings: its name, descriptions, stage and passage of time
- *
- * @param role The user's role in the universe
- * @return True when the role may
+ * What each role lets its editors do, under its name in the dialog that gives players a role, and when
+ * the pointer is over a role on the Editors tab
  */
-export function canEditUniverseSettings(role: UniverseRole): boolean
+export const UNIVERSE_ROLE_DESCRIPTIONS: Record<UniverseRole, MessageDescriptor> = defineMessages({
+	creator: {
+		id: 'universe.roleDescription.creator',
+		defaultMessage: 'Can change everything about the universe, including who else works on it, and play it while it\'s still being built.',
+		description: 'What the creator role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	},
+	builder: {
+		id: 'universe.roleDescription.builder',
+		defaultMessage: 'Can change the universe\'s world (its tiles, items, areas, maps and links) and play it while it\'s still being built. Can read its other settings without changing them.',
+		description: 'What the builder role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	},
+	beta_tester: {
+		id: 'universe.roleDescription.beta_tester',
+		defaultMessage: 'Can play the universe while it\'s open for testing, before everyone can, but can\'t change it.',
+		description: 'What the beta tester role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	},
+	translator: {
+		id: 'universe.roleDescription.translator',
+		defaultMessage: 'Can translate the universe\'s text into the languages they are given, and play it while it\'s open for testing, but can\'t change anything else.',
+		description: 'What the translator role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
+	}
+});
+
+/**
+ * Most languages one translator may be given
+ */
+export const MAX_TRANSLATOR_LANGUAGES = 20;
+
+/**
+ * Someone's place in a universe: their role, and the languages a translator may translate into
+ */
+export interface UniverseAccess
 {
-	return(role === 'creator');
+	role: UniverseRole;
+
+	/**
+	 * Language tags, such as de or pt-BR; empty for every role but translator
+	 */
+	languages: readonly string[];
 }
 
 /**
- * Whether a role may change a universe's world: its tiles, areas, maps and links
+ * The role a server admin edits a universe with whenever it allows more than their own role there, which
+ * is any role but creator: everything a creator may do. Never stored in universe_editors, so it isn't
+ * one of the universe's editors and isn't listed on the Editors tab
+ */
+export const ADMIN_ROLE = 'admin';
+
+/**
+ * The role the editor works with: a role in the universe, or ADMIN_ROLE
+ */
+export type EditorRole = UniverseRole | typeof ADMIN_ROLE;
+
+/**
+ * Every role the editor works with: the roles in a universe, and ADMIN_ROLE
+ */
+export const EDITOR_ROLES = [
+	...UNIVERSE_ROLES,
+	ADMIN_ROLE
+] as const satisfies readonly EditorRole[];
+
+/**
+ * Each role's name in the editor, ADMIN_ROLE included
+ */
+export const EDITOR_ROLE_NAMES: Record<EditorRole, MessageDescriptor> = {
+	...UNIVERSE_ROLE_NAMES,
+	...defineMessages({
+		admin: {
+			id: 'universe.role.admin',
+			defaultMessage: 'site admin',
+			description: 'Role a server admin edits a universe with when they have no stronger role in it, shown in the editor\'s toolbar: they can change everything, as a creator can'
+		}
+	})
+};
+
+/**
+ * Someone's place in the editor: their role, ADMIN_ROLE included, and the languages a translator may
+ * translate into
+ */
+export interface EditorAccess
+{
+	role: EditorRole;
+
+	/**
+	 * Language tags, such as de or pt-BR; empty for every role but translator
+	 */
+	languages: readonly string[];
+}
+
+/**
+ * What someone may do in a universe's editor: a server admin with 2FA on edits with ADMIN_ROLE unless
+ * they are one of its creators, and everyone else with their role in it
  *
- * @param role The user's role in the universe
+ * @param access Their role in the universe and their languages, or undefined for none
+ * @param serverAdmin Whether they are a server admin with 2FA on
+ * @return Their access, or undefined when they may not open the editor
+ */
+export function editorAccessOf(access: UniverseAccess | undefined, serverAdmin: boolean): EditorAccess | undefined
+{
+	if (serverAdmin && (access?.role !== 'creator'))
+	{
+		return({
+			role: ADMIN_ROLE,
+			languages: []
+		});
+	}
+
+	return(access);
+}
+
+/**
+ * Whether a role may add, change and remove a universe's editors
+ *
+ * @param role The user's role in the editor
  * @return True when the role may
  */
-export function canEditWorld(role: UniverseRole): boolean
+export function canManageEditors(role: EditorRole): boolean
 {
-	return((role === 'creator') || (role === 'builder'));
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether a role may change a universe's settings: its name, descriptions, stage and passage of time
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canEditUniverseSettings(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether a role may start, apply and discard a universe's draft (see Universe versions in
+ * STRUCTURE-OVERVIEW.md). Every role that edits the universe may edit the draft
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canManageVersions(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether a role may change a universe's world: its tiles, items, areas, maps and links
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canEditWorld(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === 'builder') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether a role may still change a universe at the end of time, when it is locked: only creators and
+ * server admins may
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canEditAtEndOfTime(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether someone may translate a universe's text into a language: creators and server admins into any,
+ * translators into the languages they are given
+ *
+ * @param access The user's role in the editor, and their languages
+ * @param language The language's tag
+ * @return True when they may
+ */
+export function canTranslate(access: EditorAccess, language: string): boolean
+{
+	if ((access.role === 'creator') || (access.role === ADMIN_ROLE))
+	{
+		return(true);
+	}
+
+	return((access.role === 'translator') && access.languages.some((each) => (each.toLowerCase() === language.toLowerCase())));
+}
+
+/**
+ * Whether someone may mark a piece of universe text as needing no translation in any language, such as a
+ * proper name, or as needing one again: creators, builders, server admins and translators
+ *
+ * @param access The user's role in the editor, and their languages
+ * @return True when they may
+ */
+export function canMarkNoTranslation(access: EditorAccess): boolean
+{
+	return(canEditWorld(access.role) || (access.role === 'translator'));
 }
 
 /**
@@ -423,6 +609,43 @@ export function canPlayUniverse(stage: UniverseStage, role: UniverseRole | undef
 }
 
 /**
+ * Whether a user may look at a universe in the stage it is in: open its page, list their characters
+ * and open their groups. Anyone may look at a universe at the end of time, which is locked, so its
+ * groups open read-only; in every other stage, those who may play it
+ *
+ * @param stage The universe's stage
+ * @param role The user's role in the universe, or undefined for none
+ * @return True when the user may
+ */
+export function canViewUniverse(stage: UniverseStage, role: UniverseRole | undefined): boolean
+{
+	return((stage === 'end_of_time') || canPlayUniverse(stage, role));
+}
+
+/**
+ * Whether a universe moving from one stage to another changes what a role may do in its editor: whether
+ * the universe is locked to it at the end of time (canEditAtEndOfTime), and whether it may look at the
+ * universe's page (canViewUniverse), which the site admin role always may. Creators and server admins
+ * may do the same in every stage
+ *
+ * @param role The user's role in the editor
+ * @param from The stage the universe was in
+ * @param to The stage the universe is in now
+ * @return True when the role may do something different
+ */
+export function stageChangesEditorAccess(role: EditorRole, from: UniverseStage, to: UniverseStage): boolean
+{
+	if (role === ADMIN_ROLE)
+	{
+		return(false);
+	}
+
+	const lockChanged = (!canEditAtEndOfTime(role) && ((from === 'end_of_time') !== (to === 'end_of_time')));
+
+	return(lockChanged || (canViewUniverse(from, role) !== canViewUniverse(to, role)));
+}
+
+/**
  * The part of a universe's address that names it, made from its name: lowercase, with every run of
  * characters other than letters and digits turned into one hyphen, e.g. "The Shattered Isles!" is
  * the-shattered-isles. Letters of every alphabet are kept, so a name in any language reads in its
@@ -439,4 +662,22 @@ export function universeSlug(name: string): string
 		.toLowerCase()
 		.replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
 		.replace(/^-+|-+$/g, ''));
+}
+
+/**
+ * The form of a universe's ID. A universe's page is found by its ID or its slug, and text in this form is
+ * only ever taken as an ID, so no universe's slug may have it (hasIdShapedSlug)
+ */
+export const UNIVERSE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a universe's name makes a slug in the form of a universe's ID, which a universe can't be named,
+ * since its page's address would name another universe
+ *
+ * @param name The universe's name
+ * @return True when its slug has the form of an ID
+ */
+export function hasIdShapedSlug(name: string): boolean
+{
+	return(UNIVERSE_ID_PATTERN.test(universeSlug(name)));
 }

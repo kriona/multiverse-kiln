@@ -8,8 +8,9 @@
 import { createHash, randomBytes } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, INVITE_DURATION_MS, INVITE_DURATIONS, INVITES_PATH, MAX_GROUP_NAME_LENGTH, UNIVERSES_PATH, type DifficultyLevelListPayload, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
+import { canPlayUniverse, characterBar, defineMessages, DISALLOWED_TEXT_CHARACTERS, INVITE_DURATION_MS, INVITE_DURATIONS, INVITES_PATH, MAX_GROUP_NAME_LENGTH, UNIVERSES_PATH, type DifficultyLevelListPayload, type GroupCharacterRequest, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest, type NewInviteRequest } from '@multiverse-kiln/shared';
 
+import { loadBarredOptions } from '../db/barredOptions.js';
 import { findOwnCharacter, type OwnCharacter } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
@@ -18,11 +19,11 @@ import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInv
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { findUniverseRole } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { lockUniverse } from '../db/universeRepo.js';
+import { liveVersion } from '../db/universeVersions.js';
 import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
-import { loadPlayableUniverse, universeOf, type PlayableUniverse } from './characters.js';
+import { findAllowedUniverse, loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
@@ -73,6 +74,11 @@ const messages = defineMessages({
 		id: 'error.groupCharacterUnavailable',
 		defaultMessage: 'That character can\'t do that: they don\'t exist, aren\'t yours, or have been given their last rites.',
 		description: 'Why a character couldn\'t make, join or leave a group: the character isn\'t one of the player\'s in this universe, or is waiting to be deleted'
+	},
+	characterBarred: {
+		id: 'error.groupCharacterBarred',
+		defaultMessage: '{bar, select, race {That character\'s race is disabled, so they can\'t play.} other {That character\'s class is disabled, so they can\'t play.}}',
+		description: 'Why a character couldn\'t make or join a group: the universe\'s creators disabled their race (bar is race) or class (bar is class) and stopped characters already of it playing'
 	},
 	alreadyInGroup: {
 		id: 'error.alreadyInGroup',
@@ -151,7 +157,12 @@ export function addGroupRoutes(app: Application, allowedOrigins: Set<string>): v
  */
 async function difficultyLevelsRoute(request: Request, response: Response): Promise<void>
 {
-	const payload: DifficultyLevelListPayload = { difficultyLevels: await listDifficultyLevels(universeOf(request).id) };
+	const universe = universeOf(request);
+	const [levels, translator] = await Promise.all([
+		listDifficultyLevels(liveVersion(universe.id)),
+		loadTranslator(request, universe, ['difficultyLevel'])
+	]);
+	const payload: DifficultyLevelListPayload = { difficultyLevels: levels.map((level) => translator.name('difficultyLevel', level.id, level)) };
 
 	response.json(payload);
 }
@@ -167,8 +178,8 @@ async function difficultyLevelsRoute(request: Request, response: Response): Prom
  */
 async function findStartingPlace(universe: PlayableUniverse, character: OwnCharacter, executor: Executor): Promise<StartingPlace | null>
 {
-	const race = (await loadEditorRaces(universe.id, universe.ruleset, executor)).find((option) => (option.id === character.raceId));
-	const characterClass = (await loadEditorClasses(universe.id, universe.ruleset, executor)).find((option) => (option.id === character.classId));
+	const race = (await loadEditorRaces(liveVersion(universe.id), universe.ruleset, executor)).find((option) => (option.id === character.raceId));
+	const characterClass = (await loadEditorClasses(liveVersion(universe.id), universe.ruleset, executor)).find((option) => (option.id === character.classId));
 
 	// A race or class that characters have can't be deleted
 	if (!race || !characterClass)
@@ -212,6 +223,15 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		// Deleting a difficulty level waits for the universe's lock too, so the level can't go as the group takes it
 		await lockUniverse(universe.id, transaction);
 
+		// Read again under the lock, since a save or a server admin that held it may have disabled the
+		// universe, changed its stage or the player's role, or moved its starting area and deleted the old one
+		const locked = await findAllowedUniverse(universe.id, playerId, canPlayUniverse, transaction);
+
+		if (!locked)
+		{
+			return({ status: 404, message: errorMessages.noSuchUniverse });
+		}
+
 		const character = await findOwnCharacter(playerId, universe.id, anchorId, transaction);
 
 		if (!character?.playable)
@@ -219,17 +239,30 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
+		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+
+		if (bar !== null)
+		{
+			return({
+				status: 409,
+				message: messages.characterBarred,
+				values: {
+					bar
+				}
+			});
+		}
+
 		if (await findMembership(anchorId, transaction))
 		{
 			return({ status: 409, message: messages.alreadyInGroup });
 		}
 
-		if (!(await findDifficultyLevel(universe.id, difficultyLevelId, transaction)))
+		if (!(await findDifficultyLevel(liveVersion(universe.id), difficultyLevelId, transaction)))
 		{
 			return({ status: 404, message: messages.noSuchDifficulty });
 		}
 
-		const start = await findStartingPlace(universe, character, transaction);
+		const start = await findStartingPlace(locked, character, transaction);
 		const groupId = await createGroup({
 			universeId: universe.id,
 			anchorCharacterId: anchorId,
@@ -247,6 +280,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 				playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			}
 		});
@@ -262,7 +296,8 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		kind: 'joined',
 		groupId: result.groupId,
 		universeId: universe.id,
-		character: result.anchor
+		character: result.anchor,
+		created: true
 	});
 
 	const payload: GroupCreatedPayload = { groupId: result.groupId };
@@ -404,8 +439,11 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 	}
 
 	const { universe, group } = found;
-	const members = await listGroupMembers(group.id);
-	const difficulty = await findDifficultyLevel(universe.id, group.difficultyLevelId);
+	const [members, difficulty, translator] = await Promise.all([
+		listGroupMembers(group.id),
+		findDifficultyLevel(liveVersion(universe.id), group.difficultyLevelId),
+		loadTranslator(request, universe, ['universe', 'difficultyLevel'])
+	]);
 
 	// A group's level is moved to the default before the level is deleted, so it is always there
 	if (!difficulty)
@@ -416,7 +454,7 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 	const payload: InviteDetails = {
 		universeId: universe.id,
 		universeSlug: universe.slug,
-		universeName: universe.name,
+		universeName: translator.text('universe', universe.id, 'name', universe.name),
 		groupId: group.id,
 		groupName: group.name,
 		anchorName: (members.find((member) => (member.characterId === group.anchorCharacterId))?.name ?? ''),
@@ -424,7 +462,7 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 		groupSize: universe.groupSize,
 		difficulty: {
 			key: difficulty.key,
-			name: difficulty.name,
+			name: translator.name('difficultyLevel', difficulty.id, difficulty).name,
 			mobScale: difficulty.mobScale,
 			permadeath: difficulty.permadeath
 		}
@@ -463,6 +501,20 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 	const joiningId = body.data.characterId;
 	const result = await inTransaction(async (transaction): Promise<Refusal | { groupId: string; joined?: GroupCharacter }> =>
 	{
+		// The player, then the universe, then the group: the order making a group and saving the world
+		// editor (which changes groups) take them in
+		await lockPlayer(playerId, transaction);
+		await lockUniverse(universe.id, transaction);
+
+		// Read again under the lock, since a save or a server admin that held it may have disabled the
+		// universe, changed its stage, its group size or the player's role
+		const locked = await findAllowedUniverse(universe.id, playerId, canPlayUniverse, transaction);
+
+		if (!locked)
+		{
+			return({ status: 404, message: messages.inviteGone });
+		}
+
 		// The invite is read again under the group's lock, so a single-use link lets in only one character
 		const invite = await findInvite(tokenHash, transaction);
 		const group = (invite ? await lockGroup(invite.groupId, transaction) : undefined);
@@ -472,13 +524,24 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			return({ status: 404, message: messages.inviteGone });
 		}
 
-		await lockPlayer(playerId, transaction);
-
 		const character = await findOwnCharacter(playerId, universe.id, joiningId, transaction);
 
 		if (!character?.playable)
 		{
 			return({ status: 404, message: messages.characterUnavailable });
+		}
+
+		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+
+		if (bar !== null)
+		{
+			return({
+				status: 409,
+				message: messages.characterBarred,
+				values: {
+					bar
+				}
+			});
 		}
 
 		const membership = await findMembership(joiningId, transaction);
@@ -493,13 +556,13 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			return({ status: 409, message: messages.alreadyInGroup });
 		}
 
-		if (await countGroupMembers(group.id, transaction) >= universe.groupSize)
+		if (await countGroupMembers(group.id, transaction) >= locked.groupSize)
 		{
 			return({
 				status: 409,
 				message: messages.groupFull,
 				values: {
-					max: universe.groupSize
+					max: locked.groupSize
 				}
 			});
 		}
@@ -518,6 +581,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 				playerId,
 				name: character.name,
 				raceId: character.raceId,
+				classId: character.classId,
 				playable: true
 			}
 		});
@@ -546,7 +610,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 
 /**
  * The group and universe a request's invite link leads to, when the link still works and the player
- * may play the universe
+ * may play the universe, which isn't disabled
  *
  * @param request The request, with the token in its path
  * @return The universe, the group and the token's hash, or undefined
@@ -569,12 +633,9 @@ async function findInviteGroup(request: Request): Promise<{ universe: PlayableUn
 		return(undefined);
 	}
 
-	const [universe, role] = await Promise.all([
-		findEditableUniverse(group.universeId),
-		findUniverseRole(group.universeId, playerIdOf(request))
-	]);
+	const universe = await findAllowedUniverse(group.universeId, playerIdOf(request), canPlayUniverse);
 
-	if (!universe || !canPlayUniverse(universe.stage, role))
+	if (!universe)
 	{
 		return(undefined);
 	}

@@ -5,8 +5,12 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAUL
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, loadChunks, loadChunksAt, loadArea, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
-import { addUniverse, addArea, defaultTileId, loadWholeMap } from './fixtures.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
+import { createGroup } from '../../src/db/groupRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
+import { addPlayer } from '../players.js';
+import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeMap } from './fixtures.js';
 
 /**
  * A chunk of default cells with its first cell set
@@ -50,7 +54,7 @@ describe('areaRepo', () =>
 			const universeId = await addUniverse();
 			const areaId = await addArea(universeId, 'Meadow');
 
-			await updateUniverseSettings(universeId, { displayTime: 'none' });
+			await updateUniverseSettings(liveVersion(universeId), { displayTime: 'none' });
 
 			assert.strictEqual((await loadArea(areaId))?.displayTime, 'none');
 		});
@@ -67,6 +71,11 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetAreaId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
 			assert.deepStrictEqual((await loadArea(insideId))?.links, []);
+			assert.deepStrictEqual([...(loaded?.disabledTargetIds ?? [])], []);
+			assert.deepStrictEqual(await listAreasLinkingTo(insideId), [areaId]);
+
+			await updateAreaSettings(insideId, { enabled: false });
+			assert.deepStrictEqual([...((await loadArea(areaId))?.disabledTargetIds ?? [])], [insideId]);
 		});
 
 		it('follows inherit through the parent areas to the universe\'s passage of time', async () =>
@@ -101,7 +110,7 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
 
-			await updateUniverseSettings(universeId, { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
+			await updateUniverseSettings(liveVersion(universeId), { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
 
 			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'faerie', morning: 'horizon' });
 		});
@@ -149,7 +158,7 @@ describe('areaRepo', () =>
 			await addArea(await addUniverse('Other'), 'Elsewhere');
 
 			assert.deepStrictEqual(await findEditorArea(areaId), {
-				universeId,
+				version: liveVersion(universeId),
 				area: {
 					id: areaId,
 					name: 'Village',
@@ -165,8 +174,8 @@ describe('areaRepo', () =>
 					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
 				}
 			});
-			assert.deepStrictEqual((await listAreas(universeId)).map((area) => area.name), ['Abbey', 'Village']);
-			assert.strictEqual(await countAreas(universeId), 2);
+			assert.deepStrictEqual((await listAreas(liveVersion(universeId))).map((area) => area.name), ['Abbey', 'Village']);
+			assert.strictEqual(await countAreas(liveVersion(universeId)), 2);
 		});
 	});
 
@@ -307,6 +316,32 @@ describe('areaRepo', () =>
 		});
 	});
 
+	describe('lockAreas', () =>
+	{
+		it('locks areas without keeping rows that refer to them, such as a group starting in one, from being added', async () =>
+		{
+			const { universeId, fieldAreaId } = await addPlayableUniverse();
+			const player = await addPlayer('Locksmith');
+			const anchorCharacterId = await addCharacter(player.id, universeId, 'Brokk');
+			const difficultyLevel = await findDefaultDifficultyLevel(liveVersion(universeId));
+
+			assert.ok(difficultyLevel);
+			await inTransaction(async (transaction) =>
+			{
+				assert.ok((await lockAreas([fieldAreaId], transaction)).has(fieldAreaId));
+				await inTransactionWithoutWaiting((other) => createGroup({
+					universeId,
+					anchorCharacterId,
+					name: '',
+					startingAreaId: fieldAreaId,
+					startingColumn: 0,
+					startingRow: 0,
+					difficultyLevelId: difficultyLevel.id
+				}, other));
+			});
+		});
+	});
+
 	describe('updateAreaSettings and deleteArea', () =>
 	{
 		it('changes settings, and deleting an area leaves its children at the top level', async () =>
@@ -351,13 +386,13 @@ describe('areaRepo', () =>
 
 			await addArea(otherId, 'Lake', { tile: 'water' });
 
-			assert.strictEqual(await isTileInUse(universeId, await defaultTileId('grass')), true);
-			assert.strictEqual(await isTileInUse(universeId, forest), false);
-			assert.strictEqual(await isTileInUse(universeId, water), false);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), await defaultTileId('grass')), true);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), forest), false);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), water), false);
 
 			await inTransaction((transaction) => editCells(areaId, [[1, 1, forest]], transaction));
 
-			assert.strictEqual(await isTileInUse(universeId, forest), true);
+			assert.strictEqual(await isTileInUse(liveVersion(universeId), forest), true);
 		});
 	});
 });

@@ -1,11 +1,17 @@
-import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
+import { CloseCode, ErrorCode, ServerError } from '@colyseus/sdk';
+import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatAuthorDeletedPayload, type ChatPayload, type ChatReadPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { EditorApi } from './network/editorApi';
-import type { ServerConnection } from './network/serverConnection';
+import { joinEditorRoom, type EditorRoom, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { currentPageAddress, gamePageUrl, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER } from './pages';
+import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
+import { followUnsavedWork, hasUnsavedWork } from './ui/changeTracker';
 import { showScreen, showStatus } from './ui/dom';
+import { areaClaims } from './ui/editor/areaClaims';
+import { unsavedDraftEditors } from './ui/editor/DraftSection';
+import { EditorChat } from './ui/editor/EditorChat';
+import { EditorPresenceBar } from './ui/editor/EditorPresenceBar';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
 import { pageMessages } from './ui/pageMessages';
 
@@ -47,11 +53,18 @@ function isEditorPlace(state: unknown): state is EditorPlace
  * the login page, which comes back here
  *
  * The page joins the session room, which says whether the browser is logged in and tells it when its
- * session ends. Being open counts as using the session
+ * session ends. Being open counts as using the session. Once logged in, it joins the universe's editor
+ * room too, which lists who has the editor open, carries the editors' chat and says what other windows
+ * save, and tells it what this window has open
  */
 export class EditorPage
 {
 	private readonly editorScreen: EditorScreen;
+
+	/**
+	 * The editor's API, which tells each save the window's ID in the editor room
+	 */
+	private readonly api: EditorApi;
 
 	/**
 	 * Whether the editor has been opened; it opens once, the first time the browser is logged in
@@ -75,22 +88,56 @@ export class EditorPage
 	private restoringPlace = false;
 
 	/**
+	 * The version of the universe open
+	 */
+	private version: UniverseVersionName;
+
+	/**
+	 * The universe's editor room, while it is joined
+	 */
+	private editorRoom: EditorRoom | undefined;
+
+	/**
+	 * The editors' chat, once the browser is known to be logged in
+	 */
+	private chat: EditorChat | undefined;
+
+	/**
+	 * The other editors and where they are, in the save bar, once the browser is known to be logged in
+	 */
+	private presenceBar: EditorPresenceBar | undefined;
+
+	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
-	 * @param place The tab and area to open it at
+	 * @param startingPlace The tab and area to open it at
+	 * @param version The version of the universe to open
 	 */
-	constructor(server: ServerConnection, private readonly universeId: string, private readonly startingPlace: Partial<EditorPlace>)
+	constructor(private readonly server: ServerConnection, private readonly universeId: string, private readonly startingPlace: Partial<EditorPlace>, version: UniverseVersionName)
 	{
 		const { client, session } = server;
+		const api = new EditorApi(client);
 
-		this.editorScreen = new EditorScreen(new EditorApi(client), {
-			play: (universe) =>
-			{
-				window.location.assign(gamePageUrl(universe.slug));
-			},
+		api.version = version;
+		this.api = api;
+		this.version = version;
+		this.editorScreen = new EditorScreen(api, {
 			placeChanged: (changed) =>
 			{
 				this.recordPlace(changed);
+				this.sendPlace();
+			},
+			versionChanged: (changed) =>
+			{
+				this.version = changed;
+				replacePageParameters({
+					[VERSION_PARAMETER]: ((changed === 'draft') ? changed : undefined)
+				});
+				this.sendPlace();
+			},
+			areasLoaded: () =>
+			{
+				this.presenceBar?.refresh();
 			}
 		});
 
@@ -98,7 +145,10 @@ export class EditorPage
 		{
 			this.restorePlace(event.state);
 		});
-
+		followUnsavedWork(() =>
+		{
+			this.sendPlace();
+		});
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 		{
 			this.onAccount(account);
@@ -132,8 +182,194 @@ export class EditorPage
 		if (!this.opened)
 		{
 			this.opened = true;
+			this.chat = new EditorChat(account.player.playerId, (text) =>
+			{
+				const chat: ChatPayload = { text };
+
+				this.editorRoom?.send(EditorMessageType.Chat, chat);
+			}, (readAt) =>
+			{
+				const read: ChatReadPayload = { readAt };
+
+				this.editorRoom?.send(EditorMessageType.ChatRead, read);
+			});
+			this.presenceBar = new EditorPresenceBar(account.player.playerId, (version, areaId) => this.editorScreen.areaName(version, areaId), (shown) =>
+			{
+				this.editorScreen.setOthersHere(shown);
+			});
 			void this.editorScreen.open(this.universeId, this.startingPlace);
+			void this.joinEditorRoom(this.chat, this.presenceBar, account.player.playerId);
 		}
+	}
+
+	/**
+	 * Joins the universe's editor room, which lists who has the editor open and carries the editors'
+	 * chat, and follows what it says
+	 *
+	 * @param chat The editors' chat
+	 * @param presenceBar The other editors and where they are, in the save bar
+	 * @param playerId The browser's player, whose own windows claim no areas from it
+	 */
+	private async joinEditorRoom(chat: EditorChat, presenceBar: EditorPresenceBar, playerId: string): Promise<void>
+	{
+		let room: EditorRoom;
+
+		try
+		{
+			room = await joinEditorRoom(this.server.client, this.universeId);
+		}
+		catch (error)
+		{
+			console.error('Could not join the editor room:', error);
+			chat.showProblem(t({
+				id: 'editor.chat.notJoined',
+				defaultMessage: 'Could not connect to the editors\' chat. Reload the page to try again.',
+				description: 'Shown in the editors\' chat panel when the page couldn\'t join it, which also lists who has the editor open'
+			}));
+
+			// A player the room turns away can't open the universe either, which the page says above the tabs
+			if (!((error instanceof ServerError) && (error.code === ErrorCode.AUTH_FAILED)))
+			{
+				this.editorScreen.showDisconnected();
+			}
+
+			return;
+		}
+
+		this.editorRoom = room;
+		this.api.windowId = room.sessionId;
+		chat.setConnected(true);
+		this.sendPlace();
+
+		room.onStateChange(() =>
+		{
+			chat.showEditors(room.state.editors);
+			presenceBar.show(room.state.editors);
+			this.editorScreen.setAreaClaims(areaClaims(room.state.editors, playerId, this.version));
+			this.editorScreen.setUnsavedDraftEditors(unsavedDraftEditors(room.state.editors, playerId));
+		});
+
+		room.onMessage(EditorServerMessageType.ChatHistory, (history: KeptChatHistoryPayload) =>
+		{
+			chat.setHistory(history.messages, history.readAt);
+		});
+
+		room.onMessage(EditorServerMessageType.ChatRead, (read: ChatReadPayload) =>
+		{
+			chat.setReadAt(read.readAt);
+		});
+
+		room.onMessage(EditorServerMessageType.Chat, (message: KeptChatMessage) =>
+		{
+			chat.addMessage(message);
+		});
+
+		room.onMessage(EditorServerMessageType.ChatAuthorDeleted, (deleted: ChatAuthorDeletedPayload) =>
+		{
+			chat.forgetAuthor(deleted.playerId);
+		});
+
+		room.onMessage(EditorServerMessageType.Notice, (notice: NoticePayload) =>
+		{
+			if (notice.reason === NoticeReason.ChatTooFast)
+			{
+				chat.refuseTooFast();
+			}
+		});
+
+		room.onMessage(EditorServerMessageType.AccessChanged, () =>
+		{
+			this.editorScreen.accessChanged();
+		});
+
+		room.onMessage(EditorServerMessageType.Saved, (saved: EditorSavedPayload) =>
+		{
+			void this.editorScreen.otherSaved(saved);
+		});
+
+		room.onLeave((code: number) =>
+		{
+			this.onEditorRoomLeft(chat, code);
+		});
+	}
+
+	/**
+	 * Handles the editor room closing when the page isn't being left: says why in the chat, and above the
+	 * tabs when the connection was lost, and turns saving off when the player may no longer edit the
+	 * universe or it was deleted. A player who may no
+	 * longer edit it goes to the universe's page, unless they choose to stay when the browser asks about
+	 * changes not yet saved
+	 *
+	 * @param chat The editors' chat
+	 * @param code WebSocket close code
+	 */
+	private onEditorRoomLeft(chat: EditorChat, code: number): void
+	{
+		this.editorRoom = undefined;
+		this.api.windowId = undefined;
+		this.presenceBar?.show([]);
+		this.editorScreen.setAreaClaims(new Map());
+		this.editorScreen.setUnsavedDraftEditors([]);
+
+		// A session that ended goes to the login page when the session room says so
+		if (isLeavingPage() || (code === CloseCode.CONSENTED) || (code === ServerCloseCode.LoggedOut.valueOf()))
+		{
+			return;
+		}
+
+		if (code === ServerCloseCode.AccessLost.valueOf())
+		{
+			const message = t({
+				id: 'editor.accessLost',
+				defaultMessage: 'You no longer have a role in this universe, so your changes can\'t be saved.',
+				description: 'Shown above the editor\'s tabs, and in the editors\' chat panel, when the player\'s role in the universe was taken away while they had the editor open'
+			});
+
+			this.editorScreen.lockOut(message);
+			chat.showProblem(message);
+			window.location.replace(universePageUrl(this.universeId));
+		}
+		else if (code === ServerCloseCode.UniverseDeleted.valueOf())
+		{
+			const message = t({
+				id: 'editor.universeDeleted',
+				defaultMessage: 'This universe has been deleted, so changes to it can\'t be saved.',
+				description: 'Shown above the editor\'s tabs, and in the editors\' chat panel, when the universe was deleted while the player had its editor open'
+			});
+
+			this.editorScreen.lockOut(message);
+			chat.showProblem(message);
+		}
+		else
+		{
+			chat.showProblem(t({
+				id: 'editor.chat.disconnected',
+				defaultMessage: 'The editors\' chat was disconnected. Reload the page to reconnect.',
+				description: 'Shown in the editors\' chat panel when its connection to the server was lost'
+			}));
+			this.editorScreen.showDisconnected();
+		}
+	}
+
+	/**
+	 * Tells the editor room which version, tab and area the page has open, once it has opened one, and
+	 * whether it holds unsaved work
+	 */
+	private sendPlace(): void
+	{
+		if (!this.editorRoom || !this.place)
+		{
+			return;
+		}
+
+		const place: EditorPlacePayload = {
+			version: this.version,
+			tab: this.place.tab,
+			areaId: (this.place.areaId ?? null),
+			unsaved: hasUnsavedWork()
+		};
+
+		this.editorRoom.send(EditorMessageType.Place, place);
 	}
 
 	/**
@@ -203,6 +439,7 @@ export class EditorPage
 		if (shown)
 		{
 			this.place = { ...state };
+			this.sendPlace();
 		}
 		else
 		{

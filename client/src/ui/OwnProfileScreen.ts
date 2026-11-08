@@ -1,4 +1,4 @@
-import { accountExportFileName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
+import { accountExportFileName, languageName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { availableLocales, chooseLocale, currentLocale, formatList, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
@@ -10,12 +10,11 @@ import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { ChipCombobox } from './ChipCombobox';
-import type { ComboboxChoice } from './ComboboxList';
 import { getElement, setPageTitle, showMessage, showScreen } from './dom';
 import { EmailChangeDialog } from './EmailChangeDialog';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { languageName } from './languagePicker';
+import { languageChoices } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { characterLabel, showProfileCharacters } from './profileCharacters';
 import { ProviderLinkDialog } from './ProviderLinkDialog';
@@ -25,33 +24,6 @@ import { timeZoneChoices } from './timeZones';
 import { showToast } from './toast';
 import { TwoFactorConfirmDialog } from './TwoFactorConfirmDialog';
 import { TwoFactorSetupDialog } from './TwoFactorSetupDialog';
-
-/**
- * The languages a profile can say the player knows, each named in itself, with its name in the page's
- * language after it when that differs, sorted by name
- *
- * @return The choices
- */
-function profileLanguageChoices(): ComboboxChoice[]
-{
-	const current = currentLocale();
-	const pageNames = new Intl.DisplayNames([current], { type: 'language' });
-
-	return(PROFILE_LANGUAGES
-		.map((language) =>
-		{
-			const name = languageName(language);
-			const pageName = pageNames.of(language);
-
-			return({
-				value: language,
-				name,
-				lang: language,
-				detail: (((pageName === undefined) || (pageName === name)) ? undefined : pageName)
-			});
-		})
-		.sort((first, second) => first.name.localeCompare(second.name, current)));
-}
 
 /**
  * The player's own profile (the profile screen of profile.html): what others see about them, which they
@@ -86,7 +58,7 @@ export class OwnProfileScreen
 		searchId: 'profile-languages-search',
 		listboxId: 'profile-languages-options',
 		chosenId: 'profile-languages-chosen',
-		choices: profileLanguageChoices(),
+		choices: languageChoices(PROFILE_LANGUAGES),
 		max: MAX_PROFILE_LANGUAGES,
 		tooMany: t({
 			id: 'profile.languagesTooMany',
@@ -311,12 +283,12 @@ export class OwnProfileScreen
 
 		this.twoFactorOffButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('turnOff', (this.profile?.email ?? null));
+			this.twoFactorConfirmDialog.open('turnOff', (this.profile?.email ?? null), (this.profile?.serverAdmin ?? false));
 		});
 
 		this.twoFactorCodesButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('newCodes', (this.profile?.email ?? null));
+			this.twoFactorConfirmDialog.open('newCodes', (this.profile?.email ?? null), (this.profile?.serverAdmin ?? false));
 		});
 
 		this.forgetBrowsersButton.addEventListener('click', () =>
@@ -852,6 +824,8 @@ export class OwnProfileScreen
 			}
 		}
 
+		const form = this.changes.snapshot();
+
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
@@ -893,11 +867,17 @@ export class OwnProfileScreen
 
 		this.viewLink.href = playerPageUrl(profile.username);
 		showAccountName(profile.displayName);
-		this.changes.markSaved();
+		// Changes made while the save was sent stay unsaved
+		this.changes.markSaved(form);
 
 		if ((profile.locale !== null) && (profile.locale !== previousLocale))
 		{
 			chooseLocale(profile.locale);
+			return;
+		}
+
+		if (this.changes.hasUnsavedChanges())
+		{
 			return;
 		}
 

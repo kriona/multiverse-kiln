@@ -26,6 +26,80 @@ export const SOURCE_LOCALE = 'en';
 export const PSEUDO_LOCALE = 'en-XA';
 
 /**
+ * Pirate, a joke translation that ships with the engine for testing how languages load and switch.
+ * Universes can be translated into it too
+ */
+export const PIRATE_LOCALE = 'en-x-pirate';
+
+/**
+ * Names of languages Intl.DisplayNames doesn't know, as each calls itself and in every other language
+ */
+const LANGUAGE_NAMES: Readonly<Record<string, string>> = {
+	[PIRATE_LOCALE]: 'Pirate',
+	[PSEUDO_LOCALE]: 'Gibberish'
+};
+
+/**
+ * A language's name in that language, e.g. Deutsch for de. The client's build uses it too, to write the
+ * footer's language picker (client/vite.config.ts)
+ *
+ * @param locale The language tag
+ * @return The name
+ */
+export function languageName(locale: string): string
+{
+	return(languageNameIn(locale, locale));
+}
+
+/**
+ * A language's name in another language, e.g. German for de in English. Intl.DisplayNames can't name
+ * private-use tags such as Pirate's, which keep their own names. Text that isn't a language tag, such as
+ * a file's pt_BR, is its own name, since Intl.DisplayNames throws on it
+ *
+ * @param locale The language tag
+ * @param displayLocale The language to name it in
+ * @return The name
+ */
+export function languageNameIn(locale: string, displayLocale: string): string
+{
+	const ownName = LANGUAGE_NAMES[locale];
+
+	if (ownName !== undefined)
+	{
+		return(ownName);
+	}
+
+	try
+	{
+		return(new Intl.DisplayNames([displayLocale], { type: 'language' }).of(locale) ?? locale);
+	}
+	catch
+	{
+		return(locale);
+	}
+}
+
+/**
+ * A language tag in its canonical form
+ *
+ * @param text The tag as typed, e.g. pt-br
+ * @return The tag, e.g. pt-BR, or undefined when the text isn't one
+ */
+export function canonicalLanguage(text: string): string | undefined
+{
+	try
+	{
+		const [language] = Intl.getCanonicalLocales(text.trim());
+
+		return(language);
+	}
+	catch
+	{
+		return(undefined);
+	}
+}
+
+/**
  * A message as the code declares it
  */
 export interface MessageDescriptor

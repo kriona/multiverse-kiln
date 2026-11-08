@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { createHash } from 'crypto';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_USERNAME_CHECK_PATH, type AuthErrorPayload, type EmailCodePurpose } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_REGISTER_PATH, AUTH_SESSION_PATH, AUTH_USERNAME_CHECK_PATH, type AuthErrorPayload, type EmailCodePurpose, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { setPwnedRangeFetch } from '../src/auth/pwnedPasswords.js';
@@ -9,6 +9,7 @@ import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { MAX_WRONG_GUESSES_PER_CODE } from '../src/logic/emailCodes.js';
+import { SESSION_LIFETIMES } from '../src/logic/sessionLifetimes.js';
 import { Browser } from './browser.js';
 import { logInBrowser } from './players.js';
 import { discardEmail } from './setup.js';
@@ -380,6 +381,20 @@ describe('auth routes', () =>
 			assert.strictEqual(await browser.username(), 'ada');
 		});
 
+		it('records when the account last logged in', async () =>
+		{
+			await register('ada@example.com', 'ada');
+			await pool.query('UPDATE players SET last_login_at = NULL WHERE username = $1', ['ada']);
+
+			const before = Date.now();
+
+			await new Browser().send('POST', AUTH_LOGIN_PATH, { email: 'ada@example.com', password: PASSWORD, rememberMe: false });
+
+			const [row] = (await pool.query<{ last_login_at: Date | null }>('SELECT last_login_at FROM players WHERE username = $1', ['ada'])).rows;
+
+			assert.ok((row.last_login_at !== null) && (row.last_login_at.getTime() >= before));
+		});
+
 		it('ends the session a browser was already logged in with when it logs in again', async () =>
 		{
 			const browser = await register('ada@example.com', 'ada');
@@ -520,6 +535,28 @@ describe('auth routes', () =>
 
 			await pool.query('DELETE FROM players WHERE id = $1', [player.id]);
 			assert.strictEqual(await browser.username(), null);
+		});
+
+		it('says how long the session lasts if it isn\'t used again', async () =>
+		{
+			const player = await createPlayer({
+				username: 'ada',
+				displayName: 'Ada',
+				email: 'ada@example.com',
+				passwordHash: await hashPassword(PASSWORD)
+			});
+			const { cookie, sessionId } = await logInBrowser(player.id, true);
+			const browser = new Browser();
+
+			browser.cookies.set('__Host-kiln-session', cookie.split('=')[1]);
+
+			// Used two minutes ago, too recently to record this use, so it ends 30 days after that
+			await pool.query('UPDATE sessions SET last_used_at = now() - interval \'2 minutes\' WHERE id = $1', [sessionId]);
+
+			const expiresInMs = (await browser.send<SessionPayload>('GET', AUTH_SESSION_PATH)).body.player?.sessionExpiresInMs ?? 0;
+			const expected = (SESSION_LIFETIMES.remembered.idleMs - (2 * 60 * 1000));
+
+			assert.ok(Math.abs(expiresInMs - expected) < 30000, `${expiresInMs} is not about ${expected}`);
 		});
 	});
 

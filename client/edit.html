@@ -14,34 +14,59 @@
 					<!-- include site-name.html -->
 					<h1 id="editor-title" data-message="editor.title" data-translation-context="Heading of the world editor until the universe's name has loaded">Edit Universe</h1>
 					<span class="toolbar-name" data-message="editor.role" data-translation-context="In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder">Your role: <strong id="editor-role" data-argument="role"></strong></span>
-					<button id="editor-play" type="button" data-shortcut="Alt+U" data-message="editor.play" data-translation-context="Button in the editor's toolbar that goes to the universe's lobby to play"><!-- icon game-icons:magic-portal -->Enter Universe</button>
+					<label id="editor-version-field" class="toolbar-name editor-version" hidden>
+						<span data-message="editor.version" data-translation-context="Label of the choice in the editor's toolbar of which version of the universe to edit: the live version players play, or the draft being built beside it">Editing</span>
+						<select id="editor-version">
+							<option value="live" data-message="editor.version.live" data-translation-context="Choice in the editor's toolbar for editing the live version of the universe, the one players play">Live version</option>
+							<option value="draft" data-message="editor.version.draft" data-translation-context="Choice in the editor's toolbar for editing the universe's draft, a copy players don't see until it is applied">Draft</option>
+						</select>
+					</label>
+					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"><!-- icon ph:copy -->Start Draft</button>
+					<button id="editor-apply-draft" class="draft" type="button" hidden data-message="editor.draft.apply" data-translation-context="Button in the editor's toolbar that applies the universe's draft to the live version after asking, so players see everything changed in it"><!-- icon ph:rocket-launch -->Apply Draft</button>
+					<button id="editor-discard-draft" class="danger" type="button" hidden data-message="editor.draft.discard" data-translation-context="Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"><!-- icon ph:trash -->Discard Draft</button>
+					<span class="editor-chat-toggle">
+						<button id="editor-chat-toggle" type="button" class="secondary" aria-expanded="false" aria-controls="editor-chat" aria-describedby="editor-chat-unread" data-shortcut="Alt+H" data-message="editor.chat.toggle" data-translation-context="Button in the editor's toolbar that shows or hides the chat of the universe's editors, with who has the editor open"><!-- icon ph:chats-circle -->Chat</button>
+						<span id="editor-chat-unread-count" class="chat-unread" aria-hidden="true" hidden></span>
+						<span id="editor-chat-unread" class="visually-hidden" hidden></span>
+					</span>
+					<a id="editor-view" class="button" data-shortcut="Alt+U" hidden data-message="editor.view" data-translation-context="Button in the editor's toolbar that goes to the universe's page, which players see"><!-- icon game-icons:magic-portal -->View Universe</a>
 					<!-- include account.html -->
 				</header>
 				<p id="editor-notice" class="notice" role="status" hidden></p>
-				<div class="tabs" role="tablist">
-					<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings"><!-- icon game-icons:galaxy -->Universe</button>
-					<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
-					<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
-					<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
-					<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
-					<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
-					<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
+				<p id="editor-connection-notice" class="notice" hidden></p>
+				<p id="editor-version-notice" class="notice" role="status" hidden></p>
+				<div class="tab-strip">
+					<div id="editor-tabs" class="tabs" role="tablist">
+						<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings"><!-- icon game-icons:galaxy -->Universe</button>
+						<button id="editor-tab-editors" type="button" role="tab" aria-controls="editor-panel-editors" data-message="editor.tab.editors" data-translation-context="Tab of the editor listing the players who can work on or test the universe, and their roles"><!-- icon ph:users -->Editors</button>
+						<button id="editor-tab-ruleset" type="button" role="tab" aria-controls="editor-panel-ruleset" data-message="editor.tab.ruleset" data-translation-context="Tab of the editor with the settings of the universe's game rules, such as how ability scores are made"><!-- icon game-icons:rule-book -->Ruleset</button>
+						<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
+						<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
+						<button id="editor-tab-characterList" type="button" role="tab" aria-controls="editor-panel-characterList" data-message="editor.tab.characterList" data-translation-context="Tab of the editor listing every character players have made in the universe, with their race, class and player"><!-- icon game-icons:three-friends -->Character List</button>
+						<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
+						<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
+						<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
+						<button id="editor-tab-translations" type="button" role="tab" aria-controls="editor-panel-translations" data-message="editor.tab.translations" data-translation-context="Tab of the editor with the languages the universe can be played in: the one its text is written in, and those it is translated into"><!-- icon ph:translate -->Translations</button>
+						<button id="editor-tab-audit" type="button" role="tab" aria-controls="editor-panel-audit" data-message="editor.tab.audit" data-translation-context="Tab of the editor listing every save made in the universe's editor: who saved, with which role, when and what changed"><!-- icon ph:clock-counter-clockwise -->Audit</button>
+					</div>
+					<button id="editor-tabs-back" type="button" class="tab-scroll tab-scroll-back" tabindex="-1" aria-hidden="true" hidden><!-- icon ph:caret-left --></button>
+					<button id="editor-tabs-forward" type="button" class="tab-scroll tab-scroll-forward" tabindex="-1" aria-hidden="true" hidden><!-- icon ph:caret-right --></button>
 				</div>
 				<div class="editor-body">
 					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
 						<form id="universe-form" class="form">
 							<fieldset id="universe-fields" class="plain">
-								<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+								<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Name
 									<input id="universe-name-input" required />
 								</label>
-								<label data-message="universe.shortDescription" data-translation-context="Label of the field for a universe's description in one sentence">
+								<label data-message="universe.shortDescription" data-translation-context="Label of the field for a universe's description in one sentence; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									1-sentence description
 									<input id="universe-short-description" />
 								</label>
 								<div class="markdown-editor">
 									<div class="field-label">
-										<label for="universe-long-description" data-message="editor.universe.longDescription" data-translation-context="Label of the field for a universe's full description, which is written in Markdown">Long description (Markdown)</label>
+										<label for="universe-long-description" data-message="editor.universe.longDescription" data-translation-context="Label of the field for a universe's full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor's Audit tab">Long description (Markdown)</label>
 										<markdown-toolbar id="universe-long-toolbar" class="markdown-toolbar" for="universe-long-description">
 											<!-- role is set here because the md-* elements don't set it themselves -->
 											<md-header level="1" role="button" title="Heading 1" aria-label="Heading 1" data-message="markdown.heading1Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the first level" data-message-title="markdown.heading1" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the first level" data-message-aria-label="markdown.heading1" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the first level">H1</md-header>
@@ -64,9 +89,10 @@
 									</div>
 								</div>
 								<fieldset id="universe-stage" class="choice stacked">
-									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired">Stage</legend>
+									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired; also names the setting in the list of what a save changed, on the editor's Audit tab">Stage</legend>
 								</fieldset>
-								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
+								<p id="universe-stage-warning" class="hint" role="status" hidden></p>
+								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Passage of time
 									<select id="universe-time"></select>
 								</label>
@@ -74,13 +100,43 @@
 									Where is morning?
 									<select id="universe-faerie"></select>
 								</label>
-								<label data-message="editor.displayTime" data-translation-context="Label of the field for how players are shown the time of day in a universe">
+								<label data-message="editor.displayTime" data-translation-context="Label of the field for how players are shown the time of day in a universe; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Display time
 									<select id="universe-display-time"></select>
 								</label>
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
+						<section id="universe-draft" class="universe-draft" aria-labelledby="universe-draft-heading" hidden>
+							<h2 id="universe-draft-heading" data-message="editor.draft.heading" data-translation-context="Heading of the part of the editor's Universe tab shown when starting, applying or discarding the universe's draft (a copy of the universe editors change without players seeing it) couldn't be saved">Draft</h2>
+							<p id="universe-draft-status" role="status"></p>
+							<div class="form-buttons">
+								<button id="universe-draft-undo" type="button" data-message="editor.draft.undo" data-translation-context="Button on the editor's Universe tab that takes back starting, applying or discarding the draft, when saving it was refused"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
+							</div>
+							<p id="universe-draft-error" class="form-error" role="alert" hidden></p>
+						</section>
+					</section>
+
+					<section id="editor-panel-editors" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-editors" hidden>
+						<div class="panel">
+							<p id="editors-draft-note" class="notice" data-message="editor.editors.draftNote" data-translation-context="On the editor's Editors tab while the universe's draft (a copy players don't see until it is applied) is open: editors aren't part of the draft" hidden>Changes to editors apply to all versions of the universe - both the live and the draft versions.</p>
+							<div class="filters">
+								<button id="editors-add" type="button" data-shortcut="Alt+N" data-message="editor.editors.add" data-translation-context="Button on the editor's Editors tab that opens the dialog for giving a player a role in the universe"><!-- icon ph:user-plus -->Add Editor</button>
+							</div>
+							<p id="editors-error" class="form-error" role="alert" hidden></p>
+							<table class="item-table">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.editors.username" data-translation-context="Heading of the column of usernames on the editor's Editors tab">Username</th>
+										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</th>
+										<th scope="col" data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Role</th>
+										<th scope="col" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Languages</th>
+										<th scope="col" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</th>
+									</tr>
+								</thead>
+								<tbody id="editors-rows"></tbody>
+							</table>
+						</div>
 					</section>
 
 					<section id="editor-panel-ruleset" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-ruleset" hidden>
@@ -88,38 +144,58 @@
 							<fieldset id="ruleset-fields" class="plain">
 								<p data-message="editor.ruleset.heading" data-translation-context="At the top of the editor's Ruleset tab, naming the universe's game rules; {ruleset} is e.g. Pathfinder 1E">Settings for <strong id="ruleset-name" data-argument="ruleset"></strong></p>
 								<div id="ruleset-pf1e-stats" class="form-group">
-									<label data-message="editor.ruleset.statMethod" data-translation-context="Label of the field for how characters' ability scores are made: rolled with dice, or bought with points">
+									<label data-message="editor.ruleset.statMethod" data-translation-context="Label of the field for how characters' ability scores are made: rolled with dice, or bought with points; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Rolling for stats
 										<select id="ruleset-stat-method"></select>
 									</label>
-									<label id="ruleset-budget-field" data-message="editor.ruleset.budget" data-translation-context="Label of the field for how many points players spend on ability scores, shown when the universe chooses the number" hidden>
+									<label id="ruleset-budget-field" data-message="editor.ruleset.budget" data-translation-context="Label of the field for how many points players spend on ability scores, shown when the universe chooses the number; also names the setting in the list of what a save changed, on the editor's Audit tab" hidden>
 										Points to spend
 										<input id="ruleset-budget" type="number" step="1" required />
 									</label>
 									<p class="hint" data-message="editor.ruleset.statMethodHint" data-translation-context="Explains that changing how ability scores are made only affects characters made afterwards">Rolled scores can be rearranged among the abilities. Changing this doesn't change characters that already exist.</p>
 								</div>
 								<div id="ruleset-sf1e-stats" class="form-group" hidden>
-									<label data-message="editor.ruleset.abilityPoints" data-translation-context="Label of the field for how many ability points players spend raising their characters' ability scores, in Starfinder">
+									<label data-message="editor.ruleset.abilityPoints" data-translation-context="Label of the field for how many ability points players spend raising their characters' ability scores, in Starfinder; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Ability points
 										<input id="ruleset-ability-points" type="number" step="1" required />
 									</label>
 									<p class="hint" data-message="editor.ruleset.abilityPointsHint" data-translation-context="Explains the Starfinder ability points field: how ability scores are made, and that changing it only affects characters made afterwards">Every ability score starts at 10, and each point raises one by 1, up to 18 with the race's and theme's bonuses. Changing this doesn't change characters that already exist.</p>
 								</div>
-								<label class="checkbox" data-message="editor.ruleset.needsSleep" data-translation-context="Checkbox for whether characters in the universe get tired and need to sleep">
+								<label class="checkbox" data-message="editor.ruleset.needsSleep" data-translation-context="Checkbox for whether characters in the universe get tired and need to sleep; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									<input id="ruleset-needs-sleep" type="checkbox" />
 									Characters get tired and need sleep
 								</label>
-								<label id="ruleset-coins-have-weight-field" class="checkbox" data-message="editor.ruleset.coinsHaveWeight" data-translation-context="Checkbox for whether the coins characters carry add to the weight they carry">
+								<label id="ruleset-coins-have-weight-field" class="checkbox" data-message="editor.ruleset.coinsHaveWeight" data-translation-context="Checkbox for whether the coins characters carry add to the weight they carry; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									<input id="ruleset-coins-have-weight" type="checkbox" />
 									Coins count towards carrying capacity
 								</label>
-								<label class="checkbox" data-message="editor.ruleset.tracksAmmo" data-translation-context="Checkbox for whether arrows and other ammunition are used up when fired">
+								<label class="checkbox" data-message="editor.ruleset.tracksAmmo" data-translation-context="Checkbox for whether arrows and other ammunition are used up when fired; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									<input id="ruleset-tracks-ammo" type="checkbox" />
 									Track ammunition
 								</label>
 								<p id="ruleset-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
+
+						<section id="ruleset-coins" class="panel coins" aria-labelledby="coins-heading">
+							<h2 id="coins-heading" data-message="editor.coins.heading" data-translation-context="Heading of the part of the editor's Ruleset tab where the universe gives each coin a name and abbreviation of its own">Coins</h2>
+							<form id="coins-form" class="form">
+								<fieldset id="coins-fields" class="plain">
+									<table class="coin-table" aria-labelledby="coins-heading" aria-describedby="coins-hint">
+										<thead>
+											<tr>
+												<th id="coins-coin" scope="col" data-message="editor.coins.coinColumn" data-translation-context="Heading of the column of coins in the Coins table on the editor's Ruleset tab, which names each coin as the rules do, such as Gold pieces">Coin</th>
+												<th id="coins-name" scope="col" data-message="editor.coins.nameColumn" data-translation-context="Heading of the column of fields for the name the universe gives each coin, such as Bronze kits for copper pieces, in the Coins table on the editor's Ruleset tab">Name</th>
+												<th id="coins-abbreviation" scope="col" data-message="editor.coins.abbreviationColumn" data-translation-context="Heading of the column of fields for the abbreviation the universe writes each coin with after an amount, such as bk in 2bk for bronze kits, in the Coins table on the editor's Ruleset tab">Abbreviation</th>
+											</tr>
+										</thead>
+										<tbody id="coin-rows"></tbody>
+									</table>
+									<p id="coins-hint" class="hint" data-message="editor.coins.hint" data-translation-context="Explains the Coins table on the editor's Ruleset tab. Each field is empty while the coin uses the usual name or abbreviation, which the field shows grayed out. Names are written the way they read in the middle of a sentence, and labels capitalize their first letter">What the universe calls each coin, and what amounts of it are written with, like the gp in 2gp. Write names as they'd read mid-sentence, like gold pieces. Leave a field empty to use the default name. Abbreviations can't have spaces, digits or commas, and each coin needs its own abbreviation. Name and abbreviation are translated on the Translations tab.</p>
+									<p id="coins-error" class="form-error" role="alert" hidden></p>
+								</fieldset>
+							</form>
+						</section>
 
 						<section id="ruleset-difficulty" class="panel difficulty-levels" aria-labelledby="ruleset-difficulty-heading">
 							<h2 id="ruleset-difficulty-heading" data-message="editor.difficulty.heading" data-translation-context="Heading of the part of the editor's Ruleset tab listing the difficulty levels a new group can choose">Difficulty</h2>
@@ -131,7 +207,7 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</th>
+										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col"></th>
 									</tr>
@@ -142,11 +218,20 @@
 					</section>
 
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
-						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab.</p>
-						<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
+						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other.</p>
 						<form id="lobby-form" class="form">
+							<p data-message="editor.lobby.areaChoice" data-translation-context="Shows the area players walk around in the universe's lobby, on the editor's Lobby tab; {area} is the area's name and the square players start on, or that there is none">Lobby area: <strong id="lobby-area-name" data-argument="area"></strong></p>
+							<div class="form-group lobby-area-details">
+								<p class="hint" data-message="editor.lobby.areaHint" data-translation-context="Explains the lobby's area on the editor's Lobby tab, under the area's name">The area to use as the game's lobby for players between groups.</p>
+								<p id="lobby-no-map-hint" class="hint" hidden></p>
+								<div class="area-buttons">
+									<button id="lobby-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.lobby.chooseArea" data-translation-context="Button on the editor's Lobby tab that opens the dialog for choosing the area players walk around in the lobby, and the square they start on"><!-- icon ph:map-pin -->Choose Area</button>
+									<button id="lobby-area-clear" type="button" class="secondary" data-shortcut="Alt+O" data-message="editor.lobby.clearArea" data-translation-context="Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no map to walk around"><!-- icon ph:x -->No Lobby Area</button>
+									<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
+								</div>
+							</div>
 							<fieldset id="lobby-fields" class="plain">
-								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
+								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Passage of time
 									<select id="lobby-time"></select>
 								</label>
@@ -160,7 +245,7 @@
 									Where is morning?
 									<select id="lobby-faerie"></select>
 								</label>
-								<label class="checkbox" data-message="editor.lobby.noVisionCost" data-translation-context="Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost">
+								<label class="checkbox" data-message="editor.lobby.noVisionCost" data-translation-context="Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									<input id="lobby-no-vision-cost" type="checkbox" />
 									No vision cost in the lobby
 								</label>
@@ -173,18 +258,18 @@
 					<section id="editor-panel-characters" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-characters" hidden>
 						<form id="characters-form" class="panel form">
 							<fieldset id="characters-fields" class="plain">
-								<label data-message="editor.characters.groupSize" data-translation-context="Label of the field for the most characters that can play together in one group">
+								<label data-message="editor.characters.groupSize" data-translation-context="Label of the field for the most characters that can play together in one group; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Group size
 									<input id="characters-group-size" type="number" step="1" required />
 								</label>
 								<p id="characters-group-size-hint" class="hint"></p>
-								<label data-message="editor.characters.startingMoney" data-translation-context="Label of the field for the money every character starts with">
+								<label data-message="editor.characters.startingMoney" data-translation-context="Label of the field for the money every character starts with; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Starting money
 									<input id="characters-starting-money" class="money" autocomplete="off" />
 								</label>
 								<p id="characters-starting-money-hint" class="hint"></p>
 								<div class="starting-equipment">
-									<h3 id="characters-items-heading" data-message="editor.characters.startingEquipment" data-translation-context="Heading of the list of items every character starts with, on the editor's Characters tab">Starting equipment</h3>
+									<h3 id="characters-items-heading" data-message="editor.characters.startingEquipment" data-translation-context="Heading of the list of items every character starts with, on the editor's Characters tab; also names the setting in the list of what a save changed, on the editor's Audit tab">Starting equipment</h3>
 									<ul id="characters-items" class="starting-items" aria-labelledby="characters-items-heading"></ul>
 									<p class="hint" data-message="editor.characters.startingEquipmentHint" data-translation-context="Explains the starting equipment on the editor's Characters tab">What every character starts with. Races and classes can add more.</p>
 									<div>
@@ -210,7 +295,7 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
@@ -229,7 +314,7 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
@@ -248,7 +333,7 @@
 							<table class="item-table">
 								<thead>
 									<tr>
-										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 									</tr>
@@ -256,6 +341,42 @@
 								<tbody id="theme-rows"></tbody>
 							</table>
 						</section>
+					</section>
+
+					<section id="editor-panel-characterList" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-characterList" hidden>
+						<div class="filters">
+							<input id="character-list-search" type="search" placeholder="Search by name or player" aria-label="Search characters by name or player" data-message-placeholder="editor.characterList.search" data-translation-context-placeholder="Shown in the empty field on the editor's Character List tab that narrows the characters down by the character's name or their player's username or name" data-message-aria-label="editor.characterList.searchLabel" data-translation-context-aria-label="Name of the field on the editor's Character List tab that narrows the characters down by the character's name or their player's username or name, for screen readers" />
+							<label data-message="editor.characterList.race" data-translation-context="Label of the filter on the editor's Character List tab for the characters' race, such as elf or dwarf">
+								Race
+								<select id="character-list-race"></select>
+							</label>
+							<label data-message="editor.characterList.class" data-translation-context="Label of the filter on the editor's Character List tab for the characters' class, such as fighter or wizard">
+								Class
+								<select id="character-list-class"></select>
+							</label>
+							<label data-message="editor.characterList.inGroup" data-translation-context="Label of the yes-or-no filter on the editor's Character List tab for whether a character is in a group (characters playing together)">
+								In a group
+								<select id="character-list-in-group"></select>
+							</label>
+						</div>
+						<table id="character-list-table" class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="editor.characterList.name" data-translation-context="Heading of the column of characters' names on the editor's Character List tab">Name</button></th>
+									<th scope="col" data-message="editor.characterList.description" data-translation-context="Heading of the column on the editor's Character List tab giving each character's race and class, e.g. Dwarf Fighter">Race and class</th>
+									<th scope="col" data-sort="player"><button type="button" class="sort-button" data-message="editor.characterList.player" data-translation-context="Heading of the column on the editor's Character List tab naming the player who made each character">Player</button></th>
+									<th scope="col" data-sort="created"><button type="button" class="sort-button" data-message="editor.characterList.created" data-translation-context="Heading of the column on the editor's Character List tab for the day each character was made">Created</button></th>
+									<th scope="col" data-message="editor.characterList.notes" data-translation-context="Heading of the column on the editor's Character List tab that says whether each character is in a group or waiting to be deleted">Notes</th>
+								</tr>
+							</thead>
+							<tbody id="character-list-rows"></tbody>
+						</table>
+						<p id="character-list-empty" class="universe-empty" data-message="editor.characterList.none" data-translation-context="Shown on the editor's Character List tab instead of the list of characters when no character matches the search or filters" hidden>No characters match.</p>
+						<div class="pager">
+							<button id="character-list-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+							<span id="character-list-page"></span>
+							<button id="character-list-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+						</div>
 					</section>
 
 					<section id="editor-panel-tilesets" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-tilesets" hidden>
@@ -269,7 +390,7 @@
 								Where
 								<select id="tile-filter-used-in"></select>
 							</label>
-							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Enabled
 								<select id="tile-filter-enabled"></select>
 							</label>
@@ -287,8 +408,8 @@
 						<table id="tile-table" class="tile-table">
 							<thead>
 								<tr>
-									<th scope="col" data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors">Color</th>
-									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+									<th scope="col" data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors; also names the setting in the list of what a save changed, on the editor's Audit tab">Color</th>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 									<th scope="col" data-sort="walkTime"><button type="button" class="sort-button" data-message="editor.tiles.walkTime" data-translation-context="Heading of the table column with how many seconds of game time walking a square of each tile takes">Walk time</button></th>
 									<th scope="col" data-sort="visionCost"><button type="button" class="sort-button" data-message="editor.tiles.visionCost" data-translation-context="Heading of the table column with how much of a character's vision crossing each tile uses">Vision cost</button></th>
 									<th scope="col" data-sort="usedIn"><button type="button" class="sort-button" data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</button></th>
@@ -305,57 +426,64 @@
 						</div>
 					</section>
 
-					<section id="editor-panel-areas" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-areas" hidden>
-						<div id="area-list-view">
+					<section id="editor-panel-areas" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-areas" hidden>
+						<div id="area-list-view" class="panel">
 							<div class="panel-heading">
 								<h2 data-message="editor.areas.heading" data-translation-context="Heading of the list of the universe's areas">Areas</h2>
 								<button id="area-add" type="button" data-shortcut="Alt+N" data-message="editor.areas.add" data-translation-context="Button that opens the dialog for making a new area"><!-- icon ph:plus -->Add Area</button>
 							</div>
 							<ul id="area-list" class="area-list"></ul>
-							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe only has its lobby" hidden>There are no areas besides the lobby.</p>
+							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe has none" hidden>There are no areas yet.</p>
 							<p id="area-list-error" class="form-error" role="alert" hidden></p>
 						</div>
-						<div id="area-editor-view" hidden>
-							<form id="area-form" class="form">
+						<div id="area-editor-view" class="editor-cards" hidden>
+							<form id="area-form" class="panel form">
 								<!-- Outside the fieldset, so disabling the fields leaves the back button working -->
 								<div class="area-editor-top">
-									<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
-									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+									<div class="area-back-buttons">
+										<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
+										<button id="area-back-lobby" type="button" class="secondary" data-shortcut="Alt+Y" data-message="editor.area.backToLobby" data-translation-context="Button in the area editor, shown while the area is the lobby's, that closes the area editor and goes to the editor's Lobby tab" hidden><!-- icon ph:arrow-left -->Back to Lobby</button>
+									</div>
+									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Name
 										<input id="area-name" required />
 									</label>
 								</div>
+								<p id="area-lobby-notice" class="lobby-notice" data-message="editor.area.lobbyNotice" data-translation-context="Shown prominently under the name in the area editor while the area is the one players walk around in the universe's lobby (chosen on the Lobby tab)" hidden>This area is the game's lobby.</p>
 								<fieldset id="area-fields" class="plain">
-									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-enabled" type="checkbox" />
 										Enabled
 									</label>
 									<p id="area-parent-disabled" class="hint" hidden></p>
-									<label data-message="editor.area.parent" data-translation-context="Label of the field for the area this one is inside">
-										Parent area
-										<select id="area-parent"></select>
-									</label>
+									<div class="field-label">
+										<span id="area-parent-label" data-message="editor.area.parent" data-translation-context="Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor's Audit tab">Parent area</span>
+										<div class="combobox-field">
+											<input id="area-parent" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="area-parent-options" aria-labelledby="area-parent-label" data-untracked />
+											<ul id="area-parent-options" class="combobox-options" role="listbox" aria-labelledby="area-parent-label" hidden></ul>
+										</div>
+									</div>
 									<fieldset class="choice indoor-outdoor">
-										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
-										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
+										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab">Indoors or outdoors</legend>
+										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 											<input id="area-outdoors" name="area-indoors" type="radio" value="outdoors" />
 											Outdoors
 										</label>
-										<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
+										<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 											<input id="area-indoors" name="area-indoors" type="radio" value="indoors" />
 											Indoors
 										</label>
 									</fieldset>
-									<label id="area-light-field" data-message="editor.area.lightLevel" data-translation-context="Label of the field for how light an indoor area is at any time of day: lit or dark" hidden>
+									<label id="area-light-field" data-message="editor.area.lightLevel" data-translation-context="Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab" hidden>
 										Light level
 										<select id="area-light"></select>
 									</label>
 									<p id="area-light-hint" class="hint" data-message="editor.area.lightLevelHint" data-translation-context="Explains the light level field of an indoor area" hidden>A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.</p>
-									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area's map is filled with where nothing else is painted">
+									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area's map is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Default tile
 										<select id="area-default-tile"></select>
 									</label>
-									<label id="area-time-field" data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area">
+									<label id="area-time-field" data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Passage of time
 										<select id="area-time"></select>
 									</label>
@@ -364,11 +492,11 @@
 										Where is morning?
 										<select id="area-faerie"></select>
 									</label>
-									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west">
+									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-loops-east-west" type="checkbox" />
 										Loops east-west
 									</label>
-									<label class="checkbox" data-message="editor.area.loopsNorthSouth" data-translation-context="Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south">
+									<label class="checkbox" data-message="editor.area.loopsNorthSouth" data-translation-context="Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-loops-north-south" type="checkbox" />
 										Loops north-south
 									</label>
@@ -380,57 +508,51 @@
 									</div>
 								</fieldset>
 							</form>
-							<section id="map-editor" class="map-editor" aria-labelledby="map-editor-title">
-								<h3 id="map-editor-title" data-message="editor.map.heading" data-translation-context="Heading of the area's map editor">Map</h3>
-								<div id="map-tools" class="map-tools">
-									<fieldset class="choice">
-										<legend data-message="editor.map.tool" data-translation-context="Heading of the choice of what clicking the map does">Tool</legend>
-										<label class="checkbox" data-message="editor.map.draw" data-translation-context="Map tool that paints tiles onto the map">
-											<input id="map-tool-draw" name="map-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
-											Draw
+							<section id="map-editor" class="panel map-editor" aria-label="Map" data-message-aria-label="editor.map.heading" data-translation-context-aria-label="Name of the area's map editor (the card holding the map and its tools), for screen readers">
+								<p id="map-claim" class="area-claim" hidden></p>
+								<div class="map-tools">
+									<!-- Hidden for a map that can't be changed, leaving Full Page -->
+									<div id="map-tools" class="map-editing-tools">
+										<fieldset class="choice">
+											<legend data-message="editor.map.tool" data-translation-context="Heading of the choice of what clicking the map does">Tool</legend>
+											<label class="checkbox" data-message="editor.map.draw" data-translation-context="Map tool that paints tiles onto the map">
+												<input id="map-tool-draw" name="map-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
+												Draw
+											</label>
+											<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other areas">
+												<input id="map-tool-links" name="map-tool" type="radio" value="links" data-shortcut="Alt+L" />
+												Links
+											</label>
+										</fieldset>
+										<label data-message="editor.map.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
+											Tile
+											<select id="map-tile" data-shortcut="Alt+T"></select>
 										</label>
-										<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other areas">
-											<input id="map-tool-links" name="map-tool" type="radio" value="links" data-shortcut="Alt+L" />
-											Links
+										<label data-message="editor.map.brushSize" data-translation-context="Label of the field for how many cells across the Draw tool paints">
+											Size
+											<input id="map-brush-size" type="number" min="1" step="1" value="1" />
 										</label>
-									</fieldset>
-									<label data-message="editor.map.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
-										Tile
-										<select id="map-tile" data-shortcut="Alt+T"></select>
-									</label>
-									<label data-message="editor.map.brushSize" data-translation-context="Label of the field for how many cells across the Draw tool paints">
-										Size
-										<input id="map-brush-size" type="number" min="1" step="1" value="1" />
-									</label>
-									<label data-message="editor.map.brushShape" data-translation-context="Label of the field for the shape the Draw tool paints, a circle or a square">
-										Shape
-										<select id="map-brush-shape"></select>
-									</label>
-									<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting or change to the map's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
-									<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
-									<button id="map-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:resize -->Edit Size</button>
+										<label data-message="editor.map.brushShape" data-translation-context="Label of the field for the shape the Draw tool paints, a circle or a square">
+											Shape
+											<select id="map-brush-shape"></select>
+										</label>
+										<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting or change to the map's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
+										<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
+										<button id="map-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:resize -->Edit Size</button>
+									</div>
+									<button id="map-full-page" type="button" class="secondary map-full-page" data-shortcut="Alt+P"></button>
 								</div>
-								<div class="map-frame">
-									<button id="map-expand-north" type="button" class="secondary map-expand-north" data-message="editor.map.expandNorth" data-translation-context="Button above the map that makes it bigger to the north">+ North</button>
-									<button id="map-expand-west" type="button" class="secondary map-expand-west" data-message="editor.map.expandWest" data-translation-context="Button left of the map that makes it bigger to the west">+ West</button>
-									<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the area's map in the map editor, for screen readers"></div>
-									<button id="map-expand-east" type="button" class="secondary map-expand-east" data-message="editor.map.expandEast" data-translation-context="Button right of the map that makes it bigger to the east">+ East</button>
-									<button id="map-expand-south" type="button" class="secondary map-expand-south" data-message="editor.map.expandSouth" data-translation-context="Button below the map that makes it bigger to the south">+ South</button>
+								<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the area's map in the map editor, for screen readers">
+									<span id="map-cursor" class="map-cursor"></span>
 								</div>
 								<div class="map-status">
-									<label id="map-expand-field" data-message="editor.map.expandBy" data-translation-context="Label of the field for how many cells the buttons around the map add">
-										Expand by
-										<input id="map-expand-by" type="number" min="1" step="1" value="10" />
-									</label>
-									<span id="map-cursor"></span>
 									<span id="map-save-status" role="status"></span>
-									<button id="map-full-page" type="button" class="secondary map-full-page" data-shortcut="Alt+P"></button>
 								</div>
 								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
 								<p id="map-keyboard-help" class="hint" data-message="editor.map.keyboardHelp" data-translation-context="Explains how to use the map editor with only the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="map-error" class="form-error" role="alert" hidden></p>
 							</section>
-							<div id="area-children" hidden>
+							<div id="area-children" class="panel" hidden>
 								<h3 data-message="editor.area.children" data-translation-context="Heading of the list of areas inside the area being edited">Areas inside this one</h3>
 								<ul id="area-child-list" class="area-list"></ul>
 							</div>
@@ -444,11 +566,11 @@
 								Kind
 								<select id="item-filter-category"></select>
 							</label>
-							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter">
+							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Type
 								<select id="item-filter-type"></select>
 							</label>
-							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Enabled
 								<select id="item-filter-enabled"></select>
 							</label>
@@ -467,7 +589,7 @@
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
-									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">Name</button></th>
+									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 									<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 									<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
 								</tr>
@@ -481,24 +603,214 @@
 							<button id="item-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
 						</div>
 					</section>
+
+					<section id="editor-panel-audit" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-audit" hidden>
+						<p class="hint" data-message="editor.audit.hint" data-translation-context="Explains on the editor's Audit tab how long the record of each save is kept">Each save is kept here for 90 days.</p>
+						<table id="audit-table" class="item-table">
+							<thead>
+								<tr>
+									<th scope="col" data-message="editor.audit.saved" data-translation-context="Heading of the column on the editor's Audit tab for the date and time of each save">Saved</th>
+									<th scope="col" data-message="editor.audit.player" data-translation-context="Heading of the column on the editor's Audit tab naming the player who made each save">Player</th>
+									<th scope="col" data-message="editor.audit.role" data-translation-context="Heading of the column on the editor's Audit tab giving the role each save was made with, such as creator, builder or site admin">Role</th>
+									<th scope="col" data-message="editor.audit.changes" data-translation-context="Heading of the column on the editor's Audit tab listing what each save changed, such as Changed item Dagger, with a line for each setting it changed">Changes</th>
+								</tr>
+							</thead>
+							<tbody id="audit-rows"></tbody>
+						</table>
+						<p id="audit-empty" class="universe-empty" hidden></p>
+						<div class="pager">
+							<button id="audit-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+							<span id="audit-page"></span>
+							<button id="audit-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+						</div>
+					</section>
+
+					<section id="editor-panel-translations" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-translations" hidden>
+						<p data-message="editor.translations.explanation" data-translation-context="Explains the editor's Translations tab, above its fields">Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs.</p>
+						<form id="translations-form" class="form">
+							<fieldset id="translations-fields" class="plain">
+								<label data-message="editor.translations.sourceLanguage" data-translation-context="Label of the field on the editor's Translations tab for the language the universe's text is written in; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									Source language
+									<select id="translations-source" aria-describedby="translations-source-hint"></select>
+								</label>
+								<p id="translations-source-hint" class="hint" data-message="editor.translations.sourceLanguageHint" data-translation-context="Explains the source language field on the editor's Translations tab">The language the universe's editors write its text in.</p>
+								<div class="field-label">
+									<span id="translations-languages-label" data-message="editor.translations.languages" data-translation-context="Label of the field on the editor's Translations tab for the languages the universe's text is translated into; also names the setting in the list of what a save changed, on the editor's Audit tab">Translated into</span>
+									<ul id="translations-languages-chosen" class="chips" aria-labelledby="translations-languages-label" hidden></ul>
+									<div class="combobox-field">
+										<input id="translations-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="translations-languages-options" aria-labelledby="translations-languages-label" aria-describedby="translations-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="editor.translations.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages a universe is translated into, on the editor's Translations tab" />
+										<ul id="translations-languages-options" class="combobox-options" role="listbox" aria-labelledby="translations-languages-label" hidden></ul>
+									</div>
+									<p id="translations-languages-hint" class="hint" data-message="editor.translations.languagesHint" data-translation-context="Explains the field for the languages a universe is translated into, on the editor's Translations tab">Taking a language off deletes its translations when the universe is saved.</p>
+								</div>
+								<p id="translations-error" class="form-error" role="alert" hidden></p>
+							</fieldset>
+						</form>
+						<section class="translations-text" aria-labelledby="translations-text-heading">
+							<h2 id="translations-text-heading" data-message="editor.translations.textHeading" data-translation-context="Heading of the table on the editor's Translations tab listing every piece of the universe's text (names and descriptions) with its translation into the language chosen">Universe text</h2>
+							<p id="translations-text-none" class="hint" hidden></p>
+							<div id="translations-text-list">
+								<div class="filters">
+									<label data-message="editor.translations.language" data-translation-context="Label of the choice on the editor's Translations tab of the language whose translations the table shows">
+										Language
+										<select id="translations-language"></select>
+									</label>
+									<input id="translations-search" type="search" placeholder="Search" aria-label="Search the universe's text" data-message-placeholder="editor.translations.search" data-translation-context-placeholder="Shown in the empty field that narrows the Translations tab's table down to text holding what is typed, in where it comes from, the source text, the note or the translation" data-message-aria-label="editor.translations.searchLabel" data-translation-context-aria-label="Name of the field that narrows the Translations tab's table down to text holding what is typed, for screen readers" />
+									<label class="checkbox" data-message="editor.translations.missingFilter" data-translation-context="Checkbox on the editor's Translations tab that shows only the text not yet translated into the language chosen (with Out of date also checked: either)">
+										<input id="translations-missing" type="checkbox" />
+										Missing
+									</label>
+									<label class="checkbox" data-message="editor.translations.outOfDateFilter" data-translation-context="Checkbox on the editor's Translations tab that shows only the translations made from source text that has changed since (with Missing also checked: either)">
+										<input id="translations-out-of-date" type="checkbox" />
+										Out of date
+									</label>
+								</div>
+								<div class="filters">
+									<label data-message="editor.translations.fileFormat" data-translation-context="Label of the choice of the format translation files are exported in (and imported in, when the file's name doesn't say), on the editor's Translations tab and on the admin page's Translations tool">
+										File format
+										<select id="translations-format"></select>
+									</label>
+									<button id="translations-export" type="button" class="secondary" data-shortcut="Alt+X" aria-describedby="translations-files-hint" data-message="editor.translations.export" data-translation-context="Button on the editor's Translations tab that downloads the universe's text and its translations into the language chosen as a file, for translators working outside the editor"><!-- icon ph:download-simple -->Export</button>
+									<button id="translations-import" type="button" class="secondary" data-shortcut="Alt+I" aria-describedby="translations-files-hint" data-message="editor.translations.import" data-translation-context="Button on the editor's Translations tab that reads translations into the language chosen from a file, keeping them on the tab until the editor is saved"><!-- icon ph:upload-simple -->Import</button>
+									<input id="translations-import-file" type="file" accept=".po,.pot,.xlf,.xliff,.csv,.json" hidden />
+								</div>
+								<p id="translations-files-hint" class="hint" data-message="editor.translations.filesHint" data-translation-context="Under the Export and Import buttons on the editor's Translations tab, explaining translation files">Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date.</p>
+								<p id="translations-import-status" class="hint" role="status" hidden></p>
+								<p id="translations-list-error" class="form-error" role="alert" hidden></p>
+								<table id="translations-table" class="item-table translations-table">
+									<thead>
+										<tr>
+											<th scope="col" data-sort="place"><button type="button" class="sort-button" data-message="editor.translations.place" data-translation-context="Heading of the column on the editor's Translations tab saying where each piece of text comes from, such as Area: Waterdeep, name">From</button></th>
+											<th scope="col" data-sort="source"><button type="button" class="sort-button" data-message="editor.translations.source" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text in the universe's source language, and the label of the text in the dialog that translates it">Source text</button></th>
+											<th scope="col" data-sort="note"><button type="button" class="sort-button" data-message="editor.translations.note" data-translation-context="Heading of the column on the editor's Translations tab with the note for translators on each piece of text, and the label of the note's field in the dialog that translates it">Note for translators</button></th>
+											<th scope="col" data-sort="translation"><button type="button" class="sort-button" data-message="editor.translations.translation" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text's translation into the language chosen, and the label of the translation's field in the dialog that translates it">Translation</button></th>
+										</tr>
+									</thead>
+									<tbody id="translations-rows"></tbody>
+								</table>
+								<p id="translations-empty" class="universe-empty" hidden></p>
+								<div class="pager">
+									<button id="translations-previous" type="button" class="secondary" data-message="pager.previous" data-translation-context="Button that shows the previous page of a list">Previous</button>
+									<span id="translations-page"></span>
+									<button id="translations-next" type="button" class="secondary" data-message="pager.next" data-translation-context="Button that shows the next page of a list">Next</button>
+								</div>
+							</div>
+						</section>
+					</section>
 				</div>
+				<aside id="editor-chat" class="panel editor-chat" tabindex="-1" aria-labelledby="editor-chat-heading" hidden>
+					<div class="editor-chat-header">
+						<h2 id="editor-chat-heading" data-message="editor.chat.heading" data-translation-context="Heading of the panel with the chat of the universe's editors, opened with the Chat button in the editor's toolbar">Editors' Chat</h2>
+						<button id="editor-chat-close" type="button" class="secondary" data-message="editor.chat.close" data-translation-context="Button that hides the panel with the chat of the universe's editors; Escape does the same">Close</button>
+					</div>
+					<p id="editor-chat-status" class="hint" role="status" hidden></p>
+					<div class="editor-chat-here">
+						<h3 id="editor-chat-here-heading" data-message="editor.chat.here" data-translation-context="Heading in the editors' chat panel above the names of the players who have the universe's editor open, each linking to their profile">Here now</h3>
+						<ul id="editor-chat-here" class="editor-chat-here-list" aria-labelledby="editor-chat-here-heading"></ul>
+					</div>
+					<ol id="editor-chat-log" class="chat-log" aria-live="polite"></ol>
+					<form id="editor-chat-form" class="chat-form">
+						<input id="editor-chat-input" name="text" autocomplete="off" placeholder="Say something..." aria-label="Chat message" data-message-placeholder="lobby.chat.placeholder" data-translation-context-placeholder="Shown in the empty chat field" data-message-aria-label="lobby.chat.label" data-translation-context-aria-label="Name of the chat field for screen readers" />
+						<button id="editor-chat-send" type="submit" data-message="lobby.chat.send" data-translation-context="Button that sends the chat message typed"><!-- icon ph:paper-plane-right -->Send</button>
+					</form>
+				</aside>
 				<footer id="editor-save-bar" class="editor-save-bar" hidden>
+					<div id="editor-presence" class="editor-presence" hidden>
+						<span id="editor-presence-label" class="editor-presence-label" data-message="editor.presence.label" data-translation-context="In the bar at the bottom of the universe's editor, before the list of the other editors who have it open and where each is">Also here:</span>
+						<ul id="editor-presence-list" class="editor-presence-list" aria-labelledby="editor-presence-label"></ul>
+					</div>
 					<span id="editor-save-status" class="form-saved" role="status"></span>
 					<button id="editor-save" type="button" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
 				</footer>
+				<dialog id="translation-dialog" class="panel dialog option-dialog" aria-labelledby="translation-dialog-title">
+					<form id="translation-form" class="form">
+						<fieldset class="plain">
+							<h2 id="translation-dialog-title"></h2>
+							<div class="field-label">
+								<span id="translation-source-label" data-message="editor.translations.source" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text in the universe's source language, and the label of the text in the dialog that translates it">Source text</span>
+								<div id="translation-source" class="translation-source" aria-labelledby="translation-source-label"></div>
+							</div>
+							<p id="translation-out-of-date" class="notice" data-message="editor.translations.outOfDateNotice" data-translation-context="In the dialog that translates a piece of universe text, when the source text has changed since it was translated" hidden>The source text has changed since this was translated. Update the translation, or confirm it's still correct.</p>
+							<label data-message="editor.translations.note" data-translation-context="Heading of the column on the editor's Translations tab with the note for translators on each piece of text, and the label of the note's field in the dialog that translates it">
+								Note for translators
+								<textarea id="translation-note" rows="2" aria-describedby="translation-note-hint"></textarea>
+							</label>
+							<p id="translation-note-hint" class="hint" data-message="editor.translations.noteHint" data-translation-context="Under the note field in the dialog that translates a piece of universe text, explaining what the note is for">Anything translators should know, such as a pun to keep. Creators and builders write notes; one note serves every language.</p>
+							<label class="checkbox" data-message="editor.translations.noTranslation" data-translation-context="Checkbox in the dialog that translates a piece of universe text, for text that stays the same in every language, such as a proper name">
+								<input id="translation-no-translation" type="checkbox" aria-describedby="translation-no-translation-hint" />
+								Needs no translation
+							</label>
+							<p id="translation-no-translation-hint" class="hint" data-message="editor.translations.noTranslationHint" data-translation-context="Under the checkbox for text that needs no translation, in the dialog that translates a piece of universe text">Such as a proper name. Players see it as written in every language, and translations already made are kept for if it's unchecked.</p>
+							<label id="translation-text-field" data-message="editor.translations.translation" data-translation-context="Heading of the column on the editor's Translations tab with each piece of text's translation into the language chosen, and the label of the translation's field in the dialog that translates it">
+								Translation
+								<input id="translation-text" />
+							</label>
+							<div id="translation-long-field" class="field-label" hidden>
+								<label for="translation-long" data-message="editor.translations.translationMarkdown" data-translation-context="Label of the field in the dialog that translates a universe's long description, which is written in Markdown">Translation (Markdown)</label>
+								<textarea id="translation-long" rows="8"></textarea>
+								<div id="translation-preview" class="markdown markdown-preview"></div>
+							</div>
+							<p id="translation-dialog-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="translation-confirm" type="button" class="secondary" data-shortcut="Alt+C" aria-describedby="translation-out-of-date" data-message="editor.translations.confirm" data-translation-context="Button in the dialog that translates a piece of universe text, shown when the source text changed since it was translated: keeps the translation and marks it up to date, when the editor is saved"><!-- icon ph:check-circle -->Still Correct</button>
+								<button id="translation-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="translation-apply" type="submit" aria-describedby="translation-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="editor-dialog" class="panel dialog option-dialog" aria-labelledby="editor-dialog-title">
+					<form id="editor-form" class="form">
+						<fieldset class="plain">
+							<h2 id="editor-dialog-title"></h2>
+							<div id="editor-player-field" class="form-group">
+								<div class="field-label">
+									<span id="editor-player-label" data-message="editor.editors.player" data-translation-context="Label of the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add by name or username">Player</span>
+									<div class="field-beside">
+										<div class="combobox-field">
+											<!-- Another player's username, which password managers must leave alone. They ignore autocomplete="off" and decide what to fill from the field's ID and type, so it is a search field without "username" in its IDs, with each manager's own opt-out as well -->
+											<input id="editor-player" type="search" class="username-input" role="combobox" autocomplete="off" autocapitalize="none" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-player-options" aria-labelledby="editor-player-label" aria-describedby="editor-player-hint" data-untracked data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" />
+											<ul id="editor-player-options" class="combobox-options" role="listbox" aria-labelledby="editor-player-label" hidden></ul>
+										</div>
+										<p id="editor-player-error" class="field-error field-message-slot"></p>
+									</div>
+								</div>
+								<p id="editor-player-hint" class="hint" data-message="editor.editors.playerHint" data-translation-context="Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add">Type the user's name, or @ and their username, then choose them from the list.</p>
+							</div>
+							<fieldset id="editor-role-choice" class="choice stacked">
+								<legend data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Role</legend>
+							</fieldset>
+							<div id="editor-languages-field" class="field-label" hidden>
+								<span id="editor-languages-label" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Languages</span>
+								<ul id="editor-languages-chosen" class="chips" aria-labelledby="editor-languages-label" hidden></ul>
+								<div class="combobox-field">
+									<input id="editor-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-languages-options" aria-labelledby="editor-languages-label" aria-describedby="editor-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="editor.editors.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages a translator may translate a universe into, in the dialog on the editor's Editors tab" />
+									<ul id="editor-languages-options" class="combobox-options" role="listbox" aria-labelledby="editor-languages-label" hidden></ul>
+								</div>
+								<p id="editor-languages-hint" class="hint" data-message="editor.editors.languagesHint" data-translation-context="Under the languages field in the dialog on the editor's Editors tab, shown when the role chosen is translator">The languages they may translate the universe's text into.</p>
+							</div>
+							<p id="editor-dialog-error" class="form-error" role="alert" hidden></p>
+							<div class="form-buttons">
+								<button id="editor-remove" type="button" class="danger" aria-describedby="editor-dialog-error"></button>
+								<button id="editor-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+								<button id="editor-apply" type="submit" aria-describedby="editor-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+							</div>
+						</fieldset>
+					</form>
+				</dialog>
 				<dialog id="item-dialog" class="panel dialog" aria-labelledby="item-dialog-title">
 					<form id="item-form" class="form">
 						<fieldset id="item-fields" class="plain">
 							<h2 id="item-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="item-name" required />
 							</label>
-							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter">
+							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Type
 								<select id="item-type"></select>
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -532,38 +844,38 @@
 					<form id="race-form" class="form">
 						<fieldset id="race-fields" class="plain">
 							<h2 id="race-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="race-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="race-enabled" type="checkbox" />
 								Enabled
 							</label>
 							<p class="hint" data-message="editor.race.enabledHint" data-translation-context="Explains the race editor's Enabled checkbox">New characters can only choose enabled races, and at least one race must be enabled.</p>
 							<fieldset class="choice ability-modifiers">
-								<legend data-message="editor.race.abilityModifiers" data-translation-context="Heading of the race editor's fields for how much the race adds to or takes from each ability score">Ability modifiers</legend>
+								<legend data-message="editor.race.abilityModifiers" data-translation-context="Heading of the race editor's fields for how much the race adds to or takes from each ability score; also names the setting in the list of what a save changed, on the editor's Audit tab">Ability modifiers</legend>
 								<div id="race-modifiers" class="ability-modifiers"></div>
 							</fieldset>
-							<label class="checkbox" data-message="editor.race.floatingBonus" data-translation-context="Checkbox for whether the player chooses one ability score for the race to raise">
+							<label class="checkbox" data-message="editor.race.floatingBonus" data-translation-context="Checkbox for whether the player chooses one ability score for the race to raise; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="race-floating" type="checkbox" />
 								Floating ability bonus
 							</label>
 							<p id="race-floating-hint" class="hint"></p>
-							<label data-message="character.darkvision" data-translation-context="How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can">
+							<label data-message="character.darkvision" data-translation-context="How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Darkvision
 								<select id="race-darkvision"></select>
 							</label>
-							<label class="checkbox" data-message="character.lightSensitivity" data-translation-context="Whether bright light dazzles a character: the label on a character's sheet, and the race editor's checkbox for whether it dazzles the race's characters">
+							<label class="checkbox" data-message="character.lightSensitivity" data-translation-context="Whether bright light dazzles a character: the label on a character's sheet, and the race editor's checkbox for whether it dazzles the race's characters; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="race-light-sensitivity" type="checkbox" />
 								Light sensitivity
 							</label>
 							<p class="hint" data-message="editor.race.lightSensitivityHint" data-translation-context="Explains the race editor's Light sensitivity checkbox">Bright light dazzles the race's characters, so they see only half as far in full daylight.</p>
-							<label data-message="editor.race.size" data-translation-context="Label of the field for a race's size, such as small or medium">
+							<label data-message="editor.race.size" data-translation-context="Label of the field for a race's size, such as small or medium; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Size
 								<select id="race-size"></select>
 							</label>
-							<label id="race-hit-points-field" data-message="editor.race.hitPoints" data-translation-context="Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder" hidden>
+							<label id="race-hit-points-field" data-message="editor.race.hitPoints" data-translation-context="Label of the field for the hit points a race gives its characters on top of their class's, in Starfinder; also names the setting in the list of what a save changed, on the editor's Audit tab" hidden>
 								Hit points
 								<input id="race-hit-points" type="number" step="1" required />
 							</label>
@@ -597,41 +909,41 @@
 					<form id="class-form" class="form">
 						<fieldset id="class-fields" class="plain">
 							<h2 id="class-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="class-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="class-enabled" type="checkbox" />
 								Enabled
 							</label>
 							<p class="hint" data-message="editor.class.enabledHint" data-translation-context="Explains the class editor's Enabled checkbox">New characters can only choose enabled classes, and at least one class must be enabled.</p>
 							<div id="class-pf1e-rules" class="form-group">
-								<label data-message="editor.class.primaryAbility" data-translation-context="Label of the field for the ability score a character class relies on most">
+								<label data-message="editor.class.primaryAbility" data-translation-context="Label of the field for the ability score a character class relies on most; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Primary ability
 									<select id="class-primary-ability"></select>
 								</label>
 								<p class="hint" data-message="editor.class.primaryAbilityHint" data-translation-context="Explains the class editor's Primary ability field">Suggested to players when they arrange their ability scores.</p>
-								<label data-message="editor.class.tradition" data-translation-context="Label of the field for where a character class's magic comes from: none, arcane or divine">
+								<label data-message="editor.class.tradition" data-translation-context="Label of the field for where a character class's magic comes from: none, arcane or divine; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Magic tradition
 									<select id="class-tradition"></select>
 								</label>
-								<label data-message="editor.class.castingStyle" data-translation-context="Label of the field for how a character class casts spells: none, prepared or spontaneous">
+								<label data-message="editor.class.castingStyle" data-translation-context="Label of the field for how a character class casts spells: none, prepared or spontaneous; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Spellcasting style
 									<select id="class-casting-style"></select>
 								</label>
 							</div>
 							<div id="class-sf1e-rules" class="form-group" hidden>
-								<label data-message="editor.class.keyAbility" data-translation-context="Label of the field for the ability score a character class relies on most, its key ability score in Starfinder">
+								<label data-message="editor.class.keyAbility" data-translation-context="Label of the field for the ability score a character class relies on most, its key ability score in Starfinder; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Key ability
 									<select id="class-key-ability"></select>
 								</label>
 								<p class="hint" data-message="editor.class.keyAbilityHint" data-translation-context="Explains the class editor's Key ability field in Starfinder">Suggested to players when they spend their ability points.</p>
-								<label data-message="editor.class.hitPoints" data-translation-context="Label of the field for the hit points a character class gives at each level, in Starfinder">
+								<label data-message="editor.class.hitPoints" data-translation-context="Label of the field for the hit points a character class gives at each level, in Starfinder; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Hit points per level
 									<input id="class-hit-points" type="number" step="1" required />
 								</label>
-								<label data-message="editor.class.staminaPoints" data-translation-context="Label of the field for the stamina points a character class gives at each level, in Starfinder; stamina is lost before hit points and comes back with rest">
+								<label data-message="editor.class.staminaPoints" data-translation-context="Label of the field for the stamina points a character class gives at each level, in Starfinder; stamina is lost before hit points and comes back with rest; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Stamina points per level
 									<input id="class-stamina-points" type="number" step="1" required />
 								</label>
@@ -653,7 +965,7 @@
 								<button id="class-area-clear" type="button" class="secondary" data-shortcut="Alt+L" data-message="editor.class.clearArea" data-translation-context="Button in the class editor that takes away the class's area for every race, so an area can be chosen for each race"><!-- icon ph:x -->Choose by Race</button>
 							</div>
 							<div class="race-areas">
-								<h3 id="class-race-areas-heading" data-message="editor.class.raceAreas" data-translation-context="Heading of the class editor's list of where the class's members of each race start">Starting area by race</h3>
+								<h3 id="class-race-areas-heading" data-message="editor.class.raceAreas" data-translation-context="Heading of the class editor's list of where the class's members of each race start; also names the setting in the list of what a save changed, on the editor's Audit tab">Starting area by race</h3>
 								<p id="class-race-areas-note" class="hint" data-message="editor.class.raceAreasNote" data-translation-context="Shown in the class editor while the class has an area for every race, which turns off the areas for each race" hidden>All members of this class, whatever their race, start in the class's area.</p>
 								<ul id="class-race-areas" aria-labelledby="class-race-areas-heading"></ul>
 							</div>
@@ -670,16 +982,16 @@
 					<form id="theme-form" class="form">
 						<fieldset id="theme-fields" class="plain">
 							<h2 id="theme-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="theme-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="theme-enabled" type="checkbox" />
 								Enabled
 							</label>
 							<p class="hint" data-message="editor.theme.enabledHint" data-translation-context="Explains the theme editor's Enabled checkbox">New characters can only choose enabled themes, and at least one theme must be enabled.</p>
-							<label data-message="editor.theme.ability" data-translation-context="Label of the field for the ability score a theme raises">
+							<label data-message="editor.theme.ability" data-translation-context="Label of the field for the ability score a theme raises; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Ability raised
 								<select id="theme-ability"></select>
 							</label>
@@ -697,21 +1009,21 @@
 					<form id="difficulty-form" class="form">
 						<fieldset id="difficulty-fields" class="plain">
 							<h2 id="difficulty-dialog-title"></h2>
-							<label class="checkbox" data-message="editor.difficultyLevel.default" data-translation-context="Checkbox for whether a difficulty level is the one a new group starts on">
+							<label class="checkbox" data-message="editor.difficultyLevel.default" data-translation-context="Checkbox for whether a difficulty level is the one a new group starts on; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="difficulty-default" type="checkbox" />
 								Default
 							</label>
 							<p class="hint" data-message="editor.difficultyLevel.defaultHint" data-translation-context="Explains the difficulty level editor's Default checkbox">New groups start on this difficulty.</p>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="difficulty-name" required />
 							</label>
-							<label data-message="editor.difficultyLevel.mobScale" data-translation-context="Label of the field for how much harder or easier a difficulty level makes mobs (monsters and enemies), as a percentage">
+							<label data-message="editor.difficultyLevel.mobScale" data-translation-context="Label of the field for how much harder or easier a difficulty level makes mobs (monsters and enemies), as a percentage; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Mob scale (%)
 								<input id="difficulty-mob-scale" type="number" step="1" required />
 							</label>
 							<p id="difficulty-mob-scale-hint" class="hint"></p>
-							<label class="checkbox" data-message="editor.difficultyLevel.permadeath" data-translation-context="Checkbox for whether characters who die at this difficulty level are gone for good">
+							<label class="checkbox" data-message="editor.difficultyLevel.permadeath" data-translation-context="Checkbox for whether characters who die at this difficulty level are gone for good; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="difficulty-permadeath" type="checkbox" />
 								Permadeath
 							</label>
@@ -729,35 +1041,35 @@
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">
 							<h2 id="tile-dialog-title"></h2>
-							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+							<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Name
 								<input id="tile-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="tile-enabled" type="checkbox" aria-describedby="tile-enabled-locked" />
 								Enabled
 							</label>
 							<p id="tile-enabled-locked" class="hint" hidden data-message="editor.tile.enabledLocked" data-translation-context="Shown under the tile editor's Enabled checkbox, which can't be unchecked, for the tile new outdoor or indoor areas are painted with">New areas start with this tile, so it can't be disabled.</p>
 							<fieldset class="choice">
 								<legend data-message="editor.tile.usedIn" data-translation-context="Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column">Where</legend>
-								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
+								<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									<input id="tile-outdoors" type="checkbox" />
 									Outdoors
 								</label>
-								<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
+								<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									<input id="tile-indoors" type="checkbox" />
 									Indoors
 								</label>
 							</fieldset>
 							<p class="hint" data-message="editor.tile.usedInHint" data-translation-context="Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile">Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.</p>
-							<label data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors">
+							<label data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Color
 								<span class="color-field">
 									<input id="tile-color-picker" type="color" aria-label="Pick a color" data-message-aria-label="editor.tile.colorPicker" data-translation-context-aria-label="Name of the color picker for a tile's color, for screen readers" />
 									<input id="tile-color" required aria-label="Color as hex" data-message-aria-label="editor.tile.colorHex" data-translation-context-aria-label="Name of the field for a tile's color as a hexadecimal number, for screen readers" />
 								</span>
 							</label>
-							<label data-message="editor.tile.graphic" data-translation-context="Label of the tile editor's list of the graphics a tile can be drawn with">
+							<label data-message="editor.tile.graphic" data-translation-context="Label of the tile editor's list of the graphics a tile can be drawn with; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Graphic
 								<select id="tile-graphic" aria-describedby="tile-graphic-hint"></select>
 							</label>
@@ -766,12 +1078,12 @@
 								<button id="tile-graphic-upload" type="button" class="secondary" data-shortcut="Alt+U" data-message="editor.tile.uploadGraphic" data-translation-context="Button in the tile editor that opens the dialog for uploading a tileset (a picture a tile can be drawn with)"><!-- icon ph:upload-simple -->Upload Tileset Image</button>
 								<button id="tile-graphic-delete" type="button" class="danger" aria-describedby="tile-error"></button>
 							</div>
-							<label data-message="editor.tile.visionCost" data-translation-context="Label of the field for how much of a character's vision crossing the tile uses, in percent">
+							<label data-message="editor.tile.visionCost" data-translation-context="Label of the field for how much of a character's vision crossing the tile uses, in percent; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Vision cost (%)
 								<input id="tile-vision" type="number" min="0" max="100" step="1" required />
 							</label>
 							<p class="hint" data-message="editor.tile.visionHint" data-translation-context="Explains the vision cost field">100% can't be seen through.</p>
-							<label data-message="editor.tile.walkSeconds" data-translation-context="Label of the field for how many seconds of game time walking a square of the tile takes">
+							<label data-message="editor.tile.walkSeconds" data-translation-context="Label of the field for how many seconds of game time walking a square of the tile takes; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Walk time (seconds)
 								<input id="tile-walk" type="number" min="0" max="3600" step="1" required aria-describedby="tile-walk-readout" />
 							</label>
@@ -796,13 +1108,52 @@
 						</fieldset>
 					</form>
 				</dialog>
-				<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question">
+				<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
 					<form id="confirm-form" class="form">
 						<h2 id="confirm-title"></h2>
 						<p id="confirm-question"></p>
+						<p id="confirm-note" hidden></p>
 						<div class="dialog-buttons">
 							<button id="confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="confirm-submit" type="submit" class="danger"></button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="conflict-dialog" class="panel dialog" aria-labelledby="conflict-title" aria-describedby="conflict-explanation">
+					<form id="conflict-form" class="form">
+						<h2 id="conflict-title" data-message="editor.conflict.title" data-translation-context="Title of the dialog the editor's Save opens when other editors saved different values for settings the player also changed, asking whose to keep">Settings Changed by Others</h2>
+						<p id="conflict-explanation" data-message="editor.conflict.explanation" data-translation-context="Explains the dialog that asks, for each setting another editor saved a different value for since the player loaded it, whether to keep the player's value or take the other editor's">Other editors saved different values for some of the settings you changed. Choose which to keep for each, then save.</p>
+						<div id="conflict-choices" class="form-group"></div>
+						<div class="dialog-buttons">
+							<button id="conflict-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="conflict-submit" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="impact-dialog" class="panel dialog" aria-labelledby="impact-title" aria-describedby="impact-explanation">
+					<form id="impact-form" class="form">
+						<h2 id="impact-title" data-message="editor.impact.title" data-translation-context="Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them">Players Are Affected</h2>
+						<p id="impact-explanation" data-message="editor.impact.explanation" data-translation-context="Explains the dialog that asks what should happen to characters and groups using something the save disables or limits">These changes affect characters players are using. Choose what happens to them, then save.</p>
+						<div id="impact-choices" class="form-group"></div>
+						<div class="dialog-buttons">
+							<button id="impact-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="impact-submit" type="submit" data-shortcut="Alt+S" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="start-draft-dialog" class="panel dialog" aria-labelledby="start-draft-title" aria-describedby="start-draft-explanation start-draft-overwrite start-draft-unsaved">
+					<form id="start-draft-form" class="form">
+						<h2 id="start-draft-title" data-message="editor.startDraft.title" data-translation-context="Title of the dialog the editor's Start Draft button opens, explaining drafts before one is started">Start a Draft</h2>
+						<div id="start-draft-explanation" class="form-group">
+							<p data-message="editor.startDraft.copy" data-translation-context="In the dialog explaining drafts before one is started: what a draft is">A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied.</p>
+							<p data-message="editor.startDraft.finishing" data-translation-context="In the dialog explaining drafts before one is started: how a draft ends">When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is.</p>
+						</div>
+						<p id="start-draft-overwrite" class="notice" data-message="editor.startDraft.overwrite" data-translation-context="Warning in the dialog explaining drafts before one is started, shown in a box that stands out">⚠️ Applying the draft overwrites the entire universe with it, including any changes saved to the live version while the draft is open. Applying can't be undone.</p>
+						<p id="start-draft-unsaved" data-message="editor.startDraft.unsaved" data-translation-context="In the dialog explaining drafts before one is started, when the editor has unsaved changes: they are saved first, so the draft starts with them" hidden>Your unsaved changes are saved to the live version first, so the draft starts with them.</p>
+						<p id="start-draft-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="start-draft-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="start-draft-submit" class="draft" type="submit" data-shortcut="Alt+S"></button>
 						</div>
 					</form>
 				</dialog>
@@ -844,7 +1195,7 @@
 							<input id="tile-graphic-file" type="file" accept="image/png" required aria-describedby="tile-graphic-format" />
 						</label>
 						<p id="tile-graphic-format" class="hint"></p>
-						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
 							<input id="tile-graphic-name" required />
 						</label>
@@ -867,17 +1218,17 @@
 				<dialog id="area-add-dialog" class="panel dialog" aria-labelledby="area-add-title">
 					<form id="area-add-form" class="form">
 						<h2 id="area-add-title" data-message="editor.areaAdd.title" data-translation-context="Title of the dialog for making a new area">Add Area</h2>
-						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them">
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 							Name
 							<input id="area-add-name" required />
 						</label>
 						<fieldset class="choice indoor-outdoor">
-							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile">Indoors or outdoors</legend>
-							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors">
+							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab">Indoors or outdoors</legend>
+							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="area-add-outdoors" name="area-add-indoors" type="radio" value="outdoors" checked />
 								Outdoors
 							</label>
-							<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors">
+							<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="area-add-indoors" name="area-add-indoors" type="radio" value="indoors" />
 								Indoors
 							</label>
@@ -892,6 +1243,7 @@
 				<dialog id="area-select-dialog" class="panel dialog area-select-dialog" aria-labelledby="area-select-title">
 					<form id="area-select-form" class="form">
 						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
+						<p id="area-select-lobby-hint" class="hint" data-message="editor.areaSelect.lobbyHint" data-translation-context="Shown in the dialog for choosing the lobby's area, which leaves out the areas characters start in" hidden>A starting area can't be a lobby.</p>
 						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
@@ -930,6 +1282,19 @@
 							</label>
 						</div>
 						<p id="resize-total"></p>
+						<section class="form-group" aria-labelledby="resize-extend-title">
+							<h3 id="resize-extend-title" data-message="editor.resize.extendTitle" data-translation-context="Heading of the part of the dialog for changing a map's size with buttons that make the map bigger on one side">Extend Size</h3>
+							<div class="resize-grid resize-extend">
+								<button id="resize-extend-north" type="button" class="secondary resize-north" data-message="editor.resize.extendNorth" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's north side">+ North</button>
+								<button id="resize-extend-west" type="button" class="secondary resize-west" data-message="editor.resize.extendWest" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's west side">+ West</button>
+								<label class="resize-center" data-message="editor.resize.extendBy" data-translation-context="Label of the field for how many cells the Extend Size buttons add to a side of the map">
+									Extend by
+									<input id="resize-extend-by" type="number" min="1" step="1" value="10" />
+								</label>
+								<button id="resize-extend-east" type="button" class="secondary resize-east" data-message="editor.resize.extendEast" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's east side">+ East</button>
+								<button id="resize-extend-south" type="button" class="secondary resize-south" data-message="editor.resize.extendSouth" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's south side">+ South</button>
+							</div>
+						</section>
 						<p id="resize-warning" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="resize-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
@@ -956,10 +1321,13 @@
 								<input id="link-whole-group" type="checkbox" />
 								Requires the whole group
 							</label>
-							<label data-message="editor.link.target" data-translation-context="Label of the field for the area a link leads to">
-								Goes to
-								<select id="link-target" required></select>
-							</label>
+							<div class="field-label">
+								<span id="link-target-label" data-message="editor.link.target" data-translation-context="Label of the field for the area a link leads to">Goes to</span>
+								<div class="combobox-field">
+									<input id="link-target" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="link-target-options" aria-labelledby="link-target-label" data-untracked placeholder="Search areas by name" data-message-placeholder="editor.areaSearch" data-translation-context-placeholder="Shown in the empty field for choosing an area by typing part of its name: the area a link goes to, in the link dialog" />
+									<ul id="link-target-options" class="combobox-options" role="listbox" aria-labelledby="link-target-label" hidden></ul>
+								</div>
+							</div>
 							<label class="checkbox" data-message="editor.link.addReturn" data-translation-context="Checkbox that also places a link in the other area leading back">
 								<input id="link-return" type="checkbox" />
 								Add a return link that leads back to this cell

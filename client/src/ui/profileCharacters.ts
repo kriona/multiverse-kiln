@@ -1,9 +1,7 @@
 import type { ProfileCharacter } from '@multiverse-kiln/shared';
 
-import { t } from '../localization';
 import { universePageUrl } from '../pages';
-import { characterMessages } from './characterMessages';
-import { className, raceName } from './raceAndClassNames';
+import { characterDescription } from './raceAndClassNames';
 
 /**
  * Lists a profile's characters under their universes, each universe's name a link to its page
@@ -52,10 +50,7 @@ export function characterLabel(character: ProfileCharacter): HTMLElement[]
 
 	name.textContent = character.name;
 	description.className = 'profile-character-description';
-	description.textContent = t(characterMessages.raceAndClass, {
-		race: raceName(character.race, character.universe.ruleset),
-		class: className(character.characterClass, character.universe.ruleset)
-	});
+	description.textContent = characterDescription(character, character.universe.ruleset);
 
 	return([name, description]);
 }

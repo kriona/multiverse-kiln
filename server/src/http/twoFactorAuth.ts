@@ -12,8 +12,9 @@
 import { randomBytes } from 'crypto';
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, RECOVERY_CODE_COUNT, SITE_NAME, TRUSTED_BROWSER_DAYS, type RecoveryCodesPayload, type RecoveryCodesRequest, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
+import { AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, RECOVERY_CODE_COUNT, SITE_NAME, TRUSTED_BROWSER_DAYS, TWO_FACTOR_CODE_LENGTH, type RecoveryCodesPayload, type RecoveryCodesRequest, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
 
+import { isDevCode } from '../auth/devCodes.js';
 import { keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { takeAttempt } from '../auth/rateLimits.js';
@@ -21,7 +22,7 @@ import { resolveSession, startSession, type SessionIdentity } from '../auth/sess
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import { decryptTotpSecret, encryptTotpSecret } from '../auth/totpSecrets.js';
 import type { Executor } from '../db/client.js';
-import { findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
+import { findEmailRecipient, findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
 import { findRateLimitTimes, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { countRecoveryCodes, deletePendingTwoFactorLogin, deleteTrustedBrowsers, deleteTwoFactor, enableAuthenticator, hasTwoFactor, isBrowserTrusted, lockAuthenticator, lockPendingTwoFactorLogin, recordWrongTwoFactorGuess, replaceRecoveryCodes, saveAuthenticatorSetup, saveLastUsedStep, trustBrowser, useRecoveryCode } from '../db/twoFactorRepo.js';
@@ -30,7 +31,8 @@ import { recoveryCodeUsedEmail, twoFactorDisabledEmail, twoFactorEnabledEmail, w
 import { sendEmailInBackground } from '../email/mailer.js';
 import { DAY_MS, decideLimit, MAX_GUESSES_PER_NETWORK_HOUR, type SendDecision } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
-import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
+import { serverAdminChanges } from '../players/serverAdminChanges.js';
+import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpStep, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
 import { accountPasswordLimits, authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, readCookie, setCookie, TRUSTED_BROWSER_COOKIE, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
@@ -277,6 +279,11 @@ export async function checkSecondFactor(request: Request, response: Response, pl
 		});
 	}
 
+	if ((code.kind === 'totp') && isDevCode(code.code, TWO_FACTOR_CODE_LENGTH))
+	{
+		return({ kind: 'right' });
+	}
+
 	if (code.kind === 'totp')
 	{
 		const step = matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, authenticator.lastUsedStep);
@@ -292,13 +299,13 @@ export async function checkSecondFactor(request: Request, response: Response, pl
 
 		if ((wrongCodesAt.length + 1) === WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING)
 		{
-			const email = await findPlayerEmail(playerId, executor);
+			const recipient = await findEmailRecipient(playerId, executor);
 
-			if (email !== null)
+			if (recipient)
 			{
 				sendEmailInBackground({
-					to: email,
-					...wrongAuthenticatorCodesEmail(WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING, options.emailLocale)
+					to: recipient.email,
+					...wrongAuthenticatorCodesEmail(WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING, recipient.displayName, options.emailLocale)
 				});
 			}
 		}
@@ -364,13 +371,13 @@ export async function reportRecoveryCodeUse(playerId: string, outcome: SecondFac
 		return;
 	}
 
-	const email = await findPlayerEmail(playerId);
+	const recipient = await findEmailRecipient(playerId);
 
-	if (email !== null)
+	if (recipient)
 	{
 		sendEmailInBackground({
-			to: email,
-			...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, emailLocale)
+			to: recipient.email,
+			...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -674,7 +681,12 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const code = readTwoFactorCode(typed);
-		const step = ((code?.kind === 'totp') ? matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, null) : undefined);
+		let step: number | undefined;
+
+		if (code?.kind === 'totp')
+		{
+			step = (isDevCode(code.code, TWO_FACTOR_CODE_LENGTH) ? totpStep(now) : matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, null));
+		}
 
 		if (step === undefined)
 		{
@@ -712,13 +724,13 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 
 	response.json(payload);
 
-	const email = await findPlayerEmail(playerId);
+	const recipient = await findEmailRecipient(playerId);
 
-	if (email !== null)
+	if (recipient)
 	{
 		sendEmailInBackground({
-			to: email,
-			...twoFactorEnabledEmail(emailLocale)
+			to: recipient.email,
+			...twoFactorEnabledEmail(recipient.displayName, emailLocale)
 		});
 	}
 }
@@ -783,7 +795,8 @@ async function changeTwoFactor<Result>(request: Request, response: Response, pla
 
 /**
  * POST AUTH_TWO_FACTOR_DISABLE_PATH: turns off 2FA for the logged-in account, once its password and an
- * authenticator or recovery code are given. Its recovery codes and trusted browsers go with it
+ * authenticator or recovery code are given. Its recovery codes and trusted browsers go with it, and a
+ * server admin's open editors stop letting them edit with the site admin role
  *
  * @param request The request, with a TwoFactorDisableRequest
  * @param response The response: 204
@@ -819,15 +832,16 @@ async function disableRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	serverAdminChanges.publishLost(playerId);
 	response.sendStatus(204);
 
-	const email = await findPlayerEmail(playerId);
+	const recipient = await findEmailRecipient(playerId);
 
-	if (email !== null)
+	if (recipient)
 	{
 		sendEmailInBackground({
-			to: email,
-			...twoFactorDisabledEmail(emailLocale)
+			to: recipient.email,
+			...twoFactorDisabledEmail(recipient.displayName, emailLocale)
 		});
 	}
 }

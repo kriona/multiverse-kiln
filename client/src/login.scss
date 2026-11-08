@@ -37,6 +37,36 @@ main
 	}
 }
 
+// Under the heading once an account is created: a large check mark beside the welcome
+.registered-success
+{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border: 1px solid $success;
+	border-radius: 6px;
+
+	.icon
+	{
+		flex: none;
+		font-size: 40px;
+		color: $success;
+	}
+
+	p
+	{
+		margin: 0;
+	}
+}
+
+// The heading of the offer to set up 2FA, under the welcome
+.auth-panel h2
+{
+	margin: 8px 0 0;
+	font-size: 18px;
+}
+
 .auth-logo
 {
 	align-self: center;

@@ -6,9 +6,10 @@
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# Dependabot edits package.json in a checkout made with these rules and commits it through GitHub's API,
-# which stores it as-is, so a CRLF checkout would reach the repository
+# Dependabot edits package.json and docker-compose.yml in a checkout made with these rules and commits
+# them through GitHub's API, which stores them as-is, so a CRLF checkout would reach the repository
 package.json text eol=lf
+docker-compose.yml text eol=lf
 
 *.png binary
 *.jpg binary

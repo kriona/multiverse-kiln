@@ -1,11 +1,12 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, hasIdShapedSlug, MAX_SHORT_DESCRIPTION_LENGTH,MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
-import { t } from '../localization';
+import { currentLocale, t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
 import { editPageUrl, loginPageUrl, universePageUrl } from '../pages';
 import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
+import { describeUniverseLanguages } from './universeLanguages';
 
 /**
  * What the Home screen asks the app to do
@@ -34,13 +35,15 @@ export interface HomeScreenActions
 }
 
 /**
- * Home: the universes to play in, a page at a time, each linking to its page; the universes the player
- * works on, and creating a universe
+ * Home: the universes to play in, a page at a time, each linking to its page; the universes open for
+ * testing that the player has a role in, which no one else sees; the universes the player works on,
+ * and creating a universe
  */
 export class HomeScreen
 {
 	private readonly ownList = getElement('own-universe-list', HTMLUListElement);
-	private readonly ownEmpty = getElement('own-universe-empty', HTMLElement);
+	private readonly ownHeading = getElement('own-universes-heading', HTMLElement);
+	private readonly ownInvite = getElement('own-universes-invite', HTMLElement);
 	private readonly createButton = getElement('create-universe', HTMLButtonElement);
 	private readonly createDialog = getElement('create-universe-dialog', HTMLDialogElement);
 	private readonly createForm = getElement('create-universe-form', HTMLFormElement);
@@ -51,15 +54,34 @@ export class HomeScreen
 	private readonly createSubmit = getElement('create-universe-submit', HTMLButtonElement);
 	private readonly logInLink = getElement('home-log-in', HTMLAnchorElement);
 	private readonly ownUniverses = getElement('own-universes', HTMLElement);
+	private readonly testingUniverses = getElement('testing-universes', HTMLElement);
+	private readonly testingList = getElement('testing-universe-list', HTMLUListElement);
 	private readonly notice = getElement('home-notice', HTMLElement);
+	private readonly publicUniverses = getElement('public-universes', HTMLElement);
 	private readonly list = getElement('universe-list', HTMLUListElement);
-	private readonly empty = getElement('universe-empty', HTMLElement);
 	private readonly moreButton = getElement('universe-more', HTMLButtonElement);
+	private readonly emptyMessage = getElement('home-empty', HTMLElement);
 
 	/**
 	 * How many universes are listed, which is where the next page starts
 	 */
 	private listed = 0;
+
+	/**
+	 * Whether the first page of universes has arrived
+	 */
+	private firstPageLoaded = false;
+
+	/**
+	 * Whether the browser is logged in
+	 */
+	private loggedIn = false;
+
+	/**
+	 * How many universes the player has a role in, and whether they may create one (the site allows it
+	 * and they haven't created the most they may), once their own universes have loaded
+	 */
+	private ownSummary: { count: number; canCreate: boolean } | undefined;
 
 	/**
 	 * Changes every time the list starts over, so a page that arrives for an older list is ignored
@@ -114,20 +136,21 @@ export class HomeScreen
 	 */
 	show(loggedIn: boolean): void
 	{
-		setPageTitle(t({
-			id: 'home.pageTitle',
-			defaultMessage: 'Universes',
-			description: 'The browser tab\'s title while Home lists the universes, before the game engine\'s name'
-		}));
+		setPageTitle();
 		this.logInLink.hidden = loggedIn;
-		this.ownUniverses.hidden = !loggedIn;
+		this.loggedIn = loggedIn;
 		this.listed = 0;
+		this.firstPageLoaded = false;
+		this.ownSummary = undefined;
 		this.listVersion++;
 		this.list.replaceChildren();
-		this.empty.hidden = true;
+		this.publicUniverses.hidden = true;
 		this.moreButton.hidden = true;
 		this.ownList.replaceChildren();
-		this.ownEmpty.hidden = true;
+		this.ownUniverses.hidden = true;
+		this.emptyMessage.hidden = true;
+		this.testingList.replaceChildren();
+		this.testingUniverses.hidden = true;
 		void this.loadPage();
 
 		if (loggedIn)
@@ -191,12 +214,29 @@ export class HomeScreen
 
 		this.list.append(...page.universes.map((universe) => this.createItem(universe)));
 		this.listed += page.universes.length;
-		this.empty.hidden = (this.listed > 0);
+		this.firstPageLoaded = true;
+		this.publicUniverses.hidden = (this.listed === 0);
 		this.moreButton.hidden = !page.hasMore;
+		this.showSections();
 	}
 
 	/**
-	 * A universe's entry in the list: its name, one-sentence description and ruleset, linking to its page
+	 * Shows the player's own universes once they have loaded, unless they have none and may not create
+	 * one. When there are no universes to play either (or no login to have any with), Home says the
+	 * first universe is still to come in place of the lists
+	 */
+	private showSections(): void
+	{
+		const nothingToPlay = (this.firstPageLoaded && (this.listed === 0));
+		const nothingOwn = ((this.ownSummary !== undefined) && (this.ownSummary.count === 0) && !this.ownSummary.canCreate);
+
+		this.emptyMessage.hidden = !(nothingToPlay && (!this.loggedIn || nothingOwn));
+		this.ownUniverses.hidden = (!this.loggedIn || (this.ownSummary === undefined) || nothingOwn);
+	}
+
+	/**
+	 * A universe's entry in the list: its name, one-sentence description, ruleset and languages, linking
+	 * to its page
 	 *
 	 * @param universe The universe
 	 * @return The list item
@@ -205,9 +245,10 @@ export class HomeScreen
 	{
 		const item = document.createElement('li');
 		const link = document.createElement('a');
-		const name = document.createElement('strong');
+		const name = document.createElement('h3');
 		const description = document.createElement('span');
 		const ruleset = document.createElement('span');
+		const languages = document.createElement('span');
 
 		link.className = 'button universe-item';
 		link.href = universePageUrl(universe.slug);
@@ -215,23 +256,25 @@ export class HomeScreen
 		description.textContent = universe.shortDescription;
 		ruleset.className = 'universe-ruleset';
 		ruleset.textContent = t(RULESET_NAMES[universe.ruleset]);
+		languages.className = 'universe-ruleset';
+		languages.textContent = describeUniverseLanguages(universe);
 
-		link.append(name, description, ruleset);
+		link.append(name, description, ruleset, languages);
 		item.append(link);
 
 		return(item);
 	}
 
 	/**
-	 * Lists the universes the player works on, and allows creating one until they have created the most they may
+	 * Lists the universes the player works on, with those open for testing (in prologue) in a section of
+	 * their own linking to their pages, and shows Create Universe only while the site allows creating
+	 * universes and the player hasn't created the most they may
 	 *
 	 * @param version The list's version when it was asked for; a list that arrives for an older one is ignored
 	 */
 	private async loadOwnUniverses(version: number): Promise<void>
 	{
 		let list: EditableUniverseListPayload;
-
-		this.createButton.disabled = true;
 
 		try
 		{
@@ -258,39 +301,29 @@ export class HomeScreen
 
 		const { universes, universeCreationEnabled, universesPerCreator } = list;
 		const created = universes.filter((universe) => (universe.role === 'creator')).length;
+		const testing = universes.filter((universe) => ((universe.stage === 'prologue') && !universe.disabled));
 
+		const none = (universes.length === 0);
+		const canCreate = (universeCreationEnabled && (created < universesPerCreator));
+
+		// With none of their own, the player is asked whether to create one
 		this.ownList.replaceChildren(...universes.map((universe) => this.createOwnItem(universe)));
-		this.ownEmpty.hidden = (universes.length > 0);
-
-		if (!universeCreationEnabled)
-		{
-			this.createButton.disabled = true;
-			this.createButton.title = t({
-				id: 'home.createDisabled',
-				defaultMessage: 'Creating universes is turned off for now',
-				description: 'Tooltip of the disabled Create Universe button when the site\'s admins have stopped everyone from creating universes'
-			});
-		}
-		else if (created >= universesPerCreator)
-		{
-			this.createButton.disabled = true;
-			this.createButton.title = t({
-				id: 'home.createLimit',
-				defaultMessage: 'You can create at most {max, plural, one {# universe} other {# universes}}',
-				description: 'Tooltip of the disabled Create Universe button when the player has made as many universes as allowed'
-			}, {
-				max: universesPerCreator
-			});
-		}
-		else
-		{
-			this.createButton.disabled = false;
-			this.createButton.title = '';
-		}
+		this.ownList.hidden = none;
+		this.ownHeading.hidden = none;
+		this.ownInvite.hidden = !none;
+		this.createButton.hidden = !canCreate;
+		this.testingList.replaceChildren(...testing.map((universe) => this.createItem(universe)));
+		this.testingUniverses.hidden = (testing.length === 0);
+		this.ownSummary = {
+			count: universes.length,
+			canCreate
+		};
+		this.showSections();
 	}
 
 	/**
-	 * An entry in the player's own universes: its name, description, stage and the player's role, linking to the editor
+	 * An entry in the player's own universes: its name, description, stage, the player's role and whether
+	 * it is disabled, linking to the editor
 	 *
 	 * @param universe The universe
 	 * @return The list item
@@ -299,7 +332,7 @@ export class HomeScreen
 	{
 		const item = document.createElement('li');
 		const link = document.createElement('a');
-		const name = document.createElement('strong');
+		const name = document.createElement('h3');
 		const description = document.createElement('span');
 		const details = document.createElement('span');
 
@@ -308,15 +341,25 @@ export class HomeScreen
 		name.textContent = universe.name;
 		description.textContent = universe.shortDescription;
 		details.className = 'universe-ruleset';
-		details.textContent = t({
-			id: 'home.ownDetails',
-			defaultMessage: '{ruleset} - {stage} - {role}',
-			description: 'Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player\'s role (e.g. builder)'
-		}, {
-			ruleset: t(RULESET_NAMES[universe.ruleset]),
-			stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
-			role: t(UNIVERSE_ROLE_NAMES[universe.role])
-		});
+		details.textContent = (universe.disabled
+			? t({
+				id: 'home.ownDetailsDisabled',
+				defaultMessage: '{ruleset} - {stage} - {role} - disabled by the site\'s admins',
+				description: 'Under each universe the player can edit that one of the site\'s admins has disabled: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue), the player\'s role (e.g. builder), and that it is disabled. The editor says why'
+			}, {
+				ruleset: t(RULESET_NAMES[universe.ruleset]),
+				stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
+				role: t(UNIVERSE_ROLE_NAMES[universe.role])
+			})
+			: t({
+				id: 'home.ownDetails',
+				defaultMessage: '{ruleset} - {stage} - {role}',
+				description: 'Under each universe the player can edit: its ruleset (e.g. Pathfinder 1E), its stage (e.g. prologue) and the player\'s role (e.g. builder)'
+			}, {
+				ruleset: t(RULESET_NAMES[universe.ruleset]),
+				stage: t(UNIVERSE_STAGE_NAMES[universe.stage]),
+				role: t(UNIVERSE_ROLE_NAMES[universe.role])
+			}));
 
 		link.append(name, description, details);
 		item.append(link);
@@ -368,6 +411,12 @@ export class HomeScreen
 			return;
 		}
 
+		if (hasIdShapedSlug(name))
+		{
+			reportFieldError(this.createName, t(formMessages.universeNameLikeId));
+			return;
+		}
+
 		if (DISALLOWED_TEXT_CHARACTERS.test(shortDescription))
 		{
 			reportFieldError(this.createDescription, t(formMessages.invalidText));
@@ -378,7 +427,7 @@ export class HomeScreen
 
 		try
 		{
-			const universeId = await this.actions.createUniverse({ name, shortDescription, ruleset: this.createRuleset.value as Ruleset });
+			const universeId = await this.actions.createUniverse({ name, shortDescription, ruleset: this.createRuleset.value as Ruleset, locale: currentLocale() });
 
 			this.createDialog.close();
 			this.actions.edit(universeId);

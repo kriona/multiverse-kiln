@@ -9,6 +9,11 @@ export interface Confirmation
 	question: string;
 
 	/**
+	 * A line shown on its own under the question, such as why the player can't confirm yet
+	 */
+	note?: string;
+
+	/**
 	 * The button that confirms, such as "Delete"
 	 */
 	confirmLabel: string;
@@ -17,6 +22,17 @@ export interface Confirmation
 	 * The confirm button's icon's SVG markup, from a virtual:icon import
 	 */
 	confirmIcon: string;
+
+	/**
+	 * Whether the confirm button is disabled, for something the player can't do yet: the question says why
+	 */
+	confirmDisabled?: boolean;
+
+	/**
+	 * Whether confirming is harmless, such as enabling something again: the confirm button is a plain
+	 * button rather than a red, dangerous one
+	 */
+	harmless?: boolean;
 }
 
 /**
@@ -33,10 +49,15 @@ export function askToConfirm(confirmation: Confirmation): Promise<boolean>
 	const form = getElement('confirm-form', HTMLFormElement);
 	const cancelButton = getElement('confirm-cancel', HTMLButtonElement);
 	const confirmButton = getElement('confirm-submit', HTMLButtonElement);
+	const note = getElement('confirm-note', HTMLElement);
 
 	getElement('confirm-title', HTMLElement).textContent = confirmation.title;
 	getElement('confirm-question', HTMLElement).textContent = confirmation.question;
+	note.textContent = (confirmation.note ?? '');
+	note.hidden = (confirmation.note === undefined);
 	setButtonLabel(confirmButton, confirmation.confirmIcon, confirmation.confirmLabel);
+	confirmButton.disabled = (confirmation.confirmDisabled === true);
+	confirmButton.classList.toggle('danger', (confirmation.harmless !== true));
 
 	return(new Promise((resolve) =>
 	{
@@ -50,6 +71,12 @@ export function askToConfirm(confirmation: Confirmation): Promise<boolean>
 		const onSubmit = (event: SubmitEvent): void =>
 		{
 			event.preventDefault();
+
+			if (confirmButton.disabled)
+			{
+				return;
+			}
+
 			confirmed = true;
 			dialog.close();
 		};

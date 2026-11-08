@@ -1,13 +1,15 @@
-import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
+import { formMessages } from '../formMessages';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { TableSorter } from '../tableSorter';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
 import type { EditorSave, SavedIds } from './editorSave';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -21,7 +23,7 @@ const SEARCH_DELAY_MS = 250;
  * server, before paging) and a page at a time, opening the item editor. Changes wait on the page until the tab is saved: changed items show their changes on the
  * page they are on, and items added since show at the top of the first page, whatever the filters
  */
-export class ItemsTab implements SavableTab
+export class ItemsTab implements SavableTab, FollowsOtherSaves
 {
 	private readonly nameFilter = getElement('item-filter-name', HTMLInputElement);
 	private readonly categoryFilter = getElement('item-filter-category', HTMLSelectElement);
@@ -43,6 +45,16 @@ export class ItemsTab implements SavableTab
 	 * The changes made since the items were last saved
 	 */
 	readonly changes = new StagedChanges<ItemSettings>();
+
+	/**
+	 * The items other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince = new ChangedSinceNotes('item');
+
+	/**
+	 * Keeps the item editor up with saves made in other windows to the item it shows
+	 */
+	private readonly dialogFollower = new DialogFollower(this.dialog.following, 'item');
 
 	/**
 	 * The changes the save being sent holds
@@ -93,15 +105,15 @@ export class ItemsTab implements SavableTab
 			setOptions(filter, [
 				{
 					value: '',
-					label: t(editorMessages.filterAny)
+					label: t(formMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t(editorMessages.filterYes)
+					label: t(formMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t(editorMessages.filterNo)
+					label: t(formMessages.filterNo)
 				}
 			]);
 		}
@@ -168,6 +180,7 @@ export class ItemsTab implements SavableTab
 		this.items = [];
 		this.known.clear();
 		this.changes.clear();
+		this.changedSince.clear();
 		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
 		setOptions(this.categoryFilter, [
@@ -232,6 +245,36 @@ export class ItemsTab implements SavableTab
 		this.changes.markSaved(this.collected, (id) => ids.number(listRef('Item', id)));
 		this.collected = [];
 		await this.refresh();
+	}
+
+	/**
+	 * Loads the page shown again after another window saved changes to the items, keeping the changes
+	 * made here and marking the items they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed an item with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.changes.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
+
+		this.changedSince.move(this.changes.followDeleted(save, 'item'));
+
+		if (changed)
+		{
+			void this.refresh().then(() =>
+			{
+				// Only an item on the page shown is known as saved now
+				this.dialogFollower.reopen(dialog.reopen, (id) => (this.items.some((item) => (item.id === id)) ? this.itemWithChanges(id as number) : undefined), (item) =>
+				{
+					this.openItem(item);
+				});
+			});
+		}
+
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -437,6 +480,8 @@ export class ItemsTab implements SavableTab
 			row.append(cell);
 		}
 
+		this.changedSince.mark(row.cells[1], item.id, (state !== undefined));
+
 		return(markStagedRow(row, state, !item.custom));
 	}
 
@@ -449,7 +494,8 @@ export class ItemsTab implements SavableTab
 	{
 		if (this.universe)
 		{
-			this.dialog.open(this.universe, item, this.changes.edit(item?.id), () =>
+			this.dialogFollower.opened(item?.id);
+			this.dialog.open(this.universe, item, this.changes.edit(item?.id, loadedFrom((item === undefined) ? undefined : this.known.get(item.id))), () =>
 			{
 				this.render();
 			});
@@ -466,7 +512,7 @@ function anyOption(): SelectOption
 {
 	return({
 		value: '',
-		label: t(editorMessages.filterAny)
+		label: t(formMessages.filterAny)
 	});
 }
 

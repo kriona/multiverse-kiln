@@ -5,10 +5,11 @@
 import type { LoginProvider } from './accounts.js';
 import type { OptionName } from './characters.js';
 import { SITE_NAME } from './constants.js';
-import type { LocalizedMessage } from './localization.js';
+import type { UniverseEditDetail } from './editor.js';
+import { defineMessages, type LocalizedMessage, type MessageDescriptor } from './localization.js';
 import type { Money } from './money.js';
 import type { AbilityScores } from './racesAndClasses.js';
-import type { Ruleset, UniverseRole } from './universes.js';
+import type { EditorRole, Ruleset, UniverseRole } from './universes.js';
 
 /**
  * Most characters in a profile's pronouns, such as "she/her" or "they/them"
@@ -88,6 +89,13 @@ export function profileCharacterPath(characterId: string): string
 {
 	return(`${PROFILE_PATH}/characters/${encodeURIComponent(characterId)}`);
 }
+
+/**
+ * PUT: changes the language the logged-in player's profile names (ProfileLocaleRequest), when it names
+ * one. A profile left on the browser's language keeps it, since the language the browser asks for is
+ * already the one chosen
+ */
+export const PROFILE_LOCALE_PATH = `${PROFILE_PATH}/locale`;
 
 /**
  * GET: everything the site keeps about the logged-in player, to download as one JSON file
@@ -219,6 +227,11 @@ export interface OwnProfilePayload extends ProfileFields
 	twoFactor: TwoFactorState | null;
 
 	/**
+	 * Whether the player is a server admin, who can't use the admin pages while 2FA is off
+	 */
+	serverAdmin: boolean;
+
+	/**
 	 * The language the player chose, or null when the pages follow the browser's settings
 	 */
 	locale: string | null;
@@ -274,6 +287,17 @@ export interface ProfileErrorPayload
 }
 
 /**
+ * Body of PUT PROFILE_LOCALE_PATH
+ */
+export interface ProfileLocaleRequest
+{
+	/**
+	 * The language's tag, such as de or pt-BR
+	 */
+	locale: string;
+}
+
+/**
  * Body of PUT profileCharacterPath(characterId)
  */
 export interface CharacterVisibilityRequest
@@ -302,6 +326,12 @@ export interface SoleCreatedUniversePayload
 	name: string;
 
 	/**
+	 * Whether a server admin who disabled it kept its creators from deleting it, so it can only be handed
+	 * on: with no editors to hand it to, the account can't be deleted while it is disabled
+	 */
+	deletionPrevented: boolean;
+
+	/**
 	 * Everyone else with a role in it, by username; empty when there is no one to hand it to
 	 */
 	editors: UniverseEditorChoice[];
@@ -318,6 +348,12 @@ export interface AccountDeletionPayload
 	universes: SoleCreatedUniversePayload[];
 
 	/**
+	 * Whether any of the player's characters is a group's anchor being, so deleting the account
+	 * disbands the group
+	 */
+	anchorsGroups: boolean;
+
+	/**
 	 * Whether the account has a password, which deleting it asks for; an account without one confirms
 	 * with its username instead
 	 */
@@ -327,7 +363,38 @@ export interface AccountDeletionPayload
 	 * Whether deleting the account asks for its authenticator or recovery code too
 	 */
 	twoFactor: boolean;
+
+	/**
+	 * Whether the player is the site's only server admin, whose account can't be deleted until another
+	 * player is made one (LAST_SERVER_ADMIN_DELETION)
+	 */
+	lastServerAdmin: boolean;
 }
+
+/**
+ * Why the account of the site's only server admin can't be deleted, shown in the dialog that deletes it
+ * and given by the server when it refuses
+ */
+export const LAST_SERVER_ADMIN_DELETION: MessageDescriptor = defineMessages({
+	lastServerAdmin: {
+		id: 'profile.deleteLastServerAdmin',
+		defaultMessage: 'You\'re the site\'s only admin, so your account can\'t be deleted. Make another player an admin first.',
+		description: 'In the dialog that deletes the player\'s account, in place of what it asks, and the reason deleting it was refused: the player is the only admin of the whole site, and the site needs one'
+	}
+}).lastServerAdmin;
+
+/**
+ * Why an account can't be deleted while it is the only creator of a universe a server admin disabled and
+ * kept from being deleted, with no other editor to hand it to, shown in the dialog that deletes it and
+ * given by the server when it refuses. Takes the universe's name as {universe}
+ */
+export const UNHANDABLE_UNIVERSE_DELETION: MessageDescriptor = defineMessages({
+	unhandableUniverse: {
+		id: 'profile.deleteUnhandableUniverse',
+		defaultMessage: 'The site\'s admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can\'t be deleted until the admins enable it.',
+		description: 'In the dialog that deletes the player\'s account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that the site\'s admins disabled and kept from being deleted, so it can\'t be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name'
+	}
+}).unhandableUniverse;
 
 /**
  * A character in the data export
@@ -400,6 +467,11 @@ export interface AccountExport
 		locale: string | null;
 		showCharacters: boolean;
 		createdAt: string;
+
+		/**
+		 * When the player last logged in, or null when they never have
+		 */
+		lastLoginAt: string | null;
 	};
 
 	/**
@@ -447,5 +519,120 @@ export interface AccountExport
 	characterDrafts: {
 		universeId: string;
 		draft: unknown;
+	}[];
+
+	/**
+	 * The messages the player wrote that the kept chats still hold (the editors' chat of a universe, and
+	 * groups' chats), oldest first
+	 */
+	chatMessages: {
+		universeId: string;
+		universeName: string;
+
+		/**
+		 * The group whose chat it is in, or null for the universe's editors' chat
+		 */
+		groupId: string | null;
+
+		groupName: string | null;
+		text: string;
+		sentAt: string;
+	}[];
+
+	/**
+	 * How far the player has read each kept chat that remembers it: when the newest message they have
+	 * seen was sent
+	 */
+	chatReads: {
+		universeId: string;
+		universeName: string;
+
+		/**
+		 * The group whose chat it is, or null for the universe's editors' chat
+		 */
+		groupId: string | null;
+
+		groupName: string | null;
+		readAt: string;
+	}[];
+
+	/**
+	 * The saves the player made in universes' editors that are still kept (for 90 days), oldest first
+	 */
+	universeEdits: {
+		universeId: string;
+		universeName: string;
+
+		/**
+		 * The role they saved with, the site admin role included
+		 */
+		role: EditorRole;
+
+		/**
+		 * Whether the save changed the universe's draft rather than its live version
+		 */
+		draft: boolean;
+
+		/**
+		 * What the save changed, as the editor's Audit tab lists it, or null for a save recorded before
+		 * its details were
+		 */
+		changes: UniverseEditDetail[] | null;
+
+		savedAt: string;
+	}[];
+
+	/**
+	 * The saves other players made that added the player as an editor of a universe, changed their role or
+	 * removed them, still kept (for 90 days), oldest first: only what each save did to the player, without
+	 * who saved
+	 */
+	editorChanges: {
+		universeId: string;
+		universeName: string;
+		changes: UniverseEditDetail[];
+		savedAt: string;
+	}[];
+
+	/**
+	 * What server admins did on the admin pages that the player did or was the subject of, oldest first,
+	 * without the other admin who did it
+	 */
+	adminEvents: {
+		/**
+		 * What was done: adminAdded, adminRemoved, universeDisabled or universeEnabled
+		 */
+		kind: string;
+
+		/**
+		 * Whether the player was the admin who did it, rather than the player made or removed as an admin
+		 */
+		byPlayer: boolean;
+
+		/**
+		 * The player made or removed as an admin, by ID, or null for other kinds and once their account is
+		 * deleted
+		 */
+		playerId: string | null;
+
+		/**
+		 * The universe disabled or enabled, or null for other kinds and once it is deleted
+		 */
+		universe: {
+			id: string;
+			name: string;
+		} | null;
+
+		/**
+		 * The reason given for disabling a universe, or null for other kinds
+		 */
+		reason: string | null;
+
+		/**
+		 * Whether disabling a universe kept its creators from deleting it, or null for other kinds
+		 */
+		preventsDeletion: boolean | null;
+
+		occurredAt: string;
 	}[];
 }

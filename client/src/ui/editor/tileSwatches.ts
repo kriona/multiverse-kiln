@@ -34,6 +34,11 @@ const TILE_GRAPHIC_NAMES: Record<TileGraphic, MessageDescriptor> = defineMessage
 		defaultMessage: 'Stone Wall',
 		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: the top of a thick stone wall seen from above, which joins up with the same tile in the cells around it'
 	},
+	woodWall: {
+		id: 'editor.tile.graphic.woodWall',
+		defaultMessage: 'Wood Wall',
+		description: 'One of the graphics a tile can be drawn with, in the tile editor\'s list of them and read out for the Tilesets table\'s pictures of tiles: the top of a wooden wall seen from above, such as a building\'s inside walls, which joins up with the same tile in the cells around it'
+	},
 	hedge: {
 		id: 'editor.tile.graphic.hedge',
 		defaultMessage: 'Hedge',

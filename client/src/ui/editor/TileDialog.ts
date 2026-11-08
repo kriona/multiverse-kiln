@@ -11,6 +11,7 @@ import { formMessages } from '../formMessages';
 import { tileName } from '../tileNames';
 import { colorToHex, parseHexColor } from './colors';
 import { editorMessages } from './editorMessages';
+import { FollowedDialog } from './otherSaves';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 import { TileDeleteDialog } from './TileDeleteDialog';
 import { TileGraphicDialog, type StagedUpload } from './TileGraphicDialog';
@@ -122,6 +123,11 @@ export class TileDialog
 	 * Whether the tile has changes that haven't been applied
 	 */
 	private readonly changes = new ChangeTracker({ root: this.form });
+
+	/**
+	 * How the dialog follows saves made in other windows to the tile it shows
+	 */
+	readonly following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 	private universe: EditableUniverse | undefined;
 
@@ -331,7 +337,7 @@ export class TileDialog
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		this.updatePreview();
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 	}
 

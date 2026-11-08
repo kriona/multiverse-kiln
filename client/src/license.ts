@@ -1,21 +1,14 @@
-import { startLocalization } from './localization';
-import { startAccountMenu } from './ui/accountMenu';
+import { startPage } from './pageStart';
 import { scrollToFragment, setPageTitle } from './ui/dom';
-import { startLanguagePicker } from './ui/languagePicker';
-import { startShortcuts } from './ui/shortcuts';
-import { startSiteSocials } from './ui/siteSocials';
 
 /**
- * Shows the license page in the player's language
+ * Shows the license page in the player's language. It works without the server, so it doesn't wait for
+ * the connection
  */
 async function start(): Promise<void>
 {
-	await startLocalization();
+	await startPage();
 	setPageTitle(document.title);
-	void startAccountMenu();
-	startLanguagePicker();
-	void startSiteSocials();
-	startShortcuts();
 	scrollToFragment();
 }
 

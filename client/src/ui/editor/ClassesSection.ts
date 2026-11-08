@@ -45,6 +45,7 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 			}),
 			name: className,
 			describe: describeClass,
+			dialog: dialog.following,
 			openDialog: (universe, characterClass, edit, onChanged) =>
 			{
 				dialog.open(universe, characterClass, edit, onChanged);

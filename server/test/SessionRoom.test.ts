@@ -5,8 +5,12 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { SESSION_ROOM_NAME, SessionServerMessageType, type AccountPayload, type AccountPlayer } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { pool } from '../src/db/client.js';
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
+import { SESSION_LIFETIMES } from '../src/logic/sessionLifetimes.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
+import type { SessionRoom } from '../src/rooms/SessionRoom.js';
 import { Inbox } from './inbox.js';
+import { changeDuringNextLookup } from './joinRaces.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -93,15 +97,27 @@ describe('SessionRoom', () =>
 		await assert.rejects(colyseus.sdk.create(SESSION_ROOM_NAME));
 	});
 
-	it('tells a logged-in window who its player is', async () =>
+	it('tells a logged-in window who its player is, and when its session ends if it isn\'t used again', async () =>
 	{
 		const browser = await logInNewBrowser('Ada');
 		const window = await openWindow(browser.cookie);
+		const { sessionExpiresInMs, ...player } = (window.account ?? { sessionExpiresInMs: 0 });
 
-		assert.deepStrictEqual(window.account, {
+		assert.deepStrictEqual(player, {
 			playerId: browser.playerId,
-			name: 'Ada'
+			name: 'Ada',
+			serverAdmin: false
 		});
+		assert.ok((sessionExpiresInMs > (SESSION_LIFETIMES.short.idleMs - 60000)) && (sessionExpiresInMs <= SESSION_LIFETIMES.short.idleMs));
+	});
+
+	it('tells a server admin\'s window that they are one', async () =>
+	{
+		const browser = await logInNewBrowser('Ada');
+
+		await addServerAdmin(browser.playerId);
+
+		assert.strictEqual((await openWindow(browser.cookie)).account?.serverAdmin, true);
 	});
 
 	it('treats a session token it doesn\'t know as not logged in', async () =>
@@ -150,6 +166,21 @@ describe('SessionRoom', () =>
 		assert.strictEqual(await takeAccount(window1.inbox), null);
 		assert.strictEqual(await takeAccount(window2.inbox), null);
 		assert.strictEqual(other.inbox.pending(SessionServerMessageType.Account), 0);
+	});
+
+	it('tells a window whose session ends while it joins that it isn\'t logged in', async () =>
+	{
+		const browser = await logInNewBrowser('Ada');
+		const room = colyseus.getRoomById<SessionRoom>((await openWindow()).room.roomId);
+
+		changeDuringNextLookup(room, 'lookUp', async () =>
+		{
+			await pool.query('DELETE FROM sessions WHERE id = $1', [browser.sessionId]);
+			connectedSessions.end([browser.sessionId]);
+		});
+
+		assert.strictEqual((await openWindow(browser.cookie)).account, null);
+		assert.ok(!connectedSessions.ids().includes(browser.sessionId));
 	});
 
 	it('counts a session\'s connected windows until the last leaves', async () =>

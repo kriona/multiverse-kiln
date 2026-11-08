@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_SESSION_PATH, MAX_PROFILE_LANGUAGES, playerProfilePath, PROFILE_LANGUAGES, PROFILE_PATH, profileCharacterPath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileErrorPayload, type ProfileUpdateRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_SESSION_PATH, MAX_PROFILE_LANGUAGES, playerProfilePath, PROFILE_LANGUAGES, PROFILE_LOCALE_PATH, PROFILE_PATH, profileCharacterPath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileErrorPayload, type ProfileUpdateRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { pool } from '../src/db/client.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
@@ -101,6 +101,7 @@ describe('profile routes', () =>
 			hasPassword: false,
 			providers: [],
 			twoFactor: null,
+			serverAdmin: false,
 			locale: null,
 			showCharacters: true,
 			characters: []
@@ -131,12 +132,13 @@ describe('profile routes', () =>
 			socials: ADA_PROFILE.socials
 		};
 
-		assert.deepStrictEqual({ ...own.body, email: undefined, hasPassword: undefined, providers: undefined, twoFactor: undefined, characters: undefined }, {
+		assert.deepStrictEqual({ ...own.body, email: undefined, hasPassword: undefined, providers: undefined, twoFactor: undefined, serverAdmin: undefined, characters: undefined }, {
 			...ADA_PROFILE,
 			email: undefined,
 			hasPassword: undefined,
 			providers: undefined,
 			twoFactor: undefined,
+			serverAdmin: undefined,
 			characters: undefined
 		});
 		assert.deepStrictEqual((await (await logIn('Grace')).browser.send<PlayerProfilePayload>('GET', playerProfilePath('ada_l'))).body, {
@@ -202,6 +204,27 @@ describe('profile routes', () =>
 		assert.strictEqual((await browser.send('PUT', PROFILE_PATH, { ...ADA_PROFILE, languages: ['en', 'xx'] })).status, 400);
 		assert.strictEqual((await browser.send('PUT', PROFILE_PATH, { ...ADA_PROFILE, languages: PROFILE_LANGUAGES.slice(0, MAX_PROFILE_LANGUAGES + 1) })).status, 400);
 		assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.username, 'Ada');
+	});
+
+	it('changes the profile\'s language on its own, only when the profile names one', async () =>
+	{
+		const { browser } = await logIn('Ada');
+
+		assert.strictEqual((await new Browser().send('PUT', PROFILE_LOCALE_PATH, { locale: 'de' })).status, 401);
+		assert.strictEqual((await browser.send('PUT', PROFILE_LOCALE_PATH, { locale: 'de' })).status, 204);
+		assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.locale, null);
+
+		assert.strictEqual((await browser.send('PUT', PROFILE_PATH, ADA_PROFILE)).status, 204);
+		assert.strictEqual((await browser.send('PUT', PROFILE_LOCALE_PATH, { locale: 'DE-at' })).status, 204);
+		assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.locale, 'de-AT');
+		assert.strictEqual((await browser.send<SessionPayload>('GET', AUTH_SESSION_PATH)).body.player?.locale, 'de-AT');
+
+		const refused = await browser.send<ProfileErrorPayload>('PUT', PROFILE_LOCALE_PATH, { locale: 'not a language' });
+
+		assert.strictEqual(refused.status, 400);
+		assert.strictEqual(refused.body.field, 'locale');
+		assert.strictEqual((await browser.send('PUT', PROFILE_LOCALE_PATH, {})).status, 400);
+		assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.locale, 'de-AT');
 	});
 
 	it('shows others\' profiles only to logged-in players', async () =>

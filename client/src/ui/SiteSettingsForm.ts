@@ -1,5 +1,6 @@
 import { isPrivacyContact, isSiteSocialUrl, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
 
+import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
 import type { AdminApi } from '../network/adminApi';
 import { describeEditorError } from '../network/editorApi';
@@ -11,7 +12,7 @@ import { SOCIAL_SITE_NAMES } from './socialSites';
 import { showToast } from './toast';
 
 /**
- * The admin page's form: settings for the whole site, such as whether players can create universes,
+ * The admin settings page's form: settings for the whole site, such as whether players can create universes,
  * how long last rites wait before deleting a character, the social sites the footer links to and the
  * privacy policy's contact
  */
@@ -96,6 +97,12 @@ export class SiteSettingsForm
 		catch (error)
 		{
 			this.loading.hidden = true;
+
+			if (showAdminRefusal(error))
+			{
+				return;
+			}
+
 			showMessage(this.loadError, describeEditorError(error, {
 				id: 'admin.loadFailed',
 				defaultMessage: 'Could not load the site settings.',
@@ -166,18 +173,25 @@ export class SiteSettingsForm
 			privacyContact: ((privacyContact === '') ? null : privacyContact)
 		};
 
+		const form = this.changes.snapshot();
+
 		this.saveButton.disabled = true;
 		showMessage(this.error, undefined);
 
 		try
 		{
 			await this.api.saveSiteSettings(settings);
-			this.changes.markSaved();
-			this.saved.textContent = t(formMessages.saved);
-			showToast(t(formMessages.savedToast), {
-				kind: 'success',
-				announce: false
-			});
+			// Changes made while the save was sent stay unsaved
+			this.changes.markSaved(form);
+
+			if (!this.changes.hasUnsavedChanges())
+			{
+				this.saved.textContent = t(formMessages.saved);
+				showToast(t(formMessages.savedToast), {
+					kind: 'success',
+					announce: false
+				});
+			}
 		}
 		catch (error)
 		{

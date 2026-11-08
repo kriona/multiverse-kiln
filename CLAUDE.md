@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Context and rules for working in this repository. Read this before making changes.
-See `PLAN.md` for the build roadmap and current phase, and `STRUCTURE-OVERVIEW.md` for the pages, editors and game rules the phases build. Read the relevant sections of `STRUCTURE-OVERVIEW.md` before planning or implementing a feature, and update it when a design decision changes.
+See `PLAN.md` for the build roadmap and `STRUCTURE-OVERVIEW.md` for the pages, editors and game rules the phases build. Read the relevant sections of `STRUCTURE-OVERVIEW.md` before planning or implementing a feature, and update it when a design decision changes.
 
 ## Project overview
 
@@ -17,7 +17,7 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Ten pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Sixteen pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
@@ -25,10 +25,16 @@ An engine for making multiplayer browser-based role-playing games.
                  src/character.scss), license.html (the game's license and the
                  licenses of what it uses, linked from the footer; src/license.ts, src/license.scss), privacy.html
                  (the privacy policy, linked from the footer; src/privacy.ts, src/privacy.scss),
-                 admin.html (settings for the whole site; src/admin.ts, src/admin.scss), login.html (logging
+                 the admin pages for server admins: admin.html (/admin, linking to the tools; src/admin.ts) and the
+                 tools in admin/ (settings.html, sessions.html, players.html, admins.html, universes.html and
+                 translations.html at /admin/settings, /admin/sessions, /admin/players, /admin/admins,
+                 /admin/universes and /admin/translations: the site's settings, its login sessions, its players,
+                 its server admins, disabling universes, and translation files of the engine text to make
+                 language files from; src/adminSettings.ts, src/adminSessions.ts, src/adminPlayers.ts,
+                 src/adminAdmins.ts, src/adminUniverses.ts, src/adminTranslations.ts), sharing src/AdminPage.ts and src/admin.scss, login.html (logging
                  in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
                  src/LoginPage.ts, src/login.scss) and profile.html (the player's own profile at /profile, and
-                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile and Log out, status and notice screens,
+                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile, Site admin for server admins and Log out, Site Admin in the admin tools' toolbars and their refusal notice, status and notice screens,
                  footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -38,13 +44,17 @@ An engine for making multiplayer browser-based role-playing games.
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: tells
-                     every window who its player is, and when its session ends), LobbyRoom (one per universe)
-                     and GameRoom (one per group, made from the database when a member returns). Every room
+                     every window who its player is, and when its session ends), LobbyRoom (one per universe),
+                     GameRoom (one per group, made from the database when a member returns, with the group's chat) and EditorRoom (one
+                     per universe: who has its editor open, the editors' chat, and what each window saves). Every room
                      finds its clients' players from their session cookie in onAuth. The two map rooms share
                      AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
-  src/players/       which login sessions have windows connected, and changes to characters and groups, published
-                     to the rooms (in memory; accounts, sessions, characters and groups are in the database)
-  src/world/         changes the world editor makes, published to the rooms playing in that world (in memory)
+  src/players/       which login sessions have windows connected, changes to characters and groups, players who
+                     may no longer play a universe, and players who are no longer server admins, published to the rooms (in memory; accounts, sessions,
+                     characters, groups and roles are in the database)
+  src/world/         changes the world editor makes, published to the rooms playing in that world, what changes
+                     for a universe's open editors (roles, disabling), published to its editor room, and which
+                     area each room's characters are in, for the editor's warnings (in memory)
   src/logic/         pure game-simulation functions (no I/O)
   src/db/            Drizzle client, schema, and repository modules
   src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
@@ -52,7 +62,8 @@ An engine for making multiplayer browser-based role-playing games.
   src/auth/          logins: sessions (the session cookie to a player, sessions.ts), password hashing, keyed
                      hashes, tokens, rate limits, the breached password check and the Google and Discord
                      clients (providers.ts)
-  src/email/         sending email (SMTP; Mailpit locally) and the emails logins send, in each player's language
+  src/email/         sending email (SMTP; Mailpit locally), how every email is laid out, and the emails logins
+                     send and players given a role in a universe get, in each player's language
   src/http/          REST routes (health, logins and accounts (auth.ts, and providerAuth.ts for Google and Discord), profiles, universes for Home, characters, groups and
                      invite links, the world editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
                      every change through one route, editorChanges.ts, in one transaction; each kind of
@@ -72,9 +83,12 @@ An engine for making multiplayer browser-based role-playing games.
                      (git-ignored)
   scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
 docker-compose.yml   local Postgres and object storage (SeaweedFS)
+/scratchpad      scratch work (git-ignored): benchmarks, review notes, throwaway scripts and their output
 ```
 
 npm workspaces are assumed (`client`, `server`, `shared`). Update this section if the package manager changes.
+
+Put scratch files in `scratchpad/`, not a system or session temp folder, so they last and can be run again. Scripts there import the repository's code by relative path (e.g. `../shared/dist/translationFiles.js`). Don't overwrite the notes already there without asking.
 
 ## Architecture rules (do not violate)
 
@@ -97,15 +111,15 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 - Give migrations descriptive names (`npx drizzle-kit generate --name=<name>` from `server/`). Data every database needs, such as a ruleset's default tiles, goes in a custom migration (`--custom --name=<name>`); sample data for development goes in the seed script instead.
 - Use a standard TCP Postgres driver (`pg` or `postgres.js`) with a connection pool. Do not use Neon's HTTP/serverless driver; the server is a long-running process.
 - In production, use Neon's **pooled** connection string.
-- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` and `kiln_test` databases. Never give the server the migration role's credentials.
-- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, rebuilds it from the migrations at the start of every run, and before each test deletes every row except those the migrations inserted (such as default tiles), so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`.
+- Two roles: migrations run as the migration role, which owns the tables; the server runs as the app role, which can read and write rows but not alter tables. Locally, the scripts in `docker/postgres/init/` create them, along with the `kiln` database and the test databases (`kiln_test`, and `kiln_test_1` to `kiln_test_8` for the parallel test workers). Never give the server the migration role's credentials.
+- `server/src/db/client.ts` throws on import when `DATABASE_URL` is unset. Tests run against their own database: `server/test/setup.ts` points `DATABASE_URL` at `TEST_DATABASE_URL`, rebuilds it from the migrations at the start of every run, and before each test deletes every row except those the migrations inserted (such as default tiles), so a test never depends on rows another test left behind. It refuses a database whose name doesn't end in `_test`. `npm test` runs the test files in parallel (mocha's `--parallel`), and each worker process uses a database of its own: `TEST_DATABASE_URL`'s with the worker's number after it, such as `kiln_test_3` (`server/test/testWorker.ts`). Mocha without `--parallel`, such as for one file or `.only`, uses `kiln_test` itself.
 - Write repository tests against the real test database (`server/test/db/`), not mocks.
 
 ## Configuration
 
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
 - Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
-- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground, `/monitor` and the load test's bot login, never in production), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `CLIENT_ADDRESS_HEADER` / `TRUSTED_PROXY_HOPS` (the one forwarding header a proxy in front of the server sets, and how many proxies add to X-Forwarded-For; unset uses the connection's address, and Colyseus Cloud requires them; `server/src/http/clientNetwork.ts`), `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, `AUTH_HMAC_KEY` (the key for the keyed hashes of addresses, email codes, recovery codes and networks; `server/src/auth/keyedHashes.ts`), `TOTP_ENCRYPTION_KEY` (encrypts authenticator secrets for 2FA, kept apart from the database; `server/src/auth/totpSecrets.ts`), `SMTP_URL` / `EMAIL_FROM` (where email is sent, and the address it comes from), `SITE_URL` (the client's address, which emails link to and Google and Discord send players back to; the server refuses to start without it, `server/src/siteUrl.ts`), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` (each provider is offered once both are set; `server/src/auth/providers.ts`).
+- Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground, `/monitor` and the load test's bot login, never in production), `ENABLE_DEV_CODES` (takes 111111 for any email or authenticator code; only on a developer's own computer, left off in `.env.example`; `server/src/auth/devCodes.ts`), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `CLIENT_ADDRESS_HEADER` / `TRUSTED_PROXY_HOPS` (the one forwarding header a proxy in front of the server sets, and how many proxies add to X-Forwarded-For; unset uses the connection's address, and Colyseus Cloud requires them; `server/src/http/clientNetwork.ts`), `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, `AUTH_HMAC_KEY` (the key for the keyed hashes of addresses, email codes, recovery codes and networks; `server/src/auth/keyedHashes.ts`), `TOTP_ENCRYPTION_KEY` (encrypts authenticator secrets for 2FA, kept apart from the database; `server/src/auth/totpSecrets.ts`), `SMTP_URL` / `EMAIL_FROM` (where email is sent, and the address it comes from), `SITE_URL` (the client's address, which emails link to and Google and Discord send players back to; the server refuses to start without it, `server/src/siteUrl.ts`), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` (each provider is offered once both are set; `server/src/auth/providers.ts`).
 - Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
@@ -120,7 +134,7 @@ npm workspaces are assumed (`client`, `server`, `shared`). Update this section i
 
 - Only origins in `ALLOWED_ORIGINS` may use the server from a browser; the server refuses to start without it. `server/src/http/responseHeaders.ts` replaces Colyseus's default CORS (which allows every origin with credentials), and `createOriginCheck` in `server/src/http/origins.ts` rejects WebSocket connections from other origins (browsers don't apply CORS to WebSockets). Requests without an `Origin` header (non-browser clients) are allowed.
 - Every HTTP response gets `X-Content-Type-Options: nosniff`; `X-Powered-By` is disabled, and `/` returns 404 unless dev tools are on, so the server doesn't advertise Colyseus or Express. Don't undo these, and cover new routes in `server/test/http.test.ts`.
-- Tests share one server through `server/test/testServer.ts` (`getTestServer()`): the app's `Server` instance can only be booted once per run.
+- Tests share one server through `server/test/testServer.ts` (`getTestServer()`): the app's `Server` instance can only be booted once per process, so every file a test worker runs shares it. Each worker's server has a port of its own (2568, plus the worker's number), so use `testServerUrl` rather than writing the port.
 
 ## Local development
 
@@ -132,6 +146,7 @@ npm run storage:setup -w server      # create the storage bucket (start.bat does
 npm run db:generate -w server        # create a migration after changing server/src/db/schema.ts
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <username> makes that account its creator
+npm run admin:add -w server -- <username>  # make an account a server admin (it needs 2FA on to use the admin pages)
 npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
 npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
@@ -145,6 +160,10 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - TypeScript `strict` mode everywhere. Avoid `any`; validate untrusted input (client messages, request bodies) at the boundary.
 - Prefer small, focused modules. Room classes orchestrate; logic lives elsewhere.
 - Write unit tests for `server/src/logic/` and repository modules.
+- Keep tests fast; the whole suite runs on every `npm test`. Be careful adding a test that is slow on purpose to check timing or performance:
+	- Don't wait for real time to pass (sleeps, waiting out a timeout or rate limit window). Make the time a parameter, or pass in a clock, so the test can move it on at once.
+	- A test guarding against a slowdown (such as a parser growing with the square of its input) uses an input just large enough that the slow code clearly fails a generous time limit, while the fixed code takes milliseconds: see the large XLIFF test in `server/test/shared/translationFiles.test.ts`. Never one that runs for seconds when the code is right.
+	- Benchmarks that measure how fast something is go in `scratchpad/`, not the test suite.
 - **Text players read is a message** (see Localization in `STRUCTURE-OVERVIEW.md`): an ID, its English text and a description that tells translators what it is and where it appears, written as an object literal where it's used, e.g. `t({ id, defaultMessage, description })` with `t()` from `client/src/localization.ts`, so the English reads in place. Declare a message with `defineMessages()` from `/shared` only when it's used in more than one place or looked up from a table (such as `UNIVERSE_STAGE_NAMES`), and put the declaration as close to its uses as possible. Give the same English used for two purposes two IDs, and one concept shown in several places (a setting's heading in its editor, filter and table column; a value shown as filter choices and in a column) one ID: each ID is separate work for translators, so look for an existing message before adding one, and write its description to cover every place it appears. In a page's HTML, repeat the same `data-message` ID with the same text and `data-translation-context`. Build sentences with ICU arguments and plurals (`'{count, plural, one {# area} other {# areas}}'`), never by joining pieces. Text in a page's HTML gets `data-message` and `data-translation-context` attributes (see `shared/scripts/extractMessages.ts`); the client's Vite config strips `data-translation-context` from the pages it serves and builds. The server never sends English: HTTP errors go through `sendError()` (`server/src/http/errors.ts`) as a `LocalizedMessage`. Text players write (names, chat) and universe text (names and descriptions creators write) aren't messages. The client's dev server keeps `shared/locales/en.json` current as files are saved; without it, run `npm run messages`, since lint fails until the catalog is current. When it or lint warns that a translation is missing messages or out of date, update it with the `translate` skill (`.agents/skills/translate/SKILL.md`): Pirate (`en-x-pirate`) right away, a real language only when asked. Check new pages in the pseudo-language with `?locale=en-XA`.
 - **The game engine's name is only ever `SITE_NAME`** (`shared/src/constants.ts`), never written into a message or page. Code uses the constant; a page's HTML writes `%SITE_NAME%`, which `client/vite.config.ts` fills in. A message that names it takes it as an argument, `{siteName}`, which in a page's HTML is `<span data-argument="siteName" translate="no">%SITE_NAME%</span>`. Browser tab titles leave it out: set them with `setPageTitle()` (`client/src/ui/dom.ts`), which adds ` - ${SITE_NAME}`.
 - **Icons** come from Phosphor's Regular icons (`ph:<name>`, https://phosphoricons.com) for interface actions and game-icons.net (`game-icons:<name>`, https://game-icons.net) for game concepts. A page marks one with `<!-- icon ph:floppy-disk -->` before a button's text; code imports one with `import trashIcon from 'virtual:icon/ph:trash'` and shows it with `setButtonLabel()` (`client/src/ui/dom.ts`). The icons plugin in `client/vite.config.ts` inlines them as SVG at build time. Both are credited, with their licenses, on `client/license.html`; credit any new third-party code or assets the pages use there too.

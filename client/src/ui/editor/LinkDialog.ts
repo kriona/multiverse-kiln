@@ -1,4 +1,4 @@
-import { isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { ancestorAreas, isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditorMap } from '../../editor/EditorMap';
@@ -8,11 +8,14 @@ import { describeEditorError } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
 import type { MapEditorHost } from '../../scenes/MapEditorScene';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, setOptions, showMessage } from '../dom';
+import { getElement, showMessage } from '../dom';
+import { reportFieldError, setFieldError } from '../fieldErrors';
+import { SearchSelect } from '../SearchSelect';
 import { addKeyHelp } from '../shortcuts';
 import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
 import { mapMessages } from './mapMessages';
+import { FollowedDialog } from './otherSaves';
 
 /**
  * Width of the target area's preview, in pixels
@@ -99,7 +102,22 @@ export class LinkDialog
 	private readonly automatic = getElement('link-automatic', HTMLInputElement);
 	private readonly manual = getElement('link-manual', HTMLInputElement);
 	private readonly wholeGroup = getElement('link-whole-group', HTMLInputElement);
-	private readonly targetArea = getElement('link-target', HTMLSelectElement);
+
+	/**
+	 * The area the link goes to, chosen by typing part of its name; '' until one is chosen
+	 */
+	private readonly targetArea = new SearchSelect({
+		searchId: 'link-target',
+		listboxId: 'link-target-options',
+		choices: [],
+		onChange: () =>
+		{
+			this.destination = undefined;
+			this.returnCell = undefined;
+			setFieldError(this.targetArea.field, undefined);
+			void this.showPreview(this.targetArea.value);
+		}
+	});
 	private readonly addReturn = getElement('link-return', HTMLInputElement);
 	private readonly pickChoice = getElement('link-pick-choice', HTMLElement);
 	private readonly pickReturn = getElement('link-pick-return', HTMLInputElement);
@@ -120,8 +138,14 @@ export class LinkDialog
 	 */
 	private readonly changes = new ChangeTracker({
 		root: this.form,
-		state: () => [this.destination, this.returnCell]
+		state: () => [this.targetArea.value, this.destination, this.returnCell]
 	});
+
+	/**
+	 * Whether the dialog is open with changes not yet applied, for the area editor following saves made
+	 * in other windows
+	 */
+	readonly following = new FollowedDialog(this.dialog, this.title, this.changes);
 
 	/**
 	 * Changes every time the preview switches area, so an area that arrives for an earlier choice is ignored
@@ -146,13 +170,6 @@ export class LinkDialog
 				defaultMessage: 'Choose the cursor\'s cell',
 				description: 'In the list of keyboard shortcuts, what Space and Enter do on the link dialog\'s map: choose the destination or the return link\'s cell'
 			})
-		});
-
-		this.targetArea.addEventListener('change', () =>
-		{
-			this.destination = undefined;
-			this.returnCell = undefined;
-			void this.showPreview(this.targetArea.value);
 		});
 
 		this.addReturn.addEventListener('change', () =>
@@ -230,11 +247,13 @@ export class LinkDialog
 		this.pickDestination.checked = true;
 		this.deleteButton.hidden = !link;
 		this.fields.disabled = false;
-		setOptions(this.targetArea, others.map((area) => ({
+		this.targetArea.setChoices(others.map((area) => ({
 			value: area.id,
-			label: area.name
+			name: area.name,
+			detail: ancestorAreas(target.areas, area.id)[0]?.name
 		})));
 		this.targetArea.value = (link?.targetAreaId ?? others[0]?.id ?? '');
+		setFieldError(this.targetArea.field, undefined);
 		showMessage(this.error, ((others.length === 0)
 			? t({
 				id: 'editor.link.noOtherAreas',
@@ -243,7 +262,7 @@ export class LinkDialog
 			})
 			: undefined));
 		this.updateCells();
-		this.dialog.showModal();
+		this.following.show();
 		this.changes.markSaved();
 
 		if (this.targetArea.value !== '')
@@ -264,7 +283,8 @@ export class LinkDialog
 
 		this.closePreview();
 
-		if (!target)
+		// The field is empty while the player types another area's name
+		if (!target || (areaId === ''))
 		{
 			return;
 		}
@@ -446,6 +466,16 @@ export class LinkDialog
 		const target = this.target;
 		const preview = this.preview;
 		const destination = this.destination;
+
+		if (target && (this.targetArea.value === ''))
+		{
+			reportFieldError(this.targetArea.field, t({
+				id: 'editor.link.needTarget',
+				defaultMessage: 'Choose the area the link goes to.',
+				description: 'Shown under the link dialog\'s Goes to field when Apply is pressed with no area chosen'
+			}));
+			return;
+		}
 
 		if (!target || !preview)
 		{

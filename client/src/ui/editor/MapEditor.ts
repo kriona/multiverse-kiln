@@ -1,10 +1,10 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canPaintTile, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MAX_MAP_SIDE, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { BRUSH_SHAPES, brushCells, type BrushCell, type BrushShape } from '../../editor/brush';
 import { ChunkLoader } from '../../editor/ChunkLoader';
-import { EditHistory, type EditStep } from '../../editor/EditHistory';
+import { EditHistory, type EditStep, type SavedCell } from '../../editor/EditHistory';
 import { EditorMap } from '../../editor/EditorMap';
 import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { currentLocale, t } from '../../localization';
@@ -19,6 +19,7 @@ import { describeCell } from './cellDescription';
 import type { EditorSave, SaveRefusal } from './editorSave';
 import { LinkDialog } from './LinkDialog';
 import { mapMessages } from './mapMessages';
+import type { FollowedDialog } from './otherSaves';
 import { ResizeDialog, type ResizeLoss } from './ResizeDialog';
 
 /**
@@ -54,16 +55,15 @@ const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages(
 const VOID_CHOICE = 'void';
 
 /**
- * The sides of a map, as the expand buttons name them
+ * The outline of the cells other editors painted while the area was open
  */
-type Side = 'north' | 'east' | 'south' | 'west';
+const PAINTED_BY_OTHERS_COLOR = 0xe040fb;
 
-const sides: Side[] = [
-	'north',
-	'east',
-	'south',
-	'west'
-];
+/**
+ * The outline of the cells other editors painted over painting here, a warning color apart from the
+ * automatic links' orange
+ */
+const PAINTED_OVER_COLOR = 0xff3d00;
 
 /**
  * The area being edited and everything that goes with it
@@ -89,6 +89,22 @@ interface OpenArea
 }
 
 /**
+ * What taking in another editor's painting did to the open map
+ */
+export interface FollowedPainting
+{
+	/**
+	 * How many of the cells it changed had been painted here while the area was open
+	 */
+	paintedOver: number;
+
+	/**
+	 * Takes the save's marks off the map
+	 */
+	unmark: () => void;
+}
+
+/**
  * The cells a stroke of the draw tool has painted so far
  */
 interface Stroke
@@ -106,8 +122,8 @@ interface Stroke
 
 /**
  * The map editor in the area editor: the area's map on the same grid as gameplay, a draw tool (a tile
- * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, buttons to grow the
- * map on each side, Edit Size, and a tool for the map's area links
+ * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, Edit Size, and a
+ * tool for the map's area links
  *
  * Painting, changes to the map's size and links show immediately and are kept until the editor's Save
  * button calls save(); a click, a drag or a change of size is one step to undo
@@ -124,9 +140,6 @@ export class MapEditor
 	private readonly resizeButton = getElement('map-resize', HTMLButtonElement);
 	private readonly section = getElement('map-editor', HTMLElement);
 	private readonly fullPageButton = getElement('map-full-page', HTMLButtonElement);
-	private readonly expandButtons = sides.map((side) => getElement(`map-expand-${side}`, HTMLButtonElement));
-	private readonly expandField = getElement('map-expand-field', HTMLElement);
-	private readonly expandBy = getElement('map-expand-by', HTMLInputElement);
 	private readonly cursor = getElement('map-cursor', HTMLElement);
 	private readonly saveStatus = getElement('map-save-status', HTMLElement);
 	private readonly error = getElement('map-error', HTMLElement);
@@ -162,6 +175,23 @@ export class MapEditor
 	 * The server's value of each cell in unsaved, by "column,row"
 	 */
 	private readonly savedValues = new Map<string, number>();
+
+	/**
+	 * The cells other editors painted while the area was open, with the display name of the last to
+	 * paint each, whether they painted over painting here and the save that marked it (counted by
+	 * followedSaves), by "column,row"
+	 */
+	private readonly paintedByOthers = new Map<string, { name: string; overPainting: boolean; save: number }>();
+
+	/**
+	 * How many saves made in other windows followPainting() has taken in, which numbers their marks
+	 */
+	private followedSaves = 0;
+
+	/**
+	 * The cells this window saved painting to while the area was open, by "column,row"
+	 */
+	private readonly paintedHere = new Set<string>();
 
 	/**
 	 * Links added, changed or deleted that haven't been saved, in this area and return links in others,
@@ -200,6 +230,11 @@ export class MapEditor
 	private openVersion = 0;
 
 	/**
+	 * The chunks the view last reached, which the open area's chunk loader was asked for
+	 */
+	private view: ChunkRange | undefined;
+
+	/**
 	 * @param source Where the areas, their links and their maps' chunks come from
 	 * @param onBoundsChanged Called with an area's new bounds after the map editor resizes it
 	 * @param onUnsavedChanged Called with whether the map has painting, a change of size or links that haven't been saved, whenever that may have changed
@@ -210,7 +245,6 @@ export class MapEditor
 		this.linkDialog = new LinkDialog();
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
 		setOptions(this.brushShape, namedOptions(BRUSH_SHAPES, BRUSH_SHAPE_NAMES));
-		this.canvasElement.style.setProperty('--map-view-width', `${VIEW_WIDTH}px`);
 		this.canvasObserver.observe(this.canvasElement);
 
 		this.undoButton.addEventListener('click', () =>
@@ -234,14 +268,6 @@ export class MapEditor
 		});
 
 		this.setFullPage(false);
-
-		sides.forEach((side, index) =>
-		{
-			this.expandButtons[index].addEventListener('click', () =>
-			{
-				this.expand(side);
-			});
-		});
 
 		document.addEventListener('keydown', this.onKeyDown);
 		this.addKeyHelp();
@@ -336,13 +362,6 @@ export class MapEditor
 		this.deletedTiles = deletedTiles;
 		this.fillTiles(universe, area, tiles, sameArea);
 		this.tools.hidden = !editable;
-		this.expandField.hidden = !editable;
-
-		for (const button of this.expandButtons)
-		{
-			button.hidden = !editable;
-		}
-
 		showMessage(this.error, undefined);
 
 		let links: EditorAreaLink[];
@@ -378,6 +397,8 @@ export class MapEditor
 			this.open?.loader.stop();
 			this.history.clear();
 			this.stagedLinks.clear();
+			this.paintedByOthers.clear();
+			this.paintedHere.clear();
 			this.open = this.openMap(universe, area, tiles, areas, links, editable);
 			this.unsavedChanged();
 		}
@@ -395,11 +416,14 @@ export class MapEditor
 		this.openVersion++;
 		this.open?.loader.stop();
 		this.open = undefined;
+		this.view = undefined;
 		this.stroke = undefined;
 		this.history.clear();
 		this.unsaved.clear();
 		this.savedValues.clear();
 		this.stagedLinks.clear();
+		this.paintedByOthers.clear();
+		this.paintedHere.clear();
 		this.canvas.stop();
 		this.unsavedChanged();
 	}
@@ -412,6 +436,17 @@ export class MapEditor
 	hasUnsavedChanges(): boolean
 	{
 		return((this.unsaved.size > 0) || this.hasUnsavedBounds() || (this.stagedLinks.size > 0));
+	}
+
+	/**
+	 * The link dialog, as the area editor follows saves made in other windows: one open with changes not
+	 * yet applied keeps the area from loading again under it
+	 *
+	 * @return The dialog's following
+	 */
+	linkDialogFollowing(): FollowedDialog
+	{
+		return(this.linkDialog.following);
 	}
 
 	/**
@@ -442,6 +477,71 @@ export class MapEditor
 				target: ((change.target === null) ? null : { ...change.target, targetAreaId: resolve(change.target.targetAreaId) })
 			}))
 			.map((change) => [linkKey(change.areaId, change.column, change.row), change]));
+	}
+
+	/**
+	 * Keeps the open area as a new area once a save in another window deleted it, so saving adds it again
+	 * with the map as it shows here: every loaded cell that isn't the default tile is painting not yet
+	 * saved, the map grows or shrinks from the size every new area starts with, and its links are links
+	 * not yet saved, except those deleted here. The parts of the map that hadn't loaded went with the
+	 * area, so they load as the default tile, and the links other areas had into it are gone
+	 *
+	 * @param areaId The area's ID as a new area
+	 * @param bounds The map every new area starts with
+	 */
+	recreate(areaId: string, bounds: MapBounds): void
+	{
+		const open = this.open;
+
+		if (!open)
+		{
+			return;
+		}
+
+		this.resolveIds(new Map([[open.area.id, areaId]]));
+		open.loader.stop();
+		open.loader = this.createLoader(areaId, open.map);
+		open.area = { ...open.area, bounds };
+
+		for (const { column, row, ...target } of open.links)
+		{
+			const key = linkKey(areaId, column, row);
+
+			if (!this.stagedLinks.has(key))
+			{
+				this.stagedLinks.set(key, { areaId, column, row, target });
+			}
+		}
+
+		for (const [key, change] of [...this.stagedLinks])
+		{
+			if ((change.areaId === areaId) && (change.target === null))
+			{
+				this.stagedLinks.delete(key);
+			}
+		}
+
+		open.links = [];
+		this.unsaved.clear();
+		this.savedValues.clear();
+
+		for (const cell of open.map.paintedCells())
+		{
+			const key = `${cell[0]},${cell[1]}`;
+
+			this.unsaved.set(key, cell);
+			this.savedValues.set(key, DEFAULT_TILE_CELL);
+		}
+
+		if (this.view)
+		{
+			open.loader.request(this.view);
+		}
+
+		this.canvas.scene?.setLinks(linksOnMap(open, this.currentLinks(areaId, open.links)));
+		this.showHoveredCell();
+		this.unsavedChanged();
+		this.updateButtons();
 	}
 
 	/**
@@ -602,6 +702,12 @@ export class MapEditor
 		}
 
 		this.markCellsSaved(collected.cells);
+
+		for (const [column, row] of collected.cells)
+		{
+			this.paintedHere.add(`${column},${row}`);
+		}
+
 		open.area = { ...open.area, bounds: collected.bounds };
 
 		for (const [key, change] of collected.links)
@@ -762,15 +868,26 @@ export class MapEditor
 	private openMap(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], areas: readonly EditorAreaSummary[], links: EditorAreaLink[], editable: boolean): OpenArea
 	{
 		const map = new EditorMap(area.bounds);
-		const loader = new ChunkLoader((range) => this.source.loadChunks(area.id, range), map, (chunkKeys) =>
+
+		return({ universe, area, tiles, areas, map, loader: this.createLoader(area.id, map), links, editable });
+	}
+
+	/**
+	 * Creates what loads an area's chunks into its map as the view reaches them
+	 *
+	 * @param areaId The area's ID
+	 * @param map The area's map
+	 * @return The loader
+	 */
+	private createLoader(areaId: string, map: EditorMap): ChunkLoader
+	{
+		return(new ChunkLoader((range) => this.source.loadChunks(areaId, range), map, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
 		{
 			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
-		});
-
-		return({ universe, area, tiles, areas, map, loader, links, editable });
+		}));
 	}
 
 	/**
@@ -793,7 +910,178 @@ export class MapEditor
 		if (this.open === open)
 		{
 			scene.setLinks(linksOnMap(open, this.currentLinks(open.area.id, open.links)));
+			this.showPaintedByOthers();
 		}
+	}
+
+	/**
+	 * Marks on the map the cells other editors painted while the area was open
+	 */
+	private showPaintedByOthers(): void
+	{
+		this.canvas.scene?.setHighlights([...this.paintedByOthers].map(([key, painted]) =>
+		{
+			const [column, row] = key.split(',').map(Number);
+
+			return({ column, row, color: (painted.overPainting ? PAINTED_OVER_COLOR : PAINTED_BY_OTHERS_COLOR) });
+		}));
+	}
+
+	/**
+	 * Takes in the painting another editor saved to the open area: loads the chunks it painted again, if
+	 * they have loaded here, and marks each cell it changed, in the warning color where it painted over
+	 * painting here: painting not yet saved, or saved from here while the area was open. A cell painted
+	 * here and not yet saved keeps the painting here, which is saved over theirs, and undoing back to the
+	 * saved map gives theirs
+	 *
+	 * @param areaId The area painted
+	 * @param chunks The chunks of its map the save painted
+	 * @param name The display name of the editor who saved
+	 * @return How many of the cells it changed had been painted here, and what takes its marks off the
+	 * map, leaving those a later save made
+	 */
+	async followPainting(areaId: string, chunks: readonly ChunkCoordinates[], name: string): Promise<FollowedPainting>
+	{
+		const opened = this.open;
+		const nothing: FollowedPainting = {
+			paintedOver: 0,
+			unmark: () =>
+			{
+				// The save marked nothing
+			}
+		};
+
+		if (!opened || (opened.area.id !== areaId))
+		{
+			return(nothing);
+		}
+
+		let reloaded: Map<string, number[] | undefined>;
+
+		try
+		{
+			reloaded = await opened.loader.reload(chunks);
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
+			return(nothing);
+		}
+
+		// Showing the area's settings again keeps its map, which a new size replaces
+		const open = this.open;
+
+		if (!open || (open.map !== opened.map))
+		{
+			return(nothing);
+		}
+
+		const applied: CellChange[] = [];
+		const rebased: SavedCell[] = [];
+		const save = ++this.followedSaves;
+		let paintedOver = 0;
+
+		for (const [chunk, cells] of reloaded)
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(chunk);
+
+			for (let index = 0; index < (CHUNK_SIZE * CHUNK_SIZE); index++)
+			{
+				const column = (chunkColumn * CHUNK_SIZE) + (index % CHUNK_SIZE);
+				const row = (chunkRow * CHUNK_SIZE) + Math.floor(index / CHUNK_SIZE);
+				const key = `${column},${row}`;
+				const theirs = (cells?.[index] ?? DEFAULT_TILE_CELL);
+				const shown = open.map.valueAt(column, row);
+				const before = (this.savedValues.get(key) ?? this.stroke?.before.get(key)?.[2] ?? shown);
+
+				if ((before === undefined) || (before === theirs))
+				{
+					continue;
+				}
+
+				// A cell painted here, in an earlier stroke or the one under way, keeps the painting here
+				const mine = this.unsaved.get(key);
+				const strokeBefore = this.stroke?.before.get(key);
+				const strokeValue = this.stroke?.after.get(key);
+				const overPainting = (this.paintedHere.has(key) || ((mine !== undefined) && (mine[2] !== theirs)) || ((strokeValue !== undefined) && (strokeValue !== theirs)));
+
+				rebased.push({
+					column,
+					row,
+					before,
+					after: theirs
+				});
+				this.paintedByOthers.set(key, { name, overPainting, save });
+
+				if (overPainting)
+				{
+					paintedOver++;
+				}
+
+				if (mine)
+				{
+					this.savedValues.set(key, theirs);
+
+					if (mine[2] === theirs)
+					{
+						this.unsaved.delete(key);
+						this.savedValues.delete(key);
+					}
+				}
+				else if (strokeBefore)
+				{
+					strokeBefore[2] = theirs;
+				}
+				else
+				{
+					applied.push([column, row, theirs]);
+				}
+			}
+		}
+
+		this.history.rebase(rebased);
+
+		if (applied.length > 0)
+		{
+			this.canvas.scene?.refreshChunks(open.map.apply(applied));
+		}
+
+		this.showPaintedByOthers();
+		this.showHoveredCell();
+		this.unsavedChanged();
+
+		return({
+			paintedOver,
+			unmark: () =>
+			{
+				this.unmarkPainting(open.map, save);
+			}
+		});
+	}
+
+	/**
+	 * Takes the marks one save made off the map, while the map they are on is still open
+	 *
+	 * @param map The map the save painted
+	 * @param save The save, as followPainting() numbered it
+	 */
+	private unmarkPainting(map: EditorMap, save: number): void
+	{
+		if (this.open?.map !== map)
+		{
+			return;
+		}
+
+		for (const [key, painted] of this.paintedByOthers)
+		{
+			if (painted.save === save)
+			{
+				this.paintedByOthers.delete(key);
+			}
+		}
+
+		this.showPaintedByOthers();
+		this.showHoveredCell();
 	}
 
 	/**
@@ -830,6 +1118,7 @@ export class MapEditor
 			describe: (cell) => this.cellText(cell),
 			viewChanged: (range) =>
 			{
+				this.view = range;
 				this.open?.loader.request(range);
 			}
 		});
@@ -1101,11 +1390,6 @@ export class MapEditor
 		this.undoButton.disabled = (saving || !this.history.canUndo);
 		this.redoButton.disabled = (saving || !this.history.canRedo);
 		this.resizeButton.disabled = saving;
-
-		for (const button of this.expandButtons)
-		{
-			button.disabled = saving;
-		}
 	}
 
 	/**
@@ -1131,13 +1415,26 @@ export class MapEditor
 			return('');
 		}
 
-		return(describeCell({
+		const described = describeCell({
 			map: open.map,
 			defaultTileId: open.area.defaultTileId,
 			tiles: open.tiles,
 			links: this.currentLinks(open.area.id, open.links),
 			ruleset: open.universe.ruleset
-		}, cell));
+		}, cell);
+		const paintedBy = this.paintedByOthers.get(`${cell.column},${cell.row}`);
+
+		return((((paintedBy === undefined) || (described === ''))
+			? described
+			: t({
+				id: 'editor.map.cellPaintedBy',
+				defaultMessage: '{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}',
+				description: 'Under the map editor\'s map, the cell under the pointer or the keyboard\'s cursor when another editor painted it and saved while the player had the area open; the map marks such cells. {cell} is the cell and what it holds, e.g. "3, -2: Grass", {name} the other editor\'s display name, and {over} yes when the player had painted the cell too (saved or not), which the map marks in a warning color'
+			}, {
+				over: (paintedBy.overPainting ? 'yes' : 'no'),
+				cell: described,
+				name: paintedBy.name
+			})));
 	}
 
 	/**
@@ -1221,49 +1518,6 @@ export class MapEditor
 		]);
 
 		this.tile.value = ([...this.tile.options].some((option) => (option.value === chosen)) ? chosen : String(area.defaultTileId));
-	}
-
-	/**
-	 * Grows the map on one side by the number of cells chosen, as one step to undo. The new bounds are saved with save()
-	 *
-	 * @param side The side
-	 */
-	private expand(side: Side): void
-	{
-		const open = this.open;
-		const cells = Math.floor(this.expandBy.valueAsNumber);
-
-		if (!open || !(cells > 0))
-		{
-			return;
-		}
-
-		const bounds = { ...open.map.bounds };
-
-		if (side === 'north')
-		{
-			bounds.minRow -= cells;
-		}
-		else if (side === 'south')
-		{
-			bounds.maxRow += cells;
-		}
-		else if (side === 'west')
-		{
-			bounds.minColumn -= cells;
-		}
-		else
-		{
-			bounds.maxColumn += cells;
-		}
-
-		if ((((bounds.maxColumn - bounds.minColumn) + 1) > MAX_MAP_SIDE) || (((bounds.maxRow - bounds.minRow) + 1) > MAX_MAP_SIDE))
-		{
-			showMessage(this.error, t(mapMessages.tooLarge, { max: MAX_MAP_SIDE }));
-			return;
-		}
-
-		this.resize(bounds);
 	}
 
 	/**
@@ -1372,6 +1626,9 @@ export class MapEditor
 		this.fullPage = fullPage;
 		this.section.classList.toggle('full-page', fullPage);
 
+		// The page can't scroll under a map that fills the window, so the wheel scrolls the map
+		this.canvas.setWheelPans(fullPage);
+
 		if (fullPage)
 		{
 			setButtonLabel(this.fullPageButton, exitFullPageIcon, t({
@@ -1393,8 +1650,8 @@ export class MapEditor
 	}
 
 	/**
-	 * Sizes the canvas to fill its element: the space left while the map editor is full page, and in the
-	 * page the view's usual size, or less on a screen too narrow for it
+	 * Sizes the canvas to fill its element's width, and its height too while the map editor is full
+	 * page; in the page the view keeps its usual height
 	 */
 	private fitCanvas(): void
 	{
@@ -1406,14 +1663,7 @@ export class MapEditor
 			return;
 		}
 
-		if (this.fullPage)
-		{
-			this.canvas.setSize(width, this.canvasElement.clientHeight);
-		}
-		else
-		{
-			this.canvas.setSize(Math.min(width, VIEW_WIDTH), VIEW_HEIGHT);
-		}
+		this.canvas.setSize(width, (this.fullPage ? this.canvasElement.clientHeight : VIEW_HEIGHT));
 	}
 
 	/**

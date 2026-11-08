@@ -1,11 +1,12 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { eq, sql } from 'drizzle-orm';
-import type { ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
+import { and, count, eq, exists, isNotNull, not, sql, type SQL } from 'drizzle-orm';
+import type { LoginProvider, PlayerMatch, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { players } from './schema.js';
+import { authenticators, players, providerLogins, serverAdmins } from './schema.js';
+import { anyColumnContains } from './textSearch.js';
 
 /**
  * A player account as the rest of the server sees it
@@ -83,12 +84,17 @@ export interface OwnProfileDetails extends ProfileDetails
 	email: string | null;
 	hasPassword: boolean;
 	createdAt: Date;
+
+	/**
+	 * When the player last logged in, or null when they never have
+	 */
+	lastLoginAt: Date | null;
 }
 
 /**
  * What a player can change on their profile
  */
-export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt'>;
+export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt' | 'lastLoginAt'>;
 
 /**
  * Thrown when a new account would take a username or email address another account has, ignoring capitals
@@ -281,6 +287,71 @@ export async function findPlayerEmail(playerId: string, executor: Executor = db)
 }
 
 /**
+ * An account's display name, which emails greet it by
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The name, or null when the account doesn't exist
+ */
+export async function findDisplayName(playerId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			displayName: players.displayName
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.displayName ?? null));
+}
+
+/**
+ * Where to email a player, the name emails greet them by, and their language
+ */
+export interface EmailRecipient
+{
+	email: string;
+	displayName: string;
+
+	/**
+	 * The language the player chose, or null when they haven't chosen one
+	 */
+	locale: string | null;
+}
+
+/**
+ * Where to email an account, and who to greet
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The address, display name and language, or undefined when the account has no address or doesn't exist
+ */
+export async function findEmailRecipient(playerId: string, executor: Executor = db): Promise<EmailRecipient | undefined>
+{
+	const [row] = await executor
+		.select({
+			email: players.email,
+			displayName: players.displayName,
+			locale: players.locale
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	if (!row || (row.email === null))
+	{
+		return(undefined);
+	}
+
+	return({
+		email: row.email,
+		displayName: row.displayName,
+		locale: row.locale
+	});
+}
+
+/**
  * An account's password hash
  *
  * @param playerId The account's ID
@@ -298,6 +369,26 @@ export async function findPasswordHash(playerId: string, executor: Executor = db
 		.limit(1);
 
 	return((row?.passwordHash ?? null));
+}
+
+/**
+ * The language a player chose for the pages and emails
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The language's tag, or null when they haven't chosen one or the account doesn't exist
+ */
+export async function findPlayerLocale(playerId: string, executor: Executor = db): Promise<string | null>
+{
+	const [row] = await executor
+		.select({
+			locale: players.locale
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.locale ?? null));
 }
 
 /**
@@ -367,7 +458,8 @@ export async function findOwnProfile(playerId: string, executor: Executor = db):
 			...publicProfileColumns,
 			email: players.email,
 			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`,
-			createdAt: players.createdAt
+			createdAt: players.createdAt,
+			lastLoginAt: players.lastLoginAt
 		})
 		.from(players)
 		.where(eq(players.id, playerId))
@@ -412,6 +504,28 @@ export async function saveProfile(playerId: string, changes: ProfileChanges, exe
 
 		throw error;
 	}
+}
+
+/**
+ * Changes the language a player's profile names, when it names one; a profile left on the browser's
+ * language keeps it
+ *
+ * @param playerId The account's ID
+ * @param locale The language's tag, written the usual way (Intl.getCanonicalLocales())
+ * @param executor The database, or a transaction
+ * @return Whether the profile named a language, and now names this one
+ */
+export async function replaceProfileLocale(playerId: string, locale: string, executor: Executor = db): Promise<boolean>
+{
+	const changed = await executor
+		.update(players)
+		.set({
+			locale
+		})
+		.where(and(eq(players.id, playerId), isNotNull(players.locale)))
+		.returning({ id: players.id });
+
+	return((changed.length > 0));
 }
 
 /**
@@ -464,8 +578,26 @@ export async function saveEmail(playerId: string, email: string, executor: Execu
 }
 
 /**
+ * Records that a player logged in
+ *
+ * @param playerId The player's ID
+ * @param now When they logged in
+ * @param executor The database, or a transaction
+ */
+export async function saveLastLogin(playerId: string, now: Date, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(players)
+		.set({
+			lastLoginAt: now
+		})
+		.where(eq(players.id, playerId));
+}
+
+/**
  * Locks a player's row until the transaction ends, so checks and changes made for that player in
- * concurrent transactions happen one after another
+ * concurrent transactions happen one after another. FOR NO KEY UPDATE doesn't block foreign key
+ * checks, so rows that refer to the player (such as sessions) can still be added
  *
  * @param playerId The player's ID
  * @param executor A transaction
@@ -479,7 +611,7 @@ export async function lockPlayer(playerId: string, executor: Executor): Promise<
 		})
 		.from(players)
 		.where(eq(players.id, playerId))
-		.for('update');
+		.for('no key update');
 
 	return(rows.length > 0);
 }
@@ -500,4 +632,153 @@ export async function deletePlayer(playerId: string, executor: Executor = db): P
 		.returning({ id: players.id });
 
 	return(deleted.length > 0);
+}
+
+/**
+ * A player account as the admin pages list it
+ */
+export interface AdminPlayerRecord
+{
+	id: string;
+	username: string;
+	displayName: string;
+	email: string | null;
+	createdAt: Date;
+
+	/**
+	 * When the account last logged in, or null when it never has
+	 */
+	lastLoginAt: Date | null;
+
+	hasPassword: boolean;
+	providers: LoginProvider[];
+	twoFactor: boolean;
+	serverAdmin: boolean;
+}
+
+/**
+ * What a list of accounts for the admin pages is narrowed to
+ */
+export interface AdminPlayerFilter
+{
+	/**
+	 * Text the username, name or email address holds, ignoring capitals
+	 */
+	search?: string;
+
+	/**
+	 * Only server admins (true), or only other players (false)
+	 */
+	serverAdmin?: boolean;
+}
+
+/**
+ * A page of the player accounts, for the admin pages, with how each logs in and whether it is a server
+ * admin. Reads the provider_logins, authenticators and server_admins tables for that
+ *
+ * @param filter What to narrow the list to
+ * @param page How many matching accounts to skip, and the most to return
+ * @param executor The database, or a transaction
+ * @return The accounts, by username ignoring case, and how many match in all
+ */
+export async function listPlayersForAdmin(filter: AdminPlayerFilter, page: { offset: number; limit: number }, executor: Executor = db): Promise<{ players: AdminPlayerRecord[]; total: number }>
+{
+	const isAdmin = exists(executor
+		.select({
+			playerId: serverAdmins.playerId
+		})
+		.from(serverAdmins)
+		.where(eq(serverAdmins.playerId, players.id)));
+	const where = and(
+		((filter.search === undefined) ? undefined : anyColumnContains([players.username, players.displayName, players.email], filter.search)),
+		((filter.serverAdmin === undefined) ? undefined : (filter.serverAdmin ? isAdmin : not(isAdmin)))
+	);
+	const [rows, [counted]] = await Promise.all([
+		executor
+			.select({
+				id: players.id,
+				username: players.username,
+				displayName: players.displayName,
+				email: players.email,
+				createdAt: players.createdAt,
+				lastLoginAt: players.lastLoginAt,
+				hasPassword: sql<boolean>`(${players.passwordHash} IS NOT NULL)`,
+				providers: sql<LoginProvider[]>`coalesce((SELECT array_agg(${providerLogins.provider}::text ORDER BY ${providerLogins.provider}) FROM ${providerLogins} WHERE ${providerLogins.playerId} = ${players.id}), '{}'::text[])`,
+				twoFactor: sql<boolean>`${exists(executor
+					.select({
+						playerId: authenticators.playerId
+					})
+					.from(authenticators)
+					.where(and(
+						eq(authenticators.playerId, players.id),
+						isNotNull(authenticators.enabledAt)
+					)))}`,
+				serverAdmin: sql<boolean>`${isAdmin}`
+			})
+			.from(players)
+			.where(where)
+			.orderBy(sql`lower(${players.username})`)
+			.offset(page.offset)
+			.limit(page.limit),
+		executor
+			.select({
+				total: count()
+			})
+			.from(players)
+			.where(where)
+	]);
+
+	return({
+		players: rows,
+		total: counted.total
+	});
+}
+
+/**
+ * What a search for players looks for (parsePlayerSearch())
+ */
+export interface PlayerSearch
+{
+	text: string;
+
+	/**
+	 * Whether only usernames are matched, rather than usernames and names
+	 */
+	usernameOnly: boolean;
+}
+
+/**
+ * Players whose username, or name unless only usernames are searched, holds some text, ignoring capitals
+ *
+ * @param search The text, and whether only usernames are searched
+ * @param limit The most players to return
+ * @param excluding A condition on the players row that leaves a player out, such as one already an editor
+ * @param executor The database, or a transaction
+ * @return The players: the one with exactly that username first, then those whose username starts
+ * with it, then the rest, each by username
+ */
+export async function searchPlayers(search: PlayerSearch, limit: number, excluding: SQL | undefined, executor: Executor = db): Promise<PlayerMatch[]>
+{
+	const text = search.text.toLowerCase();
+
+	// % and _ are wildcards in LIKE, and _ is common in usernames; backslash is LIKE's escape character
+	const pattern = text.replace(/[\\%_]/g, (character) => `\\${character}`);
+	const username = sql`lower(${players.username})`;
+	const matches = (search.usernameOnly
+		? sql`${username} LIKE ${`%${pattern}%`}`
+		: sql`(${username} LIKE ${`%${pattern}%`} OR lower(${players.displayName}) LIKE ${`%${pattern}%`})`);
+
+	return(executor
+		.select({
+			playerId: players.id,
+			username: players.username,
+			displayName: players.displayName
+		})
+		.from(players)
+		.where(and(matches, excluding))
+		.orderBy(
+			sql`CASE WHEN ${username} = ${text} THEN 0 WHEN ${username} LIKE ${`${pattern}%`} THEN 1 ELSE 2 END`,
+			username
+		)
+		.limit(limit));
 }

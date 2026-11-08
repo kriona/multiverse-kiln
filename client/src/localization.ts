@@ -6,6 +6,7 @@
  * messages with t()
  */
 import { LOCALE_PARAMETER, readPageParameter, replacePageParameters } from './pages';
+import { remember } from './rememberedValues';
 import { matchLocale, SOURCE_LOCALE, translationCatalog, Translator, type LocalizedMessage, type MessageSource, type MessageValues, type TranslationFile } from '@multiverse-kiln/shared';
 
 /**
@@ -34,7 +35,14 @@ const LOCALE_STORAGE_KEY = 'kiln.locale';
 let translator = new Translator(SOURCE_LOCALE);
 
 /**
- * Picks the player's language, loads its translations and translates the page's marked text
+ * Where the browser keeps the language the last page was shown in, which public/remembered-language.js
+ * reads to keep the next page hidden until it's translated
+ */
+const PAGE_LOCALE_STORAGE_KEY = 'kiln-page-locale';
+
+/**
+ * Picks the player's language, loads its translations and translates the page's marked text, then
+ * shows the page if public/remembered-language.js hid it to wait for that
  */
 export async function startLocalization(): Promise<void>
 {
@@ -48,11 +56,14 @@ export async function startLocalization(): Promise<void>
 	catch (error)
 	{
 		console.error(`Could not load the ${locale} translations; showing English:`, error);
+		document.documentElement.removeAttribute('data-translating');
 		return;
 	}
 
 	document.documentElement.lang = locale;
 	localizePage(document.documentElement);
+	document.documentElement.removeAttribute('data-translating');
+	remember(PAGE_LOCALE_STORAGE_KEY, locale);
 }
 
 /**
@@ -66,30 +77,72 @@ export function availableLocales(): string[]
 }
 
 /**
- * Switches to a language: remembers it in the browser and loads the page again in it
+ * A language's file in shared/locales, as the build has it
+ *
+ * @param locale The language tag, as its file is named
+ * @return The file, or undefined when there is no translation into the language
+ */
+export async function loadTranslationFile(locale: string): Promise<TranslationFile | undefined>
+{
+	const load = loaders.get(locale);
+
+	return(((load === undefined) ? undefined : load()));
+}
+
+/**
+ * Whether the pages can be shown in a language, as it is or in another region's version of it
+ *
+ * @param locale The language tag, e.g. "de"
+ * @return Whether there are translations for it, or it is English
+ */
+export function pagesHaveLanguage(locale: string): boolean
+{
+	const base = (language: string) => language.split('-')[0].toLowerCase();
+
+	return((base(matchLocale([locale], availableLocales())) === base(locale)));
+}
+
+/**
+ * Switches to a language: remembers it in the browser and loads the page again in it. A language the
+ * pages aren't translated into is remembered with the page's language after it, so universe text is
+ * shown in it and the pages stay as they are
  *
  * @param locale The language tag
  */
 export function chooseLocale(locale: string): void
 {
+	const choice = (pagesHaveLanguage(locale) ? locale : `${locale},${translator.locale}`);
+
 	try
 	{
-		localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+		localStorage.setItem(LOCALE_STORAGE_KEY, choice);
 		replacePageParameters({ [LOCALE_PARAMETER]: undefined });
 	}
 	catch
 	{
 		// Without storage, the choice lasts as long as it stays in the page's address
-		replacePageParameters({ [LOCALE_PARAMETER]: locale });
+		replacePageParameters({ [LOCALE_PARAMETER]: choice });
 	}
 
 	window.location.reload();
 }
 
 /**
- * The languages the player wants, most wanted first: the one chosen with the language picker or with
- * ?locale= (e.g. ?locale=en-XA for the pseudo-language), then the browser's. ?locale= given empty
- * forgets the choice
+ * The languages the player wants, most wanted first, for the server to show universe text in (as the
+ * Accept-Language header): those they chose, then the browser's, whether or not the pages have them,
+ * since a universe may be translated into a language the engine isn't
+ *
+ * @return The language tags, leaving out anything that isn't one
+ */
+export function wantedLanguages(): string[]
+{
+	return([...new Set(requestedLocales())].filter((locale) => /^[A-Za-z0-9-]{1,35}$/.test(locale)));
+}
+
+/**
+ * The languages the player wants, most wanted first: those chosen with a language picker or with
+ * ?locale= (e.g. ?locale=en-XA for the pseudo-language, or ?locale=de,en-x-pirate for German universe
+ * text on Pirate pages), then the browser's. ?locale= given empty forgets the choice
  *
  * @return The languages
  */
@@ -112,18 +165,32 @@ function requestedLocales(): readonly string[]
 
 		if (remembered !== null)
 		{
-			return([remembered, ...navigator.languages]);
+			return([...splitLocales(remembered), ...navigator.languages]);
 		}
 	}
 	catch
 	{
 		if ((chosen !== undefined) && (chosen !== ''))
 		{
-			return([chosen, ...navigator.languages]);
+			return([...splitLocales(chosen), ...navigator.languages]);
 		}
 	}
 
 	return(navigator.languages);
+}
+
+/**
+ * The languages in a remembered choice
+ *
+ * @param choice Language tags separated by commas, most wanted first
+ * @return The tags
+ */
+function splitLocales(choice: string): string[]
+{
+	return(choice
+		.split(',')
+		.map((locale) => locale.trim())
+		.filter((locale) => (locale !== '')));
 }
 
 /**
@@ -134,6 +201,20 @@ function requestedLocales(): readonly string[]
 export function currentLocale(): string
 {
 	return(translator.locale);
+}
+
+/**
+ * Text written as it reads mid-sentence, such as a coin's name, made into a label by capitalizing its
+ * first letter the way the player's language does. Languages without capital letters are left as they are
+ *
+ * @param text The text
+ * @return The text with its first letter capitalized, e.g. "Gold pieces" for "gold pieces"
+ */
+export function capitalized(text: string): string
+{
+	const [first = '', ...rest] = text;
+
+	return(first.toLocaleUpperCase(translator.locale) + rest.join(''));
 }
 
 /**
@@ -178,6 +259,17 @@ export function formatTimeOfDay(secondOfDay: number): string
 {
 	// Game time has no time zone, so it is formatted as a time in UTC to keep the player's own zone out of it
 	return(new Intl.DateTimeFormat(translator.locale, { hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }).format(new Date(Math.floor(secondOfDay) * 1000)));
+}
+
+/**
+ * A moment in real time, such as when a player logged in, in the browser's time zone
+ *
+ * @param time The moment, as ISO 8601
+ * @return The date and time in the player's language, such as Nov 1, 2026, 6:30 PM
+ */
+export function formatDateTime(time: string): string
+{
+	return(new Intl.DateTimeFormat(translator.locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(time)));
 }
 
 /**

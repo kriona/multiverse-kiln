@@ -90,17 +90,19 @@
 						Email address
 						<input id="register-email" type="email" autocomplete="username" readonly />
 					</label>
-					<label data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">
-						Username
-						<input id="register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="register-username-hint" />
-					</label>
-					<p id="register-username-error" class="field-error field-message-slot"></p>
+					<div class="field-label">
+						<label for="register-username" data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">Username</label>
+						<div class="field-beside">
+							<input id="register-username" class="username-input" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="register-username-hint" />
+							<p id="register-username-error" class="field-error field-message-slot"></p>
+						</div>
+					</div>
 					<p id="register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="register-username-min" data-argument="min" translate="no">3</span> to <span id="register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
 					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
 						Name
 						<input id="register-name" autocomplete="nickname" required aria-describedby="register-name-hint" />
 					</label>
-					<p id="register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name, or unique.</p>
+					<p id="register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name.</p>
 					<div class="password-field">
 						<label data-message="login.newPassword" data-translation-context="Label of the field for a new password, when creating an account or resetting a password">
 							Password
@@ -161,17 +163,19 @@
 				<form id="provider-register-form" class="panel form auth-panel">
 					<h1 data-message="login.registerTitle" data-translation-context="Heading of the screen where a new account's username, name and password are chosen, and of the one where a new account's username and name are chosen after logging in with Google or Discord">Create your account</h1>
 					<p id="provider-register-intro"></p>
-					<label data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">
-						Username
-						<input id="provider-register-username" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="provider-register-username-hint" />
-					</label>
-					<p id="provider-register-username-error" class="field-error field-message-slot"></p>
+					<div class="field-label">
+						<label for="provider-register-username" data-message="login.username" data-translation-context="Label of the field for a new account's username: a unique name of letters, digits and underscores that other players find them by">Username</label>
+						<div class="field-beside">
+							<input id="provider-register-username" class="username-input" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="provider-register-username-hint" />
+							<p id="provider-register-username-error" class="field-error field-message-slot"></p>
+						</div>
+					</div>
 					<p id="provider-register-username-hint" class="hint" data-message="login.usernameHint" data-translation-context="Under the username field when creating an account; {min} and {max} are numbers">How other players find you, and tell you apart from others with the same name. <span id="provider-register-username-min" data-argument="min" translate="no">3</span> to <span id="provider-register-username-max" data-argument="max" translate="no">20</span> letters (a to z), digits and underscores.</p>
 					<label data-message="login.displayName" data-translation-context="Label of the field for the name other players see, when creating an account">
 						Name
 						<input id="provider-register-name" autocomplete="nickname" required aria-describedby="provider-register-name-hint" />
 					</label>
-					<p id="provider-register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name, or unique.</p>
+					<p id="provider-register-name-hint" class="hint" data-message="login.displayNameHint" data-translation-context="Under the name field when creating an account">The name other players see. It doesn't have to be your real name.</p>
 					<p class="hint" data-message="login.privacy" data-translation-context="On the create account screen; {privacy} is a link to the privacy policy, named by page.privacyPolicy">Read how we look after your information in our <a href="/privacy" target="_blank" data-argument="privacy" data-message="page.privacyPolicy" data-translation-context="The name of the privacy policy, as a link to it">privacy policy</a>.</p>
 					<p id="provider-register-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
@@ -234,7 +238,12 @@
 
 			<section id="registered-screen" class="screen auth-screen" hidden>
 				<div class="panel form auth-panel">
-					<h1 data-message="login.registeredTitle" data-translation-context="Heading of the screen shown once a new account is created, offering to set up two-factor authentication">Your account is ready</h1>
+					<h1 data-message="login.registeredTitle" data-translation-context="Heading of the screen shown once a new account is created, offering to set up two-factor authentication">Your account has been created!</h1>
+					<div class="registered-success">
+						<!-- icon ph:check-circle -->
+						<p data-message="login.registeredWelcome" data-translation-context="Under the heading of the screen shown once a new account is created, beside a check mark; {name} is the name the player chose for other players to see">Welcome, <strong id="registered-name" data-argument="name"></strong>! You're logged in to your new account.</p>
+					</div>
+					<h2 data-message="login.twoFactorSetupHeading" data-translation-context="Heading of the part of the screen shown once a new account is created that offers to set up two-factor authentication">Set Up Two-Factor Authentication</h2>
 					<p data-message="login.registeredIntro" data-translation-context="On the screen shown once a new account is created with a password">Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile.</p>
 					<div class="form-buttons">
 						<button id="registered-continue" type="button" class="secondary" data-shortcut="Alt+N" data-message="login.notNow" data-translation-context="Button on the screen shown once a new account is created: skips setting up two-factor authentication for now and goes on"><!-- icon ph:arrow-right -->Not now</button>

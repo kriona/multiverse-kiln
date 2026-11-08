@@ -1,13 +1,15 @@
-import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { showStagedTileGraphic } from '../../rendering/tileGraphics';
 import { getElement, setOptions, showMessage } from '../dom';
+import { formMessages } from '../formMessages';
 import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
 import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
+import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 import { TileDialog } from './TileDialog';
@@ -61,7 +63,7 @@ function uploadRef(stagedId: string): NewRef
  * Tilesets uploaded and deleted from the tile editor wait too. Saving uploads the new ones first, so the
  * tiles staged to use them can name them, then saves the tiles, then deletes the tilesets marked to delete
  */
-export class TilesetsTab implements SavableTab
+export class TilesetsTab implements SavableTab, FollowsOtherSaves
 {
 	private readonly nameFilter = getElement('tile-filter-name', HTMLInputElement);
 	private readonly passableFilter = getElement('tile-filter-passable', HTMLSelectElement);
@@ -84,6 +86,16 @@ export class TilesetsTab implements SavableTab
 	 * since, so its ID stays clear of the values cells hold for void and unseen cells
 	 */
 	private readonly staged = new StagedChanges<TileSettings>(FIRST_NEW_TILE_ID);
+
+	/**
+	 * The tiles other windows saved while this one had unsaved changes to them
+	 */
+	private readonly changedSince = new ChangedSinceNotes('tile');
+
+	/**
+	 * Keeps the tile editor up with saves made in other windows to the tile it shows
+	 */
+	private readonly dialogFollower: DialogFollower;
 
 	/**
 	 * Tilesets chosen in the upload dialog, uploaded when the tab is saved. Until then tiles refer to
@@ -194,6 +206,7 @@ export class TilesetsTab implements SavableTab
 			}
 		});
 
+		this.dialogFollower = new DialogFollower(this.dialog.following, 'tile');
 		this.sorter = new TableSorter(getElement('tile-table', HTMLTableElement), TILE_SORT_COLUMNS, {
 			column: 'name',
 			direction: 'ascending'
@@ -206,7 +219,7 @@ export class TilesetsTab implements SavableTab
 		setOptions(this.usedInFilter, [
 			{
 				value: '',
-				label: t(editorMessages.filterAny)
+				label: t(formMessages.filterAny)
 			},
 			...TILE_USED_IN.map((usedIn) => ({
 				value: usedIn,
@@ -230,15 +243,15 @@ export class TilesetsTab implements SavableTab
 			setOptions(filter, [
 				{
 					value: '',
-					label: t(editorMessages.filterAny)
+					label: t(formMessages.filterAny)
 				},
 				{
 					value: 'true',
-					label: t(editorMessages.filterYes)
+					label: t(formMessages.filterYes)
 				},
 				{
 					value: 'false',
-					label: t(editorMessages.filterNo)
+					label: t(formMessages.filterNo)
 				}
 			]);
 		}
@@ -283,6 +296,7 @@ export class TilesetsTab implements SavableTab
 		this.tiles = [];
 		this.known.clear();
 		this.staged.clear();
+		this.changedSince.clear();
 		this.uploadsToAdd.clear();
 		this.uploadsToDelete.clear();
 		this.uploadedIds.clear();
@@ -485,7 +499,7 @@ export class TilesetsTab implements SavableTab
 			case 'create':
 				return({ kind: 'createTile', ref: newRef('tile', change.id), settings: this.resolveUpload(change.settings) });
 			case 'save':
-				return({ kind: 'saveTile', id: numberRef('tile', change.id), settings: this.resolveUpload(change.settings) });
+				return({ kind: 'saveTile', id: numberRef('tile', change.id), settings: this.resolveUpload(change.settings), loaded: change.loaded });
 			case 'remove':
 			{
 				const replacement = this.replacements.get(change.id);
@@ -544,6 +558,41 @@ export class TilesetsTab implements SavableTab
 		{
 			await Promise.all([this.refresh(), this.loadUploads(universe)]);
 		}
+	}
+
+	/**
+	 * Loads the tiles and uploaded tilesets again after another window saved changes to them, keeping the
+	 * changes made here and marking the tiles they and the save both changed
+	 *
+	 * @param save The save
+	 * @return True when the save changed a tile with unsaved changes here
+	 */
+	otherSaved(save: OtherSave): boolean
+	{
+		const isStaged = (id: number | string): boolean => ((typeof id === 'number') && (this.staged.stateOf(id) !== undefined));
+		const { changed, kept } = this.changedSince.follow(save, isStaged);
+		const dialog = this.dialogFollower.follow(save, isStaged);
+
+		this.changedSince.move(this.staged.followDeleted(save, 'tile'));
+
+		if (changed)
+		{
+			void this.refresh().then(() =>
+			{
+				// Only a tile on the page shown is known as saved now
+				this.dialogFollower.reopen(dialog.reopen, (id) => (this.tiles.some((tile) => (tile.id === id)) ? this.tileWithChanges(id as number) : undefined), (tile) =>
+				{
+					this.openTile(tile);
+				});
+			});
+		}
+
+		if (this.universe && save.details.some((detail) => (detail.subject === 'tileset')))
+		{
+			void this.loadUploads(this.universe);
+		}
+
+		return(kept || dialog.kept);
 	}
 
 	/**
@@ -805,6 +854,8 @@ export class TilesetsTab implements SavableTab
 			row.classList.add('staged-deleted');
 		}
 
+		this.changedSince.mark(row.cells[1], tile.id, (state !== undefined));
+
 		return(markStagedRow(row, state, !tile.custom));
 	}
 
@@ -817,7 +868,8 @@ export class TilesetsTab implements SavableTab
 	{
 		if (this.universe)
 		{
-			this.dialog.open(this.universe, tile, this.staged.edit(tile?.id), () =>
+			this.dialogFollower.opened(tile?.id);
+			this.dialog.open(this.universe, tile, this.staged.edit(tile?.id, loadedFrom((tile === undefined) ? undefined : this.known.get(tile.id))), () =>
 			{
 				this.render();
 			});

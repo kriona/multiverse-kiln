@@ -106,6 +106,23 @@ export class EditorSave
 	}
 
 	/**
+	 * Replaces a change, keeping the tab that added it, such as with what the player chose should happen
+	 * to the characters it affects
+	 *
+	 * @param index The change's place in the save
+	 * @param change The change to save in its place
+	 */
+	replace(index: number, change: EditorChange): void
+	{
+		const entry = this.entries.at(index);
+
+		if (entry)
+		{
+			entry.change = change;
+		}
+	}
+
+	/**
 	 * Calls back once the save is over, whether or not it was saved, for a tab that stops edits while saving
 	 *
 	 * @param callback Called once

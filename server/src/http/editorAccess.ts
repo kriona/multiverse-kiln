@@ -3,23 +3,50 @@
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import type { EditableUniverse, EditorArea, UniverseRole } from '@multiverse-kiln/shared';
+import { EDITOR_VERSION_PARAM, UNIVERSE_VERSIONS, editorAccessOf, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorRole } from '@multiverse-kiln/shared';
 
-import { findUniverseRole } from '../db/universeEditorRepo.js';
+import type { Executor } from '../db/client.js';
+import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
+import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { findEditorArea } from '../db/areaRepo.js';
+import { draftVersion, isSameVersion, liveVersion, type UniverseVersion } from '../db/universeVersions.js';
 import { resolveSession } from '../auth/sessions.js';
 import { errorMessages, sendError } from './errors.js';
 import { isOriginAllowed } from './origins.js';
+import { rememberProfileLocale } from './requestLanguages.js';
 
 /**
- * The universe a request is about, and the requesting player's role in it
+ * The universe a request is about, and the requesting player's role in the editor
  */
 export interface UniverseContext
 {
 	playerId: string;
-	universe: Omit<EditableUniverse, 'role'>;
-	role: UniverseRole;
+
+	/**
+	 * The universe, with the settings of the version the request is about
+	 */
+	universe: EditableUniverseDetails;
+
+	/**
+	 * The version the request reads or changes: the one its EDITOR_VERSION_PARAM names
+	 */
+	version: UniverseVersion;
+
+	/**
+	 * Their role in the universe, or ADMIN_ROLE for a server admin without a stronger one
+	 */
+	role: EditorRole;
+
+	/**
+	 * The languages the player may translate into, as a translator
+	 */
+	languages: readonly string[];
+
+	/**
+	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
+	 */
+	serverAdmin: boolean;
 }
 
 /**
@@ -87,14 +114,37 @@ export async function requireLogin(request: Request, response: Response, next: N
 	}
 
 	playerIds.set(request, player.playerId);
+	rememberProfileLocale(request, player.locale);
 	next();
 }
 
 /**
- * Middleware for routes under /:universeId: loads the universe and the player's role in it
+ * What a player may do in a universe's editor: their role in it, or ADMIN_ROLE for a server admin with
+ * 2FA on who has no stronger one (editorAccessOf())
  *
- * Answers 404 when the universe doesn't exist and when the player has no role in it, so the editor
- * doesn't reveal universes the player can't see
+ * @param universeId The universe's ID
+ * @param playerId The player's ID
+ * @param executor The database when left out, or a transaction
+ * @return Their access, undefined when they may not open the universe's editor, and whether they are a
+ * server admin with 2FA on
+ */
+export async function findEditorAccess(universeId: string, playerId: string, executor?: Executor): Promise<{ access: EditorAccess | undefined; serverAdmin: boolean }>
+{
+	const access = await findUniverseAccess(universeId, playerId, executor);
+	const serverAdmin = await isActiveServerAdmin(playerId, executor);
+
+	return({
+		access: editorAccessOf(access, serverAdmin),
+		serverAdmin
+	});
+}
+
+/**
+ * Middleware for routes under /:universeId: loads the universe, in the version its EDITOR_VERSION_PARAM
+ * names (the live version when it names none), and the player's role in the editor
+ *
+ * Answers 404 when the universe doesn't exist and when the player may not edit it, so the editor
+ * doesn't reveal universes the player can't see, and when the draft is asked for and the universe has none
  *
  * @param request The request
  * @param response The response
@@ -103,19 +153,35 @@ export async function requireLogin(request: Request, response: Response, next: N
 export async function loadUniverseContext(request: Request, response: Response, next: NextFunction): Promise<void>
 {
 	const universeId = z.uuid().safeParse(request.params.universeId);
+	const versionName = z.enum(UNIVERSE_VERSIONS).default('live').safeParse(request.query[EDITOR_VERSION_PARAM]);
 	const playerId = playerIdOf(request);
 
-	if (universeId.success)
+	if (universeId.success && versionName.success)
 	{
-		const [universe, role] = await Promise.all([
-			findEditableUniverse(universeId.data),
-			findUniverseRole(universeId.data, playerId)
+		const version = ((versionName.data === 'draft') ? draftVersion(universeId.data) : liveVersion(universeId.data));
+		const [universe, { access, serverAdmin }] = await Promise.all([
+			findEditableUniverse(version),
+			findEditorAccess(universeId.data, playerId)
 		]);
 
-		if (universe && role)
+		if (universe && access)
 		{
-			universeContexts.set(request, { playerId, universe, role });
+			universeContexts.set(request, {
+				playerId,
+				universe,
+				version,
+				role: access.role,
+				languages: access.languages,
+				serverAdmin
+			});
 			next();
+			return;
+		}
+
+		// The universe without its draft, so its editors are told there is no draft rather than no universe
+		if (access && version.draft && await findEditableUniverse(liveVersion(universeId.data)))
+		{
+			sendError(response, 404, errorMessages.noSuchDraft);
 			return;
 		}
 	}
@@ -139,7 +205,7 @@ export async function loadAreaContext(request: Request, response: Response, next
 	{
 		const found = await findEditorArea(areaId.data);
 
-		if (found && (found.universeId === context.universe.id))
+		if (found && isSameVersion(found.version, context.version))
 		{
 			areaContexts.set(request, { ...context, area: found.area });
 			next();
@@ -156,7 +222,7 @@ export async function loadAreaContext(request: Request, response: Response, next
  * @param allowed The check, such as canEditWorld
  * @return The middleware
  */
-export function requireRole(allowed: (role: UniverseRole) => boolean): RequestHandler
+export function requireRole(allowed: (role: EditorRole) => boolean): RequestHandler
 {
 	return((request, response, next) =>
 	{

@@ -20,8 +20,13 @@
  *   the invite link in ?invite= when it was opened from one
  * - license.html: the game's license and the licenses of what it uses, linked to from the footer
  * - privacy.html: the privacy policy, linked to from the footer
- * - admin.html: settings for the whole site, linked to from Home's toolbar. Anyone can use it until
- *   there are server admin accounts
+ * - admin.html: the admin page at /admin, linking to the admin tools, and linked to from the account menu
+ *   (Site admin) for server admins. Only those with 2FA on can use it and the tools
+ * - admin/settings.html, admin/sessions.html, admin/players.html, admin/admins.html,
+ *   admin/universes.html and admin/translations.html: the admin tools at /admin/settings,
+ *   /admin/sessions, /admin/players, /admin/admins, /admin/universes and /admin/translations, with
+ *   settings for the whole site, the login sessions still going, every player account, the server
+ *   admins, every universe and the translation files of the site's text, each linking back to admin.html
  * - login.html: logging in, creating an account and resetting a forgotten password, linked to from
  *   Home's toolbar. The game, the world editor and Create Character send a browser that isn't logged in
  *   here with ?next=<their address>, and it goes back there once logged in
@@ -50,6 +55,12 @@ export const TAB_PARAMETER = 'tab';
  * Query string parameter of the editor naming the area open in the area editor
  */
 export const AREA_PARAMETER = 'area';
+
+/**
+ * Query string parameter of the editor naming the version of the universe open: draft for its draft, or
+ * left out for its live version
+ */
+export const VERSION_PARAMETER = 'version';
 
 /**
  * Query string parameter of the player's own profile that opens the dialog setting up two-factor

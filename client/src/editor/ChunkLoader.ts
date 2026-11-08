@@ -1,4 +1,4 @@
-import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type ChunkListPayload, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type AreaChunk, type ChunkCoordinates, type ChunkListPayload, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
 
 import type { EditorMap } from './EditorMap';
 
@@ -13,6 +13,23 @@ export type ChunkSource = (range: ChunkRange) => Promise<ChunkListPayload>;
 const BLOCK_SIDE = Math.floor(Math.sqrt(MAX_CHUNKS_PER_REQUEST));
 
 /**
+ * A request for a range of chunks that hasn't been answered yet
+ */
+interface PendingLoad
+{
+	/**
+	 * The chunks asked for
+	 */
+	range: ChunkRange;
+
+	/**
+	 * Whether another editor saved painting in the range while the request was on its way, so the
+	 * answer may hold the cells from before that save
+	 */
+	stale: boolean;
+}
+
+/**
  * Loads an area's chunks into an EditorMap as the editor's view reaches them
  *
  * The map is split into square blocks of chunks, and each block is asked for once, the first time
@@ -25,6 +42,11 @@ export class ChunkLoader
 	 * Blocks asked for, loaded or still on their way, by chunkKey() of the block
 	 */
 	private readonly requested = new Set<string>();
+
+	/**
+	 * The requests for chunks to load into the map that haven't been answered yet
+	 */
+	private readonly pending = new Set<PendingLoad>();
 
 	private stopped = false;
 
@@ -115,7 +137,7 @@ export class ChunkLoader
 					continue;
 				}
 
-				const { chunks } = await this.source(range);
+				const chunks = await this.fetch(range);
 
 				if (!this.stopped)
 				{
@@ -123,6 +145,76 @@ export class ChunkLoader
 				}
 			}
 		}
+	}
+
+	/**
+	 * Loads some of the map's chunks again as they are stored now, such as the chunks another editor
+	 * painted, without changing the map. Only chunks on the map that have loaded are asked for, the
+	 * chunks in one block in one request. A chunk still loading is asked for again once its answer
+	 * comes, since the server may have read it before the painting was saved
+	 *
+	 * @param chunks The chunks
+	 * @return Each chunk asked for, by chunkKey(), with its stored cells, or undefined for one that is all
+	 * the default tile; empty once the loader has stopped
+	 */
+	async reload(chunks: readonly ChunkCoordinates[]): Promise<Map<string, number[] | undefined>>
+	{
+		const area = this.map.chunkRange;
+		const blocks = new Map<string, ChunkRange>();
+		const reloaded = new Map<string, number[] | undefined>();
+
+		for (const { chunkColumn, chunkRow } of chunks)
+		{
+			const onMap = ((chunkColumn >= area.minChunkColumn) && (chunkColumn <= area.maxChunkColumn) && (chunkRow >= area.minChunkRow) && (chunkRow <= area.maxChunkRow));
+
+			if (!onMap)
+			{
+				continue;
+			}
+
+			if (!this.map.isLoaded(chunkColumn, chunkRow))
+			{
+				this.markStale(chunkColumn, chunkRow);
+				continue;
+			}
+
+			const key = chunkKey(Math.floor(chunkColumn / BLOCK_SIDE), Math.floor(chunkRow / BLOCK_SIDE));
+			const block = blocks.get(key);
+
+			reloaded.set(chunkKey(chunkColumn, chunkRow), undefined);
+			blocks.set(key, ((block === undefined)
+				? {
+					minChunkColumn: chunkColumn,
+					minChunkRow: chunkRow,
+					maxChunkColumn: chunkColumn,
+					maxChunkRow: chunkRow
+				}
+				: {
+					minChunkColumn: Math.min(block.minChunkColumn, chunkColumn),
+					minChunkRow: Math.min(block.minChunkRow, chunkRow),
+					maxChunkColumn: Math.max(block.maxChunkColumn, chunkColumn),
+					maxChunkRow: Math.max(block.maxChunkRow, chunkRow)
+				}));
+		}
+
+		const answers = await Promise.all([...blocks.values()].map((range) => this.source(range)));
+
+		if (this.stopped)
+		{
+			return(new Map());
+		}
+
+		for (const chunk of answers.flatMap((answer) => answer.chunks))
+		{
+			const key = chunkKey(chunk.chunkColumn, chunk.chunkRow);
+
+			if (reloaded.has(key))
+			{
+				reloaded.set(key, chunk.cells);
+			}
+		}
+
+		return(reloaded);
 	}
 
 	/**
@@ -148,6 +240,60 @@ export class ChunkLoader
 	}
 
 	/**
+	 * Marks the requests still on their way for a chunk as stale, for when another editor saved painting
+	 * in it
+	 *
+	 * @param chunkColumn The chunk's column
+	 * @param chunkRow The chunk's row
+	 */
+	private markStale(chunkColumn: number, chunkRow: number): void
+	{
+		for (const load of this.pending)
+		{
+			const { range } = load;
+
+			if ((chunkColumn >= range.minChunkColumn) && (chunkColumn <= range.maxChunkColumn) && (chunkRow >= range.minChunkRow) && (chunkRow <= range.maxChunkRow))
+			{
+				load.stale = true;
+			}
+		}
+	}
+
+	/**
+	 * Asks for the stored chunks in a range to load into the map, asking again while another editor saves
+	 * painting in the range before the answer comes
+	 *
+	 * @param range The chunks
+	 * @return The stored chunks in the range
+	 */
+	private async fetch(range: ChunkRange): Promise<AreaChunk[]>
+	{
+		for (;;)
+		{
+			const load: PendingLoad = {
+				range,
+				stale: false
+			};
+
+			this.pending.add(load);
+
+			try
+			{
+				const { chunks } = await this.source(range);
+
+				if (!load.stale || this.stopped)
+				{
+					return(chunks);
+				}
+			}
+			finally
+			{
+				this.pending.delete(load);
+			}
+		}
+	}
+
+	/**
 	 * Stops taking in chunks, for when the editor moves on to another area or map
 	 */
 	stop(): void
@@ -165,7 +311,7 @@ export class ChunkLoader
 	{
 		try
 		{
-			const { chunks } = await this.source(range);
+			const chunks = await this.fetch(range);
 
 			if (!this.stopped)
 			{

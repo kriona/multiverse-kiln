@@ -1,0 +1,4 @@
+ALTER TABLE "universe_translations" ADD COLUMN "saved_by" uuid;--> statement-breakpoint
+ALTER TABLE "universe_translator_notes" ADD COLUMN "note_saved_by" uuid;--> statement-breakpoint
+ALTER TABLE "universe_translations" ADD CONSTRAINT "universe_translations_saved_by_players_id_fk" FOREIGN KEY ("saved_by") REFERENCES "public"."players"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "universe_translator_notes" ADD CONSTRAINT "universe_translator_notes_note_saved_by_players_id_fk" FOREIGN KEY ("note_saved_by") REFERENCES "public"."players"("id") ON DELETE set null ON UPDATE no action;

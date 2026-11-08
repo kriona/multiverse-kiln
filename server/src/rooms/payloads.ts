@@ -6,7 +6,7 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatPayload, type ChooseCharacterPayload, type ControlPayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, EDITOR_TABS, MAX_CHAT_MESSAGE_LENGTH, UNIVERSE_VERSIONS, type ChatPayload, type ChatReadPayload, type ChooseCharacterPayload, type ControlPayload, type EditorJoinOptions, type EditorPlacePayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -37,6 +37,13 @@ export const chatPayload = z.object({
 }) satisfies z.ZodType<ChatPayload>;
 
 /**
+ * ChatReadPayload: when the newest message the player has seen was sent
+ */
+export const chatReadPayload = z.object({
+	readAt: z.number().int().nonnegative()
+}) satisfies z.ZodType<ChatReadPayload>;
+
+/**
  * ChooseCharacterPayload: a character's ID
  */
 export const chooseCharacterPayload = z.object({
@@ -51,11 +58,21 @@ export const controlPayload = z.object({
 }) satisfies z.ZodType<ControlPayload>;
 
 /**
- * Options a universe's lobby is created and joined with: which universe
+ * Options a universe's lobby or editor room is created and joined with: which universe
  */
 export const roomOptions = z.object({
 	universeId: z.uuid()
-}) satisfies z.ZodType<LobbyJoinOptions>;
+}) satisfies z.ZodType<LobbyJoinOptions & EditorJoinOptions>;
+
+/**
+ * EditorPlacePayload: the version, tab and area a window of the editor has open
+ */
+export const editorPlacePayload = z.object({
+	version: z.enum(UNIVERSE_VERSIONS),
+	tab: z.enum(EDITOR_TABS),
+	areaId: z.uuid().nullable(),
+	unsaved: z.boolean()
+}) satisfies z.ZodType<EditorPlacePayload>;
 
 /**
  * Options a group's game room is created and joined with: which group, and which character the window plays

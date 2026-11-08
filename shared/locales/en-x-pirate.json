@@ -31,6 +31,94 @@
 		"message": "Yer account: {name}",
 		"source": "Your account: {name}"
 	},
+	"account.siteAdmin": {
+		"message": "Captain's quarters",
+		"source": "Site admin"
+	},
+	"admin.admins.add": {
+		"message": "Promote to Officer",
+		"source": "Add Admin"
+	},
+	"admin.admins.addFailed": {
+		"message": "Couldn't promote that sailor.",
+		"source": "Could not add the admin."
+	},
+	"admin.admins.added": {
+		"message": "Officer since",
+		"source": "Admin since"
+	},
+	"admin.admins.choosePlayer": {
+		"message": "Pick a sailor from the list.",
+		"source": "Choose a player from the list."
+	},
+	"admin.admins.heading": {
+		"message": "The Ship's Officers",
+		"source": "Server Admins"
+	},
+	"admin.admins.hint": {
+		"message": "Officers can set foot in these quarters once they raise two-factor authentication.",
+		"source": "Server admins can use these pages once they turn on two-factor authentication."
+	},
+	"admin.admins.loadFailed": {
+		"message": "Couldn't haul up the officers' roll.",
+		"source": "Could not load the server admins."
+	},
+	"admin.admins.noTwoFactor": {
+		"message": "No 2FA: barred from the captain's quarters",
+		"source": "No 2FA: can't use the admin pages"
+	},
+	"admin.admins.nowAdmin": {
+		"message": "{name} (@{username}) be an officer now.",
+		"source": "{name} (@{username}) is now a server admin."
+	},
+	"admin.admins.player": {
+		"message": "Sailor to promote",
+		"source": "Player to add"
+	},
+	"admin.admins.playerHint": {
+		"message": "Type the user's name, or @ and their username, then pick them from the list.",
+		"source": "Type the user's name, or @ and their username, then choose them from the list."
+	},
+	"admin.admins.remove": {
+		"message": "Demote",
+		"source": "Remove"
+	},
+	"admin.admins.removeFailed": {
+		"message": "Couldn't demote that officer.",
+		"source": "Could not remove the admin."
+	},
+	"admin.admins.removeLabel": {
+		"message": "Demote {name} (@{username}) from officer",
+		"source": "Remove {name} (@{username}) as an admin"
+	},
+	"admin.admins.removeQuestion": {
+		"message": "Strip {name} (@{username}) of their officer's rank? They won't be able to set foot in the captain's quarters.",
+		"source": "Stop {name} (@{username}) being one of the site's admins? They won't be able to use the admin pages."
+	},
+	"admin.admins.removeSelfQuestion": {
+		"message": "Give up yer officer's rank? Ye won't be able to set foot in the captain's quarters, unless another officer promotes ye again.",
+		"source": "Stop being one of the site's admins? You won't be able to use the admin pages, unless another admin adds you again."
+	},
+	"admin.admins.removeTitle": {
+		"message": "Demote Officer",
+		"source": "Remove Admin"
+	},
+	"admin.admins.removed": {
+		"message": "{name} (@{username}) be an officer no more.",
+		"source": "{name} (@{username}) is no longer a server admin."
+	},
+	"admin.admins.title": {
+		"message": "The Ship's Officers",
+		"source": "Server Admins"
+	},
+	"admin.admins.you": {
+		"message": "Ye",
+		"source": "You"
+	},
+	"admin.back": {
+		"message": "The Captain's Quarters",
+		"source": "Site Admin"
+	},
 	"admin.characterDeletionDays": {
 		"message": "Days 'twixt last rites and Davy Jones",
 		"source": "Days between last rites and deletion"
@@ -43,13 +131,105 @@
 		"message": "Hands",
 		"source": "Characters"
 	},
+	"admin.column.actions": {
+		"message": "Orders",
+		"source": "Actions"
+	},
+	"admin.column.notes": {
+		"message": "Scribblings",
+		"source": "Notes"
+	},
+	"admin.column.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
 	"admin.heading": {
-		"message": "The Captain's Orders",
-		"source": "Site Settings"
+		"message": "Orders",
+		"source": "Settings"
+	},
+	"admin.home.heading": {
+		"message": "The Captain's Quarters",
+		"source": "Site Admin"
+	},
+	"admin.home.loadFailed": {
+		"message": "Couldn't open the captain's quarters. Try again in a moment.",
+		"source": "Could not load the admin page. Try again in a moment."
+	},
+	"admin.home.title": {
+		"message": "The Captain's Quarters",
+		"source": "Site Admin"
 	},
 	"admin.loadFailed": {
 		"message": "Couldn't haul up the captain's orders.",
 		"source": "Could not load the site settings."
+	},
+	"admin.matches": {
+		"message": "{total, plural, =0 {Not a soul matches} one {# match} other {# matches}}",
+		"source": "{total, plural, =0 {Nothing matches} one {# match} other {# matches}}"
+	},
+	"admin.players.active": {
+		"message": "Aboard",
+		"source": "Active"
+	},
+	"admin.players.email": {
+		"message": "Message bottle",
+		"source": "Email"
+	},
+	"admin.players.heading": {
+		"message": "The Crew Roll",
+		"source": "Players"
+	},
+	"admin.players.joined": {
+		"message": "Signed on",
+		"source": "Joined"
+	},
+	"admin.players.lastLogin": {
+		"message": "Last came aboard",
+		"source": "Last login"
+	},
+	"admin.players.loadFailed": {
+		"message": "Couldn't haul up the crew roll.",
+		"source": "Could not load the players."
+	},
+	"admin.players.logsInWith": {
+		"message": "Comes aboard with",
+		"source": "Logs in with"
+	},
+	"admin.players.neverLoggedIn": {
+		"message": "Never set foot aboard",
+		"source": "Never"
+	},
+	"admin.players.none": {
+		"message": "No sailors match.",
+		"source": "No players match."
+	},
+	"admin.players.password": {
+		"message": "Secret word",
+		"source": "Password"
+	},
+	"admin.players.search": {
+		"message": "Search by name, username or message bottle",
+		"source": "Search by name, username or email"
+	},
+	"admin.players.searchLabel": {
+		"message": "Search the crew by name, username or message bottle address",
+		"source": "Search players by name, username or email address"
+	},
+	"admin.players.serverAdmin": {
+		"message": "Officer",
+		"source": "Server admin"
+	},
+	"admin.players.serverAdminNote": {
+		"message": "Officer",
+		"source": "Server admin"
+	},
+	"admin.players.title": {
+		"message": "The Crew Roll",
+		"source": "Players"
+	},
+	"admin.players.twoFactor": {
+		"message": "2FA",
+		"source": "2FA"
 	},
 	"admin.privacy": {
 		"message": "Articles o' Secrecy",
@@ -71,6 +251,62 @@
 		"message": "Couldn't stow the captain's orders.",
 		"source": "Could not save the site settings."
 	},
+	"admin.sessions.connected": {
+		"message": "Aboard now",
+		"source": "Connected"
+	},
+	"admin.sessions.connectedNote": {
+		"message": "Aboard now",
+		"source": "Connected"
+	},
+	"admin.sessions.current": {
+		"message": "This spyglass",
+		"source": "This browser"
+	},
+	"admin.sessions.ends": {
+		"message": "Plank raised",
+		"source": "Ends"
+	},
+	"admin.sessions.heading": {
+		"message": "Gangplanks",
+		"source": "Sessions"
+	},
+	"admin.sessions.hint": {
+		"message": "Each spyglass come aboard the ship.",
+		"source": "Each browser logged in to the site."
+	},
+	"admin.sessions.lastUsed": {
+		"message": "Last seen",
+		"source": "Last used"
+	},
+	"admin.sessions.loadFailed": {
+		"message": "Couldn't haul up the gangplanks.",
+		"source": "Could not load the sessions."
+	},
+	"admin.sessions.none": {
+		"message": "No gangplanks match.",
+		"source": "No sessions match."
+	},
+	"admin.sessions.remembered": {
+		"message": "Remembered",
+		"source": "Remembered"
+	},
+	"admin.sessions.search": {
+		"message": "Search by name or username",
+		"source": "Search by name or username"
+	},
+	"admin.sessions.searchLabel": {
+		"message": "Search the gangplanks by sailor's name or username",
+		"source": "Search sessions by player name or username"
+	},
+	"admin.sessions.started": {
+		"message": "Came aboard",
+		"source": "Logged in"
+	},
+	"admin.sessions.title": {
+		"message": "Gangplanks",
+		"source": "Sessions"
+	},
 	"admin.socials": {
 		"message": "Social ports",
 		"source": "Social sites"
@@ -87,6 +323,174 @@
 		"message": "The Captain's Orders",
 		"source": "Site Settings"
 	},
+	"admin.tools.admins": {
+		"message": "The Ship's Officers",
+		"source": "Server Admins"
+	},
+	"admin.tools.adminsHint": {
+		"message": "Who may set foot in these quarters: promote officers and demote 'em.",
+		"source": "Who can use these pages: add admins and remove them."
+	},
+	"admin.tools.players": {
+		"message": "The Crew Roll",
+		"source": "Players"
+	},
+	"admin.tools.playersHint": {
+		"message": "Every sailor: how they come aboard, when they last did, and who be an officer.",
+		"source": "Every account: how it logs in, when it last did, and who is a server admin."
+	},
+	"admin.tools.sessions": {
+		"message": "Gangplanks",
+		"source": "Sessions"
+	},
+	"admin.tools.sessionsHint": {
+		"message": "Every spyglass come aboard the ship, and which be aboard now.",
+		"source": "Every browser logged in to the site, and which are connected now."
+	},
+	"admin.tools.settings": {
+		"message": "The Captain's Orders",
+		"source": "Settings"
+	},
+	"admin.tools.settingsHint": {
+		"message": "Launchin' universes, last rites, the social ports at the bottom o' the page and the Articles o' Secrecy's address.",
+		"source": "Creating universes, last rites, the footer's social sites and the privacy policy's contact."
+	},
+	"admin.tools.translations": {
+		"message": "Tongues",
+		"source": "Translations"
+	},
+	"admin.tools.translationsHint": {
+		"message": "Send off the ship's words to the tongue-turners, and make what they bring back into a tongue scroll for the ship's code.",
+		"source": "Export the site's text for translators, and turn what they translate into a language file for the site's code."
+	},
+	"admin.tools.universes": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"admin.tools.universesHint": {
+		"message": "Every universe, with who launched it: lay one up, sayin' why, and set it afloat again.",
+		"source": "Every universe, with who created it: disable one, saying why, and enable it again."
+	},
+	"admin.translations.commit": {
+		"message": "Haul {fileName} ashore and lash it into the ship's code as {path}{replacing, select, yes {, in place o' the scroll there} other {}}. The ship speaks the tongue once she be built and set sail with it.",
+		"source": "Download {fileName} and commit it to the site's code as {path}{replacing, select, yes {, replacing the file there} other {}}. The site shows the translation once it is built and deployed with it."
+	},
+	"admin.translations.coverage": {
+		"message": "The tongue scroll turns {translated, number} o' the ship's {total, number} messages, {outdated, plural, =0 {every one o' them shipshape} one {# o' them gone stale} other {# o' them gone stale}}.",
+		"source": "The language file translates {translated, number} of the site's {total, number} messages, {outdated, plural, =0 {all of them up to date} one {# of them out of date} other {# of them out of date}}."
+	},
+	"admin.translations.download": {
+		"message": "Stow Ashore",
+		"source": "Download"
+	},
+	"admin.translations.existingFailed": {
+		"message": "Couldn't haul up the ship's {language} tongue. Reload the page and try again.",
+		"source": "Could not load the site's translation into {language}. Reload the page and try again."
+	},
+	"admin.translations.export": {
+		"message": "Send Off",
+		"source": "Export"
+	},
+	"admin.translations.exportHeading": {
+		"message": "Send Off",
+		"source": "Export"
+	},
+	"admin.translations.exportHint": {
+		"message": "Send off the ship's English as a scroll for the tongue-turners, with what the tongue has turned so far.",
+		"source": "Export the site's English text as a file for translators, with what the language has translated so far."
+	},
+	"admin.translations.hasTranslation": {
+		"message": "{language}: the ship speaks this tongue already, which Send Off carries and Haul In adds to.",
+		"source": "{language}: the site has a translation into it, which Export includes and Import adds to."
+	},
+	"admin.translations.heading": {
+		"message": "Tongues",
+		"source": "Translations"
+	},
+	"admin.translations.import": {
+		"message": "Haul In",
+		"source": "Import"
+	},
+	"admin.translations.importHeading": {
+		"message": "Haul In",
+		"source": "Import"
+	},
+	"admin.translations.importHint": {
+		"message": "Haul in the scroll the tongue-turners send back to make the tongue scroll, which goes in the ship's code. It be read into the tongue picked above, or the tongue the scroll names when none be picked, and in the format its name says.",
+		"source": "Import the file translators send back to make the language file, which goes in the site's code. It is read into the language chosen above, or the language the file names when none is chosen, and in the format its name says."
+	},
+	"admin.translations.imported": {
+		"message": "{imported, plural, =0 {The scroll holds nothin' new.} one {Hauled in # translation.} other {Hauled in # translations.}}",
+		"source": "{imported, plural, =0 {The file has no new translations.} one {Imported # translation.} other {Imported # translations.}}"
+	},
+	"admin.translations.language": {
+		"message": "Tongue",
+		"source": "Language"
+	},
+	"admin.translations.languageEnglish": {
+		"message": "The ship's words be writ in English. Pick the tongue to turn 'em into.",
+		"source": "The site's text is written in English. Choose the language to translate it into."
+	},
+	"admin.translations.languageHint": {
+		"message": "A tongue's tag, such as de, pt-BR or en-x-pirate.",
+		"source": "A language tag, such as de, pt-BR or en-x-pirate."
+	},
+	"admin.translations.languageInvalid": {
+		"message": "Give a tongue's tag, such as de or pt-BR.",
+		"source": "Enter a language tag, such as de or pt-BR."
+	},
+	"admin.translations.languagePseudo": {
+		"message": "{language} be made from the English as the ship sails, so it has no scroll to turn. Pick another tongue.",
+		"source": "{language} is made from the English as the site runs, so it has no file to translate. Choose another language."
+	},
+	"admin.translations.loadFailed": {
+		"message": "Couldn't hoist the Tongues tool. Try again in a moment.",
+		"source": "Could not load the Translations tool. Try again in a moment."
+	},
+	"admin.translations.noTranslation": {
+		"message": "{language}: the ship don't speak this tongue yet.",
+		"source": "{language}: the site has no translation into it yet."
+	},
+	"admin.translations.removed": {
+		"message": "{removed, plural, one {It leaves out # translation o' a message the ship no longer has.} other {It leaves out # translations o' messages the ship no longer has.}}",
+		"source": "{removed, plural, one {It leaves out # translation of a message the site no longer has.} other {It leaves out # translations of messages the site no longer has.}}"
+	},
+	"admin.translations.resultHeading": {
+		"message": "Tongue scroll",
+		"source": "Language file"
+	},
+	"admin.translations.skipped": {
+		"message": "{count, plural, one {Tossed # translation overboard} other {Tossed # translations overboard}}",
+		"source": "{count, plural, one {Skipped # translation} other {Skipped # translations}}"
+	},
+	"admin.translations.skippedArguments": {
+		"message": "{count, plural, =0 {It has arguments or tags, and the English has none.} other {It must carry the same arguments and tags as the English: {names}.}}",
+		"source": "{count, plural, =0 {It has arguments or tags, and the English has none.} other {It must use the same arguments and tags as the English: {names}.}}"
+	},
+	"admin.translations.skippedItem": {
+		"message": "{id}: {reason}",
+		"source": "{id}: {reason}"
+	},
+	"admin.translations.skippedNeedsReview": {
+		"message": "The scroll marks it as needin' a second look.",
+		"source": "The file marks it as needing review."
+	},
+	"admin.translations.skippedUnknown": {
+		"message": "The ship has no message by this ID.",
+		"source": "The site has no message with this ID."
+	},
+	"admin.translations.skippedUnreadable": {
+		"message": "It ain't proper ICU MessageFormat: check its braces.",
+		"source": "It isn't valid ICU MessageFormat: check its braces."
+	},
+	"admin.translations.title": {
+		"message": "Tongues",
+		"source": "Translations"
+	},
+	"admin.turnOnTwoFactor": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
 	"admin.universeCreationEnabled": {
 		"message": "Hands can create universes",
 		"source": "Players can create universes"
@@ -94,6 +498,126 @@
 	"admin.universes": {
 		"message": "Universes",
 		"source": "Universes"
+	},
+	"admin.universes.created": {
+		"message": "Launched",
+		"source": "Created"
+	},
+	"admin.universes.creators": {
+		"message": "Captains",
+		"source": "Creators"
+	},
+	"admin.universes.deletionPreventedNote": {
+		"message": "Her captains can't scuttle her.",
+		"source": "Its creators can't delete it."
+	},
+	"admin.universes.disable": {
+		"message": "Lay Up",
+		"source": "Disable"
+	},
+	"admin.universes.disableFailed": {
+		"message": "Couldn't lay up {universe}.",
+		"source": "Could not disable {universe}."
+	},
+	"admin.universes.disableIntro": {
+		"message": "Lay up {universe}? It comes off the charts and can't be sailed, and its officers can't stow changes till it's set afloat again.",
+		"source": "Disable {universe}? It stops being listed and can't be played, and its editors can't save until it is enabled again."
+	},
+	"admin.universes.disableLabel": {
+		"message": "Lay up {universe}",
+		"source": "Disable {universe}"
+	},
+	"admin.universes.disableTitle": {
+		"message": "Lay Up Universe",
+		"source": "Disable Universe"
+	},
+	"admin.universes.disabled": {
+		"message": "{universe} be laid up.",
+		"source": "{universe} is disabled."
+	},
+	"admin.universes.disabledFilter": {
+		"message": "Laid up",
+		"source": "Disabled"
+	},
+	"admin.universes.disabledNote": {
+		"message": "Laid up",
+		"source": "Disabled"
+	},
+	"admin.universes.disabledSince": {
+		"message": "Since {date}: {reason}",
+		"source": "Since {date}: {reason}"
+	},
+	"admin.universes.enable": {
+		"message": "Set Afloat",
+		"source": "Enable"
+	},
+	"admin.universes.enableFailed": {
+		"message": "Couldn't set {universe} afloat.",
+		"source": "Could not enable {universe}."
+	},
+	"admin.universes.enableLabel": {
+		"message": "Set {universe} afloat",
+		"source": "Enable {universe}"
+	},
+	"admin.universes.enableQuestion": {
+		"message": "Set {universe} afloat? It can be sailed and its changes stowed again.",
+		"source": "Enable {universe}? It can be played and saved again."
+	},
+	"admin.universes.enableTitle": {
+		"message": "Set Universe Afloat",
+		"source": "Enable Universe"
+	},
+	"admin.universes.enabled": {
+		"message": "{universe} be afloat.",
+		"source": "{universe} is enabled."
+	},
+	"admin.universes.heading": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"admin.universes.loadFailed": {
+		"message": "Couldn't haul up the universes.",
+		"source": "Could not load the universes."
+	},
+	"admin.universes.none": {
+		"message": "No universes match.",
+		"source": "No universes match."
+	},
+	"admin.universes.preventDeletion": {
+		"message": "Forbid her captains from scuttlin' the universe",
+		"source": "Prevent its creators from deleting the universe"
+	},
+	"admin.universes.preventDeletionHint": {
+		"message": "A captain who scuttles their account has to make another o' her crew her captain, rather than sendin' her to the deep along with what she were laid up for.",
+		"source": "A creator who deletes their account has to make another of its editors its creator, rather than deleting it and what it was disabled for."
+	},
+	"admin.universes.reason": {
+		"message": "Reason, shown to its officers",
+		"source": "Reason, shown to its editors"
+	},
+	"admin.universes.reasonNeeded": {
+		"message": "Say why the universe be laid up. Its officers are shown the reason.",
+		"source": "Say why the universe is disabled. Its editors are shown the reason."
+	},
+	"admin.universes.search": {
+		"message": "Search by name",
+		"source": "Search by name"
+	},
+	"admin.universes.searchLabel": {
+		"message": "Search the universes by name",
+		"source": "Search universes by name"
+	},
+	"admin.universes.stage": {
+		"message": "Stage",
+		"source": "Stage"
+	},
+	"admin.universes.title": {
+		"message": "Universes",
+		"source": "Universes"
+	},
+	"admin.universes.universe": {
+		"message": "Universe",
+		"source": "Universe"
 	},
 	"admin.universesHint": {
 		"message": "These only touch new universes. Universes already afloat continue to be, even fer hands what have more than the limit.",
@@ -371,6 +895,10 @@
 		"message": "Be ye truly, deeply sure ye want to throw {name} overboard? This be forever (a mighty long voyage!) and there be no bringin' 'em back.",
 		"source": "Are you absolutely sure you want to delete {name}? This is permanent (a very long time!) and cannot be undone."
 	},
+	"characterDelete.inGroup": {
+		"message": "To throw {name} overboard, ye must first jump ship from this crew.",
+		"source": "To delete {name}, you must first leave this group."
+	},
 	"characterDelete.lastRites": {
 		"message": "Last Rites (throw 'em overboard in {days, plural, one {# day} other {# days}})",
 		"source": "Last Rites (delete in {days, plural, one {# day} other {# days}})"
@@ -399,10 +927,6 @@
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
-	"characterSheet.inGroup": {
-		"message": "{name} sails with a crew, and has to jump ship before they can be sent to Davy Jones.",
-		"source": "{name} is in a group, and has to leave it before they can be deleted."
-	},
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
@@ -410,6 +934,10 @@
 	"characterSheet.items": {
 		"message": "Kit",
 		"source": "Equipment"
+	},
+	"characterSheet.leftGroup": {
+		"message": "{name} has jumped ship.",
+		"source": "{name} has left the group."
 	},
 	"characterSheet.lightSensitivityValue": {
 		"message": "{lightSensitivity, select, true {Aye} other {Nay}}",
@@ -463,6 +991,10 @@
 		"message": "Marks o' the hand",
 		"source": "Traits"
 	},
+	"characters.barred": {
+		"message": "{bar, select, race {Can't sail: yer folk be closed} other {Can't sail: yer callin' be closed}}",
+		"source": "{bar, select, race {Can't play: your race is disabled} other {Can't play: your class is disabled}}"
+	},
 	"characters.heading": {
 		"message": "Yer hands",
 		"source": "Your characters"
@@ -486,6 +1018,30 @@
 	"characters.none": {
 		"message": "Ye haven't signed on a hand in this universe yet.",
 		"source": "You haven't made a character in this universe yet."
+	},
+	"chat.created": {
+		"message": "{name} raised this crew.",
+		"source": "{name} created the group."
+	},
+	"chat.deletedAccount": {
+		"message": "[scuttled sailor]",
+		"source": "[deleted user]"
+	},
+	"chat.focusShortcut": {
+		"message": "Squawk in the chat",
+		"source": "Write in the chat"
+	},
+	"chat.joined": {
+		"message": "{name} came aboard the crew.",
+		"source": "{name} joined the group."
+	},
+	"chat.left": {
+		"message": "{name} has jumped ship from this crew.",
+		"source": "{name} has left this group."
+	},
+	"chat.tooFast": {
+		"message": "Ye be squawkin' too fast. Wait a moment and try again.",
+		"source": "You are sending messages too quickly. Wait a moment and try again."
 	},
 	"chips.added": {
 		"message": "{name} brought aboard",
@@ -579,9 +1135,25 @@
 		"message": "Tall Tale",
 		"source": "Story"
 	},
+	"editor.accessChanged": {
+		"message": "What ye can do in this universe has changed: yer rank, her stage, or whether the ship's officers have laid her up. Stow or undo yer changes, then reload the page to see what ye can do now.",
+		"source": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now."
+	},
+	"editor.accessLost": {
+		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
+		"source": "You no longer have a role in this universe, so your changes can't be saved."
+	},
 	"editor.area.back": {
 		"message": "Back to Areas",
 		"source": "Back to Areas"
+	},
+	"editor.area.backToLobby": {
+		"message": "Back to the Tavern",
+		"source": "Back to Lobby"
+	},
+	"editor.area.claimed": {
+		"message": "{count, plural, one {{names} be workin' this area too. Ye can still tinker with it; cells the other hand daubs will be shown to ye (crossed ones too).} other {{names} be workin' this area too. Ye can still tinker with it; cells the other hands daub will be shown to ye (crossed ones too).}}",
+		"source": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}"
 	},
 	"editor.area.children": {
 		"message": "Areas in this one's hold",
@@ -610,6 +1182,10 @@
 	"editor.area.lightLevelHint": {
 		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
 		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
+	},
+	"editor.area.lobbyNotice": {
+		"message": "This area be the game's tavern.",
+		"source": "This area is the game's lobby."
 	},
 	"editor.area.lobbyTime": {
 		"message": "How the hours pass in the tavern be set on the Lobby tab.",
@@ -663,6 +1239,10 @@
 		"message": "Add Area",
 		"source": "Add Area"
 	},
+	"editor.areaSearch": {
+		"message": "Hunt fer areas by name",
+		"source": "Search areas by name"
+	},
 	"editor.areaSelect.cell": {
 		"message": "Hands start on {column}, {row}, or the free square nearest it.",
 		"source": "Characters start on {column}, {row}, or the free square nearest it."
@@ -678,6 +1258,10 @@
 	"editor.areaSelect.loadFailed": {
 		"message": "Couldn't haul up the areas.",
 		"source": "Could not load the areas."
+	},
+	"editor.areaSelect.lobbyHint": {
+		"message": "A home port can't be a tavern.",
+		"source": "A starting area can't be a lobby."
 	},
 	"editor.areaSelect.none": {
 		"message": "No areas be matchin'.",
@@ -727,6 +1311,10 @@
 		"message": "Areas",
 		"source": "Areas"
 	},
+	"editor.areas.claimedTag": {
+		"message": "{count, plural, one {{names} be workin' it} other {{names} be workin' it}}",
+		"source": "{count, plural, one {{names} is editing} other {{names} are editing}}"
+	},
 	"editor.areas.indoorsTag": {
 		"message": "below decks",
 		"source": "indoors"
@@ -735,9 +1323,13 @@
 		"message": "Couldn't list the areas.",
 		"source": "Could not list the areas."
 	},
+	"editor.areas.lobbyTag": {
+		"message": "tavern",
+		"source": "lobby"
+	},
 	"editor.areas.none": {
-		"message": "There be no areas but the tavern.",
-		"source": "There are no areas besides the lobby."
+		"message": "There be no areas yet.",
+		"source": "There are no areas yet."
 	},
 	"editor.areas.outdoorsTag": {
 		"message": "topside",
@@ -746,6 +1338,234 @@
 	"editor.areas.startingAreaTag": {
 		"message": "home port",
 		"source": "starting area"
+	},
+	"editor.audit.changes": {
+		"message": "Alterations",
+		"source": "Changes"
+	},
+	"editor.audit.deletedPlayer": {
+		"message": "[scuttled sailor]",
+		"source": "[deleted user]"
+	},
+	"editor.audit.detail.area": {
+		"message": "{action, select, added {Charted new area {name}} changed {Altered area {name}} resized {Stretched the chart o' {name}} other {Scuttled area {name}}}",
+		"source": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized the map of {name}} other {Deleted area {name}}}"
+	},
+	"editor.audit.detail.cells": {
+		"message": "{count, plural, one {Daubed # cell in {name}} other {Daubed # cells in {name}}}",
+		"source": "{count, plural, one {Painted # cell in {name}} other {Painted # cells in {name}}}"
+	},
+	"editor.audit.detail.class": {
+		"message": "{action, select, added {Took on class {name}} changed {Altered class {name}} restored {Set class {name} back t' its old ways} other {Scuttled class {name}}}",
+		"source": "{action, select, added {Added class {name}} changed {Changed class {name}} restored {Restored class {name} to its default} other {Deleted class {name}}}"
+	},
+	"editor.audit.detail.difficultyLevel": {
+		"message": "{action, select, added {Added peril {name}} changed {Altered peril {name}} other {Scuttled peril {name}}}",
+		"source": "{action, select, added {Added difficulty level {name}} changed {Changed difficulty level {name}} other {Deleted difficulty level {name}}}"
+	},
+	"editor.audit.detail.draft": {
+		"message": "{action, select, added {Laid down a draft} applied {Launched the draft upon the live seas} other {Scuttled the draft}}",
+		"source": "{action, select, added {Started a draft} applied {Applied the draft to the live version} other {Discarded the draft}}"
+	},
+	"editor.audit.detail.editor": {
+		"message": "{action, select, added {Signed on officer {name}} changed {Altered officer {name}} other {Cast off officer {name}}}",
+		"source": "{action, select, added {Added editor {name}} changed {Changed editor {name}} other {Removed editor {name}}}"
+	},
+	"editor.audit.detail.item": {
+		"message": "{action, select, added {Stowed new booty {name}} changed {Altered booty {name}} restored {Set booty {name} back t' its old ways} other {Scuttled booty {name}}}",
+		"source": "{action, select, added {Added item {name}} changed {Changed item {name}} restored {Restored item {name} to its default} other {Deleted item {name}}}"
+	},
+	"editor.audit.detail.links": {
+		"message": "{action, select, deleted {{count, plural, one {Scuttled # passage in {name}} other {Scuttled # passages in {name}}}} other {{count, plural, one {Laid or altered # passage in {name}} other {Laid or altered # passages in {name}}}}}",
+		"source": "{action, select, deleted {{count, plural, one {Deleted # link in {name}} other {Deleted # links in {name}}}} other {{count, plural, one {Added or changed # link in {name}} other {Added or changed # links in {name}}}}}"
+	},
+	"editor.audit.detail.race": {
+		"message": "{action, select, added {Took on race {name}} changed {Altered race {name}} restored {Set race {name} back t' its old ways} other {Scuttled race {name}}}",
+		"source": "{action, select, added {Added race {name}} changed {Changed race {name}} restored {Restored race {name} to its default} other {Deleted race {name}}}"
+	},
+	"editor.audit.detail.ruleset": {
+		"message": "Altered the ship's articles",
+		"source": "Changed the ruleset"
+	},
+	"editor.audit.detail.settings": {
+		"message": "Altered the rigging",
+		"source": "Changed settings"
+	},
+	"editor.audit.detail.theme": {
+		"message": "{action, select, added {Took on theme {name}} changed {Altered theme {name}} restored {Set theme {name} back t' its old ways} other {Scuttled theme {name}}}",
+		"source": "{action, select, added {Added theme {name}} changed {Changed theme {name}} restored {Restored theme {name} to its default} other {Deleted theme {name}}}"
+	},
+	"editor.audit.detail.tile": {
+		"message": "{action, select, added {Laid new tile {name}} changed {Altered tile {name}} restored {Set tile {name} back t' its old ways} other {Scuttled tile {name}}}",
+		"source": "{action, select, added {Added tile {name}} changed {Changed tile {name}} restored {Restored tile {name} to its default} other {Deleted tile {name}}}"
+	},
+	"editor.audit.detail.tileset": {
+		"message": "{action, select, added {Hauled aboard tileset {name}} other {Scuttled tileset {name}}}",
+		"source": "{action, select, added {Uploaded tileset {name}} other {Deleted tileset {name}}}"
+	},
+	"editor.audit.detail.noTranslation": {
+		"message": "{action, select, added {{count, plural, one {Marked # scrap o' words as needin' no translation} other {Marked # scraps o' words as needin' no translation}}} other {{count, plural, one {Marked # scrap o' words as needin' translation again} other {Marked # scraps o' words as needin' translation again}}}}",
+		"source": "{action, select, added {{count, plural, one {Marked # piece of text as needing no translation} other {Marked # pieces of text as needing no translation}}} other {{count, plural, one {Marked # piece of text as needing translation again} other {Marked # pieces of text as needing translation again}}}}"
+	},
+	"editor.audit.detail.translations": {
+		"message": "{count, plural, one {Added, altered or scuttled # translation into {name}} other {Added, altered or scuttled # translations into {name}}}",
+		"source": "{count, plural, one {Added, changed or deleted # translation into {name}} other {Added, changed or deleted # translations into {name}}}"
+	},
+	"editor.audit.detail.translatorNotes": {
+		"message": "{count, plural, one {Wrote or scuttled # note fer the translators} other {Wrote or scuttled # notes fer the translators}}",
+		"source": "{count, plural, one {Wrote or deleted # note for translators} other {Wrote or deleted # notes for translators}}"
+	},
+	"editor.audit.draftSave": {
+		"message": "Stowed in the draft",
+		"source": "Saved to the draft"
+	},
+	"editor.audit.field.coinAbbreviations": {
+		"message": "Coin marks",
+		"source": "Coin abbreviations"
+	},
+	"editor.audit.field.coinNames": {
+		"message": "Coin names",
+		"source": "Coin names"
+	},
+	"editor.audit.field.lobbyDayHours": {
+		"message": "Length o' a tavern day",
+		"source": "Length of a lobby day"
+	},
+	"editor.audit.field.lobbyPassageOfTime": {
+		"message": "Tavern's passage o' time",
+		"source": "Lobby's passage of time"
+	},
+	"editor.audit.field.startingArea": {
+		"message": "Home port",
+		"source": "Starting area"
+	},
+	"editor.audit.fieldValue": {
+		"message": "{field}: {value}",
+		"source": "{field}: {value}"
+	},
+	"editor.audit.hint": {
+		"message": "Each time ye stow changes, it stays in the ship's log fer 90 days.",
+		"source": "Each save is kept here for 90 days."
+	},
+	"editor.audit.listFailed": {
+		"message": "Couldn't read the ship's log.",
+		"source": "Could not list the saves."
+	},
+	"editor.audit.none": {
+		"message": "Nothin' has been stowed in this universe's editor yet.",
+		"source": "Nothing has been saved in this universe's editor yet."
+	},
+	"editor.audit.notCounted": {
+		"message": "Not logged",
+		"source": "Not recorded"
+	},
+	"editor.audit.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
+	"editor.audit.role": {
+		"message": "Rank",
+		"source": "Role"
+	},
+	"editor.audit.saved": {
+		"message": "Stowed",
+		"source": "Saved"
+	},
+	"editor.audit.value.abilityModifier": {
+		"message": "{ability} {modifier}",
+		"source": "{ability} {modifier}"
+	},
+	"editor.audit.value.characters": {
+		"message": "{count, plural, one {# mark o' ink} other {# marks o' ink}}",
+		"source": "{count, plural, one {# character} other {# characters}}"
+	},
+	"editor.audit.value.coin": {
+		"message": "{coin}: {text}",
+		"source": "{coin}: {text}"
+	},
+	"editor.audit.value.faerieTime": {
+		"message": "{time}, mornin' be {morning}",
+		"source": "{time}, morning: {morning}"
+	},
+	"editor.audit.value.itemQuantity": {
+		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
+		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
+	},
+	"editor.audit.value.no": {
+		"message": "nay",
+		"source": "no"
+	},
+	"editor.audit.value.none": {
+		"message": "nothin'",
+		"source": "none"
+	},
+	"editor.audit.value.place": {
+		"message": "{area}, moored at {column}, {row}",
+		"source": "{area} at {column}, {row}"
+	},
+	"editor.audit.value.raceArea": {
+		"message": "{race}: {place}",
+		"source": "{race}: {place}"
+	},
+	"editor.audit.value.yes": {
+		"message": "aye",
+		"source": "yes"
+	},
+	"editor.changedSince": {
+		"message": "{action, select, deleted {{names} scuttled this since ye opened it.} restored {{names} restored this to its default since ye opened it.} other {{fieldCount, plural, =0 {{names} changed this since ye opened it.} other {{names} changed {fields} since ye opened this.}}}}",
+		"source": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}"
+	},
+	"editor.characterList.class": {
+		"message": "Callin'",
+		"source": "Class"
+	},
+	"editor.characterList.created": {
+		"message": "Signed on",
+		"source": "Created"
+	},
+	"editor.characterList.description": {
+		"message": "Folk an' callin'",
+		"source": "Race and class"
+	},
+	"editor.characterList.inGroup": {
+		"message": "Sailin' with a crew",
+		"source": "In a group"
+	},
+	"editor.characterList.listFailed": {
+		"message": "Couldn't muster the hands.",
+		"source": "Could not list the characters."
+	},
+	"editor.characterList.name": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.characterList.none": {
+		"message": "No hands be matchin'.",
+		"source": "No characters match."
+	},
+	"editor.characterList.noneMade": {
+		"message": "Nary a soul has signed on in this universe yet.",
+		"source": "Nobody has made a character in this universe yet."
+	},
+	"editor.characterList.notes": {
+		"message": "Scribblings",
+		"source": "Notes"
+	},
+	"editor.characterList.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
+	"editor.characterList.race": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"editor.characterList.search": {
+		"message": "Search by name or sailor",
+		"source": "Search by name or player"
+	},
+	"editor.characterList.searchLabel": {
+		"message": "Search the hands by name or sailor",
+		"source": "Search characters by name or player"
 	},
 	"editor.characters.areaFailed": {
 		"message": "Couldn't find the home port.",
@@ -790,6 +1610,54 @@
 	"editor.characters.startingMoneyHint": {
 		"message": "Heaps o' coins, like {example}. Coins stay as they're given; races an' classes can add more to the purse.",
 		"source": "Amounts of coins, like {example}. Coins stay as they are given; races and classes can add more."
+	},
+	"editor.chat.close": {
+		"message": "Batten down",
+		"source": "Close"
+	},
+	"editor.chat.closed": {
+		"message": "{name} left the chartroom",
+		"source": "{name} closed the editor"
+	},
+	"editor.chat.disconnected": {
+		"message": "The officers' parley lost its line. Reload the page to hail 'em again.",
+		"source": "The editors' chat was disconnected. Reload the page to reconnect."
+	},
+	"editor.chat.heading": {
+		"message": "Officers' Parley",
+		"source": "Editors' Chat"
+	},
+	"editor.chat.here": {
+		"message": "Aboard now",
+		"source": "Here now"
+	},
+	"editor.chat.newMessage": {
+		"message": "{name} spoke in the officers' parley: {text}",
+		"source": "{name} wrote in the editors' chat: {text}"
+	},
+	"editor.chat.notJoined": {
+		"message": "Couldn't hail the officers' parley. Reload the page to try again.",
+		"source": "Could not connect to the editors' chat. Reload the page to try again."
+	},
+	"editor.chat.opened": {
+		"message": "{name} came into the chartroom",
+		"source": "{name} opened the editor"
+	},
+	"editor.chat.toast": {
+		"message": "{name} hails: {text}",
+		"source": "{name}: {text}"
+	},
+	"editor.chat.toggle": {
+		"message": "Parley",
+		"source": "Chat"
+	},
+	"editor.chat.unread": {
+		"message": "{count, plural, one {# new word} other {# new words}}",
+		"source": "{count, plural, one {# new message} other {# new messages}}"
+	},
+	"editor.chat.you": {
+		"message": "{name} (ye)",
+		"source": "{name} (you)"
 	},
 	"editor.chooseEquipment": {
 		"message": "Choose Kit",
@@ -903,6 +1771,58 @@
 		"message": "leans on {ability}",
 		"source": "relies on {ability}"
 	},
+	"editor.coins.abbreviationColumn": {
+		"message": "Mark",
+		"source": "Abbreviation"
+	},
+	"editor.coins.abbreviationTaken": {
+		"message": "Another coin already be marked with {abbreviation}, matey.",
+		"source": "Another coin is already written with {abbreviation}."
+	},
+	"editor.coins.coinColumn": {
+		"message": "Coin",
+		"source": "Coin"
+	},
+	"editor.coins.heading": {
+		"message": "Treasure",
+		"source": "Coins"
+	},
+	"editor.coins.hint": {
+		"message": "What the crew calls each coin, an' the mark scrawled after heaps o' it, like the dbl in 2dbl. Write names as they'd sound mid-yarn, like doubloons. Leave a field empty to use the default name. Marks can't have spaces, digits or commas, an' each coin needs its own abbreviation. Name an' abbreviation be translated on the Translations tab.",
+		"source": "What the universe calls each coin, and what amounts of it are written with, like the gp in 2gp. Write names as they'd read mid-sentence, like gold pieces. Leave a field empty to use the default name. Abbreviations can't have spaces, digits or commas, and each coin needs its own abbreviation. Name and abbreviation are translated on the Translations tab."
+	},
+	"editor.coins.nameColumn": {
+		"message": "Name",
+		"source": "Name"
+	},
+	"editor.coins.saveFailed": {
+		"message": "Couldn't stow the treasure's names.",
+		"source": "Could not save the coins."
+	},
+	"editor.conflict.explanation": {
+		"message": "Other hands stowed different values for some o' the settings ye changed. Choose which t' keep for each, then stow.",
+		"source": "Other editors saved different values for some of the settings you changed. Choose which to keep for each, then save."
+	},
+	"editor.conflict.keepMine": {
+		"message": "{hasValue, select, yes {Keep me own: {value}} other {Keep me own}}",
+		"source": "{hasValue, select, yes {Keep mine: {value}} other {Keep mine}}"
+	},
+	"editor.conflict.setting": {
+		"message": "{subject, select, settings {Universe settings: {field}} ruleset {Ship's Articles: {field}} editor {Officer {name}: {field}} race {Race {name}: {field}} class {Class {name}: {field}} theme {Theme {name}: {field}} item {Item {name}: {field}} tile {Tile {name}: {field}} difficultyLevel {Difficulty level {name}: {field}} area {Area {name}: {field}} other {{name}: {field}}}",
+		"source": "{subject, select, settings {Universe settings: {field}} ruleset {Ruleset: {field}} editor {Editor {name}: {field}} race {Race {name}: {field}} class {Class {name}: {field}} theme {Theme {name}: {field}} item {Item {name}: {field}} tile {Tile {name}: {field}} difficultyLevel {Difficulty level {name}: {field}} area {Area {name}: {field}} other {{name}: {field}}}"
+	},
+	"editor.conflict.text": {
+		"message": "{subject, select, translations {Translation into {language} o' {place}} other {Note fer the translators on {place}}}",
+		"source": "{subject, select, translations {Translation into {language} of {place}} other {Note for translators on {place}}}"
+	},
+	"editor.conflict.takeTheirs": {
+		"message": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the stowed one: {value}} other {Take the stowed one}}}}",
+		"source": "{known, select, yes {{hasValue, select, yes {Take {name}'s: {value}} other {Take {name}'s}}} other {{hasValue, select, yes {Take the saved one: {value}} other {Take the saved one}}}}"
+	},
+	"editor.conflict.title": {
+		"message": "Crossed Courses",
+		"source": "Settings Changed by Others"
+	},
 	"editor.difficulty.add": {
 		"message": "Add a Peril",
 		"source": "Add Difficulty"
@@ -963,9 +1883,189 @@
 		"message": "Hands who die in a crew at this peril go to Davy Jones for good.",
 		"source": "Characters who die in a group at this level are gone for good."
 	},
+	"editor.disconnected": {
+		"message": "This window has lost its line to the other officers, so changes stowed in other windows don't show here and the officers' parley be silent. Stow yer changes, then reload the page to hail 'em again.",
+		"source": "This window isn't connected to the other editors, so changes saved in other windows don't show here and the editors' chat is off. Save your changes, then reload the page to connect again."
+	},
 	"editor.displayTime": {
 		"message": "Show the hour",
 		"source": "Display time"
+	},
+	"editor.draft.apply": {
+		"message": "Launch Draft",
+		"source": "Apply Draft"
+	},
+	"editor.draft.applyConfirm": {
+		"message": "Launch Draft",
+		"source": "Apply Draft"
+	},
+	"editor.draft.applyQuestion": {
+		"message": "Every hand aboard will see all that changed in the draft at once. Changes stowed to the live version since the draft were laid down be replaced by the draft's. There be no turnin' back.",
+		"source": "Players will see everything changed in the draft at once. Changes saved to the live version since the draft was started are replaced by the draft's. This can't be undone."
+	},
+	"editor.draft.applyStaged": {
+		"message": "The draft will be launched upon the live version when ye stow.",
+		"source": "The draft will be applied to the live version when the editor is saved."
+	},
+	"editor.draft.applyTitle": {
+		"message": "Launch the draft?",
+		"source": "Apply the draft?"
+	},
+	"editor.draft.applyUnsavedOthers": {
+		"message": "{count, plural, one {{names} has} other {{names} have}} changes to the draft not yet stowed, which can't be stowed once she's launched. Bid them stow first.",
+		"source": "{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren't saved yet, which can't be saved once it is applied. Ask them to save first."
+	},
+	"editor.draft.discard": {
+		"message": "Scuttle Draft",
+		"source": "Discard Draft"
+	},
+	"editor.draft.discardConfirm": {
+		"message": "Scuttle Draft",
+		"source": "Discard Draft"
+	},
+	"editor.draft.discardQuestion": {
+		"message": "All that changed in the draft goes to Davy Jones. The live version stays as she be.",
+		"source": "Everything changed in the draft will be discarded. The live version remains unchanged."
+	},
+	"editor.draft.discardStaged": {
+		"message": "The draft will be scuttled when ye stow.",
+		"source": "The draft will be discarded when the editor is saved."
+	},
+	"editor.draft.discardTitle": {
+		"message": "Scuttle the draft?",
+		"source": "Discard the draft?"
+	},
+	"editor.draft.discardUnsavedOthers": {
+		"message": "{count, plural, one {{names} has} other {{names} have}} changes to the draft not yet stowed, which go to Davy Jones once she's scuttled.",
+		"source": "{count, plural, one {{names} has} other {{names} have}} changes to the draft that aren't saved yet, which are lost once it is discarded."
+	},
+	"editor.draft.heading": {
+		"message": "Draft",
+		"source": "Draft"
+	},
+	"editor.draft.saveFailed": {
+		"message": "Couldn't change the draft.",
+		"source": "Could not change the draft."
+	},
+	"editor.draft.saveOthersFirst": {
+		"message": "Stow or undo yer other changes first.",
+		"source": "Save or undo your other changes first."
+	},
+	"editor.draft.start": {
+		"message": "Lay Down Draft",
+		"source": "Start Draft"
+	},
+	"editor.draft.startStaged": {
+		"message": "A draft will be laid down when ye stow, a copy o' the live version with the other changes bein' stowed.",
+		"source": "A draft will be started when the editor is saved, as a copy of the live version with the other changes being saved."
+	},
+	"editor.draft.undo": {
+		"message": "Belay",
+		"source": "Undo"
+	},
+	"editor.draftChangedElsewhere": {
+		"message": "Another hand laid down, launched or scuttled the universe's draft. Stow or undo yer changes, then reload the page to see the universe as she now be.",
+		"source": "Another editor started, applied or discarded the universe's draft. Save or undo your changes, then reload the page to see the universe as it now is."
+	},
+	"editor.editingAsAdmin": {
+		"message": "Ye be editin' this universe as a ship's officer: ye can change all a captain can.",
+		"source": "You are editing this universe as a site admin: you can change everything a creator can."
+	},
+	"editor.editors.add": {
+		"message": "Sign On a Hand",
+		"source": "Add Editor"
+	},
+	"editor.editors.addTitle": {
+		"message": "Sign On a Hand",
+		"source": "Add Editor"
+	},
+	"editor.editors.choosePlayer": {
+		"message": "Search for the sailor by name or username, then pick them from the list.",
+		"source": "Search for the player by name or username, then choose them from the list."
+	},
+	"editor.editors.draftNote": {
+		"message": "Changes to the crew roster apply to every version o' the universe - the live version an' the draft alike.",
+		"source": "Changes to editors apply to all versions of the universe - both the live and the draft versions."
+	},
+	"editor.editors.editTitle": {
+		"message": "Reassign {username}",
+		"source": "Edit {username}"
+	},
+	"editor.editors.languages": {
+		"message": "Tongues",
+		"source": "Languages"
+	},
+	"editor.editors.languagesHint": {
+		"message": "The tongues they may turn the universe's words into.",
+		"source": "The languages they may translate the universe's text into."
+	},
+	"editor.editors.languagesNeeded": {
+		"message": "Pick the tongues they may translate into, matey.",
+		"source": "Choose the languages they may translate into."
+	},
+	"editor.editors.languagesSearch": {
+		"message": "Search the tongues",
+		"source": "Search languages"
+	},
+	"editor.editors.languagesTooMany": {
+		"message": "A translator can speak up to {max, plural, one {# tongue} other {# tongues}}.",
+		"source": "A translator can have up to {max, plural, one {# language} other {# languages}}."
+	},
+	"editor.editors.leave": {
+		"message": "Jump Ship",
+		"source": "Leave Universe"
+	},
+	"editor.editors.leaveLastCreator": {
+		"message": "Ye be its only captain, so ye can't jump ship till ye make another hand a captain.",
+		"source": "You are its only creator, so you can't leave until you make another editor a creator."
+	},
+	"editor.editors.leaveQuestion": {
+		"message": "Once ye save, ye give up yer post ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {Ye can still sail it, since it be open to all.} other {Ye can't sail it till it opens to all, and ye'll be put ashore from its tavern and yer crews there.}}{lastCreator, select, yes {} other { Only a captain can give ye a post again.}}",
+		"source": "Once you save, you lose your role ({role}) in {universe} and can no longer open it in the editor. {play, select, yes {You can still play it, since it is open to everyone.} other {You can't play it until it opens to everyone, and you will be turned out of its lobby and your groups there.}}{lastCreator, select, yes {} other { Only a creator can give you a role again.}}"
+	},
+	"editor.editors.leaveTitle": {
+		"message": "Jump ship from {universe}?",
+		"source": "Leave {universe}?"
+	},
+	"editor.editors.listFailed": {
+		"message": "Couldn't muster the crew list.",
+		"source": "Could not list the editors."
+	},
+	"editor.editors.player": {
+		"message": "Sailor",
+		"source": "Player"
+	},
+	"editor.editors.playerHint": {
+		"message": "Type the user's name, or @ and their username, then pick them from the list.",
+		"source": "Type the user's name, or @ and their username, then choose them from the list."
+	},
+	"editor.editors.remove": {
+		"message": "Put Ashore",
+		"source": "Remove Editor"
+	},
+	"editor.editors.removedNote": {
+		"message": "(put ashore when saved)",
+		"source": "(loses their role when saved)"
+	},
+	"editor.editors.role": {
+		"message": "Post",
+		"source": "Role"
+	},
+	"editor.editors.saveFailed": {
+		"message": "Couldn't stow the changes to {username}.",
+		"source": "Could not save the changes to {username}."
+	},
+	"editor.editors.undoRemove": {
+		"message": "Keep Aboard",
+		"source": "Undo Remove"
+	},
+	"editor.editors.username": {
+		"message": "Username",
+		"source": "Username"
+	},
+	"editor.editors.youTag": {
+		"message": "ye",
+		"source": "you"
 	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
@@ -994,6 +2094,70 @@
 	"editor.filter.edited": {
 		"message": "Changed from the ruleset",
 		"source": "Edited from default"
+	},
+	"editor.impact.area": {
+		"message": "Closin' {name}: {count, plural, one {# hand be in it} other {# hands be in it}}",
+		"source": "Disabling {name}: {count, plural, one {# character is in it} other {# characters are in it}}"
+	},
+	"editor.impact.class": {
+		"message": "Closin' {name}: {count, plural, one {# hand follows this callin' fer a trade} other {# hands follow this callin' fer a trade}}",
+		"source": "Disabling {name}: {count, plural, one {# character is this class} other {# characters are this class}}"
+	},
+	"editor.impact.disbandGroups": {
+		"message": "Scuttle the bigger crews",
+		"source": "Disband the larger groups"
+	},
+	"editor.impact.explanation": {
+		"message": "These changes reach hands that sailors be usin'. Choose what befalls 'em, then stow it.",
+		"source": "These changes affect characters players are using. Choose what happens to them, then save."
+	},
+	"editor.impact.groupSize": {
+		"message": "Crews o' {size} at most: {count, plural, one {# crew be bigger} other {# crews be bigger}}",
+		"source": "Groups of at most {size}: {count, plural, one {# group is larger} other {# groups are larger}}"
+	},
+	"editor.impact.item": {
+		"message": "Closin' {name}: {count, plural, one {# hand carries it} other {# hands carry it}}",
+		"source": "Disabling {name}: {count, plural, one {# character carries it} other {# characters carry it}}"
+	},
+	"editor.impact.keepGroups": {
+		"message": "Let those crews keep sailin'; only new crews be kept small",
+		"source": "Let those groups keep playing; only limit the size of new groups"
+	},
+	"editor.impact.keepItem": {
+		"message": "Let 'em keep it; no new ones be made",
+		"source": "Let them keep using it; no new copies are made"
+	},
+	"editor.impact.keepPlaying": {
+		"message": "Let 'em keep sailin'; only new hands can't choose it",
+		"source": "Let them keep playing; only new characters can't choose it"
+	},
+	"editor.impact.preventPlaying": {
+		"message": "Keep 'em ashore till it be open again",
+		"source": "Stop them playing until it is enabled again"
+	},
+	"editor.impact.race": {
+		"message": "Closin' {name}: {count, plural, one {# hand hails from this folk} other {# hands hail from this folk}}",
+		"source": "Disabling {name}: {count, plural, one {# character is this race} other {# characters are this race}}"
+	},
+	"editor.impact.removeItem": {
+		"message": "Take it from 'em; they get it back if it be opened again",
+		"source": "Take it from them; they get it back if it is enabled again"
+	},
+	"editor.impact.removeMembers": {
+		"message": "Put hands ashore, the newest aboard first, till the crew fits",
+		"source": "Take out members, those who joined most recently first, until they fit"
+	},
+	"editor.impact.title": {
+		"message": "Sailors Be Caught Up in This",
+		"source": "Players Are Affected"
+	},
+	"editor.impact.toParent": {
+		"message": "Move all hands to the mother area",
+		"source": "Move everyone to the area it is in"
+	},
+	"editor.impact.toStart": {
+		"message": "Move all hands back to where they set sail",
+		"source": "Move everyone back to where they start"
 	},
 	"editor.item.addTitle": {
 		"message": "Add Booty",
@@ -1119,6 +2283,10 @@
 		"message": "Click the chart to choose where the passage goes.",
 		"source": "Click the map to choose where the link goes."
 	},
+	"editor.link.needTarget": {
+		"message": "Pick the area the passage goes to.",
+		"source": "Choose the area the link goes to."
+	},
 	"editor.link.needReturn": {
 		"message": "Click the chart to place the return passage, or don't be addin' one.",
 		"source": "Click the map to place the return link, or don't add one."
@@ -1175,6 +2343,26 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
+	"editor.lobby.area": {
+		"message": "Tavern area",
+		"source": "Lobby area"
+	},
+	"editor.lobby.areaChoice": {
+		"message": "Tavern area: {area}",
+		"source": "Lobby area: {area}"
+	},
+	"editor.lobby.areaHint": {
+		"message": "The area to use as the game's tavern, fer scallywags between crews.",
+		"source": "The area to use as the game's lobby for players between groups."
+	},
+	"editor.lobby.chooseArea": {
+		"message": "Choose Area",
+		"source": "Choose Area"
+	},
+	"editor.lobby.clearArea": {
+		"message": "No Tavern Area",
+		"source": "No Lobby Area"
+	},
 	"editor.lobby.dayHours": {
 		"message": "How swift?",
 		"source": "How quickly?"
@@ -1188,8 +2376,16 @@
 		"source": "Edit the lobby's area"
 	},
 	"editor.lobby.explanation": {
-		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. It be an area like any other, but it ain't listed on the Areas tab.",
-		"source": "The lobby is where everyone in the universe meets before joining a group. It is an area like any other, but isn't listed on the Areas tab."
+		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. Its area be one o' the universe's areas, edited on the Areas tab like any other.",
+		"source": "The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other."
+	},
+	"editor.lobby.noArea": {
+		"message": "None",
+		"source": "None"
+	},
+	"editor.lobby.noMapHint": {
+		"message": "{reason, select, disabled {The tavern's area be disabled, so scallywags only jaw an' pick their hands.} other {Without a tavern area, scallywags only jaw an' pick their hands.}}",
+		"source": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}"
 	},
 	"editor.lobby.noVisionCost": {
 		"message": "No spyglass cost in the tavern",
@@ -1235,6 +2431,10 @@
 		"message": "hoistin'...",
 		"source": "loading..."
 	},
+	"editor.map.cellPaintedBy": {
+		"message": "{over, select, yes {{cell} (daubed by {name} over yer own daubin' while ye had this chart open)} other {{cell} (daubed by {name} while ye had this chart open)}}",
+		"source": "{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}"
+	},
 	"editor.map.cellWithLink": {
 		"message": "{column}, {row}: {contents} ({mode, select, automatic {passage that hauls ye through} other {passage that asks first}})",
 		"source": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})"
@@ -1250,26 +2450,6 @@
 	"editor.map.exitFullPage": {
 		"message": "Furl the Page Back",
 		"source": "Exit Full Page"
-	},
-	"editor.map.expandBy": {
-		"message": "Widen by",
-		"source": "Expand by"
-	},
-	"editor.map.expandEast": {
-		"message": "+ East",
-		"source": "+ East"
-	},
-	"editor.map.expandNorth": {
-		"message": "+ North",
-		"source": "+ North"
-	},
-	"editor.map.expandSouth": {
-		"message": "+ South",
-		"source": "+ South"
-	},
-	"editor.map.expandWest": {
-		"message": "+ West",
-		"source": "+ West"
 	},
 	"editor.map.fullPage": {
 		"message": "Unfurl Full Page",
@@ -1387,6 +2567,10 @@
 		"message": "Couldn't open the universe.",
 		"source": "Could not open the universe."
 	},
+	"editor.option.keepPlaying": {
+		"message": "Hands already aboard keep sailin' while it be closed",
+		"source": "Existing characters keep playing while disabled"
+	},
 	"editor.pageTitle": {
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
@@ -1395,9 +2579,21 @@
 		"message": "How the hours pass",
 		"source": "Passage of time"
 	},
-	"editor.play": {
-		"message": "Set Sail",
-		"source": "Enter Universe"
+	"editor.presence.area": {
+		"message": "{tab} - {area}",
+		"source": "{tab} - {area}"
+	},
+	"editor.presence.draft": {
+		"message": "{place} (draft)",
+		"source": "{place} (draft)"
+	},
+	"editor.presence.editor": {
+		"message": "{name} be at {places}",
+		"source": "{name}: {places}"
+	},
+	"editor.presence.label": {
+		"message": "Also aboard:",
+		"source": "Also here:"
 	},
 	"editor.resize.cutOffWarning": {
 		"message": "The smaller chart cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the chart is stowed. Resize anyway?",
@@ -1414,6 +2610,30 @@
 	"editor.resize.explanation": {
 		"message": "How many cells the chart reaches in each direction from its middle cell (0, 0).",
 		"source": "How many cells the map reaches in each direction from its center cell (0, 0)."
+	},
+	"editor.resize.extendBy": {
+		"message": "Widen by",
+		"source": "Extend by"
+	},
+	"editor.resize.extendEast": {
+		"message": "+ East",
+		"source": "+ East"
+	},
+	"editor.resize.extendNorth": {
+		"message": "+ North",
+		"source": "+ North"
+	},
+	"editor.resize.extendSouth": {
+		"message": "+ South",
+		"source": "+ South"
+	},
+	"editor.resize.extendTitle": {
+		"message": "Widen the Chart",
+		"source": "Extend Size"
+	},
+	"editor.resize.extendWest": {
+		"message": "+ West",
+		"source": "+ West"
 	},
 	"editor.resize.failed": {
 		"message": "Couldn't resize the chart.",
@@ -1587,6 +2807,18 @@
 		"message": "Couldn't stow it.",
 		"source": "Could not save."
 	},
+	"editor.saveNotice": {
+		"message": "{more, plural, =0 {{name} stowed: {changes}} one {{name} stowed: {changes}, an' # more change besides} other {{name} stowed: {changes}, an' # more changes besides}}",
+		"source": "{more, plural, =0 {{name} saved: {changes}} one {{name} saved: {changes}, and # more change} other {{name} saved: {changes}, and # more changes}}"
+	},
+	"editor.saveNoticeKept": {
+		"message": "{count, plural, one {This be crossin' yer unstowed changes on the {tabs} tab.} other {This be crossin' yer unstowed changes on the {tabs} tabs.}}",
+		"source": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}"
+	},
+	"editor.saveNoticePaintedOver": {
+		"message": "{count, plural, one {They daubed over # cell ye daubed, ringed in orange on the chart.} other {They daubed over # cells ye daubed, ringed in orange on the chart.}}",
+		"source": "{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}"
+	},
 	"editor.searchByName": {
 		"message": "Search by name",
 		"source": "Search by name"
@@ -1627,13 +2859,37 @@
 		"message": "Don't Restore",
 		"source": "Undo Restore"
 	},
+	"editor.startDraft.copy": {
+		"message": "A draft be a copy o' the whole universe: its settings, races, classes, items, tilesets, areas an' their charts, an' translations. The crew keeps sailin' the live version, an' sees naught o' the draft till it be launched.",
+		"source": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied."
+	},
+	"editor.startDraft.finishing": {
+		"message": "When the draft be shipshape, a captain launches it with Launch Draft atop the editor, an' the crew sees all that changed in it at once. Scuttle Draft sinks it instead, leavin' the live version as she be.",
+		"source": "When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is."
+	},
+	"editor.startDraft.overwrite": {
+		"message": "⚠️ Launchin' the draft writes it over the entire universe, includin' any changes stowed to the live version while the draft be open. There be no turnin' back.",
+		"source": "⚠️ Applying the draft overwrites the entire universe with it, including any changes saved to the live version while the draft is open. Applying can't be undone."
+	},
+	"editor.startDraft.saveAndStart": {
+		"message": "Stow Changes An' Lay Down Draft",
+		"source": "Save Changes And Start Draft"
+	},
+	"editor.startDraft.title": {
+		"message": "Lay Down a Draft",
+		"source": "Start a Draft"
+	},
+	"editor.startDraft.unsaved": {
+		"message": "Yer unstowed changes be stowed to the live version first, so the draft starts with 'em.",
+		"source": "Your unsaved changes are saved to the live version first, so the draft starts with them."
+	},
 	"editor.startingArea.area": {
 		"message": "Home port: {area}",
 		"source": "Starting area: {area}"
 	},
 	"editor.startingArea.at": {
-		"message": "{area}, from {column}, {row}",
-		"source": "{area}, from {column}, {row}"
+		"message": "{area} at ({column}, {row})",
+		"source": "{area} at ({column}, {row})"
 	},
 	"editor.startingArea.loadFailed": {
 		"message": "Couldn't make out the ports' names.",
@@ -1671,9 +2927,21 @@
 		"message": "Areas",
 		"source": "Areas"
 	},
+	"editor.tab.audit": {
+		"message": "Ship's Log",
+		"source": "Audit"
+	},
+	"editor.tab.characterList": {
+		"message": "Ship's Roster",
+		"source": "Character List"
+	},
 	"editor.tab.characters": {
 		"message": "Crew",
 		"source": "Characters"
+	},
+	"editor.tab.editors": {
+		"message": "Officers",
+		"source": "Editors"
 	},
 	"editor.tab.items": {
 		"message": "Booty",
@@ -1690,6 +2958,10 @@
 	"editor.tab.tilesets": {
 		"message": "Tilesets",
 		"source": "Tilesets"
+	},
+	"editor.tab.translations": {
+		"message": "Tongues",
+		"source": "Translations"
 	},
 	"editor.tab.universe": {
 		"message": "Universe",
@@ -1819,6 +3091,10 @@
 		"message": "Stone Rampart",
 		"source": "Stone Wall"
 	},
+	"editor.tile.graphic.woodWall": {
+		"message": "Timber Bulkhead",
+		"source": "Wood Wall"
+	},
 	"editor.tile.graphicHint.blob": {
 		"message": "Painted atop the area's default tile, lashed to its neighbors (47-Tile Blob).",
 		"source": "Drawn over the area's default tile, joining up with its neighbors (47-Tile Blob)."
@@ -1912,8 +3188,8 @@
 		"source": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
 	},
 	"editor.tileGraphic.blobFormatHint": {
-		"message": "A PNG o' {width, number} by {height, number} pixels, no heavier than {kilobytes, number} KB: {columns, number} frames across an' {rows, number} down in the 47-tile blob layout, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
-		"source": "A PNG of {width, number} by {height, number} pixels, at most {kilobytes, number} KB: {columns, number} frames across and {rows, number} down in the 47-tile blob layout, with the last place empty. These tiles are drawn over the ground, so they have no draw order."
+		"message": "A PNG no heavier than {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across an' {columns, number} down like the tilesets that sail with the game, with 2 berths left empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across an' {sortedRows, number} down, sorted by the neighbors they join, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
+		"source": "A PNG of at most {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across and {columns, number} down like the game's own tilesets, with 2 places empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across and {sortedRows, number} down, sorted by the neighbors they join, with the last place empty. These tiles are drawn over the ground, so they have no draw order."
 	},
 	"editor.tileGraphic.drawOrder": {
 		"message": "Stackin' order",
@@ -2027,6 +3303,230 @@
 		"message": "Edit Universe",
 		"source": "Edit Universe"
 	},
+	"editor.translations.confirm": {
+		"message": "Still Shipshape",
+		"source": "Still Correct"
+	},
+	"editor.translations.dialogTitle": {
+		"message": "{place} in {language}",
+		"source": "{place} in {language}"
+	},
+	"editor.translations.explanation": {
+		"message": "Sailors see the universe's words, such as its name and the names of its areas and booty, in whichever of its tongues be nearest their own, or in its mother tongue when it ain't been turned into theirs.",
+		"source": "Players see the universe's text, such as its name and the names of its areas and items, in the closest of its languages to their own, or in its source language when it isn't translated into theirs."
+	},
+	"editor.translations.export": {
+		"message": "Send Off",
+		"source": "Export"
+	},
+	"editor.translations.exportFailed": {
+		"message": "Couldn't send off the universe's words.",
+		"source": "Could not export the universe's text."
+	},
+	"editor.translations.fileFormat": {
+		"message": "Scroll format",
+		"source": "File format"
+	},
+	"editor.translations.filesHint": {
+		"message": "Send the words off t' be turned in another tool, then haul 'em back in here and stow. A translation that had gone stale and comes back unchanged stays stale.",
+		"source": "Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date."
+	},
+	"editor.translations.format.csv": {
+		"message": "CSV, fer spreadsheets (.csv)",
+		"source": "CSV, for spreadsheets (.csv)"
+	},
+	"editor.translations.format.json": {
+		"message": "JSON (.json)",
+		"source": "JSON (.json)"
+	},
+	"editor.translations.format.po": {
+		"message": "Gettext PO (.po)",
+		"source": "Gettext PO (.po)"
+	},
+	"editor.translations.format.xliff": {
+		"message": "XLIFF 2.0 (.xlf)",
+		"source": "XLIFF 2.0 (.xlf)"
+	},
+	"editor.translations.import": {
+		"message": "Haul In",
+		"source": "Import"
+	},
+	"editor.translations.importFailed": {
+		"message": "Couldn't haul in the translations.",
+		"source": "Could not import the translations."
+	},
+	"editor.translations.importTooLarge": {
+		"message": "This scroll be too heavy fer a translation scroll: translation scrolls weigh no more than {megabytes, number} MB.",
+		"source": "This file is too large for a translation file: translation files are at most {megabytes, number} MB."
+	},
+	"editor.translations.importWrongLanguage": {
+		"message": "This scroll holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} t' haul it in.",
+		"source": "This file holds translations into {fileLanguage}, not {language}. Choose {fileLanguage} to import it."
+	},
+	"editor.translations.imported": {
+		"message": "{imported, plural, =0 {No new translations t' haul in.} one {Hauled in # translation, t' be stowed with Stow.} other {Hauled in # translations, t' be stowed with Stow.}} {skipped, plural, =0 {} one {Tossed # overboard that was marked fer review, too long, or fer words that ain't the universe's any more or need no translatin'.} other {Tossed # overboard that were marked fer review, too long, or fer words that ain't the universe's any more or need no translatin'.}}",
+		"source": "{imported, plural, =0 {No new translations to import.} one {Imported # translation, to be saved with Save.} other {Imported # translations, to be saved with Save.}} {skipped, plural, =0 {} one {Skipped # that was marked for review, too long, or for text that isn't the universe's any more or needs no translation.} other {Skipped # that were marked for review, too long, or for text that isn't the universe's any more or needs no translation.}}"
+	},
+	"editor.translations.language": {
+		"message": "Tongue",
+		"source": "Language"
+	},
+	"editor.translations.languageChoice": {
+		"message": "{name} ({nameHere})",
+		"source": "{name} ({nameHere})"
+	},
+	"editor.translations.languages": {
+		"message": "Turned into these tongues",
+		"source": "Translated into"
+	},
+	"editor.translations.languagesHint": {
+		"message": "Strike a tongue off and its translations be scuttled when the universe is stowed.",
+		"source": "Taking a language off deletes its translations when the universe is saved."
+	},
+	"editor.translations.languagesSearch": {
+		"message": "Search the tongues",
+		"source": "Search languages"
+	},
+	"editor.translations.languagesTooMany": {
+		"message": "A universe can be turned into up to {max, plural, one {# tongue} other {# tongues}}.",
+		"source": "A universe can be translated into up to {max, plural, one {# language} other {# languages}}."
+	},
+	"editor.translations.listFailed": {
+		"message": "Couldn't haul up the universe's words.",
+		"source": "Could not list the universe's text."
+	},
+	"editor.translations.missingFilter": {
+		"message": "Missin'",
+		"source": "Missing"
+	},
+	"editor.translations.missingTag": {
+		"message": "missin'",
+		"source": "missing"
+	},
+	"editor.translations.noLanguages": {
+		"message": "The universe ain't been turned into any tongue yet. Add one above, and stow it, t' turn its words.",
+		"source": "The universe isn't translated into any language yet. Add one above, and save, to translate its text."
+	},
+	"editor.translations.noneMatch": {
+		"message": "No words be matchin'.",
+		"source": "No text matches."
+	},
+	"editor.translations.noTranslation": {
+		"message": "Needs no translatin'",
+		"source": "Needs no translation"
+	},
+	"editor.translations.noTranslationHint": {
+		"message": "Such as a proper name. Sailors see it as written in every tongue, and translations already made be kept in case it's unchecked.",
+		"source": "Such as a proper name. Players see it as written in every language, and translations already made are kept for if it's unchecked."
+	},
+	"editor.translations.noTranslationTag": {
+		"message": "needs no translatin'",
+		"source": "needs no translation"
+	},
+	"editor.translations.noneOfYours": {
+		"message": "The universe ain't been turned into any o' yer tongues yet. Its creators can add 'em above.",
+		"source": "The universe isn't translated into any of your languages yet. Its creators can add them above."
+	},
+	"editor.translations.notUtf8": {
+		"message": "This scroll ain't penned in UTF-8, so its letters be gibberish. Stow it as UTF-8 an' haul it in again.",
+		"source": "This file isn't saved as UTF-8 text, so its letters can't be read. Save it as UTF-8 and import it again."
+	},
+	"editor.translations.notUtf8Csv": {
+		"message": "This scroll ain't penned in UTF-8, so its letters be gibberish. Stow it from the spreadsheet as CSV UTF-8 an' haul it in again.",
+		"source": "This file isn't saved as UTF-8 text, so its letters can't be read. Save it from the spreadsheet as CSV UTF-8 and import it again."
+	},
+	"editor.translations.note": {
+		"message": "Note fer the translators",
+		"source": "Note for translators"
+	},
+	"editor.translations.noteHint": {
+		"message": "Anythin' translators should know, such as a pun worth keepin'. Creators and builders write notes; one note serves every tongue.",
+		"source": "Anything translators should know, such as a pun to keep. Creators and builders write notes; one note serves every language."
+	},
+	"editor.translations.outOfDateFilter": {
+		"message": "Gone stale",
+		"source": "Out of date"
+	},
+	"editor.translations.outOfDateNotice": {
+		"message": "The mother tongue's words have changed since this was turned. Mend the translation, or swear it be still shipshape.",
+		"source": "The source text has changed since this was translated. Update the translation, or confirm it's still correct."
+	},
+	"editor.translations.outOfDateTag": {
+		"message": "gone stale",
+		"source": "out of date"
+	},
+	"editor.translations.place": {
+		"message": "Hails from",
+		"source": "From"
+	},
+	"editor.translations.placeOf": {
+		"message": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence tale} other {long tale}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Booty: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {mark} other {name}}} other {Peril: {name}, name}}",
+		"source": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}"
+	},
+	"editor.translations.remove": {
+		"message": "Strike It Off",
+		"source": "Take Off"
+	},
+	"editor.translations.removeQuestion": {
+		"message": "Strikin' {language} off scuttles the universe's {count, plural, one {# translation} other {# translations}} into it when the universe is stowed. Strike it off?",
+		"source": "Taking {language} off deletes the universe's {count, plural, one {# translation} other {# translations}} into it when the universe is saved. Take it off?"
+	},
+	"editor.translations.removeTitle": {
+		"message": "Scuttle translations",
+		"source": "Delete translations"
+	},
+	"editor.translations.saveFailed": {
+		"message": "Couldn't stow the tongues.",
+		"source": "Could not save the languages."
+	},
+	"editor.translations.search": {
+		"message": "Search",
+		"source": "Search"
+	},
+	"editor.translations.searchLabel": {
+		"message": "Search the universe's words",
+		"source": "Search the universe's text"
+	},
+	"editor.translations.source": {
+		"message": "Words in the mother tongue",
+		"source": "Source text"
+	},
+	"editor.translations.sourceLanguage": {
+		"message": "Mother tongue",
+		"source": "Source language"
+	},
+	"editor.translations.sourceLanguageHint": {
+		"message": "The tongue the universe's crew write its words in.",
+		"source": "The language the universe's editors write its text in."
+	},
+	"editor.translations.sourceTranslated": {
+		"message": "{language} be the mother tongue, so the universe can't be turned into it as well.",
+		"source": "{language} is the source language, so the universe can't also be translated into it."
+	},
+	"editor.translations.textHeading": {
+		"message": "The universe's words",
+		"source": "Universe text"
+	},
+	"editor.translations.textSaveFailed": {
+		"message": "Couldn't stow the translations and notes.",
+		"source": "Could not save the translations and notes."
+	},
+	"editor.translations.translation": {
+		"message": "Translation",
+		"source": "Translation"
+	},
+	"editor.translations.translationMarkdown": {
+		"message": "Translation (Markdown)",
+		"source": "Translation (Markdown)"
+	},
+	"editor.translations.unreadable": {
+		"message": "This scroll can't be read as {format}.",
+		"source": "This file can't be read as {format}."
+	},
+	"editor.translations.unreadableLine": {
+		"message": "This scroll can't be read as {format}: see line {line, number}.",
+		"source": "This file can't be read as {format}: see line {line, number}."
+	},
 	"editor.universe.longDescription": {
 		"message": "Long tale (Markdown)",
 		"source": "Long description (Markdown)"
@@ -2043,9 +3543,53 @@
 		"message": "Voyage",
 		"source": "Stage"
 	},
+	"editor.universe.stageWarning": {
+		"message": "Once the universe leaves the stage {stage}, new areas start battened down, so no hand can wander into 'em before they be finished. Open each one on the Areas tab when she's ready.",
+		"source": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready."
+	},
+	"editor.universeDeleted": {
+		"message": "This universe has been scuttled, so changes to her can't be stowed.",
+		"source": "This universe has been deleted, so changes to it can't be saved."
+	},
+	"editor.universeDisabled": {
+		"message": "The ship's officers have laid up this universe, so it can't be sailed and changes to it can't be stowed. Ye can still jump ship on the Officers tab. Reason: {reason}",
+		"source": "The site's admins have disabled this universe, so it can't be played and changes to it can't be saved. You can still leave it on the Editors tab. Reason: {reason}"
+	},
+	"editor.universeDisabledAdmin": {
+		"message": "The ship's officers have laid up this universe, so it can't be sailed and its crew can't stow changes. As a ship's officer, ye can still stow changes to it. Reason: {reason}",
+		"source": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}"
+	},
+	"editor.universeLocked": {
+		"message": "This universe has sunk to the depths, so only her captains can change her. Ye can still jump ship on the Officers tab.",
+		"source": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab."
+	},
 	"editor.universeTitle": {
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
+	},
+	"editor.version": {
+		"message": "Workin' on",
+		"source": "Editing"
+	},
+	"editor.version.draft": {
+		"message": "Draft",
+		"source": "Draft"
+	},
+	"editor.version.draftNotice": {
+		"message": "Ye be workin' on the draft version o' this universe. The crew won't see yer changes till they be launched.",
+		"source": "You are editing the draft version of this universe. Players will not see changes until they are applied."
+	},
+	"editor.version.live": {
+		"message": "Live version",
+		"source": "Live version"
+	},
+	"editor.version.liveWithDraftNotice": {
+		"message": "Ye be workin' on the live version, the one the crew sails. This universe has a draft: changes stowed here be replaced when it's launched, unless ye make 'em in the draft too.",
+		"source": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft."
+	},
+	"editor.view": {
+		"message": "Spy the Universe",
+		"source": "View Universe"
 	},
 	"email.accountCreated.body": {
 		"message": "Yer account on {siteName} be ready.",
@@ -2091,6 +3635,10 @@
 		"message": "Come aboard {siteName}",
 		"source": "Log in to {siteName}"
 	},
+	"email.action.openEditor": {
+		"message": "Open the editor o' {universe}",
+		"source": "Open the editor of {universe}"
+	},
 	"email.action.resetPassword": {
 		"message": "Reset yer password",
 		"source": "Reset your password"
@@ -2098,6 +3646,10 @@
 	"email.action.visit": {
 		"message": "Set sail for {siteName}",
 		"source": "Go to {siteName}"
+	},
+	"email.action.visitUniverse": {
+		"message": "Set sail for {universe}",
+		"source": "Go to {universe}"
 	},
 	"email.code.changeEmail.intro": {
 		"message": "Enter this code on {siteName} to make this yer account's email address:",
@@ -2175,6 +3727,14 @@
 		"message": "This letter was sent by {siteName}:",
 		"source": "This email was sent by {siteName}:"
 	},
+	"email.greeting": {
+		"message": "Ahoy {name},",
+		"source": "Hi {name},"
+	},
+	"email.greetingNoName": {
+		"message": "Ahoy,",
+		"source": "Hi,"
+	},
 	"email.passwordChanged.body": {
 		"message": "The password o' yer account on {siteName} was just changed, an' every browser aboard it was put ashore.",
 		"source": "The password of your account on {siteName} was just changed, and every browser logged in to it was logged out."
@@ -2210,6 +3770,22 @@
 	"email.recoveryCodeUsed.subject": {
 		"message": "A recovery code was spent on {siteName}",
 		"source": "A recovery code was used on {siteName}"
+	},
+	"email.roleGiven.body": {
+		"message": "{giver} signed ye on as {role} in the universe {universe} on {siteName}.",
+		"source": "{giver} gave you the role of {role} in the universe {universe} on {siteName}."
+	},
+	"email.roleGiven.leave": {
+		"message": "If ye don't want the post, ye can jump ship on the Officers tab o' the universe's editor.",
+		"source": "If you don't want the role, you can leave the universe on its editor's Editors tab."
+	},
+	"email.roleGiven.subject": {
+		"message": "Ye have a post in {universe} on {siteName}",
+		"source": "You have a role in {universe} on {siteName}"
+	},
+	"email.roleGiven.whatItAllows": {
+		"message": "{role, select, creator {As captain ye can change everythin' about the universe, even who else sails her.} builder {As shipwright ye can change the universe's world: its tiles, booty, areas, charts and passages.} beta_tester {As deckhand ye can sail the universe afore she opens to every soul.} other {As translator ye can turn the universe's words into the tongues ye were given.}}",
+		"source": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}"
 	},
 	"email.twoFactorDisabled.body": {
 		"message": "Two-factor authentication was struck from yer account on {siteName}. Comin' aboard now needs only yer password, an' yer recovery codes be worthless.",
@@ -2247,9 +3823,21 @@
 		"message": "Wrong codes were tried on yer account on {siteName}",
 		"source": "Wrong codes were typed for your account on {siteName}"
 	},
+	"error.adminNeedsTwoFactor": {
+		"message": "Raise two-factor authentication afore ye set foot in the captain's quarters.",
+		"source": "Turn on two-factor authentication to use the admin pages."
+	},
+	"error.alreadyEditor": {
+		"message": "{username} already serves aboard this universe.",
+		"source": "{username} already has a role in this universe."
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
+	},
+	"error.alreadyServerAdmin": {
+		"message": "They already be one o' the ship's officers.",
+		"source": "They are already one of the site's admins."
 	},
 	"error.areaInsideItself": {
 		"message": "An area can't be inside its own hold.",
@@ -2258,6 +3846,10 @@
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
+	},
+	"error.auth.deleteUniversePrevented": {
+		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin'. Make another o' her crew her captain.",
+		"source": "The site's admins disabled {universe} and kept it from being deleted. Make another of its editors its creator."
 	},
 	"error.auth.deleteUniversesChanged": {
 		"message": "The universes ye captain alone have changed. Look 'em over again afore scuttlin' yer account.",
@@ -2443,6 +4035,10 @@
 		"message": "A peril needs a name.",
 		"source": "A difficulty level needs a name."
 	},
+	"error.draftExists": {
+		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
+		"source": "The universe already has a draft. Apply it or discard it before starting another."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
@@ -2458,6 +4054,10 @@
 	"error.floatingAbility": {
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
+	},
+	"error.groupCharacterBarred": {
+		"message": "{bar, select, race {That hand's folk be closed, so they can't sail.} other {That hand's callin' be closed, so they can't sail.}}",
+		"source": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}"
 	},
 	"error.groupCharacterUnavailable": {
 		"message": "That hand can't do that: they be lost at sea, sail under another flag, or be bound for Davy Jones.",
@@ -2495,9 +4095,17 @@
 		"message": "Booty needs a name.",
 		"source": "An item needs a name."
 	},
+	"error.lastCreator": {
+		"message": "Every universe needs a captain. Make another hand a captain first.",
+		"source": "A universe needs at least one creator. Make another editor a creator first."
+	},
 	"error.lastRitesOff": {
 		"message": "There be no last rites on this ship. Hands can only be thrown overboard on the spot.",
 		"source": "Characters can't be given their last rites on this site. They can only be deleted immediately."
+	},
+	"error.lastServerAdmin": {
+		"message": "The ship needs at least one officer, so the last can't be demoted.",
+		"source": "The site needs at least one admin, so the last can't be removed."
 	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area's chart.",
@@ -2515,6 +4123,10 @@
 		"message": "A passage must sail to another area.",
 		"source": "A link must go to another area."
 	},
+	"error.lobbyIsStartingArea": {
+		"message": "Hands set sail from this area, so it can't be the tavern. Pick another area, or first change where the universe's, folks' an' callin's hands set sail from.",
+		"source": "Characters start in this area, so it can't be the lobby. Choose another area, or first change where the universe's, races' and classes' characters start."
+	},
 	"error.logInFirst": {
 		"message": "Come aboard first.",
 		"source": "Log in first."
@@ -2530,6 +4142,10 @@
 	"error.noEnabledTheme": {
 		"message": "A universe needs at least one yarn open to all hands, so new crew have one to spin.",
 		"source": "A universe needs at least one enabled theme, so new characters have one to choose."
+	},
+	"error.noLongerEditor": {
+		"message": "Ye no longer serve aboard this universe, so yer changes can't be stowed.",
+		"source": "You no longer have a role in this universe, so your changes can't be saved."
 	},
 	"error.noSuchArea": {
 		"message": "That area be lost at sea.",
@@ -2551,6 +4167,14 @@
 		"message": "That peril be lost at sea.",
 		"source": "The difficulty level doesn't exist."
 	},
+	"error.noSuchDraft": {
+		"message": "This universe has no draft. It may have been launched or scuttled.",
+		"source": "The universe has no draft. It may have been applied or discarded."
+	},
+	"error.noSuchEditor": {
+		"message": "That hand no longer serves aboard this universe.",
+		"source": "They are no longer one of the universe's editors."
+	},
 	"error.noSuchGroup": {
 		"message": "That crew has sunk, or that hand ain't aboard.",
 		"source": "The group doesn't exist any more, or that character isn't in it."
@@ -2563,7 +4187,19 @@
 		"message": "There be no passage on that cell.",
 		"source": "There is no link on that cell."
 	},
+	"error.noSuchLobbyArea": {
+		"message": "The tavern must be one o' this universe's areas.",
+		"source": "The lobby must be one of this universe's areas."
+	},
 	"error.noSuchPlayer": {
+		"message": "No sailor goes by that username.",
+		"source": "No player has that username."
+	},
+	"error.noSuchPlayerToAdd": {
+		"message": "No sailor goes by that username.",
+		"source": "No player has that username."
+	},
+	"error.noSuchPlayerToMakeAdmin": {
 		"message": "No sailor goes by that username.",
 		"source": "No player has that username."
 	},
@@ -2591,6 +4227,14 @@
 		"message": "That universe be lost at sea, or ye can't see it.",
 		"source": "The universe doesn't exist, or you can't see it."
 	},
+	"error.noSuchUniverseText": {
+		"message": "Them words ain't the universe's any more. Someone may have scuttled or renamed what they belong to.",
+		"source": "That text isn't the universe's any more. Someone may have deleted or renamed what it belongs to."
+	},
+	"error.noSuchTranslationLanguage": {
+		"message": "The universe ain't been turned into that tongue.",
+		"source": "The universe isn't translated into that language."
+	},
 	"error.noSuchUploadedGraphic": {
 		"message": "That hauled-aboard tileset ain't in this universe's hold.",
 		"source": "The uploaded tileset doesn't exist in this universe."
@@ -2602,6 +4246,14 @@
 	"error.noThemes": {
 		"message": "This universe's ship's articles have no yarns.",
 		"source": "This universe's ruleset has no themes."
+	},
+	"error.notAnAdminToRemove": {
+		"message": "They ain't one o' the ship's officers.",
+		"source": "They aren't one of the site's admins."
+	},
+	"error.notServerAdmin": {
+		"message": "Only the ship's officers can set foot here.",
+		"source": "Only the site's admins can use this page."
 	},
 	"error.onlyAnchorInvites": {
 		"message": "Only the anchor bein's sailor can call others aboard.",
@@ -2655,6 +4307,10 @@
 		"message": "Yer rank in this universe don't allow that.",
 		"source": "Your role in this universe doesn't allow that."
 	},
+	"error.saveConflicts": {
+		"message": "Other hands changed some o' the same settings since ye loaded 'em. Choose whose t' keep, then stow again.",
+		"source": "Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again."
+	},
 	"error.scoresChanged": {
 		"message": "The universe has changed how knacks be scored. Close Sign On a Hand an' open it again.",
 		"source": "The universe has changed how ability scores are made. Close Create Character and open it again."
@@ -2662,6 +4318,10 @@
 	"error.somethingWentWrong": {
 		"message": "Somethin' went awry in the server's hold.",
 		"source": "Something went wrong on the server."
+	},
+	"error.sourceLanguageTranslated": {
+		"message": "The mother tongue can't also be one o' the tongues the universe be turned into.",
+		"source": "The source language can't also be one of the languages the universe is translated into."
 	},
 	"error.themeInUse": {
 		"message": "Hands spin this yarn, so it can't be scuttled. Lock it away instead.",
@@ -2707,17 +4367,41 @@
 		"message": "A tile needs a name.",
 		"source": "A tile needs a name."
 	},
+	"error.translationLanguageGone": {
+		"message": "The universe ain't turned into that tongue any more.",
+		"source": "The universe isn't translated into that language any more."
+	},
+	"error.translationsNotAllowed": {
+		"message": "Yer rank don't let ye see the translations into that tongue.",
+		"source": "Your role doesn't let you see the translations into that language."
+	},
+	"error.universeAlreadyDisabled": {
+		"message": "That universe be laid up already.",
+		"source": "The universe is already disabled."
+	},
 	"error.universeCreationDisabled": {
 		"message": "The captain's forbidden creatin' universes fer now.",
 		"source": "Creating universes is turned off for now."
+	},
+	"error.universeDisabledSave": {
+		"message": "The ship's officers have laid up this universe, so changes to it can't be stowed.",
+		"source": "The site's admins have disabled this universe, so changes to it can't be saved."
 	},
 	"error.universeLimit": {
 		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}.",
 		"source": "You can create at most {max, plural, one {# universe} other {# universes}}."
 	},
+	"error.universeLockedSave": {
+		"message": "This universe has sunk to the depths, so only her captains can change her.",
+		"source": "This universe has reached the end of time, so only its creators can change it."
+	},
 	"error.universeNameTaken": {
 		"message": "Another universe already sails under that name, or one too much like it.",
 		"source": "Another universe already has that name, or one too much like it."
+	},
+	"error.universeNotDisabled": {
+		"message": "That universe ain't laid up.",
+		"source": "The universe isn't disabled."
 	},
 	"error.unknownItemType": {
 		"message": "The universe's ruleset knows no such sort o' booty.",
@@ -2762,6 +4446,10 @@
 	"filter.yes": {
 		"message": "Aye",
 		"source": "Yes"
+	},
+	"form.coinAbbreviation.invalid": {
+		"message": "Scrawl up to {max, number} marks, without spaces, digits or commas.",
+		"source": "Write up to {max, number} characters, without spaces, digits or commas."
 	},
 	"form.discardChanges": {
 		"message": "Ye've changes not yet stowed. Toss 'em overboard?",
@@ -2819,6 +4507,10 @@
 		"message": "Not yet stowed",
 		"source": "Unsaved changes"
 	},
+	"form.universeNameLikeId": {
+		"message": "Pick a name that don't look like a universe's ID, matey.",
+		"source": "Choose a name that doesn't look like a universe's ID."
+	},
 	"form.universeNameNoLetters": {
 		"message": "A universe's name needs at least one letter or number, matey.",
 		"source": "A universe's name needs at least one letter or number."
@@ -2827,21 +4519,53 @@
 		"message": "Give a whole number from {min, number} to {max, number}, matey.",
 		"source": "Enter a whole number from {min, number} to {max, number}."
 	},
+	"game.accessLost": {
+		"message": "Yer post in {universe} was changed or stripped, so ye can't sail it while it stands at its current stage.",
+		"source": "Your role in {universe} was changed or taken away, so you can't play it while it is in its current stage."
+	},
 	"game.loadingUniverse": {
 		"message": "Unrollin' the charts...",
 		"source": "Loading the universe..."
+	},
+	"game.stageChanged": {
+		"message": "The stage o' {universe} was changed, and yer post don't let ye sail her at her new stage.",
+		"source": "The stage of {universe} was changed, and your role doesn't let you play it in its new stage."
 	},
 	"game.universeDeleted": {
 		"message": "{universe} was sent to the deep, with all aboard.",
 		"source": "{universe} was deleted, with everything in it."
 	},
+	"game.universeDisabled": {
+		"message": "The ship's officers have laid up {universe}, so it can't be sailed fer now.",
+		"source": "The site's admins have disabled {universe}, so it can't be played for now."
+	},
+	"game.universeLocked": {
+		"message": "{universe} has sunk to the depths, so she be locked fast and her tavern can't be entered. Hands in a crew can still open her up to have a look about.",
+		"source": "{universe} has reached the end of time, so it is locked and its lobby can't be entered. Characters in a group can still open it to look around."
+	},
 	"game.universeNotFound": {
 		"message": "That universe be lost at sea.",
 		"source": "That universe could not be found."
 	},
+	"group.characterBarred": {
+		"message": "The universe's captains closed the folk or callin' o' {name}, so they can't sail till it be open again. They still sail with the crew.",
+		"source": "The universe's creators disabled the race or class of {name}, so they can't play until it is enabled again. They are still in the group."
+	},
 	"group.characterLeft": {
 		"message": "{name} no longer sails with the crew, or can't take the helm.",
 		"source": "{name} is no longer in the group, or can't be played."
+	},
+	"group.chat.arrived": {
+		"message": "{count, plural, one {{names} be aboard} other {{names} be aboard}}",
+		"source": "{count, plural, one {{names} is here} other {{names} are here}}"
+	},
+	"group.chat.here": {
+		"message": "Aboard: {names}",
+		"source": "Here: {names}"
+	},
+	"group.chat.left": {
+		"message": "{count, plural, one {{names} has gone ashore} other {{names} have gone ashore}}",
+		"source": "{count, plural, one {{names} has left} other {{names} have left}}"
 	},
 	"group.clock": {
 		"message": "Day {day, number} o' the voyage, {time}",
@@ -2874,6 +4598,14 @@
 	"group.leaveFailed": {
 		"message": "Couldn't jump ship.",
 		"source": "Could not leave the group."
+	},
+	"group.locked": {
+		"message": "This universe has sunk to the depths, so she be locked fast. Ye can have a look about and switch between yer hands, but nothin' can move or change.",
+		"source": "This universe has reached the end of time, so it is locked. You can look around and switch between your characters, but nothing can move or change."
+	},
+	"group.lockedNow": {
+		"message": "This universe has sunk to the depths, so she be locked fast now. Nothin' can move or change.",
+		"source": "This universe has reached the end of time, so it is now locked. Nothing can move or change."
 	},
 	"group.member.anchor": {
 		"message": "anchor",
@@ -2915,9 +4647,17 @@
 		"message": "Rowin' back to the tavern...",
 		"source": "Going back to the lobby..."
 	},
+	"group.sizeLowered": {
+		"message": "The universe's captains made crews smaller, so {name} no longer sails with the crew, or the crew was scuttled.",
+		"source": "The universe's creators made groups smaller, so {name} is no longer in the group, or the group was disbanded."
+	},
 	"group.title": {
 		"message": "Crew",
 		"source": "Group"
+	},
+	"group.unlockedNow": {
+		"message": "This universe be locked no more. Ye can move again.",
+		"source": "This universe is no longer locked. You can move again."
 	},
 	"group.unnamed": {
 		"message": "Crew",
@@ -2939,17 +4679,17 @@
 		"message": "Create Universe",
 		"source": "Create Universe"
 	},
-	"home.createDisabled": {
-		"message": "The captain's forbidden creatin' universes fer now",
-		"source": "Creating universes is turned off for now"
-	},
-	"home.createLimit": {
-		"message": "Ye can create at most {max, plural, one {# universe} other {# universes}}",
-		"source": "You can create at most {max, plural, one {# universe} other {# universes}}"
-	},
 	"home.createUniverse": {
 		"message": "Create Universe",
 		"source": "Create Universe"
+	},
+	"home.empty.text": {
+		"message": "Come back later to spy the light o' the first universe.",
+		"source": "Come back later to see the light of the first universe."
+	},
+	"home.empty.title": {
+		"message": "The stars be still in the forge.",
+		"source": "The stars are still being forged."
 	},
 	"home.listFailed": {
 		"message": "Couldn't list the universes. Reload the page to try again.",
@@ -2959,17 +4699,13 @@
 		"message": "Come aboard",
 		"source": "Log in"
 	},
-	"home.noOwnUniverses": {
-		"message": "Ye haven't made a universe yet.",
-		"source": "You haven't made a universe yet."
-	},
-	"home.noUniverses": {
-		"message": "There be no universes to sail yet.",
-		"source": "There are no universes to play in yet."
-	},
 	"home.ownDetails": {
 		"message": "{ruleset} - {stage} - {role}",
 		"source": "{ruleset} - {stage} - {role}"
+	},
+	"home.ownDetailsDisabled": {
+		"message": "{ruleset} - {stage} - {role} - laid up by the ship's officers",
+		"source": "{ruleset} - {stage} - {role} - disabled by the site's admins"
 	},
 	"home.ownListFailed": {
 		"message": "Couldn't list yer universes.",
@@ -2979,17 +4715,21 @@
 		"message": "Yer universes",
 		"source": "Your universes"
 	},
-	"home.pageTitle": {
-		"message": "Universes",
-		"source": "Universes"
+	"home.ownUniversesNone": {
+		"message": "Fancy tryin' yer hand at the act o' creation?",
+		"source": "Try your hand at the act of creation?"
 	},
 	"home.showMore": {
 		"message": "Show more",
 		"source": "Show more"
 	},
-	"home.siteSettings": {
-		"message": "The Captain's Orders",
-		"source": "Site Settings"
+	"home.testingHint": {
+		"message": "Universes ye hold a post in that be out on sea trials. Only their officers and deckhands spy 'em here.",
+		"source": "Universes you have a role in that are open for testing. Only their editors and beta testers see them here."
+	},
+	"home.testingUniverses": {
+		"message": "Out on sea trials",
+		"source": "Open for testing"
 	},
 	"home.universes": {
 		"message": "Universes",
@@ -3160,8 +4900,8 @@
 		"source": "Disband the Group?"
 	},
 	"leaveGroup.question": {
-		"message": "{name} jumps ship and rows to the tavern. To come back aboard, they need a fresh summons.",
-		"source": "{name} leaves the group and goes to the lobby. To come back, they need a new invite."
+		"message": "If ye jump ship from this crew, {name} will row back to the tavern. To come back aboard, ye'll need a fresh summons.",
+		"source": "If you leave this group, {name} will return to the lobby. To rejoin this group, you will need to be reinvited."
 	},
 	"leaveGroup.title": {
 		"message": "Jump Ship?",
@@ -3263,6 +5003,10 @@
 		"message": "{siteName} be handed out in the hope that it'll be useful, but WITHOUT ANY WARRANTY; without even the implied warranty o' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.",
 		"source": "{siteName} is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details."
 	},
+	"lobby.characterBarred": {
+		"message": "The universe's captains closed that hand's folk or callin', so they can't sail till it be open again.",
+		"source": "The universe's creators disabled that character's race or class, so they can't play until it is enabled again."
+	},
 	"lobby.characterPlaying": {
 		"message": "At the helm",
 		"source": "Playing"
@@ -3286,10 +5030,6 @@
 	"lobby.chat.send": {
 		"message": "Send",
 		"source": "Send"
-	},
-	"lobby.chat.tooFast": {
-		"message": "Ye be squawkin' too fast. Wait a moment and try again.",
-		"source": "You are sending messages too quickly. Wait a moment and try again."
 	},
 	"lobby.connectionLost": {
 		"message": "Lost sight o' {universe}.",
@@ -3380,8 +5120,8 @@
 		"source": "Name"
 	},
 	"login.displayNameHint": {
-		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
-		"source": "The name other players see. It doesn't have to be your real name, or unique."
+		"message": "The name other sailors see. It needn't be yer real name.",
+		"source": "The name other players see. It doesn't have to be your real name."
 	},
 	"login.email": {
 		"message": "Email address",
@@ -3480,8 +5220,12 @@
 		"source": "Two-factor authentication keeps your account safe even if someone learns your password: logging in asks for a code from an app on your phone too. You can set it up now, or any time from your profile."
 	},
 	"login.registeredTitle": {
-		"message": "Yer articles be signed",
-		"source": "Your account is ready"
+		"message": "Yer articles be signed!",
+		"source": "Your account has been created!"
+	},
+	"login.registeredWelcome": {
+		"message": "Welcome aboard, {name}! Ye be logged in to yer new account.",
+		"source": "Welcome, {name}! You're logged in to your new account."
 	},
 	"login.rememberMe": {
 		"message": "Remember me",
@@ -3554,6 +5298,10 @@
 	"login.twoFactorResetHint": {
 		"message": "Yer account has two-factor authentication, so the email code ain't enough on its own. Enter the 6-digit code from yer authenticator app, or one o' yer recovery codes.",
 		"source": "Your account has two-factor authentication, so the email code isn't enough on its own. Enter the 6-digit code from your authenticator app, or one of your recovery codes."
+	},
+	"login.twoFactorSetupHeading": {
+		"message": "Rig Two-Factor Authentication",
+		"source": "Set Up Two-Factor Authentication"
 	},
 	"login.twoFactorTitle": {
 		"message": "Enter yer authenticator code",
@@ -3819,6 +5567,10 @@
 		"message": "Source code",
 		"source": "Source code"
 	},
+	"page.titleUnread": {
+		"message": "({count, number}) {title}",
+		"source": "({count, number}) {title}"
+	},
 	"pager.next": {
 		"message": "Onward",
 		"source": "Next"
@@ -3950,6 +5702,22 @@
 	"pf1e.coin.sp": {
 		"message": "pcs",
 		"source": "sp"
+	},
+	"pf1e.coinName.cp": {
+		"message": "copper bits",
+		"source": "copper pieces"
+	},
+	"pf1e.coinName.gp": {
+		"message": "doubloons",
+		"source": "gold pieces"
+	},
+	"pf1e.coinName.pp": {
+		"message": "platinum pieces",
+		"source": "platinum pieces"
+	},
+	"pf1e.coinName.sp": {
+		"message": "pieces o' eight",
+		"source": "silver pieces"
 	},
 	"pf1e.itemCategory.armor": {
 		"message": "Armor",
@@ -4215,6 +5983,34 @@
 		"message": "{city} ({zoneName}), where the ship's bell says {time}",
 		"source": "{city} ({zoneName}), where it's {time} now"
 	},
+	"playerSearch.chosen": {
+		"message": "{name} (@{username})",
+		"source": "{name} (@{username})"
+	},
+	"playerSearch.clear": {
+		"message": "Toss {name} overboard",
+		"source": "Remove {name}"
+	},
+	"playerSearch.cleared": {
+		"message": "{name} tossed overboard",
+		"source": "{name} removed"
+	},
+	"playerSearch.failed": {
+		"message": "Couldn't spy any sailors through the fog. Try again in a moment.",
+		"source": "Could not search for players. Try again in a moment."
+	},
+	"playerSearch.noMatches": {
+		"message": "No sailors answer to that",
+		"source": "No players match"
+	},
+	"playerSearch.searching": {
+		"message": "Scanning the horizon...",
+		"source": "Searching..."
+	},
+	"playerSearch.typeToSearch": {
+		"message": "Scrawl at least {min, plural, one {# letter} other {# letters}} of a name, or @ and a username",
+		"source": "Type at least {min, plural, one {# character} other {# characters}} of a name, or @ and a username"
+	},
 	"privacy.account": {
 		"message": "Yer account",
 		"source": "Your account"
@@ -4268,8 +6064,8 @@
 		"source": "Cookies and browser storage"
 	},
 	"privacy.cookiesCharacter": {
-		"message": "The hand each tab last sailed as, so reloadin' the tab sails as 'em again, till the tab closes.",
-		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes."
+		"message": "The hand each tab last sailed as, so reloadin' the tab sails as 'em again, till the tab closes, ye go ashore or yer time aboard runs out.",
+		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes, you log out or your login ends."
 	},
 	"privacy.cookiesCode": {
 		"message": "After ye enter a code we sent ye, a cookie that lets that browser take the next step, such as choosin' a password, for 10 minutes.",
@@ -4286,6 +6082,10 @@
 	"privacy.cookiesLanguage": {
 		"message": "The tongue ye choose at the bottom o' the page.",
 		"source": "The language you choose at the bottom of the page."
+	},
+	"privacy.cookiesName": {
+		"message": "The name ye sail under, so each page shows it at once, till ye go ashore or yer time aboard runs out.",
+		"source": "Your display name, so each page shows it at once, until you log out or your login ends."
 	},
 	"privacy.cookiesSession": {
 		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after an hour without use, or when ye close yer browser; with \"Remember me\" checked, after 30 days without use.",
@@ -4323,9 +6123,13 @@
 		"message": "A hand ye send to Davy Jones, for {days, plural, one {# day} other {# days}}, while ye can still haul 'em back.",
 		"source": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back."
 	},
+	"privacy.howLongEditRecord": {
+		"message": "The record o' changes stowed in universe editors fer 90 days, or until the universe be deleted, even after ye delete yer account.",
+		"source": "The record of saves made in universe editors for 90 days, or until the universe is deleted, even after you delete your account."
+	},
 	"privacy.howLongSecurity": {
-		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, an' counts only while a limit needs 'em.",
-		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, and counts only while a limit needs them."
+		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs 'em, an' the officers' log with yer name in it till ye delete yer account.",
+		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account."
 	},
 	"privacy.intro": {
 		"message": "These articles tell what this {siteName} ship keeps about ye when ye sail or build universes here, why it keeps it, who can see it, how long it be kept, an' how ye can haul it down or delete it. We keep as little data as we can.",
@@ -4352,8 +6156,16 @@
 		"source": "Your characters, their items and progress, the groups they are in, and the parts of each universe your groups have explored."
 	},
 	"privacy.playChat": {
-		"message": "Chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
-		"source": "Chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
+		"message": "Tavern chatter ain't saved. The game server keeps a tavern's latest messages in memory, so players who arrive can read 'em, till the tavern closes or the server restarts.",
+		"source": "Lobby chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
+	},
+	"privacy.playEditRecord": {
+		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. Each one be kept fer 90 days, or until the universe be deleted if that comes sooner, even after ye delete yer account. Deletin' yer account strikes yer name off the changes ye stowed yerself, but yer username stays in the ones that gave ye a role in a universe, changed it or took it away.",
+		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for 90 days, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away."
+	},
+	"privacy.playKeptChat": {
+		"message": "Each crew's chatter and the chatter o' a universe's editors be saved, so hands who arrive can read them: each keeps its newest 200 messages, until the crew disbands or the universe be deleted. When ye delete yer account, yer messages stay in them without yer name.",
+		"source": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps its newest 200 messages, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name."
 	},
 	"privacy.playUniverses": {
 		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",
@@ -4386,6 +6198,10 @@
 	"privacy.security": {
 		"message": "Keepin' it safe",
 		"source": "Keeping it safe"
+	},
+	"privacy.securityAdminLog": {
+		"message": "A log o' what the ship's officers do in the captain's quarters, such as promotin' a sailor to officer or layin' up a universe. It names the officer and any sailor promoted or demoted, till their accounts be deleted.",
+		"source": "A record of what the site's admins do on the admin pages, such as making a player an admin or disabling a universe. It names the admin and any player made or removed as an admin, until their accounts are deleted."
 	},
 	"privacy.securityCodes": {
 		"message": "The codes we send ye, to sign on, reset yer password or change yer email address, kept only scrambled, an' only till they be used or expire 15 minutes later.",
@@ -4595,13 +6411,29 @@
 		"message": "Scuttle account",
 		"source": "Delete account"
 	},
+	"profile.deleteAccountAnchors": {
+		"message": "Crews whose anchor be one of yer hands are disbanded.",
+		"source": "Groups whose anchor being is one of your characters are disbanded."
+	},
 	"profile.deleteAccountConfirm": {
 		"message": "Scuttle my account",
 		"source": "Delete my account"
 	},
+	"profile.deleteAccountDownload": {
+		"message": "Haul yer data ashore first to keep a copy.",
+		"source": "Download your data first to keep a copy."
+	},
+	"profile.deleteAccountFarewell": {
+		"message": "Be ye truly, deeply sure ye want to scuttle yer account? This be forever (a mighty long voyage!) and there be no raisin' it again.",
+		"source": "Are you absolutely sure you want to delete your account? This is permanent (a very long time!) and cannot be undone."
+	},
 	"profile.deleteAccountIntro": {
-		"message": "Yer profile and hands go to the deep, never to be raised. Crews whose anchor be one of yer hands are disbanded. Haul yer data ashore first to keep a copy.",
-		"source": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy."
+		"message": "Yer profile and hands go to the deep, never to be raised.",
+		"source": "Your profile and characters are deleted, and can't be brought back."
+	},
+	"profile.deleteAccountNext": {
+		"message": "Scuttle my account",
+		"source": "Delete my account"
 	},
 	"profile.deleteAccountTitle": {
 		"message": "Scuttle yer account",
@@ -4623,6 +6455,10 @@
 		"message": "Couldn't scuttle yer account.",
 		"source": "Could not delete your account."
 	},
+	"profile.deleteLastServerAdmin": {
+		"message": "Ye be the ship's only officer, so yer account can't be scuttled. Promote another sailor to officer first.",
+		"source": "You're the site's only admin, so your account can't be deleted. Make another player an admin first."
+	},
 	"profile.deleteLoadFailed": {
 		"message": "Couldn't see what scuttlin' yer account needs. Close this and try again.",
 		"source": "Could not check what deleting your account needs. Close this and try again."
@@ -4630,6 +6466,10 @@
 	"profile.deleteTypeUsername": {
 		"message": "Write yer username to swear to it",
 		"source": "Type your username to confirm"
+	},
+	"profile.deleteUnhandableUniverse": {
+		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin', an' she has no other crew to hand her to. Yer account can't be scuttled till the officers set her sailin' again.",
+		"source": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it."
 	},
 	"profile.deleteUniverseChoose": {
 		"message": "Choose...",
@@ -4642,6 +6482,10 @@
 	"profile.deleteUniverseHandTo": {
 		"message": "Make {name} (@{username}, {role}) its captain",
 		"source": "Make {name} (@{username}, {role}) its creator"
+	},
+	"profile.deleteUniversePrevented": {
+		"message": "The ship's officers have laid up this universe an' forbid her scuttlin', so another o' her crew has to become her captain.",
+		"source": "The site's admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator."
 	},
 	"profile.deleteUniverseUnchosen": {
 		"message": "Choose what becomes o' {universe}.",
@@ -4660,8 +6504,8 @@
 		"source": "Name"
 	},
 	"profile.displayNameHint": {
-		"message": "The name other sailors see. It needn't be yer real name, nor yers alone.",
-		"source": "The name other players see. It doesn't have to be your real name, or unique."
+		"message": "The name other sailors see. It needn't be yer real name.",
+		"source": "The name other players see. It doesn't have to be your real name."
 	},
 	"profile.downloadData": {
 		"message": "Haul yer data ashore",
@@ -4939,6 +6783,10 @@
 		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
 		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten."
 	},
+	"profile.twoFactorDisableIntroAdmin": {
+		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
+		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
+	},
 	"profile.twoFactorDisableTitle": {
 		"message": "Strike two-factor authentication",
 		"source": "Turn off two-factor authentication"
@@ -5074,6 +6922,10 @@
 	"sf1e.coin.cr": {
 		"message": "cr",
 		"source": "cr"
+	},
+	"sf1e.coinName.cr": {
+		"message": "credits",
+		"source": "credits"
 	},
 	"sf1e.itemCategory.armor": {
 		"message": "Armor",
@@ -5319,6 +7171,10 @@
 		"message": "{period, select, midnight {the witchin' hour} pre_dawn {afore first light} dawn {first light} early_morning {early mornin''} morning {mornin''} late_morning {late mornin''} noon {high noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {eventide} late_evening {late eventide} other {the dark o' night}}",
 		"source": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}"
 	},
+	"toast.close": {
+		"message": "Aye, Got It",
+		"source": "Got It"
+	},
 	"universe.displayTime.none": {
 		"message": "naught",
 		"source": "nothing"
@@ -5371,6 +7227,10 @@
 		"message": "west",
 		"source": "west"
 	},
+	"universe.languages": {
+		"message": "Tongues: {languages}",
+		"source": "Languages: {languages}"
+	},
 	"universe.lightLevel.dark": {
 		"message": "pitch dark",
 		"source": "dark"
@@ -5383,6 +7243,10 @@
 		"message": "Tavern",
 		"source": "Lobby"
 	},
+	"universe.role.admin": {
+		"message": "ship's officer",
+		"source": "site admin"
+	},
 	"universe.role.beta_tester": {
 		"message": "deckhand",
 		"source": "beta tester"
@@ -5394,6 +7258,26 @@
 	"universe.role.creator": {
 		"message": "captain",
 		"source": "creator"
+	},
+	"universe.role.translator": {
+		"message": "translator",
+		"source": "translator"
+	},
+	"universe.roleDescription.beta_tester": {
+		"message": "Can sail the universe while she's open for sea trials, afore every soul can, but can't change her.",
+		"source": "Can play the universe while it's open for testing, before everyone can, but can't change it."
+	},
+	"universe.roleDescription.builder": {
+		"message": "Can change the universe's world (its tiles, booty, areas, charts and passages) and sail her while she's still on the slipway. Can read her other settings without changin' them.",
+		"source": "Can change the universe's world (its tiles, items, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them."
+	},
+	"universe.roleDescription.creator": {
+		"message": "Can change everythin' about the universe, even who else sails her, and sail her while she's still on the slipway.",
+		"source": "Can change everything about the universe, including who else works on it, and play it while it's still being built."
+	},
+	"universe.roleDescription.translator": {
+		"message": "Can turn the universe's words into the tongues they be given, and sail her during sea trials, but can't change aught else.",
+		"source": "Can translate the universe's text into the languages they are given, and play it while it's open for testing, but can't change anything else."
 	},
 	"universe.ruleset": {
 		"message": "Ship's articles",
@@ -5479,20 +7363,64 @@
 		"message": "by the real clock",
 		"source": "real time"
 	},
+	"universePage.edit": {
+		"message": "Refit Universe",
+		"source": "Edit Universe"
+	},
 	"universePage.enter": {
 		"message": "Set Sail",
 		"source": "Enter Universe"
+	},
+	"universePage.languageShown": {
+		"message": "Hoisted",
+		"source": "In use"
+	},
+	"universePage.languagesHeading": {
+		"message": "Tongues",
+		"source": "Languages"
+	},
+	"universePage.languagesIntro": {
+		"message": "Pick the tongue to sail this universe in.",
+		"source": "Choose the language to play this universe in."
+	},
+	"universePage.languagesProfileNote": {
+		"message": "Pickin' a tongue also makes it the tongue on yer profile.",
+		"source": "Choosing a language also makes it the language on your profile."
 	},
 	"universePage.loadFailed": {
 		"message": "Couldn't haul up the universe. Reload the page to try again.",
 		"source": "Could not load the universe. Reload the page to try again."
 	},
+	"universePage.locked": {
+		"message": "This universe has sunk to the depths, so she be locked fast. Her tavern can't be entered and no hands can be signed on, but hands in a crew can still open her up to have a look about.",
+		"source": "This universe has reached the end of time, so it is locked. Its lobby can't be entered and no characters can be made, but characters in a group can still open it to look around."
+	},
 	"universePage.notFound": {
 		"message": "That universe be lost at sea. It may sail under a new name, or it ain't open to all hands yet.",
 		"source": "That universe could not be found. It may have been renamed, or it isn't open to everyone yet."
 	},
+	"universePage.profileLocaleFailed": {
+		"message": "Couldn't change the tongue on yer profile, so the tongue weren't changed.",
+		"source": "Could not change the language on your profile, so the language wasn't changed."
+	},
+	"universePage.siteLanguageChanged": {
+		"message": "The site now speaks {language}, matey.",
+		"source": "The site is now in {language}."
+	},
 	"universePage.unavailableTitle": {
 		"message": "Universe",
 		"source": "Universe"
+	},
+	"universePage.universeTextOnly": {
+		"message": "universe words only",
+		"source": "universe text only"
+	},
+	"universePage.universeTextOnlyNote": {
+		"message": "The site itself ain't been turned into the tongues marked \"{label}\" yet. Pickin' one shows universes' own words in it, such as their names, tales, areas and booty, wherever a universe be turned into it. The site's buttons and menus stay in the tongue they be in now.",
+		"source": "The site itself isn't translated into the languages marked \"{label}\" yet. Choosing one shows universes' own text in it, such as their names, descriptions, areas and items, wherever a universe is translated into it. The site's buttons and menus stay in the language they are in now."
+	},
+	"universePage.universeTextOnlyTag": {
+		"message": "({label})",
+		"source": "({label})"
 	}
 }

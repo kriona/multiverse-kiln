@@ -2,6 +2,9 @@
 // universes, dialogs, forms and rendered Markdown. Each page's stylesheet uses this with
 // `@use 'shared' as *;` and adds its own rules
 
+@use 'sass:meta';
+@use 'sass:string';
+
 // Backgrounds, darkest first
 $background-page: #111;
 $background-panel: #181a20;
@@ -30,6 +33,7 @@ $text-dim: #888;
 
 // Green: primary buttons, hover borders and the player's own name
 $accent: #4caf50;
+$accent-text: #59d95e;
 $accent-background: #2e7d32;
 $accent-background-hover: #388e3c;
 
@@ -38,10 +42,18 @@ $danger: #c62828;
 $danger-background: #8e1c1c;
 $danger-background-hover: #a52222;
 
-$link: #64b5f6;
+// Purple: buttons for a universe's draft, such as the editor's Start Draft, and Home's list of the
+// player's own universes
+$draft: #9c4dcc;
+$draft-text: #ce93d8;
+$draft-background: #6a1b9a;
+$draft-background-hover: #7b1fa2;
+
+$link: #00B2EE;
 $focus: #ffd54f;
-$link-hover: #90caf9;
+$link-hover: #ffd54f;
 $chat-name: #42a5f5;
+$chat-notice: #90caf9;
 $error: #ef9a9a;
 $success: #81c784;
 
@@ -69,6 +81,23 @@ body
 	flex-direction: column;
 	font-family: sans-serif;
 	color: $text;
+}
+
+// While a page shown in another language waits to be translated (public/remembered-language.js), it
+// stays hidden rather than showing its HTML's English. After a second it shows regardless, so a page whose
+// scripts fail is never left blank
+:root[data-translating] body
+{
+	visibility: hidden;
+	animation: show-untranslated 0s 1s forwards;
+}
+
+@keyframes show-untranslated
+{
+	to
+	{
+		visibility: visible;
+	}
 }
 
 [hidden]
@@ -182,7 +211,8 @@ textarea
 
 // a.button is a link to another page that looks like a button, such as Back to Home in a toolbar
 button,
-a.button
+a.button,
+a.button:visited
 {
 	padding: 6px 14px;
 	border: 1px solid $accent;
@@ -214,12 +244,15 @@ a.button
 	text-decoration: none;
 }
 
-// Icons from the icons plugin in vite.config.ts, sized to and colored like the text around them
+// Icons from the icons plugin in vite.config.ts, sized to and colored like the text around them. Their size
+// is rounded to whole pixels: a fractional height makes the buttons holding them, such as the account menu
+// in each toolbar, fractional too, which puts everything below on part of a pixel, where a scrolled list
+// can lose the top line of an entry's border
 .icon
 {
 	flex-shrink: 0;
-	width: 1.15em;
-	height: 1.15em;
+	width: round(1.15em, 1px);
+	height: round(1.15em, 1px);
 	vertical-align: -0.2em;
 }
 
@@ -287,6 +320,18 @@ button.danger
 	&:hover
 	{
 		background: $danger-background-hover;
+	}
+}
+
+button.draft,
+a.button.draft
+{
+	border-color: $draft;
+	background: $draft-background;
+
+	&:hover
+	{
+		background: $draft-background-hover;
 	}
 }
 
@@ -358,6 +403,69 @@ button.sort-button
 	justify-content: center;
 }
 
+// A chat's messages and the field for sending one, in the lobby, a group and the editors' chat
+// Fills its chat panel and scrolls; min-height lets it shrink below its messages' height to do so
+.chat-log
+{
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+	overflow-wrap: anywhere;
+
+	li
+	{
+		padding: 2px 0;
+	}
+}
+
+.chat-time
+{
+	margin-right: 6px;
+	font-size: 12px;
+	color: $text-dim;
+}
+
+.chat-name
+{
+	margin-right: 6px;
+	font-weight: bold;
+	color: $chat-name;
+
+	.chat-own &
+	{
+		color: $accent;
+	}
+}
+
+// A notice the server writes in a chat, such as a character leaving a group: the whole sentence is
+// blue, lighter than the names, so it doesn't read as someone's message
+.chat-notice
+{
+	color: $chat-notice;
+}
+
+// Who wrote a chat message a toast shows, in the chat's color for names
+.toast-chat-name
+{
+	font-weight: bold;
+	color: $chat-name;
+}
+
+.chat-form
+{
+	display: flex;
+	gap: 8px;
+}
+
+.chat-form input
+{
+	flex: 1;
+	min-width: 0;
+}
+
 // A message filling the page with a link to Home (partials/notice.html), such as for a universe that can't be found
 #notice-screen
 {
@@ -374,6 +482,12 @@ button.sort-button
 	gap: 12px;
 	padding: 12px 16px;
 	border-bottom: 1px solid $border;
+
+	a,
+	a:visited
+	{
+		color: #FFF;
+	}
 }
 
 // The game engine's name at the start of every toolbar, linking to Home. A line sets it apart from the page's own heading
@@ -430,7 +544,7 @@ button.sort-button
 	}
 }
 
-.toolbar-link ~ .account-menu
+.toolbar-link:not([hidden]) ~ .account-menu
 {
 	margin-inline-start: 0;
 }
@@ -472,12 +586,13 @@ button.sort-button
 	}
 }
 
+// Over the universe editor's chat, which sits under the toolbar
 .account-menu-list
 {
 	position: absolute;
 	inset-inline-end: 0;
 	top: calc(100% + 4px);
-	z-index: 10;
+	z-index: 13;
 	min-width: 180px;
 	margin: 0;
 	padding: 4px;
@@ -571,6 +686,37 @@ button.sort-button
 	color: $success-toast-text;
 }
 
+.toast.warning
+{
+	border-color: $notice-border;
+	background: $notice-background;
+	color: $notice-text;
+}
+
+// A toast that stays until it is closed, with its Got It button after the text
+.toast.stays
+{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.toast-close
+{
+	flex-shrink: 0;
+}
+
+// A toast with more than one paragraph, such as a save notice naming tabs with unsaved changes
+.toast p
+{
+	margin: 0;
+}
+
+.toast p + p
+{
+	margin-top: 6px;
+}
+
 // A toast fading out can't be clicked or hovered
 .toast.closing
 {
@@ -654,6 +800,12 @@ a.button.secondary
 	margin: 12px 0;
 	padding: 0;
 	list-style: none;
+
+	a,
+	a:visited
+	{
+		color: #FFF;
+	}
 }
 
 // An entry in a list: a universe linking to its page or its editor, or a button, such as an area in the editor
@@ -686,6 +838,57 @@ a.button.universe-item
 .universe-empty
 {
 	color: $text-faint;
+}
+
+// A player's username after their name, in the admin pages' lists and the editor's Character List tab
+.player-username
+{
+	color: $text-faint;
+	white-space: nowrap;
+}
+
+// The search and filters above a list, such as the editor's Items tab or the admin pages' lists
+.filters
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px;
+	margin-bottom: 12px;
+
+	label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		color: $text-muted;
+	}
+
+	// A checkbox sits beside its words, level with the fields' boxes
+	label.checkbox
+	{
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		min-height: 32px;
+	}
+
+	input[type="search"]
+	{
+		flex: 1;
+		min-width: 180px;
+	}
+}
+
+// Previous, which rows are shown, and Next, under a list shown a page at a time
+.pager
+{
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	margin-top: 12px;
+	color: $text-muted;
 }
 
 .dialog
@@ -871,6 +1074,15 @@ button.chip-remove
 	}
 }
 
+// After the player chosen in a player search (ui/PlayerSearch.ts), on the field's message line
+button.player-search-clear
+{
+	display: inline-flex;
+	margin-inline-start: 4px;
+	font-size: 14px;
+	vertical-align: middle;
+}
+
 // A search field with a list of choices under it (see ui/ComboboxList.ts)
 .combobox-field
 {
@@ -941,6 +1153,19 @@ button.chip-remove
 	color: $text-faint;
 }
 
+// A username field, about as wide as the longest username (MAX_USERNAME_LENGTH)
+input.username-input
+{
+	max-width: 22ch;
+}
+
+// One made a search field to keep password managers out keeps the right of the field for the
+// checking spinner (field-checking) rather than the browser's clear button
+input.username-input[type="search"]::-webkit-search-cancel-button
+{
+	appearance: none;
+}
+
 .form-error
 {
 	color: $error;
@@ -960,6 +1185,38 @@ button.chip-remove
 	min-height: 1lh;
 }
 
+// A field with its message line to its right, level with it, such as a new username and what checking
+// it found, or a player search and who was chosen. On a screen too narrow for both, the message goes
+// under the field
+.field-beside
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 12px;
+
+	> input,
+	> .combobox-field
+	{
+		flex: 0 1 22ch;
+		min-width: 0;
+	}
+
+	> .field-message-slot
+	{
+		flex: 1 1 10em;
+	}
+
+	// The list of choices is as wide as they need, rather than the narrow field, over the message
+	.combobox-options
+	{
+		inset-inline-end: auto;
+		width: max-content;
+		min-width: 100%;
+		max-width: min(32em, calc(100vw - 32px));
+	}
+}
+
 // That what was typed in a field is fine, on its message line
 .field-error.field-success
 {
@@ -969,7 +1226,7 @@ button.chip-remove
 // A field whose value the server is checking, such as a new username: Phosphor's circle-notch at the
 // right of the field, turning unless the player asked for less motion
 $checking-icon-path: "M232 128a104 104 0 0 1-208 0c0-41 23.81-78.36 60.66-95.27a8 8 0 0 1 6.68 14.54C60.15 61.59 40 93.27 40 128a88 88 0 0 0 176 0c0-34.73-20.15-66.41-51.34-80.73a8 8 0 0 1 6.68-14.54C208.19 49.64 232 87 232 128";
-$checking-icon-color: "%23" + str-slice(inspect($text-muted), 2);
+$checking-icon-color: "%23" + string.slice(meta.inspect($text-muted), 2);
 
 input.field-checking
 {
@@ -996,6 +1253,12 @@ input.field-checking
 .form-saved
 {
 	color: $success;
+}
+
+a,
+a:visited
+{
+	color: $link;
 }
 
 .markdown
@@ -1060,11 +1323,6 @@ input.field-checking
 		margin-bottom: 0;
 	}
 
-	a
-	{
-		color: $link;
-	}
-
 	pre,
 	code
 	{
@@ -1106,13 +1364,14 @@ footer
 	color: $text-faint;
 
 	a,
+	a:visited,
 	.link-button
 	{
 		color: $text-footer-link;
 
 		&:hover
 		{
-			color: $link-hover;
+			color: $link;
 		}
 	}
 

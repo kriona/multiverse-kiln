@@ -40,6 +40,7 @@ const torch: ItemSettings = {
 const lizardfolk: RaceSettings = {
 	name: 'Lizardfolk',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -51,6 +52,7 @@ const lizardfolk: RaceSettings = {
 const gunslinger: ClassSettings = {
 	name: 'Gunslinger',
 	enabled: true,
+	keepPlaying: true,
 	startingMoney: emptyMoney(),
 	startingItems: [],
 	startingAreaId: null,
@@ -184,9 +186,9 @@ function deleteTileset(editor: Editor, universeId: string, graphicId: string): P
  */
 function raceSettingsOf(race: EditorRace): RaceSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
+	const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
 
-	return({ name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
+	return({ name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
 }
 
 /**
@@ -197,9 +199,9 @@ function raceSettingsOf(race: EditorRace): RaceSettings
  */
 function classSettingsOf(characterClass: EditorClass): ClassSettings
 {
-	const { name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
+	const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
 
-	return({ name, enabled, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
+	return({ name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
 }
 
 describe('World editor API', () =>
@@ -378,6 +380,19 @@ describe('World editor API', () =>
 
 			assert.strictEqual((await updateUniverse(grace, otherId, { name: 'kilnhaven' })).status, 409);
 			assert.strictEqual((await updateUniverse(ada, universeId, { name: 'KilnHaven' })).status, 200);
+		});
+
+		it('refuses a name whose address would have the form of a universe\'s ID, when creating or renaming', async () =>
+		{
+			const universeId = await createUniverse(ada, 'Kilnhaven');
+
+			for (const name of [universeId, universeId.toUpperCase().replaceAll('-', ' ')])
+			{
+				assert.strictEqual((await send(ada, 'POST', '', { body: { name, shortDescription: '', ruleset: 'pf1e' } })).status, 400, name);
+				assert.strictEqual((await updateUniverse(ada, universeId, { name })).status, 400, name);
+			}
+
+			assert.strictEqual((await updateUniverse(ada, universeId, { name: `${universeId} Station` })).status, 200);
 		});
 
 		it('changes the settings, keeping faerie time and its morning together', async () =>
@@ -801,9 +816,13 @@ describe('World editor API', () =>
 				assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId, replaceWith)).status, 400, String(replaceWith));
 			}
 
+			// Telling the rooms the universe's text changed is tested in editorLanguages.test.ts
 			const stopListening = areaChanges.onChange((change) =>
 			{
-				changes.push(change);
+				if (change.kind !== 'text')
+				{
+					changes.push(change);
+				}
 			});
 
 			try
@@ -1574,9 +1593,14 @@ describe('World editor API', () =>
 		beforeEach(() =>
 		{
 			published = [];
+
+			// Telling the rooms the universe's text changed is tested in editorLanguages.test.ts
 			stopListening = areaChanges.onChange((change) =>
 			{
-				published.push(change);
+				if (change.kind !== 'text')
+				{
+					published.push(change);
+				}
 			});
 		});
 

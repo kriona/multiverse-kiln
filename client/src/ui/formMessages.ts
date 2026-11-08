@@ -14,6 +14,11 @@ export const formMessages = defineMessages({
 		defaultMessage: 'A universe\'s name needs at least one letter or number.',
 		description: 'Shown by the field for a universe\'s name when it has only spaces and punctuation; the name is made into the universe\'s web address, which needs a letter or number'
 	},
+	universeNameLikeId: {
+		id: 'form.universeNameLikeId',
+		defaultMessage: 'Choose a name that doesn\'t look like a universe\'s ID.',
+		description: 'Shown by the field for a universe\'s name when it has the form of the long code that identifies a universe (32 letters and digits in groups split by hyphens); the name is made into the universe\'s web address, where that form would name another universe'
+	},
 	wholeNumber: {
 		id: 'form.wholeNumber',
 		defaultMessage: 'Enter a whole number from {min, number} to {max, number}.',
@@ -43,5 +48,20 @@ export const formMessages = defineMessages({
 		id: 'dialog.close',
 		defaultMessage: 'Close',
 		description: 'Button that closes a dialog that only shows something, with nothing to change'
+	},
+	filterAny: {
+		id: 'filter.any',
+		defaultMessage: 'Any',
+		description: 'Choice of a filter that shows everything: on the editor\'s Items, Tilesets or Character List tab (such as items of every type, tiles whether passable or not, or characters of every race), or on the admin pages\' lists of sessions and players (such as players whether server admins or not)'
+	},
+	filterYes: {
+		id: 'filter.yes',
+		defaultMessage: 'Yes',
+		description: 'Choice of a yes-or-no filter on the editor\'s Items, Tilesets or Character List tab, e.g. Passable: Yes, or on the admin pages\' lists, e.g. Server admin: Yes'
+	},
+	filterNo: {
+		id: 'filter.no',
+		defaultMessage: 'No',
+		description: 'Choice of a yes-or-no filter on the editor\'s Items, Tilesets or Character List tab, e.g. Passable: No, or on the admin pages\' lists, e.g. Server admin: No'
 	}
 });

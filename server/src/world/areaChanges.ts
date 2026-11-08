@@ -1,4 +1,14 @@
 /**
+ * A cell of an area
+ */
+export interface AreaPlace
+{
+	areaId: string;
+	column: number;
+	row: number;
+}
+
+/**
  * A change the world editor has made to a universe's world, for the rooms playing in it
  *
  * - cells: cells of an area's map changed, in the chunks listed (by chunkKey())
@@ -8,14 +18,27 @@
  * - time: a universe's passage of time, its lobby's, or an area's that others may inherit, changed
  * - universeDeleted: the universe was deleted, with its world, groups and characters, so its rooms
  *   turn every window away
+ * - universeDisabled: a server admin disabled the universe, so its rooms turn every window away
+ * - evacuated: an area was disabled, and everyone in it goes to destination, or to where they start
+ *   (the lobby area, or their group's starting area) when it is null. Published after the area's own
+ *   change, and handled by the rooms rather than AreaPlayers.applyChange()
+ * - lobby: a universe's lobby moved to another area or starting cell, or now has no area. Its lobby room
+ *   reads where its players walk again (published with an area change for the old and new lobby areas,
+ *   whose time and vision follow the lobby's settings while they are its area)
+ * - text: a universe's text changed (a name, a translation or its languages), so its rooms tell their
+ *   clients to fetch it again (ServerMessageType.UniverseText)
  */
 export type AreaChange =
 	| { kind: 'cells'; areaId: string; chunkKeys: string[] }
 	| { kind: 'area'; areaId: string }
 	| { kind: 'deleted'; areaId: string }
+	| { kind: 'evacuated'; areaId: string; destination: AreaPlace | null }
+	| { kind: 'lobby'; universeId: string }
+	| { kind: 'text'; universeId: string }
 	| { kind: 'tiles'; universeId: string }
 	| { kind: 'time'; universeId: string }
-	| { kind: 'universeDeleted'; universeId: string };
+	| { kind: 'universeDeleted'; universeId: string }
+	| { kind: 'universeDisabled'; universeId: string };
 
 /**
  * Called after every change

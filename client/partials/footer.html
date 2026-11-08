@@ -12,10 +12,20 @@
 	&middot;
 	<label class="language-picker" data-message="page.language" data-translation-context="Label of the list of languages at the bottom of every page, which switches the language the game is shown in">
 		Language
-		<select id="language-select"></select>
+		<select id="language-select">
+			<!-- language options -->
+		</select>
 	</label>
 	<span id="site-socials" hidden>
 		&middot;
-		<ul id="site-socials-list" class="site-socials"></ul>
+		<ul id="site-socials-list" class="site-socials">
+			<li data-site="discord" hidden><a rel="noopener noreferrer"><!-- icon ph:discord-logo --></a></li>
+			<li data-site="facebook" hidden><a rel="noopener noreferrer"><!-- icon ph:facebook-logo --></a></li>
+			<li data-site="instagram" hidden><a rel="noopener noreferrer"><!-- icon ph:instagram-logo --></a></li>
+			<li data-site="tiktok" hidden><a rel="noopener noreferrer"><!-- icon ph:tiktok-logo --></a></li>
+			<li data-site="x" hidden><a rel="noopener noreferrer"><!-- icon ph:x-logo --></a></li>
+			<li data-site="youtube" hidden><a rel="noopener noreferrer"><!-- icon ph:youtube-logo --></a></li>
+		</ul>
 	</span>
+	<script src="/remembered-socials.js"></script>
 </footer>

@@ -1,4 +1,4 @@
-import { defineMessages, type ClassSettings, type DifficultyLevelSettings, type EditorChange, type EditorTile, type ItemSettings, type NewRef, type RaceSettings, type ThemeSettings } from '@multiverse-kiln/shared';
+import { defineMessages, loadedFrom, type AuditSubject, type ClassSettings, type DifficultyLevelSettings, type EditorChange, type EditorTile, type ItemSettings, type LoadedSettings, type NewRef, type RaceSettings, type ThemeSettings } from '@multiverse-kiln/shared';
 import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 import trashIcon from 'virtual:icon/ph:trash';
@@ -8,6 +8,7 @@ import { describeEditorError } from '../../network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork, type UnsavedWork } from '../changeTracker';
 import { setButtonLabel } from '../dom';
 import { newRef, numberRef, type EditorSave, type SaveRefusal } from './editorSave';
+import type { OtherSave } from './otherSaves';
 
 /**
  * Something on an editor tab that may hold changes not yet saved, and says when that changes, such as a
@@ -49,12 +50,13 @@ export interface StagedTiles
  * negative ID until it is saved
  *
  * - create: adds a thing
- * - save: changes a thing's settings
+ * - save: changes a thing's settings, from the settings it had when the change was made (loaded: as the
+ *   list loaded them, or as the change before it left them), so only the settings it changed are saved
  * - remove: deletes a thing the universe added, or restores one of the ruleset's defaults it changed
  */
 export type StagedChange<S> =
 	| { kind: 'create'; id: number; settings: S }
-	| { kind: 'save'; id: number; settings: S }
+	| { kind: 'save'; id: number; settings: S; loaded: LoadedSettings | undefined }
 	| { kind: 'remove'; id: number };
 
 /**
@@ -86,7 +88,7 @@ export function listChange<List extends keyof ListSettings>(list: List, change: 
 		case 'create':
 			return({ kind: `create${list}`, ref: newRef(kind, change.id), settings: change.settings } as EditorChange);
 		case 'save':
-			return({ kind: `save${list}`, id: numberRef(kind, change.id), settings: change.settings } as EditorChange);
+			return({ kind: `save${list}`, id: numberRef(kind, change.id), settings: change.settings, loaded: change.loaded } as EditorChange);
 		case 'remove':
 			return({ kind: `remove${list}`, id: numberRef(kind, change.id) } as EditorChange);
 	}
@@ -201,6 +203,18 @@ export class StagedChanges<S> implements ChangeSource
 	 */
 	private nextNewId: number;
 
+	/**
+	 * The ID each thing another window deleted, kept here as a new thing (followDeleted()), has now, by
+	 * the ID it had, for a dialog still open on it
+	 */
+	private readonly recreated = new Map<number, number>();
+
+	/**
+	 * The things saves in other windows deleted, for a dialog still open on one: changing it adds it
+	 * again, and deleting it does nothing
+	 */
+	private readonly gone = new Set<number>();
+
 	private readonly listeners = new Set<(unsaved: boolean) => void>();
 
 	/**
@@ -265,31 +279,57 @@ export class StagedChanges<S> implements ChangeSource
 	}
 
 	/**
-	 * Changes a thing's settings
+	 * Changes a thing's settings. The change is made from the settings an earlier change gave it, or
+	 * else from those it was loaded with. One another window deleted is kept as a new thing with the
+	 * settings, which saving adds again
 	 *
 	 * @param id Its ID
 	 * @param settings Its settings
+	 * @param loaded Its settings as the list loaded them, or undefined to save every setting as given
 	 */
-	save(id: number, settings: S): void
+	save(id: number, settings: S, loaded?: LoadedSettings): void
 	{
-		this.changes.push({ kind: 'save', id, settings });
+		const current = this.currentId(id);
+
+		if (this.gone.has(current))
+		{
+			this.recreated.set(current, this.create(settings));
+			return;
+		}
+
+		const earlier = this.settingsOf(current);
+
+		this.changes.push({
+			kind: 'save',
+			id: current,
+			settings,
+			loaded: ((earlier === undefined) ? loaded : loadedFrom(earlier as object))
+		});
 		this.changed();
 	}
 
 	/**
-	 * Deletes a thing, or restores a default it changed. A thing added since the last save just goes
+	 * Deletes a thing, or restores a default it changed. A thing added since the last save just goes, and
+	 * one another window deleted is gone already
 	 *
 	 * @param id Its ID
 	 */
 	remove(id: number): void
 	{
-		if (isNewId(id))
+		const current = this.currentId(id);
+
+		if (this.gone.has(current))
 		{
-			this.changes = this.changes.filter((change) => (change.id !== id));
+			return;
+		}
+
+		if (isNewId(current))
+		{
+			this.changes = this.changes.filter((change) => (change.id !== current));
 		}
 		else
 		{
-			this.changes.push({ kind: 'remove', id });
+			this.changes.push({ kind: 'remove', id: current });
 		}
 
 		this.changed();
@@ -302,8 +342,83 @@ export class StagedChanges<S> implements ChangeSource
 	 */
 	undoRemove(id: number): void
 	{
-		this.changes = this.changes.filter((change) => ((change.kind !== 'remove') || (change.id !== id)));
+		const current = this.currentId(id);
+
+		this.changes = this.changes.filter((change) => ((change.kind !== 'remove') || (change.id !== current)));
 		this.changed();
+	}
+
+	/**
+	 * Follows a save made in another window: the changes made here to each thing it deleted are kept as
+	 * a new thing with the settings they give it, which saving adds again and deleting discards, and those
+	 * that delete it are dropped, since it is gone already. Changes made to it later, from a dialog still
+	 * open on it, are kept the same way (save(), remove())
+	 *
+	 * @param save The save
+	 * @param subject What the list holds, as the Audit tab names it
+	 * @return For each thing the save deleted that had changes here, by the ID it had: the ID it has as
+	 * a new thing, or undefined when its changes were dropped
+	 */
+	followDeleted(save: OtherSave, subject: AuditSubject): Map<number, number | undefined>
+	{
+		const followed = new Map<number, number | undefined>();
+
+		for (const detail of save.details)
+		{
+			const id = detail.id;
+
+			if ((detail.subject !== subject) || (detail.action !== 'deleted') || (typeof id !== 'number') || isNewId(id) || followed.has(id))
+			{
+				continue;
+			}
+
+			this.gone.add(id);
+
+			const first = this.changes.findIndex((change) => (change.id === id));
+
+			if (first < 0)
+			{
+				continue;
+			}
+
+			const settings = this.settingsOf(id);
+			const kept: StagedChange<S>[] = (((settings === undefined) || this.isRemoved(id))
+				? []
+				: [{ kind: 'create', id: this.nextNewId--, settings }]);
+			const newId = kept.at(0)?.id;
+
+			this.changes = [
+				...this.changes.slice(0, first),
+				...kept,
+				...this.changes
+					.slice(first)
+					.filter((change) => (change.id !== id))
+			];
+			followed.set(id, newId);
+
+			if (newId !== undefined)
+			{
+				this.recreated.set(id, newId);
+			}
+		}
+
+		if (followed.size > 0)
+		{
+			this.changed();
+		}
+
+		return(followed);
+	}
+
+	/**
+	 * The ID a thing has now: a new one for one another window deleted that is kept here as new
+	 *
+	 * @param id The ID it was given by
+	 * @return Its ID now
+	 */
+	private currentId(id: number): number
+	{
+		return(this.recreated.get(id) ?? id);
 	}
 
 	/**
@@ -378,9 +493,10 @@ export class StagedChanges<S> implements ChangeSource
 	 * What an editor dialog does with a thing, or with a new one
 	 *
 	 * @param id The thing's ID, or undefined for a new one
+	 * @param loaded The thing's settings as the list loaded them, which its changes are made from
 	 * @return Its staged edit
 	 */
-	edit(id: number | undefined): StagedEdit<S>
+	edit(id: number | undefined, loaded?: LoadedSettings): StagedEdit<S>
 	{
 		return({
 			removed: ((id !== undefined) && this.isRemoved(id)),
@@ -392,7 +508,7 @@ export class StagedChanges<S> implements ChangeSource
 				}
 				else
 				{
-					this.save(id, settings);
+					this.save(id, settings, loaded);
 				}
 			},
 			remove: () =>
@@ -418,6 +534,7 @@ export class StagedChanges<S> implements ChangeSource
 	clear(): void
 	{
 		this.changes = [];
+		this.recreated.clear();
 		this.changed();
 	}
 
@@ -459,6 +576,15 @@ export class StagedChanges<S> implements ChangeSource
 		this.changes = this.changes
 			.filter((change) => !done.has(change))
 			.map((change) => (isNewId(change.id) ? { ...change, id: (savedId(change.id) ?? change.id) } : change));
+
+		for (const [id, newId] of this.recreated)
+		{
+			if (isNewId(newId))
+			{
+				this.recreated.set(id, (savedId(newId) ?? newId));
+			}
+		}
+
 		this.changed();
 	}
 

@@ -6,7 +6,11 @@
 		"rootDir": "src",
 		"outDir": "dist",
 		"declaration": true,
-		"declarationMap": true
+		"declarationMap": true,
+		// Only changed sources are written out, so a build with nothing to do leaves dist untouched and
+		// the watchers that use it don't restart. The build info lives in dist so deleting dist rebuilds everything
+		"incremental": true,
+		"tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
 	},
 	"include": [
 		"src"

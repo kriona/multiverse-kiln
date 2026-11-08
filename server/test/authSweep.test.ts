@@ -33,7 +33,9 @@ describe('sweepAuth', () =>
 		const idle = await logInBrowser(playerId);
 		const now = new Date(Date.now() + (2 * HOUR_MS));
 
-		connectedSessions.connect(connected.sessionId);
+		const window = {};
+
+		connectedSessions.connect(window, connected.sessionId);
 
 		try
 		{
@@ -41,7 +43,7 @@ describe('sweepAuth', () =>
 		}
 		finally
 		{
-			connectedSessions.disconnect(connected.sessionId);
+			connectedSessions.disconnect(window);
 		}
 
 		const remaining = (await pool.query<{ id: string }>('SELECT id FROM sessions')).rows.map((row) => row.id);

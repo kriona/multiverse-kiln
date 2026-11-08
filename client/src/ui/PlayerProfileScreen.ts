@@ -1,8 +1,7 @@
-import { SOCIAL_SITES, type PlayerProfilePayload, type SocialSite } from '@multiverse-kiln/shared';
+import { languageName, SOCIAL_SITES, type PlayerProfilePayload, type SocialSite } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { getElement, setPageTitle, showScreen } from './dom';
-import { languageName } from './languagePicker';
 import { SOCIAL_SITE_NAMES, socialSiteIcon } from './socialSites';
 import { describeTimeZone } from './timeZones';
 import { characterLabel, showProfileCharacters } from './profileCharacters';

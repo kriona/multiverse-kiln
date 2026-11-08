@@ -9,6 +9,7 @@ import { defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSe
 import { hasCharactersOfClass } from '../db/characterRepo.js';
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass } from '../db/classRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
@@ -57,8 +58,8 @@ export function addClassRoutes(router: express.Router): void
  */
 async function listClasses(request: Request, response: Response): Promise<void>
 {
-	const { universe } = universeContextOf(request);
-	const payload: ClassListPayload = { classes: await loadEditorClasses(universe.id, universe.ruleset) };
+	const { universe, version } = universeContextOf(request);
+	const payload: ClassListPayload = { classes: await loadEditorClasses(version, universe.ruleset) };
 
 	response.json(payload);
 }
@@ -72,7 +73,7 @@ async function listClasses(request: Request, response: Response): Promise<void>
  */
 export async function createClassChange(context: ChangeContext, ref: NewRef, settings: ClassSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const { name } = settings;
 
 	if (name === null)
@@ -80,7 +81,7 @@ export async function createClassChange(context: ChangeContext, ref: NewRef, set
 		refuse(400, messages.classNeedsName);
 	}
 
-	if (await countCustomClasses(universe.id, transaction) >= MAX_CUSTOM_CLASSES)
+	if (await countCustomClasses(version, transaction) >= MAX_CUSTOM_CLASSES)
 	{
 		refuse(409, {
 			id: 'error.classLimit',
@@ -92,7 +93,7 @@ export async function createClassChange(context: ChangeContext, ref: NewRef, set
 	}
 
 	await checkClass(context, undefined, settings);
-	recordRef(context, ref, await createCustomClass(universe.id, universe.ruleset, { ...settings, name }, transaction));
+	recordRef(context, ref, await createCustomClass(version, universe.ruleset, { ...settings, name }, transaction));
 }
 
 /**
@@ -104,9 +105,9 @@ export async function createClassChange(context: ChangeContext, ref: NewRef, set
  */
 export async function saveClassChange(context: ChangeContext, id: NumberRef, settings: ClassSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const classId = resolveNumberRef(context, id);
-	const kind = await findClassKind(universe.id, universe.ruleset, classId, transaction);
+	const kind = await findClassKind(version, universe.ruleset, classId, transaction);
 	const { name } = settings;
 
 	if (kind === undefined)
@@ -124,11 +125,11 @@ export async function saveClassChange(context: ChangeContext, id: NumberRef, set
 
 	if (kind === 'default')
 	{
-		await saveEditedDefaultClass(universe.id, universe.ruleset, classId, settings, transaction);
+		await saveEditedDefaultClass(version, universe.ruleset, classId, settings, transaction);
 	}
 	else if (name !== null)
 	{
-		await updateCustomClass(universe.id, universe.ruleset, classId, { ...settings, name }, transaction);
+		await updateCustomClass(version, universe.ruleset, classId, { ...settings, name }, transaction);
 	}
 }
 
@@ -140,9 +141,9 @@ export async function saveClassChange(context: ChangeContext, id: NumberRef, set
  */
 export async function removeClassChange(context: ChangeContext, id: NumberRef): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 	const classId = resolveNumberRef(context, id);
-	const kind = await findClassKind(universe.id, universe.ruleset, classId, transaction);
+	const kind = await findClassKind(version, universe.ruleset, classId, transaction);
 
 	if (kind === undefined)
 	{
@@ -152,7 +153,8 @@ export async function removeClassChange(context: ChangeContext, id: NumberRef): 
 	// Default classes are enabled, so restoring one never leaves the universe without an enabled class
 	if (kind === 'default')
 	{
-		await restoreDefaultClass(universe.id, classId, transaction);
+		await restoreDefaultClass(version, classId, transaction);
+		await deleteUniverseTextOf(version, 'class', classId, transaction);
 		return;
 	}
 
@@ -162,14 +164,15 @@ export async function removeClassChange(context: ChangeContext, id: NumberRef): 
 		refuse(409, messages.classInUse);
 	}
 
-	const others = (await loadEditorClasses(universe.id, universe.ruleset, transaction)).filter((characterClass) => (characterClass.id !== classId));
+	const others = (await loadEditorClasses(version, universe.ruleset, transaction)).filter((characterClass) => (characterClass.id !== classId));
 
 	if (!others.some((characterClass) => characterClass.enabled))
 	{
 		refuse(409, messages.noEnabledClass);
 	}
 
-	await deleteCustomClass(universe.id, classId, transaction);
+	await deleteCustomClass(version, classId, transaction);
+	await deleteUniverseTextOf(version, 'class', classId, transaction);
 }
 
 /**
@@ -182,7 +185,7 @@ export async function removeClassChange(context: ChangeContext, id: NumberRef): 
  */
 async function checkClass(context: ChangeContext, classId: number | undefined, settings: ClassSettings): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { universe, version, transaction } = context;
 
 	await checkStartingReferences(context, {
 		areaIds: [
@@ -194,7 +197,7 @@ async function checkClass(context: ChangeContext, classId: number | undefined, s
 
 	if (settings.raceAreas.length > 0)
 	{
-		const raceIds = new Set((await loadEditorRaces(universe.id, universe.ruleset, transaction)).map((race) => race.id));
+		const raceIds = new Set((await loadEditorRaces(version, universe.ruleset, transaction)).map((race) => race.id));
 
 		if (!settings.raceAreas.every(({ raceId }) => raceIds.has(raceId)))
 		{
@@ -206,7 +209,7 @@ async function checkClass(context: ChangeContext, classId: number | undefined, s
 		}
 	}
 
-	if (!settings.enabled && !(await loadEditorClasses(universe.id, universe.ruleset, transaction)).some((characterClass) => ((characterClass.id !== classId) && characterClass.enabled)))
+	if (!settings.enabled && !(await loadEditorClasses(version, universe.ruleset, transaction)).some((characterClass) => ((characterClass.id !== classId) && characterClass.enabled)))
 	{
 		refuse(409, messages.noEnabledClass);
 	}

@@ -293,13 +293,67 @@ export function showStatus(message: string): void
 }
 
 /**
- * Sets the browser tab's title, followed by the game engine's name, which messages leave out
+ * The browser tab's title as setPageTitle() was last given it, without the engine's name or the count of
+ * unread chat messages
+ */
+let pageTitle: string | undefined;
+
+/**
+ * How many chat messages the player hasn't read in each of the page's chats that has any, shown added up
+ * before the title
+ */
+const unreadChatCounts = new Map<object, number>();
+
+/**
+ * Sets the browser tab's title, followed by the game engine's name, which messages leave out, and led
+ * by the count of unread chat messages while there are any (setUnreadChatCount())
  *
  * @param title The title in the player's language, or undefined for the engine's name alone
  */
 export function setPageTitle(title?: string): void
 {
-	document.title = ((title === undefined) ? SITE_NAME : `${title} - ${SITE_NAME}`);
+	pageTitle = title;
+	showPageTitle();
+}
+
+/**
+ * Shows how many chat messages the player hasn't read before the browser tab's title, as "(3) Edit
+ * Kilnhaven", so they can be seen from other tabs. Each of the page's chats sets its own count as messages
+ * arrive and are read, and the title shows them added up
+ *
+ * @param chat The chat whose messages these are
+ * @param count How many, or 0 once they are read
+ */
+export function setUnreadChatCount(chat: object, count: number): void
+{
+	if (count === 0)
+	{
+		unreadChatCounts.delete(chat);
+	}
+	else
+	{
+		unreadChatCounts.set(chat, count);
+	}
+
+	showPageTitle();
+}
+
+/**
+ * Puts the title, the engine's name and the count of unread chat messages in the browser tab
+ */
+function showPageTitle(): void
+{
+	const title = ((pageTitle === undefined) ? SITE_NAME : `${pageTitle} - ${SITE_NAME}`);
+	const unreadChatCount = [...unreadChatCounts.values()].reduce((total, count) => (total + count), 0);
+
+	document.title = ((unreadChatCount === 0) ? title : t({
+		id: 'page.titleUnread',
+		defaultMessage: '({count, number}) {title}',
+		description: 'The browser tab\'s title on a page with a chat while it has messages the player hasn\'t read; {count} is how many and {title} the page\'s usual title'
+	}, {
+		count: unreadChatCount,
+		title
+	}));
 }
 
 /**

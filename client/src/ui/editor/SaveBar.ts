@@ -1,10 +1,14 @@
+import { isMergedChange, isMergedTextChange, settleConflict, settleTextConflict, type Ruleset, type SaveConflict } from '@multiverse-kiln/shared';
+
 import { t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { changeMessages } from '../changeTracker';
 import { getElement } from '../dom';
 import { formMessages } from '../formMessages';
 import { showToast } from '../toast';
+import { ConflictDialog } from './ConflictDialog';
 import { EditorSave, isSaveRefused, SavedIds } from './editorSave';
+import { ImpactDialog, mayAffectPlayers } from './ImpactDialog';
 import type { ChangeSource } from './stagedChanges';
 
 /**
@@ -39,6 +43,14 @@ export interface SavableTab
 	 * @param ids The IDs the save gave the things it made
 	 */
 	saved(ids: SavedIds): Promise<void> | void;
+
+	/**
+	 * Whether the tab's only unsaved change is the player leaving the universe, which may be saved while
+	 * saving is turned off. A tab without it never only leaves
+	 *
+	 * @return True when it is
+	 */
+	onlyLeaving?(): boolean;
 }
 
 /**
@@ -106,6 +118,16 @@ export class SaveBar
 	private readonly saveButton = getElement('editor-save', HTMLButtonElement);
 
 	/**
+	 * Asks what happens to characters and groups a save affects
+	 */
+	private readonly impactDialog = new ImpactDialog();
+
+	/**
+	 * Asks whose value to keep for settings other editors saved differently meanwhile
+	 */
+	private readonly conflictDialog = new ConflictDialog();
+
+	/**
 	 * The tab showing, or undefined while none that saves is
 	 */
 	private tab: SavableTab | undefined;
@@ -116,6 +138,17 @@ export class SaveBar
 	private readonly panels = new Map<SavableTab, HTMLElement>();
 
 	private saving = false;
+
+	/**
+	 * Whether saving is turned off, for a universe a server admin has disabled, except for the player
+	 * leaving it
+	 */
+	private locked = false;
+
+	/**
+	 * Whether the bar lists other editors who have the editor open, which keeps it showing
+	 */
+	private othersHere = false;
 
 	/**
 	 * Whether the editor was just saved, so the bar says so until something changes again
@@ -129,11 +162,12 @@ export class SaveBar
 
 	/**
 	 * @param api The editor's API
-	 * @param universeId The ID of the universe being edited, or undefined while none has loaded
+	 * @param universe The universe being edited, or undefined while none has loaded
 	 * @param showTab Shows a tab, whose change the server refused or whose field stopped the save
-	 * @param afterSave Called once a save is saved and every tab in it has taken its changes as saved
+	 * @param afterSave Called once a save is saved and every tab in it has taken its changes as saved,
+	 * with those tabs
 	 */
-	constructor(private readonly api: EditorApi, private readonly universeId: () => string | undefined, private readonly showTab: (tab: SavableTab) => void, private readonly afterSave: () => void)
+	constructor(private readonly api: EditorApi, private readonly universe: () => { id: string; ruleset: Ruleset } | undefined, private readonly showTab: (tab: SavableTab) => void, private readonly afterSave: (saved: readonly SavableTab[]) => void)
 	{
 		this.saveButton.addEventListener('click', () =>
 		{
@@ -183,25 +217,76 @@ export class SaveBar
 	}
 
 	/**
+	 * Turns saving off or on, for a universe a server admin has disabled. The editor says why. While it is
+	 * off, the player can still save leaving the universe
+	 *
+	 * @param locked True to turn it off
+	 */
+	setLocked(locked: boolean): void
+	{
+		this.locked = locked;
+		this.update();
+	}
+
+	/**
+	 * Keeps the bar showing while it lists other editors, even on a tab with nothing to save
+	 *
+	 * @param shown Whether it lists any
+	 */
+	setOthersHere(shown: boolean): void
+	{
+		this.othersHere = shown;
+		this.update();
+	}
+
+	/**
+	 * Whether saving is turned off, for a universe a server admin has disabled
+	 *
+	 * @return True when it is
+	 */
+	isLocked(): boolean
+	{
+		return(this.locked);
+	}
+
+	/**
+	 * Whether the changes waiting can't be saved: while saving is turned off, only the player leaving
+	 * the universe can be
+	 *
+	 * @return True when they can't
+	 */
+	private isBlocked(): boolean
+	{
+		return(this.locked && ![...this.panels.keys()]
+			.filter((tab) => (tab.canSave() && tab.changes.hasUnsavedChanges()))
+			.every((tab) => (tab.onlyLeaving?.() ?? false)));
+	}
+
+	/**
 	 * Whether any tab has changes that haven't been saved
 	 *
 	 * @return True when one has
 	 */
-	private hasUnsavedChanges(): boolean
+	hasUnsavedChanges(): boolean
 	{
 		return([...this.panels.keys()].some((tab) => tab.changes.hasUnsavedChanges()));
 	}
 
 	/**
-	 * Saves every tab's changes in one request, stopping before it at a field with a problem
+	 * Saves every tab's changes in one request, stopping before it at a field with a problem, as the Save
+	 * button does. Changes that disable or limit something players are using first ask what should happen
+	 * to them, and saving them waits for the answer
+	 *
+	 * @param announce Whether to say the changes were saved, which a save made only to change the draft doesn't
+	 * @return Whether it saved: false when a field stopped it, the player cancelled or the server refused it
 	 */
-	private async save(): Promise<void>
+	async save(announce: boolean = true): Promise<boolean>
 	{
-		const universeId = this.universeId();
+		const universe = this.universe();
 
-		if ((universeId === undefined) || this.saving || !this.hasUnsavedChanges())
+		if (!universe || this.saving || this.isBlocked() || !this.hasUnsavedChanges())
 		{
-			return;
+			return(false);
 		}
 
 		const tabs = [...this.panels.keys()].filter((tab) => (tab.canSave() && tab.changes.hasUnsavedChanges()));
@@ -218,7 +303,7 @@ export class SaveBar
 				save.finish();
 				this.showTab(tab);
 				this.update();
-				return;
+				return(false);
 			}
 		}
 
@@ -229,7 +314,10 @@ export class SaveBar
 
 		try
 		{
-			ids = new SavedIds(await this.api.saveChanges(universeId, save.changes()));
+			if (await this.askAboutImpacts(universe, save))
+			{
+				ids = await this.send(universe, save);
+			}
 		}
 		catch (error)
 		{
@@ -248,8 +336,8 @@ export class SaveBar
 				await tab.saved(ids);
 			}
 
-			this.afterSave();
-			this.justSaved = !this.hasUnsavedChanges();
+			this.afterSave(tabs);
+			this.justSaved = (announce && !this.hasUnsavedChanges());
 
 			if (this.justSaved)
 			{
@@ -261,6 +349,100 @@ export class SaveBar
 		}
 
 		this.update();
+
+		return(ids !== undefined);
+	}
+
+	/**
+	 * Sends a save. When other editors saved different values for settings it changes, asks whose to
+	 * keep for each, settles its changes so, and sends it again, until it is saved or the player cancels
+	 *
+	 * @param universe The universe being saved
+	 * @param save The save
+	 * @return The IDs the save gave the things it made, or undefined when the player cancelled
+	 */
+	private async send(universe: { id: string; ruleset: Ruleset }, save: EditorSave): Promise<SavedIds | undefined>
+	{
+		for (;;)
+		{
+			let conflicts: SaveConflict[];
+
+			try
+			{
+				return(new SavedIds(await this.api.saveChanges(universe.id, save.changes())));
+			}
+			catch (error)
+			{
+				const data = ((error instanceof EditorApiError) ? error.data : undefined);
+
+				if (!isSaveRefused(data) || (data.conflicts === undefined))
+				{
+					throw error;
+				}
+
+				conflicts = data.conflicts;
+			}
+
+			const keepMine = await this.conflictDialog.ask(conflicts, universe.ruleset);
+
+			if (!keepMine)
+			{
+				return(undefined);
+			}
+
+			for (const [index, conflict] of conflicts.entries())
+			{
+				const change = save.changes().at(conflict.changeIndex);
+
+				if (change && isMergedChange(change))
+				{
+					save.replace(conflict.changeIndex, settleConflict(change, conflict.saved, keepMine[index]));
+				}
+				else if (change && isMergedTextChange(change))
+				{
+					save.replace(conflict.changeIndex, settleTextConflict(change, conflict.saved, keepMine[index]));
+				}
+			}
+		}
+	}
+
+	/**
+	 * Asks what should happen to the characters and groups a save affects, when it disables or limits
+	 * something they are using, and puts the answers in its changes
+	 *
+	 * @param universe The universe being saved
+	 * @param save The save
+	 * @return False when the player cancels, so nothing is saved
+	 */
+	private async askAboutImpacts(universe: { id: string; ruleset: Ruleset }, save: EditorSave): Promise<boolean>
+	{
+		const changes = save.changes();
+
+		if (!changes.some(mayAffectPlayers))
+		{
+			return(true);
+		}
+
+		const impacts = await this.api.findImpacts(universe.id, changes);
+
+		if (impacts.length === 0)
+		{
+			return(true);
+		}
+
+		const answered = await this.impactDialog.ask(impacts, changes, universe.ruleset);
+
+		if (!answered)
+		{
+			return(false);
+		}
+
+		for (const [index, change] of answered)
+		{
+			save.replace(index, change);
+		}
+
+		return(true);
 	}
 
 	/**
@@ -310,9 +492,11 @@ export class SaveBar
 	private update(): void
 	{
 		const unsaved = this.hasUnsavedChanges();
+		const canSave = ((this.tab?.canSave() ?? false) || unsaved);
 
-		this.bar.hidden = (!(this.tab?.canSave() ?? false) && !unsaved);
-		this.saveButton.disabled = (!unsaved || this.saving);
+		this.bar.hidden = (!canSave && !this.othersHere);
+		this.saveButton.hidden = !canSave;
+		this.saveButton.disabled = (!unsaved || this.saving || this.isBlocked());
 
 		if (this.failure !== undefined)
 		{
