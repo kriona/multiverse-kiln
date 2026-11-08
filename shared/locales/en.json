@@ -623,6 +623,82 @@
 		"defaultMessage": "Universes each player can create",
 		"description": "Label of the field on the site settings page for the most universes one player may create"
 	},
+	"area.announce.appeared": {
+		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
+		"description": "Read out by screen readers when other players come into view in the area; {players} is a list of their names"
+	},
+	"area.announce.area": {
+		"defaultMessage": "You are in {area}.",
+		"description": "Read out by screen readers when the player comes into an area; {area} is its name"
+	},
+	"area.announce.blocked": {
+		"defaultMessage": "Something is in the way.",
+		"description": "Read out by screen readers when the player tries to move but can't, e.g. into a wall or another player"
+	},
+	"area.announce.disappeared": {
+		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
+		"description": "Read out by screen readers when other players go out of view in the area or leave; {players} is a list of their names"
+	},
+	"area.announce.partOfDay": {
+		"defaultMessage": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}",
+		"description": "Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes"
+	},
+	"area.announce.player": {
+		"defaultMessage": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}",
+		"description": "Read out by screen readers in the list of players the player can see: their name, how many cells away and in which direction, e.g. \"Bo, 3 cells northeast\""
+	},
+	"area.announce.playerHere": {
+		"defaultMessage": "{name}, right where you are",
+		"description": "Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name"
+	},
+	"area.announce.position": {
+		"defaultMessage": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
+	},
+	"area.announce.sight": {
+		"defaultMessage": "You can see {squares, plural, one {# square} other {# squares}} across open ground.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains"
+	},
+	"area.announce.timeOfDay": {
+		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30:00 PM\", and the part of the day it falls in"
+	},
+	"area.announce.timeOfDayRough": {
+		"defaultMessage": "It is {time}.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. \"late morning\""
+	},
+	"area.ghost": {
+		"defaultMessage": "Ghost",
+		"description": "Shown above the player in the lobby's area while they play no character: they are a ghost, whom other players can't see"
+	},
+	"area.help": {
+		"defaultMessage": "Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. {shortcut} tells you where you are and who you can see.",
+		"description": "Read by screen readers on the area the player walks around in the game: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P"
+	},
+	"area.keys.move": {
+		"defaultMessage": "Arrow keys, W A S D or number pad",
+		"description": "In the list of keyboard shortcuts, the keys that move the player; the keys are the same in every language"
+	},
+	"area.keys.moveDescription": {
+		"defaultMessage": "Move",
+		"description": "In the list of keyboard shortcuts, what the movement keys do"
+	},
+	"area.keys.position": {
+		"defaultMessage": "Say where you are and who you can see",
+		"description": "In the list of keyboard shortcuts, what the shortcut that reads out the player's position does"
+	},
+	"area.keys.takeLink": {
+		"defaultMessage": "Go through a door or path you stand on",
+		"description": "In the list of keyboard shortcuts, what the E key does: takes the player to another area through the link they stand on"
+	},
+	"area.label": {
+		"defaultMessage": "Area",
+		"description": "Name for screen readers of the area the player walks around in the game, the lobby's or the group's"
+	},
+	"area.takeLink": {
+		"defaultMessage": "Press E to go through",
+		"description": "Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language"
+	},
 	"character.back": {
 		"defaultMessage": "Back",
 		"description": "Button on the Create Character page that goes to the step before"
@@ -1139,6 +1215,10 @@
 		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
 		"description": "Shown above the editor's tabs, and in the editors' chat panel, when the player's role in the universe was taken away while they had the editor open"
 	},
+	"editor.area.areaDefault": {
+		"defaultMessage": "{tile} (default)",
+		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
+	},
 	"editor.area.back": {
 		"defaultMessage": "Back to Areas",
 		"description": "Button that closes the area editor and goes back to the list of areas"
@@ -1147,29 +1227,133 @@
 		"defaultMessage": "Back to Lobby",
 		"description": "Button in the area editor, shown while the area is the lobby's, that closes the area editor and goes to the editor's Lobby tab"
 	},
+	"editor.area.brush.circle": {
+		"defaultMessage": "circle",
+		"description": "Shape of the Draw tool's brush"
+	},
+	"editor.area.brush.square": {
+		"defaultMessage": "square",
+		"description": "Shape of the Draw tool's brush"
+	},
+	"editor.area.brushShape": {
+		"defaultMessage": "Shape",
+		"description": "Label of the field for the shape the Draw tool paints, a circle or a square"
+	},
+	"editor.area.brushSize": {
+		"defaultMessage": "Size",
+		"description": "Label of the field for how many cells across the Draw tool paints"
+	},
+	"editor.area.cell": {
+		"defaultMessage": "{column}, {row}: {contents}",
+		"description": "Under the area editor's cells, the cell under the pointer: its coordinates and what it holds, e.g. \"3, -2: Grass\""
+	},
+	"editor.area.cellLoading": {
+		"defaultMessage": "loading...",
+		"description": "What the cell under the pointer holds, while that part of the area is loading"
+	},
+	"editor.area.cellPaintedBy": {
+		"defaultMessage": "{over, select, yes {{cell} (painted by {name} over your painting while you had this area open)} other {{cell} (painted by {name} while you had this area open)}}",
+		"description": "Under the area editor's cells, the cell under the pointer or the keyboard's cursor when another editor painted it and saved while the player had the area open; the area editor marks such cells. {cell} is the cell and what it holds, e.g. \"3, -2: Grass\", {name} the other editor's display name, and {over} yes when the player had painted the cell too (saved or not), which the area editor marks in a warning color"
+	},
+	"editor.area.cellWithLink": {
+		"defaultMessage": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})",
+		"description": "Under the area editor's cells, the cell under the pointer when it has an area link: its coordinates, what it holds and the kind of link"
+	},
+	"editor.area.cellsSaveFailed": {
+		"defaultMessage": "Could not save the area's cells.",
+		"description": "Shown in the area editor when the server refused the painting on the area's cells, its new size or its links, followed by why; nothing was saved"
+	},
 	"editor.area.children": {
 		"defaultMessage": "Areas inside this one",
 		"description": "Heading of the list of areas inside the area being edited"
 	},
 	"editor.area.claimed": {
 		"defaultMessage": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}",
-		"description": "Above the map in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes"
+		"description": "Above the area's cells in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes"
 	},
 	"editor.area.confirmDelete": {
-		"defaultMessage": "Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas.",
+		"defaultMessage": "Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas.",
 		"description": "Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name"
 	},
+	"editor.area.confirmDeleteLinks": {
+		"defaultMessage": "Saving the smaller area deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?",
+		"description": "Asked while saving an area made smaller, when links are on the cells it cuts off or lead into them; {links} is how many"
+	},
 	"editor.area.confirmDeleteNew": {
-		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost.",
+		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, painting and links will be lost.",
 		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name"
 	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
-		"description": "Label of the field for the tile an area's map is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.delete": {
 		"defaultMessage": "Delete Area",
 		"description": "Button that deletes the area being edited when the Areas tab is saved"
+	},
+	"editor.area.draw": {
+		"defaultMessage": "Draw",
+		"description": "Area editor tool that paints tiles onto the area's cells"
+	},
+	"editor.area.exitFullPage": {
+		"defaultMessage": "Exit Full Page",
+		"description": "Button that puts the area editor's cells and their tools back in the page after they were made to fill the window"
+	},
+	"editor.area.fullPage": {
+		"defaultMessage": "Full Page",
+		"description": "Button that makes the area editor's cells and their tools fill the window"
+	},
+	"editor.area.heading": {
+		"defaultMessage": "Cells",
+		"description": "Name of the area's cell editor (the card holding the area's cells and the tools that paint them), for screen readers"
+	},
+	"editor.area.help": {
+		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
+		"description": "Explains how to use the area editor's cells with the mouse and keyboard"
+	},
+	"editor.area.keyboardHelp": {
+		"defaultMessage": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.",
+		"description": "Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language"
+	},
+	"editor.area.keys.cursor": {
+		"defaultMessage": "Arrow keys",
+		"description": "In the list of keyboard shortcuts, the name of the arrow keys"
+	},
+	"editor.area.keys.cursorDescription": {
+		"defaultMessage": "Move the cursor on the focused area, 10 cells at a time with Shift",
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on an area shown in the editor: the area editor's cells, the link dialog's preview, or the preview in the dialog for choosing a starting area"
+	},
+	"editor.area.keys.home": {
+		"defaultMessage": "Home",
+		"description": "In the list of keyboard shortcuts, the name of the Home key"
+	},
+	"editor.area.keys.homeDescription": {
+		"defaultMessage": "Go back to the center cell",
+		"description": "In the list of keyboard shortcuts, what the Home key does on the area editor's cells"
+	},
+	"editor.area.keys.paint": {
+		"defaultMessage": "Space / Enter",
+		"description": "In the list of keyboard shortcuts, the names of the Space and Enter keys"
+	},
+	"editor.area.keys.paintDescription": {
+		"defaultMessage": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting",
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the area editor's cells"
+	},
+	"editor.area.keys.redo": {
+		"defaultMessage": "Redo the painting or change of size undone",
+		"description": "In the list of keyboard shortcuts, what Ctrl+Y does in the area editor"
+	},
+	"editor.area.keys.undo": {
+		"defaultMessage": "Undo the last painting or change to the area's size",
+		"description": "In the list of keyboard shortcuts, what Ctrl+Z does in the area editor"
+	},
+	"editor.area.keys.zoom": {
+		"defaultMessage": "Zoom in or out",
+		"description": "In the list of keyboard shortcuts, what the + and - keys do on the area editor's cells"
+	},
+	"editor.area.label": {
+		"defaultMessage": "Cells",
+		"description": "Name of the area's cells in the area editor, where they are painted, for screen readers"
 	},
 	"editor.area.lightLevel": {
 		"defaultMessage": "Light level",
@@ -1178,6 +1362,22 @@
 	"editor.area.lightLevelHint": {
 		"defaultMessage": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.",
 		"description": "Explains the light level field of an indoor area"
+	},
+	"editor.area.links": {
+		"defaultMessage": "Links",
+		"description": "Area editor tool that adds and changes links to other areas"
+	},
+	"editor.area.linksKept": {
+		"defaultMessage": "The links were kept, so the area wasn't made smaller.",
+		"description": "Why saving stopped: the player chose not to delete the links a smaller area would cut off; nothing was saved"
+	},
+	"editor.area.loadFailed": {
+		"defaultMessage": "Could not load the area's cells.",
+		"description": "Shown in the area editor or an area preview when part of an area's cells couldn't be loaded"
+	},
+	"editor.area.loadLinksFailed": {
+		"defaultMessage": "Could not load the links.",
+		"description": "Shown in the area editor when the area's links couldn't be loaded"
 	},
 	"editor.area.lobbyNotice": {
 		"defaultMessage": "This area is the game's lobby.",
@@ -1189,15 +1389,11 @@
 	},
 	"editor.area.loopsEastWest": {
 		"defaultMessage": "Loops east-west",
-		"description": "Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.loopsNorthSouth": {
 		"defaultMessage": "Loops north-south",
-		"description": "Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor's Audit tab"
-	},
-	"editor.area.mapSaveFailed": {
-		"defaultMessage": "Could not save the map.",
-		"description": "Shown in the area editor when the server refused the painting on the area's map, its new size or its links, followed by why; nothing was saved"
+		"description": "Checkbox for an area that wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.noParent": {
 		"defaultMessage": "None (a top-level area)",
@@ -1215,13 +1411,49 @@
 		"defaultMessage": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled.",
 		"description": "Warns that players can't reach the area; {areas} lists the areas it is inside that are disabled, and {count} is how many"
 	},
+	"editor.area.redo": {
+		"defaultMessage": "Redo",
+		"description": "Button that makes again the painting or change of size Undo took back"
+	},
+	"editor.area.resize": {
+		"defaultMessage": "Edit Size",
+		"description": "Button that opens the dialog for changing the area's size"
+	},
 	"editor.area.saveFailed": {
 		"defaultMessage": "Could not save the area.",
 		"description": "Shown in the area editor when the server refused the area's settings, followed by why; nothing was saved"
 	},
 	"editor.area.size": {
-		"defaultMessage": "The map is {height, number} tall x {width, number} wide.",
-		"description": "The size of the area's map, in cells"
+		"defaultMessage": "The area is {height, number} tall x {width, number} wide.",
+		"description": "The size of the area, in cells"
+	},
+	"editor.area.tile": {
+		"defaultMessage": "Tile",
+		"description": "Label of the field for the tile the Draw tool paints"
+	},
+	"editor.area.tooLarge": {
+		"defaultMessage": "An area can be at most {max, number} cells in each direction.",
+		"description": "Shown when the size asked for an area is larger than allowed; {max} is the most cells on a side"
+	},
+	"editor.area.tool": {
+		"defaultMessage": "Tool",
+		"description": "Heading of the choice of what clicking a cell of the area does"
+	},
+	"editor.area.undo": {
+		"defaultMessage": "Undo",
+		"description": "Button that takes back the last painting or change to the area's size"
+	},
+	"editor.area.unknownTile": {
+		"defaultMessage": "unknown tile",
+		"description": "What the cell under the pointer holds, when it is a tile the editor doesn't know"
+	},
+	"editor.area.unsaved": {
+		"defaultMessage": "Area changes not saved yet",
+		"description": "Shown under the area editor's cells while they have painting, a change of size or links that the editor's Save button hasn't stored yet"
+	},
+	"editor.area.void": {
+		"defaultMessage": "🌃Void",
+		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
 	"editor.areaAdd.failed": {
 		"defaultMessage": "Could not add the area.",
@@ -1241,7 +1473,7 @@
 	},
 	"editor.areaSelect.cell": {
 		"defaultMessage": "Characters start on {column}, {row}, or the free square nearest it.",
-		"description": "In the dialog for choosing a starting area, under the map: the square characters start on; {column} and {row} are its coordinates"
+		"description": "In the dialog for choosing a starting area, under the area preview: the square characters start on; {column} and {row} are its coordinates"
 	},
 	"editor.areaSelect.inside": {
 		"defaultMessage": "Inside {area}",
@@ -1249,7 +1481,7 @@
 	},
 	"editor.areaSelect.keys.pickDescription": {
 		"defaultMessage": "Choose the cursor's square for characters to start on",
-		"description": "In the list of keyboard shortcuts, what Space and Enter do on the map in the dialog for choosing a starting area"
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the area preview in the dialog for choosing a starting area"
 	},
 	"editor.areaSelect.loadFailed": {
 		"defaultMessage": "Could not load the areas.",
@@ -1264,12 +1496,12 @@
 		"description": "Shown in the dialog for choosing an area when no area's name matches the search"
 	},
 	"editor.areaSelect.previewHelp": {
-		"defaultMessage": "Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.",
-		"description": "Explains how to choose the square characters start on, on the map in the dialog for choosing a starting area; the keys are the same in every language"
+		"defaultMessage": "Click the area to choose the square characters start on. With the area focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.",
+		"description": "Explains how to choose the square characters start on, on the area preview in the dialog for choosing a starting area; the keys are the same in every language"
 	},
 	"editor.areaSelect.previewLabel": {
-		"defaultMessage": "Map of the chosen area",
-		"description": "Name of the map in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"
+		"defaultMessage": "The chosen area",
+		"description": "Name of the area preview in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"
 	},
 	"editor.areaSelect.results": {
 		"defaultMessage": "Areas",
@@ -1285,7 +1517,7 @@
 	},
 	"editor.areaSelect.summary": {
 		"defaultMessage": "{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide",
-		"description": "In the dialog for choosing an area, describes the chosen area under its map preview; {height} and {width} are its size in cells"
+		"description": "In the dialog for choosing an area, describes the chosen area under its preview; {height} and {width} are its size in cells"
 	},
 	"editor.areaSelect.title": {
 		"defaultMessage": "Choose an Area",
@@ -1344,12 +1576,12 @@
 		"description": "In the Player column of the editor's Audit tab, in place of the player who made a save, once they have deleted their account; the brackets mark it as a stand-in rather than a name"
 	},
 	"editor.audit.detail.area": {
-		"defaultMessage": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized the map of {name}} other {Deleted area {name}}}",
-		"description": "In the editor's Audit tab's list of what a save changed: an area (a place with its own map) added, changed, its map made bigger or smaller, or deleted. {name} is its name. A change is followed by a line for each setting it changed"
+		"defaultMessage": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized area {name}} other {Deleted area {name}}}",
+		"description": "In the editor's Audit tab's list of what a save changed: an area (a place with its own grid of cells) added, changed, made bigger or smaller, or deleted. {name} is its name. A change is followed by a line for each setting it changed"
 	},
 	"editor.audit.detail.cells": {
 		"defaultMessage": "{count, plural, one {Painted # cell in {name}} other {Painted # cells in {name}}}",
-		"description": "In the editor's Audit tab's list of what a save changed: how many cells of an area's map it painted. {name} is the area's name"
+		"description": "In the editor's Audit tab's list of what a save changed: how many cells of an area it painted. {name} is the area's name"
 	},
 	"editor.audit.detail.class": {
 		"defaultMessage": "{action, select, added {Added class {name}} changed {Changed class {name}} restored {Restored class {name} to its default} other {Deleted class {name}}}",
@@ -1373,7 +1605,7 @@
 	},
 	"editor.audit.detail.links": {
 		"defaultMessage": "{action, select, deleted {{count, plural, one {Deleted # link in {name}} other {Deleted # links in {name}}}} other {{count, plural, one {Added or changed # link in {name}} other {Added or changed # links in {name}}}}}",
-		"description": "In the editor's Audit tab's list of what a save changed: how many links (cells on a map that take characters to another area) it added or changed, or deleted, in one area. {name} is the area's name"
+		"description": "In the editor's Audit tab's list of what a save changed: how many links (cells of an area that take characters to another area) it added or changed, or deleted, in one area. {name} is the area's name"
 	},
 	"editor.audit.detail.noTranslation": {
 		"defaultMessage": "{action, select, added {{count, plural, one {Marked # piece of text as needing no translation} other {Marked # pieces of text as needing no translation}}} other {{count, plural, one {Marked # piece of text as needing translation again} other {Marked # pieces of text as needing translation again}}}}",
@@ -1397,7 +1629,7 @@
 	},
 	"editor.audit.detail.tile": {
 		"defaultMessage": "{action, select, added {Added tile {name}} changed {Changed tile {name}} restored {Restored tile {name} to its default} other {Deleted tile {name}}}",
-		"description": "In the editor's Audit tab's list of what a save changed: a tile (what maps are painted with, such as grass) added, changed, given back the ruleset's settings for it, or deleted. {name} is its name. A change is followed by a line for each setting it changed"
+		"description": "In the editor's Audit tab's list of what a save changed: a tile (what areas are painted with, such as grass) added, changed, given back the ruleset's settings for it, or deleted. {name} is its name. A change is followed by a line for each setting it changed"
 	},
 	"editor.audit.detail.tileset": {
 		"defaultMessage": "{action, select, added {Uploaded tileset {name}} other {Deleted tileset {name}}}",
@@ -1481,7 +1713,7 @@
 	},
 	"editor.audit.value.faerieTime": {
 		"defaultMessage": "{time}, morning: {morning}",
-		"description": "The value of a passage of time setting in the editor's Audit tab's list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the map that has morning, such as north"
+		"description": "The value of a passage of time setting in the editor's Audit tab's list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
 	},
 	"editor.audit.value.itemQuantity": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
@@ -1497,7 +1729,7 @@
 	},
 	"editor.audit.value.place": {
 		"defaultMessage": "{area} at {column}, {row}",
-		"description": "The value of a starting area setting in the editor's Audit tab's list of what a save changed: where characters start, as the area's name and the column and row of the square on its map, e.g. \"Meadow at 3, 4\""
+		"description": "The value of a starting area setting in the editor's Audit tab's list of what a save changed: where characters start, as the area's name and the column and row of the square in it, e.g. \"Meadow at 3, 4\""
 	},
 	"editor.audit.value.raceArea": {
 		"defaultMessage": "{race}: {place}",
@@ -2101,7 +2333,7 @@
 	},
 	"editor.faerieMorning": {
 		"defaultMessage": "Where is morning?",
-		"description": "Label of the field for which side of the map has morning, when the passage of time is faerie"
+		"description": "Label of the field for which side of an area has morning, when the passage of time is faerie"
 	},
 	"editor.filter.custom": {
 		"defaultMessage": "Custom",
@@ -2268,7 +2500,7 @@
 		"description": "Choice for an area link that moves the player to the other area as soon as they step onto it"
 	},
 	"editor.link.chooseDestination": {
-		"defaultMessage": "Click the map to choose the destination.",
+		"defaultMessage": "Click the area to choose the destination.",
 		"description": "Shown in the link dialog until the cell the link leads to is chosen"
 	},
 	"editor.link.confirmDelete": {
@@ -2285,7 +2517,7 @@
 	},
 	"editor.link.keys.pickDescription": {
 		"defaultMessage": "Choose the cursor's cell",
-		"description": "In the list of keyboard shortcuts, what Space and Enter do on the link dialog's map: choose the destination or the return link's cell"
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the link dialog's area preview: choose the destination or the return link's cell"
 	},
 	"editor.link.manual": {
 		"defaultMessage": "Offer to take them through (manual)",
@@ -2296,11 +2528,11 @@
 		"description": "Heading of the choice of what an area link does when a player steps onto its cell"
 	},
 	"editor.link.needDestination": {
-		"defaultMessage": "Click the map to choose where the link goes.",
+		"defaultMessage": "Click the area to choose where the link goes.",
 		"description": "Shown when Apply is pressed before the cell the link leads to is chosen"
 	},
 	"editor.link.needReturn": {
-		"defaultMessage": "Click the map to place the return link, or don't add one.",
+		"defaultMessage": "Click the area to place the return link, or don't add one.",
 		"description": "Shown when Apply is pressed with a return link asked for but not placed"
 	},
 	"editor.link.needTarget": {
@@ -2312,28 +2544,28 @@
 		"description": "Shown in the link dialog when the universe has only the area being edited"
 	},
 	"editor.link.pick": {
-		"defaultMessage": "Clicking the map below chooses",
-		"description": "Heading of the choice of what clicking the map preview in the link dialog places"
+		"defaultMessage": "Clicking the area below chooses",
+		"description": "Heading of the choice of what clicking the area preview in the link dialog places"
 	},
 	"editor.link.pickDestination": {
 		"defaultMessage": "The destination",
-		"description": "Choice that makes clicking the map preview choose where the link leads"
+		"description": "Choice that makes clicking the area preview choose where the link leads"
 	},
 	"editor.link.pickReturn": {
 		"defaultMessage": "The return link's cell",
-		"description": "Choice that makes clicking the map preview place the return link"
+		"description": "Choice that makes clicking the area preview place the return link"
 	},
 	"editor.link.placeReturn": {
-		"defaultMessage": "Choose the return link's cell above, then click the map to place it.",
+		"defaultMessage": "Choose the return link's cell above, then click the area to place it.",
 		"description": "Shown in the link dialog until the cell for the link leading back is chosen"
 	},
 	"editor.link.previewHelp": {
-		"defaultMessage": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.",
-		"description": "Explains how to choose a cell on the link dialog's map with the keyboard; the keys are the same in every language"
+		"defaultMessage": "With the area focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.",
+		"description": "Explains how to choose a cell on the link dialog's area preview with the keyboard; the keys are the same in every language"
 	},
 	"editor.link.previewLabel": {
-		"defaultMessage": "Map of the area the link goes to",
-		"description": "Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"
+		"defaultMessage": "The area the link goes to",
+		"description": "Name of the area preview in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"
 	},
 	"editor.link.returnCell": {
 		"defaultMessage": "Return link at {column}, {row}",
@@ -2345,7 +2577,7 @@
 	},
 	"editor.link.showAreaFailed": {
 		"defaultMessage": "Could not show that area.",
-		"description": "Shown in the link dialog when the map of the area the link goes to couldn't be loaded"
+		"description": "Shown in the link dialog when the area the link goes to couldn't be loaded for its preview"
 	},
 	"editor.link.target": {
 		"defaultMessage": "Goes to",
@@ -2377,7 +2609,7 @@
 	},
 	"editor.lobby.clearArea": {
 		"defaultMessage": "No Lobby Area",
-		"description": "Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no map to walk around"
+		"description": "Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no area to walk around"
 	},
 	"editor.lobby.dayHours": {
 		"defaultMessage": "How quickly?",
@@ -2397,11 +2629,11 @@
 	},
 	"editor.lobby.noArea": {
 		"defaultMessage": "None",
-		"description": "Shown on the editor's Lobby tab as the lobby's area when it has none, so the lobby has no map"
+		"description": "Shown on the editor's Lobby tab as the lobby's area when it has none, so the lobby has no area to walk around"
 	},
-	"editor.lobby.noMapHint": {
+	"editor.lobby.noAreaHint": {
 		"defaultMessage": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}",
-		"description": "Shown on the editor's Lobby tab when the lobby has no map to walk around: {reason} is \"disabled\" when its area is disabled, and otherwise it has no area"
+		"description": "Shown on the editor's Lobby tab when the lobby has no area to walk around: {reason} is \"disabled\" when its area is disabled, and otherwise it has no area"
 	},
 	"editor.lobby.noVisionCost": {
 		"defaultMessage": "No vision cost in the lobby",
@@ -2418,162 +2650,6 @@
 	"editor.lobby.timeHint": {
 		"defaultMessage": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.",
 		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
-	},
-	"editor.map.areaDefault": {
-		"defaultMessage": "{tile} (default)",
-		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
-	},
-	"editor.map.brush.circle": {
-		"defaultMessage": "circle",
-		"description": "Shape of the Draw tool's brush"
-	},
-	"editor.map.brush.square": {
-		"defaultMessage": "square",
-		"description": "Shape of the Draw tool's brush"
-	},
-	"editor.map.brushShape": {
-		"defaultMessage": "Shape",
-		"description": "Label of the field for the shape the Draw tool paints, a circle or a square"
-	},
-	"editor.map.brushSize": {
-		"defaultMessage": "Size",
-		"description": "Label of the field for how many cells across the Draw tool paints"
-	},
-	"editor.map.cell": {
-		"defaultMessage": "{column}, {row}: {contents}",
-		"description": "Under the map, the cell under the pointer: its coordinates and what it holds, e.g. \"3, -2: Grass\""
-	},
-	"editor.map.cellLoading": {
-		"defaultMessage": "loading...",
-		"description": "What the cell under the pointer holds, while that part of the map is loading"
-	},
-	"editor.map.cellPaintedBy": {
-		"defaultMessage": "{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}",
-		"description": "Under the map editor's map, the cell under the pointer or the keyboard's cursor when another editor painted it and saved while the player had the area open; the map marks such cells. {cell} is the cell and what it holds, e.g. \"3, -2: Grass\", {name} the other editor's display name, and {over} yes when the player had painted the cell too (saved or not), which the map marks in a warning color"
-	},
-	"editor.map.cellWithLink": {
-		"defaultMessage": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})",
-		"description": "Under the map, the cell under the pointer when it has an area link: its coordinates, what it holds and the kind of link"
-	},
-	"editor.map.confirmDeleteLinks": {
-		"defaultMessage": "Saving the smaller map deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?",
-		"description": "Asked while saving a map made smaller, when links are on the cells it cuts off or lead into them; {links} is how many"
-	},
-	"editor.map.draw": {
-		"defaultMessage": "Draw",
-		"description": "Map tool that paints tiles onto the map"
-	},
-	"editor.map.exitFullPage": {
-		"defaultMessage": "Exit Full Page",
-		"description": "Button that puts the map editor back in the page after it was made to fill the window"
-	},
-	"editor.map.fullPage": {
-		"defaultMessage": "Full Page",
-		"description": "Button that makes the map editor fill the window"
-	},
-	"editor.map.heading": {
-		"defaultMessage": "Map",
-		"description": "Name of the area's map editor (the card holding the map and its tools), for screen readers"
-	},
-	"editor.map.help": {
-		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
-		"description": "Explains how to use the map editor with the mouse and keyboard"
-	},
-	"editor.map.keyboardHelp": {
-		"defaultMessage": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.",
-		"description": "Explains how to use the map editor with only the keyboard; the keys are the same in every language"
-	},
-	"editor.map.keys.cursor": {
-		"defaultMessage": "Arrow keys",
-		"description": "In the list of keyboard shortcuts, the name of the arrow keys"
-	},
-	"editor.map.keys.cursorDescription": {
-		"defaultMessage": "Move the cursor on the focused map, 10 cells at a time with Shift",
-		"description": "In the list of keyboard shortcuts, what the arrow keys do on a map in the editor: the map editor's, the link dialog's, or the one in the dialog for choosing a starting area"
-	},
-	"editor.map.keys.home": {
-		"defaultMessage": "Home",
-		"description": "In the list of keyboard shortcuts, the name of the Home key"
-	},
-	"editor.map.keys.homeDescription": {
-		"defaultMessage": "Go back to the center cell",
-		"description": "In the list of keyboard shortcuts, what the Home key does on the map editor's map"
-	},
-	"editor.map.keys.paint": {
-		"defaultMessage": "Space / Enter",
-		"description": "In the list of keyboard shortcuts, the names of the Space and Enter keys"
-	},
-	"editor.map.keys.paintDescription": {
-		"defaultMessage": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting",
-		"description": "In the list of keyboard shortcuts, what Space and Enter do on the map editor's map"
-	},
-	"editor.map.keys.redo": {
-		"defaultMessage": "Redo the painting or change of size undone",
-		"description": "In the list of keyboard shortcuts, what Ctrl+Y does in the map editor"
-	},
-	"editor.map.keys.undo": {
-		"defaultMessage": "Undo the last painting or change to the map's size",
-		"description": "In the list of keyboard shortcuts, what Ctrl+Z does in the map editor"
-	},
-	"editor.map.keys.zoom": {
-		"defaultMessage": "Zoom in or out",
-		"description": "In the list of keyboard shortcuts, what the + and - keys do on the map editor's map"
-	},
-	"editor.map.label": {
-		"defaultMessage": "Map",
-		"description": "Name of the area's map in the map editor, for screen readers"
-	},
-	"editor.map.links": {
-		"defaultMessage": "Links",
-		"description": "Map tool that adds and changes links to other areas"
-	},
-	"editor.map.linksKept": {
-		"defaultMessage": "The links were kept, so the map wasn't made smaller.",
-		"description": "Why saving stopped: the player chose not to delete the links a smaller map would cut off; nothing was saved"
-	},
-	"editor.map.loadFailed": {
-		"defaultMessage": "Could not load the map.",
-		"description": "Shown in the map editor or a map preview when part of an area's map couldn't be loaded"
-	},
-	"editor.map.loadLinksFailed": {
-		"defaultMessage": "Could not load the links.",
-		"description": "Shown in the map editor when the area's links couldn't be loaded"
-	},
-	"editor.map.redo": {
-		"defaultMessage": "Redo",
-		"description": "Button that makes again the painting or change of size Undo took back"
-	},
-	"editor.map.resize": {
-		"defaultMessage": "Edit Size",
-		"description": "Button that opens the dialog for changing the map's size"
-	},
-	"editor.map.tile": {
-		"defaultMessage": "Tile",
-		"description": "Label of the field for the tile the Draw tool paints"
-	},
-	"editor.map.tooLarge": {
-		"defaultMessage": "A map can be at most {max, number} cells in each direction.",
-		"description": "Shown when the size asked for a map is larger than allowed; {max} is the most cells on a side"
-	},
-	"editor.map.tool": {
-		"defaultMessage": "Tool",
-		"description": "Heading of the choice of what clicking the map does"
-	},
-	"editor.map.undo": {
-		"defaultMessage": "Undo",
-		"description": "Button that takes back the last painting or change to the map's size"
-	},
-	"editor.map.unknownTile": {
-		"defaultMessage": "unknown tile",
-		"description": "What the cell under the pointer holds, when it is a tile the editor doesn't know"
-	},
-	"editor.map.unsaved": {
-		"defaultMessage": "Map changes not saved yet",
-		"description": "Shown under the map while it has painting, a change of size or links that the editor's Save button hasn't stored yet"
-	},
-	"editor.map.void": {
-		"defaultMessage": "🌃Void",
-		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
 	"editor.notes": {
 		"defaultMessage": "Notes",
@@ -2700,72 +2776,72 @@
 		"description": "One ability modifier in a race's summary on the editor's Characters tab, e.g. Dexterity +2; {ability} is the ability's name"
 	},
 	"editor.resize.cutOffWarning": {
-		"defaultMessage": "The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?",
-		"description": "Warns before making a map smaller cuts off cells painted with something other than the default tile, and area links"
+		"defaultMessage": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the area is saved. Resize anyway?",
+		"description": "Warns before making an area smaller cuts off cells painted with something other than the default tile, and area links"
 	},
 	"editor.resize.discard": {
 		"defaultMessage": "Resize and Discard",
-		"description": "Button that makes the map smaller after the player was warned it loses painting or links"
+		"description": "Button that makes the area smaller after the player was warned it loses painting or links"
 	},
 	"editor.resize.east": {
 		"defaultMessage": "East",
-		"description": "Label of the field for how many cells the map reaches east of its center"
+		"description": "Label of the field for how many cells the area reaches east of its center"
 	},
 	"editor.resize.explanation": {
-		"defaultMessage": "How many cells the map reaches in each direction from its center cell (0, 0).",
-		"description": "Explains the four fields of the dialog for changing a map's size"
+		"defaultMessage": "How many cells the area reaches in each direction from its center cell (0, 0).",
+		"description": "Explains the four fields of the dialog for changing an area's size"
 	},
 	"editor.resize.extendBy": {
 		"defaultMessage": "Extend by",
-		"description": "Label of the field for how many cells the Extend Size buttons add to a side of the map"
+		"description": "Label of the field for how many cells the Extend Size buttons add to a side of the area"
 	},
 	"editor.resize.extendEast": {
 		"defaultMessage": "+ East",
-		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's east side"
+		"description": "Button in the dialog for changing an area's size that adds the number of cells chosen to the area's east side"
 	},
 	"editor.resize.extendNorth": {
 		"defaultMessage": "+ North",
-		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's north side"
+		"description": "Button in the dialog for changing an area's size that adds the number of cells chosen to the area's north side"
 	},
 	"editor.resize.extendSouth": {
 		"defaultMessage": "+ South",
-		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's south side"
+		"description": "Button in the dialog for changing an area's size that adds the number of cells chosen to the area's south side"
 	},
 	"editor.resize.extendTitle": {
 		"defaultMessage": "Extend Size",
-		"description": "Heading of the part of the dialog for changing a map's size with buttons that make the map bigger on one side"
+		"description": "Heading of the part of the dialog for changing an area's size with buttons that make the area bigger on one side"
 	},
 	"editor.resize.extendWest": {
 		"defaultMessage": "+ West",
-		"description": "Button in the dialog for changing a map's size that adds the number of cells chosen to the map's west side"
+		"description": "Button in the dialog for changing an area's size that adds the number of cells chosen to the area's west side"
 	},
 	"editor.resize.failed": {
-		"defaultMessage": "Could not resize the map.",
-		"description": "Shown in the Edit Size dialog when the map's size couldn't be changed"
+		"defaultMessage": "Could not resize the area.",
+		"description": "Shown in the Edit Size dialog when the area's size couldn't be changed"
 	},
 	"editor.resize.north": {
 		"defaultMessage": "North",
-		"description": "Label of the field for how many cells the map reaches north of its center"
+		"description": "Label of the field for how many cells the area reaches north of its center"
 	},
 	"editor.resize.south": {
 		"defaultMessage": "South",
-		"description": "Label of the field for how many cells the map reaches south of its center"
+		"description": "Label of the field for how many cells the area reaches south of its center"
 	},
 	"editor.resize.submit": {
 		"defaultMessage": "Resize",
-		"description": "Button that changes the map to the size given"
+		"description": "Button that changes the area to the size given"
 	},
 	"editor.resize.title": {
 		"defaultMessage": "Edit Size",
-		"description": "Title of the dialog for changing a map's size"
+		"description": "Title of the dialog for changing an area's size"
 	},
 	"editor.resize.total": {
 		"defaultMessage": "{height, number} tall x {width, number} wide",
-		"description": "The size of the map the dialog's fields describe, in cells"
+		"description": "The size of the area the dialog's fields describe, in cells"
 	},
 	"editor.resize.west": {
 		"defaultMessage": "West",
-		"description": "Label of the field for how many cells the map reaches west of its center"
+		"description": "Label of the field for how many cells the area reaches west of its center"
 	},
 	"editor.restore": {
 		"defaultMessage": "Restore Default",
@@ -2832,8 +2908,8 @@
 		"description": "A second sentence in the toast saying another editor saved changes, when they changed something the player also has unsaved changes to; the toast stays until closed. {tabs} names the editor's tabs those things are on, e.g. \"Characters and Items\", and {count} how many tabs"
 	},
 	"editor.saveNoticePaintedOver": {
-		"defaultMessage": "{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}",
-		"description": "A sentence in the toast saying another editor saved changes, when they painted cells of the open area's map that the player had also painted since opening it, saved or not; the toast stays until closed. {count} is how many cells. The map outlines those cells in orange, and the text under the map names who painted the cell under the pointer"
+		"defaultMessage": "{count, plural, one {They painted over # cell you painted, outlined in orange in the area editor.} other {They painted over # cells you painted, outlined in orange in the area editor.}}",
+		"description": "A sentence in the toast saying another editor saved changes, when they painted cells of the open area that the player had also painted since opening it, saved or not; the toast stays until closed. {count} is how many cells. The area editor outlines those cells in orange, and the text under the area's cells names who painted the cell under the pointer"
 	},
 	"editor.searchByName": {
 		"defaultMessage": "Search by name",
@@ -2876,7 +2952,7 @@
 		"description": "Button in an editor dialog (race, class, theme, item or tile) for one of the ruleset's that will be put back as the ruleset has it when the tab is saved: keeps the universe's changes instead"
 	},
 	"editor.startDraft.copy": {
-		"defaultMessage": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied.",
+		"defaultMessage": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their cells, and translations. Players keep playing the live version and won't see draft changes until they are applied.",
 		"description": "In the dialog explaining drafts before one is started: what a draft is"
 	},
 	"editor.startDraft.finishing": {
@@ -2941,7 +3017,7 @@
 	},
 	"editor.tab.areas": {
 		"defaultMessage": "Areas",
-		"description": "Tab of the editor listing the universe's areas (places with their own map)"
+		"description": "Tab of the editor listing the universe's areas (places with their own grid of cells)"
 	},
 	"editor.tab.audit": {
 		"defaultMessage": "Audit",
@@ -2973,7 +3049,7 @@
 	},
 	"editor.tab.tilesets": {
 		"defaultMessage": "Tilesets",
-		"description": "Tab of the editor listing the tiles maps are painted with"
+		"description": "Tab of the editor listing the tiles areas are painted with"
 	},
 	"editor.tab.translations": {
 		"defaultMessage": "Translations",
@@ -3148,7 +3224,7 @@
 		"description": "Heading of whether indoor areas, outdoor areas, both or neither can paint with a tile: in the tile editor, and the Tilesets tab's filter and table column"
 	},
 	"editor.tile.usedInHint": {
-		"defaultMessage": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.",
+		"defaultMessage": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but areas that already use it keep it.",
 		"description": "Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile"
 	},
 	"editor.tile.visionCost": {
@@ -3172,12 +3248,12 @@
 		"description": "Label of the field for how many seconds of game time walking a square of the tile takes; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.tileDelete.checkFailed": {
-		"defaultMessage": "Could not find out which maps use the tile.",
+		"defaultMessage": "Could not find out which areas use the tile.",
 		"description": "Shown in the dialog before deleting a tile when the areas using it couldn't be loaded"
 	},
 	"editor.tileDelete.checking": {
-		"defaultMessage": "Checking which maps use it...",
-		"description": "Shown in the dialog before deleting a tile while it finds out which areas' maps use the tile"
+		"defaultMessage": "Checking which areas use it...",
+		"description": "Shown in the dialog before deleting a tile while it finds out which areas use the tile"
 	},
 	"editor.tileDelete.chooseReplacement": {
 		"defaultMessage": "Choose a tile",
@@ -3189,7 +3265,7 @@
 	},
 	"editor.tileDelete.replaceWith": {
 		"defaultMessage": "Replace it with",
-		"description": "Label of the list of tiles to paint the maps with in place of a tile being deleted"
+		"description": "Label of the list of tiles to paint the areas with in place of a tile being deleted"
 	},
 	"editor.tileDelete.submit": {
 		"defaultMessage": "Delete",
@@ -3200,8 +3276,8 @@
 		"description": "Title of the dialog that asks before deleting a tile"
 	},
 	"editor.tileDelete.usage": {
-		"defaultMessage": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.",
-		"description": "Shown in the dialog before deleting a tile that maps use; {areas} lists the areas' names, and {count} is how many there are"
+		"defaultMessage": "{count, plural, one {{areas} uses it.} other {{areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.",
+		"description": "Shown in the dialog before deleting a tile that areas use; {areas} lists the areas' names, and {count} is how many there are"
 	},
 	"editor.tileGraphic.blobFormatHint": {
 		"defaultMessage": "A PNG of at most {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across and {columns, number} down like the game's own tilesets, with 2 places empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across and {sortedRows, number} down, sorted by the neighbors they join, with the last place empty. These tiles are drawn over the ground, so they have no draw order.",
@@ -3672,7 +3748,7 @@
 		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: the first item, followed by what the world holds"
 	},
 	"editor.universeDelete.worldContents": {
-		"defaultMessage": "Its areas and their maps, tilesets and uploads, items, races, classes, translations",
+		"defaultMessage": "Its areas and their cells, tilesets and uploads, items, races, classes, translations",
 		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: what its world holds, after the item for its world"
 	},
 	"editor.universeDeleted": {
@@ -3956,7 +4032,7 @@
 		"description": "Subject of the email sent when a player is made one of a universe's editors (given a role in it, such as builder or beta tester); {universe} is the universe's name and {siteName} the site's name"
 	},
 	"email.roleGiven.whatItAllows": {
-		"defaultMessage": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}",
+		"defaultMessage": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}",
 		"description": "Second paragraph of the email sent when a player is given a role in a universe, saying what the role lets them do; {role} chooses the sentence and isn't shown"
 	},
 	"email.twoFactorDisabled.body": {
@@ -4192,8 +4268,8 @@
 		"description": "Why an area couldn't be deleted: the universe needs it"
 	},
 	"error.cellOutOfBounds": {
-		"defaultMessage": "Every cell must be inside the area's map.",
-		"description": "Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller"
+		"defaultMessage": "Every cell must be inside the area.",
+		"description": "Why painting was refused: some cells are outside the area, perhaps because another editor made it smaller"
 	},
 	"error.characterLimit": {
 		"defaultMessage": "You can have at most {max, plural, one {# character} other {# characters}} in a universe.",
@@ -4245,11 +4321,11 @@
 	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
-		"description": "Why an area can't both have faerie time and a map that wraps around: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings"
+		"description": "Why an area can't both have faerie time and wrap around at its edges: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings"
 	},
 	"error.faerieLobbyCantLoop": {
-		"defaultMessage": "The lobby's passage of time can't be faerie while its map loops.",
-		"description": "Why the lobby's settings, or its area's, were refused: faerie time and a map that wraps around can't be combined"
+		"defaultMessage": "The lobby's passage of time can't be faerie while its area loops.",
+		"description": "Why the lobby's settings, or its area's, were refused: faerie time and an area that wraps around at its edges can't be combined"
 	},
 	"error.faerieMorningMismatch": {
 		"defaultMessage": "Where morning is must be chosen when, and only when, the passage of time is faerie.",
@@ -4312,16 +4388,16 @@
 		"description": "Why a player couldn't be removed from the site's admins on the Admins admin page: they are the only one left"
 	},
 	"error.linkOutOfBounds": {
-		"defaultMessage": "The link's cell must be inside the area's map.",
-		"description": "Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller"
+		"defaultMessage": "The link's cell must be inside the area.",
+		"description": "Why an area link was refused: its cell is outside the area, perhaps because another editor made it smaller"
 	},
 	"error.linkTargetNotInUniverse": {
 		"defaultMessage": "A link must go to another area of this universe.",
 		"description": "Why an area link was refused: the area it leads to doesn't exist or is in another universe"
 	},
 	"error.linkTargetOutOfBounds": {
-		"defaultMessage": "Where the link goes must be inside the other area's map.",
-		"description": "Why an area link was refused: the cell it leads to is outside the other area's map"
+		"defaultMessage": "Where the link goes must be inside the other area.",
+		"description": "Why an area link was refused: the cell it leads to is outside the other area"
 	},
 	"error.linkToSameArea": {
 		"defaultMessage": "A link must go to another area.",
@@ -4413,7 +4489,7 @@
 	},
 	"error.noSuchReplacementTile": {
 		"defaultMessage": "The tile chosen to replace it doesn't exist.",
-		"description": "Why a tile couldn't be deleted: the tile chosen to paint the maps with in its place isn't one of the universe's tiles, perhaps because it was deleted"
+		"description": "Why a tile couldn't be deleted: the tile chosen to paint the areas with in its place isn't one of the universe's tiles, perhaps because it was deleted"
 	},
 	"error.noSuchTheme": {
 		"defaultMessage": "The theme doesn't exist.",
@@ -4509,7 +4585,7 @@
 	},
 	"error.resizeDiscards": {
 		"defaultMessage": "Resizing would discard painted cells or links.",
-		"description": "Why a map wasn't made smaller without asking: the part it would lose has painting or links"
+		"description": "Why an area wasn't made smaller without asking: the part it would lose has painting or links"
 	},
 	"error.roleNotAllowed": {
 		"defaultMessage": "Your role in this universe doesn't allow that.",
@@ -4564,8 +4640,8 @@
 		"description": "Why an uploaded tileset was refused: the picture is the wrong size for the layout chosen for it (15 tiles for ground, or 47 for walls); {width} and {height} are the size it must be, in pixels"
 	},
 	"error.tileInUse": {
-		"defaultMessage": "A map uses this tile, so it can't be deleted.",
-		"description": "Why a tile couldn't be deleted: some area's map is painted with it"
+		"defaultMessage": "An area uses this tile, so it can't be deleted.",
+		"description": "Why a tile couldn't be deleted: some area is painted with it"
 	},
 	"error.tileLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
@@ -4717,7 +4793,7 @@
 	},
 	"form.saving": {
 		"defaultMessage": "Saving...",
-		"description": "Shown while work is being stored, such as painting under the map editor's map, or the player's progress in the toolbar of Create Character"
+		"description": "Shown while work is being stored, such as painting the area editor's cells, or the player's progress in the toolbar of Create Character"
 	},
 	"form.universeNameLikeId": {
 		"defaultMessage": "Choose a name that doesn't look like a universe's ID.",
@@ -4765,7 +4841,7 @@
 	},
 	"group.characterBarred": {
 		"defaultMessage": "The universe's creators disabled the race or class of {name}, so they can't play until it is enabled again. They are still in the group.",
-		"description": "Shown in the lobby when the character a window played in a group was taken off its map because the universe's creators disabled their race or class for characters already of it; {name} is the character's name"
+		"description": "Shown in the lobby when the character a window played in a group was taken out of its area because the universe's creators disabled their race or class for characters already of it; {name} is the character's name"
 	},
 	"group.characterLeft": {
 		"defaultMessage": "{name} is no longer in the group, or can't be played.",
@@ -4817,7 +4893,7 @@
 	},
 	"group.locked": {
 		"defaultMessage": "This universe has reached the end of time, so it is locked. You can look around and switch between your characters, but nothing can move or change.",
-		"description": "Above a group's map while its universe is in the stage end of time, which locks it"
+		"description": "Above a group's area while its universe is in the stage end of time, which locks it"
 	},
 	"group.lockedNow": {
 		"defaultMessage": "This universe has reached the end of time, so it is now locked. Nothing can move or change.",
@@ -5149,7 +5225,7 @@
 	},
 	"license.artworkCredit": {
 		"defaultMessage": "The logo and the default tilesets were drawn by {artist}.",
-		"description": "On the license page, crediting the artist who made the game's logo and the default tilesets (the tile images new maps are drawn with); {artist} is the artist's name, linking to their portfolio, the same in every language"
+		"description": "On the license page, crediting the artist who made the game's logo and the default tilesets (the tile images new areas are drawn with); {artist} is the artist's name, linking to their portfolio, the same in every language"
 	},
 	"license.assets": {
 		"defaultMessage": "Art and other assets",
@@ -5566,82 +5642,6 @@
 	"login.withGoogle": {
 		"defaultMessage": "Log in with Google",
 		"description": "Button on the login screen that logs in with a Google account, creating an account here the first time"
-	},
-	"map.announce.appeared": {
-		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
-		"description": "Read out by screen readers when other players come into view on the map; {players} is a list of their names"
-	},
-	"map.announce.area": {
-		"defaultMessage": "You are in {area}.",
-		"description": "Read out by screen readers when the player comes into an area; {area} is its name"
-	},
-	"map.announce.blocked": {
-		"defaultMessage": "Something is in the way.",
-		"description": "Read out by screen readers when the player tries to move but can't, e.g. into a wall or another player"
-	},
-	"map.announce.disappeared": {
-		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
-		"description": "Read out by screen readers when other players go out of view on the map or leave; {players} is a list of their names"
-	},
-	"map.announce.partOfDay": {
-		"defaultMessage": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}",
-		"description": "Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes"
-	},
-	"map.announce.player": {
-		"defaultMessage": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}",
-		"description": "Read out by screen readers in the list of players the player can see: their name, how many cells away and in which direction, e.g. \"Bo, 3 cells northeast\""
-	},
-	"map.announce.playerHere": {
-		"defaultMessage": "{name}, right where you are",
-		"description": "Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name"
-	},
-	"map.announce.position": {
-		"defaultMessage": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area's name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as \"Bo, 3 cells northeast\""
-	},
-	"map.announce.sight": {
-		"defaultMessage": "You can see {squares, plural, one {# square} other {# squares}} across open ground.",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains"
-	},
-	"map.announce.timeOfDay": {
-		"defaultMessage": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. \"6:30:00 PM\", and the part of the day it falls in"
-	},
-	"map.announce.timeOfDayRough": {
-		"defaultMessage": "It is {time}.",
-		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. \"late morning\""
-	},
-	"map.ghost": {
-		"defaultMessage": "Ghost",
-		"description": "Shown above the player on the lobby's map while they play no character: they are a ghost, whom other players can't see"
-	},
-	"map.help": {
-		"defaultMessage": "Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. {shortcut} tells you where you are and who you can see.",
-		"description": "Read by screen readers on the game's map: the keys that play it. The keys are the same in every language; {shortcut} is the keys that read out where the player is, e.g. Alt+P"
-	},
-	"map.keys.move": {
-		"defaultMessage": "Arrow keys, W A S D or number pad",
-		"description": "In the list of keyboard shortcuts, the keys that move the player; the keys are the same in every language"
-	},
-	"map.keys.moveDescription": {
-		"defaultMessage": "Move",
-		"description": "In the list of keyboard shortcuts, what the movement keys do"
-	},
-	"map.keys.position": {
-		"defaultMessage": "Say where you are and who you can see",
-		"description": "In the list of keyboard shortcuts, what the shortcut that reads out the player's position does"
-	},
-	"map.keys.takeLink": {
-		"defaultMessage": "Go through a door or path you stand on",
-		"description": "In the list of keyboard shortcuts, what the E key does: takes the player to another area through the link they stand on"
-	},
-	"map.label": {
-		"defaultMessage": "Map",
-		"description": "Name of the game's map for screen readers"
-	},
-	"map.takeLink": {
-		"defaultMessage": "Press E to go through",
-		"description": "Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language"
 	},
 	"markdown.bold": {
 		"defaultMessage": "Bold",
@@ -7385,51 +7385,51 @@
 	},
 	"tile.pf1e.desert": {
 		"defaultMessage": "Desert",
-		"description": "Name of a map tile: sandy desert, which is slow to cross"
+		"description": "Name of an area tile: sandy desert, which is slow to cross"
 	},
 	"tile.pf1e.forest": {
 		"defaultMessage": "Forest",
-		"description": "Name of a map tile: woodland, which is slow to cross and hard to see through"
+		"description": "Name of an area tile: woodland, which is slow to cross and hard to see through"
 	},
 	"tile.pf1e.grass": {
 		"defaultMessage": "Grass",
-		"description": "Name of a map tile: open grassland"
+		"description": "Name of an area tile: open grassland"
 	},
 	"tile.pf1e.mountains": {
 		"defaultMessage": "Mountains",
-		"description": "Name of a map tile: mountains, which can't be crossed or seen past"
+		"description": "Name of an area tile: mountains, which can't be crossed or seen past"
 	},
 	"tile.pf1e.water": {
 		"defaultMessage": "Water",
-		"description": "Name of a map tile: deep water, which can't be walked into"
+		"description": "Name of an area tile: deep water, which can't be walked into"
 	},
 	"tile.pf1e.wood_floor": {
 		"defaultMessage": "Wood Floor",
-		"description": "Name of a map tile: the wooden floor of a building"
+		"description": "Name of an area tile: the wooden floor of a building"
 	},
 	"tile.sf1e.bulkhead": {
 		"defaultMessage": "Bulkhead",
-		"description": "Name of a map tile in a science fantasy world: a metal wall inside a starship or station, which can't be crossed or seen past"
+		"description": "Name of an area tile in a science fantasy world: a metal wall inside a starship or station, which can't be crossed or seen past"
 	},
 	"tile.sf1e.grass": {
 		"defaultMessage": "Grass",
-		"description": "Name of a map tile in a science fantasy world: open grassland"
+		"description": "Name of an area tile in a science fantasy world: open grassland"
 	},
 	"tile.sf1e.metal_floor": {
 		"defaultMessage": "Metal Floor",
-		"description": "Name of a map tile in a science fantasy world: the metal deck of a starship or station"
+		"description": "Name of an area tile in a science fantasy world: the metal deck of a starship or station"
 	},
 	"tile.sf1e.rock": {
 		"defaultMessage": "Rock",
-		"description": "Name of a map tile in a science fantasy world: bare rock cliffs, which can't be crossed or seen past"
+		"description": "Name of an area tile in a science fantasy world: bare rock cliffs, which can't be crossed or seen past"
 	},
 	"tile.sf1e.sand": {
 		"defaultMessage": "Sand",
-		"description": "Name of a map tile in a science fantasy world: loose sand, which is slow to cross"
+		"description": "Name of an area tile in a science fantasy world: loose sand, which is slow to cross"
 	},
 	"tile.sf1e.water": {
 		"defaultMessage": "Water",
-		"description": "Name of a map tile in a science fantasy world: deep water, which can't be walked into"
+		"description": "Name of an area tile in a science fantasy world: deep water, which can't be walked into"
 	},
 	"time.periodOfDay": {
 		"defaultMessage": "{period, select, midnight {midnight} pre_dawn {pre-dawn} dawn {dawn} early_morning {early morning} morning {morning} late_morning {late morning} noon {noon} early_afternoon {early afternoon} afternoon {afternoon} late_afternoon {late afternoon} evening {evening} late_evening {late evening} other {night}}",
@@ -7457,43 +7457,43 @@
 	},
 	"universe.faerie.center": {
 		"defaultMessage": "center",
-		"description": "Where morning is in faerie time: the center of the map, with midnight at the edges"
+		"description": "Where morning is in faerie time: the center of the area, with midnight at the edges"
 	},
 	"universe.faerie.east": {
 		"defaultMessage": "east",
-		"description": "Where morning is in faerie time: the east edge of the map"
+		"description": "Where morning is in faerie time: the east edge of the area"
 	},
 	"universe.faerie.horizon": {
 		"defaultMessage": "horizon",
-		"description": "Where morning is in faerie time: every edge of the map, with night in the center"
+		"description": "Where morning is in faerie time: every edge of the area, with night in the center"
 	},
 	"universe.faerie.north": {
 		"defaultMessage": "north",
-		"description": "Where morning is in faerie time: the north edge of the map"
+		"description": "Where morning is in faerie time: the north edge of the area"
 	},
 	"universe.faerie.northeast": {
 		"defaultMessage": "northeast",
-		"description": "Where morning is in faerie time: the northeast corner of the map"
+		"description": "Where morning is in faerie time: the northeast corner of the area"
 	},
 	"universe.faerie.northwest": {
 		"defaultMessage": "northwest",
-		"description": "Where morning is in faerie time: the northwest corner of the map"
+		"description": "Where morning is in faerie time: the northwest corner of the area"
 	},
 	"universe.faerie.south": {
 		"defaultMessage": "south",
-		"description": "Where morning is in faerie time: the south edge of the map"
+		"description": "Where morning is in faerie time: the south edge of the area"
 	},
 	"universe.faerie.southeast": {
 		"defaultMessage": "southeast",
-		"description": "Where morning is in faerie time: the southeast corner of the map"
+		"description": "Where morning is in faerie time: the southeast corner of the area"
 	},
 	"universe.faerie.southwest": {
 		"defaultMessage": "southwest",
-		"description": "Where morning is in faerie time: the southwest corner of the map"
+		"description": "Where morning is in faerie time: the southwest corner of the area"
 	},
 	"universe.faerie.west": {
 		"defaultMessage": "west",
-		"description": "Where morning is in faerie time: the west edge of the map"
+		"description": "Where morning is in faerie time: the west edge of the area"
 	},
 	"universe.languages": {
 		"defaultMessage": "Languages: {languages}",
@@ -7521,7 +7521,7 @@
 	},
 	"universe.role.builder": {
 		"defaultMessage": "builder",
-		"description": "Role of someone who can change a universe's world: its tiles, items, areas, maps and links"
+		"description": "Role of someone who can change a universe's world: its tiles, items, areas and links"
 	},
 	"universe.role.creator": {
 		"defaultMessage": "creator",
@@ -7536,7 +7536,7 @@
 		"description": "What the beta tester role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
 	},
 	"universe.roleDescription.builder": {
-		"defaultMessage": "Can change the universe's world (its tiles, items, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them.",
+		"defaultMessage": "Can change the universe's world (its tiles, items, areas and links) and play it while it's still being built. Can read its other settings without changing them.",
 		"description": "What the builder role lets an editor do, under its name in the dialog on the editor's Editors tab, and when the pointer is over the role in the tab's list of editors"
 	},
 	"universe.roleDescription.creator": {
@@ -7617,7 +7617,7 @@
 	},
 	"universe.time.faerie": {
 		"defaultMessage": "faerie",
-		"description": "Passage of time where the time of day depends on where you are on the map, as in the realm of Faerie"
+		"description": "Passage of time where the time of day depends on where you are in the area, as in the realm of Faerie"
 	},
 	"universe.time.flows_normally": {
 		"defaultMessage": "flows normally",

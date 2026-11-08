@@ -411,7 +411,7 @@ export async function restoreDefaultTile(version: UniverseVersion, defaultTileId
 }
 
 /**
- * Deletes one of a universe's own tiles. Check that no map uses it first (isTileInUse in areaRepo)
+ * Deletes one of a universe's own tiles. Check that no area uses it first (isTileInUse in areaRepo)
  *
  * @param version The universe's live version or draft
  * @param tileId The tile's ID, from findTileKind() as custom

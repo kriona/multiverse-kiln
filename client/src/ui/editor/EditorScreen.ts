@@ -40,7 +40,7 @@ import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
 
 /**
- * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
+ * The order the tabs' changes are saved in: the Areas tab's areas can be painted with tiles the
  * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab after it. The server checks every
  * change against the role the player had when the save began, so the Editors tab's changes to roles
  * can go anywhere. The Translations tab goes last, so the server checks translations and notes against
@@ -819,7 +819,7 @@ export class EditorScreen
 	 * Follows a save made in another window, once the universe has loaded (a save heard of while it
 	 * loads waits for it): lists the saves on the Audit tab again (once the tab shows), updates what the
 	 * save changed that this window has no unsaved changes to, marks what it has them to, and says who
-	 * saved what, once the painting it made to the area open is taken into its map. Of a save to the
+	 * saved what, once the painting it made to the area open is taken into its cells. Of a save to the
 	 * other version, it follows only what the universe holds once (detailsForVersionOpen()). Starting,
 	 * applying or discarding the draft changes the whole universe, which loads again, or says to reload
 	 * while anything is unsaved

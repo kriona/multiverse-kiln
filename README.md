@@ -188,7 +188,7 @@ The object storage is [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which
 
 [Mailpit](https://mailpit.axllent.org/) catches every email the server sends, such as login codes, so none reaches a real inbox. Read them in its web inbox at http://127.0.0.1:8025.
 
-The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample maps. It refuses to run with `NODE_ENV=production`.
+The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample areas. It refuses to run with `NODE_ENV=production`.
 
 Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_username` makes the account with that username its creator. Register the account first; the script won't create one. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
 
@@ -249,7 +249,7 @@ Open the game at `https://www.multiversekiln.localhost:5173`. The server's outpu
 
 Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 
-Type a name to log in, then pick a universe on Home (Kilnhaven, after seeding) and press **Enter Universe** to walk around its lobby. Press **Create game** to start a group and **Share** to copy a join link for other players; the group starts in the universe's starting area. Move with the arrow keys or WASD, and press **E** to go through a doorway that offers to take you somewhere (such as Kilnhaven's cottage trapdoor). Click the map to move again after typing in the chat. Your player is green; other players are blue.
+Type a name to log in, then pick a universe on Home (Kilnhaven, after seeding) and press **Enter Universe** to walk around its lobby. Press **Create game** to start a group and **Share** to copy a join link for other players; the group starts in the universe's starting area. Move with the arrow keys or WASD, and press **E** to go through a doorway that offers to take you somewhere (such as Kilnhaven's cottage trapdoor). Click the area to move again after typing in the chat. Your player is green; other players are blue.
 
 Until there are real logins, a name is the whole login: typing a name you've used before (in any capitals) logs you in as that player again, from any browser, and a new name creates a new player. A player can only be logged in from one browser at a time.
 

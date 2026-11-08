@@ -26,7 +26,7 @@ export interface ChangeSource extends UnsavedWork
 }
 
 /**
- * The Tilesets tab's tiles as its changes make them (see TilesetsTab.withChanges), for the maps other
+ * The Tilesets tab's tiles as its changes make them (see TilesetsTab.withChanges), for the areas other
  * tabs and dialogs draw
  */
 export interface StagedTiles

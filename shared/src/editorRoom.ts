@@ -175,7 +175,7 @@ export function detailsForVersionOpen<Detail extends UniverseEditDetail>(details
 export interface SavedEditDetail extends UniverseEditDetail
 {
 	/**
-	 * The ID of the tile, item, race, class, theme, difficulty level, area (the one whose map or links it
+	 * The ID of the tile, item, race, class, theme, difficulty level, area (the one whose cells or links it
 	 * changed, for cells and links) or uploaded tileset, or the editor's player ID (an editor added
 	 * included); null for anything else added, and for the settings, the ruleset, translations and the
 	 * draft
@@ -183,14 +183,14 @@ export interface SavedEditDetail extends UniverseEditDetail
 	id: number | string | null;
 
 	/**
-	 * For cells, the chunks of the area's map the save painted, for the area editor to load again and mark
+	 * For cells, the chunks of the area the save painted, for the area editor to load again and mark
 	 * the cells that changed; left out of the details saved for the Audit tab
 	 */
 	chunks?: ChunkCoordinates[];
 }
 
 /**
- * A chunk of an area's map, by its column and row among chunks
+ * A chunk of an area, by its column and row among chunks
  */
 export interface ChunkCoordinates
 {

@@ -1,5 +1,5 @@
 /**
- * Links that require the whole group (see STRUCTURE-OVERVIEW.md, Editor: Map)
+ * Links that require the whole group (see STRUCTURE-OVERVIEW.md, Editor: Area Cells)
  *
  * Such a link can be taken only while every member of the group, the anchor being included, is
  * present and together, and then the whole group goes through it at once

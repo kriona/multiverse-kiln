@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { IMPASSABLE_WALK_SECONDS, type EditorTile, type EditorArea, type MapBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, type EditorTile, type EditorArea, type AreaBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
 
-import { MAP_EDITOR_SCENE_KEY, MapEditorScene, type CameraState, type MapEditorHost } from '../scenes/MapEditorScene';
+import { AREA_EDITOR_SCENE_KEY, AreaEditorScene, type CameraState, type AreaEditorHost } from '../scenes/AreaEditorScene';
 import { announce } from '../ui/announcer';
 import { cellsBetween, type BrushCell } from './brush';
 
@@ -21,28 +21,28 @@ const ARROW_STEPS: Record<string, BrushCell> = {
 };
 
 /**
- * A canvas showing an area's map in the map editor scene: one Phaser game, created the first time a
- * map is shown, running a fresh start of the scene for each map
+ * A canvas showing an area's cells in the area editor scene: one Phaser game, created the first time an
+ * area is shown, running a fresh start of the scene for each area
  *
- * The canvas's element can be focused, and then the keyboard works the map with a cursor: the arrow
+ * The canvas's element can be focused, and then the keyboard works the area with a cursor: the arrow
  * keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints or picks its cell
  * as a click does, holding Space while moving keeps painting as a drag does, + and - zoom, and Home
  * goes back to the center cell. Each cell the cursor moves onto is read out to screen readers
  */
-export class MapCanvas
+export class AreaCanvas
 {
 	private game?: Phaser.Game;
-	private current?: MapEditorScene;
-	private host?: MapEditorHost;
-	private bounds?: MapBounds;
+	private current?: AreaEditorScene;
+	private host?: AreaEditorHost;
+	private bounds?: AreaBounds;
 
 	/**
-	 * Whether the wheel pans the map instead of scrolling the page (see setWheelPans)
+	 * Whether the wheel pans the area instead of scrolling the page (see setWheelPans)
 	 */
 	private wheelPans = false;
 
 	/**
-	 * The keyboard's cursor, once the map has had focus
+	 * The keyboard's cursor, once the area has had focus
 	 */
 	private cursor: BrushCell | undefined;
 
@@ -66,25 +66,25 @@ export class MapCanvas
 	}
 
 	/**
-	 * The scene showing the map, once it is ready
+	 * The scene showing the area, once it is ready
 	 *
 	 * @return The scene, or undefined while none is showing
 	 */
-	get scene(): MapEditorScene | undefined
+	get scene(): AreaEditorScene | undefined
 	{
 		return(this.current);
 	}
 
 	/**
-	 * Shows a map in place of the one before
+	 * Shows an area in place of the one before
 	 *
-	 * @param area The area, with the tiles its map can use
+	 * @param area The area, with the tiles its cells can use
 	 * @param chunks The area's loaded chunks, by chunkKey(); the host changes them and calls refreshChunks
 	 * @param host Decides what clicks do and hears what happens
 	 * @param camera Where the camera starts, or undefined for the area's center cell
 	 * @return The scene, once it is ready
 	 */
-	show(area: AreaPayload, chunks: ReadonlyMap<string, readonly number[]>, host: MapEditorHost, camera?: CameraState): Promise<MapEditorScene>
+	show(area: AreaPayload, chunks: ReadonlyMap<string, readonly number[]>, host: AreaEditorHost, camera?: CameraState): Promise<AreaEditorScene>
 	{
 		const { bounds } = area;
 
@@ -105,7 +105,7 @@ export class MapCanvas
 				chunks,
 				host,
 				camera,
-				onReady: (scene: MapEditorScene) =>
+				onReady: (scene: AreaEditorScene) =>
 				{
 					this.current = scene;
 					scene.wheelPans = this.wheelPans;
@@ -123,7 +123,7 @@ export class MapCanvas
 			{
 				// The canvas's element handles the keyboard itself (see onKeyDown), so the game mustn't take
 				// keys from the page's text fields. The wheel scrolls the page unless Ctrl is held or the
-				// wheel pans the map (see onWheel)
+				// wheel pans the area (see onWheel)
 				this.game = new Phaser.Game({
 					type: Phaser.WEBGL,
 					parent: this.parent,
@@ -136,30 +136,30 @@ export class MapCanvas
 					},
 					scene: []
 				});
-				this.game.scene.add(MAP_EDITOR_SCENE_KEY, MapEditorScene, true, data);
+				this.game.scene.add(AREA_EDITOR_SCENE_KEY, AreaEditorScene, true, data);
 				return;
 			}
 
-			this.game.scene.start(MAP_EDITOR_SCENE_KEY, data);
+			this.game.scene.start(AREA_EDITOR_SCENE_KEY, data);
 		}));
 	}
 
 	/**
-	 * Stops showing a map
+	 * Stops showing an area
 	 */
 	stop(): void
 	{
 		this.stopPainting();
 		this.current = undefined;
 		this.host = undefined;
-		this.game?.scene.stop(MAP_EDITOR_SCENE_KEY);
+		this.game?.scene.stop(AREA_EDITOR_SCENE_KEY);
 	}
 
 	/**
-	 * Makes the wheel pan the map instead of scrolling the page, for a map that fills the window, or
+	 * Makes the wheel pan the area instead of scrolling the page, for an area that fills the window, or
 	 * scroll the page again
 	 *
-	 * @param pans Whether the wheel pans the map
+	 * @param pans Whether the wheel pans the area
 	 */
 	setWheelPans(pans: boolean): void
 	{
@@ -213,7 +213,7 @@ export class MapCanvas
 	}
 
 	/**
-	 * Puts the keyboard's cursor on the map when it takes focus: where it was, or the center cell
+	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the center cell
 	 */
 	private readonly onFocus = (): void =>
 	{
@@ -223,7 +223,7 @@ export class MapCanvas
 	/**
 	 * Moves the cursor, uses the tool on its cell, zooms or goes back to the center cell
 	 *
-	 * @param event The key press on the map
+	 * @param event The key press on the area
 	 */
 	private readonly onKeyDown = (event: KeyboardEvent): void =>
 	{
@@ -269,10 +269,10 @@ export class MapCanvas
 	};
 
 	/**
-	 * Keeps Ctrl+wheel, which the scene zooms the map with, from zooming the page, and the wheel from
-	 * scrolling the page while it pans the map. Otherwise the wheel alone scrolls the page
+	 * Keeps Ctrl+wheel, which the scene zooms the area with, from zooming the page, and the wheel from
+	 * scrolling the page while it pans the area. Otherwise the wheel alone scrolls the page
 	 *
-	 * @param event The wheel turn over the map
+	 * @param event The wheel turn over the area
 	 */
 	private readonly onWheel = (event: WheelEvent): void =>
 	{
@@ -285,7 +285,7 @@ export class MapCanvas
 	/**
 	 * Ends a stroke when Space is let go
 	 *
-	 * @param event The key release on the map
+	 * @param event The key release on the area
 	 */
 	private readonly onKeyUp = (event: KeyboardEvent): void =>
 	{
@@ -296,7 +296,7 @@ export class MapCanvas
 	};
 
 	/**
-	 * Moves the keyboard's cursor to a cell, kept inside the map, painting the cells on the way while
+	 * Moves the keyboard's cursor to a cell, kept inside the area, painting the cells on the way while
 	 * Space is held, and reads out where it is
 	 *
 	 * @param target The cell
@@ -383,7 +383,7 @@ export class MapCanvas
 }
 
 /**
- * What the map editor scene needs to draw an area
+ * What the area editor scene needs to draw an area
  *
  * @param area The area as the editor knows it
  * @param tiles Every tile the universe can use
@@ -397,7 +397,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		name: area.name,
 		ruleset,
 		indoors: area.indoors,
-		// The editor draws the map in daylight
+		// The editor draws the area in daylight
 		time: { passage: 'always_noon' },
 		displayTime: 'none',
 		lightLevel: null,

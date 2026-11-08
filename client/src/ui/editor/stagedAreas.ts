@@ -21,7 +21,7 @@ export function isNewAreaId(areaId: string): boolean
 
 /**
  * The areas added and deleted on the Areas tab, kept on the page until the tab is saved. A new area has
- * the map every new area starts with (NEW_AREA_BOUNDS), all its default tile, until it is saved
+ * the bounds every new area starts with (NEW_AREA_BOUNDS), all its default tile, until it is saved
  */
 export class StagedAreas implements ChangeSource
 {

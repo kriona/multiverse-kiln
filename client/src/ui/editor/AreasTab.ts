@@ -10,9 +10,9 @@ import { formMessages } from '../formMessages';
 import { SearchSelect } from '../SearchSelect';
 import { tileName } from '../tileNames';
 import { claimTag, sameClaims, type AreaClaims } from './areaClaims';
+import { AreaEditor, type FollowedPainting } from './AreaEditor';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
-import { MapEditor, type FollowedPainting } from './MapEditor';
 import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
 import { ChangedSinceLine, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
@@ -36,7 +36,7 @@ function areaRef(areaId: string): string
 const AREA_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['area', 'cells', 'links']);
 
 /**
- * Whether a save's detail is painting the map editor takes into its map as it is: painting that names
+ * Whether a save's detail is painting the cell editor takes into its cells as they are: painting that names
  * the chunks it touched
  *
  * @param detail The detail
@@ -50,7 +50,7 @@ function isFollowedPainting(detail: SavedEditDetail): boolean
 /**
  * The Areas tab: the universe's areas, opening the area editor, and adding and deleting areas
  *
- * The area editor is a view in the tab rather than a dialog, since it holds the area's map. Areas added
+ * The area editor is a view in the tab rather than a dialog, since it holds the area's cells. Areas added
  * and deleted wait on the page until the tab is saved, as do the changes made to the area open in the
  * area editor; a new area can be opened, painted and linked to before it is saved
  */
@@ -112,19 +112,19 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private readonly addIndoors = getElement('area-add-indoors', HTMLInputElement);
 	private readonly addError = getElement('area-add-error', HTMLElement);
 	private readonly addSubmit = getElement('area-add-submit', HTMLButtonElement);
-	private readonly mapEditor: MapEditor;
+	private readonly areaEditor: AreaEditor;
 
 	/**
-	 * Whether the map editor has painting, a change of size or links that haven't been saved
+	 * Whether the cell editor has painting, a change of size or links that haven't been saved
 	 */
-	private mapUnsaved = false;
+	private cellsUnsaved = false;
 
 	/**
-	 * Whether the area editor's settings or map have changes that haven't been saved
+	 * Whether the area editor's settings or cells have changes that haven't been saved
 	 */
 	private readonly areaChanges = new ChangeTracker({
 		root: this.form,
-		state: () => [this.mapUnsaved, this.parent.value]
+		state: () => [this.cellsUnsaved, this.parent.value]
 	});
 
 	/**
@@ -144,8 +144,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	readonly changes = combineChanges(this.areaChanges, this.staged);
 
 	/**
-	 * Where the map editor gets areas: the page for an area added since the tab was last saved, whose
-	 * map is all its default tile and has no links yet, and the server for the rest
+	 * Where the cell editor gets areas: the page for an area added since the tab was last saved, whose
+	 * cells are all its default tile and which has no links yet, and the server for the rest
 	 */
 	private readonly source: AreaSource = {
 		getArea: async (areaId) => (this.staged.get(areaId) ?? this.api.getArea(this.universeId(), areaId)),
@@ -172,12 +172,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * Every tile the universe can use with the Tilesets tab's changes, for the default tile choice and
-	 * the map editor
+	 * the cell editor
 	 */
 	private tiles: EditorTile[] = [];
 
 	/**
-	 * The tiles the Tilesets tab will delete, with the tiles chosen to replace them on the maps
+	 * The tiles the Tilesets tab will delete, with the tiles chosen to replace them in the areas
 	 */
 	private deletedTiles: ReadonlyMap<number, number | undefined> = new Map();
 
@@ -193,9 +193,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private area: EditorArea | undefined;
 
 	/**
-	 * Says above the map who else is editing the area open
+	 * Says above the area's cells who else is editing the area open
 	 */
-	private readonly claimLine = getElement('map-claim', HTMLParagraphElement);
+	private readonly claimLine = getElement('area-cells-claim', HTMLParagraphElement);
 
 	/**
 	 * Who else has each area open in the area editor, as the editor room last said
@@ -214,7 +214,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * @param api The editor's API
-	 * @param stagedTiles The Tilesets tab's changes, which the maps are drawn and painted with
+	 * @param stagedTiles The Tilesets tab's changes, which the areas are drawn and painted with
 	 * @param onAreaChanged Called with the area the area editor opens, or undefined when the tab goes back to the list
 	 * @param onAreasLoaded Called each time the tab has loaded the universe's areas, which areaName() names
 	 * @param onBackToLobby Called when the player leaves the lobby's area with Back to Lobby, to show the Lobby tab
@@ -226,7 +226,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			this.showTileChanges();
 		});
 
-		this.mapEditor = new MapEditor(this.source, (bounds) =>
+		this.areaEditor = new AreaEditor(this.source, (bounds) =>
 		{
 			if (this.area)
 			{
@@ -235,7 +235,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			}
 		}, (unsaved) =>
 		{
-			this.mapUnsaved = unsaved;
+			this.cellsUnsaved = unsaved;
 			this.areaChanges.check();
 		});
 		this.name.maxLength = MAX_AREA_NAME_LENGTH;
@@ -255,7 +255,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			choice.addEventListener('change', () =>
 			{
 				this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
-				this.mapEditor.showTilesFor(this.indoors.checked);
+				this.areaEditor.showTilesFor(this.indoors.checked);
 				this.showLightField();
 			});
 		}
@@ -468,8 +468,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		const version = ++this.openVersion;
 
-		// Any unsaved painting has been discarded, so the map loads afresh
-		this.mapEditor.hide();
+		// Any unsaved painting has been discarded, so the area's cells load afresh
+		this.areaEditor.hide();
 		this.areaChanges.markSaved();
 		this.changedSince.hide();
 		showMessage(this.claimLine, undefined);
@@ -522,7 +522,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		this.area = undefined;
 		this.onAreaChanged(undefined);
-		this.mapEditor.hide();
+		this.areaEditor.hide();
 		// The hidden area editor is filled afresh when an area opens, so nothing left in it can be saved
 		this.areaChanges.markSaved();
 		this.changedSince.hide();
@@ -634,7 +634,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Lists the tiles in the area editor's default tile choice and map editor as the Tilesets tab's
+	 * Lists the tiles in the area editor's default tile choice and cell editor as the Tilesets tab's
 	 * changes make them, keeping the area's unsaved changes
 	 */
 	private showTileChanges(): void
@@ -644,7 +644,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		if (this.area)
 		{
 			this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
-			void this.mapEditor.setTiles(this.tiles, this.deletedTiles, this.indoors.checked);
+			void this.areaEditor.setTiles(this.tiles, this.deletedTiles, this.indoors.checked);
 		}
 	}
 
@@ -652,7 +652,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 * Follows a save made in another window that changed areas: loads the list again, and the area open
 	 * when the save changed it and it has no unsaved changes here; with them, keeps them and says above
 	 * the area's settings what the save changed. An area the save deleted is taken as deleted here too
-	 * (StagedAreas.markDeleted()). Painting the open area's map is left to followPainting()
+	 * (StagedAreas.markDeleted()). Painting the open area's cells is left to followPainting()
 	 *
 	 * @param save The save
 	 * @return True when the save changed an area with unsaved changes here: the area open, or one being
@@ -685,7 +685,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(deletedHere);
 		}
 
-		// Painting is taken into the map as it is by followPainting()
+		// Painting is taken into the area's cells as they are by followPainting()
 		const rest = aboutOpen.filter((detail) => !isFollowedPainting(detail));
 
 		if (rest.length === 0)
@@ -697,8 +697,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(deletedHere);
 		}
 
-		// A link dialog with changes not yet applied applies them to the map as it is open, so the map stays
-		const linkDialog = this.mapEditor.linkDialogFollowing();
+		// A link dialog with changes not yet applied applies them to the area as it is open, so the area stays
+		const linkDialog = this.areaEditor.linkDialogFollowing();
 
 		if (this.areaChanges.hasUnsavedChanges() || linkDialog.hasUnappliedChanges())
 		{
@@ -724,7 +724,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * Keeps the area open, which a save in another window deleted while it had unsaved changes here, as a
-	 * new area with the settings it was loaded with and its map as it shows here (MapEditor.recreate()),
+	 * new area with the settings it was loaded with and its cells as they show here (AreaEditor.recreate()),
 	 * so saving adds it again with the changes made to it, and deleting it discards them. One inside an
 	 * area the save deleted too becomes a top-level area, as the server makes the areas inside it
 	 *
@@ -754,7 +754,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			loopsNorthSouth: area.loopsNorthSouth
 		});
 
-		this.mapEditor.recreate(added.id, added.bounds);
+		this.areaEditor.recreate(added.id, added.bounds);
 		this.area = { ...area, id: added.id };
 		// A new area has no address until it is saved
 		this.onAreaChanged(undefined);
@@ -762,12 +762,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Takes the painting a save made in another window to the open area into its map, unsaved changes or
-	 * not, marking the cells it changed (MapEditor.followPainting()). Call it after otherSaved()
+	 * Takes the painting a save made in another window to the open area into its cells, unsaved changes or
+	 * not, marking the cells it changed (AreaEditor.followPainting()). Call it after otherSaved()
 	 *
 	 * @param save The save
 	 * @return How many of the cells it changed had been painted here while the area was open, and what
-	 * takes its marks off the map
+	 * takes its marks off the area
 	 */
 	async followPainting(save: OtherSave): Promise<FollowedPainting>
 	{
@@ -776,7 +776,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			? []
 			: await Promise.all(save.details
 				.filter((detail) => (isFollowedPainting(detail) && (detail.id === open.id)))
-				.map((detail) => this.mapEditor.followPainting(open.id, (detail.chunks ?? []), save.name))));
+				.map((detail) => this.areaEditor.followPainting(open.id, (detail.chunks ?? []), save.name))));
 
 		return({
 			paintedOver: followed.reduce((sum, each) => (sum + each.paintedOver), 0),
@@ -792,7 +792,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * Follows who else is editing each area, as the editor room says: tags the areas in the lists, and
-	 * says above the map who else is editing the area open
+	 * says above the area's cells who else is editing the area open
 	 *
 	 * @param claims Who else has each area open, from areaClaims()
 	 */
@@ -819,7 +819,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Says above the map who else is editing the area open, reading it out when the names change
+	 * Says above the area's cells who else is editing the area open, reading it out when the names change
 	 */
 	private showClaim(): void
 	{
@@ -837,7 +837,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		const text = t({
 			id: 'editor.area.claimed',
 			defaultMessage: '{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}',
-			description: 'Above the map in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. "Bea and Cal", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes'
+			description: 'Above the area\'s cells in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. "Bea and Cal", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes'
 		}, {
 			names: formatList(names, 'conjunction'),
 			count: names.length
@@ -852,8 +852,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Loads the open area's settings and links again after another window saved them, keeping its map as
-	 * it has loaded, with the painting other editors saved taken in, unless its size changed. One that
+	 * Loads the open area's settings and links again after another window saved them, keeping its cells as
+	 * they have loaded, with the painting other editors saved taken in, unless its size changed. One that
 	 * can't be loaded opens afresh, and one that has unsaved changes by the time it loads keeps them,
 	 * saying above its settings what the save changed
 	 *
@@ -895,7 +895,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
-		if (this.areaChanges.hasUnsavedChanges() || this.mapEditor.linkDialogFollowing().hasUnappliedChanges())
+		if (this.areaChanges.hasUnsavedChanges() || this.areaEditor.linkDialogFollowing().hasUnappliedChanges())
 		{
 			this.changedSince.add(name, details);
 			return;
@@ -1080,7 +1080,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.children.hidden = (children.length === 0);
 		this.showClaim();
 		this.areaChanges.markSaved();
-		void this.mapEditor.show(universe, area, this.tiles, this.deletedTiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
+		void this.areaEditor.show(universe, area, this.tiles, this.deletedTiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
 	}
 
 	/**
@@ -1131,7 +1131,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Shows how large an area's map is
+	 * Shows how large an area is
 	 *
 	 * @param area The area
 	 */
@@ -1142,8 +1142,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		this.size.textContent = t({
 			id: 'editor.area.size',
-			defaultMessage: 'The map is {height, number} tall x {width, number} wide.',
-			description: 'The size of the area\'s map, in cells'
+			defaultMessage: 'The area is {height, number} tall x {width, number} wide.',
+			description: 'The size of the area, in cells'
 		}, {
 			height,
 			width
@@ -1278,11 +1278,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * Adds the tab's changes to a save: the areas deleted, the areas added, then the area open in the area
-	 * editor, its map first and then its settings as the form shows them
+	 * editor, its cells first and then its settings as the form shows them
 	 *
 	 * Deleting goes first, so deleting areas can make room for new ones (MAX_AREAS); a new area is added
 	 * after the area it is inside, so it can name it. Tiles staged for deletion on the Tilesets tab are
-	 * sent as the tiles chosen to replace them, as the Tilesets tab's changes repaint the saved maps
+	 * sent as the tiles chosen to replace them, as the Tilesets tab's changes repaint the saved areas
 	 *
 	 * @param save The save
 	 * @return False when the area editor's settings have a problem
@@ -1372,12 +1372,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		{
 			const defaultTileId = this.paintedAs(settings.defaultTileId);
 
-			this.mapEditor.collect(save, areaRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (refusal) =>
+			this.areaEditor.collect(save, areaRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (refusal) =>
 			{
 				showMessage(this.error, describeEditorError(refusal.error, {
-					id: 'editor.area.mapSaveFailed',
-					defaultMessage: 'Could not save the map.',
-					description: 'Shown in the area editor when the server refused the painting on the area\'s map, its new size or its links, followed by why; nothing was saved'
+					id: 'editor.area.cellsSaveFailed',
+					defaultMessage: 'Could not save the area\'s cells.',
+					description: 'Shown in the area editor when the server refused the painting on the area\'s cells, its new size or its links, followed by why; nothing was saved'
 				}));
 			});
 
@@ -1437,7 +1437,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
-		this.mapEditor.saved();
+		this.areaEditor.saved();
 
 		for (const areaId of deletedIds)
 		{
@@ -1507,7 +1507,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private areaCreated(areaId: string, savedId: string): void
 	{
 		this.staged.markCreated(areaId, savedId);
-		this.mapEditor.resolveIds(new Map([[areaId, savedId]]));
+		this.areaEditor.resolveIds(new Map([[areaId, savedId]]));
 
 		this.parent.replaceValue(areaId, savedId);
 
@@ -1591,14 +1591,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		const question = (isNewAreaId(area.id)
 			? t({
 				id: 'editor.area.confirmDeleteNew',
-				defaultMessage: 'Delete {area}? It hasn\'t been saved, so its settings, map and links will be lost.',
+				defaultMessage: 'Delete {area}? It hasn\'t been saved, so its settings, painting and links will be lost.',
 				description: 'Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name'
 			}, {
 				area: area.name
 			})
 			: t({
 				id: 'editor.area.confirmDelete',
-				defaultMessage: 'Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas.',
+				defaultMessage: 'Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas.',
 				description: 'Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name'
 			}, {
 				area: area.name

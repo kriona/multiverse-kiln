@@ -9,7 +9,7 @@ import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
 import { ChatLog } from './ChatLog';
 import { getElement, setPageTitle, showMessage, titleLink } from './dom';
-import type { MapView } from './MapView';
+import type { AreaView } from './AreaView';
 import { addShortcut } from './shortcuts';
 
 /**
@@ -54,7 +54,7 @@ export interface LobbyScreenActions
 }
 
 /**
- * The lobby screen: the lobby's map, chat, who's here, the player's characters, and the Create
+ * The lobby screen: the lobby's area, chat, who's here, the player's characters, and the Create
  * Character, Create Group and Leave lobby buttons
  *
  * The screen is made once and attached to whichever universe lobby the window is in. Choosing one of
@@ -71,7 +71,7 @@ export class LobbyScreen
 	private readonly characterError = getElement('character-error', HTMLElement);
 	private readonly createButton = getElement('create-group', HTMLButtonElement);
 	private readonly leaveButton = getElement('leave-lobby', HTMLButtonElement);
-	private readonly map = getElement('lobby-map', HTMLElement);
+	private readonly areaElement = getElement('lobby-area-view', HTMLElement);
 	private readonly notice = getElement('lobby-notice', HTMLElement);
 	private readonly chat: ChatLog;
 	private readonly memberCount = getElement('member-count', HTMLElement);
@@ -89,13 +89,13 @@ export class LobbyScreen
 	private attached: LobbyConnection | undefined;
 
 	/**
-	 * Whether the attached lobby's map is drawn: only while the lobby has one (LobbyState.hasMap)
+	 * Whether the attached lobby's area is drawn: only while the lobby has one (LobbyState.hasArea)
 	 */
-	private mapShown = false;
+	private areaShown = false;
 
 	/**
-	 * The area the player was last sent while the map wasn't drawn, which the map starts with once the
-	 * lobby has one. The area arrives before the state says the lobby has a map
+	 * The area the player was last sent while no area was drawn, which the view starts with once the
+	 * lobby has one. The area arrives before the state says the lobby has one
 	 */
 	private pendingArea: AreaPayload | undefined;
 
@@ -120,10 +120,10 @@ export class LobbyScreen
 	private memberListQueued = false;
 
 	/**
-	 * @param mapView The map, shared with the group screen
+	 * @param areaView The area, shared with the group screen
 	 * @param actions What the screen's controls do
 	 */
-	constructor(private readonly mapView: MapView, private readonly actions: LobbyScreenActions)
+	constructor(private readonly areaView: AreaView, private readonly actions: LobbyScreenActions)
 	{
 		this.chat = new ChatLog({
 			log: 'chat-log',
@@ -208,28 +208,28 @@ export class LobbyScreen
 		this.attached = connection;
 		this.pendingArea = connection.area;
 
-		// While the map is drawn, it follows the areas sent itself
+		// While the area is drawn, it follows the areas sent itself
 		this.unbinds.push(connection.room.onMessage(ServerMessageType.Area, (area: AreaPayload) =>
 		{
-			if (!this.mapShown)
+			if (!this.areaShown)
 			{
 				this.pendingArea = area;
-				this.showMap();
+				this.showArea();
 			}
 		}));
 
 		// Fires for the lobby's state on joining too
-		this.unbinds.push(callbacks.listen('hasMap', (hasMap: boolean) =>
+		this.unbinds.push(callbacks.listen('hasArea', (hasArea: boolean) =>
 		{
-			if (!hasMap)
+			if (!hasArea)
 			{
 				this.pendingArea = undefined;
 			}
 
-			this.showMap();
+			this.showArea();
 		}));
 
-		this.showMap();
+		this.showArea();
 
 		// Fires for members already in the lobby too
 		this.unbinds.push(callbacks.onAdd('members', (member: LobbyMember, playerId: string) =>
@@ -246,31 +246,31 @@ export class LobbyScreen
 	}
 
 	/**
-	 * Draws the attached lobby's map while it has one, once its area has arrived, and takes the map away
+	 * Draws the attached lobby's area while it has one, once the area has arrived, and takes it away
 	 * while it has none (its universe has no lobby area, or it is disabled) or no lobby is attached
 	 */
-	private showMap(): void
+	private showArea(): void
 	{
 		const connection = this.attached;
-		const hasMap = (connection?.room.state.hasMap ?? false);
+		const hasArea = (connection?.room.state.hasArea ?? false);
 
-		if (hasMap && !this.mapShown && connection && this.pendingArea)
+		if (hasArea && !this.areaShown && connection && this.pendingArea)
 		{
-			this.mapView.show(this.map, {
+			this.areaView.show(this.areaElement, {
 				room: connection.room,
 				playerId: connection.playerId,
 				area: this.pendingArea
 			});
-			this.mapShown = true;
+			this.areaShown = true;
 			this.pendingArea = undefined;
 		}
-		else if (!hasMap && this.mapShown)
+		else if (!hasArea && this.areaShown)
 		{
-			this.mapView.hide();
-			this.mapShown = false;
+			this.areaView.hide();
+			this.areaShown = false;
 		}
 
-		this.map.hidden = !this.mapShown;
+		this.areaElement.hidden = !this.areaShown;
 	}
 
 	/**
@@ -286,7 +286,7 @@ export class LobbyScreen
 
 		this.attached = undefined;
 		this.pendingArea = undefined;
-		this.showMap();
+		this.showArea();
 
 		this.members.clear();
 		this.chat.clear();

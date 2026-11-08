@@ -5,7 +5,7 @@
  * player's role may change (canExportUniverse(), universeExportContents()) in the version the request
  * names, as it is saved, holding:
  * - UNIVERSE_EXPORT_MANIFEST: a UniverseExport, as JSON
- * - universeExportMapPath(): each area's map, an ExportedMap as JSON, when the export holds the world
+ * - universeExportAreaPath(): each area's cells, an ExportedAreaCells as JSON, when the export holds the world
  * - universeExportTilesetPath(): each uploaded tileset's PNG, when the export holds the world
  *
  * Things are named by the IDs the version gives them, as the editor names them: a default tile, item,
@@ -45,12 +45,12 @@ export const UNIVERSE_EXPORT_FORMAT_VERSION = 1;
 export const UNIVERSE_EXPORT_MANIFEST = 'universe.json';
 
 /**
- * The path in the archive of an area's map
+ * The path in the archive of an area's cells
  *
  * @param areaId The area's ID
  * @return The path
  */
-export function universeExportMapPath(areaId: string): string
+export function universeExportAreaPath(areaId: string): string
 {
 	return(`areas/${areaId}.json`);
 }
@@ -78,7 +78,7 @@ export interface UniverseExportContents
 	settings: boolean;
 
 	/**
-	 * Its tilesets, tiles, items, areas with their maps and links, and notes for translators: what
+	 * Its tilesets, tiles, items, areas with their cells and links, and notes for translators: what
 	 * builders change too
 	 */
 	world: boolean;
@@ -202,7 +202,7 @@ export interface ExportedTileGraphic extends UploadedTileGraphic
 export type ExportedTile = Omit<EditorTile, 'uploadedGraphic'>;
 
 /**
- * An area, its links, and where its map is in the archive
+ * An area, its links, and where its cells are in the archive
  */
 export interface ExportedArea extends EditorArea
 {
@@ -212,16 +212,16 @@ export interface ExportedArea extends EditorArea
 	links: EditorAreaLink[];
 
 	/**
-	 * Its map's path in the archive (universeExportMapPath())
+	 * Its cells' path in the archive (universeExportAreaPath())
 	 */
-	map: string;
+	file: string;
 }
 
 /**
- * An area's map: the stored chunks of its ground. A chunk that isn't listed is all the area's default
+ * An area's cells: the stored chunks of its ground. A chunk that isn't listed is all the area's default
  * tile. Each cell holds a tile the export lists, DEFAULT_TILE_CELL or VOID_CELL
  */
-export interface ExportedMap
+export interface ExportedAreaCells
 {
 	/**
 	 * Cells along each side of a chunk (CHUNK_SIZE)

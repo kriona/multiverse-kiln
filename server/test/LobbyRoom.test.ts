@@ -419,7 +419,7 @@ describe('LobbyRoom', () =>
 			assert.notStrictEqual(ada.room.roomId, alan.room.roomId);
 		});
 
-		it('puts a new player in the universe\'s lobby area and sends them its map', async () =>
+		it('puts a new player in the universe\'s lobby area and sends them its cells', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
@@ -490,7 +490,7 @@ describe('LobbyRoom', () =>
 			{
 				await updateAreaSettings(squareAreaId, { enabled: false });
 				areaChanges.publish({ kind: 'area', areaId: squareAreaId });
-				await waitUntil(() => !room.state.hasMap);
+				await waitUntil(() => !room.state.hasArea);
 			});
 
 			const grace = await joinAsNewPlayer(universeId, 'Grace');
@@ -789,7 +789,7 @@ describe('LobbyRoom', () =>
 		});
 	});
 
-	describe('without a map', () =>
+	describe('without an area', () =>
 	{
 		it('lets players chat with no lobby area, then puts everyone on its starting square once it has one', async () =>
 		{
@@ -800,7 +800,7 @@ describe('LobbyRoom', () =>
 			const ada = await joinAsNewPlayer(universeId, 'Ada');
 			const room = lobbyOf(ada);
 
-			assert.strictEqual(room.state.hasMap, false);
+			assert.strictEqual(room.state.hasArea, false);
 			assert.strictEqual(room.state.players.size, 0);
 			assert.ok(room.state.members.has(ada.playerId));
 
@@ -814,14 +814,14 @@ describe('LobbyRoom', () =>
 			areaChanges.publish({ kind: 'lobby', universeId });
 
 			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
-			await waitUntil(() => room.state.hasMap);
+			await waitUntil(() => room.state.hasArea);
 
 			const player = playerOf(ada);
 
 			assert.deepStrictEqual([Math.floor(player.x / GRID_CELL_SIZE), Math.floor(player.y / GRID_CELL_SIZE)], [4, 7]);
 		});
 
-		it('takes the map away while the lobby\'s area is disabled, and gives it back once it is enabled', async () =>
+		it('takes the area away while the lobby\'s area is disabled, and gives it back once it is enabled', async () =>
 		{
 			const { universeId, squareAreaId } = universe;
 			const ada = await joinAsNewPlayer(universeId, 'Ada');
@@ -830,19 +830,19 @@ describe('LobbyRoom', () =>
 			await ada.inbox.take(ServerMessageType.Area);
 			await updateAreaSettings(squareAreaId, { enabled: false });
 			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
-			await waitUntil(() => !room.state.hasMap);
+			await waitUntil(() => !room.state.hasArea);
 			assert.strictEqual(room.state.players.size, 0);
 
 			// A window joining meanwhile isn't sent an area
 			const grace = await joinAsNewPlayer(universeId, 'Grace');
 
-			assert.strictEqual(grace.room.state.hasMap, false);
+			assert.strictEqual(grace.room.state.hasArea, false);
 			assert.ok(room.state.members.has(grace.playerId));
 
 			await updateAreaSettings(squareAreaId, { enabled: true });
 			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
-			await waitUntil(() => room.state.hasMap);
+			await waitUntil(() => room.state.hasArea);
 			assert.ok(playerOf(ada));
 			assert.ok(playerOf(grace));
 		});
@@ -1152,7 +1152,7 @@ describe('LobbyRoom', () =>
 		});
 	});
 
-	describe('map chunks', () =>
+	describe('area chunks', () =>
 	{
 		it('sends the chunks near the player, and more as the player moves', async () =>
 		{

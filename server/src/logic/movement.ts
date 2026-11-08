@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { IMPASSABLE_WALK_SECONDS, isInBounds, positiveModulo, type MapBounds, type MovePayload } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, isInBounds, positiveModulo, type AreaBounds, type MovePayload } from '@multiverse-kiln/shared';
 
 /**
  * A point in world units
@@ -15,7 +15,7 @@ export interface Position
 }
 
 /**
- * A cell of the grid. Column 0, row 0 is the map's center cell, and its top left corner is at world
+ * A cell of the grid. Column 0, row 0 is the area's center cell, and its top left corner is at world
  * position (0, 0), so cells left of or above it have negative columns or rows
  */
 export interface Cell
@@ -25,7 +25,7 @@ export interface Cell
 }
 
 /**
- * The grid players move on: an area's map
+ * The grid players move on: an area's cells
  */
 export interface Grid
 {
@@ -37,7 +37,7 @@ export interface Grid
 	/**
 	 * The cells players can be in
 	 */
-	bounds: MapBounds;
+	bounds: AreaBounds;
 
 	/**
 	 * Whether stepping off the east or west edge comes back on at the other
@@ -300,7 +300,7 @@ export function occupiedCells(mover: Pick<GridMover, 'x' | 'y' | 'step'>, grid: 
  * @param grid The grid
  * @param isCellFree Whether another player holds a cell
  * @param maxDistance Most cells away from `near` to look
- * @return The center of the nearest cell that is on the map, enterable and free, or undefined when
+ * @return The center of the nearest cell that is inside the area, enterable and free, or undefined when
  * there is none within maxDistance
  */
 export function findFreeCell(near: Cell, grid: Grid, isCellFree: IsCellFree, maxDistance: number): Position | undefined
@@ -347,7 +347,7 @@ export function cellCenter(cell: Cell, grid: Pick<Grid, 'cellSize'>): Position
  *
  * @param position Position in world units
  * @param grid The grid
- * @return The cell, clamped to the map
+ * @return The cell, clamped to the area
  */
 export function cellAt(position: Position, grid: Grid): Cell
 {
@@ -360,12 +360,12 @@ export function cellAt(position: Position, grid: Grid): Cell
 }
 
 /**
- * The cell a cell past a looping edge stands for: on a map that loops east-west, the column after the
+ * The cell a cell past a looping edge stands for: in an area that loops east-west, the column after the
  * last is the first, and so on
  *
- * @param cell The cell, which may be off the map
+ * @param cell The cell, which may be outside the area
  * @param grid The grid
- * @return The cell on the map along each looping axis; unchanged along an axis that doesn't loop
+ * @return The cell inside the area along each looping axis; unchanged along an axis that doesn't loop
  */
 export function wrapCell(cell: Cell, grid: Grid): Cell
 {
@@ -444,7 +444,7 @@ function canEnter(from: Cell, to: Cell, grid: Grid, isCellFree: IsCellFree): boo
  * @param cell The cell, already wrapped
  * @param grid The grid
  * @param isCellFree Whether another player holds a cell
- * @return True when the cell is on the map, can be entered, and nobody else holds it
+ * @return True when the cell is inside the area, can be entered, and nobody else holds it
  */
 function canStandIn(cell: Cell, grid: Grid, isCellFree: IsCellFree): boolean
 {

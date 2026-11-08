@@ -1,18 +1,18 @@
 /**
- * Which chunks of an area's map are near its players: the ones a room keeps loaded and sends to clients
+ * Which chunks of an area are near its players: the ones a room keeps loaded and sends to clients
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { chunkCoordinate, chunkKey, positiveModulo, type MapBounds } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, positiveModulo, type AreaBounds } from '@multiverse-kiln/shared';
 
 import type { Cell } from './movement.js';
 
 /**
- * The shape of an area's map, as chunkArea needs it
+ * The shape of an area, as chunkArea needs it
  */
-export interface ChunkAreaMap
+export interface ChunkAreaShape
 {
-	bounds: MapBounds;
+	bounds: AreaBounds;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 }
@@ -23,18 +23,18 @@ export interface ChunkAreaMap
  *
  * @param cells The cells, such as where each player is
  * @param radius How many cells either side of each cell to cover
- * @param map The map's bounds and whether it loops
+ * @param shape The area's bounds and whether it loops
  * @return The chunks' keys (see chunkKey)
  */
-export function chunksNear(cells: readonly Cell[], radius: number, map: ChunkAreaMap): Set<string>
+export function chunksNear(cells: readonly Cell[], radius: number, shape: ChunkAreaShape): Set<string>
 {
-	const { bounds } = map;
+	const { bounds } = shape;
 	const keys = new Set<string>();
 
 	for (const cell of cells)
 	{
-		const columns = chunksAlong(cell.column, radius, bounds.minColumn, bounds.maxColumn, map.loopsEastWest);
-		const rows = chunksAlong(cell.row, radius, bounds.minRow, bounds.maxRow, map.loopsNorthSouth);
+		const columns = chunksAlong(cell.column, radius, bounds.minColumn, bounds.maxColumn, shape.loopsEastWest);
+		const rows = chunksAlong(cell.row, radius, bounds.minRow, bounds.maxRow, shape.loopsNorthSouth);
 
 		for (const chunkRow of rows)
 		{
@@ -53,9 +53,9 @@ export function chunksNear(cells: readonly Cell[], radius: number, map: ChunkAre
  *
  * @param center The cell's column or row
  * @param radius How many cells either side to cover
- * @param min The map's first column or row
- * @param max The map's last column or row
- * @param loops Whether the map loops along this axis
+ * @param min The area's first column or row
+ * @param max The area's last column or row
+ * @param loops Whether the area loops along this axis
  * @return The chunk coordinates, each once
  */
 function chunksAlong(center: number, radius: number, min: number, max: number, loops: boolean): number[]

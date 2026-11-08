@@ -9,7 +9,7 @@ import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tile
 /**
  * Key the scene is registered under in each editor's game
  */
-export const MAP_EDITOR_SCENE_KEY = 'MapEditorScene';
+export const AREA_EDITOR_SCENE_KEY = 'AreaEditorScene';
 
 const MIN_ZOOM = 0.1;
 
@@ -26,7 +26,7 @@ const ZOOM_STEP = 1.25;
 const WHEEL_LINE_PIXELS = 16;
 
 /**
- * How far the map pans for each pixel the wheel turns: half, since a whole turn moves the map too far to follow
+ * How far the area pans for each pixel the wheel turns: half, since a whole turn moves the area too far to follow
  */
 const WHEEL_PAN_SCALE = 0.25;
 
@@ -67,18 +67,18 @@ export interface CellHighlight
 }
 
 /**
- * What a click on the map does
+ * What a click on the area does
  *
  * - paint: the draw tool paints, and dragging keeps painting
  * - pick: the cell clicked is chosen, e.g. for a link
- * - none: the map can only be looked around
+ * - none: the area can only be looked around
  */
 export type PointerMode = 'paint' | 'pick' | 'none';
 
 /**
  * Whoever shows the scene: what clicks do, and what the scene tells it
  */
-export interface MapEditorHost
+export interface AreaEditorHost
 {
 	/**
 	 * What a left click does now
@@ -111,7 +111,7 @@ export interface MapEditorHost
 	pick: (column: number, row: number) => void;
 
 	/**
-	 * The pointer moves over a cell, or off the map's canvas, or the keyboard's cursor moves to a cell
+	 * The pointer moves over a cell, or off the area's canvas, or the keyboard's cursor moves to a cell
 	 */
 	hover: (cell: BrushCell | undefined) => void;
 
@@ -139,7 +139,7 @@ export interface CameraState
 /**
  * Data the scene is started with
  */
-export interface MapEditorSceneData
+export interface AreaEditorSceneData
 {
 	/**
 	 * Where the camera starts, or undefined to center on the area's center cell
@@ -156,37 +156,37 @@ export interface MapEditorSceneData
 	 */
 	chunks: ReadonlyMap<string, readonly number[]>;
 
-	host: MapEditorHost;
+	host: AreaEditorHost;
 
 	/**
 	 * Called once the scene is ready to take calls
 	 */
-	onReady: (scene: MapEditorScene) => void;
+	onReady: (scene: AreaEditorScene) => void;
 }
 
 /**
- * Shows an area's map for editing: the same grid as gameplay, with the map's edges, its center cell,
+ * Shows an area's cells for editing: the same grid as gameplay, with the area's edges, its center cell,
  * its links and the brush outlined on top
  *
  * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
- * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. MapCanvas
+ * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. AreaCanvas
  * does the same from the keyboard with a cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
  */
-export class MapEditorScene extends Phaser.Scene
+export class AreaEditorScene extends Phaser.Scene
 {
 	private area!: AreaPayload;
 	private startCamera: CameraState | undefined;
 	private chunks!: ReadonlyMap<string, readonly number[]>;
-	private host!: MapEditorHost;
-	private onReady!: (scene: MapEditorScene) => void;
+	private host!: AreaEditorHost;
+	private onReady!: (scene: AreaEditorScene) => void;
 	private areaRenderer?: AreaRenderer;
 	private overlay?: Phaser.GameObjects.Graphics;
 	private links: LinkMarker[] = [];
 
 	/**
 	 * The highlighted cells' outlines, drawn apart from the overlay, which is drawn again every frame:
-	 * there can be tens of thousands of them, as when another editor paints a large part of the map
+	 * there can be tens of thousands of them, as when another editor paints a large part of the area
 	 */
 	private highlightOverlay?: Phaser.GameObjects.Graphics;
 
@@ -232,14 +232,14 @@ export class MapEditorScene extends Phaser.Scene
 	private lastViewKey = '';
 
 	/**
-	 * Whether the wheel pans the map, as when the map fills the window and the page can't scroll;
+	 * Whether the wheel pans the area, as when the area fills the window and the page can't scroll;
 	 * otherwise the wheel scrolls the page
 	 */
 	wheelPans = false;
 
 	constructor()
 	{
-		super(MAP_EDITOR_SCENE_KEY);
+		super(AREA_EDITOR_SCENE_KEY);
 	}
 
 	/**
@@ -247,7 +247,7 @@ export class MapEditorScene extends Phaser.Scene
 	 *
 	 * @param data The area to show and whoever shows it
 	 */
-	init(data: MapEditorSceneData): void
+	init(data: AreaEditorSceneData): void
 	{
 		this.area = {
 			...data.area,
@@ -272,7 +272,7 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Loads the tile graphics the map is drawn with
+	 * Loads the tile graphics the area is drawn with
 	 */
 	preload(): void
 	{
@@ -280,7 +280,7 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws the map centered on its center cell, and listens to the pointer
+	 * Draws the area centered on its center cell, and listens to the pointer
 	 */
 	create(): void
 	{
@@ -339,7 +339,7 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws the map around the camera and the outlines on top, and tells the host when the view moves on to other chunks
+	 * Draws the area around the camera and the outlines on top, and tells the host when the view moves on to other chunks
 	 */
 	update(): void
 	{
@@ -568,7 +568,7 @@ export class MapEditorScene extends Phaser.Scene
 	};
 
 	/**
-	 * Zooms in or out while Ctrl is held, and otherwise pans the map when wheelPans is set. Without
+	 * Zooms in or out while Ctrl is held, and otherwise pans the area when wheelPans is set. Without
 	 * either the wheel scrolls the page
 	 *
 	 * @param pointer The pointer
@@ -588,13 +588,13 @@ export class MapEditorScene extends Phaser.Scene
 		{
 			this.pan(event, deltaX, deltaY);
 
-			// The map moved under the pointer, so it is over another cell, and a stroke being painted follows it
+			// The area moved under the pointer, so it is over another cell, and a stroke being painted follows it
 			this.onPointerMove(pointer);
 		}
 	};
 
 	/**
-	 * Pans the map by a turn of the wheel. Shift turns the wheel's vertical movement sideways, for a
+	 * Pans the area by a turn of the wheel. Shift turns the wheel's vertical movement sideways, for a
 	 * mouse without a sideways wheel
 	 *
 	 * @param event The wheel event, which says what the movement is measured in
@@ -746,7 +746,7 @@ export class MapEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Outlines the map's edges, its center cell, its links and the brush
+	 * Outlines the area's edges, its center cell, its links and the brush
 	 */
 	private drawOverlay(): void
 	{

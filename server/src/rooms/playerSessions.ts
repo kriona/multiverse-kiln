@@ -1,7 +1,7 @@
 /**
  * Which player each client in a room controls
  *
- * A player here is someone on the room's map: in a lobby, a logged-in player, whom every window of the
+ * A player here is someone in the room's areas: in a lobby, a logged-in player, whom every window of the
  * browser controls; in a group's room, a character, whom any window of their player may control. So
  * several clients can control one player, and a client can switch to another
  */

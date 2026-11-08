@@ -623,6 +623,82 @@
 		"message": "Universes each hand can create",
 		"source": "Universes each player can create"
 	},
+	"area.announce.appeared": {
+		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
+		"source": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}"
+	},
+	"area.announce.area": {
+		"message": "Ye be in {area}.",
+		"source": "You are in {area}."
+	},
+	"area.announce.blocked": {
+		"message": "Somethin' be in yer way.",
+		"source": "Something is in the way."
+	},
+	"area.announce.disappeared": {
+		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
+		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
+	},
+	"area.announce.partOfDay": {
+		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
+		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"
+	},
+	"area.announce.player": {
+		"message": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {nor'east} east {east} southeast {sou'east} south {south} southwest {sou'west} west {west} other {nor'west}}",
+		"source": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}"
+	},
+	"area.announce.playerHere": {
+		"message": "{name}, right alongside ye",
+		"source": "{name}, right where you are"
+	},
+	"area.announce.position": {
+		"message": "{area}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
+		"source": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
+	},
+	"area.announce.sight": {
+		"message": "Ye can spy {squares, plural, one {# square} other {# squares}} across open ground.",
+		"source": "You can see {squares, plural, one {# square} other {# squares}} across open ground."
+	},
+	"area.announce.timeOfDay": {
+		"message": "'Tis {time}, {part, select, dawn {first light} day {broad day} dusk {dusk} other {the dark o' night}}.",
+		"source": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}."
+	},
+	"area.announce.timeOfDayRough": {
+		"message": "'Tis {time}.",
+		"source": "It is {time}."
+	},
+	"area.ghost": {
+		"message": "Ghost",
+		"source": "Ghost"
+	},
+	"area.help": {
+		"message": "Arrow keys, W A S D or the number pad sail ye about. E takes ye through a door or passage ye stand on. {shortcut} tells ye where ye be and who ye can spy.",
+		"source": "Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. {shortcut} tells you where you are and who you can see."
+	},
+	"area.keys.move": {
+		"message": "Arrow keys, W A S D or number pad",
+		"source": "Arrow keys, W A S D or number pad"
+	},
+	"area.keys.moveDescription": {
+		"message": "Sail about",
+		"source": "Move"
+	},
+	"area.keys.position": {
+		"message": "Say where ye be and who ye can spy",
+		"source": "Say where you are and who you can see"
+	},
+	"area.keys.takeLink": {
+		"message": "Go through a door or passage ye stand on",
+		"source": "Go through a door or path you stand on"
+	},
+	"area.label": {
+		"message": "These Waters",
+		"source": "Area"
+	},
+	"area.takeLink": {
+		"message": "Press E to go through",
+		"source": "Press E to go through"
+	},
 	"character.back": {
 		"message": "Astern",
 		"source": "Back"
@@ -1139,6 +1215,10 @@
 		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
 		"source": "You no longer have a role in this universe, so your changes can't be saved."
 	},
+	"editor.area.areaDefault": {
+		"message": "{tile} (the usual)",
+		"source": "{tile} (default)"
+	},
 	"editor.area.back": {
 		"message": "Back to Areas",
 		"source": "Back to Areas"
@@ -1146,6 +1226,42 @@
 	"editor.area.backToLobby": {
 		"message": "Back to the Tavern",
 		"source": "Back to Lobby"
+	},
+	"editor.area.brush.circle": {
+		"message": "round as a cannonball",
+		"source": "circle"
+	},
+	"editor.area.brush.square": {
+		"message": "square as a crate",
+		"source": "square"
+	},
+	"editor.area.brushShape": {
+		"message": "Shape",
+		"source": "Shape"
+	},
+	"editor.area.brushSize": {
+		"message": "Size",
+		"source": "Size"
+	},
+	"editor.area.cell": {
+		"message": "{column}, {row}: {contents}",
+		"source": "{column}, {row}: {contents}"
+	},
+	"editor.area.cellLoading": {
+		"message": "hoistin'...",
+		"source": "loading..."
+	},
+	"editor.area.cellPaintedBy": {
+		"message": "{over, select, yes {{cell} (daubed by {name} over yer own daubin' while ye had this area open)} other {{cell} (daubed by {name} while ye had this area open)}}",
+		"source": "{over, select, yes {{cell} (painted by {name} over your painting while you had this area open)} other {{cell} (painted by {name} while you had this area open)}}"
+	},
+	"editor.area.cellWithLink": {
+		"message": "{column}, {row}: {contents} ({mode, select, automatic {passage that hauls ye through} other {passage that asks first}})",
+		"source": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})"
+	},
+	"editor.area.cellsSaveFailed": {
+		"message": "Couldn't stow the area's cells.",
+		"source": "Could not save the area's cells."
 	},
 	"editor.area.claimed": {
 		"message": "{count, plural, one {{names} be workin' this area too. Ye can still tinker with it; cells the other hand daubs will be shown to ye (crossed ones too).} other {{names} be workin' this area too. Ye can still tinker with it; cells the other hands daub will be shown to ye (crossed ones too).}}",
@@ -1156,12 +1272,16 @@
 		"source": "Areas inside this one"
 	},
 	"editor.area.confirmDelete": {
-		"message": "Scuttle {area}, its chart and every passage into it when the Areas tab be stowed? Areas inside it be cast adrift as top-level areas.",
-		"source": "Delete {area}, its map and every link into it when the Areas tab is saved? Areas inside it become top-level areas."
+		"message": "Scuttle {area} and every passage into it when the Areas tab be stowed? Areas inside it be cast adrift as top-level areas.",
+		"source": "Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas."
+	},
+	"editor.area.confirmDeleteLinks": {
+		"message": "Stowin' the smaller area scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
+		"source": "Saving the smaller area deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
 	},
 	"editor.area.confirmDeleteNew": {
-		"message": "Scuttle {area}? It ain't been stowed yet, so its settings, chart and passages be lost to the deep.",
-		"source": "Delete {area}? It hasn't been saved, so its settings, map and links will be lost."
+		"message": "Scuttle {area}? It ain't been stowed yet, so its settings, daubin' and passages be lost to the deep.",
+		"source": "Delete {area}? It hasn't been saved, so its settings, painting and links will be lost."
 	},
 	"editor.area.defaultTile": {
 		"message": "Usual tile",
@@ -1171,6 +1291,70 @@
 		"message": "Scuttle Area",
 		"source": "Delete Area"
 	},
+	"editor.area.draw": {
+		"message": "Paint",
+		"source": "Draw"
+	},
+	"editor.area.exitFullPage": {
+		"message": "Furl the Page Back",
+		"source": "Exit Full Page"
+	},
+	"editor.area.fullPage": {
+		"message": "Unfurl Full Page",
+		"source": "Full Page"
+	},
+	"editor.area.heading": {
+		"message": "Cells",
+		"source": "Cells"
+	},
+	"editor.area.help": {
+		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
+	},
+	"editor.area.keyboardHelp": {
+		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Passages tool opens the cell's passage; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
+		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
+	},
+	"editor.area.keys.cursor": {
+		"message": "Arrow keys",
+		"source": "Arrow keys"
+	},
+	"editor.area.keys.cursorDescription": {
+		"message": "Steer the cursor on the area in hand, 10 cells at a time with Shift",
+		"source": "Move the cursor on the focused area, 10 cells at a time with Shift"
+	},
+	"editor.area.keys.home": {
+		"message": "Home",
+		"source": "Home"
+	},
+	"editor.area.keys.homeDescription": {
+		"message": "Sail back to the center cell",
+		"source": "Go back to the center cell"
+	},
+	"editor.area.keys.paint": {
+		"message": "Space / Enter",
+		"source": "Space / Enter"
+	},
+	"editor.area.keys.paintDescription": {
+		"message": "Paint the cursor's cell, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
+		"source": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting"
+	},
+	"editor.area.keys.redo": {
+		"message": "Paint or resize again what ye took back",
+		"source": "Redo the painting or change of size undone"
+	},
+	"editor.area.keys.undo": {
+		"message": "Take back the last paintin' or change to the area's size",
+		"source": "Undo the last painting or change to the area's size"
+	},
+	"editor.area.keys.zoom": {
+		"message": "Spyglass in or out",
+		"source": "Zoom in or out"
+	},
+	"editor.area.label": {
+		"message": "Cells",
+		"source": "Cells"
+	},
 	"editor.area.lightLevel": {
 		"message": "Lantern light",
 		"source": "Light level"
@@ -1178,6 +1362,22 @@
 	"editor.area.lightLevelHint": {
 		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
 		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
+	},
+	"editor.area.links": {
+		"message": "Passages",
+		"source": "Links"
+	},
+	"editor.area.linksKept": {
+		"message": "The passages were kept, so the area weren't made smaller.",
+		"source": "The links were kept, so the area wasn't made smaller."
+	},
+	"editor.area.loadFailed": {
+		"message": "Couldn't haul up the area's cells.",
+		"source": "Could not load the area's cells."
+	},
+	"editor.area.loadLinksFailed": {
+		"message": "Couldn't haul up the passages.",
+		"source": "Could not load the links."
 	},
 	"editor.area.lobbyNotice": {
 		"message": "This area be the game's tavern.",
@@ -1195,10 +1395,6 @@
 		"message": "Wraps north-south",
 		"source": "Loops north-south"
 	},
-	"editor.area.mapSaveFailed": {
-		"message": "Couldn't stow the chart.",
-		"source": "Could not save the map."
-	},
 	"editor.area.noParent": {
 		"message": "None (a top-level area)",
 		"source": "None (a top-level area)"
@@ -1215,13 +1411,49 @@
 		"message": "This area be inside {areas}, which {count, plural, one {be} other {be}} closed to all hands.",
 		"source": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled."
 	},
+	"editor.area.redo": {
+		"message": "Redo",
+		"source": "Redo"
+	},
+	"editor.area.resize": {
+		"message": "Change Size",
+		"source": "Edit Size"
+	},
 	"editor.area.saveFailed": {
 		"message": "Couldn't stow the area.",
 		"source": "Could not save the area."
 	},
 	"editor.area.size": {
-		"message": "The chart be {height, number} tall by {width, number} wide.",
-		"source": "The map is {height, number} tall x {width, number} wide."
+		"message": "The area be {height, number} tall by {width, number} wide.",
+		"source": "The area is {height, number} tall x {width, number} wide."
+	},
+	"editor.area.tile": {
+		"message": "Tile",
+		"source": "Tile"
+	},
+	"editor.area.tooLarge": {
+		"message": "An area can be at most {max, number} cells in each direction, matey.",
+		"source": "An area can be at most {max, number} cells in each direction."
+	},
+	"editor.area.tool": {
+		"message": "Tool",
+		"source": "Tool"
+	},
+	"editor.area.undo": {
+		"message": "Undo",
+		"source": "Undo"
+	},
+	"editor.area.unknownTile": {
+		"message": "mystery tile",
+		"source": "unknown tile"
+	},
+	"editor.area.unsaved": {
+		"message": "Area changes not stowed yet",
+		"source": "Area changes not saved yet"
+	},
+	"editor.area.void": {
+		"message": "⚓Davy Jones' Locker",
+		"source": "🌃Void"
 	},
 	"editor.areaAdd.failed": {
 		"message": "Couldn't add the area.",
@@ -1264,12 +1496,12 @@
 		"source": "No areas match."
 	},
 	"editor.areaSelect.previewHelp": {
-		"message": "Click the chart to pick the square hands start on. With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the square.",
-		"source": "Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square."
+		"message": "Click the area to pick the square hands start on. With the area in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the square.",
+		"source": "Click the area to choose the square characters start on. With the area focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square."
 	},
 	"editor.areaSelect.previewLabel": {
-		"message": "Chart o' the chosen area",
-		"source": "Map of the chosen area"
+		"message": "The area ye chose",
+		"source": "The chosen area"
 	},
 	"editor.areaSelect.results": {
 		"message": "Areas",
@@ -1344,8 +1576,8 @@
 		"source": "[deleted user]"
 	},
 	"editor.audit.detail.area": {
-		"message": "{action, select, added {Charted new area {name}} changed {Altered area {name}} resized {Stretched the chart o' {name}} other {Scuttled area {name}}}",
-		"source": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized the map of {name}} other {Deleted area {name}}}"
+		"message": "{action, select, added {Charted new area {name}} changed {Altered area {name}} resized {Stretched area {name}} other {Scuttled area {name}}}",
+		"source": "{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized area {name}} other {Deleted area {name}}}"
 	},
 	"editor.audit.detail.cells": {
 		"message": "{count, plural, one {Daubed # cell in {name}} other {Daubed # cells in {name}}}",
@@ -2268,8 +2500,8 @@
 		"source": "Take them through (automatic)"
 	},
 	"editor.link.chooseDestination": {
-		"message": "Click the chart to choose where ye be headed.",
-		"source": "Click the map to choose the destination."
+		"message": "Click the area to choose where ye be headed.",
+		"source": "Click the area to choose the destination."
 	},
 	"editor.link.confirmDelete": {
 		"message": "Scuttle the passage at {column}, {row}?",
@@ -2296,24 +2528,24 @@
 		"source": "When a player steps onto the cell"
 	},
 	"editor.link.needDestination": {
-		"message": "Click the chart to choose where the passage goes.",
-		"source": "Click the map to choose where the link goes."
+		"message": "Click the area to choose where the passage goes.",
+		"source": "Click the area to choose where the link goes."
 	},
 	"editor.link.needTarget": {
 		"message": "Pick the area the passage goes to.",
 		"source": "Choose the area the link goes to."
 	},
 	"editor.link.needReturn": {
-		"message": "Click the chart to place the return passage, or don't be addin' one.",
-		"source": "Click the map to place the return link, or don't add one."
+		"message": "Click the area to place the return passage, or don't be addin' one.",
+		"source": "Click the area to place the return link, or don't add one."
 	},
 	"editor.link.noOtherAreas": {
 		"message": "Chart another area to sail to first.",
 		"source": "Add another area to link to first."
 	},
 	"editor.link.pick": {
-		"message": "Clickin' the chart below chooses",
-		"source": "Clicking the map below chooses"
+		"message": "Clickin' the area below chooses",
+		"source": "Clicking the area below chooses"
 	},
 	"editor.link.pickDestination": {
 		"message": "Where ye be headed",
@@ -2324,16 +2556,16 @@
 		"source": "The return link's cell"
 	},
 	"editor.link.placeReturn": {
-		"message": "Choose the return passage's cell above, then click the chart to place it.",
-		"source": "Choose the return link's cell above, then click the map to place it."
+		"message": "Choose the return passage's cell above, then click the area to place it.",
+		"source": "Choose the return link's cell above, then click the area to place it."
 	},
 	"editor.link.previewHelp": {
-		"message": "With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the cell.",
-		"source": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell."
+		"message": "With the area in hand, the arrow keys steer the cursor, 10 cells at a time with Shift, and Space or Enter picks the cell.",
+		"source": "With the area focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell."
 	},
 	"editor.link.previewLabel": {
-		"message": "Chart o' the area the passage leads to",
-		"source": "Map of the area the link goes to"
+		"message": "The area the passage leads to",
+		"source": "The area the link goes to"
 	},
 	"editor.link.returnCell": {
 		"message": "Return passage at {column}, {row}",
@@ -2399,7 +2631,7 @@
 		"message": "None",
 		"source": "None"
 	},
-	"editor.lobby.noMapHint": {
+	"editor.lobby.noAreaHint": {
 		"message": "{reason, select, disabled {The tavern's area be disabled, so scallywags only jaw an' pick their hands.} other {Without a tavern area, scallywags only jaw an' pick their hands.}}",
 		"source": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}"
 	},
@@ -2418,162 +2650,6 @@
 	"editor.lobby.timeHint": {
 		"message": "Nothin' ye do in the tavern takes any time, so its hours pass by this 'stead o' the universe's way.",
 		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
-	},
-	"editor.map.areaDefault": {
-		"message": "{tile} (the usual)",
-		"source": "{tile} (default)"
-	},
-	"editor.map.brush.circle": {
-		"message": "round as a cannonball",
-		"source": "circle"
-	},
-	"editor.map.brush.square": {
-		"message": "square as a crate",
-		"source": "square"
-	},
-	"editor.map.brushShape": {
-		"message": "Shape",
-		"source": "Shape"
-	},
-	"editor.map.brushSize": {
-		"message": "Size",
-		"source": "Size"
-	},
-	"editor.map.cell": {
-		"message": "{column}, {row}: {contents}",
-		"source": "{column}, {row}: {contents}"
-	},
-	"editor.map.cellLoading": {
-		"message": "hoistin'...",
-		"source": "loading..."
-	},
-	"editor.map.cellPaintedBy": {
-		"message": "{over, select, yes {{cell} (daubed by {name} over yer own daubin' while ye had this chart open)} other {{cell} (daubed by {name} while ye had this chart open)}}",
-		"source": "{over, select, yes {{cell} (painted by {name} over your painting while you had this map open)} other {{cell} (painted by {name} while you had this map open)}}"
-	},
-	"editor.map.cellWithLink": {
-		"message": "{column}, {row}: {contents} ({mode, select, automatic {passage that hauls ye through} other {passage that asks first}})",
-		"source": "{column}, {row}: {contents} ({mode, select, automatic {automatic link} other {manual link}})"
-	},
-	"editor.map.confirmDeleteLinks": {
-		"message": "Stowin' the smaller chart scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
-		"source": "Saving the smaller map deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
-	},
-	"editor.map.draw": {
-		"message": "Paint",
-		"source": "Draw"
-	},
-	"editor.map.exitFullPage": {
-		"message": "Furl the Page Back",
-		"source": "Exit Full Page"
-	},
-	"editor.map.fullPage": {
-		"message": "Unfurl Full Page",
-		"source": "Full Page"
-	},
-	"editor.map.heading": {
-		"message": "Chart",
-		"source": "Map"
-	},
-	"editor.map.help": {
-		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
-		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
-	},
-	"editor.map.keyboardHelp": {
-		"message": "With the chart in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Passages tool opens the cell's passage; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
-		"source": "With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
-	},
-	"editor.map.keys.cursor": {
-		"message": "Arrow keys",
-		"source": "Arrow keys"
-	},
-	"editor.map.keys.cursorDescription": {
-		"message": "Steer the cursor on the chart in hand, 10 cells at a time with Shift",
-		"source": "Move the cursor on the focused map, 10 cells at a time with Shift"
-	},
-	"editor.map.keys.home": {
-		"message": "Home",
-		"source": "Home"
-	},
-	"editor.map.keys.homeDescription": {
-		"message": "Sail back to the center cell",
-		"source": "Go back to the center cell"
-	},
-	"editor.map.keys.paint": {
-		"message": "Space / Enter",
-		"source": "Space / Enter"
-	},
-	"editor.map.keys.paintDescription": {
-		"message": "Paint the cursor's cell, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
-		"source": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting"
-	},
-	"editor.map.keys.redo": {
-		"message": "Paint or resize again what ye took back",
-		"source": "Redo the painting or change of size undone"
-	},
-	"editor.map.keys.undo": {
-		"message": "Take back the last paintin' or change to the chart's size",
-		"source": "Undo the last painting or change to the map's size"
-	},
-	"editor.map.keys.zoom": {
-		"message": "Spyglass in or out",
-		"source": "Zoom in or out"
-	},
-	"editor.map.label": {
-		"message": "Chart",
-		"source": "Map"
-	},
-	"editor.map.links": {
-		"message": "Passages",
-		"source": "Links"
-	},
-	"editor.map.linksKept": {
-		"message": "The passages were kept, so the chart weren't made smaller.",
-		"source": "The links were kept, so the map wasn't made smaller."
-	},
-	"editor.map.loadFailed": {
-		"message": "Couldn't haul up the chart.",
-		"source": "Could not load the map."
-	},
-	"editor.map.loadLinksFailed": {
-		"message": "Couldn't haul up the passages.",
-		"source": "Could not load the links."
-	},
-	"editor.map.redo": {
-		"message": "Redo",
-		"source": "Redo"
-	},
-	"editor.map.resize": {
-		"message": "Change Size",
-		"source": "Edit Size"
-	},
-	"editor.map.tile": {
-		"message": "Tile",
-		"source": "Tile"
-	},
-	"editor.map.tooLarge": {
-		"message": "A chart can be at most {max, number} cells in each direction, matey.",
-		"source": "A map can be at most {max, number} cells in each direction."
-	},
-	"editor.map.tool": {
-		"message": "Tool",
-		"source": "Tool"
-	},
-	"editor.map.undo": {
-		"message": "Undo",
-		"source": "Undo"
-	},
-	"editor.map.unknownTile": {
-		"message": "mystery tile",
-		"source": "unknown tile"
-	},
-	"editor.map.unsaved": {
-		"message": "Chart changes not stowed yet",
-		"source": "Map changes not saved yet"
-	},
-	"editor.map.void": {
-		"message": "⚓Davy Jones' Locker",
-		"source": "🌃Void"
 	},
 	"editor.notes": {
 		"message": "Scribblings",
@@ -2612,8 +2688,8 @@
 		"source": "Also here:"
 	},
 	"editor.resize.cutOffWarning": {
-		"message": "The smaller chart cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the chart is stowed. Resize anyway?",
-		"source": "The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?"
+		"message": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the area is stowed. Resize anyway?",
+		"source": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the area is saved. Resize anyway?"
 	},
 	"editor.resize.discard": {
 		"message": "Resize and Toss Overboard",
@@ -2624,8 +2700,8 @@
 		"source": "East"
 	},
 	"editor.resize.explanation": {
-		"message": "How many cells the chart reaches in each direction from its middle cell (0, 0).",
-		"source": "How many cells the map reaches in each direction from its center cell (0, 0)."
+		"message": "How many cells the area reaches in each direction from its middle cell (0, 0).",
+		"source": "How many cells the area reaches in each direction from its center cell (0, 0)."
 	},
 	"editor.resize.extendBy": {
 		"message": "Widen by",
@@ -2652,8 +2728,8 @@
 		"source": "+ West"
 	},
 	"editor.resize.failed": {
-		"message": "Couldn't resize the chart.",
-		"source": "Could not resize the map."
+		"message": "Couldn't resize the area.",
+		"source": "Could not resize the area."
 	},
 	"editor.resize.north": {
 		"message": "North",
@@ -2832,8 +2908,8 @@
 		"source": "{count, plural, one {This conflicts with your unsaved changes on the {tabs} tab.} other {This conflicts with your unsaved changes on the {tabs} tabs.}}"
 	},
 	"editor.saveNoticePaintedOver": {
-		"message": "{count, plural, one {They daubed over # cell ye daubed, ringed in orange on the chart.} other {They daubed over # cells ye daubed, ringed in orange on the chart.}}",
-		"source": "{count, plural, one {They painted over # cell you painted, outlined in orange on the map.} other {They painted over # cells you painted, outlined in orange on the map.}}"
+		"message": "{count, plural, one {They daubed over # cell ye daubed, ringed in orange in the area editor.} other {They daubed over # cells ye daubed, ringed in orange in the area editor.}}",
+		"source": "{count, plural, one {They painted over # cell you painted, outlined in orange in the area editor.} other {They painted over # cells you painted, outlined in orange in the area editor.}}"
 	},
 	"editor.searchByName": {
 		"message": "Search by name",
@@ -2876,8 +2952,8 @@
 		"source": "Undo Restore"
 	},
 	"editor.startDraft.copy": {
-		"message": "A draft be a copy o' the whole universe: its settings, races, classes, items, tilesets, areas an' their charts, an' translations. The crew keeps sailin' the live version, an' sees naught o' the draft till it be launched.",
-		"source": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied."
+		"message": "A draft be a copy o' the whole universe: its settings, races, classes, items, tilesets, areas an' their cells, an' translations. The crew keeps sailin' the live version, an' sees naught o' the draft till it be launched.",
+		"source": "A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their cells, and translations. Players keep playing the live version and won't see draft changes until they are applied."
 	},
 	"editor.startDraft.finishing": {
 		"message": "When the draft be shipshape, a captain launches it with Launch Draft atop the editor, an' the crew sees all that changed in it at once. Scuttle Draft sinks it instead, leavin' the live version as she be.",
@@ -3148,8 +3224,8 @@
 		"source": "Where"
 	},
 	"editor.tile.usedInHint": {
-		"message": "Areas can only be painted with tiles fit fer 'em. A tile fit fer neither can't be painted, but charts that already bear it keep it.",
-		"source": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it."
+		"message": "Areas can only be painted with tiles fit fer 'em. A tile fit fer neither can't be painted, but areas that already bear it keep it.",
+		"source": "Areas can only paint with tiles for their kind. A tile for neither can't be painted, but areas that already use it keep it."
 	},
 	"editor.tile.visionCost": {
 		"message": "Spyglass cost (%)",
@@ -3172,12 +3248,12 @@
 		"source": "Walk time (seconds)"
 	},
 	"editor.tileDelete.checkFailed": {
-		"message": "Couldn't find out which charts use the tile.",
-		"source": "Could not find out which maps use the tile."
+		"message": "Couldn't find out which areas use the tile.",
+		"source": "Could not find out which areas use the tile."
 	},
 	"editor.tileDelete.checking": {
-		"message": "Searchin' the charts fer it...",
-		"source": "Checking which maps use it..."
+		"message": "Searchin' the areas fer it...",
+		"source": "Checking which areas use it..."
 	},
 	"editor.tileDelete.chooseReplacement": {
 		"message": "Pick a tile",
@@ -3200,8 +3276,8 @@
 		"source": "Delete Tile"
 	},
 	"editor.tileDelete.usage": {
-		"message": "{count, plural, one {The chart o' {areas} uses it.} other {The charts o' {areas} use it.}} Pick a tile to paint {count, plural, one {it} other {them}} with in its place.",
-		"source": "{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
+		"message": "{count, plural, one {{areas} uses it.} other {{areas} use it.}} Pick a tile to paint {count, plural, one {it} other {them}} with in its place.",
+		"source": "{count, plural, one {{areas} uses it.} other {{areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place."
 	},
 	"editor.tileGraphic.blobFormatHint": {
 		"message": "A PNG no heavier than {kilobytes, number} KB in the 47-tile blob layout: {width, number} by {height, number} pixels, {columns, number} frames across an' {columns, number} down like the tilesets that sail with the game, with 2 berths left empty, or {sortedWidth, number} by {sortedHeight, number} pixels, {sortedColumns, number} frames across an' {sortedRows, number} down, sorted by the neighbors they join, with the last berth left empty. These tiles be painted atop the ground, so they need no stackin' order.",
@@ -3672,8 +3748,8 @@
 		"source": "Its world and everything else in the editor"
 	},
 	"editor.universeDelete.worldContents": {
-		"message": "Her areas an' their charts, tilesets an' hauls, booty, races, classes, tongues",
-		"source": "Its areas and their maps, tilesets and uploads, items, races, classes, translations"
+		"message": "Her areas an' their cells, tilesets an' hauls, booty, races, classes, tongues",
+		"source": "Its areas and their cells, tilesets and uploads, items, races, classes, translations"
 	},
 	"editor.universeDeleted": {
 		"message": "This universe has been scuttled, so changes to her can't be stowed.",
@@ -3956,8 +4032,8 @@
 		"source": "You have a role in {universe} on {siteName}"
 	},
 	"email.roleGiven.whatItAllows": {
-		"message": "{role, select, creator {As captain ye can change everythin' about the universe, even who else sails her.} builder {As shipwright ye can change the universe's world: its tiles, booty, areas, charts and passages.} beta_tester {As deckhand ye can sail the universe afore she opens to every soul.} other {As translator ye can turn the universe's words into the tongues ye were given.}}",
-		"source": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}"
+		"message": "{role, select, creator {As captain ye can change everythin' about the universe, even who else sails her.} builder {As shipwright ye can change the universe's world: its tiles, booty, areas and passages.} beta_tester {As deckhand ye can sail the universe afore she opens to every soul.} other {As translator ye can turn the universe's words into the tongues ye were given.}}",
+		"source": "{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe's world: its tiles, items, areas and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe's text into the languages you were given.}}"
 	},
 	"email.twoFactorDisabled.body": {
 		"message": "Two-factor authentication was struck from yer account on {siteName}. Comin' aboard now needs only yer password, an' yer recovery codes be worthless.",
@@ -4192,8 +4268,8 @@
 		"source": "The lobby and starting areas can't be deleted."
 	},
 	"error.cellOutOfBounds": {
-		"message": "Every cell must be inside the area's chart.",
-		"source": "Every cell must be inside the area's map."
+		"message": "Every cell must be inside the area.",
+		"source": "Every cell must be inside the area."
 	},
 	"error.characterLimit": {
 		"message": "Ye can have at most {max, plural, one {# hand} other {# hands}} in a universe.",
@@ -4248,8 +4324,8 @@
 		"source": "An area whose passage of time is faerie can't loop."
 	},
 	"error.faerieLobbyCantLoop": {
-		"message": "The tavern's hours can't pass the faerie way while its chart loops.",
-		"source": "The lobby's passage of time can't be faerie while its map loops."
+		"message": "The tavern's hours can't pass the faerie way while its area loops.",
+		"source": "The lobby's passage of time can't be faerie while its area loops."
 	},
 	"error.faerieMorningMismatch": {
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
@@ -4312,16 +4388,16 @@
 		"source": "The site needs at least one admin, so the last can't be removed."
 	},
 	"error.linkOutOfBounds": {
-		"message": "The passage's cell must be inside the area's chart.",
-		"source": "The link's cell must be inside the area's map."
+		"message": "The passage's cell must be inside the area.",
+		"source": "The link's cell must be inside the area."
 	},
 	"error.linkTargetNotInUniverse": {
 		"message": "A passage must sail to another area of this universe.",
 		"source": "A link must go to another area of this universe."
 	},
 	"error.linkTargetOutOfBounds": {
-		"message": "Where the passage goes must be inside the other area's chart.",
-		"source": "Where the link goes must be inside the other area's map."
+		"message": "Where the passage goes must be inside the other area.",
+		"source": "Where the link goes must be inside the other area."
 	},
 	"error.linkToSameArea": {
 		"message": "A passage must sail to another area.",
@@ -4564,8 +4640,8 @@
 		"source": "A tileset in this layout must be {width, number} by {height, number} pixels."
 	},
 	"error.tileInUse": {
-		"message": "A chart uses this tile, so it can't be scuttled.",
-		"source": "A map uses this tile, so it can't be deleted."
+		"message": "An area uses this tile, so it can't be scuttled.",
+		"source": "An area uses this tile, so it can't be deleted."
 	},
 	"error.tileLimit": {
 		"message": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
@@ -5566,82 +5642,6 @@
 	"login.withGoogle": {
 		"message": "Come aboard with Google",
 		"source": "Log in with Google"
-	},
-	"map.announce.appeared": {
-		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
-		"source": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}"
-	},
-	"map.announce.area": {
-		"message": "Ye be in {area}.",
-		"source": "You are in {area}."
-	},
-	"map.announce.blocked": {
-		"message": "Somethin' be in yer way.",
-		"source": "Something is in the way."
-	},
-	"map.announce.disappeared": {
-		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
-		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
-	},
-	"map.announce.partOfDay": {
-		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
-		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"
-	},
-	"map.announce.player": {
-		"message": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {nor'east} east {east} southeast {sou'east} south {south} southwest {sou'west} west {west} other {nor'west}}",
-		"source": "{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}"
-	},
-	"map.announce.playerHere": {
-		"message": "{name}, right alongside ye",
-		"source": "{name}, right where you are"
-	},
-	"map.announce.position": {
-		"message": "{area}, column {column}, row {row}{onTile, select, yes {, standin' on {tile}} other {}}. {count, plural, =0 {Not a soul in sight.} other {Ye can spy {players}.}}",
-		"source": "{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can't see anyone else.} other {You can see {players}.}}"
-	},
-	"map.announce.sight": {
-		"message": "Ye can spy {squares, plural, one {# square} other {# squares}} across open ground.",
-		"source": "You can see {squares, plural, one {# square} other {# squares}} across open ground."
-	},
-	"map.announce.timeOfDay": {
-		"message": "'Tis {time}, {part, select, dawn {first light} day {broad day} dusk {dusk} other {the dark o' night}}.",
-		"source": "It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}."
-	},
-	"map.announce.timeOfDayRough": {
-		"message": "'Tis {time}.",
-		"source": "It is {time}."
-	},
-	"map.ghost": {
-		"message": "Ghost",
-		"source": "Ghost"
-	},
-	"map.help": {
-		"message": "Arrow keys, W A S D or the number pad sail ye about. E takes ye through a door or passage ye stand on. {shortcut} tells ye where ye be and who ye can spy.",
-		"source": "Arrow keys, W A S D or the number pad move you. E goes through a door or path you stand on. {shortcut} tells you where you are and who you can see."
-	},
-	"map.keys.move": {
-		"message": "Arrow keys, W A S D or number pad",
-		"source": "Arrow keys, W A S D or number pad"
-	},
-	"map.keys.moveDescription": {
-		"message": "Sail about",
-		"source": "Move"
-	},
-	"map.keys.position": {
-		"message": "Say where ye be and who ye can spy",
-		"source": "Say where you are and who you can see"
-	},
-	"map.keys.takeLink": {
-		"message": "Go through a door or passage ye stand on",
-		"source": "Go through a door or path you stand on"
-	},
-	"map.label": {
-		"message": "Chart",
-		"source": "Map"
-	},
-	"map.takeLink": {
-		"message": "Press E to go through",
-		"source": "Press E to go through"
 	},
 	"markdown.bold": {
 		"message": "Bold",
@@ -7536,8 +7536,8 @@
 		"source": "Can play the universe while it's open for testing, before everyone can, but can't change it."
 	},
 	"universe.roleDescription.builder": {
-		"message": "Can change the universe's world (its tiles, booty, areas, charts and passages) and sail her while she's still on the slipway. Can read her other settings without changin' them.",
-		"source": "Can change the universe's world (its tiles, items, areas, maps and links) and play it while it's still being built. Can read its other settings without changing them."
+		"message": "Can change the universe's world (its tiles, booty, areas and passages) and sail her while she's still on the slipway. Can read her other settings without changin' them.",
+		"source": "Can change the universe's world (its tiles, items, areas and links) and play it while it's still being built. Can read its other settings without changing them."
 	},
 	"universe.roleDescription.creator": {
 		"message": "Can change everythin' about the universe, even who else sails her, and sail her while she's still on the slipway.",

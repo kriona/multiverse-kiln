@@ -710,7 +710,7 @@ export async function setUniverseDisabled(universeId: string, disabling: Univers
 }
 
 /**
- * Deletes a universe and everything in it: its areas, maps, links and tiles
+ * Deletes a universe and everything in it: its areas and their cells, links and tiles
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction

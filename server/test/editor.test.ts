@@ -134,7 +134,7 @@ function saveIn(editor: Editor, universeId: string, list: ListName, id: unknown,
  * @param universeId The universe's ID
  * @param list Which list
  * @param id The thing's ID, which may not exist
- * @param replaceWith For a tile, the tile to paint the maps with in its place
+ * @param replaceWith For a tile, the tile to paint the areas with in its place
  * @return The answer
  */
 function removeFrom(editor: Editor, universeId: string, list: ListName, id: unknown, replaceWith: unknown = null): Promise<SaveAnswer>
@@ -143,7 +143,7 @@ function removeFrom(editor: Editor, universeId: string, list: ListName, id: unkn
 }
 
 /**
- * Saves painting on an area's map
+ * Saves painting on an area's cells
  *
  * @param editor The browser saving it
  * @param universeId The universe's ID
@@ -492,7 +492,7 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.faerieMorning, null);
 		});
 
-		it('changes the lobby\'s time, keeping faerie time off a lobby whose map loops', async () =>
+		it('changes the lobby\'s time, keeping faerie time off a lobby whose area loops', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const path = `/${universeId}`;
@@ -852,7 +852,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await saveIn(ada, universeId, 'Tile', tileId, darker)).status, 400);
 		});
 
-		it('refuses to delete a tile a map uses, and deletes it once nothing does', async () =>
+		it('refuses to delete a tile an area uses, and deletes it once nothing does', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
@@ -866,7 +866,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId)).status, 404);
 		});
 
-		it('lists the areas using a tile, and deletes it after painting its maps with a replacement', async () =>
+		it('lists the areas using a tile, and deletes it after painting its areas with a replacement', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
@@ -1558,7 +1558,7 @@ describe('World editor API', () =>
 		});
 	});
 
-	describe('maps', () =>
+	describe('cells', () =>
 	{
 		it('paints cells and reads them back by chunk', async () =>
 		{
@@ -1575,7 +1575,7 @@ describe('World editor API', () =>
 			assert.strictEqual(chunks[1].cells[0], forest);
 		});
 
-		it('refuses cells outside the map, tiles the universe cannot use, and ranges that are too large', async () =>
+		it('refuses cells outside the area, tiles the universe cannot use, and ranges that are too large', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
@@ -1590,7 +1590,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'GET', `${path}/chunks?minChunkColumn=1&minChunkRow=0&maxChunkColumn=0&maxChunkRow=0`)).status, 400);
 		});
 
-		it('resizes a map, asking before it discards painted cells', async () =>
+		it('resizes an area, asking before it discards painted cells', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const areaId = await createArea(ada, universeId);
@@ -1636,7 +1636,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await saveChange(ada, universeId, { kind: 'deleteLink', areaId: outsideId, column: 3, row: -4 })).status, 404);
 		});
 
-		it('refuses links to the same area, another universe, or a cell off either map', async () =>
+		it('refuses links to the same area, another universe, or a cell outside either area', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');

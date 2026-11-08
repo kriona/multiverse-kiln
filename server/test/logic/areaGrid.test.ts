@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { CHUNK_SIZE, chunkKey, cellIndexInChunk, DEFAULT_INDOOR_WALK_SECONDS, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, VOID_CELL } from '@multiverse-kiln/shared';
 
-import { createAreaGrid, linkAt, type AreaLink, type AreaMap } from '../../src/logic/areaGrid.js';
+import { createAreaGrid, linkAt, type AreaLayout, type AreaLink } from '../../src/logic/areaGrid.js';
 
 const GRASS = 1;
 const FOREST = 2;
@@ -40,7 +40,7 @@ function link(column: number, row: number, mode: AreaLink['mode']): AreaLink
 
 // Five columns by three rows around the center, mostly grass: forest at (1, 0), void at (2, 0), and an
 // unknown tile at (-1, -1), which is in a different chunk from the rest
-const map: AreaMap = {
+const layout: AreaLayout = {
 	tiles: {
 		bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 },
 		defaultTileId: GRASS,
@@ -58,11 +58,11 @@ const map: AreaMap = {
 
 describe('createAreaGrid', () =>
 {
-	const grid = createAreaGrid(map, 30);
+	const grid = createAreaGrid(layout, 30);
 
 	it('takes its bounds, edges and cell size from the area', () =>
 	{
-		assert.deepStrictEqual(grid.bounds, map.tiles.bounds);
+		assert.deepStrictEqual(grid.bounds, layout.tiles.bounds);
 		assert.strictEqual(grid.loopsEastWest, true);
 		assert.strictEqual(grid.loopsNorthSouth, false);
 		assert.strictEqual(grid.cellSize, 30);
@@ -71,7 +71,7 @@ describe('createAreaGrid', () =>
 	it('crosses the default walk seconds of indoor or outdoor tiles at full speed', () =>
 	{
 		assert.strictEqual(grid.fullSpeedWalkSeconds, DEFAULT_INDOOR_WALK_SECONDS);
-		assert.strictEqual(createAreaGrid({ ...map, indoors: false }, 30).fullSpeedWalkSeconds, DEFAULT_OUTDOOR_WALK_SECONDS);
+		assert.strictEqual(createAreaGrid({ ...layout, indoors: false }, 30).fullSpeedWalkSeconds, DEFAULT_OUTDOOR_WALK_SECONDS);
 	});
 
 	it('gives each cell its tile\'s walk seconds', () =>
@@ -80,16 +80,16 @@ describe('createAreaGrid', () =>
 		assert.strictEqual(grid.walkSeconds({ column: 1, row: 0 }), 20);
 	});
 
-	it('makes void cells, unknown tiles and cells off the map impassable', () =>
+	it('makes void cells, unknown tiles and cells outside the area impassable', () =>
 	{
 		assert.strictEqual(grid.walkSeconds({ column: 2, row: 0 }), IMPASSABLE_WALK_SECONDS);
 		assert.strictEqual(grid.walkSeconds({ column: -1, row: -1 }), IMPASSABLE_WALK_SECONDS);
 		assert.strictEqual(grid.walkSeconds({ column: 3, row: 0 }), IMPASSABLE_WALK_SECONDS);
 	});
 
-	it('makes cells whose chunk has not loaded impassable, when the map is loaded a piece at a time', () =>
+	it('makes cells whose chunk has not loaded impassable, when the area is loaded a piece at a time', () =>
 	{
-		const partial = createAreaGrid({ ...map, loadedChunks: new Set([chunkKey(0, 0)]) }, 30);
+		const partial = createAreaGrid({ ...layout, loadedChunks: new Set([chunkKey(0, 0)]) }, 30);
 
 		assert.strictEqual(partial.walkSeconds({ column: 1, row: 0 }), 20);
 		assert.strictEqual(partial.walkSeconds({ column: -2, row: 0 }), IMPASSABLE_WALK_SECONDS);
@@ -108,11 +108,11 @@ describe('linkAt', () =>
 {
 	it('finds the link on a cell', () =>
 	{
-		assert.strictEqual(linkAt(map, { column: -2, row: 1 })?.mode, 'manual');
+		assert.strictEqual(linkAt(layout, { column: -2, row: 1 })?.mode, 'manual');
 	});
 
 	it('returns undefined for a cell with no link', () =>
 	{
-		assert.strictEqual(linkAt(map, { column: 1, row: 1 }), undefined);
+		assert.strictEqual(linkAt(layout, { column: 1, row: 1 }), undefined);
 	});
 });

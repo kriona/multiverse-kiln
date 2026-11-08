@@ -19,7 +19,7 @@ import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
+import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInAreas } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { isSameVersion, type UniverseVersion } from '../db/universeVersions.js';
@@ -70,7 +70,7 @@ const messages = defineMessages({
 	noSuchReplacementTile: {
 		id: 'error.noSuchReplacementTile',
 		defaultMessage: 'The tile chosen to replace it doesn\'t exist.',
-		description: 'Why a tile couldn\'t be deleted: the tile chosen to paint the maps with in its place isn\'t one of the universe\'s tiles, perhaps because it was deleted'
+		description: 'Why a tile couldn\'t be deleted: the tile chosen to paint the areas with in its place isn\'t one of the universe\'s tiles, perhaps because it was deleted'
 	}
 });
 
@@ -666,7 +666,7 @@ async function withUniverseGraphic(context: ChangeContext, settings: TileChangeS
 }
 
 /**
- * GET /:universeId/tiles/:tileId/usage: the areas whose maps use a tile
+ * GET /:universeId/tiles/:tileId/usage: the areas that use a tile
  *
  * @param request The request
  * @param response The response
@@ -690,13 +690,13 @@ async function tileUsage(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Deletes one of the universe's own tiles, or restores a default tile the universe has edited. A tile a
- * map uses is refused, unless replaceWith names another of the universe's tiles: then the maps are
+ * Deletes one of the universe's own tiles, or restores a default tile the universe has edited. A tile an
+ * area uses is refused, unless replaceWith names another of the universe's tiles: then the areas are
  * painted with that tile in its place first
  *
  * @param context The save
  * @param id The tile
- * @param replaceWith The tile to paint the maps with in its place, or null
+ * @param replaceWith The tile to paint the areas with in its place, or null
  */
 export async function removeTileChange(context: ChangeContext, id: NumberRef, replaceWith: NumberRef | null): Promise<void>
 {
@@ -725,14 +725,14 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	}
 
 	// Painting waits for the universe's lock too, so the tile can't come into use before it is deleted
-	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInMaps(version, tileId, replacementId, transaction));
+	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInAreas(version, tileId, replacementId, transaction));
 
 	if (await isTileInUse(version, tileId, transaction))
 	{
 		refuse(409, {
 			id: 'error.tileInUse',
-			defaultMessage: 'A map uses this tile, so it can\'t be deleted.',
-			description: 'Why a tile couldn\'t be deleted: some area\'s map is painted with it'
+			defaultMessage: 'An area uses this tile, so it can\'t be deleted.',
+			description: 'Why a tile couldn\'t be deleted: some area is painted with it'
 		});
 	}
 

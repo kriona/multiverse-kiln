@@ -5,10 +5,10 @@
  *
  * Everything is read in one read-only snapshot, so the archive fits together while others save, and the
  * archive is made in memory before it is sent, so the snapshot's connection isn't held while a slow
- * browser downloads it. Maps are deflated a page of chunks at a time as they are read
+ * browser downloads it. Areas' cells are deflated a page of chunks at a time as they are read
  */
 import type { Request, Response, Router } from 'express';
-import { canExportUniverse, CHUNK_SIZE, defineMessages, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportFileName, universeExportMapPath, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { canExportUniverse, CHUNK_SIZE, defineMessages, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { zipArchive, zipFile, type ZipFile } from '../archives/zip.js';
 import { listEditorAreas, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
@@ -32,7 +32,7 @@ import { findEditorAccess, requireRole, universeContextOf } from './editorAccess
 import { errorMessages, sendError } from './errors.js';
 
 /**
- * How many chunks of a map are read, and deflated, at once
+ * How many chunks of an area are read, and deflated, at once
  */
 const CHUNKS_PER_PAGE = 500;
 
@@ -66,9 +66,9 @@ interface ExportSnapshot
 	manifest: UniverseExport;
 
 	/**
-	 * The maps, ready for the archive
+	 * The areas' cells, ready for the archive
 	 */
-	maps: ZipFile[];
+	areaFiles: ZipFile[];
 
 	/**
 	 * Where each uploaded tileset's image is stored, by the tileset's ID
@@ -126,7 +126,7 @@ async function exportRoute(request: Request, response: Response): Promise<void>
 		const manifest = await zipFile(UNIVERSE_EXPORT_MANIFEST, [`${JSON.stringify(snapshot.manifest, null, '\t')}\n`]);
 
 		response.attachment(universeExportFileName(universe.name, universe.version, exportedAt));
-		response.send(zipArchive([manifest, ...snapshot.maps, ...tilesets], exportedAt));
+		response.send(zipArchive([manifest, ...snapshot.areaFiles, ...tilesets], exportedAt));
 	}
 	finally
 	{
@@ -181,7 +181,7 @@ async function readExport(version: UniverseVersion, playerId: string, exportedAt
 				sourceLanguage: universe.sourceLanguage
 			}
 		},
-		maps: [],
+		areaFiles: [],
 		tilesetKeys: new Map()
 	};
 
@@ -264,7 +264,7 @@ function universeSettingsOf(universe: EditableUniverseDetails): UniverseSettings
 }
 
 /**
- * Reads the world into an export: uploaded tilesets, tiles, items, and areas with their links and maps
+ * Reads the world into an export: uploaded tilesets, tiles, items, and areas with their links and cells
  *
  * @param snapshot The export
  * @param universe The universe, in the version exported
@@ -310,7 +310,7 @@ async function readWorld(snapshot: ExportSnapshot, universe: EditableUniverseDet
 
 	for (const area of await listEditorAreas(version, executor))
 	{
-		const map = universeExportMapPath(area.id);
+		const file = universeExportAreaPath(area.id);
 
 		areas.push({
 			...area,
@@ -325,23 +325,23 @@ async function readWorld(snapshot: ExportSnapshot, universe: EditableUniverseDet
 					mode,
 					requiresWholeGroup
 				})),
-			map
+			file
 		});
-		snapshot.maps.push(await zipFile(map, mapPieces(area.id, executor)));
+		snapshot.areaFiles.push(await zipFile(file, areaCellPieces(area.id, executor)));
 	}
 
 	manifest.areas = areas;
 }
 
 /**
- * An area's map as an ExportedMap in JSON, a page of chunks at a time, indented with tabs like the
+ * An area's cells as an ExportedAreaCells in JSON, a page of chunks at a time, indented with tabs like the
  * manifest but with each chunk on one line of its own
  *
  * @param areaId The area's ID
  * @param executor The snapshot
  * @return The JSON, in pieces
  */
-async function* mapPieces(areaId: string, executor: Executor): AsyncGenerator<string>
+async function* areaCellPieces(areaId: string, executor: Executor): AsyncGenerator<string>
 {
 	let after: AreaChunk | undefined;
 	let separator = '';

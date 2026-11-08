@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_TILE_CELL, VOID_CELL } from '@multiverse-kiln/shared';
 
-import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk, wouldCreateCycle } from '../../src/logic/mapEdits.js';
+import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk, wouldCreateCycle } from '../../src/logic/areaEdits.js';
 
 /**
  * A chunk whose cells are all the default tile
@@ -13,7 +13,7 @@ function defaultChunk(): number[]
 	return(new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL));
 }
 
-describe('mapEdits', () =>
+describe('areaEdits', () =>
 {
 	describe('chunksOfChanges', () =>
 	{
@@ -78,13 +78,13 @@ describe('mapEdits', () =>
 	{
 		const bounds = { minColumn: -32, minRow: -32, maxColumn: 31, maxRow: 40 };
 
-		it('is true for a chunk wholly on the map', () =>
+		it('is true for a chunk wholly inside the area', () =>
 		{
 			assert.strictEqual(isChunkInside(-1, -1, bounds), true);
 			assert.strictEqual(isChunkInside(0, 0, bounds), true);
 		});
 
-		it('is false for a chunk partly or wholly off the map', () =>
+		it('is false for a chunk partly or wholly outside the area', () =>
 		{
 			assert.strictEqual(isChunkInside(0, 1, bounds), false);
 			assert.strictEqual(isChunkInside(1, 0, bounds), false);
@@ -111,7 +111,7 @@ describe('mapEdits', () =>
 			assert.strictEqual(cells[cellIndexInChunk(10, 2)], 5);
 		});
 
-		it('clears a chunk entirely off the map', () =>
+		it('clears a chunk entirely outside the area', () =>
 		{
 			const cells = new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(5);
 			const clipped = clipChunk(3, 0, cells, { minColumn: -5, minRow: -5, maxColumn: 5, maxRow: 5 });

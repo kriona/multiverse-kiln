@@ -1,5 +1,5 @@
 /**
- * A character on the map of a room, and the area they are in
+ * A character playing in a room, and the area they are in
  */
 export interface Occupant
 {
@@ -8,7 +8,7 @@ export interface Occupant
 }
 
 /**
- * Lists the characters on a room's map
+ * Lists the characters playing in a room
  */
 export type OccupantSource = () => Iterable<Occupant>;
 
@@ -17,7 +17,7 @@ export type OccupantSource = () => Iterable<Occupant>;
  * area with characters in it is disabled. Saved positions are in the database; this has those only the
  * rooms know, since a group's room saves where its members are only when their players leave
  *
- * Each room with a map registers itself while it is open. It lives in memory, so it only knows rooms in
+ * Each room with areas registers itself while it is open. It lives in memory, so it only knows rooms in
  * the same server process, like AreaChanges
  */
 export class AreaOccupants
@@ -57,7 +57,7 @@ export class AreaOccupants
 	}
 
 	/**
-	 * Every character on the map of a room playing in a universe
+	 * Every character playing in a room of a universe
 	 *
 	 * @param universeId The universe's ID
 	 * @return The characters and their areas
@@ -69,6 +69,6 @@ export class AreaOccupants
 }
 
 /**
- * The server's rooms' characters, registered by every room with a map and read by the editor's warnings
+ * The server's rooms' characters, registered by every room with areas and read by the editor's warnings
  */
 export const areaOccupants = new AreaOccupants();

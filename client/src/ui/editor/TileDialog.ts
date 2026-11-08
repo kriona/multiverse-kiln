@@ -59,10 +59,10 @@ export interface TileDeletions
 	isRemoved(tileId: number): boolean;
 
 	/**
-	 * Keeps the tile to paint the maps with in place of a tile marked to delete, until the tab is saved
+	 * Keeps the tile to paint the areas with in place of a tile marked to delete, until the tab is saved
 	 *
 	 * @param tileId The tile marked to delete
-	 * @param replacementId The tile to paint the maps with, or undefined when no map uses it or the mark is taken back
+	 * @param replacementId The tile to paint the areas with, or undefined when no area uses it or the mark is taken back
 	 */
 	setReplacement(tileId: number, replacementId: number | undefined): void;
 }
@@ -157,9 +157,9 @@ export class TileDialog
 	private editable = false;
 
 	/**
-	 * @param api The editor's API, for which maps use a tile being deleted
+	 * @param api The editor's API, for which areas use a tile being deleted
 	 * @param uploads The tab's uploaded tilesets, which the graphic list offers, and their staged changes
-	 * @param deletions The tab's tiles marked to delete, and the tiles chosen to replace them on the maps
+	 * @param deletions The tab's tiles marked to delete, and the tiles chosen to replace them in the areas
 	 */
 	constructor(api: EditorApi, private readonly uploads: TilesetUploads, private readonly deletions: TileDeletions)
 	{
@@ -523,7 +523,7 @@ export class TileDialog
 
 	/**
 	 * Marks a custom tile to delete, or an edited default tile to restore, when the tab is saved; or takes
-	 * that back. Deleting a custom tile asks first (TileDeleteDialog), and when maps use it, which tile to
+	 * that back. Deleting a custom tile asks first (TileDeleteDialog), and when areas use it, which tile to
 	 * paint them with instead
 	 */
 	private remove(): void
@@ -545,7 +545,7 @@ export class TileDialog
 			return;
 		}
 
-		// Restoring an edited default tile loses only the universe's changes to it, and keeps it on the maps
+		// Restoring an edited default tile loses only the universe's changes to it, and keeps it in the areas
 		if (!tile.custom)
 		{
 			edit.remove();

@@ -4,9 +4,9 @@
  * Times are seconds of game time. A group's clock counts the seconds that have passed since its world
  * began, and the time of day is where that falls in a day of DAY_SECONDS. Some passages of time ignore
  * the clock: a fixed time of day, real time from the Unix epoch (the lobby's) and faerie time, which
- * comes from where a cell is on the map
+ * comes from where a cell is in its area
  */
-import { positiveModulo, type MapBounds } from './maps.js';
+import { positiveModulo, type AreaBounds } from './areaCells.js';
 import type { AreaLightLevel, AreaPassageOfTime, FaerieMorning, LobbyPassageOfTime, PassageOfTime } from './universes.js';
 
 /**
@@ -46,7 +46,7 @@ const TWILIGHT_SECONDS = 2 * 60 * 60;
  *
  * - flows_normally: from the group's clock
  * - always_dawn, always_noon, always_dusk and always_midnight: the same time forever
- * - faerie: from where a cell is on the map, with morning on one side
+ * - faerie: from where a cell is in its area, with morning on one side
  * - real_time: from the Unix epoch, with a day of dayHours real hours (the lobby's only)
  */
 export type AreaTime =
@@ -188,11 +188,11 @@ function toAreaTime(passageOfTime: PassageOfTime, faerieMorning: FaerieMorning |
  * @param time The area's time setting
  * @param clockSeconds The group's clock, used when time flows normally; 0 in the lobby
  * @param nowMilliseconds The real time as milliseconds since the Unix epoch, used for real_time
- * @param cell Where on the map, used for faerie time
- * @param bounds The area's map, used for faerie time
+ * @param cell Where in the area, used for faerie time
+ * @param bounds The area's bounds, used for faerie time
  * @return Seconds since midnight, from 0 up to DAY_SECONDS
  */
-export function secondOfDay(time: AreaTime, clockSeconds: number, nowMilliseconds: number, cell: { column: number; row: number }, bounds: MapBounds): number
+export function secondOfDay(time: AreaTime, clockSeconds: number, nowMilliseconds: number, cell: { column: number; row: number }, bounds: AreaBounds): number
 {
 	switch (time.passage)
 	{
@@ -229,10 +229,10 @@ export function secondOfDay(time: AreaTime, clockSeconds: number, nowMillisecond
  *
  * @param morning Where morning is
  * @param cell The cell
- * @param bounds The map
+ * @param bounds The area's bounds
  * @return 0 where morning is, up to 1 at the furthest point
  */
-export function faerieDistance(morning: FaerieMorning, cell: { column: number; row: number }, bounds: MapBounds): number
+export function faerieDistance(morning: FaerieMorning, cell: { column: number; row: number }, bounds: AreaBounds): number
 {
 	const west = fractionAcross(cell.column, bounds.minColumn, bounds.maxColumn);
 	const north = fractionAcross(cell.row, bounds.minRow, bounds.maxRow);

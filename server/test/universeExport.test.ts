@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, VOID_CELL, type EditableUniverse, type ExportedMap, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, VOID_CELL, type EditableUniverse, type ExportedAreaCells, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
 
 import { readZip } from '../src/archives/zip.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
@@ -147,29 +147,29 @@ describe('exporting a universe', () =>
 
 		assert.ok(files.get(`tilesets/${graphicId}.png`)?.equals(stored));
 
-		// Each area's map is a file of its own, holding only the chunks that differ from its default tile
+		// Each area's cells are a file of their own, holding only the chunks that differ from its default tile
 		const cave = manifest.areas?.find((area) => (area.id === caveId));
 		const lobby = manifest.areas?.find((area) => (area.name === 'Lobby'));
 
 		assert.deepStrictEqual(manifest.areas?.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
 		assert.ok(cave && lobby);
-		assert.strictEqual(cave.map, `areas/${caveId}.json`);
+		assert.strictEqual(cave.file, `areas/${caveId}.json`);
 		assert.deepStrictEqual(lobby.links, [{ column: 1, row: 0, targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true }]);
 
-		const mapText = files.get(cave.map)?.toString('utf8') ?? '';
-		const lobbyMapText = files.get(lobby.map)?.toString('utf8') ?? '';
-		const map = JSON.parse(mapText) as ExportedMap;
-		const lobbyMap = JSON.parse(lobbyMapText) as ExportedMap;
+		const cellsText = files.get(cave.file)?.toString('utf8') ?? '';
+		const lobbyCellsText = files.get(lobby.file)?.toString('utf8') ?? '';
+		const cells = JSON.parse(cellsText) as ExportedAreaCells;
+		const lobbyCells = JSON.parse(lobbyCellsText) as ExportedAreaCells;
 
 		// Each chunk is on a line of its own, in one line of JSON
-		assert.strictEqual(mapText, `{\n\t"chunkSize": 32,\n\t"chunks": [\n\t\t${JSON.stringify(map.chunks[0])},\n\t\t${JSON.stringify(map.chunks[1])}\n\t]\n}\n`);
-		assert.strictEqual(lobbyMapText, '{\n\t"chunkSize": 32,\n\t"chunks": []\n}\n');
+		assert.strictEqual(cellsText, `{\n\t"chunkSize": 32,\n\t"chunks": [\n\t\t${JSON.stringify(cells.chunks[0])},\n\t\t${JSON.stringify(cells.chunks[1])}\n\t]\n}\n`);
+		assert.strictEqual(lobbyCellsText, '{\n\t"chunkSize": 32,\n\t"chunks": []\n}\n');
 
-		assert.strictEqual(map.chunkSize, 32);
-		assert.deepStrictEqual(map.chunks.map((chunk) => [chunk.chunkColumn, chunk.chunkRow]), [[0, -1], [0, 0]]);
-		assert.strictEqual(map.chunks[0].cells[(29 * 32) + 12], VOID_CELL);
-		assert.strictEqual(map.chunks[1].cells[0], mossId);
-		assert.deepStrictEqual(lobbyMap.chunks, []);
+		assert.strictEqual(cells.chunkSize, 32);
+		assert.deepStrictEqual(cells.chunks.map((chunk) => [chunk.chunkColumn, chunk.chunkRow]), [[0, -1], [0, 0]]);
+		assert.strictEqual(cells.chunks[0].cells[(29 * 32) + 12], VOID_CELL);
+		assert.strictEqual(cells.chunks[1].cells[0], mossId);
+		assert.deepStrictEqual(lobbyCells.chunks, []);
 
 		assert.deepStrictEqual(manifest.translatorNotes, [{ kind: 'area', thingId: caveId, field: 'name', note: 'A dark place' }]);
 		assert.deepStrictEqual(manifest.noTranslation, [{ kind: 'universe', thingId: universeId, field: 'name' }]);
@@ -247,9 +247,9 @@ describe('exporting a universe', () =>
 		assert.notStrictEqual(draftCave.id, caveId);
 		assert.notStrictEqual(draftMoss.id, mossId);
 
-		const map = JSON.parse(files.get(draftCave.map)?.toString('utf8') ?? '') as ExportedMap;
+		const cells = JSON.parse(files.get(draftCave.file)?.toString('utf8') ?? '') as ExportedAreaCells;
 
-		assert.strictEqual(map.chunks[1].cells[0], draftMoss.id);
+		assert.strictEqual(cells.chunks[1].cells[0], draftMoss.id);
 		assert.deepStrictEqual(manifest.translations?.entries.map((entry) => entry.thingId), [draftCave.id, draftCave.id]);
 	});
 });

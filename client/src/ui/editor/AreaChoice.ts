@@ -5,7 +5,7 @@ import type { AreaSelectDialog, AreaSelectPurpose } from './AreaSelectDialog';
 import { startingAreaMessages } from './startingAreaMessages';
 
 /**
- * The square an area starts out with, and goes back to when the area is cleared: the middle of a new area's map
+ * The square an area starts out with, and goes back to when the area is cleared: the middle of a new area
  */
 const MIDDLE_CELL: StartingCell = { column: 0, row: 0 };
 

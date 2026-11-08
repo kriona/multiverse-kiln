@@ -204,7 +204,7 @@ describe('Saving editor changes', () =>
 		assert.deepStrictEqual(await customTileNames(ada, universeId), []);
 	});
 
-	it('says what shrinking a map would discard, and shrinks it when told to', async () =>
+	it('says what shrinking an area would discard, and shrinks it when told to', async () =>
 	{
 		const universeId = await createUniverse(ada);
 		const areaId = await createArea(ada, universeId);

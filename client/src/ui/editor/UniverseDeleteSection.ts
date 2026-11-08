@@ -273,7 +273,7 @@ export class UniverseDeleteSection
 			}),
 			t({
 				id: 'editor.universeDelete.worldContents',
-				defaultMessage: 'Its areas and their maps, tilesets and uploads, items, races, classes, translations',
+				defaultMessage: 'Its areas and their cells, tilesets and uploads, items, races, classes, translations',
 				description: 'In the list of what deleting a universe deletes, in the first dialog that deletes it: what its world holds, after the item for its world'
 			})
 		];

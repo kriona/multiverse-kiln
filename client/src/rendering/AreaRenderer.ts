@@ -15,12 +15,12 @@ const VOID_COLOR = 0x000000;
 const GRID_LINE_ALPHA = 0.2;
 
 /**
- * How far beyond the camera's view, in world units, pieces of the map are drawn, so they are ready before they scroll in
+ * How far beyond the camera's view, in world units, pieces of the area are drawn, so they are ready before they scroll in
  */
 const DRAW_MARGIN = GRID_CELL_SIZE * 4;
 
 /**
- * Width and height of one drawn piece of the map, in world units
+ * Width and height of one drawn piece of the area, in world units
  */
 const PIECE_SIZE = CHUNK_SIZE * GRID_CELL_SIZE;
 
@@ -57,7 +57,7 @@ const CORNER_CELLS = [
 ] as const;
 
 /**
- * Depth of the map's tiles
+ * Depth of the area's tiles
  */
 const GROUND_DEPTH = -1;
 
@@ -72,7 +72,7 @@ const WALLS_DEPTH = -0.95;
 const GRID_DEPTH = -0.9;
 
 /**
- * Depth of the overhang (see Piece): over the players (0), under the map scene's fog and night
+ * Depth of the overhang (see Piece): over the players (0), under the area scene's fog and night
  */
 const OVERHANG_DEPTH = 0.2;
 
@@ -114,7 +114,7 @@ interface Corner
 	drawables: number[];
 
 	/**
-	 * The bits of the quarters past the map's edges, which are cut off
+	 * The bits of the quarters past the area's edges, which are cut off
 	 */
 	cutOff: number;
 }
@@ -125,7 +125,7 @@ interface Corner
 type FrameLayer = 'ground' | 'overhang';
 
 /**
- * One drawn piece of the map
+ * One drawn piece of the area
  */
 interface Piece
 {
@@ -172,9 +172,9 @@ interface Piece
  * them is drawn as the area's default tile
  *
  * Pieces are laid out in world units the way the camera sees them, and each one is filled from the
- * area's cells: on an area that loops, a piece past an edge is filled from the far side, so the map
+ * area's cells: on an area that loops, a piece past an edge is filled from the far side, so the area
  * carries on seamlessly. Past an edge that doesn't loop, the cells on the edge carry on under it and are
- * then cut off, so the map ends square. Pieces that fall out of view are dropped
+ * then cut off, so the area ends square. Pieces that fall out of view are dropped
  */
 export class AreaRenderer
 {
@@ -284,7 +284,7 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws the pieces of the map the camera can see, or nearly, and drops the rest
+	 * Draws the pieces of the area the camera can see, or nearly, and drops the rest
 	 *
 	 * @param view The camera's view of the world
 	 */
@@ -331,7 +331,7 @@ export class AreaRenderer
 	 * Redraws single cells whose tiles have changed, in place, in every piece showing them; cheaper than
 	 * refreshChunks() for a few cells, such as those a group has just seen
 	 *
-	 * @param cells The cells, on the map
+	 * @param cells The cells, in the area
 	 */
 	refreshCells(cells: readonly { column: number; row: number }[]): void
 	{
@@ -434,7 +434,7 @@ export class AreaRenderer
 	 * A tile with a blob graphic goes in wallImages instead, and its cells are drawn as the area's default
 	 * tile, or as the void when that is a blob tile too
 	 *
-	 * @param tiles The tiles the area's map can use
+	 * @param tiles The tiles the area's cells can use
 	 * @return The void, then each tile, with its index in drawableIndexes
 	 */
 	private rankDrawables(tiles: readonly AreaTile[]): Drawable[]
@@ -486,7 +486,7 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws the pieces of the map in or near a view, and drops the rest
+	 * Draws the pieces of the area in or near a view, and drops the rest
 	 *
 	 * @param view The camera's view of the world
 	 */
@@ -596,7 +596,7 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws one piece of the map: its frames, the walls over them, the grid's lines over the cells, and the overhang
+	 * Draws one piece of the area: its frames, the walls over them, the grid's lines over the cells, and the overhang
 	 *
 	 * @param pieceColumn The piece's column: its position in world units divided by PIECE_SIZE
 	 * @param pieceRow The piece's row
@@ -645,7 +645,7 @@ export class AreaRenderer
 
 				frameRow.push(this.frameOf(corner, 'ground'));
 				overhangRow.push(this.frameOf(corner, 'overhang'));
-				lineRow.push((this.isOnMap(column, row) ? GRID_FRAME : EMPTY_INDEX));
+				lineRow.push((this.isInArea(column, row) ? GRID_FRAME : EMPTY_INDEX));
 
 				if (walls)
 				{
@@ -672,13 +672,13 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Whether a cell as the camera sees it is on the map, once wrapped on an area that loops
+	 * Whether a cell as the camera sees it is in the area, once wrapped on an area that loops
 	 *
 	 * @param column The cell's column, which on a looping area may be past an edge
 	 * @param row The cell's row, likewise
 	 * @return True when the cell is part of the area
 	 */
-	private isOnMap(column: number, row: number): boolean
+	private isInArea(column: number, row: number): boolean
 	{
 		const { bounds } = this.area;
 
@@ -691,7 +691,7 @@ export class AreaRenderer
 	 * @param column The corner's column: it is the top-left corner of the cell in that column and row
 	 * @param row The corner's row
 	 * @param chunks Collects the keys of the chunks the corner's cells are drawn from
-	 * @return Its cells' drawables, or undefined for a corner with no cell of the map around it
+	 * @return Its cells' drawables, or undefined for a corner with no cell of the area around it
 	 */
 	private cornerAt(column: number, row: number, chunks: Set<string>): Corner | undefined
 	{
@@ -749,16 +749,16 @@ export class AreaRenderer
 	 * the first time it appears
 	 *
 	 * Each neighbor holding the same tile joins the wall to it. Past an edge that doesn't loop, the cell
-	 * on the edge carries on, so a wall along the edge runs on off the map
+	 * on the edge carries on, so a wall along the edge runs on out of the area
 	 *
 	 * @param column The cell's column, which on a looping area may be past an edge
 	 * @param row The cell's row, likewise
 	 * @param chunks Collects the keys of the chunks the cell and its neighbors are drawn from
-	 * @return Its index in the atlas, or EMPTY_INDEX when the cell isn't on the map or has no blob graphic
+	 * @return Its index in the atlas, or EMPTY_INDEX when the cell isn't in the area or has no blob graphic
 	 */
 	private wallFrameAt(column: number, row: number, chunks: Set<string>): number
 	{
-		if (!this.isOnMap(column, row))
+		if (!this.isInArea(column, row))
 		{
 			return(EMPTY_INDEX);
 		}
@@ -845,7 +845,7 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws a corner's frame into the atlas, then cuts off the quarters past the map's edges
+	 * Draws a corner's frame into the atlas, then cuts off the quarters past the area's edges
 	 *
 	 * The ground frame draws each of the corner's tiles from the lowest-ranked up, over the corners it or
 	 * a higher-ranked tile holds. The overhang frame does the same with only the tiles that overhang, and
@@ -913,10 +913,10 @@ export class AreaRenderer
 	}
 
 	/**
-	 * A column as the camera sees it, on the map: wrapped on an area that loops east-west
+	 * A column as the camera sees it, in the area: wrapped on an area that loops east-west
 	 *
 	 * @param column The column, which on a looping area may be past an edge
-	 * @return The column on the map, or the same column on an area that doesn't loop
+	 * @return The column in the area, or the same column on an area that doesn't loop
 	 */
 	private wrapColumn(column: number): number
 	{
@@ -926,10 +926,10 @@ export class AreaRenderer
 	}
 
 	/**
-	 * A row as the camera sees it, on the map: wrapped on an area that loops north-south
+	 * A row as the camera sees it, in the area: wrapped on an area that loops north-south
 	 *
 	 * @param row The row, which on a looping area may be past an edge
-	 * @return The row on the map, or the same row on an area that doesn't loop
+	 * @return The row in the area, or the same row on an area that doesn't loop
 	 */
 	private wrapRow(row: number): number
 	{

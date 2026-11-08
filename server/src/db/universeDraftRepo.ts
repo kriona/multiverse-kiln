@@ -18,7 +18,7 @@ import type { PgTable } from 'drizzle-orm/pg-core';
 import type { UniverseTextKind } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { areaLinks, areas, classes, classRaceAreas, classStartingItems, difficultyLevels, items, mapChunks, pf1eClasses, pf1eRaces, pf1eSettings, races, raceStartingItems, sf1eClasses, sf1eRaces, sf1eSettings, sf1eThemes, themes, tileGraphics, tiles, universeDrafts, universes, universeStartingItems, universeTranslations, universeTranslatorNotes } from './schema.js';
+import { areaChunks, areaLinks, areas, classes, classRaceAreas, classStartingItems, difficultyLevels, items, pf1eClasses, pf1eRaces, pf1eSettings, races, raceStartingItems, sf1eClasses, sf1eRaces, sf1eSettings, sf1eThemes, themes, tileGraphics, tiles, universeDrafts, universes, universeStartingItems, universeTranslations, universeTranslatorNotes } from './schema.js';
 import { findUnusedStorageKeys } from './tileGraphicRepo.js';
 
 /**
@@ -58,7 +58,7 @@ const CHILD_TABLES: readonly { child: PgTable; column: string; parent: CopiedTab
 	{ child: classStartingItems, column: 'class_id', parent: classes, key: ['item_id'] },
 	{ child: classRaceAreas, column: 'class_id', parent: classes, key: ['race_id'] },
 	{ child: sf1eThemes, column: 'theme_id', parent: themes, key: [] },
-	{ child: mapChunks, column: 'area_id', parent: areas, key: ['layer', 'chunk_column', 'chunk_row'] },
+	{ child: areaChunks, column: 'area_id', parent: areas, key: ['layer', 'chunk_column', 'chunk_row'] },
 	{ child: areaLinks, column: 'area_id', parent: areas, key: ['column', 'row'] }
 ];
 
@@ -184,7 +184,7 @@ function liveIdOf(target: CopiedTable, universeId: string, value: SQL): SQL
 }
 
 /**
- * The tiles a map chunk's cells name that remapping replaces: the live tiles the draft has copies of, or
+ * The tiles an area chunk's cells name that remapping replaces: the live tiles the draft has copies of, or
  * those copies
  *
  * @param universeId The universe's ID
@@ -197,7 +197,7 @@ function remappedTileIds(universeId: string, toDraft: boolean): SQL
 }
 
 /**
- * A map chunk's cells with each tile the draft has a copy of replaced by its copy, or by its live row.
+ * An area chunk's cells with each tile the draft has a copy of replaced by its copy, or by its live row.
  * Chunks that name none of those tiles, such as those painted only with the ruleset's defaults, are
  * returned as they are without going through their cells
  *
@@ -262,7 +262,7 @@ function remappedColumn(table: PgTable, name: string, alias: string, universeId:
 	{
 		return((toDraft ? draftIdOf(reference.target, universeId, value) : liveIdOf(reference.target, universeId, value)));
 	}
-	else if ((table === mapChunks) && (name === 'cells'))
+	else if ((table === areaChunks) && (name === 'cells'))
 	{
 		return(remappedCells(universeId, value, toDraft));
 	}
@@ -296,7 +296,7 @@ function sameValues(table: PgTable, names: readonly string[], universeId: string
 
 		// Cells equal as they are stay equal once the draft's are remapped, since a live chunk names none of
 		// the draft's tiles. Most chunks name only the ruleset's tiles, and this skips remapping them
-		if ((table === mapChunks) && (name === 'cells'))
+		if ((table === areaChunks) && (name === 'cells'))
 		{
 			return(sql`(${columnOf(own, name)} = ${columnOf(other, name)} OR ${columnOf(own, name)} = ${value})`);
 		}
@@ -436,7 +436,7 @@ export async function startDraft(universeId: string, executor: Executor): Promis
 			values[reference.column] = draftIdOf(reference.target, universeId, columnOf('src', reference.column));
 		}
 
-		if (child === mapChunks)
+		if (child === areaChunks)
 		{
 			values.cells = remappedCells(universeId, sql`src.cells`, true);
 		}
@@ -485,7 +485,7 @@ async function findRemoved<Id extends number | string>(table: CopiedTable, unive
  * Applies a universe's draft to its live version, all but removing the live rows the draft doesn't have:
  * each draft row is written into the live row it was copied from, under the live row's ID, and what the
  * draft added becomes live with its own ID. Live rows the draft holds unchanged, such as the chunks of
- * maps it didn't paint, are left as they are. The draft is gone after. Call it inside a transaction holding
+ * areas it didn't paint, are left as they are. The draft is gone after. Call it inside a transaction holding
  * the universe's lock, on a universe with a draft, then deal with the removed rows (removeRows())
  *
  * @param universeId The universe's ID
@@ -537,7 +537,7 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 	// The chunks of the areas the draft added become live as they are, so they are pointed at the live
 	// tiles while those areas are still marked draft and can be found. The other areas' chunks are
 	// remapped as they are merged
-	await executor.execute(sql`UPDATE ${mapChunks} AS d SET cells = ${remappedCells(universeId, sql`d.cells`, false)} WHERE d.area_id IN (SELECT id FROM ${areas} WHERE universe_id = ${universeId} AND draft AND origin_id IS NULL) AND d.cells && ${remappedTileIds(universeId, false)}`);
+	await executor.execute(sql`UPDATE ${areaChunks} AS d SET cells = ${remappedCells(universeId, sql`d.cells`, false)} WHERE d.area_id IN (SELECT id FROM ${areas} WHERE universe_id = ${universeId} AND draft AND origin_id IS NULL) AND d.cells && ${remappedTileIds(universeId, false)}`);
 
 	for (const table of COPIED_TABLES)
 	{

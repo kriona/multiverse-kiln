@@ -41,7 +41,7 @@ The argument is the translation's language tag, e.g. `/translate en-x-pirate`. W
 
 ## Pirate (en-x-pirate)
 
-Pirate is a joke translation that ships with the engine, for testing how languages load and switch. Write it in a playful pirate voice that stays understandable ("Belay that" for Cancel, "chart" for map, "passage" for link), and use the words its existing entries already use for the same things.
+Pirate is a joke translation that ships with the engine, for testing how languages load and switch. Write it in a playful pirate voice that stays understandable ("Belay that" for Cancel, "booty" for items, "passage" for link), and use the words its existing entries already use for the same things.
 
 ## Real languages
 

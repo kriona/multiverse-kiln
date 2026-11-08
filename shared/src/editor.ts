@@ -8,7 +8,7 @@
  */
 import type { OptionName } from './characters.js';
 import type { LocalizedMessage } from './localization.js';
-import type { MapBounds } from './maps.js';
+import type { AreaBounds } from './areaCells.js';
 import type { AreaChunk } from './messages.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
@@ -37,7 +37,7 @@ import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, Passag
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload (canEditWorld())
- * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile (canEditWorld())
+ * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas that use the tile (canEditWorld())
  * - GET    /:universeId/tile-graphics              TileGraphicListPayload: the tile graphics the universe's editors uploaded (canEditWorld())
  * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload (canEditWorld())
  * - GET    /:universeId/races                      RaceListPayload (canEditWorld())
@@ -177,9 +177,9 @@ export const MAX_AREA_NAME_LENGTH = 60;
 export const MAX_AREAS = 1000;
 
 /**
- * The map a new area starts with: one screen's worth of cells around column 0, row 0
+ * The bounds a new area starts with: one screen's worth of cells around column 0, row 0
  */
-export const NEW_AREA_BOUNDS: Readonly<MapBounds> = {
+export const NEW_AREA_BOUNDS: Readonly<AreaBounds> = {
 	minColumn: -15,
 	minRow: -8,
 	maxColumn: 15,
@@ -187,9 +187,9 @@ export const NEW_AREA_BOUNDS: Readonly<MapBounds> = {
 };
 
 /**
- * A cell of a starting area. Characters start on the free cell nearest it; one outside the area's map,
- * which may have been made smaller since the cell was chosen, counts as the nearest cell on it. Column
- * 0, row 0, the middle of a new area's map, until the editor chooses another
+ * A cell of a starting area. Characters start on the free cell nearest it; one outside the area,
+ * which may have been made smaller since the cell was chosen, counts as the nearest cell in it. Column
+ * 0, row 0, the middle of a new area, until the editor chooses another
  */
 export interface StartingCell
 {
@@ -413,7 +413,7 @@ export interface UniverseSettings
 
 	/**
 	 * The area players walk around in the lobby: one of the universe's areas other than a starting area
-	 * (the universe's, a race's or a class's). While it is null or disabled, the lobby has no map, and
+	 * (the universe's, a race's or a class's). While it is null or disabled, the lobby has no area, and
 	 * its players only chat and choose their characters
 	 */
 	lobbyAreaId: string | null;
@@ -855,7 +855,7 @@ export const AUDIT_FIELDS = [
 export type AuditField = typeof AUDIT_FIELDS[number];
 
 /**
- * A place characters start: an area, by its name when saved, and a cell of its map
+ * A place characters start: an area, by its name when saved, and a cell of it
  */
 export interface AuditPlace
 {
@@ -1007,7 +1007,7 @@ export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: A
  * - tile, item, race, class, theme, difficultyLevel: added, changed, deleted, or restored (one of the
  *   ruleset's defaults that had been edited, given its default settings again)
  * - area: added, changed, resized or deleted
- * - cells: cells painted on an area's map (changed)
+ * - cells: cells painted in an area (changed)
  * - links: an area's links, added or replaced (changed) or deleted
  * - translations: translations into one language added, changed or deleted (changed), whose target
  *   holds the language's tag as its name
@@ -1129,7 +1129,7 @@ export interface TileSettings
 
 	/**
 	 * Whether indoor areas can paint with the tile. A tile can be for indoors, outdoors, both or
-	 * neither; one for neither can't be painted anywhere, but maps that already use it keep it
+	 * neither; one for neither can't be painted anywhere, but areas that already use it keep it
 	 */
 	indoors: boolean;
 
@@ -1166,7 +1166,7 @@ export interface TileSettings
 	walkSeconds: number;
 
 	/**
-	 * Whether areas can paint with the tile; maps that already use a disabled tile keep it
+	 * Whether areas can paint with the tile; areas that already use a disabled tile keep it
 	 */
 	enabled: boolean;
 }
@@ -1177,7 +1177,7 @@ export interface TileSettings
 export interface EditorTile extends TileSettings
 {
 	/**
-	 * The ID maps use for the tile. An edited default tile keeps the default tile's ID
+	 * The ID areas' cells use for the tile. An edited default tile keeps the default tile's ID
 	 */
 	id: number;
 
@@ -1305,7 +1305,7 @@ export interface TileListPayload
 }
 
 /**
- * Response of GET EDITOR_UNIVERSES_PATH/:universeId/tiles/:tileId/usage: the areas whose maps use the
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/tiles/:tileId/usage: the areas that use the
  * tile, in a cell or as their default tile, by name
  */
 export interface TileUsagePayload
@@ -1819,13 +1819,13 @@ export interface AreaListPayload
 export interface EditorArea extends AreaSettings
 {
 	id: string;
-	bounds: MapBounds;
+	bounds: AreaBounds;
 }
 
 /**
  * A new area's settings. Settings left out take their defaults: enabled while the universe is
  * in_the_beginning, outdoors, the default tile grass outdoors or wood floor indoors, inherit time, not
- * looping, and a map of NEW_AREA_BOUNDS
+ * looping, and bounds of NEW_AREA_BOUNDS
  */
 export type NewAreaRequest = Pick<AreaSettings, 'name'> & Partial<AreaSettings>;
 
@@ -1836,7 +1836,7 @@ export type NewAreaRequest = Pick<AreaSettings, 'name'> & Partial<AreaSettings>;
 export type AreaSettingsUpdate = Partial<AreaSettings>;
 
 /**
- * What giving an area's map smaller bounds would discard
+ * What giving an area smaller bounds would discard
  */
 export interface ResizeConflict
 {

@@ -2,7 +2,7 @@ import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
 import { areaLight, canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type Sight, type WelcomePayload } from '@multiverse-kiln/shared';
 
-import { chunksNear, type ChunkAreaMap } from '../logic/chunkArea.js';
+import { chunksNear, type ChunkAreaShape } from '../logic/chunkArea.js';
 import { stepSeconds } from '../logic/gameClock.js';
 import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, wrapCell, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
 import { CellOccupancy } from '../logic/occupancy.js';
@@ -14,7 +14,7 @@ import { PlayerSessions } from './playerSessions.js';
 import { toChunkUpdates, toAreaPayload, type ActiveArea, type AreaCache, type AreaMemory } from './areaCache.js';
 
 /**
- * Simulation ticks per second, in every room with a map
+ * Simulation ticks per second, in every room with areas
  */
 export const SIMULATION_TICK_RATE = 30;
 
@@ -53,7 +53,7 @@ const standingStill: MovePayload = { x: 0, y: 0 };
 const anyCell: IsCellFree = () => true;
 
 /**
- * How a player shows on the map, and how far they see (see visionBudget)
+ * How a player shows in the area, and how far they see (see visionBudget)
  */
 export interface Appearance extends Sight
 {
@@ -85,7 +85,7 @@ export interface RoomVision
 	clockSeconds(): number;
 
 	/**
-	 * What the group has seen, in a group's room: its clients are sent only those cells of the map, and
+	 * What the group has seen, in a group's room: its clients are sent only those cells of the area, and
 	 * the links on them
 	 */
 	memory?: AreaMemory;
@@ -158,7 +158,7 @@ export interface PlayerSight
 }
 
 /**
- * The players on the map of a room with areas (a universe's lobby or a group's game room): which
+ * The players in a room with areas (a universe's lobby or a group's game room): which
  * clients control them, which area each is in, how they move, and which of them each client sees
  *
  * Each client controls one player (see PlayerSessions), and can be switched to another (control()).
@@ -172,7 +172,7 @@ export interface PlayerSight
  * WholeGroupLinks). The room calls update() from its simulation tick and refreshChunks() every
  * CHUNK_REFRESH_INTERVAL_MS
  *
- * Only the chunks of each area's map near its players are loaded, and each player is sent the chunks
+ * Only the chunks of each area near its players are loaded, and each player is sent the chunks
  * near them as they move. Changes the world editor makes (applyChange) reach the players immediately
  */
 export class AreaPlayers
@@ -240,7 +240,7 @@ export class AreaPlayers
 	}
 
 	/**
-	 * The clients of the players in an area who have been sent a chunk of its map, for telling them
+	 * The clients of the players in an area who have been sent a chunk of it, for telling them
 	 * about cells of it
 	 *
 	 * @param areaId The area's ID
@@ -255,7 +255,7 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Where each player on the map who isn't a ghost looks from and how far they see, leaving out those
+	 * Where each player in an area who isn't a ghost looks from and how far they see, leaving out those
 	 * on their way to another area
 	 *
 	 * @return Their sights
@@ -297,7 +297,7 @@ export class AreaPlayers
 	{
 		const areaId = area.loaded.area.id;
 
-		await this.areas.loadChunks(areaId, chunksNear([near], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+		await this.areas.loadChunks(areaId, chunksNear([near], CHUNK_LOAD_RADIUS, chunkShapeOf(area)));
 
 		return(((this.areas.get(areaId) === area) ? area : undefined));
 	}
@@ -341,7 +341,7 @@ export class AreaPlayers
 	 * Adds a joining client controlling a player. A player new to the room is first placed on the free
 	 * cell nearest a cell of the start area; a player already here gets another window. Either way the
 	 * client is told which player it controls and which area it is in. Without a start area, as in a
-	 * lobby with no map, a new player is in no area until placeAll()
+	 * lobby with no area, a new player is in no area until placeAll()
 	 *
 	 * @param client The joining client
 	 * @param playerId The player the client controls
@@ -439,10 +439,10 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Takes every player off the map, keeping the clients that control them, as when a lobby loses its
-	 * map. Players stay in no area until placeAll()
+	 * Takes every player out of their area, keeping the clients that control them, as when a lobby loses
+	 * its area. Players stay in no area until placeAll()
 	 */
-	clearMap(): void
+	clearArea(): void
 	{
 		this.stopAll();
 		this.areaIds.clear();
@@ -456,7 +456,7 @@ export class AreaPlayers
 
 	/**
 	 * Puts every player that clients control on the free cell nearest a cell of an area, wherever they
-	 * were, as when a lobby gets a map or moves to another, and sends their clients the area
+	 * were, as when a lobby gets an area or moves to another, and sends their clients the area
 	 *
 	 * @param area The area, as prepareStart() returned it for the cell
 	 * @param near The cell to start nearest
@@ -466,7 +466,7 @@ export class AreaPlayers
 	{
 		const playerIds = this.sessions.getPlayerIds();
 
-		this.clearMap();
+		this.clearArea();
 
 		for (const playerId of playerIds)
 		{
@@ -600,7 +600,7 @@ export class AreaPlayers
 			return;
 		}
 
-		const link = linkAt(area.map, cellAt(player, area.grid));
+		const link = linkAt(area.layout, cellAt(player, area.grid));
 
 		if (link?.mode === 'manual')
 		{
@@ -735,7 +735,7 @@ export class AreaPlayers
 				}
 			}
 
-			const link = (mover.stoppedAt ? linkAt(area.map, mover.stoppedAt) : undefined);
+			const link = (mover.stoppedAt ? linkAt(area.layout, mover.stoppedAt) : undefined);
 
 			if (link)
 			{
@@ -760,16 +760,16 @@ export class AreaPlayers
 			const cells = playerIds
 				.map((playerId) => this.cellOf(playerId, area))
 				.filter((cell) => (cell !== undefined));
-			const chunkMap = chunkMapOf(area);
+			const chunkShape = chunkShapeOf(area);
 
-			this.areas.dropChunks(areaId, chunksNear(cells, CHUNK_KEEP_RADIUS, chunkMap));
+			this.areas.dropChunks(areaId, chunksNear(cells, CHUNK_KEEP_RADIUS, chunkShape));
 
 			for (const playerId of playerIds)
 			{
 				this.sendNearbyChunks(playerId, area);
 			}
 
-			this.areas.loadChunks(areaId, chunksNear(cells, CHUNK_LOAD_RADIUS, chunkMap)).then((loaded) =>
+			this.areas.loadChunks(areaId, chunksNear(cells, CHUNK_LOAD_RADIUS, chunkShape)).then((loaded) =>
 			{
 				const current = this.areas.get(areaId);
 
@@ -919,7 +919,7 @@ export class AreaPlayers
 			}
 		}
 
-		await this.areas.loadChunks(areaId, chunksNear([...targets.values()], CHUNK_LOAD_RADIUS, chunkMapOf(area)));
+		await this.areas.loadChunks(areaId, chunksNear([...targets.values()], CHUNK_LOAD_RADIUS, chunkShapeOf(area)));
 
 		const current = this.areas.get(areaId);
 
@@ -939,7 +939,7 @@ export class AreaPlayers
 
 			const cell = cellAt(player, current.grid);
 
-			// The step under way may lead off the new map, so every player starts afresh from a cell center
+			// The step under way may lead outside the new bounds, so every player starts afresh from a cell center
 			this.steps.delete(playerId);
 			this.presses.delete(playerId);
 
@@ -1072,7 +1072,7 @@ export class AreaPlayers
 			{
 				if (target)
 				{
-					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkMapOf(target)));
+					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkShapeOf(target)));
 				}
 
 				this.arrive(playerId, link, this.areas.get(link.targetAreaId), intoDisabled);
@@ -1159,7 +1159,7 @@ export class AreaPlayers
 			return;
 		}
 
-		const kept = chunksNear([cell], CHUNK_KEEP_RADIUS, chunkMapOf(area));
+		const kept = chunksNear([cell], CHUNK_KEEP_RADIUS, chunkShapeOf(area));
 
 		for (const key of [...sent])
 		{
@@ -1221,7 +1221,7 @@ export class AreaPlayers
 			return([]);
 		}
 
-		return([...chunksNear([cell], CHUNK_LOAD_RADIUS, chunkMapOf(area))].filter((key) => area.loadedChunks.has(key)));
+		return([...chunksNear([cell], CHUNK_LOAD_RADIUS, chunkShapeOf(area))].filter((key) => area.loadedChunks.has(key)));
 	}
 
 	/**
@@ -1463,12 +1463,12 @@ export class AreaPlayers
 }
 
 /**
- * An area's map as chunksNear needs it
+ * An area's shape as chunksNear needs it
  *
  * @param area The area
  * @return Its bounds and whether it loops
  */
-function chunkMapOf(area: ActiveArea): ChunkAreaMap
+function chunkShapeOf(area: ActiveArea): ChunkAreaShape
 {
 	return({
 		bounds: area.loaded.bounds,

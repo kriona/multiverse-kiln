@@ -10,7 +10,7 @@ export const BRUSH_SHAPES = ['square', 'circle'] as const;
 export type BrushShape = typeof BRUSH_SHAPES[number];
 
 /**
- * A cell of a map
+ * A cell of an area
  */
 export interface BrushCell
 {

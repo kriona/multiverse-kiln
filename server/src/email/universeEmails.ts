@@ -133,7 +133,7 @@ export function roleGivenEmail(given: RoleGiven, name: string, locale: string): 
 			}),
 			translator.format({
 				id: 'email.roleGiven.whatItAllows',
-				defaultMessage: '{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe\'s world: its tiles, items, areas, maps and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe\'s text into the languages you were given.}}',
+				defaultMessage: '{role, select, creator {As a creator you can change everything about the universe, including who else works on it.} builder {As a builder you can change the universe\'s world: its tiles, items, areas and links.} beta_tester {As a beta tester you can play the universe before it opens to everyone.} other {As a translator you can translate the universe\'s text into the languages you were given.}}',
 				description: 'Second paragraph of the email sent when a player is given a role in a universe, saying what the role lets them do; {role} chooses the sentence and isn\'t shown'
 			}, {
 				role: given.role

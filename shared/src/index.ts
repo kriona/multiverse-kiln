@@ -12,7 +12,7 @@ export * from './fieldMerge.js';
 export * from './groups.js';
 export * from './items.js';
 export * from './localization.js';
-export * from './maps.js';
+export * from './areaCells.js';
 export * from './messages.js';
 export * from './money.js';
 export * from './names.js';

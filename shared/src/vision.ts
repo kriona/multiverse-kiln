@@ -12,7 +12,7 @@
  * each client is shown, and the client to draw fog over the cells out of sight
  */
 import { defineMessages, type MessageDescriptor } from './localization.js';
-import { isInBounds, nearestCopy, positiveModulo, tileIdAt, type AreaTiles, type MapBounds } from './maps.js';
+import { isInBounds, nearestCopy, positiveModulo, tileIdAt, type AreaBounds, type AreaTiles } from './areaCells.js';
 
 /**
  * How well a race sees in the dark: not at all, darkvision (60 feet) or superior darkvision (120 feet)
@@ -78,16 +78,16 @@ export const LIGHT_SENSITIVE_VISION_SHARE = 0.5;
 export const OPAQUE_VISION_COST = 100;
 
 /**
- * Everything about an area's map that vision depends on
+ * Everything about an area that vision depends on
  */
-export interface VisionMap
+export interface VisionArea
 {
-	bounds: MapBounds;
+	bounds: AreaBounds;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 
 	/**
-	 * How much harder a cell on the map is to see past, in percent: 0 is clear, 50 spends twice as much
+	 * How much harder a cell of the area is to see past, in percent: 0 is clear, 50 spends twice as much
 	 * of the budget, and OPAQUE_VISION_COST can't be seen past
 	 *
 	 * @param column The cell's column, inside the bounds
@@ -98,7 +98,7 @@ export interface VisionMap
 }
 
 /**
- * A cell of a map
+ * A cell of an area
  */
 export interface VisionCell
 {
@@ -108,15 +108,15 @@ export interface VisionCell
 
 /**
  * An area's tiles as vision sees them. A void cell is nothing at all, so it is seen past, as are a cell
- * holding a tile the map doesn't know and a cell the client hasn't been sent (UNSEEN_CELL)
+ * holding a tile the area doesn't know and a cell the client hasn't been sent (UNSEEN_CELL)
  *
  * @param tiles The area's tiles
  * @param loopsEastWest Whether the area loops east-west
  * @param loopsNorthSouth Whether the area loops north-south
- * @param tileVisionCosts The vision cost of each tile the map can use, by tile ID
- * @return The map
+ * @param tileVisionCosts The vision cost of each tile the area can use, by tile ID
+ * @return The area as vision sees it
  */
-export function createVisionMap(tiles: AreaTiles, loopsEastWest: boolean, loopsNorthSouth: boolean, tileVisionCosts: ReadonlyMap<number, number>): VisionMap
+export function createVisionArea(tiles: AreaTiles, loopsEastWest: boolean, loopsNorthSouth: boolean, tileVisionCosts: ReadonlyMap<number, number>): VisionArea
 {
 	return({
 		bounds: tiles.bounds,
@@ -204,22 +204,22 @@ export function visionBudget(light: number, sight: Sight, fullVision: boolean): 
  * @param from The character's cell
  * @param to The cell to look at
  * @param budget The character's vision budget (visionBudget)
- * @param map The map
- * @return True when the cell is on the map and seen (see isSeen); on a map that loops, along the
+ * @param area The area
+ * @return True when the cell is inside the area and seen (see isSeen); in an area that loops, along the
  * shorter way round
  */
-export function canSee(from: VisionCell, to: VisionCell, budget: number, map: VisionMap): boolean
+export function canSee(from: VisionCell, to: VisionCell, budget: number, area: VisionArea): boolean
 {
-	if (!isInBounds(map.bounds, to.column, to.row))
+	if (!isInBounds(area.bounds, to.column, to.row))
 	{
 		return(false);
 	}
 
-	const { width, height } = sizeOf(map.bounds);
-	const column = (map.loopsEastWest ? nearestCopy(to.column, from.column, width) : to.column);
-	const row = (map.loopsNorthSouth ? nearestCopy(to.row, from.row, height) : to.row);
+	const { width, height } = sizeOf(area.bounds);
+	const column = (area.loopsEastWest ? nearestCopy(to.column, from.column, width) : to.column);
+	const row = (area.loopsNorthSouth ? nearestCopy(to.row, from.row, height) : to.row);
 
-	return(isSeen(from, column - from.column, row - from.row, budget, map));
+	return(isSeen(from, column - from.column, row - from.row, budget, area));
 }
 
 /**
@@ -227,10 +227,10 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, map: Vi
  *
  * @param from The character's cell
  * @param budget The character's vision budget (visionBudget)
- * @param map The map
- * @return The cells, as "column,row" (visionKey); on a map that loops, as the cells on the map
+ * @param area The area
+ * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area
  */
-export function visibleCells(from: VisionCell, budget: number, map: VisionMap): Set<string>
+export function visibleCells(from: VisionCell, budget: number, area: VisionArea): Set<string>
 {
 	const visible = new Set<string>();
 	const reach = Math.floor(budget);
@@ -239,9 +239,9 @@ export function visibleCells(from: VisionCell, budget: number, map: VisionMap): 
 	{
 		for (let columns = -reach; columns <= reach; columns++)
 		{
-			const cell = wrap({ column: from.column + columns, row: from.row + rows }, map);
+			const cell = wrap({ column: from.column + columns, row: from.row + rows }, area);
 
-			if (isInBounds(map.bounds, cell.column, cell.row) && isSeen(from, columns, rows, budget, map))
+			if (isInBounds(area.bounds, cell.column, cell.row) && isSeen(from, columns, rows, budget, area))
 			{
 				visible.add(visionKey(cell.column, cell.row));
 			}
@@ -277,19 +277,19 @@ export function visionKey(column: number, row: number): string
  * @param columns How many columns away the other cell is, which may be past a looping edge
  * @param rows How many rows away the other cell is, likewise
  * @param budget The vision budget
- * @param map The map
+ * @param area The area
  * @return True when the other cell can be seen
  */
-function isSeen(from: VisionCell, columns: number, rows: number, budget: number, map: VisionMap): boolean
+function isSeen(from: VisionCell, columns: number, rows: number, budget: number, area: VisionArea): boolean
 {
-	if (isInSight(from, columns, rows, budget, map))
+	if (isInSight(from, columns, rows, budget, area))
 	{
 		return(true);
 	}
 
 	const target = { column: from.column + columns, row: from.row + rows };
 
-	if ((visionCostAt(target, map) < OPAQUE_VISION_COST) || (shortestDistance(columns, rows) > budget))
+	if ((visionCostAt(target, area) < OPAQUE_VISION_COST) || (shortestDistance(columns, rows) > budget))
 	{
 		return(false);
 	}
@@ -300,7 +300,7 @@ function isSeen(from: VisionCell, columns: number, rows: number, budget: number,
 		{
 			const beside = { column: target.column + columnStep, row: target.row + rowStep };
 
-			if (((columnStep !== 0) || (rowStep !== 0)) && isCornerOrSide(target, columnStep, rowStep, map) && (visionCostAt(beside, map) < OPAQUE_VISION_COST) && isInSight(from, columns + columnStep, rows + rowStep, budget, map))
+			if (((columnStep !== 0) || (rowStep !== 0)) && isCornerOrSide(target, columnStep, rowStep, area) && (visionCostAt(beside, area) < OPAQUE_VISION_COST) && isInSight(from, columns + columnStep, rows + rowStep, budget, area))
 			{
 				return(true);
 			}
@@ -317,17 +317,17 @@ function isSeen(from: VisionCell, columns: number, rows: number, budget: number,
  * @param wall The wall's cell
  * @param columnStep How many columns the other cell is from the wall: -1, 0 or 1
  * @param rowStep How many rows the other cell is from the wall: -1, 0 or 1
- * @param map The map
+ * @param area The area
  * @return True when the other cell is on the wall's side or at an inside corner
  */
-function isCornerOrSide(wall: VisionCell, columnStep: number, rowStep: number, map: VisionMap): boolean
+function isCornerOrSide(wall: VisionCell, columnStep: number, rowStep: number, area: VisionArea): boolean
 {
 	if ((columnStep === 0) || (rowStep === 0))
 	{
 		return(true);
 	}
 
-	return((visionCostAt({ column: wall.column + columnStep, row: wall.row }, map) >= OPAQUE_VISION_COST) && (visionCostAt({ column: wall.column, row: wall.row + rowStep }, map) >= OPAQUE_VISION_COST));
+	return((visionCostAt({ column: wall.column + columnStep, row: wall.row }, area) >= OPAQUE_VISION_COST) && (visionCostAt({ column: wall.column, row: wall.row + rowStep }, area) >= OPAQUE_VISION_COST));
 }
 
 /**
@@ -353,10 +353,10 @@ function shortestDistance(columns: number, rows: number): number
  * @param columns How many columns away the other cell is, which may be past a looping edge
  * @param rows How many rows away the other cell is, likewise
  * @param budget The vision budget
- * @param map The map
+ * @param area The area
  * @return True when the other cell can be seen
  */
-function isInSight(from: VisionCell, columns: number, rows: number, budget: number, map: VisionMap): boolean
+function isInSight(from: VisionCell, columns: number, rows: number, budget: number, area: VisionArea): boolean
 {
 	const steps = Math.max(Math.abs(columns), Math.abs(rows));
 
@@ -378,7 +378,7 @@ function isInSight(from: VisionCell, columns: number, rows: number, budget: numb
 		const length = (((cell.column !== previous.column) && (cell.row !== previous.row)) ? 1.5 : 1);
 
 		// The character's own cell doesn't get in their way
-		const cost = ((step === 1) ? 0 : visionCostAt(previous, map));
+		const cost = ((step === 1) ? 0 : visionCostAt(previous, area));
 
 		if (cost >= OPAQUE_VISION_COST)
 		{
@@ -402,46 +402,46 @@ function isInSight(from: VisionCell, columns: number, rows: number, budget: numb
  * The vision cost of a cell, which may be past a looping edge
  *
  * @param cell The cell
- * @param map The map
- * @return Its vision cost; OPAQUE_VISION_COST off the map
+ * @param area The area
+ * @return Its vision cost; OPAQUE_VISION_COST outside the area
  */
-function visionCostAt(cell: VisionCell, map: VisionMap): number
+function visionCostAt(cell: VisionCell, area: VisionArea): number
 {
-	const wrapped = wrap(cell, map);
+	const wrapped = wrap(cell, area);
 
-	if (!isInBounds(map.bounds, wrapped.column, wrapped.row))
+	if (!isInBounds(area.bounds, wrapped.column, wrapped.row))
 	{
 		return(OPAQUE_VISION_COST);
 	}
 
-	return(map.visionCost(wrapped.column, wrapped.row));
+	return(area.visionCost(wrapped.column, wrapped.row));
 }
 
 /**
- * The cell on the map a cell past a looping edge stands for
+ * The cell inside the area a cell past a looping edge stands for
  *
  * @param cell The cell
- * @param map The map
+ * @param area The area
  * @return The cell, unchanged along an axis that doesn't loop
  */
-function wrap(cell: VisionCell, map: VisionMap): VisionCell
+function wrap(cell: VisionCell, area: VisionArea): VisionCell
 {
-	const { minColumn, minRow } = map.bounds;
-	const { width, height } = sizeOf(map.bounds);
+	const { minColumn, minRow } = area.bounds;
+	const { width, height } = sizeOf(area.bounds);
 
 	return({
-		column: (map.loopsEastWest ? minColumn + positiveModulo(cell.column - minColumn, width) : cell.column),
-		row: (map.loopsNorthSouth ? minRow + positiveModulo(cell.row - minRow, height) : cell.row)
+		column: (area.loopsEastWest ? minColumn + positiveModulo(cell.column - minColumn, width) : cell.column),
+		row: (area.loopsNorthSouth ? minRow + positiveModulo(cell.row - minRow, height) : cell.row)
 	});
 }
 
 /**
- * How many cells across and down a map is
+ * How many cells across and down an area is
  *
- * @param bounds The map's bounds
+ * @param bounds The area's bounds
  * @return Its width and height in cells
  */
-function sizeOf(bounds: MapBounds): { width: number; height: number }
+function sizeOf(bounds: AreaBounds): { width: number; height: number }
 {
 	return({
 		width: (bounds.maxColumn - bounds.minColumn) + 1,

@@ -26,7 +26,7 @@ describe('zip archives', () =>
 
 	it('deflates what repeats into much less', async () =>
 	{
-		const file = await zipFile('map.json', [JSON.stringify(Array.from({ length: 10000 }, () => 3))]);
+		const file = await zipFile('cells.json', [JSON.stringify(Array.from({ length: 10000 }, () => 3))]);
 
 		assert.ok(file.data.length < (file.size / 20), `${file.data.length} of ${file.size} bytes`);
 	});

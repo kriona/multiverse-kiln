@@ -10,7 +10,7 @@ import { characterMessages } from './characterMessages';
 import { ChatLog } from './ChatLog';
 import { getElement, setButtonLabel, setPageTitle, showMessage } from './dom';
 import { describeLeaving, showLeaveButton } from './leavingGroup';
-import type { MapView } from './MapView';
+import type { AreaView } from './AreaView';
 import { addShortcut } from './shortcuts';
 import { describeTimeOfDay } from './timeOfDay';
 
@@ -76,11 +76,11 @@ export interface GroupScreenActions
 }
 
 /**
- * The group screen: the group's map, its members (who is here, and who the anchor being is), the
+ * The group screen: the group's area, its members (who is here, and who the anchor being is), the
  * player's characters with Create Character, the group's chat, and the Invite and Leave group buttons
  *
  * Each window plays one character. Choosing another of the player's characters in the group switches
- * the window to them without leaving the room: the room sends Welcome and Area again, and the map
+ * the window to them without leaving the room: the room sends Welcome and Area again, and the area
  * starts over around them. Only the anchor being's player sees Invite. Leaving asks first; the anchor
  * being leaving disbands the group
  *
@@ -98,7 +98,7 @@ export class GroupScreen
 	private readonly leaveButton = getElement('leave-group', HTMLButtonElement);
 	private readonly createCharacterButton = getElement('group-create-character', HTMLButtonElement);
 	private readonly lockedNotice = getElement('group-locked', HTMLElement);
-	private readonly map = getElement('group-map', HTMLElement);
+	private readonly areaElement = getElement('group-area-view', HTMLElement);
 	private readonly memberCount = getElement('group-member-count', HTMLElement);
 	private readonly memberList = getElement('group-member-list', HTMLUListElement);
 	private readonly leaveDialog = getElement('leave-group-dialog', HTMLDialogElement);
@@ -171,10 +171,10 @@ export class GroupScreen
 	private leaving = false;
 
 	/**
-	 * @param mapView The map, shared with the lobby screen
+	 * @param areaView The area, shared with the lobby screen
 	 * @param actions What the screen's controls do
 	 */
-	constructor(private readonly mapView: MapView, private readonly actions: GroupScreenActions)
+	constructor(private readonly areaView: AreaView, private readonly actions: GroupScreenActions)
 	{
 		this.characterChoices = new CharacterList(getElement('group-character-list', HTMLUListElement), getElement('group-character-none', HTMLElement), {
 			choose: (character) =>
@@ -293,7 +293,7 @@ export class GroupScreen
 			this.setStatus('');
 		}
 
-		this.mapView.show(this.map, connection);
+		this.areaView.show(this.areaElement, connection);
 
 		this.unbinds.push(callbacks.listen('name', (name: string) =>
 		{
@@ -422,7 +422,7 @@ export class GroupScreen
 		this.chat.clear();
 		this.time.textContent = '';
 		this.leaveDialog.close();
-		this.mapView.hide();
+		this.areaView.hide();
 	}
 
 	/**
@@ -568,7 +568,7 @@ export class GroupScreen
 	}
 
 	/**
-	 * Restarts the map around the character the window has switched to, once the room has sent their area
+	 * Restarts the area around the character the window has switched to, once the room has sent their area
 	 *
 	 * @param area The area they are in
 	 */
@@ -585,7 +585,7 @@ export class GroupScreen
 		this.switchingTo = undefined;
 		this.characterId = characterId;
 		this.connection = { room: connection.room, playerId: characterId, area };
-		this.mapView.show(this.map, this.connection);
+		this.areaView.show(this.areaElement, this.connection);
 		this.render();
 
 		const name = this.members.get(characterId)?.name;

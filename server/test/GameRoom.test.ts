@@ -767,7 +767,7 @@ describe('GameRoom', () =>
 
 	it('uses cells wider than a player', () =>
 	{
-		// The whole player stays inside its cell, so a player on an edge cell is inside the map
+		// The whole player stays inside its cell, so a player on an edge cell is inside the area
 		assert.ok((GRID_CELL_SIZE / 2) >= PLAYER_RADIUS);
 	});
 
@@ -999,7 +999,7 @@ describe('GameRoom', () =>
 
 	describe('a player with several characters in the group', () =>
 	{
-		it('brings every one of them onto the map, controlling the one asked for', async () =>
+		it('brings every one of them into the area, controlling the one asked for', async () =>
 		{
 			const room = await createGameRoom();
 			const ada = await addPlayerWithCharacter('Ada');
@@ -1058,7 +1058,7 @@ describe('GameRoom', () =>
 			assert.strictEqual(playerIdOf(room, client), own);
 		});
 
-		it('takes them all off the map when the player\'s last window leaves', async () =>
+		it('takes them all out of the area when the player\'s last window leaves', async () =>
 		{
 			const room = await createGameRoom();
 			const ada = await addPlayerWithCharacter('Ada');
@@ -1378,7 +1378,7 @@ describe('GameRoom', () =>
 			return(member);
 		}
 
-		it('takes a member whose race is barred off the map, saving where they were, and lets them back once allowed', async () =>
+		it('takes a member whose race is barred out of the area, saving where they were, and lets them back once allowed', async () =>
 		{
 			const room = await createGameRoom();
 			const { client } = await joinFromBrowser(room, browserIdA);

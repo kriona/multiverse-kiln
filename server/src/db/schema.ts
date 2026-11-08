@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { bigint, boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -267,12 +267,12 @@ function universeVersionColumns()
 		displayTime: displayTime('display_time').notNull().default('precise'),
 
 		/**
-		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no map
+		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no area to walk around
 		 */
 		lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 		/**
-		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area's map
+		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area
 		 */
 		lobbyColumn: integer('lobby_column').notNull().default(0),
 		lobbyRow: integer('lobby_row').notNull().default(0),
@@ -303,7 +303,7 @@ function universeVersionColumns()
 		startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 		/**
-		 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area's map
+		 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area
 		 */
 		startingColumn: integer('starting_column').notNull().default(0),
 		startingRow: integer('starting_row').notNull().default(0),
@@ -605,13 +605,13 @@ export const tileGraphics = pgTable('tile_graphics', {
 ]);
 
 /**
- * One row per tile a map can be painted with
+ * One row per tile an area can be painted with
  *
  * A tile with no universe is one of a ruleset's default tiles, available to every universe with that
  * ruleset; a tile with a universe belongs to that universe only. Default tiles have a key, so code and
  * seed data can find them in any database
  *
- * A universe's tile that overrides a default tile is that universe's edited copy of it. Maps keep using
+ * A universe's tile that overrides a default tile is that universe's edited copy of it. Areas keep using
  * the default tile's ID, and the universe sees the copy's settings under that ID
  */
 export const tiles = pgTable('tiles', {
@@ -667,7 +667,7 @@ export const tiles = pgTable('tiles', {
 	walkSeconds: smallint('walk_seconds').notNull().default(DEFAULT_INDOOR_WALK_SECONDS),
 
 	/**
-	 * Whether areas can paint with the tile; maps that already use a disabled tile keep it
+	 * Whether areas can paint with the tile; areas that already use a disabled tile keep it
 	 */
 	enabled: boolean('enabled').notNull().default(true),
 
@@ -1103,9 +1103,9 @@ export const classRaceAreas = pgTable('class_race_areas', {
 ]);
 
 /**
- * One row per area: a map, and where it sits among the universe's areas
+ * One row per area: its size and settings, and where it sits among the universe's areas
  *
- * The map covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0
+ * The area covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0
  */
 export const areas = pgTable('areas', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -1142,30 +1142,30 @@ export const areas = pgTable('areas', {
 	index('areas_parent_area_id_index').on(table.parentAreaId),
 	index('areas_default_tile_id_index').on(table.defaultTileId),
 	...originConstraints('areas', table),
-	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
-	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
+	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
+	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
 	check('areas_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
 	check('areas_faerie_does_not_loop', sql`${table.passageOfTime} <> 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
 ]);
 
 /**
- * The stored chunks of each area's map. A chunk that isn't stored is all the area's default tile
+ * The stored chunks of each area's cells. A chunk that isn't stored is all the area's default tile
  *
  * Layer 0 is the ground; later layers go on top of it
  */
-export const mapChunks = pgTable('map_chunks', {
+export const areaChunks = pgTable('area_chunks', {
 	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
 	layer: smallint('layer').notNull().default(0),
 	chunkColumn: integer('chunk_column').notNull(),
 	chunkRow: integer('chunk_row').notNull(),
 
 	/**
-	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row: a tile ID, DEFAULT_TILE_CELL or VOID_CELL (see shared/src/maps.ts)
+	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row: a tile ID, DEFAULT_TILE_CELL or VOID_CELL (see shared/src/areaCells.ts)
 	 */
 	cells: integer('cells').array().notNull()
 }, (table) => [
 	primaryKey({ columns: [table.areaId, table.layer, table.chunkColumn, table.chunkRow] }),
-	check('map_chunks_cell_count', sql`cardinality(${table.cells}) = ${sql.raw(String(CHUNK_SIZE * CHUNK_SIZE))}`)
+	check('area_chunks_cell_count', sql`cardinality(${table.cells}) = ${sql.raw(String(CHUNK_SIZE * CHUNK_SIZE))}`)
 ]);
 
 /**
@@ -1448,7 +1448,7 @@ const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
 });
 
 /**
- * The cells each group has seen, part of its world state: one row per chunk of an area's map that the
+ * The cells each group has seen, part of its world state: one row per chunk of an area that the
  * group has seen any cell of. Deleted with the group, so disbanding it forgets what it explored
  */
 export const groupSeenChunks = pgTable('group_seen_chunks', {

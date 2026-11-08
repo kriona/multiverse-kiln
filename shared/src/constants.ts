@@ -20,7 +20,7 @@ export const GAME_ROOM_NAME = 'game';
 export const SESSION_ROOM_NAME = 'session';
 
 /**
- * Name of a universe's lobby room: its map, chat, who's here, and creating groups
+ * Name of a universe's lobby room: its area, chat, who's here, and creating groups
  *
  * Clients join with LobbyJoinOptions, and every client of the same universe joins the same lobby
  */
@@ -90,7 +90,7 @@ export const PLAYER_RADIUS = 12;
 export const GRID_CELL_SIZE = 32;
 
 /**
- * How many cells across the client's view of the map is
+ * How many cells across the client's view of the area is
  *
  * The camera centers on the player, who stands on a cell's center, so an odd number of cells puts the
  * view's edges on cell boundaries: a standing player sees only whole tiles
@@ -98,17 +98,17 @@ export const GRID_CELL_SIZE = 32;
 export const VIEW_COLUMNS = 31;
 
 /**
- * How many cells tall the client's view of the map is; odd for the same reason as VIEW_COLUMNS
+ * How many cells tall the client's view of the area is; odd for the same reason as VIEW_COLUMNS
  */
 export const VIEW_ROWS = 17;
 
 /**
- * Width of the client's view of the map, in pixels (one world unit is one pixel)
+ * Width of the client's view of the area, in pixels (one world unit is one pixel)
  */
 export const VIEW_WIDTH = VIEW_COLUMNS * GRID_CELL_SIZE;
 
 /**
- * Height of the client's view of the map, in pixels
+ * Height of the client's view of the area, in pixels
  */
 export const VIEW_HEIGHT = VIEW_ROWS * GRID_CELL_SIZE;
 

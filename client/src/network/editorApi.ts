@@ -170,7 +170,7 @@ export class EditorApi
 	}
 
 	/**
-	 * The areas whose maps use one of a universe's tiles
+	 * The areas whose cells use one of a universe's tiles
 	 *
 	 * @param universeId The universe's ID
 	 * @param tileId The tile's ID
@@ -346,7 +346,7 @@ export class EditorApi
 	}
 
 	/**
-	 * The stored chunks of an area's map in a range
+	 * The stored chunks of an area's cells in a range
 	 *
 	 * @param universeId The universe's ID
 	 * @param areaId The area's ID

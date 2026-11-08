@@ -6,7 +6,7 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_C
 export const SEEN_CHUNK_BYTES = (CHUNK_SIZE * CHUNK_SIZE) / 8;
 
 /**
- * The cells a group has seen in one chunk of an area's map
+ * The cells a group has seen in one chunk of an area
  */
 export interface AreaSeenChunk
 {
@@ -21,7 +21,7 @@ export interface AreaSeenChunk
 }
 
 /**
- * A cell of a map
+ * A cell of an area
  */
 export interface SeenCell
 {

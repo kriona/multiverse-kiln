@@ -13,7 +13,7 @@ import type { OptionName } from './characters.js';
 import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, AuditField, AuditFieldChange, AuditSubject, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { LoadedSettings } from './fieldMerge.js';
-import type { MapBounds } from './maps.js';
+import type { AreaBounds } from './areaCells.js';
 import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 import type { UniverseTextRef } from './universeText.js';
 
@@ -143,14 +143,14 @@ export interface EditorRoleSettings
  * - universe, ruleset: change the universe's settings, or how it plays under its ruleset. A universe
  *   change lowering the group size says what happens to larger groups with largerGroups, keep when left out
  * - uploadTileGraphic, deleteTileGraphic: upload a tileset, or delete one and its image
- * - tiles: removeTile with replaceWith paints the maps using the tile with that one first
+ * - tiles: removeTile with replaceWith paints the areas using the tile with that one first
  * - items, races, classes, themes and difficulty levels. A saveItem disabling an item says what happens to
  *   the characters carrying it with whenDisabled, keep when left out. Enabling an item again, or restoring
  *   a default item, gives back the copies taken. A race or class says in its settings (keepPlaying)
  *   whether its characters may play while it is disabled
  * - createArea, updateArea, deleteArea: an area's settings; the lobby and starting areas can't be deleted.
  *   An updateArea disabling an area says where the characters in it go with moveTo, start when left out
- * - resizeArea: gives an area's map new bounds. Without discard, a resize that would discard painted cells
+ * - resizeArea: gives an area new bounds. Without discard, a resize that would discard painted cells
  *   or links is refused with 409 and a SaveRefusedPayload holding resizeConflict
  * - editCells: up to MAX_CELL_CHANGES cells inside the area's bounds; a cell listed twice takes the later value
  * - saveLink, deleteLink: add or replace a cell's link, or delete it
@@ -195,7 +195,7 @@ export type EditorChange =
 	| { kind: 'createArea'; ref: NewRef; area: NewAreaChange }
 	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; loaded?: LoadedSettings; moveTo?: AreaEvacuation }
 	| { kind: 'deleteArea'; areaId: StringRef }
-	| { kind: 'resizeArea'; areaId: StringRef; bounds: MapBounds; discard: boolean }
+	| { kind: 'resizeArea'; areaId: StringRef; bounds: AreaBounds; discard: boolean }
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
 	| { kind: 'saveLink'; areaId: StringRef; column: number; row: number; target: AreaLinkTarget }
 	| { kind: 'deleteLink'; areaId: StringRef; column: number; row: number }

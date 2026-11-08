@@ -47,7 +47,7 @@ An engine for making multiplayer browser-based role-playing games.
                      every window who its player is, and when its session ends), LobbyRoom (one per universe),
                      GameRoom (one per group, made from the database when a member returns, with the group's chat) and EditorRoom (one
                      per universe: who has its editor open, the editors' chat, and what each window saves). Every room
-                     finds its clients' players from their session cookie in onAuth. The two map rooms share
+                     finds its clients' players from their session cookie in onAuth. The two area rooms share
                      AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
   src/players/       which login sessions have windows connected, changes to characters and groups, players who
                      may no longer play a universe, and players who are no longer server admins, published to the rooms (in memory; accounts, sessions,
@@ -73,7 +73,7 @@ An engine for making multiplayer browser-based role-playing games.
 /shared          Code imported by both client and server:
                  message type enums, payload interfaces, close codes, constants,
                  the synced state's @colyseus/schema classes (src/state.ts),
-                 the map and chunk layout (src/maps.ts) and universe settings (src/universes.ts),
+                 the area cell and chunk layout (src/areaCells.ts) and universe settings (src/universes.ts),
                  each ruleset's data and rules (src/rulesets/<ruleset>/, Open Game Content for PF1E and
                  SF1E; see client/license.html), and what the rulesets share: money (src/money.ts) and
                  the abilities, sizes, races, classes and themes tables (src/racesAndClasses.ts),
@@ -173,7 +173,7 @@ Test multiplayer with separate browsers or profiles: every tab of one browser is
 - **Icons** come from Phosphor's Regular icons (`ph:<name>`, https://phosphoricons.com) for interface actions and game-icons.net (`game-icons:<name>`, https://game-icons.net) for game concepts. A page marks one with `<!-- icon ph:floppy-disk -->` before a button's text; code imports one with `import trashIcon from 'virtual:icon/ph:trash'` and shows it with `setButtonLabel()` (`client/src/ui/dom.ts`). The icons plugin in `client/vite.config.ts` inlines them as SVG at build time. Both are credited, with their licenses, on `client/license.html`; credit any new third-party code or assets the pages use there too.
 - **Every screen works with only a keyboard and with a screen reader** (see Accessibility in `STRUCTURE-OVERVIEW.md`). When adding a screen, dialog or game feature:
 	- Give its main buttons shortcuts with `data-shortcut="Alt+<letter>"`, following the pattern there (Alt+S submits, Alt+N adds, and so on). The letter must be in the button's English text: a submit button without an S, such as Create or Log in, takes a letter of its own word instead (Alt+C, Alt+L). `client/src/ui/shortcuts.ts` underlines the letter, sets `aria-keyshortcuts` and lists it under `?`. Use `addShortcut()` for a shortcut that isn't a button, and `addKeyHelp()` to list keys the code handles itself. Don't use Alt+D, Alt+E or Alt+F, and don't give deleting a shortcut.
-	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `MapAnnouncer` does for the game's map.
+	- Read out what changes without the player acting, and what is only drawn on a canvas, with `announce()` (`client/src/ui/announcer.ts`), the way `AreaAnnouncer` does for the game's area.
 	- Show a field's problem with `reportFieldError()` (`client/src/ui/fieldErrors.ts`), and point the form's buttons at its error text with `aria-describedby`.
 	- Never show something by color alone, give anything drawn on a canvas a keyboard way to reach it, and set `document.title` when the screen shows.
 - **The universe editor stages every change.** Nothing a universe editor tab or its dialogs change reaches the server until the player clicks the Save button in the editor's bar (see Unsaved changes in `STRUCTURE-OVERVIEW.md`): adding, changing and deleting, uploads and deleting uploads included. Dialogs Apply their changes to the tab, the tab shows what will change, and Save sends it all. Never add a control that changes the universe immediately, even after a confirmation. The one exception is deleting the whole universe (Deleting a universe in `STRUCTURE-OVERVIEW.md`), which leaves nothing to save.

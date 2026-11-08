@@ -150,7 +150,7 @@ export const BLOB_FRAME_MASKS: readonly number[] = [...new Set(Array.from({ leng
 /**
  * The mask (BLOB_NEIGHBORS) each frame of a blob sheet is drawn for, in the sheet's order: left to
  * right, top to bottom, 7 frames to a row (BLOB_SHEET_COLUMNS). The sheet's shapes join up across its
- * frames, like the tiles drawn on a map; the 2 null places, at the start of the last row, are empty
+ * frames, like the tiles drawn in an area; the 2 null places, at the start of the last row, are empty
  */
 export const BLOB_SHEET_MASKS: readonly (number | null)[] = [
 	28, 124, 112, 16, 247, 223, 95,
