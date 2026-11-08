@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
+import { adminDb } from '../src/db/adminClient.js';
 import { createGroup, findGroup } from '../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { createPlayer } from '../src/db/playerRepo.js';
@@ -371,7 +372,7 @@ describe('World editor API', () =>
 			await saveSiteSettings({
 				...DEFAULT_SITE_SETTINGS,
 				universesPerCreator: (universesPerCreator + 1)
-			});
+			}, adminDb);
 			await createUniverse(ada, 'One More');
 			assert.strictEqual((await send(ada, 'POST', '', { body: { name: 'Too Many Again', shortDescription: '', ruleset: 'pf1e' } })).status, 409);
 		});
@@ -381,7 +382,7 @@ describe('World editor API', () =>
 			await saveSiteSettings({
 				...DEFAULT_SITE_SETTINGS,
 				universeCreationEnabled: false
-			});
+			}, adminDb);
 
 			const refused = await send(ada, 'POST', '', { body: { name: 'Kilnhaven', shortDescription: '', ruleset: 'pf1e' } });
 			const list = (await send<EditableUniverseListPayload>(ada, 'GET', '')).body;

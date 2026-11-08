@@ -9,13 +9,20 @@ import { searchPlayers, type PlayerSearch } from './playerRepo.js';
 import { authenticators, players, serverAdmins } from './schema.js';
 
 /**
+ * The transaction-level advisory lock that makes removing server admins and deleting their accounts take
+ * turns (see lockServerAdmins()). Any number no other lock uses
+ */
+const SERVER_ADMINS_LOCK = 4_150_927;
+
+/**
  * Makes a player a server admin
  *
  * @param playerId The player
- * @param executor The database, or a transaction
+ * @param executor The admin role's database or one of its transactions (adminDb, inAdminTransaction()):
+ * the server's own role can't write server_admins
  * @return Whether they became one; false when they were one already
  */
-export async function addServerAdmin(playerId: string, executor: Executor = db): Promise<boolean>
+export async function addServerAdmin(playerId: string, executor: Executor): Promise<boolean>
 {
 	const rows = await executor
 		.insert(serverAdmins)
@@ -107,20 +114,24 @@ export async function isActiveServerAdmin(playerId: string, executor: Executor =
 }
 
 /**
- * Locks every server admin's row until the transaction ends, so two admins leaving at once can't both
- * see another left
+ * Makes transactions that remove server admins, or delete one's account, wait for each other until the
+ * transaction ends, so two admins leaving at once can't both see another left, then lists the admins.
+ * An advisory lock rather than a lock on the rows, because locking rows needs the UPDATE privilege,
+ * which the server's role (kiln_app) doesn't have on server_admins, and account deletion runs as it
  *
  * @param executor A transaction
  * @return The admins' player IDs
  */
 async function lockServerAdmins(executor: Executor): Promise<string[]>
 {
+	await executor.execute(sql`SELECT pg_advisory_xact_lock(${SERVER_ADMINS_LOCK})`);
+
+	// Read after the lock is taken, so it sees what the transaction that held it last committed
 	const admins = await executor
 		.select({
 			playerId: serverAdmins.playerId
 		})
-		.from(serverAdmins)
-		.for('update');
+		.from(serverAdmins);
 
 	return(admins.map((admin) => admin.playerId));
 }
@@ -149,7 +160,8 @@ export type ServerAdminRemoval = 'removed' | 'notAdmin' | 'lastAdmin';
  * Takes away a player's server admin role, unless they are the last server admin
  *
  * @param playerId The player
- * @param executor A transaction
+ * @param executor One of the admin role's transactions (inAdminTransaction()): the server's own role can't
+ * write server_admins
  * @return Whether they were removed, or why not
  */
 export async function removeServerAdmin(playerId: string, executor: Executor): Promise<ServerAdminRemoval>

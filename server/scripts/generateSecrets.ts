@@ -119,6 +119,7 @@ function displayPath(path: string): string
 
 const repositoryRoot = join(import.meta.dirname, '..', '..');
 const appPassword = hexSecret();
+const adminPassword = hexSecret();
 const migratorPassword = hexSecret();
 const storageAccessKeyId = hexSecret();
 const storageSecretAccessKey = hexSecret();
@@ -131,6 +132,7 @@ const files: SecretsFile[] = [
 			POSTGRES_PASSWORD: hexSecret(),
 			KILN_MIGRATOR_PASSWORD: migratorPassword,
 			KILN_APP_PASSWORD: appPassword,
+			KILN_ADMIN_PASSWORD: adminPassword,
 			STORAGE_ACCESS_KEY_ID: storageAccessKeyId,
 			STORAGE_SECRET_ACCESS_KEY: storageSecretAccessKey
 		}
@@ -140,8 +142,10 @@ const files: SecretsFile[] = [
 		examplePath: join(repositoryRoot, 'server', '.env.example'),
 		secrets: {
 			DATABASE_URL: appPassword,
+			ADMIN_DATABASE_URL: adminPassword,
 			MIGRATION_DATABASE_URL: migratorPassword,
 			TEST_DATABASE_URL: appPassword,
+			TEST_ADMIN_DATABASE_URL: adminPassword,
 			TEST_MIGRATION_DATABASE_URL: migratorPassword,
 			AUTH_HMAC_KEY: base64Secret(),
 			TOTP_ENCRYPTION_KEY: base64Secret(),

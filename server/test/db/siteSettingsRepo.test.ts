@@ -2,6 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_SITE_SETTINGS, MAX_CHARACTER_DELETION_DAYS, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
 
+import { adminDb } from '../../src/db/adminClient.js';
 import { findSiteSettings, saveSiteSettings } from '../../src/db/siteSettingsRepo.js';
 
 const closed: SiteSettings = {
@@ -28,10 +29,10 @@ describe('siteSettingsRepo', () =>
 
 	it('saves settings, and replaces them when saved again', async () =>
 	{
-		await saveSiteSettings(closed);
+		await saveSiteSettings(closed, adminDb);
 		assert.deepStrictEqual(await findSiteSettings(), closed);
 
-		await saveSiteSettings(DEFAULT_SITE_SETTINGS);
+		await saveSiteSettings(DEFAULT_SITE_SETTINGS, adminDb);
 		assert.deepStrictEqual(await findSiteSettings(), DEFAULT_SITE_SETTINGS);
 	});
 
@@ -42,7 +43,7 @@ describe('siteSettingsRepo', () =>
 			await assert.rejects(saveSiteSettings({
 				...closed,
 				universesPerCreator
-			}));
+			}, adminDb));
 		}
 
 		for (const characterDeletionDays of [-1, MAX_CHARACTER_DELETION_DAYS + 1])
@@ -50,7 +51,7 @@ describe('siteSettingsRepo', () =>
 			await assert.rejects(saveSiteSettings({
 				...closed,
 				characterDeletionDays
-			}));
+			}, adminDb));
 		}
 
 		await assert.rejects(saveSiteSettings({
@@ -59,6 +60,6 @@ describe('siteSettingsRepo', () =>
 				...closed.socials,
 				x: `https://x.com/${'a'.repeat(MAX_SITE_SOCIAL_URL_LENGTH)}`
 			}
-		}));
+		}, adminDb));
 	});
 });

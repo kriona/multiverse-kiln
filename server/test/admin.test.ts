@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 
 import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
 
+import { adminDb } from '../src/db/adminClient.js';
 import { findPlayerAdminEvents, findUniverseAdminEvents } from '../src/db/adminEventRepo.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer, saveLastLogin } from '../src/db/playerRepo.js';
@@ -95,7 +96,7 @@ async function logInAdmin(name: string): Promise<TestBrowser>
 {
 	const player = await addPlayer(name);
 
-	await addServerAdmin(player.id);
+	await addServerAdmin(player.id, adminDb);
 	await turnOnTwoFactor(player.id);
 
 	return(logInBrowser(player.id));
@@ -156,7 +157,7 @@ describe('Admin access', () =>
 	{
 		const player = await addPlayer('Unguarded');
 
-		await addServerAdmin(player.id);
+		await addServerAdmin(player.id, adminDb);
 
 		const browser = await logInBrowser(player.id);
 
@@ -178,7 +179,7 @@ describe('Admin access', () =>
 	{
 		const player = await addPlayer('Guarded');
 
-		await addServerAdmin(player.id);
+		await addServerAdmin(player.id, adminDb);
 		await turnOnTwoFactor(player.id);
 
 		assert.strictEqual((await send('GET', ADMIN_PATH, { browser: await logInBrowser(player.id) })).status, 204);
@@ -189,7 +190,7 @@ describe('Admin access', () =>
 		const admin = await addPlayer('Overseer');
 		const other = await addPlayer('Wanderer');
 
-		await addServerAdmin(admin.id);
+		await addServerAdmin(admin.id, adminDb);
 		await turnOnTwoFactor(admin.id);
 
 		const adminPayload = (await (await send('GET', AUTH_SESSION_PATH, { browser: await logInBrowser(admin.id) })).json()) as SessionPayload;
@@ -560,7 +561,7 @@ describe('Admin server admin list', () =>
 
 	it('lists the admins by username ignoring case, saying which has 2FA and which is asking', async () =>
 	{
-		await addServerAdmin((await addPlayer('alan')).id);
+		await addServerAdmin((await addPlayer('alan')).id, adminDb);
 
 		assert.deepStrictEqual((await listAdmins()).map((each) => [each.username, each.displayName, each.twoFactor, each.current]), [
 			['alan', 'alan', false, false],
@@ -571,7 +572,7 @@ describe('Admin server admin list', () =>
 	it('finds players who aren\'t admins yet, and refuses searches too short', async () =>
 	{
 		await addPlayer('Grace Hopper');
-		await addServerAdmin((await addPlayer('Grace Admin')).id);
+		await addServerAdmin((await addPlayer('Grace Admin')).id, adminDb);
 
 		const response = await send('GET', `${ADMIN_ADMINS_SEARCH_PATH}?query=grace`, { browser: admin });
 
@@ -649,7 +650,7 @@ describe('Admin server admin list', () =>
 
 		try
 		{
-			await addServerAdmin(alan.id);
+			await addServerAdmin(alan.id, adminDb);
 
 			assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Alan_Turing`, { browser: admin })).status, 204);
 			assert.strictEqual(await isServerAdmin(alan.id), false);
@@ -657,7 +658,7 @@ describe('Admin server admin list', () =>
 				['adminRemoved', admin.playerId]
 			]);
 
-			await addServerAdmin(alan.id);
+			await addServerAdmin(alan.id, adminDb);
 
 			assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Head_Admin`, { browser: admin })).status, 204);
 			assert.strictEqual(await isServerAdmin(admin.playerId), false);
@@ -1055,7 +1056,7 @@ describe('Editing universes as a server admin', () =>
 		const browser = await logInBrowser(player.id);
 		const universeId = await addUniverse();
 
-		await addServerAdmin(player.id);
+		await addServerAdmin(player.id, adminDb);
 
 		assert.strictEqual((await openEditor(browser, universeId)).status, 401);
 		assert.strictEqual((await saveChanges(browser, universeId, [{ kind: 'universe', update: { shortDescription: 'Sneaky' } }])).status, 401);

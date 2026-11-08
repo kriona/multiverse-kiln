@@ -1,6 +1,7 @@
 import assert from 'assert';
 
 import { createToken, hashToken } from '../../src/auth/tokens.js';
+import { adminDb } from '../../src/db/adminClient.js';
 import { addServerAdmin } from '../../src/db/serverAdminRepo.js';
 import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findSessionByTokenHash, findSessionWithPlayer, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
 import { addPlayer } from '../players.js';
@@ -45,7 +46,7 @@ describe('sessionRepo', () =>
 		const tokenHash = hashToken(createToken());
 
 		await createSession(player.id, tokenHash, false);
-		await addServerAdmin(player.id);
+		await addServerAdmin(player.id, adminDb);
 		assert.strictEqual((await findSessionWithPlayer(tokenHash))?.needsTwoFactor, true);
 		await turnOnTwoFactor(player.id);
 		assert.strictEqual((await findSessionWithPlayer(tokenHash))?.needsTwoFactor, false);

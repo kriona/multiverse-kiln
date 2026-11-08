@@ -47,9 +47,10 @@ export async function findSiteSettings(executor: Executor = db): Promise<SiteSet
  * Stores the site's settings, replacing any it had
  *
  * @param settings The settings
- * @param executor The database, or a transaction
+ * @param executor The admin role's database or one of its transactions (adminDb, inAdminTransaction()):
+ * the server's own role can't write site_settings
  */
-export async function saveSiteSettings(settings: SiteSettings, executor: Executor = db): Promise<void>
+export async function saveSiteSettings(settings: SiteSettings, executor: Executor): Promise<void>
 {
 	const values = {
 		universeCreationEnabled: settings.universeCreationEnabled,

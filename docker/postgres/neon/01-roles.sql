@@ -1,7 +1,7 @@
 -- Creates the kiln database and its roles on a Neon branch, matching docker/postgres/init/
 --
 -- Run once per branch, as the branch's default owner role (neondb_owner), connected to neondb:
---   psql "<neondb_owner direct connection string>" -v ON_ERROR_STOP=1 -v migrator_password=... -v app_password=... -f 01-roles.sql
+--   psql "<neondb_owner direct connection string>" -v ON_ERROR_STOP=1 -v migrator_password=... -v app_password=... -v admin_password=... -f 01-roles.sql
 -- Then run 02-grants.sql as kiln_migrator
 --
 -- The roles are created here rather than in the Neon console or API, because Neon makes those
@@ -10,6 +10,10 @@
 
 CREATE ROLE kiln_migrator LOGIN PASSWORD :'migrator_password';
 CREATE ROLE kiln_app LOGIN PASSWORD :'app_password';
+
+-- The admin pages' role (ADMIN_DATABASE_URL): everything kiln_app can do, and the migrations let it
+-- write the tables only server admins change
+CREATE ROLE kiln_admin LOGIN PASSWORD :'admin_password' IN ROLE kiln_app;
 
 -- CREATE DATABASE ... OWNER needs membership in the new owner role. Creating a role only grants
 -- its creator ADMIN OPTION, so grant the membership for this statement and revoke it after

@@ -82,6 +82,15 @@ const directDatabaseImports = [
 	}
 ];
 
+// The admin role can change server admins and site settings, which the server's own role can't, so only
+// the admin pages' routes may use it (server/src/db/adminClient.ts)
+const adminDatabaseImports = [
+	{
+		group: ['**/db/adminClient*'],
+		message: 'Only the admin pages\' routes (server/src/http/admin.ts) may use the admin role\'s database'
+	}
+];
+
 export default defineConfig(
 	globalIgnores([
 		'**/node_modules/',
@@ -171,6 +180,15 @@ export default defineConfig(
 		}
 	},
 
+	// Before the folders below, whose own lists of restricted imports replace this one
+	{
+		files: ['server/src/**/*.ts'],
+		ignores: ['server/src/http/admin.ts'],
+		rules: {
+			'no-restricted-imports': ['error', { patterns: adminDatabaseImports }]
+		}
+	},
+
 	{
 		files: ['server/src/logic/**/*.ts'],
 		rules: {
@@ -181,7 +199,7 @@ export default defineConfig(
 	{
 		files: ['server/src/rooms/**/*.ts'],
 		rules: {
-			'no-restricted-imports': ['error', { patterns: directDatabaseImports }]
+			'no-restricted-imports': ['error', { patterns: [...directDatabaseImports, ...adminDatabaseImports] }]
 		}
 	},
 

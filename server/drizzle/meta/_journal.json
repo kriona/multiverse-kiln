@@ -715,6 +715,13 @@
       "when": 1794156291573,
       "tag": "0101_append_only_audit_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1794156807576,
+      "tag": "0102_admin_role_tables",
+      "breakpoints": true
     }
   ]
 }
