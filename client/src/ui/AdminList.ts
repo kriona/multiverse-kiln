@@ -115,6 +115,16 @@ export class AdminList<Row>
 	private offset = 0;
 
 	/**
+	 * How many rows the page shown has
+	 */
+	private shownRows = 0;
+
+	/**
+	 * How many rows matched when the page shown was loaded
+	 */
+	private total = 0;
+
+	/**
 	 * Changes with every request for a page, so a page that arrives after a newer request is ignored
 	 */
 	private requestVersion = 0;
@@ -161,27 +171,23 @@ export class AdminList<Row>
 			window.clearTimeout(this.searchTimer);
 			this.searchTimer = window.setTimeout(() =>
 			{
-				this.offset = 0;
-				void this.refresh(true);
+				void this.refresh(true, 0);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.filter.addEventListener('change', () =>
 		{
-			this.offset = 0;
-			void this.refresh(true);
+			void this.refresh(true, 0);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
-			this.offset = Math.max(0, (this.offset - MAX_ADMIN_ROWS_PER_PAGE));
-			void this.refresh(false);
+			void this.refresh(false, Math.max(0, (this.offset - MAX_ADMIN_ROWS_PER_PAGE)));
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
-			this.offset += MAX_ADMIN_ROWS_PER_PAGE;
-			void this.refresh(false);
+			void this.refresh(false, (this.offset + MAX_ADMIN_ROWS_PER_PAGE));
 		});
 	}
 
@@ -190,7 +196,7 @@ export class AdminList<Row>
 	 */
 	async load(): Promise<void>
 	{
-		await this.refresh(false);
+		await this.refresh(false, 0);
 	}
 
 	/**
@@ -198,15 +204,16 @@ export class AdminList<Row>
 	 */
 	async reload(): Promise<void>
 	{
-		await this.refresh(false);
+		await this.refresh(false, this.offset);
 	}
 
 	/**
-	 * Loads the page the search, filter and offset ask for, and shows it
+	 * Loads a page of the rows the search and filter ask for, and shows it
 	 *
 	 * @param announceMatches Whether to tell screen readers how many rows match, as after a search
+	 * @param offset How many matching rows come before the page
 	 */
-	private async refresh(announceMatches: boolean): Promise<void>
+	private async refresh(announceMatches: boolean, offset: number): Promise<void>
 	{
 		const version = ++this.requestVersion;
 		const search = this.search.value.trim();
@@ -220,7 +227,7 @@ export class AdminList<Row>
 			page = await this.options.load({
 				search: ((search === '') ? undefined : search),
 				filter: ((this.filter.value === '') ? undefined : (this.filter.value === 'true')),
-				offset: this.offset,
+				offset,
 				limit: MAX_ADMIN_ROWS_PER_PAGE
 			});
 		}
@@ -236,7 +243,7 @@ export class AdminList<Row>
 			if (!showAdminRefusal(error))
 			{
 				showMessage(this.error, describeEditorError(error, this.options.loadFailed));
-				this.previousButton.disabled = (this.offset === 0);
+				this.updatePageButtons();
 			}
 
 			return;
@@ -247,14 +254,20 @@ export class AdminList<Row>
 			return;
 		}
 
-		// Rows can go between pages, such as sessions ending, leaving nothing on the last page
-		if ((page.rows.length === 0) && (this.offset > 0))
+		// Rows can go between pages, such as sessions ending, leaving nothing on the last page. The rows and the
+		// count are separate queries, so the count can still say rows remain from here on: each try starts at
+		// least a page sooner, ending at the first page
+		if ((page.rows.length === 0) && (offset > 0))
 		{
-			this.offset = (Math.max(0, (Math.ceil(page.total / MAX_ADMIN_ROWS_PER_PAGE) - 1)) * MAX_ADMIN_ROWS_PER_PAGE);
-			await this.refresh(announceMatches);
+			const lastPage = (Math.max(0, (Math.ceil(page.total / MAX_ADMIN_ROWS_PER_PAGE) - 1)) * MAX_ADMIN_ROWS_PER_PAGE);
+
+			await this.refresh(announceMatches, Math.max(0, Math.min(lastPage, (offset - MAX_ADMIN_ROWS_PER_PAGE))));
 			return;
 		}
 
+		this.offset = offset;
+		this.shownRows = page.rows.length;
+		this.total = page.total;
 		showMessage(this.error, undefined);
 		this.loading.hidden = true;
 		this.empty.hidden = (page.rows.length > 0);
@@ -280,8 +293,7 @@ export class AdminList<Row>
 				last: (this.offset + page.rows.length),
 				total: page.total
 			}));
-		this.previousButton.disabled = (this.offset === 0);
-		this.nextButton.disabled = ((this.offset + page.rows.length) >= page.total);
+		this.updatePageButtons();
 
 		if (announceMatches)
 		{
@@ -293,6 +305,15 @@ export class AdminList<Row>
 				total: page.total
 			}));
 		}
+	}
+
+	/**
+	 * Enables Previous when the page shown isn't the first, and Next when more rows matched after it
+	 */
+	private updatePageButtons(): void
+	{
+		this.previousButton.disabled = (this.offset === 0);
+		this.nextButton.disabled = ((this.offset + this.shownRows) >= this.total);
 	}
 }
 
