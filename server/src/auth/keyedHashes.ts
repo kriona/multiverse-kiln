@@ -20,7 +20,7 @@ const MIN_KEY_BYTES = 32;
  * What a keyed hash is of. Each kind is hashed with its own label, so the same text hashed as two kinds
  * gives two unrelated hashes
  */
-export type KeyedHashKind = 'address' | 'emailCode' | 'network' | 'recoveryCode' | 'account' | 'providerStart' | 'knownBrowser';
+export type KeyedHashKind = 'address' | 'emailCode' | 'network' | 'recoveryCode' | 'account' | 'providerStart' | 'knownBrowser' | 'universeAccount';
 
 let key: Buffer | undefined;
 

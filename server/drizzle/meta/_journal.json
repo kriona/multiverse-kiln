@@ -673,6 +673,13 @@
       "when": 1794112332580,
       "tag": "0095_chat_notices_created_joined",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1794116352232,
+      "tag": "0096_role_email_limits",
+      "breakpoints": true
     }
   ]
 }

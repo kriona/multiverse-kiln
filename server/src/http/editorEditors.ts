@@ -6,10 +6,14 @@ import type express from 'express';
 import type { Request, Response } from 'express';
 import { canManageEditors, canViewUniverse, defineMessages, MAX_PLAYER_SEARCH_RESULTS, parsePlayerSearch, SOURCE_LOCALE, type EditorRoleSettings, type PlayerSearchPayload, type UniverseEditorListPayload } from '@multiverse-kiln/shared';
 
+import { keyedHash } from '../auth/keyedHashes.js';
+import { MAX_ROLE_EMAILS_PER_PLAYER_DAY, MAX_ROLE_EMAILS_PER_UNIVERSE_PLAYER_DAY, takeAttempt } from '../auth/rateLimits.js';
 import { findEmailRecipient, findPlayer, findPlayerByUsername } from '../db/playerRepo.js';
+import { inTransaction } from '../db/transactions.js';
 import { countUniverseCreators, findUniverseAccess, listUniverseEditors, removeUniverseEditor, searchPlayersToAdd, setUniverseAccess } from '../db/universeEditorRepo.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { roleGivenEmail } from '../email/universeEmails.js';
+import { DAY_MS } from '../logic/emailCodes.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { playerSearchQuery } from './editorPayloads.js';
@@ -168,9 +172,39 @@ export async function checkCreatorKept(context: ChangeContext): Promise<void>
 }
 
 /**
+ * Counts an email telling a player they were given a role in a universe against the limits on them,
+ * when the limits allow it
+ *
+ * @param universeId The universe's ID
+ * @param playerId The player's ID
+ * @return Whether the email may be sent
+ */
+async function takeRoleEmail(universeId: string, playerId: string): Promise<boolean>
+{
+	const decision = await inTransaction((transaction) => takeAttempt([
+		{
+			kind: 'universeAccountRoleEmail',
+			subjectHash: keyedHash('universeAccount', `${universeId}.${playerId}`),
+			limit: MAX_ROLE_EMAILS_PER_UNIVERSE_PLAYER_DAY,
+			windowMs: DAY_MS
+		},
+		{
+			kind: 'accountRoleEmail',
+			subjectHash: keyedHash('account', playerId),
+			limit: MAX_ROLE_EMAILS_PER_PLAYER_DAY,
+			windowMs: DAY_MS
+		}
+	], new Date(), transaction));
+
+	return(decision.allowed);
+}
+
+/**
  * Emails each player a save gave a role in the universe, in the language they chose, or English when
  * they haven't chosen one. Players the same save removed again, the player who made the save and
- * accounts without an address aren't emailed. The emails are sent without waiting for them
+ * accounts without an address aren't emailed, and neither are players the role email limits have
+ * stopped (see takeRoleEmail()), though they still get the role. The emails are sent without waiting
+ * for them
  *
  * @param context The save, once committed
  */
@@ -203,7 +237,7 @@ export async function emailAddedEditors(context: ChangeContext): Promise<void>
 
 		const recipient = await findEmailRecipient(playerId);
 
-		if (!recipient)
+		if (!recipient || !await takeRoleEmail(universe.id, playerId))
 		{
 			continue;
 		}

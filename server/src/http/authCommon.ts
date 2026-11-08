@@ -6,7 +6,7 @@ import type { Request, Response } from 'express';
 import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type MessageDescriptor, type MessageValues, type ProfileErrorPayload, type ProfileField } from '@multiverse-kiln/shared';
 
 import { hashAddress } from '../auth/keyedHashes.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, type HourlyLimit } from '../auth/rateLimits.js';
+import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, type AttemptLimit } from '../auth/rateLimits.js';
 import { hashToken, isTokenForm } from '../auth/tokens.js';
 import { recordAuthEvent, type AuthEventKind } from '../db/authEventRepo.js';
 import type { Executor } from '../db/client.js';
@@ -127,7 +127,7 @@ export function tooManyAttempts(decision: SendDecision & { allowed: false }, now
  * @param email The account's email address, or null when it has none
  * @return The limits
  */
-export function accountPasswordLimits(request: Request, email: string | null): HourlyLimit[]
+export function accountPasswordLimits(request: Request, email: string | null): AttemptLimit[]
 {
 	return([
 		{

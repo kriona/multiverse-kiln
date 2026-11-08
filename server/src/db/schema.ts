@@ -1893,9 +1893,10 @@ export const emailCodes = pgTable('email_codes', {
  * What a rate limit counts: codes sent to an address and wrong guesses for it, the codes asked for and
  * guesses made from a network, login attempts for an address and from a network, authenticator or
  * recovery codes tried for an account and its wrong authenticator codes, login attempts from a browser
- * that has logged in to an account, and usernames checked from a network
+ * that has logged in to an account, usernames checked from a network, and emails telling an account it
+ * was given a role in a universe, in any universe and in each one
  */
-export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck', 'accountWrongAuthenticatorCode'] as const;
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck', 'accountWrongAuthenticatorCode', 'accountRoleEmail', 'universeAccountRoleEmail'] as const;
 export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
 
 /**

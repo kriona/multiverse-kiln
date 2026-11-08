@@ -1,8 +1,11 @@
 import assert from 'assert';
 import type { EditableUniverse, EditorChange, PlayerSearchPayload, UniverseEditorListPayload } from '@multiverse-kiln/shared';
 
+import { keyedHash } from '../src/auth/keyedHashes.js';
+import { MAX_ROLE_EMAILS_PER_PLAYER_DAY } from '../src/auth/rateLimits.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer, findPlayerByUsername } from '../src/db/playerRepo.js';
+import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { roleGivenEmail } from '../src/email/universeEmails.js';
@@ -400,6 +403,21 @@ describe('Editing a universe\'s editors', () =>
 			// Changing a role isn't giving one
 			emails.length = 0;
 			await saveAll(ada, universeId, [{ kind: 'saveEditor', playerId: grace.id, settings: { role: 'creator', languages: [] } }]);
+			assert.strictEqual(emails.length, 0);
+
+			// Removing a player and adding them again the same day gives the role without another email
+			await saveAll(ada, universeId, [{ kind: 'removeEditor', playerId: alan.id }]);
+			await saveAll(ada, universeId, [{ kind: 'addEditor', username: alan.username, settings: { role: 'builder', languages: [] } }]);
+			assert.strictEqual((await findUniverseAccess(universeId, alan.id))?.role, 'builder');
+			assert.strictEqual(emails.length, 0);
+
+			// A player emailed roles in other universes as often as a day allows isn't emailed one in this one
+			for (let sent = 0; sent < MAX_ROLE_EMAILS_PER_PLAYER_DAY; sent++)
+			{
+				await recordRateLimitEvent('accountRoleEmail', keyedHash('account', carol.id), new Date());
+			}
+
+			await saveAll(ada, universeId, [{ kind: 'addEditor', username: carol.username, settings: { role: 'builder', languages: [] } }]);
 			assert.strictEqual(emails.length, 0);
 		}
 		finally
