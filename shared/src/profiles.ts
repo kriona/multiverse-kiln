@@ -342,6 +342,12 @@ export interface AccountDeletionPayload
 	universes: SoleCreatedUniversePayload[];
 
 	/**
+	 * Whether any of the player's characters is a group's anchor being, so deleting the account
+	 * disbands the group
+	 */
+	anchorsGroups: boolean;
+
+	/**
 	 * Whether the account has a password, which deleting it asks for; an account without one confirms
 	 * with its username instead
 	 */

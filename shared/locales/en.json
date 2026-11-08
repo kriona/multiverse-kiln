@@ -897,7 +897,7 @@
 	},
 	"characterDelete.mistake": {
 		"defaultMessage": "I've Made A Terrible Mistake",
-		"description": "Button that closes the last question before deleting a character, keeping the character. A playful way of saying Cancel"
+		"description": "Button that closes the last question before deleting a character or the player's account, keeping it. A playful way of saying Cancel"
 	},
 	"characterDelete.question": {
 		"defaultMessage": "Do you want to delete {name}?",
@@ -6395,17 +6395,33 @@
 		"defaultMessage": "Delete account",
 		"description": "Button on the player's own profile page that opens the dialog deleting their account"
 	},
+	"profile.deleteAccountAnchors": {
+		"defaultMessage": "Groups whose anchor being is one of your characters are disbanded.",
+		"description": "In the dialog that deletes the player's account, shown when one or more of their characters is the anchor being of a group"
+	},
 	"profile.deleteAccountConfirm": {
 		"defaultMessage": "Delete my account",
-		"description": "Button in the dialog that deletes the player's account: checks what was typed and deletes the account for good"
+		"description": "Button in the second dialog that deletes the player's account: checks what was typed and deletes the account for good"
+	},
+	"profile.deleteAccountDownload": {
+		"defaultMessage": "Download your data first to keep a copy.",
+		"description": "In the dialog that deletes the player's account, after what deleting it does: the profile has a button that downloads the player's data"
+	},
+	"profile.deleteAccountFarewell": {
+		"defaultMessage": "Are you absolutely sure you want to delete your account? This is permanent (a very long time!) and cannot be undone.",
+		"description": "In the second dialog that deletes the player's account, above the password or other fields that check it's them. Playful: the word permanent is joked about as a very long time, as in the last dialog before deleting a character"
 	},
 	"profile.deleteAccountIntro": {
-		"defaultMessage": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy.",
+		"defaultMessage": "Your profile and characters are deleted, and can't be brought back.",
 		"description": "In the dialog that deletes the player's account, before what it asks"
+	},
+	"profile.deleteAccountNext": {
+		"defaultMessage": "Delete my account",
+		"description": "Button in the first dialog that deletes the player's account: checks a choice was made for each universe, then opens a second dialog that checks it's the player before deleting the account"
 	},
 	"profile.deleteAccountTitle": {
 		"defaultMessage": "Delete your account",
-		"description": "Title of the dialog that deletes the player's account"
+		"description": "Title of both dialogs that delete the player's account: the first, which says what it does, and the second, which checks it's them"
 	},
 	"profile.deleteCodeFailed": {
 		"defaultMessage": "Could not email you a code.",

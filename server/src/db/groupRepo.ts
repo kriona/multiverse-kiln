@@ -732,6 +732,28 @@ export async function listPlayerMemberships(playerId: string, executor: Executor
 }
 
 /**
+ * Whether any of a player's characters is a group's anchor being, so deleting their account disbands
+ * the group
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return Whether one is
+ */
+export async function anchorsAnyGroup(playerId: string, executor: Executor = db): Promise<boolean>
+{
+	const [row] = await executor
+		.select({
+			id: groups.id
+		})
+		.from(groups)
+		.innerJoin(characters, eq(characters.id, groups.anchorCharacterId))
+		.where(eq(characters.playerId, playerId))
+		.limit(1);
+
+	return(row !== undefined);
+}
+
+/**
  * The memberships of the characters a condition picks
  *
  * @param condition Which characters, on the characters table

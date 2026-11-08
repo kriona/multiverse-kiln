@@ -16,18 +16,25 @@ import { pageMessages } from './pageMessages';
 const DELETE_UNIVERSE = 'delete';
 
 /**
- * The dialog that deletes the player's account (profile.html; see Deleting an account in
- * STRUCTURE-OVERVIEW.md). It asks what becomes of each universe the player is the only creator of, then
- * for the password (and authenticator code with 2FA), or for an account without a password, a code
- * emailed to its address (when it has one) and the username
+ * The two dialogs that delete the player's account (profile.html; see Deleting an account in
+ * STRUCTURE-OVERVIEW.md). The first says what deleting it does and asks what becomes of each universe
+ * the player is the only creator of. The second asks for the password (and authenticator code with
+ * 2FA), or for an account without a password, a code emailed to its address (when it has one) and the
+ * username, then deletes the account
  */
 export class AccountDeleteDialog
 {
 	private readonly dialog = getElement('account-delete-dialog', HTMLDialogElement);
 	private readonly form = getElement('account-delete-form', HTMLFormElement);
 	private readonly status = getElement('account-delete-status', HTMLElement);
+	private readonly anchors = getElement('account-delete-anchors', HTMLElement);
 	private readonly universes = getElement('account-delete-universes', HTMLFieldSetElement);
 	private readonly universeList = getElement('account-delete-universe-list', HTMLElement);
+	private readonly error = getElement('account-delete-error', HTMLElement);
+	private readonly submitButton = getElement('account-delete-submit', HTMLButtonElement);
+	private readonly cancelButton = getElement('account-delete-cancel', HTMLButtonElement);
+	private readonly confirmDialog = getElement('account-delete-confirm-dialog', HTMLDialogElement);
+	private readonly confirmForm = getElement('account-delete-confirm-form', HTMLFormElement);
 	private readonly email = getElement('account-delete-email', HTMLInputElement);
 	private readonly passwordField = getElement('account-delete-password-field', HTMLElement);
 	private readonly password = getElement('account-delete-password', HTMLInputElement);
@@ -40,14 +47,19 @@ export class AccountDeleteDialog
 	private readonly emailCode = getElement('account-delete-email-code', HTMLInputElement);
 	private readonly usernameField = getElement('account-delete-username-field', HTMLElement);
 	private readonly username = getElement('account-delete-username', HTMLInputElement);
-	private readonly error = getElement('account-delete-error', HTMLElement);
-	private readonly submitButton = getElement('account-delete-submit', HTMLButtonElement);
-	private readonly cancelButton = getElement('account-delete-cancel', HTMLButtonElement);
+	private readonly confirmError = getElement('account-delete-confirm-error', HTMLElement);
+	private readonly confirmButton = getElement('account-delete-confirm-submit', HTMLButtonElement);
+	private readonly mistakeButton = getElement('account-delete-confirm-cancel', HTMLButtonElement);
 
 	/**
 	 * What deleting the account asks, once loaded
 	 */
 	private deletion: AccountDeletionPayload | undefined;
+
+	/**
+	 * What becomes of each universe, as chosen in the first dialog
+	 */
+	private decisions: UniverseDecision[] = [];
 
 	/**
 	 * The account's address, while the dialog is open
@@ -92,6 +104,12 @@ export class AccountDeleteDialog
 		this.form.addEventListener('submit', (event) =>
 		{
 			event.preventDefault();
+			this.continueToConfirm();
+		});
+
+		this.confirmForm.addEventListener('submit', (event) =>
+		{
+			event.preventDefault();
 			void this.submit();
 		});
 
@@ -100,7 +118,12 @@ export class AccountDeleteDialog
 			this.dialog.close();
 		});
 
-		this.dialog.addEventListener('close', () =>
+		this.mistakeButton.addEventListener('click', () =>
+		{
+			this.confirmDialog.close();
+		});
+
+		this.confirmDialog.addEventListener('close', () =>
 		{
 			this.password.value = '';
 		});
@@ -125,18 +148,22 @@ export class AccountDeleteDialog
 		this.emailCodeLabel.hidden = true;
 		this.sendCodeButton.hidden = false;
 		clearFieldErrors(this.form);
+		clearFieldErrors(this.confirmForm);
 		showMessage(this.error, undefined);
+		showMessage(this.confirmError, undefined);
 		this.dialog.showModal();
 		void this.load();
 	}
 
 	/**
-	 * Loads the universes the player is the only creator of, and shows the fields that confirm the deletion
+	 * Loads what deleting the account does and the universes the player is the only creator of, and
+	 * readies the fields the second dialog confirms the deletion with
 	 */
 	private async load(): Promise<void>
 	{
 		this.deletion = undefined;
 		this.submitButton.disabled = true;
+		this.anchors.hidden = true;
 		this.universes.hidden = true;
 
 		for (const element of [this.passwordField, this.codeField, this.emailCodeField, this.usernameField])
@@ -164,6 +191,7 @@ export class AccountDeleteDialog
 		const deletion = this.deletion;
 
 		this.status.textContent = '';
+		this.anchors.hidden = !deletion.anchorsGroups;
 
 		if (deletion.lastServerAdmin)
 		{
@@ -190,7 +218,59 @@ export class AccountDeleteDialog
 		}
 
 		this.submitButton.disabled = false;
-		(this.choices.values().next().value ?? (deletion.hasPassword ? this.password : ((this.needsEmailCode() && !this.codeSent) ? this.sendCodeButton : this.username))).focus();
+		(this.choices.values().next().value ?? this.cancelButton).focus();
+	}
+
+	/**
+	 * Checks each universe has a choice, then closes the first dialog and opens the second, which
+	 * checks it's the player
+	 */
+	private continueToConfirm(): void
+	{
+		if (!this.deletion || this.submitButton.disabled)
+		{
+			return;
+		}
+
+		showMessage(this.error, undefined);
+
+		const decisions = this.readDecisions();
+
+		if (!decisions)
+		{
+			return;
+		}
+
+		this.decisions = decisions;
+		this.dialog.close();
+		showMessage(this.confirmError, undefined);
+		this.confirmButton.disabled = false;
+		this.confirmDialog.showModal();
+		this.firstConfirmField().focus();
+	}
+
+	/**
+	 * The field the second dialog starts on
+	 *
+	 * @return The password field, the button that emails a code, the emailed code's field or the
+	 * username field
+	 */
+	private firstConfirmField(): HTMLElement
+	{
+		if (this.deletion?.hasPassword)
+		{
+			return(this.password);
+		}
+		else if (this.needsEmailCode() && !this.codeSent)
+		{
+			return(this.sendCodeButton);
+		}
+		else if (this.needsEmailCode() && !this.codeChecked)
+		{
+			return(this.emailCode);
+		}
+
+		return(this.username);
 	}
 
 	/**
@@ -217,7 +297,7 @@ export class AccountDeleteDialog
 		}
 
 		this.sendCodeButton.disabled = true;
-		showMessage(this.error, undefined);
+		showMessage(this.confirmError, undefined);
 
 		try
 		{
@@ -242,7 +322,7 @@ export class AccountDeleteDialog
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, {
+			showMessage(this.confirmError, describeEditorError(error, {
 				id: 'profile.deleteCodeFailed',
 				defaultMessage: 'Could not email you a code.',
 				description: 'Shown in the dialog that deletes an account without a password when the code couldn\'t be emailed to the account\'s address'
@@ -344,27 +424,19 @@ export class AccountDeleteDialog
 	}
 
 	/**
-	 * Deletes the account with what was chosen and typed
+	 * Deletes the account with what was chosen in the first dialog and typed in the second
 	 */
 	private async submit(): Promise<void>
 	{
 		const deletion = this.deletion;
 
-		if (!deletion || this.submitButton.disabled)
+		if (!deletion || this.confirmButton.disabled)
 		{
 			return;
 		}
 
-		showMessage(this.error, undefined);
-
-		const universes = this.readDecisions();
-
-		if (!universes)
-		{
-			return;
-		}
-
-		this.submitButton.disabled = true;
+		showMessage(this.confirmError, undefined);
+		this.confirmButton.disabled = true;
 
 		try
 		{
@@ -383,15 +455,28 @@ export class AccountDeleteDialog
 				password: (deletion.hasPassword ? this.password.value : null),
 				twoFactorCode: (deletion.twoFactor ? this.code.value : null),
 				username: (deletion.hasPassword ? null : this.username.value),
-				universes,
+				universes: this.decisions,
 				locale: currentLocale()
 			});
-			this.dialog.close();
+			this.confirmDialog.close();
 			this.deleted();
 			return;
 		}
 		catch (error)
 		{
+			// The universes changed since they were listed, or the player was made the only server admin:
+			// back to the first dialog, which lists them again
+			if ((error instanceof EditorApiError) && (error.status === 409))
+			{
+				const message = error.message;
+
+				this.confirmDialog.close();
+				this.dialog.showModal();
+				await this.load();
+				showMessage(this.error, message);
+				return;
+			}
+
 			const field = authFieldOf(error);
 			const input = ((field === 'password') ? this.password : ((field === 'twoFactorCode') ? this.code : ((field === 'username') ? this.username : ((field === 'code') ? this.emailCode : undefined))));
 
@@ -401,24 +486,14 @@ export class AccountDeleteDialog
 			}
 			else
 			{
-				showMessage(this.error, describeEditorError(error, {
+				showMessage(this.confirmError, describeEditorError(error, {
 					id: 'profile.deleteFailed',
 					defaultMessage: 'Could not delete your account.',
 					description: 'Shown in the dialog that deletes the player\'s account when it couldn\'t be deleted'
 				}));
 			}
-
-			// The universes changed since they were listed: list them again
-			if ((error instanceof EditorApiError) && (error.status === 409))
-			{
-				const message = error.message;
-
-				await this.load();
-				showMessage(this.error, message);
-				return;
-			}
 		}
 
-		this.submitButton.disabled = false;
+		this.confirmButton.disabled = false;
 	}
 }

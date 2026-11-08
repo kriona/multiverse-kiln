@@ -289,10 +289,29 @@ describe('account deletion and data export', () =>
 					role: 'beta_tester'
 				}]
 			}],
+			anchorsGroups: false,
 			hasPassword: true,
 			twoFactor: false,
 			lastServerAdmin: false
 		});
+	});
+
+	it('says whether the player\'s characters anchor any group, which deleting the account disbands', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+		const grace = await addPlayer('Grace');
+		const universe = await addPlayableUniverse();
+		const adaCharacter = await addCharacter(playerId, universe.universeId, 'Brokk');
+		const graceGroup = await addGroup(universe.universeId, await addCharacter(grace.id, universe.universeId, 'Grace'), null);
+
+		await inTransaction(async (transaction) =>
+		{
+			await addGroupMember(graceGroup, adaCharacter, transaction);
+		});
+		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.anchorsGroups, false);
+
+		await addGroup(universe.universeId, await addCharacter(playerId, universe.universeId, 'Sindri'), null);
+		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.anchorsGroups, true);
 	});
 
 	it('won\'t delete the site\'s only server admin, until another player is made one', async () =>

@@ -12,7 +12,7 @@ import { findPlayerAuthEvents } from '../db/authEventRepo.js';
 import { listOwnChatMessages, listOwnChatReads } from '../db/chatRepo.js';
 import { findCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
-import { findMembership } from '../db/groupRepo.js';
+import { anchorsAnyGroup, findMembership } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { findOwnProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
@@ -66,8 +66,8 @@ function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDe
 
 /**
  * GET PROFILE_DELETION_PATH: the universes the logged-in player is the only creator of, with the
- * editors each could be handed to, how the player confirms deleting their account, and whether they
- * can't because they are the site's only server admin
+ * editors each could be handed to, whether it disbands any groups, how the player confirms deleting
+ * their account, and whether they can't because they are the site's only server admin
  *
  * @param request The request
  * @param response The response: an AccountDeletionPayload
@@ -75,9 +75,10 @@ function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDe
 export async function deletionRoute(request: Request, response: Response): Promise<void>
 {
 	const playerId = playerIdOf(request);
-	const [profile, universes, twoFactor, lastServerAdmin] = await Promise.all([
+	const [profile, universes, anchorsGroups, twoFactor, lastServerAdmin] = await Promise.all([
 		findOwnProfile(playerId),
 		listSoleCreatedUniverses(playerId),
+		anchorsAnyGroup(playerId),
 		hasTwoFactor(playerId),
 		isLastServerAdmin(playerId)
 	]);
@@ -94,6 +95,7 @@ export async function deletionRoute(request: Request, response: Response): Promi
 			name: universe.name,
 			editors: await listOtherUniverseEditors(universe.id, playerId)
 		}))),
+		anchorsGroups,
 		hasPassword: profile.hasPassword,
 		twoFactor,
 		lastServerAdmin

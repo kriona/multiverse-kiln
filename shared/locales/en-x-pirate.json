@@ -6395,13 +6395,29 @@
 		"message": "Scuttle account",
 		"source": "Delete account"
 	},
+	"profile.deleteAccountAnchors": {
+		"message": "Crews whose anchor be one of yer hands are disbanded.",
+		"source": "Groups whose anchor being is one of your characters are disbanded."
+	},
 	"profile.deleteAccountConfirm": {
 		"message": "Scuttle my account",
 		"source": "Delete my account"
 	},
+	"profile.deleteAccountDownload": {
+		"message": "Haul yer data ashore first to keep a copy.",
+		"source": "Download your data first to keep a copy."
+	},
+	"profile.deleteAccountFarewell": {
+		"message": "Be ye truly, deeply sure ye want to scuttle yer account? This be forever (a mighty long voyage!) and there be no raisin' it again.",
+		"source": "Are you absolutely sure you want to delete your account? This is permanent (a very long time!) and cannot be undone."
+	},
 	"profile.deleteAccountIntro": {
-		"message": "Yer profile and hands go to the deep, never to be raised. Crews whose anchor be one of yer hands are disbanded. Haul yer data ashore first to keep a copy.",
-		"source": "Your profile and characters are deleted, and can't be brought back. Groups whose anchor being is one of your characters are disbanded. Download your data first to keep a copy."
+		"message": "Yer profile and hands go to the deep, never to be raised.",
+		"source": "Your profile and characters are deleted, and can't be brought back."
+	},
+	"profile.deleteAccountNext": {
+		"message": "Scuttle my account",
+		"source": "Delete my account"
 	},
 	"profile.deleteAccountTitle": {
 		"message": "Scuttle yer account",

@@ -137,6 +137,12 @@
 	}
 }
 
+// The first dialog's Delete my account only goes on to the second dialog, so it sits beside Cancel
+.form-buttons.account-delete-buttons .danger
+{
+	margin-right: 0;
+}
+
 .account-delete-universe-list
 {
 	display: flex;
