@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -169,6 +169,12 @@ export class LobbyTab implements SavableTab
 	private async loadAreas(universe: EditableUniverse): Promise<void>
 	{
 		const version = ++this.version;
+
+		// Only roles that change the world may load the areas (see shared/src/editor.ts)
+		if (!canEditWorld(universe.role))
+		{
+			return;
+		}
 
 		try
 		{

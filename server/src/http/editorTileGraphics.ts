@@ -7,12 +7,12 @@
 import { randomUUID } from 'crypto';
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS, TILE_GRAPHIC_SIZES, type NewRef, type TileGraphicListPayload, type TileGraphicUploadRequest } from '@multiverse-kiln/shared';
+import { canEditWorld, MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS, TILE_GRAPHIC_SIZES, type NewRef, type TileGraphicListPayload, type TileGraphicUploadRequest } from '@multiverse-kiln/shared';
 
 import { countTileGraphics, createTileGraphic, deleteTileGraphic, listTileGraphics, tileGraphicStorageKey } from '../db/tileGraphicRepo.js';
 import { prepareTileSheet } from '../images/tileSheets.js';
 import { putObject } from '../storage/objectStorage.js';
-import { universeContextOf } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { ChangeRefusal, recordRef, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 
 /**
@@ -22,7 +22,7 @@ import { ChangeRefusal, recordRef, refuse, type ChangeContext, type PreparedUplo
  */
 export function addTileGraphicRoutes(router: express.Router): void
 {
-	router.get('/tile-graphics', listTileGraphicsRoute);
+	router.get('/tile-graphics', requireRole(canEditWorld), listTileGraphicsRoute);
 }
 
 /**

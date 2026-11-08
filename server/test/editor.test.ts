@@ -268,6 +268,42 @@ describe('World editor API', () =>
 			}
 		});
 
+		it('keeps what only the world\'s tabs show from beta testers and translators', async () =>
+		{
+			// A ruleset with themes, so every list route answers
+			const universeId = await createUniverse(ada, 'Absalom Station', 'sf1e');
+			const areaId = await createArea(ada, universeId);
+			const [tile] = (await send<TileListPayload>(ada, 'GET', `/${universeId}/tiles?limit=1`)).body.tiles;
+			const paths = [
+				'/ruleset',
+				'/tiles',
+				`/tiles/${tile.id}/usage`,
+				'/tile-graphics',
+				'/items',
+				'/races',
+				'/classes',
+				'/themes',
+				'/difficulty-levels',
+				'/characters',
+				'/areas',
+				`/areas/${areaId}`,
+				`/areas/${areaId}/chunks?minChunkRow=0&maxChunkRow=0&minChunkColumn=0&maxChunkColumn=0`,
+				`/areas/${areaId}/links`
+			];
+
+			for (const [role, status] of [['beta_tester', 403], ['translator', 403], ['builder', 200]] as const)
+			{
+				const player = await logIn(`Player ${role}`);
+
+				await setUniverseRole(universeId, player.playerId, role);
+
+				for (const path of paths)
+				{
+					assert.strictEqual((await send(player, 'GET', `/${universeId}${path}`)).status, status, `${role} ${path}`);
+				}
+			}
+		});
+
 		it('answers 400 to a body that is not JSON, with a reason the client can translate', async () =>
 		{
 			const response = await send<ErrorPayload>(ada, 'POST', '', { rawBody: '{ not json' });
@@ -1091,7 +1127,6 @@ describe('World editor API', () =>
 			const grace = await logIn('Grace');
 
 			await setUniverseRole(universeId, grace.playerId, 'beta_tester');
-			assert.strictEqual((await send(grace, 'GET', `/${universeId}/items`)).status, 200);
 			assert.strictEqual((await createIn(grace, universeId, 'Item', torch)).status, 403);
 
 			await setUniverseRole(universeId, grace.playerId, 'builder');

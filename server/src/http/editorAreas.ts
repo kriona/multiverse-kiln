@@ -3,7 +3,7 @@
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { type AreaEvacuation, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type MapBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { type AreaEvacuation, canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type MapBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
@@ -13,7 +13,7 @@ import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
 import type { AreaPlace } from '../world/areaChanges.js';
-import { loadAreaContext, universeContextOf, areaContextOf } from './editorAccess.js';
+import { loadAreaContext, requireRole, universeContextOf, areaContextOf } from './editorAccess.js';
 import { ChangeRefusal, recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { chunkRange } from './editorPayloads.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
@@ -27,8 +27,8 @@ export function addAreaRoutes(router: express.Router): void
 {
 	const areaRouter = express.Router({ mergeParams: true });
 
-	router.get('/areas', listAreasRoute);
-	router.use('/areas/:areaId', loadAreaContext, areaRouter);
+	router.get('/areas', requireRole(canEditWorld), listAreasRoute);
+	router.use('/areas/:areaId', requireRole(canEditWorld), loadAreaContext, areaRouter);
 
 	areaRouter.get('/', getArea);
 	areaRouter.get('/chunks', getChunks);

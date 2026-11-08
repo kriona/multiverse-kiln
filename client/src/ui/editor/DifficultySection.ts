@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, loadedFrom, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, loadedFrom, type DifficultyLevel, type DifficultyLevelSettings, type EditableUniverse } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -160,7 +160,8 @@ export class DifficultySection implements SavableTab, FollowsOtherSaves
 		const universe = this.universe;
 		const version = ++this.requestVersion;
 
-		if (!universe)
+		// Only roles that change the world may load the levels (see shared/src/editor.ts)
+		if (!universe || !canEditWorld(universe.role))
 		{
 			return;
 		}

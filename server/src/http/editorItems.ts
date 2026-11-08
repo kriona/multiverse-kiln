@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { defineMessages, isItemType, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
@@ -12,7 +12,7 @@ import { countCustomItems, createCustomItem, deleteCustomItem, findItemKind, lis
 import { isRaceStartingItem } from '../db/raceRepo.js';
 import { isStartingItem } from '../db/startingItemRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { universeContextOf } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { itemListQuery } from './editorPayloads.js';
 import { sendInvalidRequest } from './errors.js';
@@ -45,7 +45,7 @@ const messages = defineMessages({
  */
 export function addItemRoutes(router: express.Router): void
 {
-	router.get('/items', listItems);
+	router.get('/items', requireRole(canEditWorld), listItems);
 }
 
 /**

@@ -4,12 +4,12 @@
  */
 import type express from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import { defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type NumberRef, type ThemeListPayload, type ThemeSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type NumberRef, type ThemeListPayload, type ThemeSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfTheme } from '../db/characterRepo.js';
 import { countCustomThemes, createCustomTheme, deleteCustomTheme, findThemeKind, loadEditorThemes, restoreDefaultTheme, saveEditedDefaultTheme, updateCustomTheme } from '../db/themeRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { universeContextOf } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { sendError } from './errors.js';
 
@@ -52,7 +52,7 @@ const messages = defineMessages({
 export function addThemeRoutes(router: express.Router): void
 {
 	router.use('/themes', requireThemes);
-	router.get('/themes', listThemes);
+	router.get('/themes', requireRole(canEditWorld), listThemes);
 }
 
 /**

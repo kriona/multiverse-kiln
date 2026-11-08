@@ -33,22 +33,24 @@ import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, Passag
  * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
  * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
- * - GET    /:universeId/ruleset                    RulesetSettings
- * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload
- * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile
- * - GET    /:universeId/tile-graphics              TileGraphicListPayload: the tile graphics the universe's editors uploaded
- * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload
- * - GET    /:universeId/races                      RaceListPayload
- * - GET    /:universeId/classes                    ClassListPayload
- * - GET    /:universeId/themes                     ThemeListPayload (rulesets with themes only, rulesetHasThemes())
- * - GET    /:universeId/difficulty-levels          DifficultyLevelListPayload
- * - GET    /:universeId/areas                      AreaListPayload
- * - GET    /:universeId/areas/:areaId              EditorArea
- * - GET    /:universeId/areas/:areaId/chunks       ChunkRange as query parameters -> ChunkListPayload
- * - GET    /:universeId/areas/:areaId/links        AreaLinkListPayload
+ * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
+ * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload (canEditWorld())
+ * - GET    /:universeId/tiles/:tileId/usage        TileUsagePayload: the areas whose maps use the tile (canEditWorld())
+ * - GET    /:universeId/tile-graphics              TileGraphicListPayload: the tile graphics the universe's editors uploaded (canEditWorld())
+ * - GET    /:universeId/items                      ItemListQuery as query parameters -> ItemListPayload (canEditWorld())
+ * - GET    /:universeId/races                      RaceListPayload (canEditWorld())
+ * - GET    /:universeId/classes                    ClassListPayload (canEditWorld())
+ * - GET    /:universeId/themes                     ThemeListPayload (rulesets with themes only, rulesetHasThemes(); canEditWorld())
+ * - GET    /:universeId/difficulty-levels          DifficultyLevelListPayload (canEditWorld())
+ * - GET    /:universeId/areas                      AreaListPayload (canEditWorld())
+ * - GET    /:universeId/areas/:areaId              EditorArea (canEditWorld())
+ * - GET    /:universeId/areas/:areaId/chunks       ChunkRange as query parameters -> ChunkListPayload (canEditWorld())
+ * - GET    /:universeId/areas/:areaId/links        AreaLinkListPayload (canEditWorld())
  *
- * Every route except the list and create needs a role in the universe. Every change to a universe is
- * saved through /:universeId/changes, which checks the player's role for each change
+ * Every route except the list and create needs a role in the universe. The routes for what only the
+ * tabs of roles that change the world show answer 403 to other roles, such as beta testers and
+ * translators. Every change to a universe is saved through /:universeId/changes, which checks the
+ * player's role for each change
  */
 export const EDITOR_UNIVERSES_PATH = '/editor/universes';
 

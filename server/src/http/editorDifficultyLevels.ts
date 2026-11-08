@@ -4,12 +4,12 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { defineMessages, MAX_DIFFICULTY_LEVELS, type DifficultyLevelListPayload, type DifficultyLevelSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, MAX_DIFFICULTY_LEVELS, type DifficultyLevelListPayload, type DifficultyLevelSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { countDifficultyLevels, createDifficultyLevel, deleteDifficultyLevel, findDefaultDifficultyLevel, findDifficultyLevel, listDifficultyLevels, updateDifficultyLevel } from '../db/difficultyRepo.js';
 import { moveGroupsToDifficultyLevel } from '../db/groupRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { universeContextOf } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 
 /**
@@ -40,7 +40,7 @@ const messages = defineMessages({
  */
 export function addDifficultyLevelRoutes(router: express.Router): void
 {
-	router.get('/difficulty-levels', listLevels);
+	router.get('/difficulty-levels', requireRole(canEditWorld), listLevels);
 }
 
 /**
