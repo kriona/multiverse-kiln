@@ -5,7 +5,7 @@ import { showAdminRefusal, startAdminPage } from './AdminPage';
 import { formatDateTime, t } from './localization';
 import type { AdminApi } from './network/adminApi';
 import { describeEditorError } from './network/editorApi';
-import { adminNoteMessages, notesCell, textCell, type AdminNote } from './ui/AdminList';
+import { adminNoteMessages, notesCell, replaceRows, textCell, type AdminNote } from './ui/AdminList';
 import { playerCell } from './ui/playerCell';
 import { ChangeTracker } from './ui/changeTracker';
 import { askToConfirm } from './ui/confirmDialog';
@@ -103,7 +103,7 @@ class AdminsPage
 
 		showMessage(this.listError, undefined);
 		this.loading.hidden = true;
-		this.rows.replaceChildren(...admins.map((admin) => this.adminRow(admin, (admins.length > 1))));
+		replaceRows(this.rows, admins.map((admin) => this.adminRow(admin, (admins.length > 1))));
 	}
 
 	/**
@@ -118,6 +118,8 @@ class AdminsPage
 		const row = document.createElement('tr');
 		const actions = document.createElement('td');
 		const notes: AdminNote[] = [];
+
+		row.dataset.key = admin.username;
 
 		if (admin.current)
 		{

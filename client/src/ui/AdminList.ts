@@ -79,6 +79,14 @@ export interface AdminListOptions<Row>
 	render: (row: Row) => HTMLTableRowElement;
 
 	/**
+	 * Which row a row is, kept when the list loads again, so keyboard focus stays on its controls (replaceRows())
+	 *
+	 * @param row The row
+	 * @return Its key
+	 */
+	key?: (row: Row) => string;
+
+	/**
 	 * Shown when a page couldn't be loaded for any reason but the server refusing the admin page
 	 */
 	loadFailed: MessageSource;
@@ -131,6 +139,8 @@ export class AdminList<Row>
 		this.nextButton = getElement(`${prefix}-next`, HTMLButtonElement);
 
 		this.search.maxLength = MAX_ADMIN_SEARCH_LENGTH;
+		// Takes focus when the row that had it is gone and none are left
+		this.empty.tabIndex = -1;
 		setOptions(this.filter, [
 			{
 				value: '',
@@ -247,8 +257,18 @@ export class AdminList<Row>
 
 		showMessage(this.error, undefined);
 		this.loading.hidden = true;
-		this.rows.replaceChildren(...page.rows.map((row) => this.options.render(row)));
 		this.empty.hidden = (page.rows.length > 0);
+		replaceRows(this.rows, page.rows.map((row) =>
+		{
+			const element = this.options.render(row);
+
+			if (this.options.key)
+			{
+				element.dataset.key = this.options.key(row);
+			}
+
+			return(element);
+		}), (this.empty.hidden ? undefined : this.empty));
 		this.page.textContent = ((page.total === 0)
 			? ''
 			: t({
@@ -274,6 +294,56 @@ export class AdminList<Row>
 			}));
 		}
 	}
+}
+
+/**
+ * The controls in a table row that can take keyboard focus
+ */
+const ROW_CONTROLS = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)';
+
+/**
+ * Replaces a table's rows. When keyboard focus was in one of them, as after a dialog opened from a row's
+ * button closes, it moves to the same control of that row's new copy (rows are matched by their data-key
+ * attribute), or when the row is gone, to the action of the row now in its place or of the last row, or
+ * to the fallback when there are none, since removing the element with focus sends it to the top of the page
+ *
+ * @param body The table's body
+ * @param rows The new rows
+ * @param fallback What takes focus when the row that had it is gone and no row is left to take it
+ */
+export function replaceRows(body: HTMLTableSectionElement, rows: readonly HTMLTableRowElement[], fallback?: HTMLElement): void
+{
+	const focused = document.activeElement;
+	const focusedRow = ((focused instanceof HTMLElement) ? focused.closest('tr') : null);
+
+	if (!focused || !focusedRow || (focusedRow.parentElement !== body))
+	{
+		body.replaceChildren(...rows);
+		return;
+	}
+
+	const rowIndex = [...body.rows].indexOf(focusedRow);
+	const controlIndex = [...focusedRow.querySelectorAll(ROW_CONTROLS)].indexOf(focused);
+	const key = focusedRow.dataset.key;
+	const sameRow = ((key === undefined) ? undefined : rows.find((row) => (row.dataset.key === key)));
+	let target: HTMLElement | undefined;
+
+	body.replaceChildren(...rows);
+
+	if (sameRow)
+	{
+		const controls = [...sameRow.querySelectorAll<HTMLElement>(ROW_CONTROLS)];
+
+		target = controls[Math.min(Math.max(0, controlIndex), (controls.length - 1))];
+	}
+	else if (rows.length > 0)
+	{
+		const row = rows[Math.min(rowIndex, (rows.length - 1))];
+
+		target = (row.querySelector<HTMLElement>(`.admin-actions :is(${ROW_CONTROLS})`) ?? row.querySelector<HTMLElement>(ROW_CONTROLS) ?? undefined);
+	}
+
+	(target ?? fallback)?.focus();
 }
 
 /**

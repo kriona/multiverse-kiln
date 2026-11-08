@@ -81,10 +81,20 @@ export function showAdminRefusal(error: unknown): boolean
 		return(false);
 	}
 
-	getElement('admin-content', HTMLElement).hidden = true;
-	getElement('admin-refusal-message', HTMLElement).textContent = error.message;
+	const content = getElement('admin-content', HTMLElement);
+	const message = getElement('admin-refusal-message', HTMLElement);
+	const hadFocus = content.contains(document.activeElement);
+
+	content.hidden = true;
+	message.textContent = error.message;
 	getElement('admin-two-factor-link', HTMLAnchorElement).hidden = (errorId(error.data) !== ADMIN_TWO_FACTOR_ERROR_ID);
 	getElement('admin-refusal', HTMLElement).hidden = false;
+
+	// Hiding the content takes focus to the top of the page, as after an admin removes themself
+	if (hadFocus)
+	{
+		message.focus();
+	}
 
 	return(true);
 }

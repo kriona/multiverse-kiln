@@ -47,6 +47,7 @@ void startAdminPage(async (api) =>
 				total: page.total
 			});
 		},
+		key: (universe) => universe.id,
 		render: (universe) => universeRow(universe, {
 			disable: () =>
 			{
