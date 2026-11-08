@@ -1,10 +1,10 @@
 /**
  * Logs the kiln-review skill's live checks in as existing accounts (.agents/skills/kiln-review/SKILL.md):
  *
- *   npm run review:session -w server -- <username>
+ *   npm run review:session -w server -- <username or email address>
  *   npm run review:session -w server -- --end <token>
  *
- * The first makes a session for the account and prints { "token": "...", "playerId": "..." } as JSON. The
+ * The first makes a session for the account and prints { "token": "...", "playerId": "...", "username": "..." } as JSON. The
  * token goes in a Cookie header, as SESSION_COOKIE (server/src/http/cookies.ts). The session isn't
  * remembered, like the bot login's (server/src/http/devLogin.ts), so it ends after an hour without use.
  * The second deletes the session a token belongs to
@@ -45,7 +45,7 @@ async function main(): Promise<number>
 
 	if ((values.end === undefined) ? (positionals.length !== 1) : (positionals.length !== 0))
 	{
-		console.error('Give one username to log in as, or --end and a token: npm run review:session -w server -- <username> | --end <token>');
+		console.error('Give one username or email address to log in as, or --end and a token: npm run review:session -w server -- <username or email address> | --end <token>');
 		return(1);
 	}
 
@@ -53,7 +53,7 @@ async function main(): Promise<number>
 	// check above has passed
 	const { pool } = await import('../src/db/client.js');
 	const { createToken, hashToken, isTokenForm } = await import('../src/auth/tokens.js');
-	const { findPlayerByUsername } = await import('../src/db/playerRepo.js');
+	const { findPlayer, findPlayerByUsername, findPlayerIdByEmail } = await import('../src/db/playerRepo.js');
 	const { createSession, deleteSession, findSessionByTokenHash } = await import('../src/db/sessionRepo.js');
 
 	closeDatabase = () => pool.end();
@@ -77,11 +77,15 @@ async function main(): Promise<number>
 		return(0);
 	}
 
-	const player = await findPlayerByUsername(positionals[0]);
+	// Usernames can't hold an @, so anything with one is an email address
+	const account = positionals[0];
+	const isEmail = account.includes('@');
+	const emailPlayerId = (isEmail ? await findPlayerIdByEmail(account) : undefined);
+	const player = (isEmail ? ((emailPlayerId === undefined) ? undefined : await findPlayer(emailPlayerId)) : await findPlayerByUsername(account));
 
 	if (!player)
 	{
-		console.error(`There is no player with the username ${positionals[0]}. Register the account first.`);
+		console.error(`There is no player with the ${(isEmail ? 'email address' : 'username')} ${account}. Register the account first.`);
 		return(1);
 	}
 
@@ -91,7 +95,8 @@ async function main(): Promise<number>
 
 	console.log(JSON.stringify({
 		token,
-		playerId: player.id
+		playerId: player.id,
+		username: player.username
 	}));
 
 	return(0);

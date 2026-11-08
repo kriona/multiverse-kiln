@@ -1,6 +1,7 @@
 ---
 name: kiln-review
-description: "Reviews the branch's changes, or the whole repository with full, in four passes (bugs, security, performance and the repository's own rules), checks every finding with an agent that didn't make it, proves findings against running code where it can, and writes numbered findings to scratchpad/. Use when the user runs /kiln-review, optionally naming full and any of bugs, security, performance and rules."
+description: "Reviews the branch's changes (or the whole repository with full) for bugs, security, performance and rules, verifies each finding, and writes them to scratchpad/"
+argument-hint: "[full] [bugs] [security] [performance] [rules]"
 disable-model-invocation: true
 ---
 # Kiln review
@@ -67,10 +68,10 @@ Read `scratchpad/kiln-review.md`.
 For each of the four accounts, from the repository root:
 
 ```bash
-npm run --silent review:session -w server -- <username>
+npm run --silent review:session -w server -- <username or email address>
 ```
 
-It prints `{ "token": "...", "playerId": "..." }`. It refuses to run unless `ENABLE_DEV_TOOLS` is on and `DATABASE_URL` is a database on this computer; if it refuses, stop and tell the user why. If it says an account doesn't exist, ask the user for another username.
+It prints `{ "token": "...", "playerId": "...", "username": "..." }`. It refuses to run unless `ENABLE_DEV_TOOLS` is on and `DATABASE_URL` is a database on this computer; if it refuses, stop and tell the user why. If it says an account doesn't exist, ask the user for another username.
 
 Write `scratchpad/review/{branch}/.sessions.json`:
 

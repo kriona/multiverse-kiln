@@ -26,7 +26,7 @@ Files outside the table's paths go to the area of the code they serve:
 | `server/test/editor*.test.ts`, `server/test/http.test.ts` and other tests of routes | http |
 | `server/src/app.config.ts`, `server/src/transport.ts`, `server/src/siteUrl.ts`, `server/src/devTools.ts` | http |
 | `shared/locales/`, `shared/scripts/` | logic (the rules pass checks the messages) |
-| `docker/postgres/` | db |
+| `docker/postgres/`, the cleanup jobs (`server/src/authSweep.ts`, `server/src/characterSweep.ts`, `server/src/universeEditSweep.ts`) | db |
 | `server/scripts/`, `server/loadtest/`, root and package config (`package.json`, `eslint.config.js`, `tsconfig*.json`, `docker-compose.yml`, `.env.example` files) | other |
 
 A test belongs with the code it tests: when it's unclear from the name, read its imports.

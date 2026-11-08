@@ -148,7 +148,7 @@ npm run db:generate -w server        # create a migration after changing server/
 npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <username> makes that account its creator
 npm run admin:add -w server -- <username>  # make an account a server admin (it needs 2FA on to use the admin pages)
-npm run review:session -w server -- <username>  # print a session token for an existing account, for the kiln-review skill's live checks; -- --end <token> ends it (dev tools and a local database only)
+npm run review:session -w server -- <username or email>  # print a session token for an existing account, for the kiln-review skill's live checks; -- --end <token> ends it (dev tools and a local database only)
 npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
 npm run dev -w server                # Colyseus on wss://www.multiversekiln.localhost:2567
 npm run dev -w client                # Vite on https://www.multiversekiln.localhost:5173
