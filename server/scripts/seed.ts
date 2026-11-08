@@ -276,6 +276,7 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 			name: area.name,
 			enabled: true,
 			indoors: area.indoors,
+			lightLevel: (area.lightLevel ?? 'lit'),
 			defaultTileId: requireTile(tileIds, area.defaultTile),
 			loopsEastWest: (area.loopsEastWest ?? false),
 			loopsNorthSouth: false,

@@ -72,7 +72,25 @@ const NIGHT_COLOR = 0x0a1030;
 const NIGHT_ALPHA = 0.65;
 
 /**
- * Depth of the night color: over the map and players, under their names and the link prompt
+ * How opaque the night color is at full dark for a character with darkvision and light sensitivity,
+ * whose eyes are made for the dark
+ */
+const DARK_ADAPTED_NIGHT_ALPHA = 0.1;
+
+/**
+ * The color laid over the map in daylight outdoors for a character with darkvision and light
+ * sensitivity, whom bright light dazzles: the night color's opposite
+ */
+const GLARE_COLOR = 0xf5efcf;
+
+/**
+ * How opaque the glare is in full daylight; the map fades toward it as the light comes up
+ */
+const GLARE_ALPHA = NIGHT_ALPHA;
+
+/**
+ * Depth of the night color and the glare: over the map and players, under their names and the link
+ * prompt
  */
 const NIGHT_DEPTH = 0.5;
 
@@ -218,6 +236,11 @@ export class MapScene extends Phaser.Scene
 	private night?: Phaser.GameObjects.Rectangle;
 
 	/**
+	 * Brightens the view in daylight outdoors for a character whom bright light dazzles
+	 */
+	private glare?: Phaser.GameObjects.Rectangle;
+
+	/**
 	 * The area's map as vision sees it, from the chunks received so far
 	 */
 	private visionMap!: VisionMap;
@@ -268,6 +291,7 @@ export class MapScene extends Phaser.Scene
 		this.lastSentMove = undefined;
 		this.announcer = new MapAnnouncer();
 		this.night = undefined;
+		this.glare = undefined;
 		this.fog = undefined;
 		this.paper = undefined;
 		this.fogKey = '';
@@ -336,7 +360,12 @@ export class MapScene extends Phaser.Scene
 		});
 
 		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
-		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR, NIGHT_ALPHA)
+		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR)
+			.setOrigin(0, 0)
+			.setScrollFactor(0)
+			.setDepth(NIGHT_DEPTH)
+			.setAlpha(0);
+		this.glare = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, GLARE_COLOR)
 			.setOrigin(0, 0)
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
@@ -601,36 +630,31 @@ export class MapScene extends Phaser.Scene
 
 	/**
 	 * Darkens the map for the light where the player is: the time of day outdoors, or an indoor area's
-	 * light level. Outdoors, tells screen reader users as the part of the day changes; indoors the light
-	 * doesn't change with it
+	 * light level. A character with darkvision and light sensitivity sees the dark only faintly, and
+	 * outdoors the daylight glares for them. Outdoors, tells screen reader users as the part of the day
+	 * changes; indoors the light doesn't change with it
 	 */
 	private updateDaylight(): void
 	{
-		const seconds = this.currentSecondOfDay();
+		const own = this.room.state.players?.get(this.ownPlayerId);
 
-		if (seconds === undefined)
+		if (!own)
 		{
 			return;
 		}
 
-		this.night?.setAlpha(1 - areaLight(this.area.lightLevel, seconds));
+		const seconds = this.secondOfDayAt(this.cellOf(own));
+		const light = areaLight(this.area.lightLevel, seconds);
+		const outdoors = (this.area.lightLevel === null);
+		const darkAdapted = ((own.darkvision > 0) && own.lightSensitivity);
 
-		if (this.area.lightLevel === null)
+		this.night?.setAlpha((1 - light) * (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA));
+		this.glare?.setAlpha(((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0));
+
+		if (outdoors)
 		{
 			this.announcer.partOfDayChanged(partOfDay(seconds));
 		}
-	}
-
-	/**
-	 * The time of day where the player is
-	 *
-	 * @return Seconds since midnight, or undefined before the player is on the map
-	 */
-	private currentSecondOfDay(): number | undefined
-	{
-		const own = this.room.state.players?.get(this.ownPlayerId);
-
-		return((own ? this.secondOfDayAt(this.cellOf(own)) : undefined));
 	}
 
 	/**
