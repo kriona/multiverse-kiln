@@ -23,6 +23,7 @@ import { SearchSelect } from './SearchSelect';
 import { timeZoneChoices } from './timeZones';
 import { showToast } from './toast';
 import { TwoFactorConfirmDialog } from './TwoFactorConfirmDialog';
+import { canHaveTwoFactor, type TwoFactorAccount } from './TwoFactorEmailCode';
 import { TwoFactorSetupDialog } from './TwoFactorSetupDialog';
 
 /**
@@ -278,17 +279,17 @@ export class OwnProfileScreen
 
 		this.twoFactorOnButton.addEventListener('click', () =>
 		{
-			this.twoFactorDialog.open((this.profile?.email ?? null));
+			this.twoFactorDialog.open(this.twoFactorAccount());
 		});
 
 		this.twoFactorOffButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('turnOff', (this.profile?.email ?? null), (this.profile?.serverAdmin ?? false));
+			this.twoFactorConfirmDialog.open('turnOff', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false));
 		});
 
 		this.twoFactorCodesButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('newCodes', (this.profile?.email ?? null), (this.profile?.serverAdmin ?? false));
+			this.twoFactorConfirmDialog.open('newCodes', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false));
 		});
 
 		this.forgetBrowsersButton.addEventListener('click', () =>
@@ -424,10 +425,23 @@ export class OwnProfileScreen
 			[TWO_FACTOR_SETUP_PARAMETER]: undefined
 		});
 
-		if (this.profile?.hasPassword && (this.profile.twoFactor === null))
+		if (this.profile && canHaveTwoFactor(this.profile) && (this.profile.twoFactor === null))
 		{
-			this.twoFactorDialog.open(this.profile.email);
+			this.twoFactorDialog.open(this.twoFactorAccount());
 		}
+	}
+
+	/**
+	 * What changing the account's 2FA checks it's the player with
+	 *
+	 * @return The account's address, and whether it has a password
+	 */
+	private twoFactorAccount(): TwoFactorAccount
+	{
+		return({
+			email: (this.profile?.email ?? null),
+			hasPassword: (this.profile?.hasPassword ?? true)
+		});
 	}
 
 	/**
@@ -627,8 +641,8 @@ export class OwnProfileScreen
 	}
 
 	/**
-	 * Shows whether the account has 2FA, with its recovery codes and trusted browsers. Only an account
-	 * with a password has it: Google and Discord logins rely on the provider's own
+	 * Shows whether the account has 2FA, with its recovery codes and trusted browsers, for an account
+	 * that can have it (canHaveTwoFactor())
 	 *
 	 * @param profile The profile
 	 */
@@ -638,7 +652,7 @@ export class OwnProfileScreen
 
 		for (const element of [this.twoFactorLabel, this.twoFactorRow])
 		{
-			element.hidden = !profile.hasPassword;
+			element.hidden = !canHaveTwoFactor(profile);
 		}
 
 		for (const element of [this.trustedBrowsersLabel, this.trustedBrowsersRow])

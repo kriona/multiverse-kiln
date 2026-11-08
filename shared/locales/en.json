@@ -3659,6 +3659,14 @@
 		"defaultMessage": "Your code to change your email address on {siteName}",
 		"description": "Subject of the email, sent to the new address, with the code for changing an account's email address; {siteName} is the site's name"
 	},
+	"email.code.changeTwoFactor.intro": {
+		"defaultMessage": "Someone asked to change the two-factor authentication of your account on {siteName}: to turn it on or off, or make new recovery codes. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email with the code that checks it's the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.changeTwoFactor.subject": {
+		"defaultMessage": "Your code to change two-factor authentication on {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password; {siteName} is the site's name"
+	},
 	"email.code.confirmEmailChange.intro": {
 		"defaultMessage": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:",
 		"description": "First paragraph of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password, shown just above the code; {siteName} is the site's name"
@@ -3879,6 +3887,10 @@
 		"defaultMessage": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page.",
 		"description": "Why changing the password was refused: the account logs in only with Google or Discord, so it has no password yet"
 	},
+	"error.auth.noPasswordToCheck": {
+		"defaultMessage": "Your account has no password to check. Reload the page and try again.",
+		"description": "Why a change on the player's own profile that asks for their password was refused: the account has no password (it logs in only with Google or Discord), though the page asked for one"
+	},
 	"error.auth.passwordBreached": {
 		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
 		"description": "Shown under a new password field when the password is on HaveIBeenPwned's list of passwords leaked in data breaches"
@@ -3943,9 +3955,9 @@
 		"defaultMessage": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again.",
 		"description": "Why finishing a login with an authenticator or recovery code was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
 	},
-	"error.auth.twoFactorNoPassword": {
-		"defaultMessage": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own.",
-		"description": "Why setting up two-factor authentication was refused: the account logs in only with Google or Discord, whose own two-factor authentication protects it"
+	"error.auth.twoFactorNoEmail": {
+		"defaultMessage": "Your account has neither a password nor an email address to check it's you, so two-factor authentication can't be changed.",
+		"description": "Why turning two-factor authentication on or off, or making new recovery codes, was refused: the account logs in only with Google or Discord and has no email address, so there is no password to ask for or address to email a code to"
 	},
 	"error.auth.twoFactorNotOn": {
 		"defaultMessage": "Two-factor authentication isn't on for your account.",
@@ -5161,7 +5173,7 @@
 	},
 	"login.linkWithCode": {
 		"defaultMessage": "Email me a code",
-		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"
+		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes"
 	},
 	"login.newPassword": {
 		"defaultMessage": "Password",
@@ -6625,7 +6637,7 @@
 	},
 	"profile.makeRecoveryCodes": {
 		"defaultMessage": "Make new codes",
-		"description": "Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"
+		"description": "Button in the dialog that makes new recovery codes: checks the password (or the emailed code) and the authenticator code, and replaces the old codes with new ones"
 	},
 	"profile.newEmail": {
 		"defaultMessage": "New email address",
@@ -6781,11 +6793,11 @@
 	},
 	"profile.twoFactorContinue": {
 		"defaultMessage": "Continue",
-		"description": "Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"
+		"description": "Button in the dialog that sets up two-factor authentication: checks the password, or the emailed code, and shows the QR code"
 	},
 	"profile.twoFactorDisable": {
 		"defaultMessage": "Turn off",
-		"description": "Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"
+		"description": "Button in the dialog that turns off two-factor authentication: checks the password (or the emailed code) and the authenticator code, and turns it off"
 	},
 	"profile.twoFactorDisableFailed": {
 		"defaultMessage": "Could not turn off two-factor authentication.",
@@ -6799,6 +6811,14 @@
 		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on.",
 		"description": "In the dialog that turns off two-factor authentication, for one of the site's admins, who need it on to use the admin pages"
 	},
+	"profile.twoFactorDisableIntroProvider": {
+		"defaultMessage": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten.",
+		"description": "In the dialog that turns off two-factor authentication, for an account without a password, which logs in only with Google or Discord"
+	},
+	"profile.twoFactorDisableIntroProviderAdmin": {
+		"defaultMessage": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on.",
+		"description": "In the dialog that turns off two-factor authentication, for one of the site's admins whose account has no password (it logs in only with Google or Discord); admins need it on to use the admin pages"
+	},
 	"profile.twoFactorDisableTitle": {
 		"defaultMessage": "Turn off two-factor authentication",
 		"description": "Title of the dialog that turns off two-factor authentication"
@@ -6806,6 +6826,14 @@
 	"profile.twoFactorDisabled": {
 		"defaultMessage": "Two-factor authentication is off.",
 		"description": "Shown once the player has turned off two-factor authentication from their profile"
+	},
+	"profile.twoFactorEmailCodeIntro": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}.",
+		"description": "In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, which logs in only with Google or Discord; {email} is the account's address"
+	},
+	"profile.twoFactorEmailCodeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, once a code was sent to the account's address; {email} is that address"
 	},
 	"profile.twoFactorEnable": {
 		"defaultMessage": "Turn on",
@@ -6842,6 +6870,10 @@
 	"profile.twoFactorSetupIntro": {
 		"defaultMessage": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.",
 		"description": "First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first"
+	},
+	"profile.twoFactorSetupIntroProvider": {
+		"defaultMessage": "With two-factor authentication, logging in with Google or Discord also asks for a code from an app on your phone, so someone who gets into your Google or Discord account still can't get in here. Every other browser logged in to your account is logged out when it turns on.",
+		"description": "First paragraph of the dialog that sets up two-factor authentication, for an account without a password, which logs in only with Google or Discord; a code emailed to the account checks it's the player first"
 	},
 	"profile.twoFactorSetupTitle": {
 		"defaultMessage": "Turn on two-factor authentication",

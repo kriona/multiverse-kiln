@@ -296,7 +296,8 @@ export interface EditableUniverseListPayload
 
 	/**
 	 * What the Create Universe dialog needs to offer to turn on 2FA, when the player's account can (it
-	 * has a password, which setting it up asks for, and 2FA is off); null when it can't
+	 * has a password or an email address, which setting it up checks it's them with, and 2FA is off);
+	 * null when it can't
 	 */
 	twoFactorOffer: TwoFactorOffer | null;
 }
@@ -313,9 +314,14 @@ export interface TwoFactorOffer
 
 	/**
 	 * The account's email address, which tells password managers which account the password asked for
-	 * is for, or null when it has none
+	 * is for, and which an account without a password is sent a code at; null when it has none
 	 */
 	email: string | null;
+
+	/**
+	 * Whether the account has a password, which setting up 2FA asks for; one without is emailed a code
+	 */
+	hasPassword: boolean;
 }
 
 /**

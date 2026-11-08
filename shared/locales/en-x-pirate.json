@@ -3659,6 +3659,14 @@
 		"message": "Yer code to change yer email address on {siteName}",
 		"source": "Your code to change your email address on {siteName}"
 	},
+	"email.code.changeTwoFactor.intro": {
+		"message": "Some scallywag asked to change the two-factor authentication o' yer account on {siteName}: to raise it or strike it, or make new recovery codes. If 'twas ye, enter this code to sail on:",
+		"source": "Someone asked to change the two-factor authentication of your account on {siteName}: to turn it on or off, or make new recovery codes. If it was you, enter this code to go on:"
+	},
+	"email.code.changeTwoFactor.subject": {
+		"message": "Yer code to change two-factor authentication on {siteName}",
+		"source": "Your code to change two-factor authentication on {siteName}"
+	},
 	"email.code.confirmEmailChange.intro": {
 		"message": "Some scallywag asked to move yer account on {siteName} to another email address. If 'twas ye, enter this code to sail on:",
 		"source": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:"
@@ -3879,6 +3887,10 @@
 		"message": "Yer account has no password to change. To give it one, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
 		"source": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page."
 	},
+	"error.auth.noPasswordToCheck": {
+		"message": "Yer account has no password to check. Hoist the page again an' have another go.",
+		"source": "Your account has no password to check. Reload the page and try again."
+	},
 	"error.auth.passwordBreached": {
 		"message": "This password washed up in a data breach, so scallywags try it. Choose another.",
 		"source": "This password has turned up in a data breach, so attackers try it. Choose another."
@@ -3943,9 +3955,9 @@
 		"message": "Too long has passed since ye gave yer password, or too many codes were wrong. Come aboard with yer password again.",
 		"source": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again."
 	},
-	"error.auth.twoFactorNoPassword": {
-		"message": "Two-factor authentication be for comin' aboard with a password, an' yer account has none. Google an' Discord ask for their own.",
-		"source": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own."
+	"error.auth.twoFactorNoEmail": {
+		"message": "Yer account has neither a password nor an email address to prove it be ye, so two-factor authentication can't be changed.",
+		"source": "Your account has neither a password nor an email address to check it's you, so two-factor authentication can't be changed."
 	},
 	"error.auth.twoFactorNotOn": {
 		"message": "Two-factor authentication ain't raised on yer account.",
@@ -6799,6 +6811,14 @@
 		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
 		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
 	},
+	"profile.twoFactorDisableIntroProvider": {
+		"message": "Comin' aboard with Google or Discord won't ask for a code from the app no more. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
+		"source": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten."
+	},
+	"profile.twoFactorDisableIntroProviderAdmin": {
+		"message": "Comin' aboard with Google or Discord won't ask for a code from the app no more. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
+		"source": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
+	},
 	"profile.twoFactorDisableTitle": {
 		"message": "Strike two-factor authentication",
 		"source": "Turn off two-factor authentication"
@@ -6806,6 +6826,14 @@
 	"profile.twoFactorDisabled": {
 		"message": "Two-factor authentication be struck.",
 		"source": "Two-factor authentication is off."
+	},
+	"profile.twoFactorEmailCodeIntro": {
+		"message": "To be sure it be ye, we'll send a letter with a code to {email}.",
+		"source": "To check it's you, we'll email a code to {email}."
+	},
+	"profile.twoFactorEmailCodeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to sail on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
 	},
 	"profile.twoFactorEnable": {
 		"message": "Raise it",
@@ -6842,6 +6870,10 @@
 	"profile.twoFactorSetupIntro": {
 		"message": "With two-factor authentication, comin' aboard also asks for a code from an app on yer phone, so a scallywag who learns yer password still can't board. Every other browser aboard yer account goes ashore when it be turned on. First, enter yer password.",
 		"source": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password."
+	},
+	"profile.twoFactorSetupIntroProvider": {
+		"message": "With two-factor authentication, comin' aboard with Google or Discord also asks for a code from an app on yer phone, so a scallywag who seizes yer Google or Discord account still can't board here. Every other browser aboard yer account goes ashore when it be turned on.",
+		"source": "With two-factor authentication, logging in with Google or Discord also asks for a code from an app on your phone, so someone who gets into your Google or Discord account still can't get in here. Every other browser logged in to your account is logged out when it turns on."
 	},
 	"profile.twoFactorSetupTitle": {
 		"message": "Raise two-factor authentication",

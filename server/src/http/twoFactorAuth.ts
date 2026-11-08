@@ -4,6 +4,10 @@
  * browsers. Also the check the other auth routes make when an account with 2FA logs in, resets its
  * password or links a provider login (checkSecondFactor())
  *
+ * Changing an account's 2FA asks for its password, or for an account without one (it logs in only with
+ * Google or Discord), a code sent to its address (purpose 'changeTwoFactor'), so a stolen session alone
+ * can't turn 2FA on and lock the owner out, or turn it off
+ *
  * Turning 2FA on is two requests: setup gives the logged-in player a new secret for their authenticator
  * app (only in the body of a POST answer, never in an address), and enable turns it on once the app
  * gives a right code, answering with the recovery codes. The server keeps the secret encrypted
@@ -22,6 +26,7 @@ import { resolveSession, startSession, type SessionIdentity } from '../auth/sess
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import { decryptTotpSecret, encryptTotpSecret } from '../auth/totpSecrets.js';
 import type { Executor } from '../db/client.js';
+import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
 import { findEmailRecipient, findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
 import { findRateLimitTimes, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
@@ -35,7 +40,7 @@ import { serverAdminChanges } from '../players/serverAdminChanges.js';
 import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpStep, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
 import { accountPasswordLimits, authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
-import { clearCookie, readCookie, setCookie, TRUSTED_BROWSER_COOKIE, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
+import { clearCookie, CONTINUATION_COOKIE, readCookie, setCookie, TRUSTED_BROWSER_COOKIE, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
 
 /**
@@ -88,9 +93,14 @@ const twoFactorMessages = defineMessages({
 		description: 'Shown under the two-factor code field when the account had too many wrong authenticator app codes in the past day, so only recovery codes are taken for now; {hours} is how long until an authenticator code is taken again'
 	},
 	noPassword: {
-		id: 'error.auth.twoFactorNoPassword',
-		defaultMessage: 'Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own.',
-		description: 'Why setting up two-factor authentication was refused: the account logs in only with Google or Discord, whose own two-factor authentication protects it'
+		id: 'error.auth.noPasswordToCheck',
+		defaultMessage: 'Your account has no password to check. Reload the page and try again.',
+		description: 'Why a change on the player\'s own profile that asks for their password was refused: the account has no password (it logs in only with Google or Discord), though the page asked for one'
+	},
+	noEmail: {
+		id: 'error.auth.twoFactorNoEmail',
+		defaultMessage: 'Your account has neither a password nor an email address to check it\'s you, so two-factor authentication can\'t be changed.',
+		description: 'Why turning two-factor authentication on or off, or making new recovery codes, was refused: the account logs in only with Google or Discord and has no email address, so there is no password to ask for or address to email a code to'
 	}
 });
 
@@ -133,7 +143,7 @@ const twoFactorLoginRequest = z.object({
 }) satisfies z.ZodType<TwoFactorLoginRequest>;
 
 const twoFactorSetupRequest = z.object({
-	password
+	password: password.nullable()
 }) satisfies z.ZodType<TwoFactorSetupRequest>;
 
 const twoFactorEnableRequest = z.object({
@@ -142,13 +152,13 @@ const twoFactorEnableRequest = z.object({
 }) satisfies z.ZodType<TwoFactorEnableRequest>;
 
 const twoFactorDisableRequest = z.object({
-	password,
+	password: password.nullable(),
 	code: twoFactorCode,
 	locale
 }) satisfies z.ZodType<TwoFactorDisableRequest>;
 
 const recoveryCodesRequest = z.object({
-	password,
+	password: password.nullable(),
 	code: twoFactorCode,
 	locale
 }) satisfies z.ZodType<RecoveryCodesRequest>;
@@ -472,6 +482,68 @@ export async function checkAccountPassword(request: Request, response: Response,
 }
 
 /**
+ * How a request changing the logged-in account's 2FA showed it's the account's owner: with its
+ * password, or, for an account without one, with a code sent to its address that this browser entered
+ * (purpose 'changeTwoFactor'), which lockEmailConfirmation() checks in the change's transaction
+ */
+type OwnerCheck = 'password' | 'emailCode';
+
+/**
+ * Checks it's the owner changing the logged-in account's 2FA, so a stolen session alone can't: its
+ * password, or for an account without one, that it has an address to send a code to
+ *
+ * @param request The request
+ * @param response The response, which gets a Retry-After header when there were too many tries
+ * @param playerId The account
+ * @param typedPassword The password as typed, or null when the browser says the account has none
+ * @param now The time now
+ * @return The refusal, or how the request shows it's the owner
+ */
+async function checkOwner(request: Request, response: Response, playerId: string, typedPassword: string | null, now: Date): Promise<AuthRefusal | OwnerCheck>
+{
+	if ((await findPasswordHash(playerId)) !== null)
+	{
+		return((await checkAccountPassword(request, response, playerId, (typedPassword ?? ''), now)) ?? 'password');
+	}
+
+	if ((await findPlayerEmail(playerId)) === null)
+	{
+		return({
+			status: 400,
+			message: twoFactorMessages.noEmail
+		});
+	}
+
+	return('emailCode');
+}
+
+/**
+ * Finds the code sent to the logged-in account's address (purpose 'changeTwoFactor') that this browser
+ * entered, for an account without a password
+ *
+ * @param request The request
+ * @param playerId The account
+ * @param now The time now
+ * @param executor A transaction
+ * @return The code's ID, to delete once the change is made, or the refusal when the browser hasn't entered one
+ */
+async function lockEmailConfirmation(request: Request, playerId: string, now: Date, executor: Executor): Promise<AuthRefusal | string>
+{
+	const continuationHash = cookieTokenHash(request, CONTINUATION_COOKIE);
+	const code = ((continuationHash === undefined) ? undefined : await lockContinuation('changeTwoFactor', continuationHash, now, executor));
+
+	if (!code || (code.playerId !== playerId))
+	{
+		return({
+			status: 403,
+			message: authMessages.enterCodeFirst
+		});
+	}
+
+	return(code.id);
+}
+
+/**
  * POST AUTH_TWO_FACTOR_LOGIN_PATH: finishes a login whose password was right, with an authenticator or
  * recovery code, from the browser that gave the password. Too many wrong codes end the login. A browser
  * the player chooses to trust skips the code for TRUSTED_BROWSER_DAYS
@@ -568,7 +640,8 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 
 /**
  * POST AUTH_TWO_FACTOR_SETUP_PATH: starts turning on 2FA for the logged-in account, once its password is
- * given: makes a new secret for the authenticator app, replacing a setup already started
+ * given, or for an account without one, once this browser has entered a code sent to its address: makes
+ * a new secret for the authenticator app, replacing a setup already started. The emailed code works once
  *
  * @param request The request, with a TwoFactorSetupRequest
  * @param response The response: a TwoFactorSetupPayload
@@ -590,8 +663,41 @@ async function setupRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	const playerId = session.playerId;
 	const now = new Date();
-	const problem = await checkAccountPassword(request, response, session.playerId, body.data.password, now);
+	const owner = await checkOwner(request, response, playerId, body.data.password, now);
+
+	if (typeof owner !== 'string')
+	{
+		sendRefusal(response, owner);
+		return;
+	}
+
+	const secret = randomBytes(TOTP_SECRET_BYTES);
+	const problem = await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
+	{
+		const emailCodeId = ((owner === 'emailCode') ? await lockEmailConfirmation(request, playerId, now, executor) : undefined);
+
+		if (typeof emailCodeId === 'object')
+		{
+			return(emailCodeId);
+		}
+
+		if (!(await saveAuthenticatorSetup(playerId, encryptTotpSecret(secret, playerId), now, executor)))
+		{
+			return({
+				status: 409,
+				message: twoFactorMessages.alreadyOn
+			});
+		}
+
+		if (emailCodeId !== undefined)
+		{
+			await deleteEmailCode(emailCodeId, executor);
+		}
+
+		return(undefined);
+	});
 
 	if (problem)
 	{
@@ -599,15 +705,9 @@ async function setupRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const secret = randomBytes(TOTP_SECRET_BYTES);
-
-	if (!(await saveAuthenticatorSetup(session.playerId, encryptTotpSecret(secret, session.playerId), now)))
+	if (owner === 'emailCode')
 	{
-		sendRefusal(response, {
-			status: 409,
-			message: twoFactorMessages.alreadyOn
-		});
-		return;
+		clearCookie(response, CONTINUATION_COOKIE);
 	}
 
 	const secretBase32 = encodeBase32(secret);
@@ -736,30 +836,40 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Checks the password and code a request to change the logged-in account's 2FA gives
+ * Checks what a request to change the logged-in account's 2FA gives: its password, or for an account
+ * without one, a code sent to its address that this browser entered (which works once, and stays usable
+ * while the authenticator or recovery code is wrong), and an authenticator or recovery code
  *
  * @param request The request
  * @param response The response
  * @param playerId The account
- * @param typedPassword The password as typed
+ * @param typedPassword The password as typed, or null when the browser says the account has none
  * @param typedCode The authenticator or recovery code as typed
  * @param emailLocale The language the request asked its emails in
  * @param now The time now
  * @param change What to do once both are right, in the same transaction
  * @return The change's result, or undefined when the request was refused
  */
-async function changeTwoFactor<Result>(request: Request, response: Response, playerId: string, typedPassword: string, typedCode: string, emailLocale: string, now: Date, change: (executor: Executor) => Promise<Result>): Promise<{ result: Result; check: SecondFactorOutcome } | undefined>
+async function changeTwoFactor<Result>(request: Request, response: Response, playerId: string, typedPassword: string | null, typedCode: string, emailLocale: string, now: Date, change: (executor: Executor) => Promise<Result>): Promise<{ result: Result; check: SecondFactorOutcome } | undefined>
 {
-	const problem = await checkAccountPassword(request, response, playerId, typedPassword, now);
+	const owner = await checkOwner(request, response, playerId, typedPassword, now);
 
-	if (problem)
+	if (typeof owner !== 'string')
 	{
-		sendRefusal(response, problem);
+		sendRefusal(response, owner);
 		return(undefined);
 	}
 
 	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { result: Result; check: SecondFactorOutcome }> =>
 	{
+		// Before the authenticator code, so a browser without the emailed code doesn't use up the account's tries
+		const emailCodeId = ((owner === 'emailCode') ? await lockEmailConfirmation(request, playerId, now, executor) : undefined);
+
+		if (typeof emailCodeId === 'object')
+		{
+			return(emailCodeId);
+		}
+
 		const check = await checkSecondFactor(request, response, playerId, typedCode, now, executor, {
 			trustedBrowserSkips: false,
 			emailLocale
@@ -778,6 +888,11 @@ async function changeTwoFactor<Result>(request: Request, response: Response, pla
 			return(check.refusal);
 		}
 
+		if (emailCodeId !== undefined)
+		{
+			await deleteEmailCode(emailCodeId, executor);
+		}
+
 		return({
 			result: await change(executor),
 			check
@@ -790,13 +905,19 @@ async function changeTwoFactor<Result>(request: Request, response: Response, pla
 		return(undefined);
 	}
 
+	if (owner === 'emailCode')
+	{
+		clearCookie(response, CONTINUATION_COOKIE);
+	}
+
 	return(outcome);
 }
 
 /**
- * POST AUTH_TWO_FACTOR_DISABLE_PATH: turns off 2FA for the logged-in account, once its password and an
- * authenticator or recovery code are given. Its recovery codes and trusted browsers go with it, and a
- * server admin's open editors stop letting them edit with the site admin role
+ * POST AUTH_TWO_FACTOR_DISABLE_PATH: turns off 2FA for the logged-in account, once its password (or
+ * without one, an emailed code) and an authenticator or recovery code are given. Its recovery codes and
+ * trusted browsers go with it, and a server admin's open editors stop letting them edit with the site
+ * admin role
  *
  * @param request The request, with a TwoFactorDisableRequest
  * @param response The response: 204
@@ -847,8 +968,8 @@ async function disableRoute(request: Request, response: Response): Promise<void>
 }
 
 /**
- * POST AUTH_RECOVERY_CODES_PATH: replaces the logged-in account's recovery codes, once its password and
- * an authenticator or recovery code are given
+ * POST AUTH_RECOVERY_CODES_PATH: replaces the logged-in account's recovery codes, once its password (or
+ * without one, an emailed code) and an authenticator or recovery code are given
  *
  * @param request The request, with a RecoveryCodesRequest
  * @param response The response: a RecoveryCodesPayload

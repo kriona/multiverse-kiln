@@ -97,6 +97,56 @@ describe('2FA routes', () =>
 	}
 
 	/**
+	 * Makes an account that logs in only with Google or Discord
+	 *
+	 * @param username The account's username
+	 * @param email Its address, or null for none
+	 * @return Its ID
+	 */
+	async function addPasswordlessAccount(username: string, email: string | null): Promise<string>
+	{
+		return((await createPlayer({
+			username,
+			displayName: username,
+			email,
+			passwordHash: null
+		})).id);
+	}
+
+	/**
+	 * A browser logged in to an account, as a Google or Discord login would leave it
+	 *
+	 * @param playerId The account
+	 * @return The browser
+	 */
+	async function logInAs(playerId: string): Promise<Browser>
+	{
+		const browser = new Browser();
+
+		browser.cookies.set('__Host-kiln-session', (await logInBrowser(playerId)).cookie.split('=')[1]);
+
+		return(browser);
+	}
+
+	/**
+	 * Asks for a code to change the 2FA of the account a browser is logged in to, and enters it
+	 *
+	 * @param browser The browser
+	 * @param email The account's address
+	 */
+	async function enterTwoFactorEmailCode(browser: Browser, email: string): Promise<void>
+	{
+		const sent = emails.length;
+
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'changeTwoFactor', email, locale: 'en' })).status, 204);
+		await waitUntil(() => (emails.length > sent));
+
+		const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[emails.length - 1].text)?.[1];
+
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'changeTwoFactor', email, code })).status, 200);
+	}
+
+	/**
 	 * The kinds of Ada's auth events, oldest first
 	 *
 	 * @return The kinds
@@ -200,18 +250,36 @@ describe('2FA routes', () =>
 			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_ENABLE_PATH, { code: '123456', locale: 'en' })).status, 403);
 		});
 
-		it('isn\'t offered to an account without a password', async () =>
+		it('takes a code emailed to an account without a password, once, in place of the password', async () =>
 		{
-			const player = await createPlayer({
-				username: 'grace',
-				displayName: 'Grace',
-				email: 'grace@example.com',
-				passwordHash: null
-			});
-			const browser = new Browser();
+			const grace = await addPasswordlessAccount('grace', 'grace@example.com');
+			const browser = await logInAs(grace);
 
-			browser.cookies.set('__Host-kiln-session', (await logInBrowser(player.id)).cookie.split('=')[1]);
-			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: PASSWORD })).status, 400);
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null })).status, 403);
+			await enterTwoFactorEmailCode(browser, 'grace@example.com');
+			assert.strictEqual(emails.length, 1);
+			assert.match(emails[0].subject, /change two-factor authentication/);
+
+			const setup = await browser.send<TwoFactorSetupPayload>('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null });
+
+			assert.strictEqual(setup.status, 200);
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null })).status, 403);
+
+			const stored = await pool.query<{ encrypted_secret: Buffer }>('SELECT encrypted_secret FROM authenticators');
+			const secret = decryptTotpSecret(stored.rows[0].encrypted_secret, grace);
+			const enabled = await browser.send<RecoveryCodesPayload>('POST', AUTH_TWO_FACTOR_ENABLE_PATH, { code: authenticatorCode(secret), locale: 'en' });
+
+			assert.strictEqual(enabled.status, 200);
+			assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.twoFactor?.recoveryCodesLeft, RECOVERY_CODE_COUNT);
+		});
+
+		it('is refused to an account with neither a password nor an address', async () =>
+		{
+			const browser = await logInAs(await addPasswordlessAccount('grace', null));
+			const refused = await browser.send<AuthErrorPayload>('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null });
+
+			assert.strictEqual(refused.status, 400);
+			assert.strictEqual(refused.body.error.id, 'error.auth.twoFactorNoEmail');
 		});
 	});
 
@@ -493,6 +561,20 @@ describe('2FA routes', () =>
 			}
 
 			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code, locale: 'en' })).status, 409);
+		});
+
+		it('needs a code emailed to an account without a password, which waits through wrong authenticator codes', async () =>
+		{
+			const grace = await addPasswordlessAccount('grace', 'grace@example.com');
+			const authenticator = await turnOnTwoFactor(grace);
+			const browser = await logInAs(grace);
+			const code = authenticatorCode(authenticator.secret);
+
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: null, code, locale: 'en' })).status, 403);
+			await enterTwoFactorEmailCode(browser, 'grace@example.com');
+			assert.strictEqual((await browser.send<AuthErrorPayload>('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: null, code: wrongCode(authenticator), locale: 'en' })).body.field, 'twoFactorCode');
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: null, code, locale: 'en' })).status, 204);
+			assert.strictEqual((await pool.query('SELECT * FROM authenticators')).rowCount, 0);
 		});
 	});
 

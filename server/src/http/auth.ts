@@ -468,7 +468,7 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 		// Linking from the profile, which needn't be logged in when linking from the login page
 		session = await resolveSession(request.headers.cookie);
 	}
-	else if ((purpose === 'changeEmail') || (purpose === 'confirmEmailChange') || (purpose === 'deleteAccount'))
+	else if ((purpose === 'changeEmail') || (purpose === 'confirmEmailChange') || (purpose === 'deleteAccount') || (purpose === 'changeTwoFactor'))
 	{
 		session = await resolveSession(request.headers.cookie);
 
@@ -565,7 +565,7 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 
 			playerId = ownerId;
 		}
-		else if ((purpose === 'confirmEmailChange') || (purpose === 'deleteAccount'))
+		else if ((purpose === 'confirmEmailChange') || (purpose === 'deleteAccount') || (purpose === 'changeTwoFactor'))
 		{
 			// Only the address of the account the browser is logged in to
 			if ((ownerId === undefined) || (session?.playerId !== ownerId))
@@ -645,7 +645,7 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
 
 	const { purpose, email } = body.data;
 	const typed = normalizeEmailCode(body.data.code);
-	const forAccount = ((purpose === 'changeEmail') || (purpose === 'confirmEmailChange') || (purpose === 'deleteAccount'));
+	const forAccount = ((purpose === 'changeEmail') || (purpose === 'confirmEmailChange') || (purpose === 'deleteAccount') || (purpose === 'changeTwoFactor'));
 	const session = (forAccount ? await resolveSession(request.headers.cookie) : undefined);
 	const now = new Date();
 	const addressHash = hashAddress(email);

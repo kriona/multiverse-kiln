@@ -1,7 +1,7 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { and, count, eq, exists, isNotNull, not, sql, type SQL } from 'drizzle-orm';
+import { and, count, eq, exists, isNotNull, not, or, sql, type SQL } from 'drizzle-orm';
 import type { LoginProvider, PlayerMatch, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -58,9 +58,11 @@ export interface TwoFactorCandidate
 	username: string;
 
 	/**
-	 * The address the account logs in with, or null when it has none
+	 * The account's address, or null when it has none
 	 */
 	email: string | null;
+
+	hasPassword: boolean;
 }
 
 /**
@@ -385,24 +387,27 @@ export async function findPasswordHash(playerId: string, executor: Executor = db
 }
 
 /**
- * An account that can turn on 2FA: one with a password, which setting it up asks for, and 2FA off.
- * Reads the authenticators table for that
+ * An account that can turn on 2FA: one with 2FA off, and a password or an email address, which setting
+ * it up checks it's the owner with (the password, or a code sent to the address). Reads the
+ * authenticators table for that
  *
  * @param playerId The account's ID
  * @param executor The database, or a transaction
- * @return Its username and email address, or undefined when it can't turn 2FA on or doesn't exist
+ * @return Its username and email address and whether it has a password, or undefined when it can't
+ * turn 2FA on or doesn't exist
  */
 export async function findTwoFactorCandidate(playerId: string, executor: Executor = db): Promise<TwoFactorCandidate | undefined>
 {
 	const [row] = await executor
 		.select({
 			username: players.username,
-			email: players.email
+			email: players.email,
+			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`
 		})
 		.from(players)
 		.where(and(
 			eq(players.id, playerId),
-			isNotNull(players.passwordHash),
+			or(isNotNull(players.passwordHash), isNotNull(players.email)),
 			not(exists(executor
 				.select({
 					playerId: authenticators.playerId

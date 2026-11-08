@@ -210,7 +210,7 @@
 					<p id="email-dialog-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
 						<button id="email-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-						<button id="email-dialog-email-me" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="email-dialog-email-me" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
 						<button id="email-dialog-send" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+S" data-message="login.sendCode" data-translation-context="Button that emails a code to the address typed, to create an account, reset a password or change the account's email address"><!-- icon ph:paper-plane-right -->Send code</button>
 						<button id="email-dialog-confirm" type="submit" aria-describedby="email-dialog-error" data-shortcut="Alt+C" data-message="profile.changeEmailSubmit" data-translation-context="Button in the dialog that changes the player's email address: checks the emailed code and makes the new address the account's" hidden><!-- icon ph:check -->Change email</button>
 					</div>
@@ -252,9 +252,14 @@
 				<form id="two-factor-confirm-form" class="form" novalidate>
 					<h2 id="two-factor-confirm-title"></h2>
 					<p id="two-factor-confirm-intro"></p>
+					<p id="two-factor-confirm-email-note" hidden></p>
 					<!-- Not shown: tells password managers which account the password is for -->
 					<input id="two-factor-confirm-email" type="email" autocomplete="username" hidden />
-					<div class="password-field">
+					<label id="two-factor-confirm-email-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+						Code
+						<input id="two-factor-confirm-email-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+					</label>
+					<div id="two-factor-confirm-password-field" class="password-field">
 						<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
 							Password
 							<input id="two-factor-confirm-password" type="password" autocomplete="current-password" required />
@@ -269,8 +274,9 @@
 					<p id="two-factor-confirm-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
 						<button id="two-factor-confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-						<button id="two-factor-confirm-off" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+O" data-message="profile.twoFactorDisable" data-translation-context="Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"><!-- icon ph:shield-slash -->Turn off</button>
-						<button id="two-factor-confirm-codes" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+M" data-message="profile.makeRecoveryCodes" data-translation-context="Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"><!-- icon ph:list-numbers -->Make new codes</button>
+						<button id="two-factor-confirm-send" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="two-factor-confirm-off" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+O" data-message="profile.twoFactorDisable" data-translation-context="Button in the dialog that turns off two-factor authentication: checks the password (or the emailed code) and the authenticator code, and turns it off"><!-- icon ph:shield-slash -->Turn off</button>
+						<button id="two-factor-confirm-codes" type="submit" aria-describedby="two-factor-confirm-error" data-shortcut="Alt+M" data-message="profile.makeRecoveryCodes" data-translation-context="Button in the dialog that makes new recovery codes: checks the password (or the emailed code) and the authenticator code, and replaces the old codes with new ones"><!-- icon ph:list-numbers -->Make new codes</button>
 					</div>
 				</form>
 			</dialog>
@@ -302,7 +308,7 @@
 					<p id="provider-link-dialog-error" class="form-error" role="alert" hidden></p>
 					<div class="form-buttons">
 						<button id="provider-link-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-						<button id="provider-link-dialog-send" type="submit" aria-describedby="provider-link-dialog-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="provider-link-dialog-send" type="submit" aria-describedby="provider-link-dialog-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
 						<button id="provider-link-dialog-submit" type="submit" aria-describedby="provider-link-dialog-error" data-shortcut="Alt+C" data-message="profile.linkContinue" data-translation-context="Button in the dialog that links a Google or Discord login from the player's own profile: checks the password, or the emailed code, and the authenticator code, then goes to Google or Discord to choose the account to link"><!-- icon ph:link -->Continue</button>
 					</div>
 				</form>
@@ -350,7 +356,7 @@
 					</div>
 					<div id="account-delete-email-code-field" hidden>
 						<p id="account-delete-email-code-intro"></p>
-						<button id="account-delete-send-code" type="button" class="secondary" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"><!-- icon ph:paper-plane-right -->Email me a code</button>
+						<button id="account-delete-send-code" type="button" class="secondary" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes"><!-- icon ph:paper-plane-right -->Email me a code</button>
 						<label id="account-delete-email-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
 							Code
 							<input id="account-delete-email-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />

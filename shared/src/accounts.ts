@@ -235,9 +235,10 @@ export const MAX_TWO_FACTOR_CODE_INPUT_LENGTH = 32;
 /**
  * What an email code is for. 'changeEmail' is sent to the new address, and 'confirmEmailChange' to the
  * current address of an account without a password, to check it's the owner changing it.
- * 'deleteAccount' checks it's the owner deleting an account without a password
+ * 'deleteAccount' checks it's the owner deleting an account without a password, and 'changeTwoFactor'
+ * that it's the owner turning 2FA on or off, or making new recovery codes, for an account without one
  */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount'] as const;
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount', 'changeTwoFactor'] as const;
 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 
@@ -342,7 +343,11 @@ export interface TwoFactorLoginRequest
  */
 export interface TwoFactorSetupRequest
 {
-	password: string;
+	/**
+	 * The account's password, or null for an account without one, whose browser has entered a code sent
+	 * to its address (purpose 'changeTwoFactor') instead
+	 */
+	password: string | null;
 }
 
 /**
@@ -380,7 +385,11 @@ export interface TwoFactorEnableRequest
  */
 export interface TwoFactorDisableRequest
 {
-	password: string;
+	/**
+	 * The account's password, or null for an account without one, whose browser has entered a code sent
+	 * to its address (purpose 'changeTwoFactor') instead
+	 */
+	password: string | null;
 
 	/**
 	 * An authenticator or recovery code
@@ -395,7 +404,11 @@ export interface TwoFactorDisableRequest
  */
 export interface RecoveryCodesRequest
 {
-	password: string;
+	/**
+	 * The account's password, or null for an account without one, whose browser has entered a code sent
+	 * to its address (purpose 'changeTwoFactor') instead
+	 */
+	password: string | null;
 
 	/**
 	 * An authenticator or recovery code

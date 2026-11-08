@@ -486,7 +486,7 @@ export class HomeScreen
 	 * editor; turning 2FA on shows the recovery codes first
 	 *
 	 * @param universeId The universe just created
-	 * @param offer The account's username and address
+	 * @param offer The account's username and address, and whether it has a password
 	 */
 	private setUpTwoFactor(universeId: string, offer: TwoFactorOffer): void
 	{
@@ -494,7 +494,7 @@ export class HomeScreen
 			universeId,
 			username: offer.username
 		};
-		this.twoFactorDialog.open(offer.email, () =>
+		this.twoFactorDialog.open(offer, () =>
 		{
 			this.twoFactorSetup = undefined;
 			this.actions.edit(universeId);

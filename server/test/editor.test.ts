@@ -319,7 +319,7 @@ describe('World editor API', () =>
 			assert.deepStrictEqual(response.body.universes.map((universe) => [universe.name, universe.role]), [['Apple', 'creator'], ['Zebra', 'creator']]);
 		});
 
-		it('offers to turn on 2FA only to an account with a password and 2FA off', async () =>
+		it('offers to turn on 2FA only to an account with a password or an address, and 2FA off', async () =>
 		{
 			const grace = await createPlayer({
 				username: 'grace',
@@ -327,13 +327,25 @@ describe('World editor API', () =>
 				email: 'grace@example.com',
 				passwordHash: 'not a real hash'
 			});
+			const linus = await createPlayer({
+				username: 'linus',
+				displayName: 'Linus',
+				email: 'linus@example.com',
+				passwordHash: null
+			});
 			const browser = await logInBrowser(grace.id);
 
 			assert.deepStrictEqual((await send<EditableUniverseListPayload>(browser, 'GET', '')).body.twoFactorOffer, {
 				username: 'grace',
-				email: 'grace@example.com'
+				email: 'grace@example.com',
+				hasPassword: true
 			});
-			// Ada's account has no password, which setting up 2FA asks for
+			assert.deepStrictEqual((await send<EditableUniverseListPayload>(await logInBrowser(linus.id), 'GET', '')).body.twoFactorOffer, {
+				username: 'linus',
+				email: 'linus@example.com',
+				hasPassword: false
+			});
+			// Ada's account has neither, so nothing could check it's her setting up 2FA
 			assert.strictEqual((await send<EditableUniverseListPayload>(ada, 'GET', '')).body.twoFactorOffer, null);
 
 			await turnOnTwoFactor(grace.id);

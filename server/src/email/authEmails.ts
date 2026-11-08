@@ -136,6 +136,19 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, name: st
 			description: 'First paragraph of the email, sent to an account\'s current address, with the code that checks it\'s the owner changing the account\'s email address, for an account without a password, shown just above the code; {siteName} is the site\'s name'
 		}, values);
 	}
+	else if (purpose === 'changeTwoFactor')
+	{
+		subject = translator.format({
+			id: 'email.code.changeTwoFactor.subject',
+			defaultMessage: 'Your code to change two-factor authentication on {siteName}',
+			description: 'Subject of the email with the code that checks it\'s the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password; {siteName} is the site\'s name'
+		}, values);
+		intro = translator.format({
+			id: 'email.code.changeTwoFactor.intro',
+			defaultMessage: 'Someone asked to change the two-factor authentication of your account on {siteName}: to turn it on or off, or make new recovery codes. If it was you, enter this code to go on:',
+			description: 'First paragraph of the email with the code that checks it\'s the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password, shown just above the code; {siteName} is the site\'s name'
+		}, values);
+	}
 	else
 	{
 		subject = translator.format({
