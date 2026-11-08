@@ -120,12 +120,12 @@ Put scratch files in `scratchpad/`, not a system or session temp folder, so they
 - All environment-specific values come from environment variables. Never hard-code URLs, credentials, or secrets, and never commit `.env` files. The pre-commit hook runs gitleaks on staged changes and blocks commits that contain secrets.
 - Root (`docker-compose.yml`): `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `POSTGRES_PORT`, `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` (the local storage's keys), `STORAGE_PORT`.
 - Server: `DATABASE_URL` (the app role), `MIGRATION_DATABASE_URL` (the migration role; drizzle-kit only, never the running server), `PORT` (default 2567), `ENABLE_DEV_TOOLS` (playground, `/monitor` and the load test's bot login, never in production), `ENABLE_DEV_CODES` (takes 111111 for any email or authenticator code; only on a developer's own computer, left off in `.env.example`; `server/src/auth/devCodes.ts`), `SSL_KEY_FILE` / `SSL_CERT_FILE`, `ALLOWED_ORIGINS`, `CLIENT_ADDRESS_HEADER` / `TRUSTED_PROXY_HOPS` (the one forwarding header a proxy in front of the server sets, and how many proxies add to X-Forwarded-For; unset uses the connection's address, and Colyseus Cloud requires them; `server/src/http/clientNetwork.ts`), `LOADTEST_ENDPOINT`, `STORAGE_ENDPOINT` / `STORAGE_REGION` / `STORAGE_BUCKET` / `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` / `STORAGE_FORCE_PATH_STYLE` (object storage for uploads), `TEST_STORAGE_BUCKET`, `AUTH_HMAC_KEY` (the key for the keyed hashes of addresses, email codes, recovery codes and networks; `server/src/auth/keyedHashes.ts`), `TOTP_ENCRYPTION_KEY` (encrypts authenticator secrets for 2FA, kept apart from the database; `server/src/auth/totpSecrets.ts`), `SMTP_URL` / `EMAIL_FROM` (where email is sent, and the address it comes from), `SITE_URL` (the client's address, which emails link to and Google and Discord send players back to; the server refuses to start without it, `server/src/siteUrl.ts`), `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` and `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` (each provider is offered once both are set; `server/src/auth/providers.ts`).
-- Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln-dev.com:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
+- Client: `DEV_HOST`, `DEV_PORT`, `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`, `VITE_SERVER_URL` (`wss://www.multiversekiln.localhost:2567` locally, `wss://...` in production), `VITE_SOURCE_URL` (the source code link in the page footer, required by the AGPL; a fork sets its own repository).
 - Commit `.env.example` files listing every variable with placeholder values, and keep them up to date.
 
 ## HTTPS
 
-- Local development is always HTTPS/WSS on the hostname `www.multiversekiln-dev.com` (hosts file -> `127.0.0.1`), using an mkcert certificate in the git-ignored `certs/` folder. See README.md for setup.
+- Local development is always HTTPS/WSS on the hostname `www.multiversekiln.localhost` (hosts file -> `127.0.0.1`; `.localhost` is reserved for the local machine, so the name can't reach a real site), using an mkcert certificate in the git-ignored `certs/` folder. See README.md for setup.
 - Never add a plain HTTP fallback. `server/src/transport.ts` refuses to start without a certificate, except on Colyseus Cloud (its proxy terminates TLS and the server listens on a local socket) and when `NODE_ENV=test` (the `@colyseus/testing` harness only connects over `ws://`; `server/test/setup.ts` sets this).
 - The Vite dev server requires `DEV_SSL_KEY_FILE` / `DEV_SSL_CERT_FILE`; production builds don't.
 - Node scripts that connect to the local server need to trust the mkcert CA: run them with `--use-system-ca` (see the `loadtest` script).
@@ -148,8 +148,8 @@ npm run db:migrate -w server         # apply Drizzle migrations
 npm run db:seed -w server            # add or replace the sample universe (server/scripts/sampleUniverse.ts); -- --creator <username> makes that account its creator
 npm run admin:add -w server -- <username>  # make an account a server admin (it needs 2FA on to use the admin pages)
 npm run messages                     # update shared/locales/en.json after changing messages (the client's dev server does it as you save), and list each translation's missing and out-of-date messages
-npm run dev -w server                # Colyseus on wss://www.multiversekiln-dev.com:2567
-npm run dev -w client                # Vite on https://www.multiversekiln-dev.com:5173
+npm run dev -w server                # Colyseus on wss://www.multiversekiln.localhost:2567
+npm run dev -w client                # Vite on https://www.multiversekiln.localhost:5173
 ```
 
 Run all npm commands from the repository root, using `-w <package>` to target one package (e.g. `npm install <pkg> -w server`).

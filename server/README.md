@@ -34,4 +34,4 @@ Run all commands from the repository root with `-w server`, e.g. `npm run dev -w
 - `npm run db:migrate -w server`: apply pending migrations to `MIGRATION_DATABASE_URL`. Start Postgres first (`docker compose up -d`)
 - `npm run loadtest -w server`: connect simulated clients to `LOADTEST_ENDPOINT` with [`@colyseus/loadtest`](https://github.com/colyseus/colyseus-loadtest/). Start the server first
 
-With `ENABLE_DEV_TOOLS=true` in `server/.env`, the playground is at `https://www.multiversekiln-dev.com:2567` and the monitor at `/monitor`.
+With `ENABLE_DEV_TOOLS=true` in `server/.env`, the playground is at `https://www.multiversekiln.localhost:2567` and the monitor at `/monitor`.
