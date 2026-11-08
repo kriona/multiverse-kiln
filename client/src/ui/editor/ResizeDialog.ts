@@ -262,7 +262,7 @@ export class ResizeDialog
 					this.confirmedBounds = key;
 					setButtonText(this.submit, t({
 						id: 'editor.resize.discard',
-						defaultMessage: 'Resize and discard',
+						defaultMessage: 'Resize and Discard',
 						description: 'Button that makes the map smaller after the player was warned it loses painting or links'
 					}));
 					showMessage(this.warning, t({

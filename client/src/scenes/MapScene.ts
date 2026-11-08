@@ -8,6 +8,9 @@ import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnecti
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
+import type { CellMaskShader } from '../rendering/CellMaskShader';
+import { createRoundedFog } from '../rendering/RoundedFog';
+import { createUnexploredPaper, preloadUnexploredPaper } from '../rendering/UnexploredPaper';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
@@ -69,9 +72,32 @@ const NIGHT_COLOR = 0x0a1030;
 const NIGHT_ALPHA = 0.65;
 
 /**
+ * How opaque the night color is at full dark for a character with darkvision and light sensitivity,
+ * whose eyes are made for the dark
+ */
+const DARK_ADAPTED_NIGHT_ALPHA = 0.1;
+
+/**
+ * The color laid over the map in daylight outdoors for a character with darkvision and light
+ * sensitivity, whom bright light dazzles: the night color's opposite
+ */
+const GLARE_COLOR = 0xf5efcf;
+
+/**
+ * How opaque the glare is in full daylight; the map fades toward it as the light comes up
+ */
+const GLARE_ALPHA = NIGHT_ALPHA;
+
+/**
  * Depth of the night color: over the map and players, under their names and the link prompt
  */
 const NIGHT_DEPTH = 0.5;
+
+/**
+ * Depth of the glare, drawn over the cells in sight: over the map, the players and what overhangs them,
+ * under the paper, which is drawn rather than seen and so isn't dazzling
+ */
+const GLARE_DEPTH = 0.35;
 
 /**
  * The color laid over cells out of sight
@@ -82,11 +108,6 @@ const FOG_COLOR = 0x000000;
  * How opaque the fog is
  */
 const FOG_ALPHA = 0.55;
-
-/**
- * How opaque the fog is over cells the group has never seen, in a group's room: they are hidden
- */
-const UNSEEN_ALPHA = 1;
 
 /**
  * Depth of the fog: over the map, the players and what overhangs them, such as mountains' peaks, which
@@ -100,6 +121,19 @@ const FOG_DEPTH = 0.3;
  * camera catches up with the player
  */
 const FOG_MARGIN = 2;
+
+/**
+ * How many cells wide and tall the fog is drawn, centered on the cell the player is drawn in
+ */
+const FOG_COLUMNS = ((Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN) * 2) + 1;
+
+const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
+
+/**
+ * Depth of the paper drawn over cells the group has never seen and past the map's edges: over the fog
+ * and the glare, under the night
+ */
+const PAPER_DEPTH = 0.4;
 
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 	fontFamily: 'sans-serif',
@@ -207,6 +241,11 @@ export class MapScene extends Phaser.Scene
 	private night?: Phaser.GameObjects.Rectangle;
 
 	/**
+	 * Brightens the view in daylight outdoors for a character whom bright light dazzles
+	 */
+	private glare?: CellMaskShader;
+
+	/**
 	 * The area's map as vision sees it, from the chunks received so far
 	 */
 	private visionMap!: VisionMap;
@@ -214,7 +253,12 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Darkens the cells out of sight
 	 */
-	private fog?: Phaser.GameObjects.Graphics;
+	private fog?: CellMaskShader;
+
+	/**
+	 * Hides the cells the group has never seen, and past the map's edges, under paper
+	 */
+	private paper?: CellMaskShader;
 
 	/**
 	 * What the fog was last drawn from (see updateFog), so it is drawn again only when that changes
@@ -252,16 +296,19 @@ export class MapScene extends Phaser.Scene
 		this.lastSentMove = undefined;
 		this.announcer = new MapAnnouncer();
 		this.night = undefined;
+		this.glare = undefined;
 		this.fog = undefined;
+		this.paper = undefined;
 		this.fogKey = '';
 	}
 
 	/**
-	 * Loads the tile graphics the map is drawn with
+	 * Loads the tile graphics the map is drawn with, and the paper over cells never seen
 	 */
 	preload(): void
 	{
 		preloadTileGraphics(this);
+		preloadUnexploredPaper(this);
 	}
 
 	/**
@@ -318,12 +365,14 @@ export class MapScene extends Phaser.Scene
 		});
 
 		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
-		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR, NIGHT_ALPHA)
+		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR)
 			.setOrigin(0, 0)
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
 			.setAlpha(0);
-		this.fog = this.add.graphics().setDepth(FOG_DEPTH);
+		this.glare = createRoundedFog(this, 'rounded-glare', FOG_COLUMNS, FOG_ROWS, GLARE_DEPTH, GLARE_COLOR, 0);
+		this.fog = createRoundedFog(this, 'rounded-fog', FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
+		this.paper = createUnexploredPaper(this, FOG_COLUMNS, FOG_ROWS, PAPER_DEPTH);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
@@ -370,6 +419,12 @@ export class MapScene extends Phaser.Scene
 
 			this.areaRenderer?.destroy();
 			this.areaRenderer = undefined;
+			this.fog?.destroy();
+			this.fog = undefined;
+			this.glare?.destroy();
+			this.glare = undefined;
+			this.paper?.destroy();
+			this.paper = undefined;
 		});
 
 		this.watchPlayers();
@@ -475,43 +530,53 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws fog over the cells around the view's center that aren't visible
+	 * Draws fog over the cells around the view's center that aren't visible, the glare over those that
+	 * are, and paper over those the group has never seen. A cell that has just come into sight keeps its
+	 * paper until its tile arrives. Past an edge of the map that doesn't loop is drawn as never seen, in a
+	 * lobby too
 	 *
 	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
 	 * @param visible The cells in sight, by visionKey()
 	 */
 	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
 	{
-		const fog = this.fog;
-
-		if (!fog)
+		const left = center.column - Math.floor(FOG_COLUMNS / 2);
+		const top = center.row - Math.floor(FOG_ROWS / 2);
+		const isFogged = (column: number, row: number): boolean =>
 		{
-			return;
-		}
+			const cell = this.mapCellAt(left + column, top + row);
 
+			return((cell === undefined) || !visible.has(visionKey(cell.column, cell.row)));
+		};
+
+		this.fog?.draw(left, top, isFogged);
+		this.glare?.draw(left, top, (column, row) => !isFogged(column, row));
+
+		this.paper?.draw(left, top, (column, row) =>
+		{
+			const cell = this.mapCellAt(left + column, top + row);
+
+			return((cell === undefined) || this.isUnseen(cell.column, cell.row));
+		});
+	}
+
+	/**
+	 * The cell of the area drawn at a place in the world: past a looping edge the map carries on from the
+	 * far side, drawn next to the player
+	 *
+	 * @param column The column in the world
+	 * @param row The row in the world
+	 * @return The cell on the map, or undefined past an edge that doesn't loop
+	 */
+	private mapCellAt(column: number, row: number): { column: number; row: number } | undefined
+	{
 		const { bounds } = this.area;
-		const halfColumns = Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN;
-		const halfRows = Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN;
 		const width = (bounds.maxColumn - bounds.minColumn) + 1;
 		const height = (bounds.maxRow - bounds.minRow) + 1;
+		const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
+		const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
 
-		fog.clear();
-
-		for (let row = center.row - halfRows; row <= center.row + halfRows; row++)
-		{
-			for (let column = center.column - halfColumns; column <= center.column + halfColumns; column++)
-			{
-				// Past a looping edge the map carries on from the far side, drawn next to the player
-				const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
-				const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
-
-				if (isInBounds(bounds, mapColumn, mapRow) && !visible.has(visionKey(mapColumn, mapRow)))
-				{
-					fog.fillStyle(FOG_COLOR, (this.isUnseen(mapColumn, mapRow) ? UNSEEN_ALPHA : FOG_ALPHA));
-					fog.fillRect(column * GRID_CELL_SIZE, row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
-				}
-			}
-		}
+		return((isInBounds(bounds, mapColumn, mapRow) ? { column: mapColumn, row: mapRow } : undefined));
 	}
 
 	/**
@@ -572,36 +637,31 @@ export class MapScene extends Phaser.Scene
 
 	/**
 	 * Darkens the map for the light where the player is: the time of day outdoors, or an indoor area's
-	 * light level. Outdoors, tells screen reader users as the part of the day changes; indoors the light
-	 * doesn't change with it
+	 * light level. A character with darkvision and light sensitivity sees the dark only faintly, and
+	 * outdoors the daylight glares for them. Outdoors, tells screen reader users as the part of the day
+	 * changes; indoors the light doesn't change with it
 	 */
 	private updateDaylight(): void
 	{
-		const seconds = this.currentSecondOfDay();
+		const own = this.room.state.players?.get(this.ownPlayerId);
 
-		if (seconds === undefined)
+		if (!own)
 		{
 			return;
 		}
 
-		this.night?.setAlpha(1 - areaLight(this.area.lightLevel, seconds));
+		const seconds = this.secondOfDayAt(this.cellOf(own));
+		const light = areaLight(this.area.lightLevel, seconds);
+		const outdoors = (this.area.lightLevel === null);
+		const darkAdapted = ((own.darkvision > 0) && own.lightSensitivity);
 
-		if (this.area.lightLevel === null)
+		this.night?.setAlpha((1 - light) * (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA));
+		this.glare?.setUniform('uAlpha', ((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0));
+
+		if (outdoors)
 		{
 			this.announcer.partOfDayChanged(partOfDay(seconds));
 		}
-	}
-
-	/**
-	 * The time of day where the player is
-	 *
-	 * @return Seconds since midnight, or undefined before the player is on the map
-	 */
-	private currentSecondOfDay(): number | undefined
-	{
-		const own = this.room.state.players?.get(this.ownPlayerId);
-
-		return((own ? this.secondOfDayAt(this.cellOf(own)) : undefined));
 	}
 
 	/**

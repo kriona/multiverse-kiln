@@ -11,7 +11,7 @@
  *
  * Digits mark cells that links start from or arrive at. Each area says which tile its digits are
  */
-import { IMPASSABLE_WALK_SECONDS, type PassageOfTime, type UniverseStage, type AreaLinkMode } from '@multiverse-kiln/shared';
+import { IMPASSABLE_WALK_SECONDS, type PassageOfTime, type UniverseStage, type AreaLightLevel, type AreaLinkMode } from '@multiverse-kiln/shared';
 
 /**
  * An area to create
@@ -31,6 +31,11 @@ export interface SampleArea
 	parent?: string;
 
 	indoors: boolean;
+
+	/**
+	 * How light the area is while it is indoors; lit when left out
+	 */
+	lightLevel?: AreaLightLevel;
 
 	/**
 	 * Key of the tile `.` stands for
@@ -159,6 +164,7 @@ export const sampleAreas: SampleArea[] = [
 		name: 'Cellar',
 		parent: 'cottage',
 		indoors: true,
+		lightLevel: 'dark',
 		defaultTile: 'wood_floor',
 		markers: { 6: 'wood_floor' },
 		map: [
