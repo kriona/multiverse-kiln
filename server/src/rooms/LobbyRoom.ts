@@ -17,6 +17,7 @@ import { areaChanges } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
+import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { entryRefusalCode, findPlayRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
@@ -84,11 +85,18 @@ function identityOf(client: LobbyClient): LobbyIdentity
 export const CHAT_HISTORY_LENGTH = 50;
 
 /**
+ * The open lobby of each universe, by universe ID
+ */
+const lobbyRooms = new OneRoomPerKey<LobbyRoom>('universe');
+
+/**
  * A universe's lobby: its map, its chat and who's here
  *
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
- * joins the same room (filterBy in app.config.ts). Only logged-in browsers are admitted, and a window
- * whose session ends is turned away (ServerCloseCode.LoggedOut). A window that joins while its session
+ * joins the same room (filterBy in app.config.ts). A second lobby for a universe that has one is
+ * refused (lobbyRooms), since it would split the universe's players and chat between them. Only
+ * logged-in browsers are admitted, and a window whose session ends is turned away
+ * (ServerCloseCode.LoggedOut). A window that joins while its session
  * ends, or while who may play the universe changes, looks itself up again once it is listed
  * (JoinChanges), so the change reaches it too. Players start
  * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
@@ -278,6 +286,9 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	async onCreate(options: unknown): Promise<void>
 	{
 		const { universeId } = roomOptions.parse(options);
+
+		lobbyRooms.claim(universeId, this);
+
 		const universe = await findUniverse(universeId);
 
 		if (!universe)
@@ -412,6 +423,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	onDispose(): void
 	{
+		lobbyRooms.release(this);
 		this.stopFollowingChanges?.();
 		this.stopFollowingCharacters?.();
 		this.stopFollowingGroups?.();

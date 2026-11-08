@@ -2,6 +2,7 @@ import assert from 'assert';
 import { randomUUID } from 'crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
+import { matchMaker } from 'colyseus';
 
 import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
@@ -520,6 +521,35 @@ describe('GameRoom', () =>
 	{
 		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, { groupId: randomUUID(), characterId: randomUUID() }));
 		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, {}));
+	});
+
+	it('cannot be created a second time for a group while its room is open', async () =>
+	{
+		const room = await createGameRoom();
+
+		await assert.rejects(createGameRoom(), /already has a room/);
+
+		await room.disconnect();
+		await createGameRoom();
+	});
+
+	it('cannot be created with its group\'s ID in capitals', async () =>
+	{
+		await assert.rejects(colyseus.createRoom(GAME_ROOM_NAME, { groupId: groupId.toUpperCase(), characterId: anchor.characterId }));
+	});
+
+	it('cannot be created through matchmaking\'s create, which ignores filterBy', async () =>
+	{
+		const roomsBefore = await matchMaker.query({ name: GAME_ROOM_NAME });
+		const response = await fetch(`${testServerUrl}/matchmake/create/${GAME_ROOM_NAME}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ groupId, characterId: anchor.characterId })
+		});
+		const roomsAfter = await matchMaker.query({ name: GAME_ROOM_NAME });
+
+		assert.match(await response.text(), /invalid method/);
+		assert.strictEqual(roomsAfter.length, roomsBefore.length);
 	});
 
 	it('syncs players to clients', async () =>

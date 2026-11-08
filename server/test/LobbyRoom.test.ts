@@ -194,6 +194,17 @@ describe('LobbyRoom', () =>
 			await assert.rejects(connect(cookie, {}));
 		});
 
+		it('refuses a second lobby for a universe while its lobby is open, and its ID in capitals', async () =>
+		{
+			const room = await colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId });
+
+			await assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId }), /already has a room/);
+			await assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId.toUpperCase() }));
+
+			await room.disconnect();
+			await colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId });
+		});
+
 		it('turns away a browser whose session was logged out or has expired', async () =>
 		{
 			const playerId = (await addPlayer('Ada')).id;

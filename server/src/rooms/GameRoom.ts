@@ -22,6 +22,7 @@ import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
+import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
@@ -98,11 +99,18 @@ function identityOf(client: GameClient): GameIdentity
 }
 
 /**
+ * The open game room of each group, by group ID
+ */
+const gameRooms = new OneRoomPerKey<GameRoom>('group');
+
+/**
  * A group's game room: its members play here, send movement input, and the server simulates and syncs
  * their positions
  *
  * Clients join with GameJoinOptions, and every client asking for the same group joins the same room
  * (filterBy in app.config.ts), which loads the group from the database as the first one arrives. A
+ * second room for a group that has one is refused (gameRooms), since each would save its own copy of
+ * the group's clock, seen cells and positions over the other's. A
  * client is admitted only to play one of its player's characters in the group who hasn't been given
  * their last rites and whose race and class don't bar them (characterBar(); a save barring them takes
  * them off the map). While a player has any window here, every such character of theirs is on the map,
@@ -326,6 +334,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	async onCreate(options: unknown): Promise<void>
 	{
 		const { groupId } = gameJoinOptions.parse(options);
+
+		gameRooms.claim(groupId, this);
+
 		const group = await findGroup(groupId);
 		const universe = (group ? await findUniverse(group.universeId) : undefined);
 
@@ -632,6 +643,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	async onDispose(): Promise<void>
 	{
+		gameRooms.release(this);
+
 		for (const stop of this.stopListening)
 		{
 			stop();
