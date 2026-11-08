@@ -1170,10 +1170,11 @@
 						</div>
 					</form>
 				</dialog>
-				<dialog id="universe-export-dialog" class="panel dialog" aria-labelledby="universe-export-title" aria-describedby="universe-export-explanation">
+				<dialog id="universe-export-dialog" class="panel dialog" aria-labelledby="universe-export-title" aria-describedby="universe-export-explanation universe-export-draft">
 					<form id="universe-export-form" class="form">
 						<h2 id="universe-export-title"></h2>
 						<p id="universe-export-explanation" data-message="editor.universeExport.explanation" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)">Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.</p>
+						<p id="universe-export-draft" data-message="editor.universeExport.draft" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab, while the universe's draft (a copy players don't see until it is applied) is open: the zip file holds the draft, not the version players play" hidden>You're exporting the draft copy of the universe, not its live version.</p>
 						<p id="universe-export-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<p id="universe-export-status" class="universe-dialog-status" role="status"></p>
@@ -1199,7 +1200,7 @@
 				<dialog id="universe-import-dialog" class="panel dialog" aria-labelledby="universe-import-title" aria-describedby="universe-import-explanation">
 					<form id="universe-import-form" class="form" novalidate>
 						<h2 id="universe-import-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
-						<p id="universe-import-explanation" data-message="editor.universeImport.explanation" data-translation-context="In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file">Imports a zip file Export Universe made into the draft. What the file holds replaces what you can edit in the draft. Players see nothing of it until the draft is applied.</p>
+						<p id="universe-import-explanation" data-message="editor.universeImport.explanation" data-translation-context="In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file">Imports a zip file Export Universe made into the draft. The contents of the draft universe will be replaced with the contents of the import.</p>
 						<label data-message="editor.universeImport.file" data-translation-context="Label of the field choosing the zip file to import into the universe's draft">
 							File
 							<input id="universe-import-file" type="file" accept=".zip,application/zip" required aria-describedby="universe-import-error" />

@@ -18,6 +18,7 @@ export class UniverseExportSection
 	private readonly dialog = getElement('universe-export-dialog', HTMLDialogElement);
 	private readonly form = getElement('universe-export-form', HTMLFormElement);
 	private readonly title = getElement('universe-export-title', HTMLElement);
+	private readonly draftNote = getElement('universe-export-draft', HTMLElement);
 	private readonly status = getElement('universe-export-status', HTMLElement);
 	private readonly error = getElement('universe-export-error', HTMLElement);
 	private readonly submitButton = getElement('universe-export-submit', HTMLButtonElement);
@@ -103,7 +104,7 @@ export class UniverseExportSection
 	}
 
 	/**
-	 * Opens the dialog, titled with the universe's name
+	 * Opens the dialog, titled with the universe's name, saying when it exports the draft
 	 */
 	private openDialog(): void
 	{
@@ -121,6 +122,7 @@ export class UniverseExportSection
 		}, {
 			universe: universe.name
 		});
+		this.draftNote.hidden = (universe.version !== 'draft');
 		this.status.textContent = '';
 		showMessage(this.error, undefined);
 		this.updateButtons();

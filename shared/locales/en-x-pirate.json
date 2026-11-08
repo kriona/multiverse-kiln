@@ -3771,6 +3771,10 @@
 		"message": "Box Up the Universe",
 		"source": "Export Universe"
 	},
+	"editor.universeExport.draft": {
+		"message": "Ye be boxin' up the draft copy o' the universe, not her live version.",
+		"source": "You're exporting the draft copy of the universe, not its live version."
+	},
 	"editor.universeExport.explanation": {
 		"message": "Boxes up everythin' ye can change in the universe as a zip chest, save for the hands players made an' the ship's log.",
 		"source": "Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history."
@@ -3800,8 +3804,8 @@
 		"source": "Import Universe"
 	},
 	"editor.universeImport.explanation": {
-		"message": "Hauls a zip chest Box Up the Universe made into the draft. What the chest holds takes the place o' what ye can change in the draft. No hand sees any of it till the draft be launched.",
-		"source": "Imports a zip file Export Universe made into the draft. What the file holds replaces what you can edit in the draft. Players see nothing of it until the draft is applied."
+		"message": "Hauls a zip chest Box Up the Universe made into the draft. What the draft universe holds will be thrown overboard for what the chest holds.",
+		"source": "Imports a zip file Export Universe made into the draft. The contents of the draft universe will be replaced with the contents of the import."
 	},
 	"editor.universeImport.failed": {
 		"message": "Couldn't haul in the chest. Nothin' came aboard.",

@@ -3771,6 +3771,10 @@
 		"defaultMessage": "Export Universe",
 		"description": "Button under the settings on the editor's Universe tab that opens the dialog exporting what the player can edit in the universe as a zip file, for every role but beta tester"
 	},
+	"editor.universeExport.draft": {
+		"defaultMessage": "You're exporting the draft copy of the universe, not its live version.",
+		"description": "In the dialog Export Universe opens on the editor's Universe tab, while the universe's draft (a copy players don't see until it is applied) is open: the zip file holds the draft, not the version players play"
+	},
 	"editor.universeExport.explanation": {
 		"defaultMessage": "Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.",
 		"description": "In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)"
@@ -3800,7 +3804,7 @@
 		"description": "Button under the settings on the editor's Universe tab, beside Export Universe, that opens the dialog importing a zip file Export Universe made into the universe's draft, for every role but beta tester"
 	},
 	"editor.universeImport.explanation": {
-		"defaultMessage": "Imports a zip file Export Universe made into the draft. What the file holds replaces what you can edit in the draft. Players see nothing of it until the draft is applied.",
+		"defaultMessage": "Imports a zip file Export Universe made into the draft. The contents of the draft universe will be replaced with the contents of the import.",
 		"description": "In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file"
 	},
 	"editor.universeImport.failed": {
