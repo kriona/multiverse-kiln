@@ -1,4 +1,4 @@
-import { MAX_PASSWORD_LENGTH } from '@multiverse-kiln/shared';
+import { MAX_PASSWORD_LENGTH, type TwoFactorSetupPayload } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
@@ -12,10 +12,11 @@ import { drawQrCode } from './qrCode';
 import { TwoFactorEmailCode, type TwoFactorAccount } from './TwoFactorEmailCode';
 
 /**
- * The dialog that turns on 2FA (partials/two-factor-dialogs.html, on the profile and Home): the
- * player's password, or for an account without one, a code emailed to its address, then a QR code for
- * their authenticator app and the code the app shows. Once that is right, the account's recovery codes
- * are shown (RecoveryCodesDialog)
+ * The dialog that turns on 2FA (partials/two-factor-dialogs.html, on the profile, Home and the login
+ * page): the player's password, or for an account without one, a code emailed to its address, then a QR
+ * code for their authenticator app and the code the app shows. Once that is right, the account's
+ * recovery codes are shown (RecoveryCodesDialog). On the login page, a server admin without 2FA turns it
+ * on to finish logging in, starting at the QR code, since the login showed it's them (openAtLogin())
  *
  * The secret comes in the body of the setup request's answer, and is only drawn as a QR code and shown
  * as text in the dialog: it is never put in an address, a link or an image's source, and it is cleared
@@ -29,6 +30,8 @@ export class TwoFactorSetupDialog
 	private readonly scanStep = getElement('two-factor-dialog-scan-step', HTMLElement);
 	private readonly passwordIntro = getElement('two-factor-dialog-intro-password', HTMLElement);
 	private readonly providerIntro = getElement('two-factor-dialog-intro-provider', HTMLElement);
+	private readonly loginIntro = getElement('two-factor-dialog-intro-login', HTMLElement);
+	private readonly scanIntro = getElement('two-factor-dialog-scan-intro', HTMLElement);
 	private readonly email = getElement('two-factor-dialog-email', HTMLInputElement);
 	private readonly passwordField = getElement('two-factor-dialog-password-field', HTMLElement);
 	private readonly password = getElement('two-factor-dialog-password', HTMLInputElement);
@@ -47,9 +50,15 @@ export class TwoFactorSetupDialog
 	private readonly emailCode: TwoFactorEmailCode;
 
 	/**
-	 * Called when the dialog closes without turning 2FA on, while it offers to skip setting it up
+	 * Called when the dialog closes without turning 2FA on, while it offers to skip setting it up or
+	 * finishes a login
 	 */
 	private skipped: (() => void) | undefined;
+
+	/**
+	 * Whether the dialog finishes a server admin's login (openAtLogin())
+	 */
+	private atLogin = false;
 
 	/**
 	 * @param api The auth routes
@@ -116,6 +125,8 @@ export class TwoFactorSetupDialog
 	open(account: TwoFactorAccount, skipped?: () => void): void
 	{
 		this.skipped = skipped;
+		this.atLogin = false;
+		this.loginIntro.hidden = true;
 		this.cancelButton.hidden = (skipped !== undefined);
 		this.skipButton.hidden = (skipped === undefined);
 		this.passwordIntro.hidden = !account.hasPassword;
@@ -130,6 +141,30 @@ export class TwoFactorSetupDialog
 		this.tracker.markSaved();
 		this.dialog.showModal();
 		(account.hasPassword ? this.password : this.sendButton).focus();
+	}
+
+	/**
+	 * Opens the dialog at the QR code, for a server admin without 2FA whose login waits for them to turn
+	 * it on
+	 *
+	 * @param setup The secret for the authenticator app (AuthApi.setUpTwoFactorAtLogin())
+	 * @param canceled Called when the dialog closes without turning 2FA on, however it closes
+	 */
+	openAtLogin(setup: TwoFactorSetupPayload, canceled: () => void): void
+	{
+		this.skipped = canceled;
+		this.atLogin = true;
+		this.loginIntro.hidden = false;
+		this.cancelButton.hidden = false;
+		this.skipButton.hidden = true;
+		this.password.value = '';
+		resetCodeInput(this.code);
+		this.showSecretOf(setup);
+		this.showStep('scan');
+		this.tracker.markSaved();
+		this.dialog.showModal();
+		this.code.focus();
+		announce(`${this.loginIntro.textContent} ${this.scanIntro.textContent}`);
 	}
 
 	/**
@@ -189,10 +224,11 @@ export class TwoFactorSetupDialog
 			}
 			else
 			{
-				const codes = await this.api.enableTwoFactor({
+				const request = {
 					code: this.code.value,
 					locale: currentLocale()
-				});
+				};
+				const codes = await (this.atLogin ? this.api.enableTwoFactorAtLogin(request) : this.api.enableTwoFactor(request));
 
 				this.tracker.markSaved();
 				this.skipped = undefined;
@@ -238,6 +274,20 @@ export class TwoFactorSetupDialog
 			password: (this.emailCode.asked ? null : this.password.value)
 		});
 
+		this.showSecretOf(setup);
+		this.password.value = '';
+		this.showStep('scan');
+		this.code.focus();
+		announce(this.scanIntro.textContent);
+	}
+
+	/**
+	 * Shows a secret as a QR code and as text
+	 *
+	 * @param setup The secret
+	 */
+	private showSecretOf(setup: TwoFactorSetupPayload): void
+	{
 		this.qr.replaceChildren(drawQrCode(setup.uri, t({
 			id: 'profile.twoFactorQrLabel',
 			defaultMessage: 'QR code for your authenticator app. If you can\'t scan it, use the key below it.',
@@ -246,10 +296,6 @@ export class TwoFactorSetupDialog
 
 		// In groups of four, as authenticator apps show keys
 		this.secret.textContent = (setup.secret.match(/.{1,4}/g) ?? []).join(' ');
-		this.password.value = '';
-		this.showStep('scan');
-		this.code.focus();
-		announce(getElement('two-factor-dialog-scan-step', HTMLElement).querySelector('p')?.textContent ?? '');
 	}
 
 	/**

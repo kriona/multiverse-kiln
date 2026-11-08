@@ -1,7 +1,7 @@
 /**
  * Server admins: the only module that reads or writes the server_admins table
  */
-import { and, eq, isNotNull, notExists, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, notExists, sql, type AnyColumn, type SQL } from 'drizzle-orm';
 import type { PlayerMatch } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -48,6 +48,38 @@ export async function isServerAdmin(playerId: string, executor: Executor = db): 
 		.limit(1);
 
 	return((row !== undefined));
+}
+
+/**
+ * SQL that is true for a player who is a server admin without 2FA on, who can't be logged in until they
+ * turn it on (see Admin in STRUCTURE-OVERVIEW.md)
+ *
+ * @param playerId The column holding the player's ID, such as the session's
+ * @return The condition
+ */
+export function adminWithoutTwoFactor(playerId: AnyColumn): SQL<boolean>
+{
+	return(sql<boolean>`(EXISTS (SELECT 1 FROM ${serverAdmins} WHERE ${eq(serverAdmins.playerId, playerId)}) AND NOT EXISTS (SELECT 1 FROM ${authenticators} WHERE ${and(eq(authenticators.playerId, playerId), isNotNull(authenticators.enabledAt))}))`);
+}
+
+/**
+ * Whether a player is a server admin without 2FA on, whose logins wait for them to turn it on
+ *
+ * @param playerId The player
+ * @param executor The database, or a transaction
+ * @return Whether they are
+ */
+export async function isServerAdminWithoutTwoFactor(playerId: string, executor: Executor = db): Promise<boolean>
+{
+	const [row] = await executor
+		.select({
+			waits: adminWithoutTwoFactor(players.id)
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return((row?.waits ?? false));
 }
 
 /**

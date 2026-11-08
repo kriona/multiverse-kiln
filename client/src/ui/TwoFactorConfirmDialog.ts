@@ -87,10 +87,9 @@ export class TwoFactorConfirmDialog
 	 *
 	 * @param change What it changes
 	 * @param account The account's address, and whether it has a password
-	 * @param serverAdmin Whether the player is a server admin, who is warned that turning 2FA off takes away the admin pages
 	 * @param universes The names of the universes the player edits that require 2FA, which turning it off keeps them from saving to
 	 */
-	open(change: TwoFactorChange, account: TwoFactorAccount, serverAdmin: boolean, universes: readonly string[]): void
+	open(change: TwoFactorChange, account: TwoFactorAccount, universes: readonly string[]): void
 	{
 		this.change = change;
 		showMessage(this.universes, undefined);
@@ -102,7 +101,7 @@ export class TwoFactorConfirmDialog
 				defaultMessage: 'Turn off two-factor authentication',
 				description: 'Title of the dialog that turns off two-factor authentication'
 			});
-			this.intro.textContent = this.turnOffIntro(account.hasPassword, serverAdmin);
+			this.intro.textContent = this.turnOffIntro(account.hasPassword);
 
 			if (universes.length > 0)
 			{
@@ -147,37 +146,24 @@ export class TwoFactorConfirmDialog
 	 * What turning 2FA off means for the account
 	 *
 	 * @param hasPassword Whether the account has a password, or logs in only with Google or Discord
-	 * @param serverAdmin Whether the player is a server admin, who is warned that it takes away the admin pages
 	 * @return The dialog's first paragraph
 	 */
-	private turnOffIntro(hasPassword: boolean, serverAdmin: boolean): string
+	private turnOffIntro(hasPassword: boolean): string
 	{
 		if (!hasPassword)
 		{
-			return((serverAdmin
-				? t({
-					id: 'profile.twoFactorDisableIntroProviderAdmin',
-					defaultMessage: 'Logging in with Google or Discord won\'t ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site\'s admins: you won\'t be able to use the admin pages until you turn it back on.',
-					description: 'In the dialog that turns off two-factor authentication, for one of the site\'s admins whose account has no password (it logs in only with Google or Discord); admins need it on to use the admin pages'
-				})
-				: t({
-					id: 'profile.twoFactorDisableIntroProvider',
-					defaultMessage: 'Logging in with Google or Discord won\'t ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten.',
-					description: 'In the dialog that turns off two-factor authentication, for an account without a password, which logs in only with Google or Discord'
-				})));
+			return(t({
+				id: 'profile.twoFactorDisableIntroProvider',
+				defaultMessage: 'Logging in with Google or Discord won\'t ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten.',
+				description: 'In the dialog that turns off two-factor authentication, for an account without a password, which logs in only with Google or Discord'
+			}));
 		}
 
-		return((serverAdmin
-			? t({
-				id: 'profile.twoFactorDisableIntroAdmin',
-				defaultMessage: 'Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site\'s admins: you won\'t be able to use the admin pages until you turn it back on.',
-				description: 'In the dialog that turns off two-factor authentication, for one of the site\'s admins, who need it on to use the admin pages'
-			})
-			: t({
-				id: 'profile.twoFactorDisableIntro',
-				defaultMessage: 'Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.',
-				description: 'In the dialog that turns off two-factor authentication'
-			})));
+		return(t({
+			id: 'profile.twoFactorDisableIntro',
+			defaultMessage: 'Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.',
+			description: 'In the dialog that turns off two-factor authentication'
+		}));
 	}
 
 	/**

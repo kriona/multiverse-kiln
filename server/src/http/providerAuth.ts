@@ -17,7 +17,7 @@
 import type { Request, Response, Router } from 'express';
 import { generateCodeVerifier, generateState } from 'arctic';
 import { z } from 'zod';
-import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkConfirmation, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest } from '@multiverse-kiln/shared';
+import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, defineMessages, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type LoginProvider, type ProviderCallbackPayload, type ProviderCallbackRequest, type ProviderLinkConfirmation, type ProviderLinkRequest, type ProviderRegisterRequest, type ProvidersPayload, type ProviderStartPayload, type ProviderStartRequest, type SessionStartPayload } from '@multiverse-kiln/shared';
 
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
@@ -30,16 +30,15 @@ import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
 import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerIdByEmail, savePasswordHash, type EmailRecipient } from '../db/playerRepo.js';
 import { addProviderLogin, deletePendingProviderLogin, findProviderLoginPlayer, lockPendingProviderLogin, ProviderLoginTakenError, savePendingProviderLogin, type PendingProviderLogin } from '../db/providerLoginRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { savePendingTwoFactorLogin } from '../db/twoFactorRepo.js';
 import { accountCreatedEmail, providerLinkedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS } from '../logic/emailCodes.js';
 import { displayText } from '../rooms/payloads.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
-import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
+import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
-import { checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, requireSession, type SecondFactorOutcome } from './twoFactorAuth.js';
+import { checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, requireSession, startLogin, waitForSecondFactor, type SecondFactorOutcome } from './twoFactorAuth.js';
 
 /**
  * How long a player has at the provider before the login must start again
@@ -420,7 +419,8 @@ async function confirmLink(request: Request, response: Response, playerId: strin
 /**
  * POST AUTH_PROVIDER_CALLBACK_PATH: finishes a login with a provider, from the browser that started it.
  * A provider login an account has logs the browser in, or for an account with 2FA from a browser it
- * doesn't trust, waits for the authenticator code as a password login does. Otherwise the browser gets
+ * doesn't trust, waits for the authenticator code as a password login does, and for a server admin
+ * without 2FA, for them to turn it on (startLogin()). Otherwise the browser gets
  * a cookie that lets it take the next step for CONTINUATION_LIFETIME_MS. A link links the provider
  * login to the account instead (linkToSession())
  *
@@ -546,20 +546,12 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 			// The account's 2FA covers every way in, not only its password
 			if (await needsSecondFactor(request, playerId, now, executor))
 			{
-				await savePendingTwoFactorLogin({
-					continuationHash: hashToken(token),
-					playerId,
-					rememberMe,
-					expiresAt: new Date(now.getTime() + CONTINUATION_LIFETIME_MS)
-				}, executor);
+				await waitForSecondFactor(response, playerId, rememberMe, now, executor);
 
 				return({ outcome: 'twoFactor' });
 			}
 
-			await startSession(request, response, playerId, rememberMe, executor);
-			await recordEvent(request, playerId, 'loggedIn', now, executor);
-
-			return({ outcome: 'loggedIn' });
+			return({ outcome: await startLogin(request, response, playerId, rememberMe, now, executor) });
 		}
 
 		const ownerId = await findPlayerIdByEmail(email, executor);
@@ -594,11 +586,7 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 		});
 	});
 
-	if (payload.outcome === 'twoFactor')
-	{
-		setCookie(response, TWO_FACTOR_LOGIN_COOKIE, token, CONTINUATION_LIFETIME_MS);
-	}
-	else if (payload.outcome !== 'loggedIn')
+	if ((payload.outcome === 'register') || (payload.outcome === 'link'))
 	{
 		setCookie(response, PROVIDER_LOGIN_COOKIE, token, CONTINUATION_LIFETIME_MS);
 	}
@@ -779,10 +767,12 @@ async function registerRoute(request: Request, response: Response): Promise<void
 /**
  * POST AUTH_PROVIDER_LINK_PATH: links the provider login this browser came back with to the local
  * account with its email address, once the player logs in to that account: with its password, or with
- * a code sent to the address (purpose 'linkLogin') that this browser entered. Logs the browser in
+ * a code sent to the address (purpose 'linkLogin') that this browser entered. Logs the browser in, or
+ * for a server admin without 2FA, once they turn it on (startLogin())
  *
  * @param request The request, with a ProviderLinkRequest
- * @param response The response: 204 with the session cookie
+ * @param response The response: a SessionStartPayload, with the session cookie or the cookie that lets
+ * this browser turn 2FA on
  */
 async function linkRoute(request: Request, response: Response): Promise<void>
 {
@@ -844,7 +834,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		newHash = check.newHash;
 	}
 
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; recipient: EmailRecipient | undefined; check: SecondFactorOutcome }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; recipient: EmailRecipient | undefined; check: SecondFactorOutcome; login: SessionStartPayload['outcome'] }> =>
 	{
 		const locked = await lockBrowserLogin(request, now, executor);
 
@@ -912,15 +902,14 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		}
 
 		await deletePendingProviderLogin(locked.id, executor);
-		await startSession(request, response, playerId, locked.rememberMe, executor);
 		await recordEvent(request, playerId, 'providerLinked', now, executor);
-		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
 		return({
 			playerId,
 			provider: locked.provider,
 			recipient: await findEmailRecipient(playerId, executor),
-			check
+			check,
+			login: await startLogin(request, response, playerId, locked.rememberMe, now, executor)
 		});
 	});
 
@@ -932,7 +921,10 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 
 	clearCookie(response, PROVIDER_LOGIN_COOKIE);
 	clearCookie(response, CONTINUATION_COOKIE);
-	response.sendStatus(204);
+
+	const payload: SessionStartPayload = { outcome: outcome.login };
+
+	response.json(payload);
 
 	if (outcome.recipient)
 	{

@@ -13,7 +13,7 @@ import { resolveSession } from '../auth/sessions.js';
 import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { findPlayerByUsername, listPlayersForAdmin } from '../db/playerRepo.js';
 import { addServerAdmin, isServerAdmin, listServerAdmins, removeServerAdmin, searchPlayersToMakeAdmin } from '../db/serverAdminRepo.js';
-import { findPlayersWithSessions, listActiveSessions } from '../db/sessionRepo.js';
+import { deletePlayerSessions, findPlayersWithSessions, listActiveSessions } from '../db/sessionRepo.js';
 import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
@@ -186,7 +186,7 @@ function underAdminPath(path: string): string
 
 /**
  * Middleware that answers 401 unless the browser is logged in, and 403 unless its player is a server
- * admin with 2FA on
+ * admin. A server admin's session only counts with 2FA on (resolveSession()), so every admin here has it
  *
  * @param request The request
  * @param response The response
@@ -202,27 +202,12 @@ async function requireServerAdmin(request: Request, response: Response, next: Ne
 		return;
 	}
 
-	const [admin, twoFactor] = await Promise.all([
-		isServerAdmin(session.playerId),
-		hasTwoFactor(session.playerId)
-	]);
-
-	if (!admin)
+	if (!await isServerAdmin(session.playerId))
 	{
 		sendError(response, 403, {
 			id: 'error.notServerAdmin',
 			defaultMessage: 'Only the site\'s admins can use this page.',
 			description: 'Why an admin page, such as the site settings or the list of players, was refused: the player isn\'t one of the site\'s admins'
-		});
-		return;
-	}
-
-	if (!twoFactor)
-	{
-		sendError(response, 403, {
-			id: 'error.adminNeedsTwoFactor',
-			defaultMessage: 'Turn on two-factor authentication to use the admin pages.',
-			description: 'Why an admin page was refused to one of the site\'s admins: admins must have two-factor authentication on. The page offers a link to turn it on'
 		});
 		return;
 	}
@@ -450,7 +435,8 @@ async function searchAdminCandidates(request: Request, response: Response): Prom
 }
 
 /**
- * POST ADMIN_ADMINS_PATH: makes a player a server admin, by username
+ * POST ADMIN_ADMINS_PATH: makes a player a server admin, by username. One without 2FA on is logged out
+ * everywhere, since their sessions don't count until they turn it on, which their next login asks them to
  *
  * @param request The request
  * @param response The response
@@ -466,6 +452,7 @@ async function addAdmin(request: Request, response: Response): Promise<void>
 	}
 
 	const adminId = adminOf(request).playerId;
+	let ended: string[] = [];
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		const player = await findPlayerByUsername(body.data.username, transaction);
@@ -501,6 +488,11 @@ async function addAdmin(request: Request, response: Response): Promise<void>
 			occurredAt: new Date()
 		}, transaction);
 
+		if (!await hasTwoFactor(player.id, transaction))
+		{
+			ended = await deletePlayerSessions(player.id, transaction);
+		}
+
 		return(undefined);
 	});
 
@@ -510,6 +502,7 @@ async function addAdmin(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	connectedSessions.end(ended);
 	response.sendStatus(204);
 }
 

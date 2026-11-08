@@ -45,8 +45,10 @@ export interface SessionIdentity
 }
 
 /**
- * Finds the session a Cookie header names, if it is still going. A session found expired is deleted,
- * and its windows turned away; one used a while ago has the use recorded
+ * Finds the session a Cookie header names, if it is still going. A session found expired, or belonging
+ * to a server admin without 2FA on (who logs in again and turns it on, see Admin in
+ * STRUCTURE-OVERVIEW.md), is deleted, and its windows turned away; one used a while ago has the use
+ * recorded
  *
  * @param cookieHeader The request's or connection's Cookie header
  * @param now The time now
@@ -68,7 +70,7 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 		return(undefined);
 	}
 
-	if (isSessionExpired(session, now))
+	if (isSessionExpired(session, now) || session.needsTwoFactor)
 	{
 		await deleteSession(session.id);
 		connectedSessions.end([session.id]);

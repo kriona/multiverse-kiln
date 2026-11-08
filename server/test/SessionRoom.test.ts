@@ -13,6 +13,7 @@ import { Inbox } from './inbox.js';
 import { changeDuringNextLookup } from './joinRaces.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { turnOnTwoFactor } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
 
 /**
@@ -116,8 +117,22 @@ describe('SessionRoom', () =>
 		const browser = await logInNewBrowser('Ada');
 
 		await addServerAdmin(browser.playerId);
+		await turnOnTwoFactor(browser.playerId);
 
 		assert.strictEqual((await openWindow(browser.cookie)).account?.serverAdmin, true);
+	});
+
+	it('treats a server admin without 2FA as not logged in, and ends their session', async () =>
+	{
+		const browser = await logInNewBrowser('Ada');
+
+		await addServerAdmin(browser.playerId);
+
+		const window = await openWindow(browser.cookie);
+		const remaining = await pool.query('SELECT id FROM sessions WHERE id = $1', [browser.sessionId]);
+
+		assert.strictEqual(window.account, null);
+		assert.strictEqual(remaining.rowCount, 0);
 	});
 
 	it('treats a session token it doesn\'t know as not logged in', async () =>

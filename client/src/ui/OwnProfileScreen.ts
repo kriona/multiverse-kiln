@@ -94,6 +94,7 @@ export class OwnProfileScreen
 	private readonly twoFactorOnButton = getElement('profile-two-factor-on', HTMLButtonElement);
 	private readonly twoFactorCodesButton = getElement('profile-two-factor-codes', HTMLButtonElement);
 	private readonly twoFactorOffButton = getElement('profile-two-factor-off', HTMLButtonElement);
+	private readonly twoFactorAdminNote = getElement('profile-two-factor-admin', HTMLElement);
 	private readonly trustedBrowsersLabel = getElement('profile-trusted-browsers-label', HTMLElement);
 	private readonly trustedBrowsersRow = getElement('profile-trusted-browsers', HTMLElement);
 	private readonly trustedBrowsersState = getElement('profile-trusted-browsers-state', HTMLElement);
@@ -293,12 +294,12 @@ export class OwnProfileScreen
 
 		this.twoFactorOffButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('turnOff', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false), (this.profile?.twoFactorUniverses ?? []));
+			this.twoFactorConfirmDialog.open('turnOff', this.twoFactorAccount(), (this.profile?.twoFactorUniverses ?? []));
 		});
 
 		this.twoFactorCodesButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('newCodes', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false), []);
+			this.twoFactorConfirmDialog.open('newCodes', this.twoFactorAccount(), []);
 		});
 
 		this.forgetBrowsersButton.addEventListener('click', () =>
@@ -693,7 +694,8 @@ export class OwnProfileScreen
 		}
 
 		this.twoFactorOnButton.hidden = (twoFactor !== null);
-		this.twoFactorOffButton.hidden = (twoFactor === null);
+		this.twoFactorOffButton.hidden = ((twoFactor === null) || profile.serverAdmin);
+		this.twoFactorAdminNote.hidden = ((twoFactor === null) || !profile.serverAdmin);
 		this.twoFactorCodesButton.hidden = (twoFactor === null);
 
 		if (!twoFactor)

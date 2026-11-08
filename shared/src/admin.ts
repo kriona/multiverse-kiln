@@ -23,8 +23,9 @@ import type { Ruleset, UniverseStage } from './universes.js';
  *   there is no such universe and 409 when it isn't disabled
  *
  * Every route under ADMIN_PATH answers 401 to a browser that isn't logged in, and 403 to a player who
- * isn't a server admin or is one without 2FA on (ADMIN_TWO_FACTOR_ERROR_ID), each with an ErrorPayload.
- * What admins change is recorded as admin events
+ * isn't a server admin, each with an ErrorPayload. A server admin always has 2FA on while logged in,
+ * since their sessions need it (see Admin in STRUCTURE-OVERVIEW.md). What admins change is recorded as
+ * admin events
  */
 export const ADMIN_PATH = '/admin';
 
@@ -57,12 +58,6 @@ export const ADMIN_UNIVERSES_PATH = `${ADMIN_PATH}/universes`;
  * Most characters in the reason a server admin gives for disabling a universe
  */
 export const MAX_DISABLED_REASON_LENGTH = 500;
-
-/**
- * ID of the message the admin routes refuse a server admin with while they don't have 2FA on, so the
- * pages can offer to turn it on
- */
-export const ADMIN_TWO_FACTOR_ERROR_ID = 'error.adminNeedsTwoFactor';
 
 /**
  * Most rows an admin list returns at once

@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, TRUSTED_BROWSER_DAYS, type AuthField, type LoginProvider } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, TRUSTED_BROWSER_DAYS, type AuthField, type LoginProvider, type SessionStartPayload } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from './localization';
 import { authFieldOf, type AuthApi } from './network/authApi';
@@ -10,6 +10,8 @@ import { announce } from './ui/announcer';
 import { resetCodeInput } from './ui/codeInputs';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './ui/fieldErrors';
+import { RecoveryCodesDialog } from './ui/RecoveryCodesDialog';
+import { TwoFactorSetupDialog } from './ui/TwoFactorSetupDialog';
 import { UsernameLookup, type UsernameCheck } from './ui/UsernameLookup';
 
 /**
@@ -82,9 +84,10 @@ function findForm(name: ScreenName, fields: Partial<Record<AuthField, HTMLInputE
  * the code, then the rest. Google and Discord send the browser back to this page, which finishes the
  * login, or asks for a username for a new account, or for the password of the account with the same
  * address (or a code sent to it) to link them. An account with 2FA is asked for its authenticator or
- * recovery code too: after the password, with the new password, or with the link. Once logged in, the
- * page tells the browser's other tabs and goes back to the page that sent the player here
- * (readNextPage()); a new account is first offered setting up 2FA
+ * recovery code too: after the password, with the new password, or with the link. A server admin
+ * without 2FA turns it on at that point instead (TwoFactorSetupDialog), since they can't log in without
+ * it. Once logged in, the page tells the browser's other tabs and goes back to the page that sent the
+ * player here (readNextPage()); a new account is first offered setting up 2FA
  */
 export class LoginPage
 {
@@ -144,6 +147,15 @@ export class LoginPage
 	private readonly twoFactorTrust = getElement('two-factor-trust', HTMLInputElement);
 	private readonly twoFactorForm = findForm('two-factor', { twoFactorCode: this.twoFactorCode });
 
+	private readonly twoFactorSetupDialog: TwoFactorSetupDialog;
+	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
+
+	/**
+	 * The username of the server admin turning on 2FA to log in, which names the file their recovery
+	 * codes are saved as
+	 */
+	private setupUsername = '';
+
 	/**
 	 * What the authenticator code screen finishes, while it shows
 	 */
@@ -175,6 +187,16 @@ export class LoginPage
 	constructor(private readonly api: AuthApi)
 	{
 		const numbers = new Intl.NumberFormat(currentLocale());
+
+		// Turning 2FA on logs the browser in, so the other tabs hear at once, and the recovery codes show before going on
+		this.twoFactorSetupDialog = new TwoFactorSetupDialog(api, (codes) =>
+		{
+			this.announceLoggedIn();
+			this.recoveryCodesDialog.open(codes, this.setupUsername, () =>
+			{
+				window.location.replace(readNextPage());
+			});
+		});
 
 		for (const prefix of ['register', 'provider-register'])
 		{
@@ -465,8 +487,37 @@ export class LoginPage
 	}
 
 	/**
+	 * Finishes the login once the browser is logged in, or for a server admin without 2FA, opens the
+	 * dialog that turns it on, which finishes the login once it is on. Closing the dialog without turning
+	 * it on goes back to the login screen
+	 *
+	 * @param outcome What the login's last step answered
+	 */
+	private async finishOrSetUpTwoFactor(outcome: SessionStartPayload['outcome']): Promise<void>
+	{
+		if (outcome === 'loggedIn')
+		{
+			this.finishLogin();
+			return;
+		}
+
+		const setup = await this.api.setUpTwoFactorAtLogin();
+
+		this.setupUsername = setup.username;
+		this.twoFactorSetupDialog.openAtLogin(setup, () =>
+		{
+			this.showLogin();
+			showMessage(this.loginForm.error, t({
+				id: 'login.adminTwoFactorCanceled',
+				defaultMessage: 'The site\'s admins can\'t log in until two-factor authentication is on. Log in again to turn it on.',
+				description: 'Shown on the login screen when one of the site\'s admins closed the dialog that sets up two-factor authentication at login without turning it on'
+			}));
+		});
+	}
+
+	/**
 	 * Logs in with the address and password typed, then asks for the authenticator code if the account
-	 * has 2FA
+	 * has 2FA, or for a server admin without it, to turn it on
 	 */
 	private async logIn(): Promise<void>
 	{
@@ -482,7 +533,7 @@ export class LoginPage
 		}
 		else
 		{
-			this.finishLogin();
+			await this.finishOrSetUpTwoFactor(outcome);
 		}
 	}
 
@@ -550,17 +601,16 @@ export class LoginPage
 				trustBrowser: this.twoFactorTrust.checked,
 				locale: currentLocale()
 			});
+			this.finishLogin();
 		}
 		else
 		{
-			await this.api.linkProvider({
+			await this.finishOrSetUpTwoFactor(await this.api.linkProvider({
 				password: null,
 				locale: currentLocale(),
 				twoFactorCode: this.twoFactorCode.value
-			});
+			}));
 		}
-
-		this.finishLogin();
 	}
 
 	/**
@@ -649,6 +699,20 @@ export class LoginPage
 		{
 			this.askForTwoFactorCode('login');
 		}
+		else if (result.outcome === 'twoFactorSetup')
+		{
+			// The login screen shows behind the dialog, and with the reason when it can't open
+			this.showLogin();
+
+			try
+			{
+				await this.finishOrSetUpTwoFactor(result.outcome);
+			}
+			catch (error)
+			{
+				this.showError(this.loginForm, error);
+			}
+		}
 		else if (result.outcome === 'register')
 		{
 			this.providerRegisterIntro.textContent = t({
@@ -735,16 +799,16 @@ export class LoginPage
 	}
 
 	/**
-	 * Links the provider login to the account with the password typed, and logs in
+	 * Links the provider login to the account with the password typed, and logs in, or for a server
+	 * admin without 2FA, turns it on first
 	 */
 	private async linkWithPassword(): Promise<void>
 	{
-		await this.api.linkProvider({
+		await this.finishOrSetUpTwoFactor(await this.api.linkProvider({
 			password: this.providerLinkPassword.value,
 			locale: currentLocale(),
 			twoFactorCode: (this.providerLinkTwoFactorField.hidden ? null : this.providerLinkTwoFactorCode.value)
-		});
-		this.finishLogin();
+		}));
 	}
 
 	/**
@@ -949,12 +1013,11 @@ export class LoginPage
 				return;
 			}
 
-			await this.api.linkProvider({
+			await this.finishOrSetUpTwoFactor(await this.api.linkProvider({
 				password: null,
 				locale: currentLocale(),
 				twoFactorCode: null
-			});
-			this.finishLogin();
+			}));
 		}
 		else
 		{
@@ -994,16 +1057,15 @@ export class LoginPage
 	}
 
 	/**
-	 * Saves the new password and logs in
+	 * Saves the new password and logs in, or for a server admin without 2FA, turns it on first
 	 */
 	private async saveNewPassword(): Promise<void>
 	{
-		await this.api.resetPassword({
+		await this.finishOrSetUpTwoFactor(await this.api.resetPassword({
 			password: this.resetPassword.value,
 			rememberMe: this.resetRemember.checked,
 			locale: currentLocale(),
 			twoFactorCode: (this.resetTwoFactorField.hidden ? null : this.resetTwoFactorCode.value)
-		});
-		this.finishLogin();
+		}));
 	}
 }

@@ -596,7 +596,8 @@ describe('auth routes', () =>
 
 			const answer = await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null });
 
-			assert.strictEqual(answer.status, 204);
+			assert.strictEqual(answer.status, 200);
+			assert.deepStrictEqual(answer.body, { outcome: 'loggedIn' });
 			assert.strictEqual(await browser.username(), 'ada');
 			assert.strictEqual(await first.username(), null);
 			await waitUntil(() => emails.some((email) => /password .* was changed/.test(email.subject)));
@@ -615,7 +616,7 @@ describe('auth routes', () =>
 
 			const continuation = browser.cookies.get('__Host-kiln-continue');
 
-			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).status, 204);
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).status, 200);
 
 			browser.cookies.set('__Host-kiln-continue', continuation ?? '');
 			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'another passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).status, 403);

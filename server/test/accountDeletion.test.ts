@@ -323,11 +323,12 @@ describe('account deletion and data export', () =>
 	it('won\'t delete the site\'s only server admin, until another player is made one', async () =>
 	{
 		const { playerId, browser } = await addLocalAccount('ada');
+		const authenticator = await turnOnTwoFactor(playerId);
 
 		await addServerAdmin(playerId);
 		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.lastServerAdmin, true);
 
-		const refused = await deleteAccount(browser, { password: PASSWORD });
+		const refused = await deleteAccount(browser, { password: PASSWORD, twoFactorCode: authenticatorCode(authenticator.secret) });
 
 		assert.strictEqual(refused.status, 409);
 		assert.strictEqual(refused.body.error.id, LAST_SERVER_ADMIN_DELETION.id);
@@ -336,7 +337,7 @@ describe('account deletion and data export', () =>
 
 		await addServerAdmin((await addPlayer('Grace')).id);
 		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.lastServerAdmin, false);
-		assert.strictEqual((await deleteAccount(browser, { password: PASSWORD })).status, 204);
+		assert.strictEqual((await deleteAccount(browser, { password: PASSWORD, twoFactorCode: authenticatorCode(authenticator.secret, 1) })).status, 204);
 		assert.ok(!await accountExists(playerId));
 	});
 

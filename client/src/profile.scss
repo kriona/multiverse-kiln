@@ -111,6 +111,13 @@
 	}
 }
 
+// Why a server admin has no Turn off button for their 2FA
+.profile-two-factor-admin
+{
+	font-size: 12px;
+	color: $text-faint;
+}
+
 // Downloading the player's data and deleting their account
 .profile-data-buttons
 {

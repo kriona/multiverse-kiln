@@ -56,16 +56,16 @@
 		"source": "Server Admins"
 	},
 	"admin.admins.hint": {
-		"message": "Officers can set foot in these quarters once they raise two-factor authentication.",
-		"source": "Server admins can use these pages once they turn on two-factor authentication."
+		"message": "Officers can set foot in these quarters, and must have two-factor authentication raised to come aboard: promote one without it and they're put ashore, and their next boarding has 'em raise it.",
+		"source": "Server admins can use these pages, and must have two-factor authentication on to log in: adding one without it logs them out, and their next login asks them to turn it on."
 	},
 	"admin.admins.loadFailed": {
 		"message": "Couldn't haul up the officers' roll.",
 		"source": "Could not load the server admins."
 	},
 	"admin.admins.noTwoFactor": {
-		"message": "No 2FA: barred from the captain's quarters",
-		"source": "No 2FA: can't use the admin pages"
+		"message": "No 2FA: put ashore till they raise it",
+		"source": "No 2FA: logged out until they turn it on"
 	},
 	"admin.admins.nowAdmin": {
 		"message": "{name} (@{username}) be an officer now.",
@@ -486,10 +486,6 @@
 	"admin.translations.title": {
 		"message": "Tongues",
 		"source": "Translations"
-	},
-	"admin.turnOnTwoFactor": {
-		"message": "Raise two-factor authentication",
-		"source": "Turn on two-factor authentication"
 	},
 	"admin.universeCreationEnabled": {
 		"message": "Hands can create universes",
@@ -3875,10 +3871,6 @@
 		"message": "Wrong codes were tried on yer account on {siteName}",
 		"source": "Wrong codes were typed for your account on {siteName}"
 	},
-	"error.adminNeedsTwoFactor": {
-		"message": "Raise two-factor authentication afore ye set foot in the captain's quarters.",
-		"source": "Turn on two-factor authentication to use the admin pages."
-	},
 	"error.alreadyEditor": {
 		"message": "{username} already serves aboard this universe.",
 		"source": "{username} already has a role in this universe."
@@ -3898,6 +3890,10 @@
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
+	},
+	"error.auth.adminKeepsTwoFactor": {
+		"message": "The ship's officers must keep two-factor authentication raised. To lower it, have another officer strip ye of yer rank first.",
+		"source": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first."
 	},
 	"error.auth.deleteUniverseNeedsTwoFactor": {
 		"message": "{universe} demands her officers raise two-factor authentication, so she can only be scuttled with yer account while ye have it raised. Make another o' her crew her captain, or raise two-factor authentication.",
@@ -5166,6 +5162,14 @@
 	"lobby.title": {
 		"message": "Tavern",
 		"source": "Lobby"
+	},
+	"login.adminTwoFactorCanceled": {
+		"message": "The ship's officers can't come aboard till two-factor authentication be raised. Board again to raise it.",
+		"source": "The site's admins can't log in until two-factor authentication is on. Log in again to turn it on."
+	},
+	"login.adminTwoFactorIntro": {
+		"message": "Ye be one o' the ship's officers, so yer account needs two-factor authentication raised before ye can come aboard.",
+		"source": "You're one of the site's admins, so your account needs two-factor authentication before you can log in."
 	},
 	"login.back": {
 		"message": "Astern",
@@ -6855,6 +6859,10 @@
 		"message": "Two-factor authentication",
 		"source": "Two-factor authentication"
 	},
+	"profile.twoFactorAdmin": {
+		"message": "Ye can't lower 2FA so long as ye be one o' the ship's officers.",
+		"source": "You cannot turn off 2FA as long as you are a site admin."
+	},
 	"profile.twoFactorAppCode": {
 		"message": "Code from the app",
 		"source": "Code from the app"
@@ -6875,17 +6883,9 @@
 		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
 		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten."
 	},
-	"profile.twoFactorDisableIntroAdmin": {
-		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
-		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
-	},
 	"profile.twoFactorDisableIntroProvider": {
 		"message": "Comin' aboard with Google or Discord won't ask for a code from the app no more. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
 		"source": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten."
-	},
-	"profile.twoFactorDisableIntroProviderAdmin": {
-		"message": "Comin' aboard with Google or Discord won't ask for a code from the app no more. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
-		"source": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
 	},
 	"profile.twoFactorDisableTitle": {
 		"message": "Strike two-factor authentication",
@@ -6932,8 +6932,8 @@
 		"source": "QR code for your authenticator app. If you can't scan it, use the key below it."
 	},
 	"profile.twoFactorScan": {
-		"message": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
-		"source": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows."
+		"message": "Scan this QR code with an authenticator app, such as {googleAuthenticator}, {microsoftAuthenticator}, {aegis} or {twoFas}. Then enter the 6-digit code the app shows ye.",
+		"source": "Scan this QR code with an authenticator app, such as {googleAuthenticator}, {microsoftAuthenticator}, {aegis} or {twoFas}. Then enter the 6-digit code the app shows."
 	},
 	"profile.twoFactorSetupFailed": {
 		"message": "Couldn't raise two-factor authentication.",

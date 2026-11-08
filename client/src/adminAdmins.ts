@@ -141,8 +141,8 @@ class AdminsPage
 			: {
 				text: t({
 					id: 'admin.admins.noTwoFactor',
-					defaultMessage: 'No 2FA: can\'t use the admin pages',
-					description: 'Note in the admin page\'s list of server admins on an admin without two-factor authentication, who can\'t use the admin pages until they turn it on'
+					defaultMessage: 'No 2FA: logged out until they turn it on',
+					description: 'Note in the admin page\'s list of server admins on an admin without two-factor authentication, such as one just added: they can\'t be logged in until they turn it on, which their next login asks them to'
 				}),
 				tone: 'warning'
 			}));

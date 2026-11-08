@@ -2,7 +2,9 @@
  * 2FA (see Login in STRUCTURE-OVERVIEW.md), on the auth router: finishing a login with an authenticator
  * or recovery code, turning 2FA on and off from the profile, replacing recovery codes and trusted
  * browsers. Also the check the other auth routes make when an account with 2FA logs in, resets its
- * password or links a provider login (checkSecondFactor())
+ * password or links a provider login (checkSecondFactor()), and how they log a browser in
+ * (startLogin()): a server admin without 2FA turns it on before their login finishes, with the
+ * login's own setup routes, since a server admin's session needs it (see Admin in STRUCTURE-OVERVIEW.md)
  *
  * Changing an account's 2FA asks for its password, or for an account without one (it logs in only with
  * Google or Discord), a code sent to its address (purpose 'changeTwoFactor'), so a stolen session alone
@@ -16,7 +18,7 @@
 import { randomBytes } from 'crypto';
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, RECOVERY_CODE_COUNT, SITE_NAME, TRUSTED_BROWSER_DAYS, TWO_FACTOR_CODE_LENGTH, type RecoveryCodesPayload, type RecoveryCodesRequest, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
+import { AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_LOGIN_SETUP_PATH, AUTH_TWO_FACTOR_SETUP_PATH, defineMessages, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, RECOVERY_CODE_COUNT, SITE_NAME, TRUSTED_BROWSER_DAYS, TWO_FACTOR_CODE_LENGTH, type RecoveryCodesPayload, type RecoveryCodesRequest, type SessionStartPayload, type TwoFactorDisableRequest, type TwoFactorEnableRequest, type TwoFactorLoginRequest, type TwoFactorLoginSetupPayload, type TwoFactorSetupPayload, type TwoFactorSetupRequest } from '@multiverse-kiln/shared';
 
 import { isDevCode } from '../auth/devCodes.js';
 import { keyedHash } from '../auth/keyedHashes.js';
@@ -27,16 +29,16 @@ import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import { decryptTotpSecret, encryptTotpSecret } from '../auth/totpSecrets.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
-import { findEmailRecipient, findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
+import { findEmailRecipient, findPasswordHash, findPlayer, findPlayerEmail } from '../db/playerRepo.js';
 import { findRateLimitTimes, recordRateLimitEvent } from '../db/rateLimitRepo.js';
+import { isServerAdmin, isServerAdminWithoutTwoFactor } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
-import { countRecoveryCodes, deletePendingTwoFactorLogin, deleteTrustedBrowsers, deleteTwoFactor, enableAuthenticator, hasTwoFactor, isBrowserTrusted, lockAuthenticator, lockPendingTwoFactorLogin, recordWrongTwoFactorGuess, replaceRecoveryCodes, saveAuthenticatorSetup, saveLastUsedStep, trustBrowser, useRecoveryCode } from '../db/twoFactorRepo.js';
+import { countRecoveryCodes, deletePendingTwoFactorLogin, deleteTrustedBrowsers, deleteTwoFactor, enableAuthenticator, hasTwoFactor, isBrowserTrusted, lockAuthenticator, lockPendingTwoFactorLogin, recordWrongTwoFactorGuess, replaceRecoveryCodes, saveAuthenticatorSetup, saveLastUsedStep, savePendingTwoFactorLogin, trustBrowser, useRecoveryCode } from '../db/twoFactorRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { recoveryCodeUsedEmail, twoFactorDisabledEmail, twoFactorEnabledEmail, wrongAuthenticatorCodesEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
-import { DAY_MS, decideLimit, MAX_GUESSES_PER_NETWORK_HOUR, type SendDecision } from '../logic/emailCodes.js';
+import { CONTINUATION_LIFETIME_MS, DAY_MS, decideLimit, MAX_GUESSES_PER_NETWORK_HOUR, type SendDecision } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
-import { serverAdminChanges } from '../players/serverAdminChanges.js';
 import { twoFactorChanges } from '../players/twoFactorChanges.js';
 import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpStep, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
 import { accountPasswordLimits, authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
@@ -71,7 +73,12 @@ const twoFactorMessages = defineMessages({
 	loginAgain: {
 		id: 'error.auth.twoFactorLoginAgain',
 		defaultMessage: 'It has been too long since you typed your password, or too many codes were wrong. Log in with your password again.',
-		description: 'Why finishing a login with an authenticator or recovery code was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since'
+		description: 'Why finishing a login with an authenticator or recovery code, or with the code from the authenticator app a site admin is setting up at login, was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since'
+	},
+	adminKeepsTwoFactor: {
+		id: 'error.auth.adminKeepsTwoFactor',
+		defaultMessage: 'The site\'s admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site\'s admins first.',
+		description: 'Why turning off two-factor authentication was refused: the player is one of the site\'s admins, who can\'t log in without it'
 	},
 	setUpAgain: {
 		id: 'error.auth.twoFactorSetUpAgain',
@@ -173,6 +180,8 @@ const recoveryCodesRequest = z.object({
 export function addTwoFactorRoutes(router: Router, underAuthPath: (path: string) => string): void
 {
 	router.post(underAuthPath(AUTH_TWO_FACTOR_LOGIN_PATH), loginRoute);
+	router.post(underAuthPath(AUTH_TWO_FACTOR_LOGIN_SETUP_PATH), loginSetupRoute);
+	router.post(underAuthPath(AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH), loginEnableRoute);
 	router.post(underAuthPath(AUTH_TWO_FACTOR_SETUP_PATH), setupRoute);
 	router.post(underAuthPath(AUTH_TWO_FACTOR_ENABLE_PATH), enableRoute);
 	router.post(underAuthPath(AUTH_TWO_FACTOR_DISABLE_PATH), disableRoute);
@@ -209,6 +218,59 @@ async function isTrusted(request: Request, playerId: string, now: Date, executor
 export async function needsSecondFactor(request: Request, playerId: string, now: Date, executor?: Executor): Promise<boolean>
 {
 	return((await hasTwoFactor(playerId, executor)) && !(await isTrusted(request, playerId, now, executor)));
+}
+
+/**
+ * Keeps a login whose password (or provider login, or emailed code) was right waiting, for
+ * CONTINUATION_LIFETIME_MS, on the account's authenticator or recovery code, or for a server admin
+ * without 2FA, on turning it on. Only this browser can finish it: it gets the cookie that names the login
+ *
+ * @param response The response, which carries the cookie
+ * @param playerId The account
+ * @param rememberMe Whether the player checked "Remember me", for the session the login starts
+ * @param now The time now
+ * @param executor A transaction
+ */
+export async function waitForSecondFactor(response: Response, playerId: string, rememberMe: boolean, now: Date, executor: Executor): Promise<void>
+{
+	const token = createToken();
+
+	await savePendingTwoFactorLogin({
+		continuationHash: hashToken(token),
+		playerId,
+		rememberMe,
+		expiresAt: new Date(now.getTime() + CONTINUATION_LIFETIME_MS)
+	}, executor);
+	setCookie(response, TWO_FACTOR_LOGIN_COOKIE, token, CONTINUATION_LIFETIME_MS);
+}
+
+/**
+ * Logs a browser in once it has shown it's the account's owner (and given the account's authenticator
+ * or recovery code, when it needs one), recording the login. A server admin without 2FA isn't logged
+ * in: the login waits for them to turn it on (AUTH_TWO_FACTOR_LOGIN_SETUP_PATH), since their sessions
+ * don't count without it (resolveSession())
+ *
+ * @param request The request, with the browser's cookies
+ * @param response The response, which carries the session cookie, or the cookie that lets this browser
+ * turn 2FA on
+ * @param playerId The account
+ * @param rememberMe Whether the player checked "Remember me"
+ * @param now The time now
+ * @param executor A transaction
+ * @return Whether the browser is logged in, or waits to turn 2FA on
+ */
+export async function startLogin(request: Request, response: Response, playerId: string, rememberMe: boolean, now: Date, executor: Executor): Promise<SessionStartPayload['outcome']>
+{
+	if (await isServerAdminWithoutTwoFactor(playerId, executor))
+	{
+		await waitForSecondFactor(response, playerId, rememberMe, now, executor);
+		return('twoFactorSetup');
+	}
+
+	await startSession(request, response, playerId, rememberMe, executor);
+	await recordEvent(request, playerId, 'loggedIn', now, executor);
+
+	return('loggedIn');
 }
 
 /**
@@ -607,6 +669,18 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 			return(check.refusal);
 		}
 
+		// A server admin whose 2FA went while the login waited logs in again, to turn it on
+		if ((check.kind === 'notNeeded') && await isServerAdminWithoutTwoFactor(pending.playerId, executor))
+		{
+			await deletePendingTwoFactorLogin(pending.id, executor);
+			clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
+
+			return({
+				status: 403,
+				message: twoFactorMessages.loginAgain
+			});
+		}
+
 		await deletePendingTwoFactorLogin(pending.id, executor);
 		await startSession(request, response, pending.playerId, pending.rememberMe, executor);
 		await recordEvent(request, pending.playerId, 'loggedIn', now, executor);
@@ -637,6 +711,148 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 	clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
 	response.sendStatus(204);
 	await reportRecoveryCodeUse(outcome.playerId, outcome.check, emailLocale);
+}
+
+/**
+ * POST AUTH_TWO_FACTOR_LOGIN_SETUP_PATH: starts turning on 2FA for a server admin's login that waits on
+ * it (startLogin()), from the browser that logged in: makes a new secret for the authenticator app,
+ * replacing a setup already started. The login itself showed it's the account's owner, so nothing more
+ * is asked for
+ *
+ * @param request The request
+ * @param response The response: a TwoFactorLoginSetupPayload
+ */
+async function loginSetupRoute(request: Request, response: Response): Promise<void>
+{
+	const continuationHash = cookieTokenHash(request, TWO_FACTOR_LOGIN_COOKIE);
+	const now = new Date();
+	const secret = randomBytes(TOTP_SECRET_BYTES);
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { username: string }> =>
+	{
+		const pending = ((continuationHash === undefined) ? undefined : await lockPendingTwoFactorLogin(continuationHash, now, executor));
+		const player = (pending ? await findPlayer(pending.playerId, executor) : undefined);
+
+		if (!pending || !player)
+		{
+			clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
+
+			return({
+				status: 403,
+				message: twoFactorMessages.loginAgain
+			});
+		}
+
+		// Refused once 2FA is on, so a login waiting on its code can't replace the account's authenticator
+		if (!(await saveAuthenticatorSetup(pending.playerId, encryptTotpSecret(secret, pending.playerId), now, executor)))
+		{
+			return({
+				status: 409,
+				message: twoFactorMessages.alreadyOn
+			});
+		}
+
+		return({ username: player.username });
+	});
+
+	if ('status' in outcome)
+	{
+		sendRefusal(response, outcome);
+		return;
+	}
+
+	const secretBase32 = encodeBase32(secret);
+	const payload: TwoFactorLoginSetupPayload = {
+		secret: secretBase32,
+		uri: totpUri(secretBase32, SITE_NAME, outcome.username),
+		username: outcome.username
+	};
+
+	response.json(payload);
+}
+
+/**
+ * POST AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH: turns on 2FA for a server admin's login that waits on it,
+ * once the authenticator app just set up gives a right code, makes its recovery codes and logs the
+ * browser in. Too many wrong codes end the login, as at AUTH_TWO_FACTOR_LOGIN_PATH
+ *
+ * @param request The request, with a TwoFactorEnableRequest
+ * @param response The response: a RecoveryCodesPayload, with the session cookie
+ */
+async function loginEnableRoute(request: Request, response: Response): Promise<void>
+{
+	const body = twoFactorEnableRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const { code: typed, locale: emailLocale } = body.data;
+	const continuationHash = cookieTokenHash(request, TWO_FACTOR_LOGIN_COOKIE);
+	const now = new Date();
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; codes: string[]; ended: string[] }> =>
+	{
+		const pending = ((continuationHash === undefined) ? undefined : await lockPendingTwoFactorLogin(continuationHash, now, executor));
+
+		if (!pending)
+		{
+			clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
+
+			return({
+				status: 403,
+				message: twoFactorMessages.loginAgain
+			});
+		}
+
+		const enabled = await enableWithSetupCode(response, pending.playerId, typed, now, executor);
+
+		if (enabled.kind === 'wrong')
+		{
+			if ((pending.wrongGuesses + 1) >= MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN)
+			{
+				await deletePendingTwoFactorLogin(pending.id, executor);
+				clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
+
+				return({
+					status: 403,
+					message: twoFactorMessages.loginAgain
+				});
+			}
+
+			await recordWrongTwoFactorGuess(pending.id, executor);
+
+			return(enabled.refusal);
+		}
+
+		if (enabled.kind === 'refused')
+		{
+			return(enabled.refusal);
+		}
+
+		// The account's sessions didn't count without 2FA, so only this browser is logged in
+		const ended = await deletePlayerSessions(pending.playerId, executor);
+
+		await deletePendingTwoFactorLogin(pending.id, executor);
+		await recordEvent(request, pending.playerId, 'twoFactorEnabled', now, executor);
+		await startSession(request, response, pending.playerId, pending.rememberMe, executor);
+		await recordEvent(request, pending.playerId, 'loggedIn', now, executor);
+
+		return({
+			playerId: pending.playerId,
+			codes: enabled.codes,
+			ended
+		});
+	});
+
+	if ('status' in outcome)
+	{
+		sendRefusal(response, outcome);
+		return;
+	}
+
+	clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
+	await answerTwoFactorEnabled(response, outcome.playerId, outcome.codes, outcome.ended, emailLocale);
 }
 
 /**
@@ -750,57 +966,12 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 	const now = new Date();
 	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { codes: string[]; ended: string[] }> =>
 	{
-		const authenticator = await lockAuthenticator(playerId, executor);
+		const enabled = await enableWithSetupCode(response, playerId, typed, now, executor);
 
-		if (authenticator?.enabledAt)
+		if (enabled.kind !== 'enabled')
 		{
-			return({
-				status: 409,
-				message: twoFactorMessages.alreadyOn
-			});
+			return(enabled.refusal);
 		}
-
-		if (!authenticator || ((now.getTime() - authenticator.createdAt.getTime()) > TWO_FACTOR_SETUP_LIFETIME_MS))
-		{
-			return({
-				status: 403,
-				message: twoFactorMessages.setUpAgain
-			});
-		}
-
-		const attempt = await takeAttempt([
-			{
-				kind: 'accountTwoFactorAttempt',
-				subjectHash: keyedHash('account', playerId),
-				limit: MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR
-			}
-		], now, executor);
-
-		if (!attempt.allowed)
-		{
-			return(tooManyAttempts(attempt, now, response));
-		}
-
-		const code = readTwoFactorCode(typed);
-		let step: number | undefined;
-
-		if (code?.kind === 'totp')
-		{
-			step = (isDevCode(code.code, TWO_FACTOR_CODE_LENGTH) ? totpStep(now) : matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, null));
-		}
-
-		if (step === undefined)
-		{
-			return({
-				status: 400,
-				message: twoFactorMessages.wrongSetupCode,
-				field: 'code'
-			});
-		}
-
-		await enableAuthenticator(playerId, step, now, executor);
-
-		const codes = await makeRecoveryCodes(playerId, executor);
 
 		// A player turning 2FA on may suspect someone else is logged in, so every other browser logs in again, with the code
 		const ended = await deletePlayerSessions(playerId, executor, session.sessionId);
@@ -808,7 +979,7 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 		await recordEvent(request, playerId, 'twoFactorEnabled', now, executor);
 
 		return({
-			codes,
+			codes: enabled.codes,
 			ended
 		});
 	});
@@ -819,10 +990,134 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	connectedSessions.end(outcome.ended);
+	await answerTwoFactorEnabled(response, playerId, outcome.codes, outcome.ended, emailLocale);
+}
+
+/**
+ * What checking the code from an authenticator app just set up decided
+ */
+type SetupCodeOutcome =
+	| {
+		kind: 'enabled';
+
+		/**
+		 * The account's recovery codes, as shown to the player
+		 */
+		codes: string[];
+	}
+	| {
+		/**
+		 * The code was wrong or missing
+		 */
+		kind: 'wrong';
+		refusal: AuthRefusal;
+	}
+	| {
+		/**
+		 * The code wasn't checked: 2FA is on already, the setup is missing or too old, or too many codes
+		 * have been tried
+		 */
+		kind: 'refused';
+		refusal: AuthRefusal;
+	};
+
+/**
+ * Turns on 2FA for an account once the authenticator app just set up gives a right code, and makes its
+ * recovery codes. Every code tried counts against the account's hourly limit
+ *
+ * @param response The response, which gets a Retry-After header when too many codes were tried
+ * @param playerId The account
+ * @param typed The code as typed
+ * @param now The time now
+ * @param executor A transaction, which must be committed even when the code is wrong, so the attempt counts
+ * @return The recovery codes, or why 2FA wasn't turned on
+ */
+async function enableWithSetupCode(response: Response, playerId: string, typed: string, now: Date, executor: Executor): Promise<SetupCodeOutcome>
+{
+	const authenticator = await lockAuthenticator(playerId, executor);
+
+	if (authenticator?.enabledAt)
+	{
+		return({
+			kind: 'refused',
+			refusal: {
+				status: 409,
+				message: twoFactorMessages.alreadyOn
+			}
+		});
+	}
+
+	if (!authenticator || ((now.getTime() - authenticator.createdAt.getTime()) > TWO_FACTOR_SETUP_LIFETIME_MS))
+	{
+		return({
+			kind: 'refused',
+			refusal: {
+				status: 403,
+				message: twoFactorMessages.setUpAgain
+			}
+		});
+	}
+
+	const attempt = await takeAttempt([
+		{
+			kind: 'accountTwoFactorAttempt',
+			subjectHash: keyedHash('account', playerId),
+			limit: MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR
+		}
+	], now, executor);
+
+	if (!attempt.allowed)
+	{
+		return({
+			kind: 'refused',
+			refusal: tooManyAttempts(attempt, now, response)
+		});
+	}
+
+	const code = readTwoFactorCode(typed);
+	let step: number | undefined;
+
+	if (code?.kind === 'totp')
+	{
+		step = (isDevCode(code.code, TWO_FACTOR_CODE_LENGTH) ? totpStep(now) : matchTotpCode(decryptTotpSecret(authenticator.encryptedSecret, playerId), code.code, now, null));
+	}
+
+	if (step === undefined)
+	{
+		return({
+			kind: 'wrong',
+			refusal: {
+				status: 400,
+				message: twoFactorMessages.wrongSetupCode,
+				field: 'code'
+			}
+		});
+	}
+
+	await enableAuthenticator(playerId, step, now, executor);
+
+	return({
+		kind: 'enabled',
+		codes: await makeRecoveryCodes(playerId, executor)
+	});
+}
+
+/**
+ * Answers a request that turned 2FA on with the account's recovery codes, once its transaction is
+ * committed: turns away the windows of the sessions it ended, tells the rooms, and emails the account
+ *
+ * @param response The response: a RecoveryCodesPayload
+ * @param playerId The account
+ * @param codes The recovery codes, as shown to the player
+ * @param ended The IDs of the account's sessions that turning 2FA on ended
+ * @param emailLocale The language the request asked its emails in
+ */
+async function answerTwoFactorEnabled(response: Response, playerId: string, codes: string[], ended: string[], emailLocale: string): Promise<void>
+{
+	connectedSessions.end(ended);
 	twoFactorChanges.publish(playerId, true);
 
-	const payload: RecoveryCodesPayload = { recoveryCodes: outcome.codes };
+	const payload: RecoveryCodesPayload = { recoveryCodes: codes };
 
 	response.json(payload);
 
@@ -918,8 +1213,8 @@ async function changeTwoFactor<Result>(request: Request, response: Response, pla
 /**
  * POST AUTH_TWO_FACTOR_DISABLE_PATH: turns off 2FA for the logged-in account, once its password (or
  * without one, an emailed code) and an authenticator or recovery code are given. Its recovery codes and
- * trusted browsers go with it, a server admin's open editors stop letting them edit with the site admin
- * role, and the player's open editors of universes that require 2FA stop letting them save
+ * trusted browsers go with it, and the player's open editors of universes that require 2FA stop letting
+ * them save. A server admin is refused, since they can't be logged in without it
  *
  * @param request The request, with a TwoFactorDisableRequest
  * @param response The response: 204
@@ -943,6 +1238,17 @@ async function disableRoute(request: Request, response: Response): Promise<void>
 
 	const { password: typedPassword, code, locale: emailLocale } = body.data;
 	const playerId = session.playerId;
+
+	// Before the password, so an admin doesn't use up the account's tries; resolveSession() covers one made an admin meanwhile
+	if (await isServerAdmin(playerId))
+	{
+		sendRefusal(response, {
+			status: 403,
+			message: twoFactorMessages.adminKeepsTwoFactor
+		});
+		return;
+	}
+
 	const now = new Date();
 	const outcome = await changeTwoFactor(request, response, playerId, typedPassword, code, emailLocale, now, async (executor) =>
 	{
@@ -955,7 +1261,6 @@ async function disableRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	serverAdminChanges.publishLost(playerId);
 	twoFactorChanges.publish(playerId, false);
 	response.sendStatus(204);
 

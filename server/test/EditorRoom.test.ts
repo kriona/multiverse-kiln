@@ -23,7 +23,7 @@ import { editorUpdates } from '../src/world/editorUpdates.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
-import { usernameFor } from './players.js';
+import { logInBrowser, usernameFor } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { turnOnTwoFactor } from './twoFactorAccounts.js';
 import { waitUntil } from './waitUntil.js';
@@ -151,12 +151,14 @@ describe('EditorRoom', () =>
 
 		it('admits a server admin with 2FA on with the site admin role, but not one without 2FA', async () =>
 		{
-			const admin = await logIn('Grace');
+			const unguarded = await logIn('Grace');
 
-			await addServerAdmin(admin.playerId);
-			await assert.rejects(connect(admin.cookie, { universeId }));
-			await turnOnTwoFactor(admin.playerId);
+			await addServerAdmin(unguarded.playerId);
+			await assert.rejects(connect(unguarded.cookie, { universeId }));
+			await turnOnTwoFactor(unguarded.playerId);
 
+			// Their session ended while they had no 2FA, so they log in again
+			const admin = await logInBrowser(unguarded.playerId);
 			const window = await openEditor(admin, universeId);
 
 			assert.strictEqual(roomOf(window).state.editors.get(admin.playerId)?.role, 'admin');
@@ -630,7 +632,7 @@ describe('EditorRoom', () =>
 			await turnOnTwoFactor(grace.playerId);
 			changeDuringNextLookup(room, 'findAdmission', async () =>
 			{
-				await deleteTwoFactor(grace.playerId);
+				await pool.query('DELETE FROM server_admins WHERE player_id = $1', [grace.playerId]);
 				serverAdminChanges.publishLost(grace.playerId);
 			});
 

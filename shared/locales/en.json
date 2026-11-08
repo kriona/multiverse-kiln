@@ -56,7 +56,7 @@
 		"description": "Heading of the admin page listing the site's server admins, where admins add and remove other admins"
 	},
 	"admin.admins.hint": {
-		"defaultMessage": "Server admins can use these pages once they turn on two-factor authentication.",
+		"defaultMessage": "Server admins can use these pages, and must have two-factor authentication on to log in: adding one without it logs them out, and their next login asks them to turn it on.",
 		"description": "Explains the admin page listing the site's server admins, above the list"
 	},
 	"admin.admins.loadFailed": {
@@ -64,8 +64,8 @@
 		"description": "Shown on the admin page listing the site's server admins when the list couldn't be loaded"
 	},
 	"admin.admins.noTwoFactor": {
-		"defaultMessage": "No 2FA: can't use the admin pages",
-		"description": "Note in the admin page's list of server admins on an admin without two-factor authentication, who can't use the admin pages until they turn it on"
+		"defaultMessage": "No 2FA: logged out until they turn it on",
+		"description": "Note in the admin page's list of server admins on an admin without two-factor authentication, such as one just added: they can't be logged in until they turn it on, which their next login asks them to"
 	},
 	"admin.admins.nowAdmin": {
 		"defaultMessage": "{name} (@{username}) is now a server admin.",
@@ -486,10 +486,6 @@
 	"admin.translations.title": {
 		"defaultMessage": "Translations",
 		"description": "The browser tab's title for the admin page where the site's admins export the site's English text for translators and turn a translated file into a language's file, before the game engine's name"
-	},
-	"admin.turnOnTwoFactor": {
-		"defaultMessage": "Turn on two-factor authentication",
-		"description": "Link on the admin pages, shown to an admin who doesn't have two-factor authentication on, that goes to their profile to set it up"
 	},
 	"admin.universeCreationEnabled": {
 		"defaultMessage": "Players can create universes",
@@ -3875,10 +3871,6 @@
 		"defaultMessage": "Wrong codes were typed for your account on {siteName}",
 		"description": "Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name"
 	},
-	"error.adminNeedsTwoFactor": {
-		"defaultMessage": "Turn on two-factor authentication to use the admin pages.",
-		"description": "Why an admin page was refused to one of the site's admins: admins must have two-factor authentication on. The page offers a link to turn it on"
-	},
 	"error.alreadyEditor": {
 		"defaultMessage": "{username} already has a role in this universe.",
 		"description": "Why a player couldn't be added to a universe's editors: they are one already; {username} is their username"
@@ -3898,6 +3890,10 @@
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
+	},
+	"error.auth.adminKeepsTwoFactor": {
+		"defaultMessage": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first.",
+		"description": "Why turning off two-factor authentication was refused: the player is one of the site's admins, who can't log in without it"
 	},
 	"error.auth.deleteUniverseNeedsTwoFactor": {
 		"defaultMessage": "{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication.",
@@ -4001,7 +3997,7 @@
 	},
 	"error.auth.twoFactorLoginAgain": {
 		"defaultMessage": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again.",
-		"description": "Why finishing a login with an authenticator or recovery code was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
+		"description": "Why finishing a login with an authenticator or recovery code, or with the code from the authenticator app a site admin is setting up at login, was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
 	},
 	"error.auth.twoFactorNoEmail": {
 		"defaultMessage": "Your account has neither a password nor an email address to check it's you, so two-factor authentication can't be changed.",
@@ -5166,6 +5162,14 @@
 	"lobby.title": {
 		"defaultMessage": "Lobby",
 		"description": "Heading of a universe's lobby until its name has loaded"
+	},
+	"login.adminTwoFactorCanceled": {
+		"defaultMessage": "The site's admins can't log in until two-factor authentication is on. Log in again to turn it on.",
+		"description": "Shown on the login screen when one of the site's admins closed the dialog that sets up two-factor authentication at login without turning it on"
+	},
+	"login.adminTwoFactorIntro": {
+		"defaultMessage": "You're one of the site's admins, so your account needs two-factor authentication before you can log in.",
+		"description": "First paragraph of the dialog that sets up two-factor authentication when it opens on the login page, for one of the site's admins whose account doesn't have it on yet: they can't log in until it is on"
 	},
 	"login.back": {
 		"defaultMessage": "Back",
@@ -6855,6 +6859,10 @@
 		"defaultMessage": "Two-factor authentication",
 		"description": "Label of whether the player's account has two-factor authentication (a code from an authenticator app asked for at login, after the password), on their own profile page"
 	},
+	"profile.twoFactorAdmin": {
+		"defaultMessage": "You cannot turn off 2FA as long as you are a site admin.",
+		"description": "On the player's own profile page beside Two-factor authentication, in place of its Turn off button, for one of the site's admins: they can't turn it off while they are an admin"
+	},
 	"profile.twoFactorAppCode": {
 		"defaultMessage": "Code from the app",
 		"description": "Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication"
@@ -6875,17 +6883,9 @@
 		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.",
 		"description": "In the dialog that turns off two-factor authentication"
 	},
-	"profile.twoFactorDisableIntroAdmin": {
-		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on.",
-		"description": "In the dialog that turns off two-factor authentication, for one of the site's admins, who need it on to use the admin pages"
-	},
 	"profile.twoFactorDisableIntroProvider": {
 		"defaultMessage": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten.",
 		"description": "In the dialog that turns off two-factor authentication, for an account without a password, which logs in only with Google or Discord"
-	},
-	"profile.twoFactorDisableIntroProviderAdmin": {
-		"defaultMessage": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on.",
-		"description": "In the dialog that turns off two-factor authentication, for one of the site's admins whose account has no password (it logs in only with Google or Discord); admins need it on to use the admin pages"
 	},
 	"profile.twoFactorDisableTitle": {
 		"defaultMessage": "Turn off two-factor authentication",
@@ -6932,8 +6932,8 @@
 		"description": "What screen readers say for the QR code in the dialog that sets up two-factor authentication"
 	},
 	"profile.twoFactorScan": {
-		"defaultMessage": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
-		"description": "In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are"
+		"defaultMessage": "Scan this QR code with an authenticator app, such as {googleAuthenticator}, {microsoftAuthenticator}, {aegis} or {twoFas}. Then enter the 6-digit code the app shows.",
+		"description": "In the dialog that sets up two-factor authentication, above the QR code; {googleAuthenticator}, {microsoftAuthenticator}, {aegis} and {twoFas} are examples of authenticator apps, each named the same in every language and linking to the app's page in a new tab"
 	},
 	"profile.twoFactorSetupFailed": {
 		"defaultMessage": "Could not turn on two-factor authentication.",
