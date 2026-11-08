@@ -60,9 +60,15 @@ export class UsernameLookup<T>
 	private readonly checks = new Map<string, Exclude<UsernameCheck<T>, undefined>>();
 
 	/**
-	 * The check being made, by username
+	 * The check being made, by username, which never rejects
 	 */
 	private readonly pending = new Map<string, Promise<UsernameCheck<T>>>();
+
+	/**
+	 * Counts the calls to reset(), so a check made before one neither fills the cache nor shows what it
+	 * found
+	 */
+	private generation = 0;
 
 	private timer: number | undefined;
 
@@ -118,7 +124,10 @@ export class UsernameLookup<T>
 	reset(): void
 	{
 		window.clearTimeout(this.timer);
+		this.generation++;
 		this.checks.clear();
+		this.pending.clear();
+		this.field.classList.remove('field-checking');
 		setFieldError(this.field, undefined);
 	}
 
@@ -148,9 +157,10 @@ export class UsernameLookup<T>
 			return(undefined);
 		}
 
+		const generation = this.generation;
 		const check = await this.check(username);
 
-		if ((check !== undefined) && (this.username() === username))
+		if ((check !== undefined) && (this.username() === username) && (this.generation === generation))
 		{
 			this.show(check);
 		}
@@ -180,12 +190,19 @@ export class UsernameLookup<T>
 			return(waiting);
 		}
 
+		const generation = this.generation;
+
 		// A quick answer doesn't flash the spinner
 		const spinnerTimer = window.setTimeout(() =>
 		{
-			this.field.classList.add('field-checking');
+			if (this.generation === generation)
+			{
+				this.field.classList.add('field-checking');
+			}
 		}, SPINNER_DELAY_MS);
-		const asking = this.options.check(username);
+
+		// Every caller waiting on the check shares this promise, so it settles with undefined rather than rejecting
+		const asking = this.ask(username);
 
 		this.pending.set(username, asking);
 
@@ -193,27 +210,46 @@ export class UsernameLookup<T>
 		{
 			const check = await asking;
 
-			if (check !== undefined)
+			if ((check !== undefined) && (this.generation === generation))
 			{
 				this.checks.set(username, check);
 			}
 
 			return(check);
 		}
-		catch (error)
-		{
-			console.error('A username check failed:', error);
-			return(undefined);
-		}
 		finally
 		{
-			this.pending.delete(username);
+			// After reset() a newer check of the same username may be pending
+			if (this.pending.get(username) === asking)
+			{
+				this.pending.delete(username);
+			}
+
 			window.clearTimeout(spinnerTimer);
 
 			if (this.pending.size === 0)
 			{
 				this.field.classList.remove('field-checking');
 			}
+		}
+	}
+
+	/**
+	 * Asks the options' check about a username, taking a check that throws as one that couldn't tell
+	 *
+	 * @param username The username
+	 * @return What the check found, or undefined when it threw
+	 */
+	private async ask(username: string): Promise<UsernameCheck<T>>
+	{
+		try
+		{
+			return(await this.options.check(username));
+		}
+		catch (error)
+		{
+			console.error('A username check failed:', error);
+			return(undefined);
 		}
 	}
 
