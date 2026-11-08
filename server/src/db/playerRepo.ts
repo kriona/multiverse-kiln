@@ -1,7 +1,7 @@
 /**
  * Player accounts: the only module that reads or writes the players table
  */
-import { and, count, eq, exists, isNotNull, not, sql, type SQL } from 'drizzle-orm';
+import { and, count, eq, exists, isNotNull, not, or, sql, type SQL } from 'drizzle-orm';
 import type { LoginProvider, PlayerMatch, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -48,6 +48,21 @@ export interface LocalLogin
 {
 	id: string;
 	passwordHash: string;
+}
+
+/**
+ * An account that can turn on 2FA (findTwoFactorCandidate)
+ */
+export interface TwoFactorCandidate
+{
+	username: string;
+
+	/**
+	 * The account's address, or null when it has none
+	 */
+	email: string | null;
+
+	hasPassword: boolean;
 }
 
 /**
@@ -369,6 +384,43 @@ export async function findPasswordHash(playerId: string, executor: Executor = db
 		.limit(1);
 
 	return((row?.passwordHash ?? null));
+}
+
+/**
+ * An account that can turn on 2FA: one with 2FA off, and a password or an email address, which setting
+ * it up checks it's the owner with (the password, or a code sent to the address). Reads the
+ * authenticators table for that
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return Its username and email address and whether it has a password, or undefined when it can't
+ * turn 2FA on or doesn't exist
+ */
+export async function findTwoFactorCandidate(playerId: string, executor: Executor = db): Promise<TwoFactorCandidate | undefined>
+{
+	const [row] = await executor
+		.select({
+			username: players.username,
+			email: players.email,
+			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`
+		})
+		.from(players)
+		.where(and(
+			eq(players.id, playerId),
+			or(isNotNull(players.passwordHash), isNotNull(players.email)),
+			not(exists(executor
+				.select({
+					playerId: authenticators.playerId
+				})
+				.from(authenticators)
+				.where(and(
+					eq(authenticators.playerId, players.id),
+					isNotNull(authenticators.enabledAt)
+				))))
+		))
+		.limit(1);
+
+	return(row);
 }
 
 /**

@@ -445,7 +445,7 @@ export class DialogFollower
 /**
  * The forms on the editor's tabs that hold the universe's settings
  */
-export type SettingsForm = 'universe' | 'lobby' | 'characters' | 'coins' | 'translations';
+export type SettingsForm = 'universe' | 'lobby' | 'characters' | 'coins' | 'translations' | 'editors';
 
 /**
  * The settings each form holds: as the Audit tab names them, and as the universe holds them, which a form
@@ -472,6 +472,10 @@ export const SETTINGS_FORMS: Readonly<Record<SettingsForm, { fields: ReadonlySet
 	translations: {
 		fields: new Set(['sourceLanguage', 'translationLanguages']),
 		keys: ['sourceLanguage', 'translationLanguages']
+	},
+	editors: {
+		fields: new Set(['requireTwoFactor']),
+		keys: ['requireTwoFactor']
 	}
 };
 

@@ -1,7 +1,9 @@
 import assert from 'assert';
 
 import { pool } from '../../src/db/client.js';
-import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, replaceProfileLocale, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
+import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, findTwoFactorCandidate, replaceProfileLocale, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
+import { saveAuthenticatorSetup } from '../../src/db/twoFactorRepo.js';
+import { turnOnTwoFactor } from '../twoFactorAccounts.js';
 
 /**
  * A local account with an email address and password
@@ -109,6 +111,40 @@ describe('playerRepo', () =>
 			});
 			assert.strictEqual(await findLocalLogin('grace@example.com'), undefined);
 			assert.strictEqual(await findLocalLogin('nobody@example.com'), undefined);
+		});
+
+		it('finds an account that can turn on 2FA only while it has a password or an address, and 2FA is off', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+			const grace = await createPlayer({
+				username: 'Grace',
+				displayName: 'Grace',
+				email: 'grace@example.com',
+				passwordHash: null
+			});
+			const linus = await createPlayer({
+				username: 'Linus',
+				displayName: 'Linus',
+				email: null,
+				passwordHash: null
+			});
+
+			// Setting up an authenticator isn't 2FA until a code from it turns it on
+			await saveAuthenticatorSetup(ada.id, new Uint8Array(32), new Date());
+			assert.deepStrictEqual(await findTwoFactorCandidate(ada.id), {
+				username: 'Ada',
+				email: 'ada@example.com',
+				hasPassword: true
+			});
+			assert.deepStrictEqual(await findTwoFactorCandidate(grace.id), {
+				username: 'Grace',
+				email: 'grace@example.com',
+				hasPassword: false
+			});
+			assert.strictEqual(await findTwoFactorCandidate(linus.id), undefined);
+
+			await turnOnTwoFactor(ada.id);
+			assert.strictEqual(await findTwoFactorCandidate(ada.id), undefined);
 		});
 
 		it('finds where to email an account that has an address, its name and its language', async () =>

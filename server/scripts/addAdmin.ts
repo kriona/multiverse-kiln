@@ -1,6 +1,6 @@
 /**
- * Makes a player a server admin, who can use the admin pages once they turn on 2FA (see Admin in
- * STRUCTURE-OVERVIEW.md):
+ * Makes a player a server admin, who must have 2FA on to be logged in: without it, their next login asks
+ * them to turn it on (see Admin in STRUCTURE-OVERVIEW.md):
  *
  *   npm run admin:add -w server -- <username>
  *
@@ -43,7 +43,7 @@ async function main(): Promise<number>
 
 	if (!await hasTwoFactor(player.id))
 	{
-		console.log('They need to turn on two-factor authentication on their profile before they can use the admin pages.');
+		console.log('They don\'t have two-factor authentication on, so they are logged out, and their next login asks them to turn it on.');
 	}
 
 	return(0);

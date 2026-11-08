@@ -1,11 +1,12 @@
 import assert from 'assert';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_USERNAME_CHECK_PATH, type AuthErrorPayload, type LoginProvider, type ProviderCallbackPayload, type ProviderLinkConfirmation, type ProvidersPayload, type ProviderStartPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REGISTER_PATH, AUTH_PROVIDER_START_PATH, AUTH_PROVIDERS_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_LOGIN_SETUP_PATH, AUTH_USERNAME_CHECK_PATH, type AuthErrorPayload, type LoginProvider, type ProviderCallbackPayload, type ProviderLinkConfirmation, type ProvidersPayload, type ProviderStartPayload } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { ProviderLoginError, setProviderClients, type ProviderClient, type ProviderUser } from '../src/auth/providers.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { addProviderLogin } from '../src/db/providerLoginRepo.js';
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE } from '../src/http/cookies.js';
 import { Browser } from './browser.js';
@@ -415,7 +416,7 @@ describe('provider login routes', () =>
 		assert.strictEqual(wrong.body.field, 'password');
 		assert.strictEqual(await browser.username(), null);
 
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).status, 204);
+		assert.deepStrictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).body, { outcome: 'loggedIn' });
 		assert.strictEqual(await browser.username(), 'ada');
 		assert.deepStrictEqual((await pool.query('SELECT remember_me FROM sessions')).rows, [{ remember_me: true }]);
 		await waitUntil(() => (emails.length === 1));
@@ -451,7 +452,7 @@ describe('provider login routes', () =>
 		assert.ok(code);
 		assert.match(emails[0].subject, /link a login/);
 		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'linkLogin', email: 'ada@example.com', code })).status, 200);
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: null })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: null })).status, 200);
 		assert.strictEqual(await browser.username(), 'ada');
 		assert.strictEqual((await pool.query('SELECT * FROM email_codes')).rowCount, 0);
 		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins')).rows, [{ provider: 'discord' }]);
@@ -479,7 +480,7 @@ describe('provider login routes', () =>
 
 		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'linkLogin', email: 'ada@example.com', code })).status, 200);
 		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: null })).status, 401);
-		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: authenticatorCode(authenticator.secret) })).status, 204);
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_LINK_PATH, { password: null, locale: 'en', twoFactorCode: authenticatorCode(authenticator.secret) })).status, 200);
 		assert.strictEqual(await browser.username(), 'ada');
 		assert.deepStrictEqual((await pool.query('SELECT provider FROM provider_logins')).rows, [{ provider: 'google' }]);
 	});
@@ -512,6 +513,27 @@ describe('provider login routes', () =>
 		assert.strictEqual(await browser.username(), 'ada');
 	});
 
+	it('has a server admin without 2FA turn it on, whether the provider login is theirs or being linked', async () =>
+	{
+		const playerId = await addLocalAccount('ada@example.com', 'ada');
+
+		await addServerAdmin(playerId);
+
+		const linking = new Browser();
+
+		await logInWith(linking, GOOGLE_ADA);
+		assert.deepStrictEqual((await linking.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).body, { outcome: 'twoFactorSetup' });
+		assert.strictEqual(await linking.username(), null);
+		assert.strictEqual((await linking.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 200);
+
+		const browser = new Browser();
+
+		assert.deepStrictEqual((await logInWith(browser, GOOGLE_ADA)).body, { outcome: 'twoFactorSetup' });
+		assert.ok(!browser.cookies.has(PROVIDER_LOGIN_COOKIE));
+		assert.strictEqual(await browser.username(), null);
+		assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 200);
+	});
+
 	it('sends a link code only to the account a browser\'s provider login would link to', async () =>
 	{
 		await addLocalAccount('ada@example.com', 'ada');
@@ -535,7 +557,7 @@ describe('provider login routes', () =>
 		const first = new Browser();
 
 		await logInWith(first, GOOGLE_ADA);
-		assert.strictEqual((await first.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).status, 204);
+		assert.strictEqual((await first.send('POST', AUTH_PROVIDER_LINK_PATH, { password: PASSWORD, locale: 'en', twoFactorCode: null })).status, 200);
 
 		const second = new Browser();
 

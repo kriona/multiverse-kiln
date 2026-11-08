@@ -6,6 +6,7 @@ import { and, count, desc, eq, inArray, lte, ne, not, notInArray, or, sql, type 
 import { SESSION_LIFETIMES, type SessionTimes } from '../logic/sessionLifetimes.js';
 import { db, type Executor } from './client.js';
 import { players, sessions } from './schema.js';
+import { adminWithoutTwoFactor } from './serverAdminRepo.js';
 import { anyColumnContains } from './textSearch.js';
 
 /**
@@ -29,6 +30,12 @@ export interface SessionWithPlayer extends SessionRecord
 	 * The language the player chose, or null when they haven't
 	 */
 	locale: string | null;
+
+	/**
+	 * Whether the player is a server admin without 2FA on, whose sessions don't count until they turn it
+	 * on (adminWithoutTwoFactor())
+	 */
+	needsTwoFactor: boolean;
 }
 
 /**
@@ -85,7 +92,8 @@ export async function findSessionByTokenHash(tokenHash: Uint8Array, executor: Ex
 }
 
 /**
- * Finds the session a browser's token belongs to, with its player's names, whether or not it has expired
+ * Finds the session a browser's token belongs to, with its player's names and whether they need 2FA,
+ * whether or not it has expired
  *
  * @param tokenHash Hash of the token in the browser's cookie
  * @param executor The database, or a transaction
@@ -102,7 +110,8 @@ export async function findSessionWithPlayer(tokenHash: Uint8Array, executor: Exe
 			lastUsedAt: sessions.lastUsedAt,
 			username: players.username,
 			displayName: players.displayName,
-			locale: players.locale
+			locale: players.locale,
+			needsTwoFactor: adminWithoutTwoFactor(sessions.playerId)
 		})
 		.from(sessions)
 		.innerJoin(players, eq(players.id, sessions.playerId))

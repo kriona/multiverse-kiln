@@ -21,6 +21,11 @@ export interface SoleCreatedUniverse
 	 * Whether a server admin who disabled it kept its creators from deleting it
 	 */
 	deletionPrevented: boolean;
+
+	/**
+	 * Whether it requires its editors to have 2FA on
+	 */
+	requireTwoFactor: boolean;
 }
 
 /**
@@ -305,7 +310,8 @@ export async function listSoleCreatedUniverses(playerId: string, executor: Execu
 		.select({
 			id: universes.id,
 			name: universes.name,
-			deletionPrevented: universes.deletionPrevented
+			deletionPrevented: universes.deletionPrevented,
+			requireTwoFactor: universes.requireTwoFactor
 		})
 		.from(universeEditors)
 		.innerJoin(universes, eq(universes.id, universeEditors.universeId))
@@ -324,6 +330,31 @@ export async function listSoleCreatedUniverses(playerId: string, executor: Execu
 				)))
 		))
 		.orderBy(universes.name, universes.id));
+}
+
+/**
+ * The names of the universes that require their editors to have 2FA on in which a player has a role:
+ * those turning 2FA off keeps them from opening in the editor
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The names, by name
+ */
+export async function listTwoFactorUniverseNames(playerId: string, executor: Executor = db): Promise<string[]>
+{
+	const rows = await executor
+		.select({
+			name: universes.name
+		})
+		.from(universeEditors)
+		.innerJoin(universes, eq(universes.id, universeEditors.universeId))
+		.where(and(
+			eq(universeEditors.playerId, playerId),
+			eq(universes.requireTwoFactor, true)
+		))
+		.orderBy(universes.name, universes.id);
+
+	return(rows.map((row) => row.name));
 }
 
 /**

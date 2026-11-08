@@ -47,7 +47,8 @@ export const AUTH_USERNAME_CHECK_PATH = `${AUTH_PATH}/username/check`;
 export const AUTH_REGISTER_PATH = `${AUTH_PATH}/register`;
 
 /**
- * POST: choose a new password, after the reset code was checked (PasswordResetRequest)
+ * POST: choose a new password, after the reset code was checked (PasswordResetRequest), answered with
+ * whether the browser is logged in (SessionStartPayload)
  */
 export const AUTH_PASSWORD_RESET_PATH = `${AUTH_PATH}/password-reset`;
 
@@ -70,6 +71,19 @@ export const AUTH_PASSWORD_CHANGE_PATH = `${AUTH_PATH}/password`;
  * code (TwoFactorLoginRequest)
  */
 export const AUTH_TWO_FACTOR_LOGIN_PATH = `${AUTH_PATH}/two-factor/login`;
+
+/**
+ * POST: start turning on 2FA for a server admin's login that waits on it (SessionStartPayload's
+ * 'twoFactorSetup'), answered with the secret for the authenticator app (TwoFactorLoginSetupPayload)
+ */
+export const AUTH_TWO_FACTOR_LOGIN_SETUP_PATH = `${AUTH_PATH}/two-factor/login/setup`;
+
+/**
+ * POST: turn on 2FA for a server admin's login that waits on it, with a code from the authenticator app
+ * just set up (TwoFactorEnableRequest), finishing the login; answered with the account's recovery codes
+ * (RecoveryCodesPayload)
+ */
+export const AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH = `${AUTH_PATH}/two-factor/login/enable`;
 
 /**
  * POST: start turning on 2FA for the logged-in account, giving its password (TwoFactorSetupRequest),
@@ -124,7 +138,7 @@ export const AUTH_PROVIDER_REGISTER_PATH = `${AUTH_PATH}/providers/register`;
 
 /**
  * POST: link a provider login to the local account with the same email address, by logging in to it
- * (ProviderLinkRequest)
+ * (ProviderLinkRequest), answered with whether the browser is logged in (SessionStartPayload)
  */
 export const AUTH_PROVIDER_LINK_PATH = `${AUTH_PATH}/providers/link`;
 
@@ -235,9 +249,10 @@ export const MAX_TWO_FACTOR_CODE_INPUT_LENGTH = 32;
 /**
  * What an email code is for. 'changeEmail' is sent to the new address, and 'confirmEmailChange' to the
  * current address of an account without a password, to check it's the owner changing it.
- * 'deleteAccount' checks it's the owner deleting an account without a password
+ * 'deleteAccount' checks it's the owner deleting an account without a password, and 'changeTwoFactor'
+ * that it's the owner turning 2FA on or off, or making new recovery codes, for an account without one
  */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount'] as const;
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount', 'changeTwoFactor'] as const;
 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 
@@ -311,12 +326,23 @@ export interface LoginRequest
 }
 
 /**
- * Response of POST AUTH_LOGIN_PATH: the browser is logged in, or the account has 2FA and the login waits
+ * Response of a request that logs the browser in once it shows it's the account's owner, such as
+ * POST AUTH_PASSWORD_RESET_PATH: the browser is logged in, or the account is a server admin's without
+ * 2FA, and the login waits a few minutes, from this browser, for them to turn it on
+ * (AUTH_TWO_FACTOR_LOGIN_SETUP_PATH), since a server admin can't use the site without it
+ */
+export interface SessionStartPayload
+{
+	outcome: 'loggedIn' | 'twoFactorSetup';
+}
+
+/**
+ * Response of POST AUTH_LOGIN_PATH: as SessionStartPayload, or the account has 2FA and the login waits
  * a few minutes for its code (AUTH_TWO_FACTOR_LOGIN_PATH), from this browser
  */
 export interface LoginPayload
 {
-	outcome: 'loggedIn' | 'twoFactor';
+	outcome: SessionStartPayload['outcome'] | 'twoFactor';
 }
 
 /**
@@ -342,7 +368,11 @@ export interface TwoFactorLoginRequest
  */
 export interface TwoFactorSetupRequest
 {
-	password: string;
+	/**
+	 * The account's password, or null for an account without one, whose browser has entered a code sent
+	 * to its address (purpose 'changeTwoFactor') instead
+	 */
+	password: string | null;
 }
 
 /**
@@ -363,6 +393,15 @@ export interface TwoFactorSetupPayload
 }
 
 /**
+ * Response of POST AUTH_TWO_FACTOR_LOGIN_SETUP_PATH: the secret, and the username of the account
+ * logging in, which names the file its recovery codes are saved as
+ */
+export interface TwoFactorLoginSetupPayload extends TwoFactorSetupPayload
+{
+	username: string;
+}
+
+/**
  * Body of POST AUTH_TWO_FACTOR_ENABLE_PATH
  */
 export interface TwoFactorEnableRequest
@@ -380,7 +419,11 @@ export interface TwoFactorEnableRequest
  */
 export interface TwoFactorDisableRequest
 {
-	password: string;
+	/**
+	 * The account's password, or null for an account without one, whose browser has entered a code sent
+	 * to its address (purpose 'changeTwoFactor') instead
+	 */
+	password: string | null;
 
 	/**
 	 * An authenticator or recovery code
@@ -395,7 +438,11 @@ export interface TwoFactorDisableRequest
  */
 export interface RecoveryCodesRequest
 {
-	password: string;
+	/**
+	 * The account's password, or null for an account without one, whose browser has entered a code sent
+	 * to its address (purpose 'changeTwoFactor') instead
+	 */
+	password: string | null;
 
 	/**
 	 * An authenticator or recovery code
@@ -624,6 +671,13 @@ export type ProviderCallbackPayload =
 		 * authenticator or recovery code (AUTH_TWO_FACTOR_LOGIN_PATH), as after a password
 		 */
 		outcome: 'twoFactor';
+	}
+	| {
+		/**
+		 * The provider login is a server admin's without 2FA: turn it on to finish logging in
+		 * (AUTH_TWO_FACTOR_LOGIN_SETUP_PATH), as after a password
+		 */
+		outcome: 'twoFactorSetup';
 	}
 	| {
 		/**

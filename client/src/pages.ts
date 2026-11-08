@@ -75,9 +75,10 @@ export const TWO_FACTOR_SETUP_PARAMETER = 'setUpTwoFactor';
 export const PROVIDER_LINKED_PARAMETER = 'linked';
 
 /**
- * Query string parameter of the login page naming the page to go back to once logged in
+ * Query string parameter naming the page to go back to: on the login page once logged in, and on the
+ * player's own profile once two-factor authentication is set up (twoFactorSetupPageUrl())
  */
-const NEXT_PARAMETER = 'next';
+export const NEXT_PARAMETER = 'next';
 
 /**
  * Path of the login page, which Google and Discord also send the browser back to
@@ -146,6 +147,22 @@ export const PROFILE_PAGE_URL = PROFILE_PAGE;
  * The address of the player's own profile with the dialog setting up two-factor authentication open
  */
 export const TWO_FACTOR_SETUP_PAGE_URL = `${PROFILE_PAGE}?${TWO_FACTOR_SETUP_PARAMETER}`;
+
+/**
+ * The address of the player's own profile with the dialog setting up two-factor authentication open,
+ * which goes back to a page once 2FA is on
+ *
+ * @param next The address to go back to, as the login page's next parameter takes it
+ * @return The address
+ */
+export function twoFactorSetupPageUrl(next: string): string
+{
+	const parameters = new URLSearchParams({
+		[NEXT_PARAMETER]: next
+	});
+
+	return(`${TWO_FACTOR_SETUP_PAGE_URL}&${parameters.toString()}`);
+}
 
 /**
  * The address of Home
@@ -359,9 +376,9 @@ export function takeProviderReturn(): URLSearchParams | undefined
 }
 
 /**
- * Where the login page goes once logged in: the address its next parameter names, when that is a page
- * of this site, or Home. Only a path is taken, so a link can't send a player to another site after
- * they log in
+ * Where the login page goes once logged in, and the profile once 2FA is set up: the address the page's
+ * next parameter names, when that is a page of this site, or Home. Only a path is taken, so a link can't
+ * send a player to another site after they log in
  *
  * @return The address
  */

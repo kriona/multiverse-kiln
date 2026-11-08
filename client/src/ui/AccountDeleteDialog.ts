@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, LAST_SERVER_ADMIN_DELETION, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_UNIVERSE_DELETION, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LAST_SERVER_ADMIN_DELETION, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION, UNHANDABLE_UNIVERSE_DELETION, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
@@ -193,7 +193,7 @@ export class AccountDeleteDialog
 		this.status.textContent = '';
 		this.anchors.hidden = !deletion.anchorsGroups;
 
-		const unhandable = deletion.universes.find((universe) => (universe.deletionPrevented && (universe.editors.length === 0)));
+		const unhandable = deletion.universes.find((universe) => ((universe.deletionPrevented || universe.twoFactorRequired) && (universe.editors.length === 0)));
 
 		if (deletion.lastServerAdmin)
 		{
@@ -203,7 +203,7 @@ export class AccountDeleteDialog
 		}
 		else if (unhandable)
 		{
-			showMessage(this.error, t(UNHANDABLE_UNIVERSE_DELETION, {
+			showMessage(this.error, t((unhandable.deletionPrevented ? UNHANDABLE_UNIVERSE_DELETION : UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION), {
 				universe: unhandable.name
 			}));
 			this.cancelButton.focus();
@@ -390,17 +390,23 @@ export class AccountDeleteDialog
 			item.append(label);
 			this.choices.set(universe.id, select);
 
-			if (universe.deletionPrevented)
+			if (universe.deletionPrevented || universe.twoFactorRequired)
 			{
 				const hint = document.createElement('p');
 
 				hint.id = `account-delete-universe-${universe.id}-hint`;
 				hint.className = 'hint';
-				hint.textContent = t({
-					id: 'profile.deleteUniversePrevented',
-					defaultMessage: 'The site\'s admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator.',
-					description: 'Under a universe\'s choice in the dialog that deletes the player\'s account, which then has no choice to delete it: the site\'s admins disabled the universe and kept it from being deleted'
-				});
+				hint.textContent = (universe.deletionPrevented
+					? t({
+						id: 'profile.deleteUniversePrevented',
+						defaultMessage: 'The site\'s admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator.',
+						description: 'Under a universe\'s choice in the dialog that deletes the player\'s account, which then has no choice to delete it: the site\'s admins disabled the universe and kept it from being deleted'
+					})
+					: t({
+						id: 'profile.deleteUniverseNeedsTwoFactor',
+						defaultMessage: 'This universe requires its editors to have two-factor authentication on, so another of its editors has to become its creator. Turn it on to delete the universe instead.',
+						description: 'Under a universe\'s choice in the dialog that deletes the player\'s account, which then has no choice to delete it: the universe requires its editors to have two-factor authentication on, and the player doesn\'t'
+					}));
 				select.setAttribute('aria-describedby', hint.id);
 				item.append(hint);
 			}

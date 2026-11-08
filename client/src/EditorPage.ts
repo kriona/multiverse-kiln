@@ -13,6 +13,7 @@ import { unsavedDraftEditors } from './ui/editor/DraftSection';
 import { EditorChat } from './ui/editor/EditorChat';
 import { EditorPresenceBar } from './ui/editor/EditorPresenceBar';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
+import { EditorTwoFactorScreen } from './ui/editor/EditorTwoFactorScreen';
 import { pageMessages } from './ui/pageMessages';
 
 /**
@@ -60,6 +61,11 @@ function isEditorPlace(state: unknown): state is EditorPlace
 export class EditorPage
 {
 	private readonly editorScreen: EditorScreen;
+
+	/**
+	 * What the page shows in place of the editor while the universe requires 2FA the player doesn't have on
+	 */
+	private readonly twoFactorScreen: EditorTwoFactorScreen;
 
 	/**
 	 * The editor's API, which tells each save the window's ID in the editor room
@@ -121,6 +127,7 @@ export class EditorPage
 		api.version = version;
 		this.api = api;
 		this.version = version;
+		this.twoFactorScreen = new EditorTwoFactorScreen(api, universeId);
 		this.editorScreen = new EditorScreen(api, {
 			placeChanged: (changed) =>
 			{
@@ -138,6 +145,10 @@ export class EditorPage
 			areasLoaded: () =>
 			{
 				this.presenceBar?.refresh();
+			},
+			twoFactorRequired: (message, universeName) =>
+			{
+				this.twoFactorScreen.show(message, universeName);
 			}
 		});
 
@@ -164,8 +175,9 @@ export class EditorPage
 	}
 
 	/**
-	 * Shows the editor while the browser is logged in, and goes to the login page when it isn't. Changes
-	 * not yet saved make the browser ask before leaving
+	 * Shows the editor while the browser is logged in, unless the universe requires 2FA the player doesn't
+	 * have on, and goes to the login page when it isn't. Changes not yet saved make the browser ask before
+	 * leaving
 	 *
 	 * @param account The browser's player
 	 */
@@ -177,11 +189,15 @@ export class EditorPage
 			return;
 		}
 
-		showScreen('editor');
+		if (!this.twoFactorScreen.isShown())
+		{
+			showScreen('editor');
+		}
 
 		if (!this.opened)
 		{
 			this.opened = true;
+			this.twoFactorScreen.setPlayer(account.player.playerId);
 			this.chat = new EditorChat(account.player.playerId, (text) =>
 			{
 				const chat: ChatPayload = { text };
@@ -298,7 +314,8 @@ export class EditorPage
 	 * tabs when the connection was lost, and turns saving off when the player may no longer edit the
 	 * universe or it was deleted. A player who may no
 	 * longer edit it goes to the universe's page, unless they choose to stay when the browser asks about
-	 * changes not yet saved
+	 * changes not yet saved, and one turned away for not having 2FA on that the universe requires is shown
+	 * why in place of the editor
 	 *
 	 * @param chat The editors' chat
 	 * @param code WebSocket close code
@@ -328,6 +345,11 @@ export class EditorPage
 			this.editorScreen.lockOut(message);
 			chat.showProblem(message);
 			window.location.replace(universePageUrl(this.universeId));
+		}
+		else if (code === ServerCloseCode.TwoFactorRequired.valueOf())
+		{
+			// Opening the universe again is refused, which shows why in place of the editor
+			void this.editorScreen.open(this.universeId, this.place);
 		}
 		else if (code === ServerCloseCode.UniverseDeleted.valueOf())
 		{

@@ -56,16 +56,16 @@
 		"source": "Server Admins"
 	},
 	"admin.admins.hint": {
-		"message": "Officers can set foot in these quarters once they raise two-factor authentication.",
-		"source": "Server admins can use these pages once they turn on two-factor authentication."
+		"message": "Officers can set foot in these quarters, and must have two-factor authentication raised to come aboard: promote one without it and they're put ashore, and their next boarding has 'em raise it.",
+		"source": "Server admins can use these pages, and must have two-factor authentication on to log in: adding one without it logs them out, and their next login asks them to turn it on."
 	},
 	"admin.admins.loadFailed": {
 		"message": "Couldn't haul up the officers' roll.",
 		"source": "Could not load the server admins."
 	},
 	"admin.admins.noTwoFactor": {
-		"message": "No 2FA: barred from the captain's quarters",
-		"source": "No 2FA: can't use the admin pages"
+		"message": "No 2FA: put ashore till they raise it",
+		"source": "No 2FA: logged out until they turn it on"
 	},
 	"admin.admins.nowAdmin": {
 		"message": "{name} (@{username}) be an officer now.",
@@ -486,10 +486,6 @@
 	"admin.translations.title": {
 		"message": "Tongues",
 		"source": "Translations"
-	},
-	"admin.turnOnTwoFactor": {
-		"message": "Raise two-factor authentication",
-		"source": "Turn on two-factor authentication"
 	},
 	"admin.universeCreationEnabled": {
 		"message": "Hands can create universes",
@@ -1136,8 +1132,8 @@
 		"source": "Story"
 	},
 	"editor.accessChanged": {
-		"message": "What ye can do in this universe has changed: yer rank, her stage, or whether the ship's officers have laid her up. Stow or undo yer changes, then reload the page to see what ye can do now.",
-		"source": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now."
+		"message": "What ye can do in this universe has changed: yer rank, her stage, whether the ship's officers have laid her up, or whether ye have two-factor authentication raised. Stow or undo yer changes, then reload the page to see what ye can do now.",
+		"source": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now."
 	},
 	"editor.accessLost": {
 		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
@@ -2047,6 +2043,18 @@
 		"message": "(put ashore when saved)",
 		"source": "(loses their role when saved)"
 	},
+	"editor.editors.requireTwoFactor": {
+		"message": "Officers must raise two-factor authentication",
+		"source": "Editors need two-factor authentication"
+	},
+	"editor.editors.requireTwoFactorHint": {
+		"message": "Officers without two-factor authentication raised can't open the universe in the editor, only jump ship, though they can still sail her. Only captains can change this.",
+		"source": "Editors without two-factor authentication on can't open the universe in the editor, only leave it, though they can still play it. Only creators can change this."
+	},
+	"editor.editors.requireTwoFactorOwn": {
+		"message": "Raise two-factor authentication on yer own account before demandin' it o' others.",
+		"source": "Turn on two-factor authentication for your own account before requiring it of others."
+	},
 	"editor.editors.role": {
 		"message": "Post",
 		"source": "Role"
@@ -2054,6 +2062,14 @@
 	"editor.editors.saveFailed": {
 		"message": "Couldn't stow the changes to {username}.",
 		"source": "Could not save the changes to {username}."
+	},
+	"editor.editors.securityHeading": {
+		"message": "Watch on Deck",
+		"source": "Security"
+	},
+	"editor.editors.settingsSaveFailed": {
+		"message": "Couldn't stow whether officers must raise two-factor authentication.",
+		"source": "Could not save whether editors need two-factor authentication."
 	},
 	"editor.editors.undoRemove": {
 		"message": "Keep Aboard",
@@ -2601,7 +2617,7 @@
 	},
 	"editor.resize.discard": {
 		"message": "Resize and Toss Overboard",
-		"source": "Resize and Fiscard"
+		"source": "Resize and Discard"
 	},
 	"editor.resize.east": {
 		"message": "East",
@@ -3527,6 +3543,30 @@
 		"message": "This scroll can't be read as {format}: see line {line, number}.",
 		"source": "This file can't be read as {format}: see line {line, number}."
 	},
+	"editor.turnOnTwoFactor": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
+	"editor.twoFactorHeading": {
+		"message": "Two-Factor Authentication Be Required",
+		"source": "Two-Factor Authentication Required"
+	},
+	"editor.twoFactorLeave": {
+		"message": "Jump Ship",
+		"source": "Leave Universe"
+	},
+	"editor.twoFactorLeaveFailed": {
+		"message": "Couldn't jump ship from the universe.",
+		"source": "Could not leave the universe."
+	},
+	"editor.twoFactorLeaveQuestion": {
+		"message": "Ye give up yer post in this universe and can no longer open it in the editor. Only a captain can give ye a post again.",
+		"source": "You lose your role in this universe and can no longer open it in the editor. Only a creator can give you a role again."
+	},
+	"editor.twoFactorLeaveTitle": {
+		"message": "Jump ship from this universe?",
+		"source": "Leave this universe?"
+	},
 	"editor.universe.longDescription": {
 		"message": "Long tale (Markdown)",
 		"source": "Long description (Markdown)"
@@ -3658,6 +3698,14 @@
 	"email.code.changeEmail.subject": {
 		"message": "Yer code to change yer email address on {siteName}",
 		"source": "Your code to change your email address on {siteName}"
+	},
+	"email.code.changeTwoFactor.intro": {
+		"message": "Some scallywag asked to change the two-factor authentication o' yer account on {siteName}: to raise it or strike it, or make new recovery codes. If 'twas ye, enter this code to sail on:",
+		"source": "Someone asked to change the two-factor authentication of your account on {siteName}: to turn it on or off, or make new recovery codes. If it was you, enter this code to go on:"
+	},
+	"email.code.changeTwoFactor.subject": {
+		"message": "Yer code to change two-factor authentication on {siteName}",
+		"source": "Your code to change two-factor authentication on {siteName}"
 	},
 	"email.code.confirmEmailChange.intro": {
 		"message": "Some scallywag asked to move yer account on {siteName} to another email address. If 'twas ye, enter this code to sail on:",
@@ -3823,10 +3871,6 @@
 		"message": "Wrong codes were tried on yer account on {siteName}",
 		"source": "Wrong codes were typed for your account on {siteName}"
 	},
-	"error.adminNeedsTwoFactor": {
-		"message": "Raise two-factor authentication afore ye set foot in the captain's quarters.",
-		"source": "Turn on two-factor authentication to use the admin pages."
-	},
 	"error.alreadyEditor": {
 		"message": "{username} already serves aboard this universe.",
 		"source": "{username} already has a role in this universe."
@@ -3846,6 +3890,14 @@
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
+	},
+	"error.auth.adminKeepsTwoFactor": {
+		"message": "The ship's officers must keep two-factor authentication raised. To lower it, have another officer strip ye of yer rank first.",
+		"source": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first."
+	},
+	"error.auth.deleteUniverseNeedsTwoFactor": {
+		"message": "{universe} demands her officers raise two-factor authentication, so she can only be scuttled with yer account while ye have it raised. Make another o' her crew her captain, or raise two-factor authentication.",
+		"source": "{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication."
 	},
 	"error.auth.deleteUniversePrevented": {
 		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin'. Make another o' her crew her captain.",
@@ -3878,6 +3930,10 @@
 	"error.auth.noPassword": {
 		"message": "Yer account has no password to change. To give it one, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
 		"source": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page."
+	},
+	"error.auth.noPasswordToCheck": {
+		"message": "Yer account has no password to check. Hoist the page again an' have another go.",
+		"source": "Your account has no password to check. Reload the page and try again."
 	},
 	"error.auth.passwordBreached": {
 		"message": "This password washed up in a data breach, so scallywags try it. Choose another.",
@@ -3943,9 +3999,9 @@
 		"message": "Too long has passed since ye gave yer password, or too many codes were wrong. Come aboard with yer password again.",
 		"source": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again."
 	},
-	"error.auth.twoFactorNoPassword": {
-		"message": "Two-factor authentication be for comin' aboard with a password, an' yer account has none. Google an' Discord ask for their own.",
-		"source": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own."
+	"error.auth.twoFactorNoEmail": {
+		"message": "Yer account has neither a password nor an email address to prove it be ye, so two-factor authentication can't be changed.",
+		"source": "Your account has neither a password nor an email address to check it's you, so two-factor authentication can't be changed."
 	},
 	"error.auth.twoFactorNotOn": {
 		"message": "Two-factor authentication ain't raised on yer account.",
@@ -4038,6 +4094,10 @@
 	"error.draftExists": {
 		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
 		"source": "The universe already has a draft. Apply it or discard it before starting another."
+	},
+	"error.editorNeedsTwoFactor": {
+		"message": "{universe} demands her officers raise two-factor authentication. Raise it to open the universe in the editor.",
+		"source": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor."
 	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
@@ -4299,6 +4359,10 @@
 		"message": "Those folk be off the books now. Choose another.",
 		"source": "That race can't be chosen any more. Choose another."
 	},
+	"error.requireTwoFactorWithout": {
+		"message": "Raise two-factor authentication on yer own account before demandin' it o' the universe's officers.",
+		"source": "Turn on two-factor authentication for your own account before requiring it of the universe's editors."
+	},
 	"error.resizeDiscards": {
 		"message": "Resizin' would toss painted cells or passages overboard.",
 		"source": "Resizing would discard painted cells or links."
@@ -4374,6 +4438,10 @@
 	"error.translationsNotAllowed": {
 		"message": "Yer rank don't let ye see the translations into that tongue.",
 		"source": "Your role doesn't let you see the translations into that language."
+	},
+	"error.twoFactorRequiredSave": {
+		"message": "This universe demands her officers raise two-factor authentication. Raise it on yer account to stow changes.",
+		"source": "This universe requires its editors to have two-factor authentication on. Turn it on for your account to save changes."
 	},
 	"error.universeAlreadyDisabled": {
 		"message": "That universe be laid up already.",
@@ -4671,6 +4739,10 @@
 		"message": "Couldn't create the universe.",
 		"source": "Could not create the universe."
 	},
+	"home.create.skipTwoFactor": {
+		"message": "Sail On Without It",
+		"source": "Skip Setup"
+	},
 	"home.create.submit": {
 		"message": "Create",
 		"source": "Create"
@@ -4678,6 +4750,14 @@
 	"home.create.title": {
 		"message": "Create Universe",
 		"source": "Create Universe"
+	},
+	"home.create.twoFactor": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
+	"home.create.twoFactorHint": {
+		"message": "Yer universe be only as safe as yer account: any scallywag who learns yer password could plunder or scuttle everythin' ye build. Two-factor authentication also asks for a code from an app on yer phone when ye come aboard, so a password alone won't get 'em on deck.",
+		"source": "Your universe is only as safe as your account: anyone who learns your password could change or delete everything you build. Two-factor authentication also asks for a code from an app on your phone when you log in, so a password alone isn't enough to get in."
 	},
 	"home.createUniverse": {
 		"message": "Create Universe",
@@ -5082,6 +5162,14 @@
 	"lobby.title": {
 		"message": "Tavern",
 		"source": "Lobby"
+	},
+	"login.adminTwoFactorCanceled": {
+		"message": "The ship's officers can't come aboard till two-factor authentication be raised. Board again to raise it.",
+		"source": "The site's admins can't log in until two-factor authentication is on. Log in again to turn it on."
+	},
+	"login.adminTwoFactorIntro": {
+		"message": "Ye be one o' the ship's officers, so yer account needs two-factor authentication raised before ye can come aboard.",
+		"source": "You're one of the site's admins, so your account needs two-factor authentication before you can log in."
 	},
 	"login.back": {
 		"message": "Astern",
@@ -6467,6 +6555,10 @@
 		"message": "Write yer username to swear to it",
 		"source": "Type your username to confirm"
 	},
+	"profile.deleteUnhandableTwoFactorUniverse": {
+		"message": "{universe} demands her officers raise two-factor authentication, an' she has no other crew to hand her to. Raise two-factor authentication to scuttle her with yer account.",
+		"source": "{universe} requires its editors to have two-factor authentication on, and it has no other editors to hand it to. Turn on two-factor authentication to delete it with your account."
+	},
 	"profile.deleteUnhandableUniverse": {
 		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin', an' she has no other crew to hand her to. Yer account can't be scuttled till the officers set her sailin' again.",
 		"source": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it."
@@ -6482,6 +6574,10 @@
 	"profile.deleteUniverseHandTo": {
 		"message": "Make {name} (@{username}, {role}) its captain",
 		"source": "Make {name} (@{username}, {role}) its creator"
+	},
+	"profile.deleteUniverseNeedsTwoFactor": {
+		"message": "This universe demands her officers raise two-factor authentication, so another o' her crew has to become her captain. Raise it to send the universe to the deep instead.",
+		"source": "This universe requires its editors to have two-factor authentication on, so another of its editors has to become its creator. Turn it on to delete the universe instead."
 	},
 	"profile.deleteUniversePrevented": {
 		"message": "The ship's officers have laid up this universe an' forbid her scuttlin', so another o' her crew has to become her captain.",
@@ -6763,6 +6859,10 @@
 		"message": "Two-factor authentication",
 		"source": "Two-factor authentication"
 	},
+	"profile.twoFactorAdmin": {
+		"message": "Ye can't lower 2FA so long as ye be one o' the ship's officers.",
+		"source": "You cannot turn off 2FA as long as you are a site admin."
+	},
 	"profile.twoFactorAppCode": {
 		"message": "Code from the app",
 		"source": "Code from the app"
@@ -6783,17 +6883,29 @@
 		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
 		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten."
 	},
-	"profile.twoFactorDisableIntroAdmin": {
-		"message": "Comin' aboard will need only yer password again. Yer recovery codes be worthless, an' every trusted browser be forgotten. Ye be one o' the ship's officers: ye won't set foot in the captain's quarters till ye raise it again.",
-		"source": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on."
+	"profile.twoFactorDisableIntroProvider": {
+		"message": "Comin' aboard with Google or Discord won't ask for a code from the app no more. Yer recovery codes be worthless, an' every trusted browser be forgotten.",
+		"source": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten."
 	},
 	"profile.twoFactorDisableTitle": {
 		"message": "Strike two-factor authentication",
 		"source": "Turn off two-factor authentication"
 	},
+	"profile.twoFactorDisableUniverses": {
+		"message": "{count, plural, one {{universes} demands her officers keep it raised, so ye won't be able to stow changes to her till ye raise it again.} other {{universes} demand their officers keep it raised, so ye won't be able to stow changes to them till ye raise it again.}}",
+		"source": "{count, plural, one {{universes} requires its editors to have it on, so you won't be able to save changes to it until you turn it back on.} other {{universes} require their editors to have it on, so you won't be able to save changes to them until you turn it back on.}}"
+	},
 	"profile.twoFactorDisabled": {
 		"message": "Two-factor authentication be struck.",
 		"source": "Two-factor authentication is off."
+	},
+	"profile.twoFactorEmailCodeIntro": {
+		"message": "To be sure it be ye, we'll send a letter with a code to {email}.",
+		"source": "To check it's you, we'll email a code to {email}."
+	},
+	"profile.twoFactorEmailCodeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to sail on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
 	},
 	"profile.twoFactorEnable": {
 		"message": "Raise it",
@@ -6820,8 +6932,8 @@
 		"source": "QR code for your authenticator app. If you can't scan it, use the key below it."
 	},
 	"profile.twoFactorScan": {
-		"message": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
-		"source": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows."
+		"message": "Scan this QR code with an authenticator app, such as {googleAuthenticator}, {microsoftAuthenticator}, {aegis} or {twoFas}. Then enter the 6-digit code the app shows ye.",
+		"source": "Scan this QR code with an authenticator app, such as {googleAuthenticator}, {microsoftAuthenticator}, {aegis} or {twoFas}. Then enter the 6-digit code the app shows."
 	},
 	"profile.twoFactorSetupFailed": {
 		"message": "Couldn't raise two-factor authentication.",
@@ -6830,6 +6942,10 @@
 	"profile.twoFactorSetupIntro": {
 		"message": "With two-factor authentication, comin' aboard also asks for a code from an app on yer phone, so a scallywag who learns yer password still can't board. Every other browser aboard yer account goes ashore when it be turned on. First, enter yer password.",
 		"source": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password."
+	},
+	"profile.twoFactorSetupIntroProvider": {
+		"message": "With two-factor authentication, comin' aboard with Google or Discord also asks for a code from an app on yer phone, so a scallywag who seizes yer Google or Discord account still can't board here. Every other browser aboard yer account goes ashore when it be turned on.",
+		"source": "With two-factor authentication, logging in with Google or Discord also asks for a code from an app on your phone, so someone who gets into your Google or Discord account still can't get in here. Every other browser logged in to your account is logged out when it turns on."
 	},
 	"profile.twoFactorSetupTitle": {
 		"message": "Raise two-factor authentication",

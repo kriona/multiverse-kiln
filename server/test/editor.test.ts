@@ -5,6 +5,7 @@ import sharp from 'sharp';
 
 import { createGroup, findGroup } from '../src/db/groupRepo.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
+import { createPlayer } from '../src/db/playerRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
@@ -12,7 +13,9 @@ import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { addCharacter, defaultTileId } from './db/fixtures.js';
 import { allowedTestOrigin } from './setup.js';
 import { createArea, createUniverse, logIn, saveChange, send, solidPng, type Editor, type SaveAnswer } from './editorRequests.js';
+import { logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { turnOnTwoFactor } from './twoFactorAccounts.js';
 
 /**
  * A bidirectional override, one of the characters names may not contain
@@ -314,6 +317,39 @@ describe('World editor API', () =>
 			const response = await send<EditableUniverseListPayload>(ada, 'GET', '');
 
 			assert.deepStrictEqual(response.body.universes.map((universe) => [universe.name, universe.role]), [['Apple', 'creator'], ['Zebra', 'creator']]);
+		});
+
+		it('offers to turn on 2FA only to an account with a password or an address, and 2FA off', async () =>
+		{
+			const grace = await createPlayer({
+				username: 'grace',
+				displayName: 'Grace',
+				email: 'grace@example.com',
+				passwordHash: 'not a real hash'
+			});
+			const linus = await createPlayer({
+				username: 'linus',
+				displayName: 'Linus',
+				email: 'linus@example.com',
+				passwordHash: null
+			});
+			const browser = await logInBrowser(grace.id);
+
+			assert.deepStrictEqual((await send<EditableUniverseListPayload>(browser, 'GET', '')).body.twoFactorOffer, {
+				username: 'grace',
+				email: 'grace@example.com',
+				hasPassword: true
+			});
+			assert.deepStrictEqual((await send<EditableUniverseListPayload>(await logInBrowser(linus.id), 'GET', '')).body.twoFactorOffer, {
+				username: 'linus',
+				email: 'linus@example.com',
+				hasPassword: false
+			});
+			// Ada's account has neither, so nothing could check it's her setting up 2FA
+			assert.strictEqual((await send<EditableUniverseListPayload>(ada, 'GET', '')).body.twoFactorOffer, null);
+
+			await turnOnTwoFactor(grace.id);
+			assert.strictEqual((await send<EditableUniverseListPayload>(browser, 'GET', '')).body.twoFactorOffer, null);
 		});
 
 		it('allows each player as many universes as the site settings allow', async () =>

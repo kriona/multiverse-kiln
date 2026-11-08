@@ -14,6 +14,7 @@ import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, onlyLeav
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
 import { inTransaction } from '../db/transactions.js';
+import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, findUniverse, hasDraft, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
@@ -258,6 +259,16 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				});
 			}
 
+			if ((locked?.requireTwoFactor ?? false) && !onlyLeaves(changes, base.playerId) && !await hasTwoFactor(base.playerId, transaction))
+			{
+				refusedWhole = true;
+				refuse(403, {
+					id: 'error.twoFactorRequiredSave',
+					defaultMessage: 'This universe requires its editors to have two-factor authentication on. Turn it on for your account to save changes.',
+					description: 'Why the world editor couldn\'t save: the universe\'s creators require its editors to have two-factor authentication on, and the player doesn\'t. Leaving the universe can still be saved'
+				});
+			}
+
 			const allowedIndex = refusedIndex(access, base.playerId, changes);
 
 			if (allowedIndex >= 0)
@@ -347,6 +358,20 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 						});
 					});
 				}
+			}
+
+			const { requireTwoFactor } = saving.universe;
+
+			if (requireTwoFactor !== (locked?.requireTwoFactor ?? requireTwoFactor))
+			{
+				saving.onCommit.push(() =>
+				{
+					editorUpdates.publish({
+						kind: 'twoFactorRequirement',
+						universeId: base.universe.id,
+						required: requireTwoFactor
+					});
+				});
 			}
 
 			if (saving.universe.stage !== stageBefore)

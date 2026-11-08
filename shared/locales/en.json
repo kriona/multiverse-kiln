@@ -56,7 +56,7 @@
 		"description": "Heading of the admin page listing the site's server admins, where admins add and remove other admins"
 	},
 	"admin.admins.hint": {
-		"defaultMessage": "Server admins can use these pages once they turn on two-factor authentication.",
+		"defaultMessage": "Server admins can use these pages, and must have two-factor authentication on to log in: adding one without it logs them out, and their next login asks them to turn it on.",
 		"description": "Explains the admin page listing the site's server admins, above the list"
 	},
 	"admin.admins.loadFailed": {
@@ -64,8 +64,8 @@
 		"description": "Shown on the admin page listing the site's server admins when the list couldn't be loaded"
 	},
 	"admin.admins.noTwoFactor": {
-		"defaultMessage": "No 2FA: can't use the admin pages",
-		"description": "Note in the admin page's list of server admins on an admin without two-factor authentication, who can't use the admin pages until they turn it on"
+		"defaultMessage": "No 2FA: logged out until they turn it on",
+		"description": "Note in the admin page's list of server admins on an admin without two-factor authentication, such as one just added: they can't be logged in until they turn it on, which their next login asks them to"
 	},
 	"admin.admins.nowAdmin": {
 		"defaultMessage": "{name} (@{username}) is now a server admin.",
@@ -486,10 +486,6 @@
 	"admin.translations.title": {
 		"defaultMessage": "Translations",
 		"description": "The browser tab's title for the admin page where the site's admins export the site's English text for translators and turn a translated file into a language's file, before the game engine's name"
-	},
-	"admin.turnOnTwoFactor": {
-		"defaultMessage": "Turn on two-factor authentication",
-		"description": "Link on the admin pages, shown to an admin who doesn't have two-factor authentication on, that goes to their profile to set it up"
 	},
 	"admin.universeCreationEnabled": {
 		"defaultMessage": "Players can create universes",
@@ -1136,8 +1132,8 @@
 		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
 	"editor.accessChanged": {
-		"defaultMessage": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.",
-		"description": "Shown above the editor's tabs when the player's role in the universe, its stage, or whether the site's admins disabled it changed while they had unsaved changes, which loading the universe again would throw away"
+		"defaultMessage": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.",
+		"description": "Shown above the editor's tabs when the player's role in the universe, its stage or whether the site's admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away"
 	},
 	"editor.accessLost": {
 		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
@@ -2047,6 +2043,18 @@
 		"defaultMessage": "(loses their role when saved)",
 		"description": "Read out by screen readers after the username of an editor on the editor's Editors tab who will be removed, or is leaving, when the tab is saved; on screen the row is struck through"
 	},
+	"editor.editors.requireTwoFactor": {
+		"defaultMessage": "Editors need two-factor authentication",
+		"description": "Checkbox on the editor's Editors tab for whether the universe's editors need two-factor authentication on to save changes to it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.editors.requireTwoFactorHint": {
+		"defaultMessage": "Editors without two-factor authentication on can't open the universe in the editor, only leave it, though they can still play it. Only creators can change this.",
+		"description": "Explains the checkbox on the editor's Editors tab that requires the universe's editors to have two-factor authentication on"
+	},
+	"editor.editors.requireTwoFactorOwn": {
+		"defaultMessage": "Turn on two-factor authentication for your own account before requiring it of others.",
+		"description": "On the editor's Editors tab, under the checkbox that requires the universe's editors to have two-factor authentication on, for a creator who doesn't have it on, so the checkbox is disabled; a link to turn it on follows"
+	},
 	"editor.editors.role": {
 		"defaultMessage": "Role",
 		"description": "Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -2054,6 +2062,14 @@
 	"editor.editors.saveFailed": {
 		"defaultMessage": "Could not save the changes to {username}.",
 		"description": "Shown on the editor's Editors tab when the server refused a change to one of the universe's editors, followed by why; {username} is their username. Nothing was saved"
+	},
+	"editor.editors.securityHeading": {
+		"defaultMessage": "Security",
+		"description": "Heading of the part of the editor's Editors tab with the setting that requires the universe's editors to have two-factor authentication on"
+	},
+	"editor.editors.settingsSaveFailed": {
+		"defaultMessage": "Could not save whether editors need two-factor authentication.",
+		"description": "Shown on the editor's Editors tab when the server refused the setting that requires the universe's editors to have two-factor authentication on, followed by why; nothing was saved"
 	},
 	"editor.editors.undoRemove": {
 		"defaultMessage": "Undo Remove",
@@ -3527,6 +3543,30 @@
 		"defaultMessage": "This file can't be read as {format}: see line {line, number}.",
 		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO, and {line} the line with the problem"
 	},
+	"editor.turnOnTwoFactor": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Link in the world editor, for a player who doesn't have two-factor authentication on, that goes to their profile to set it up"
+	},
+	"editor.twoFactorHeading": {
+		"defaultMessage": "Two-Factor Authentication Required",
+		"description": "Heading of the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it"
+	},
+	"editor.twoFactorLeave": {
+		"defaultMessage": "Leave Universe",
+		"description": "Button on the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it: gives up their role in the universe, after asking"
+	},
+	"editor.twoFactorLeaveFailed": {
+		"defaultMessage": "Could not leave the universe.",
+		"description": "Shown on the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, when leaving the universe failed, followed by why"
+	},
+	"editor.twoFactorLeaveQuestion": {
+		"defaultMessage": "You lose your role in this universe and can no longer open it in the editor. Only a creator can give you a role again.",
+		"description": "Asked before a player leaves a universe from the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it"
+	},
+	"editor.twoFactorLeaveTitle": {
+		"defaultMessage": "Leave this universe?",
+		"description": "Title of the dialog asking a player to confirm leaving a universe, from the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it"
+	},
 	"editor.universe.longDescription": {
 		"defaultMessage": "Long description (Markdown)",
 		"description": "Label of the field for a universe's full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -3658,6 +3698,14 @@
 	"email.code.changeEmail.subject": {
 		"defaultMessage": "Your code to change your email address on {siteName}",
 		"description": "Subject of the email, sent to the new address, with the code for changing an account's email address; {siteName} is the site's name"
+	},
+	"email.code.changeTwoFactor.intro": {
+		"defaultMessage": "Someone asked to change the two-factor authentication of your account on {siteName}: to turn it on or off, or make new recovery codes. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email with the code that checks it's the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.changeTwoFactor.subject": {
+		"defaultMessage": "Your code to change two-factor authentication on {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password; {siteName} is the site's name"
 	},
 	"email.code.confirmEmailChange.intro": {
 		"defaultMessage": "Someone asked to move your account on {siteName} to another email address. If it was you, enter this code to go on:",
@@ -3823,10 +3871,6 @@
 		"defaultMessage": "Wrong codes were typed for your account on {siteName}",
 		"description": "Subject of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name"
 	},
-	"error.adminNeedsTwoFactor": {
-		"defaultMessage": "Turn on two-factor authentication to use the admin pages.",
-		"description": "Why an admin page was refused to one of the site's admins: admins must have two-factor authentication on. The page offers a link to turn it on"
-	},
 	"error.alreadyEditor": {
 		"defaultMessage": "{username} already has a role in this universe.",
 		"description": "Why a player couldn't be added to a universe's editors: they are one already; {username} is their username"
@@ -3846,6 +3890,14 @@
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
+	},
+	"error.auth.adminKeepsTwoFactor": {
+		"defaultMessage": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first.",
+		"description": "Why turning off two-factor authentication was refused: the player is one of the site's admins, who can't log in without it"
+	},
+	"error.auth.deleteUniverseNeedsTwoFactor": {
+		"defaultMessage": "{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication.",
+		"description": "Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but it requires its editors to have two-factor authentication on and the player doesn't, perhaps since a moment ago; {universe} is its name"
 	},
 	"error.auth.deleteUniversePrevented": {
 		"defaultMessage": "The site's admins disabled {universe} and kept it from being deleted. Make another of its editors its creator.",
@@ -3878,6 +3930,10 @@
 	"error.auth.noPassword": {
 		"defaultMessage": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page.",
 		"description": "Why changing the password was refused: the account logs in only with Google or Discord, so it has no password yet"
+	},
+	"error.auth.noPasswordToCheck": {
+		"defaultMessage": "Your account has no password to check. Reload the page and try again.",
+		"description": "Why a change on the player's own profile that asks for their password was refused: the account has no password (it logs in only with Google or Discord), though the page asked for one"
 	},
 	"error.auth.passwordBreached": {
 		"defaultMessage": "This password has turned up in a data breach, so attackers try it. Choose another.",
@@ -3941,11 +3997,11 @@
 	},
 	"error.auth.twoFactorLoginAgain": {
 		"defaultMessage": "It has been too long since you typed your password, or too many codes were wrong. Log in with your password again.",
-		"description": "Why finishing a login with an authenticator or recovery code was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
+		"description": "Why finishing a login with an authenticator or recovery code, or with the code from the authenticator app a site admin is setting up at login, was refused: the password was typed more than a few minutes ago, in another browser, or too many wrong codes were typed since"
 	},
-	"error.auth.twoFactorNoPassword": {
-		"defaultMessage": "Two-factor authentication is for logging in with a password, and your account has none. Google and Discord ask for their own.",
-		"description": "Why setting up two-factor authentication was refused: the account logs in only with Google or Discord, whose own two-factor authentication protects it"
+	"error.auth.twoFactorNoEmail": {
+		"defaultMessage": "Your account has neither a password nor an email address to check it's you, so two-factor authentication can't be changed.",
+		"description": "Why turning two-factor authentication on or off, or making new recovery codes, was refused: the account logs in only with Google or Discord and has no email address, so there is no password to ask for or address to email a code to"
 	},
 	"error.auth.twoFactorNotOn": {
 		"defaultMessage": "Two-factor authentication isn't on for your account.",
@@ -4038,6 +4094,10 @@
 	"error.draftExists": {
 		"defaultMessage": "The universe already has a draft. Apply it or discard it before starting another.",
 		"description": "Why a draft of the universe couldn't be started (see Universe versions): it has one already, perhaps started by another editor"
+	},
+	"error.editorNeedsTwoFactor": {
+		"defaultMessage": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.",
+		"description": "Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn't; {universe} is the universe's name. Buttons to turn it on, leave the universe and go back to Home follow"
 	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
@@ -4299,6 +4359,10 @@
 		"defaultMessage": "That race can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the race chosen was deleted or disabled while the player was making the character"
 	},
+	"error.requireTwoFactorWithout": {
+		"defaultMessage": "Turn on two-factor authentication for your own account before requiring it of the universe's editors.",
+		"description": "Why the setting requiring the universe's editors to have two-factor authentication on wasn't saved: the player turning it on doesn't have it on, so they would no longer be able to save changes themselves"
+	},
 	"error.resizeDiscards": {
 		"defaultMessage": "Resizing would discard painted cells or links.",
 		"description": "Why a map wasn't made smaller without asking: the part it would lose has painting or links"
@@ -4374,6 +4438,10 @@
 	"error.translationsNotAllowed": {
 		"defaultMessage": "Your role doesn't let you see the translations into that language.",
 		"description": "Why the editor's Translations tab couldn't list the universe's text: the player is a translator of other languages, or a beta tester"
+	},
+	"error.twoFactorRequiredSave": {
+		"defaultMessage": "This universe requires its editors to have two-factor authentication on. Turn it on for your account to save changes.",
+		"description": "Why the world editor couldn't save: the universe's creators require its editors to have two-factor authentication on, and the player doesn't. Leaving the universe can still be saved"
 	},
 	"error.universeAlreadyDisabled": {
 		"defaultMessage": "The universe is already disabled.",
@@ -4671,6 +4739,10 @@
 		"defaultMessage": "Could not create the universe.",
 		"description": "Shown in the Create Universe dialog when the universe couldn't be made"
 	},
+	"home.create.skipTwoFactor": {
+		"defaultMessage": "Skip Setup",
+		"description": "Button in the dialog that sets up two-factor authentication, in place of Cancel when it opens after creating a universe: closes it without turning two-factor authentication on, and opens the new universe in the editor"
+	},
 	"home.create.submit": {
 		"defaultMessage": "Create",
 		"description": "Button that makes the new universe"
@@ -4678,6 +4750,14 @@
 	"home.create.title": {
 		"defaultMessage": "Create Universe",
 		"description": "Title of the dialog for making a new universe"
+	},
+	"home.create.twoFactor": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Checkbox in the Create Universe dialog, shown when the player's account has a password and two-factor authentication is off: checked, creating the universe opens the dialog that sets it up"
+	},
+	"home.create.twoFactorHint": {
+		"defaultMessage": "Your universe is only as safe as your account: anyone who learns your password could change or delete everything you build. Two-factor authentication also asks for a code from an app on your phone when you log in, so a password alone isn't enough to get in.",
+		"description": "Under the Create Universe dialog's checkbox for turning on two-factor authentication, saying why it keeps the new universe safe"
 	},
 	"home.createUniverse": {
 		"defaultMessage": "Create Universe",
@@ -5083,6 +5163,14 @@
 		"defaultMessage": "Lobby",
 		"description": "Heading of a universe's lobby until its name has loaded"
 	},
+	"login.adminTwoFactorCanceled": {
+		"defaultMessage": "The site's admins can't log in until two-factor authentication is on. Log in again to turn it on.",
+		"description": "Shown on the login screen when one of the site's admins closed the dialog that sets up two-factor authentication at login without turning it on"
+	},
+	"login.adminTwoFactorIntro": {
+		"defaultMessage": "You're one of the site's admins, so your account needs two-factor authentication before you can log in.",
+		"description": "First paragraph of the dialog that sets up two-factor authentication when it opens on the login page, for one of the site's admins whose account doesn't have it on yet: they can't log in until it is on"
+	},
 	"login.back": {
 		"defaultMessage": "Back",
 		"description": "Button that goes back a step while logging in, creating an account or resetting a password"
@@ -5149,7 +5237,7 @@
 	},
 	"login.linkWithCode": {
 		"defaultMessage": "Email me a code",
-		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile, for an account without a password, to check it's the player linking a login, changing the email address or deleting the account"
+		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes"
 	},
 	"login.newPassword": {
 		"defaultMessage": "Password",
@@ -6467,6 +6555,10 @@
 		"defaultMessage": "Type your username to confirm",
 		"description": "Label of the field in the dialog deleting an account without a password, where the player types their username to confirm"
 	},
+	"profile.deleteUnhandableTwoFactorUniverse": {
+		"defaultMessage": "{universe} requires its editors to have two-factor authentication on, and it has no other editors to hand it to. Turn on two-factor authentication to delete it with your account.",
+		"description": "In the dialog that deletes the player's account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that requires its editors to have two-factor authentication on, which they don't, so it can't be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name"
+	},
 	"profile.deleteUnhandableUniverse": {
 		"defaultMessage": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it.",
 		"description": "In the dialog that deletes the player's account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that the site's admins disabled and kept from being deleted, so it can't be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name"
@@ -6482,6 +6574,10 @@
 	"profile.deleteUniverseHandTo": {
 		"defaultMessage": "Make {name} (@{username}, {role}) its creator",
 		"description": "A choice for a universe in the dialog that deletes the player's account: another of its editors becomes its creator; {name} and {username} are theirs, and {role} their role in it now, such as Builder"
+	},
+	"profile.deleteUniverseNeedsTwoFactor": {
+		"defaultMessage": "This universe requires its editors to have two-factor authentication on, so another of its editors has to become its creator. Turn it on to delete the universe instead.",
+		"description": "Under a universe's choice in the dialog that deletes the player's account, which then has no choice to delete it: the universe requires its editors to have two-factor authentication on, and the player doesn't"
 	},
 	"profile.deleteUniversePrevented": {
 		"defaultMessage": "The site's admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator.",
@@ -6613,7 +6709,7 @@
 	},
 	"profile.makeRecoveryCodes": {
 		"defaultMessage": "Make new codes",
-		"description": "Button in the dialog that makes new recovery codes: checks the password and code, and replaces the old codes with new ones"
+		"description": "Button in the dialog that makes new recovery codes: checks the password (or the emailed code) and the authenticator code, and replaces the old codes with new ones"
 	},
 	"profile.newEmail": {
 		"defaultMessage": "New email address",
@@ -6763,17 +6859,21 @@
 		"defaultMessage": "Two-factor authentication",
 		"description": "Label of whether the player's account has two-factor authentication (a code from an authenticator app asked for at login, after the password), on their own profile page"
 	},
+	"profile.twoFactorAdmin": {
+		"defaultMessage": "You cannot turn off 2FA as long as you are a site admin.",
+		"description": "On the player's own profile page beside Two-factor authentication, in place of its Turn off button, for one of the site's admins: they can't turn it off while they are an admin"
+	},
 	"profile.twoFactorAppCode": {
 		"defaultMessage": "Code from the app",
 		"description": "Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication"
 	},
 	"profile.twoFactorContinue": {
 		"defaultMessage": "Continue",
-		"description": "Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"
+		"description": "Button in the dialog that sets up two-factor authentication: checks the password, or the emailed code, and shows the QR code"
 	},
 	"profile.twoFactorDisable": {
 		"defaultMessage": "Turn off",
-		"description": "Button in the dialog that turns off two-factor authentication: checks the password and code and turns it off"
+		"description": "Button in the dialog that turns off two-factor authentication: checks the password (or the emailed code) and the authenticator code, and turns it off"
 	},
 	"profile.twoFactorDisableFailed": {
 		"defaultMessage": "Could not turn off two-factor authentication.",
@@ -6783,17 +6883,29 @@
 		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten.",
 		"description": "In the dialog that turns off two-factor authentication"
 	},
-	"profile.twoFactorDisableIntroAdmin": {
-		"defaultMessage": "Logging in will need only your password again. Your recovery codes stop working, and every trusted browser is forgotten. You are one of the site's admins: you won't be able to use the admin pages until you turn it back on.",
-		"description": "In the dialog that turns off two-factor authentication, for one of the site's admins, who need it on to use the admin pages"
+	"profile.twoFactorDisableIntroProvider": {
+		"defaultMessage": "Logging in with Google or Discord won't ask for a code from the app any more. Your recovery codes stop working, and every trusted browser is forgotten.",
+		"description": "In the dialog that turns off two-factor authentication, for an account without a password, which logs in only with Google or Discord"
 	},
 	"profile.twoFactorDisableTitle": {
 		"defaultMessage": "Turn off two-factor authentication",
 		"description": "Title of the dialog that turns off two-factor authentication"
 	},
+	"profile.twoFactorDisableUniverses": {
+		"defaultMessage": "{count, plural, one {{universes} requires its editors to have it on, so you won't be able to save changes to it until you turn it back on.} other {{universes} require their editors to have it on, so you won't be able to save changes to them until you turn it back on.}}",
+		"description": "In the dialog that turns off two-factor authentication, after what turning it off means, for a player with a role in universes whose creators require their editors to have it on; {universes} is a list of their names, {count} how many there are"
+	},
 	"profile.twoFactorDisabled": {
 		"defaultMessage": "Two-factor authentication is off.",
 		"description": "Shown once the player has turned off two-factor authentication from their profile"
+	},
+	"profile.twoFactorEmailCodeIntro": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}.",
+		"description": "In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, which logs in only with Google or Discord; {email} is the account's address"
+	},
+	"profile.twoFactorEmailCodeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, once a code was sent to the account's address; {email} is that address"
 	},
 	"profile.twoFactorEnable": {
 		"defaultMessage": "Turn on",
@@ -6820,8 +6932,8 @@
 		"description": "What screen readers say for the QR code in the dialog that sets up two-factor authentication"
 	},
 	"profile.twoFactorScan": {
-		"defaultMessage": "Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.",
-		"description": "In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are"
+		"defaultMessage": "Scan this QR code with an authenticator app, such as {googleAuthenticator}, {microsoftAuthenticator}, {aegis} or {twoFas}. Then enter the 6-digit code the app shows.",
+		"description": "In the dialog that sets up two-factor authentication, above the QR code; {googleAuthenticator}, {microsoftAuthenticator}, {aegis} and {twoFas} are examples of authenticator apps, each named the same in every language and linking to the app's page in a new tab"
 	},
 	"profile.twoFactorSetupFailed": {
 		"defaultMessage": "Could not turn on two-factor authentication.",
@@ -6830,6 +6942,10 @@
 	"profile.twoFactorSetupIntro": {
 		"defaultMessage": "With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.",
 		"description": "First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first"
+	},
+	"profile.twoFactorSetupIntroProvider": {
+		"defaultMessage": "With two-factor authentication, logging in with Google or Discord also asks for a code from an app on your phone, so someone who gets into your Google or Discord account still can't get in here. Every other browser logged in to your account is logged out when it turns on.",
+		"description": "First paragraph of the dialog that sets up two-factor authentication, for an account without a password, which logs in only with Google or Discord; a code emailed to the account checks it's the player first"
 	},
 	"profile.twoFactorSetupTitle": {
 		"defaultMessage": "Turn on two-factor authentication",

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_TWO_FACTOR_ERROR_ID, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
 
 import { findPlayerAdminEvents, findUniverseAdminEvents } from '../src/db/adminEventRepo.js';
 import { pool } from '../src/db/client.js';
@@ -152,7 +152,7 @@ describe('Admin access', () =>
 		});
 	});
 
-	it('refuses server admins without 2FA, saying why', async () =>
+	it('treats a server admin without 2FA as not logged in, ending their session', async () =>
 	{
 		const player = await addPlayer('Unguarded');
 
@@ -160,16 +160,17 @@ describe('Admin access', () =>
 
 		const browser = await logInBrowser(player.id);
 
-		for (const path of [ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_ADMINS_PATH, ADMIN_UNIVERSES_PATH])
+		assert.strictEqual((await send('GET', ADMIN_PATH, { browser })).status, 401);
+		assert.strictEqual((await pool.query('SELECT 1 FROM sessions WHERE id = $1', [browser.sessionId])).rowCount, 0);
+
+		for (const path of [ADMIN_PLAYERS_PATH, ADMIN_ADMINS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH])
 		{
 			const response = await send('GET', path, { browser });
 
-			assert.strictEqual(response.status, 403, path);
-			assert.strictEqual(((await response.json()) as ErrorPayload).error.id, ADMIN_TWO_FACTOR_ERROR_ID);
+			assert.strictEqual(((path === AUTH_SESSION_PATH) ? ((await response.json()) as SessionPayload).player : response.status), ((path === AUTH_SESSION_PATH) ? null : 401), path);
 		}
 
-		assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { browser, body: { username: 'Unguarded' } })).status, 403);
-		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Unguarded`, { browser })).status, 403);
+		assert.strictEqual((await send('DELETE', `${ADMIN_ADMINS_PATH}/Unguarded`, { browser })).status, 401);
 		assert.strictEqual(await isServerAdmin(player.id), true);
 	});
 
@@ -189,6 +190,7 @@ describe('Admin access', () =>
 		const other = await addPlayer('Wanderer');
 
 		await addServerAdmin(admin.id);
+		await turnOnTwoFactor(admin.id);
 
 		const adminPayload = (await (await send('GET', AUTH_SESSION_PATH, { browser: await logInBrowser(admin.id) })).json()) as SessionPayload;
 		const otherPayload = (await (await send('GET', AUTH_SESSION_PATH, { browser: await logInBrowser(other.id) })).json()) as SessionPayload;
@@ -590,6 +592,39 @@ describe('Admin server admin list', () =>
 		]);
 	});
 
+	it('logs out a player made an admin without 2FA, turning their windows away, but not one with it', async () =>
+	{
+		const grace = await addPlayer('Grace Hopper');
+		const alan = await addPlayer('Alan Turing');
+		const graceBrowser = await logInBrowser(grace.id);
+		const alanBrowser = await logInBrowser(alan.id);
+		const ended = new Set<string>();
+		const stop = connectedSessions.onEnd((sessionIds) =>
+		{
+			for (const sessionId of sessionIds)
+			{
+				ended.add(sessionId);
+			}
+		});
+
+		await turnOnTwoFactor(alan.id);
+
+		try
+		{
+			assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: 'Grace_Hopper' } })).status, 204);
+			assert.strictEqual((await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: 'Alan_Turing' } })).status, 204);
+		}
+		finally
+		{
+			stop();
+		}
+
+		assert.strictEqual(ended.has(graceBrowser.sessionId), true);
+		assert.strictEqual(ended.has(alanBrowser.sessionId), false);
+		assert.strictEqual((await pool.query('SELECT 1 FROM sessions WHERE id = $1', [graceBrowser.sessionId])).rowCount, 0);
+		assert.strictEqual((await send('GET', ADMIN_PATH, { browser: alanBrowser })).status, 204);
+	});
+
 	it('refuses to add a username no one has, or an admin again, recording nothing', async () =>
 	{
 		const missing = await send('POST', ADMIN_ADMINS_PATH, { browser: admin, body: { username: 'nobody_here' } });
@@ -680,7 +715,7 @@ describe('Admin server admin list', () =>
 		assert.strictEqual((await pool.query('SELECT 1 FROM server_admins')).rowCount, 1);
 	});
 
-	it('tells an admin\'s own profile that they are one, for the warning when turning 2FA off', async () =>
+	it('tells an admin\'s own profile that they are one, which can\'t turn 2FA off', async () =>
 	{
 		const own = (await (await send('GET', PROFILE_PATH, { browser: admin })).json()) as OwnProfilePayload;
 		const other = (await (await send('GET', PROFILE_PATH, { browser: await logInBrowser((await addPlayer('Grace Hopper')).id) })).json()) as OwnProfilePayload;
@@ -1014,7 +1049,7 @@ describe('Editing universes as a server admin', () =>
 		assert.strictEqual((await openEditor(creator, universeId)).universe.serverAdmin, false);
 	});
 
-	it('gives no site admin role to an admin without 2FA', async () =>
+	it('gives no site admin role to an admin without 2FA, who isn\'t logged in', async () =>
 	{
 		const player = await addPlayer('Unguarded Admin');
 		const browser = await logInBrowser(player.id);
@@ -1022,8 +1057,8 @@ describe('Editing universes as a server admin', () =>
 
 		await addServerAdmin(player.id);
 
-		assert.strictEqual((await openEditor(browser, universeId)).status, 404);
-		assert.strictEqual((await saveChanges(browser, universeId, [{ kind: 'universe', update: { shortDescription: 'Sneaky' } }])).status, 404);
+		assert.strictEqual((await openEditor(browser, universeId)).status, 401);
+		assert.strictEqual((await saveChanges(browser, universeId, [{ kind: 'universe', update: { shortDescription: 'Sneaky' } }])).status, 401);
 		assert.deepStrictEqual(await savedRoles(universeId), []);
 	});
 });

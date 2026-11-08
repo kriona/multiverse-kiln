@@ -3,7 +3,7 @@
  * editor open and what each window has open, carries the editors' chat, and tells each window what the
  * others save (see Editing together in STRUCTURE-OVERVIEW.md)
  */
-import type { AuditSubject, UniverseEditDetail, UniverseVersionName } from './editor.js';
+import type { AuditField, AuditSubject, UniverseEditDetail, UniverseVersionName } from './editor.js';
 
 /**
  * The names of the editor's tabs. The page's tab list decides the order they are shown in
@@ -73,8 +73,9 @@ export enum EditorServerMessageType
 	ChatRead = 'chatRead',
 
 	/**
-	 * What the player may do in the editor may have changed: their role, the universe's stage, or whether
-	 * the site's admins have disabled it. The window loads the universe again (no payload)
+	 * What the player may do in the editor may have changed: their role, the universe's stage, whether
+	 * the site's admins have disabled it, or, for a player without 2FA on, whether it requires 2FA. The
+	 * window loads the universe again (no payload)
 	 */
 	AccessChanged = 'accessChanged',
 
@@ -119,13 +120,20 @@ export interface EditorSavedPayload
 
 /**
  * The parts of a save that change what the universe holds once, its editors and its draft, whichever
- * version is open. Its stage is one of its settings, kept apart in detailsForVersionOpen()
+ * version is open. Its stage and whether it requires 2FA are among its settings, kept apart in
+ * detailsForVersionOpen()
  */
 const UNIVERSE_WIDE_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['editor', 'draft']);
 
 /**
+ * The universe's settings that it holds once, the same in both versions
+ */
+const UNIVERSE_WIDE_FIELDS: ReadonlySet<AuditField> = new Set(['stage', 'requireTwoFactor']);
+
+/**
  * What a window follows of a save: everything, when it has the version saved open, and otherwise only
- * what the universe holds once, the same in both versions: its editors, its stage and its draft
+ * what the universe holds once, the same in both versions: its editors, its stage, whether it requires
+ * 2FA and its draft
  *
  * @param details What the save changed, as the Audit tab lists it
  * @param savedVersion The version the save changed
@@ -149,7 +157,7 @@ export function detailsForVersionOpen<Detail extends UniverseEditDetail>(details
 		}
 		else if (detail.subject === 'settings')
 		{
-			const fields = detail.fields.filter((change) => (change.field === 'stage'));
+			const fields = detail.fields.filter((change) => UNIVERSE_WIDE_FIELDS.has(change.field));
 
 			if (fields.length > 0)
 			{

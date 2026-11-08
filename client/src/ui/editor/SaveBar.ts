@@ -85,7 +85,8 @@ export function combineChanges(...sources: ChangeSource[]): ChangeSource
 
 /**
  * A tab made of parts that each have changes of their own, such as the Ruleset tab's settings and
- * difficulty levels. Saving collects the changes of each part that has some, in turn
+ * difficulty levels. Saving collects the changes of each part that has some, in turn. It only leaves
+ * when every part with changes only leaves
  *
  * @param parts The parts, in the order they save
  * @return The tab
@@ -102,7 +103,10 @@ export function combineTabs(...parts: SavableTab[]): SavableTab
 			{
 				await part.saved(ids);
 			}
-		}
+		},
+		onlyLeaving: () => parts
+			.filter((part) => part.changes.hasUnsavedChanges())
+			.every((part) => (part.onlyLeaving?.() ?? false))
 	});
 }
 

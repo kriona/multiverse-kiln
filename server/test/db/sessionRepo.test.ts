@@ -1,8 +1,10 @@
 import assert from 'assert';
 
 import { createToken, hashToken } from '../../src/auth/tokens.js';
+import { addServerAdmin } from '../../src/db/serverAdminRepo.js';
 import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findSessionByTokenHash, findSessionWithPlayer, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
 import { addPlayer } from '../players.js';
+import { turnOnTwoFactor } from '../twoFactorAccounts.js';
 
 const HOUR_MS = (60 * 60 * 1000);
 const DAY_MS = (24 * HOUR_MS);
@@ -31,9 +33,22 @@ describe('sessionRepo', () =>
 			...session,
 			username: 'Ada_Lovelace',
 			displayName: 'Ada Lovelace',
-			locale: null
+			locale: null,
+			needsTwoFactor: false
 		});
 		assert.strictEqual(await findSessionWithPlayer(hashToken(createToken())), undefined);
+	});
+
+	it('says whether a session\'s player is a server admin without 2FA', async () =>
+	{
+		const player = await addPlayer('Ada');
+		const tokenHash = hashToken(createToken());
+
+		await createSession(player.id, tokenHash, false);
+		await addServerAdmin(player.id);
+		assert.strictEqual((await findSessionWithPlayer(tokenHash))?.needsTwoFactor, true);
+		await turnOnTwoFactor(player.id);
+		assert.strictEqual((await findSessionWithPlayer(tokenHash))?.needsTwoFactor, false);
 	});
 
 	it('records the use of several sessions at once', async () =>

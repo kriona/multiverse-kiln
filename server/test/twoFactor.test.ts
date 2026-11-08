@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_SETUP_PATH, PROFILE_PATH, RECOVERY_CODE_COUNT, type AuthErrorPayload, type EmailCodeCheckPayload, type LoginPayload, type OwnProfilePayload, type RecoveryCodesPayload, type TwoFactorSetupPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_LOGIN_SETUP_PATH, AUTH_TWO_FACTOR_SETUP_PATH, PROFILE_PATH, RECOVERY_CODE_COUNT, type AuthErrorPayload, type EmailCodeCheckPayload, type LoginPayload, type OwnProfilePayload, type RecoveryCodesPayload, type TwoFactorLoginSetupPayload, type TwoFactorSetupPayload } from '@multiverse-kiln/shared';
 
 import { keyedHash } from '../src/auth/keyedHashes.js';
 import { hashPassword } from '../src/auth/passwords.js';
@@ -7,10 +7,10 @@ import { decryptTotpSecret } from '../src/auth/totpSecrets.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { HOUR_MS } from '../src/logic/emailCodes.js';
 import { MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../src/logic/twoFactor.js';
-import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
 import { Browser } from './browser.js';
 import { logInBrowser } from './players.js';
 import { discardEmail } from './setup.js';
@@ -94,6 +94,56 @@ describe('2FA routes', () =>
 		{
 			await recordRateLimitEvent('accountWrongAuthenticatorCode', keyedHash('account', playerId), earlier);
 		}
+	}
+
+	/**
+	 * Makes an account that logs in only with Google or Discord
+	 *
+	 * @param username The account's username
+	 * @param email Its address, or null for none
+	 * @return Its ID
+	 */
+	async function addPasswordlessAccount(username: string, email: string | null): Promise<string>
+	{
+		return((await createPlayer({
+			username,
+			displayName: username,
+			email,
+			passwordHash: null
+		})).id);
+	}
+
+	/**
+	 * A browser logged in to an account, as a Google or Discord login would leave it
+	 *
+	 * @param playerId The account
+	 * @return The browser
+	 */
+	async function logInAs(playerId: string): Promise<Browser>
+	{
+		const browser = new Browser();
+
+		browser.cookies.set('__Host-kiln-session', (await logInBrowser(playerId)).cookie.split('=')[1]);
+
+		return(browser);
+	}
+
+	/**
+	 * Asks for a code to change the 2FA of the account a browser is logged in to, and enters it
+	 *
+	 * @param browser The browser
+	 * @param email The account's address
+	 */
+	async function enterTwoFactorEmailCode(browser: Browser, email: string): Promise<void>
+	{
+		const sent = emails.length;
+
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'changeTwoFactor', email, locale: 'en' })).status, 204);
+		await waitUntil(() => (emails.length > sent));
+
+		const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[emails.length - 1].text)?.[1];
+
+		assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'changeTwoFactor', email, code })).status, 200);
 	}
 
 	/**
@@ -200,18 +250,36 @@ describe('2FA routes', () =>
 			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_ENABLE_PATH, { code: '123456', locale: 'en' })).status, 403);
 		});
 
-		it('isn\'t offered to an account without a password', async () =>
+		it('takes a code emailed to an account without a password, once, in place of the password', async () =>
 		{
-			const player = await createPlayer({
-				username: 'grace',
-				displayName: 'Grace',
-				email: 'grace@example.com',
-				passwordHash: null
-			});
-			const browser = new Browser();
+			const grace = await addPasswordlessAccount('grace', 'grace@example.com');
+			const browser = await logInAs(grace);
 
-			browser.cookies.set('__Host-kiln-session', (await logInBrowser(player.id)).cookie.split('=')[1]);
-			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: PASSWORD })).status, 400);
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null })).status, 403);
+			await enterTwoFactorEmailCode(browser, 'grace@example.com');
+			assert.strictEqual(emails.length, 1);
+			assert.match(emails[0].subject, /change two-factor authentication/);
+
+			const setup = await browser.send<TwoFactorSetupPayload>('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null });
+
+			assert.strictEqual(setup.status, 200);
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null })).status, 403);
+
+			const stored = await pool.query<{ encrypted_secret: Buffer }>('SELECT encrypted_secret FROM authenticators');
+			const secret = decryptTotpSecret(stored.rows[0].encrypted_secret, grace);
+			const enabled = await browser.send<RecoveryCodesPayload>('POST', AUTH_TWO_FACTOR_ENABLE_PATH, { code: authenticatorCode(secret), locale: 'en' });
+
+			assert.strictEqual(enabled.status, 200);
+			assert.strictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.twoFactor?.recoveryCodesLeft, RECOVERY_CODE_COUNT);
+		});
+
+		it('is refused to an account with neither a password nor an address', async () =>
+		{
+			const browser = await logInAs(await addPasswordlessAccount('grace', null));
+			const refused = await browser.send<AuthErrorPayload>('POST', AUTH_TWO_FACTOR_SETUP_PATH, { password: null });
+
+			assert.strictEqual(refused.status, 400);
+			assert.strictEqual(refused.body.error.id, 'error.auth.twoFactorNoEmail');
 		});
 	});
 
@@ -427,7 +495,7 @@ describe('2FA routes', () =>
 			assert.deepStrictEqual(await logIn(new Browser()), { outcome: 'twoFactor' });
 
 			// The email code's next step waits through wrong authenticator codes
-			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { ...request, twoFactorCode: authenticatorCode(authenticator.secret) })).status, 204);
+			assert.deepStrictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { ...request, twoFactorCode: authenticatorCode(authenticator.secret) })).body, { outcome: 'loggedIn' });
 			assert.strictEqual(await browser.username(), 'ada');
 		});
 
@@ -442,7 +510,7 @@ describe('2FA routes', () =>
 			const browser = new Browser();
 
 			await enterResetCode(browser);
-			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: authenticator.recoveryCodes[0] })).status, 204);
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: authenticator.recoveryCodes[0] })).status, 200);
 			assert.deepStrictEqual((await trusted.send('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: 'a new passphrase', rememberMe: false })).body, { outcome: 'twoFactor' });
 		});
 
@@ -455,35 +523,19 @@ describe('2FA routes', () =>
 
 	describe('turning off', () =>
 	{
-		it('needs the password and a code, emails the account and tells the editor rooms', async () =>
+		it('needs the password and a code, and emails the account', async () =>
 		{
-			const playerId = await addAda();
-			const authenticator = await turnOnTwoFactor(playerId);
+			const authenticator = await turnOnTwoFactor(await addAda());
 			const browser = new Browser();
-			const lost: string[] = [];
-			const stop = serverAdminChanges.onLost((lostId) =>
-			{
-				lost.push(lostId);
-			});
 
 			await logIn(browser);
 			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret), true)).status, 204);
 
 			const code = authenticatorCode(authenticator.secret, 1);
 
-			try
-			{
-				assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: 'not the password at all', code, locale: 'en' })).body.field, 'password');
-				assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code: wrongCode(authenticator), locale: 'en' })).body.field, 'twoFactorCode');
-				assert.deepStrictEqual(lost, []);
-				assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code, locale: 'en' })).status, 204);
-				assert.deepStrictEqual(lost, [playerId]);
-			}
-			finally
-			{
-				stop();
-			}
-
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: 'not the password at all', code, locale: 'en' })).body.field, 'password');
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code: wrongCode(authenticator), locale: 'en' })).body.field, 'twoFactorCode');
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code, locale: 'en' })).status, 204);
 			await waitUntil(() => emails.some((email) => /Two-factor authentication is off/.test(email.subject)));
 			assert.deepStrictEqual(await logIn(new Browser()), { outcome: 'loggedIn' });
 
@@ -493,6 +545,177 @@ describe('2FA routes', () =>
 			}
 
 			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: PASSWORD, code, locale: 'en' })).status, 409);
+		});
+
+		it('needs a code emailed to an account without a password, which waits through wrong authenticator codes', async () =>
+		{
+			const grace = await addPasswordlessAccount('grace', 'grace@example.com');
+			const authenticator = await turnOnTwoFactor(grace);
+			const browser = await logInAs(grace);
+			const code = authenticatorCode(authenticator.secret);
+
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: null, code, locale: 'en' })).status, 403);
+			await enterTwoFactorEmailCode(browser, 'grace@example.com');
+			assert.strictEqual((await browser.send<AuthErrorPayload>('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: null, code: wrongCode(authenticator), locale: 'en' })).body.field, 'twoFactorCode');
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password: null, code, locale: 'en' })).status, 204);
+			assert.strictEqual((await pool.query('SELECT * FROM authenticators')).rowCount, 0);
+		});
+
+		it('is refused to a server admin, before their password is checked', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const browser = new Browser();
+
+			await addServerAdmin(playerId);
+			await logIn(browser);
+			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret))).status, 204);
+
+			for (const password of [PASSWORD, 'not the password at all'])
+			{
+				const refused = await browser.send<AuthErrorPayload>('POST', AUTH_TWO_FACTOR_DISABLE_PATH, { password, code: authenticatorCode(authenticator.secret, 1), locale: 'en' });
+
+				assert.strictEqual(refused.status, 403);
+				assert.strictEqual(refused.body.error.id, 'error.auth.adminKeepsTwoFactor');
+			}
+
+			assert.strictEqual((await pool.query('SELECT * FROM authenticators WHERE enabled_at IS NOT NULL')).rowCount, 1);
+			assert.deepStrictEqual(await eventKinds(), ['loggedIn']);
+		});
+	});
+
+	describe('a server admin without 2FA', () =>
+	{
+		/**
+		 * The secret of the authenticator Ada is setting up
+		 *
+		 * @param playerId Ada's ID
+		 * @return The secret
+		 */
+		async function setupSecret(playerId: string): Promise<Buffer>
+		{
+			const stored = await pool.query<{ encrypted_secret: Buffer }>('SELECT encrypted_secret FROM authenticators');
+
+			return(Buffer.from(decryptTotpSecret(stored.rows[0].encrypted_secret, playerId)));
+		}
+
+		/**
+		 * Gives the code of the authenticator app being set up at login
+		 *
+		 * @param browser The browser
+		 * @param code The code
+		 * @return The answer
+		 */
+		function enableAtLogin(browser: Browser, code: string): Promise<{ status: number; body: RecoveryCodesPayload & AuthErrorPayload }>
+		{
+			return(browser.send('POST', AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH, { code, locale: 'en' }));
+		}
+
+		it('turns it on before their login finishes, from the browser that gave the password', async () =>
+		{
+			const playerId = await addAda();
+			const browser = new Browser();
+
+			await addServerAdmin(playerId);
+			assert.deepStrictEqual(await logIn(browser), { outcome: 'twoFactorSetup' });
+			assert.strictEqual(await browser.username(), null);
+			assert.strictEqual((await new Browser().send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 403);
+
+			const setup = await browser.send<TwoFactorLoginSetupPayload>('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH);
+
+			assert.strictEqual(setup.status, 200);
+			assert.strictEqual(setup.body.username, 'ada');
+			assert.strictEqual(setup.body.uri, `otpauth://totp/Multiverse%20Kiln:ada?secret=${setup.body.secret}&issuer=Multiverse+Kiln&algorithm=SHA1&digits=6&period=30`);
+
+			const secret = await setupSecret(playerId);
+			const wrong = await enableAtLogin(browser, wrongCode({ secret, recoveryCodes: [] }));
+
+			assert.strictEqual(wrong.status, 400);
+			assert.strictEqual(wrong.body.field, 'code');
+			assert.strictEqual((await enableAtLogin(new Browser(), authenticatorCode(secret))).status, 403);
+
+			const enabled = await enableAtLogin(browser, authenticatorCode(secret));
+
+			assert.strictEqual(enabled.status, 200);
+			assert.strictEqual(enabled.body.recoveryCodes.length, RECOVERY_CODE_COUNT);
+			assert.strictEqual(await browser.username(), 'ada');
+			assert.strictEqual(browser.cookies.has('__Host-kiln-two-factor'), false);
+			assert.deepStrictEqual(await eventKinds(), ['loggedIn', 'twoFactorEnabled']);
+			await waitUntil(() => emails.some((email) => /Two-factor authentication is on/.test(email.subject)));
+			assert.deepStrictEqual(await logIn(new Browser()), { outcome: 'twoFactor' });
+		});
+
+		it('ends the login after too many wrong codes', async () =>
+		{
+			const playerId = await addAda();
+			const browser = new Browser();
+
+			await addServerAdmin(playerId);
+			await logIn(browser);
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 200);
+
+			const secret = await setupSecret(playerId);
+
+			for (let i = 1; i < MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN; i++)
+			{
+				assert.strictEqual((await enableAtLogin(browser, wrongCode({ secret, recoveryCodes: [] }))).status, 400);
+			}
+
+			assert.strictEqual((await enableAtLogin(browser, wrongCode({ secret, recoveryCodes: [] }))).status, 403);
+			assert.strictEqual((await enableAtLogin(browser, authenticatorCode(secret))).status, 403);
+			assert.strictEqual(await browser.username(), null);
+			assert.strictEqual((await pool.query('SELECT * FROM authenticators WHERE enabled_at IS NOT NULL')).rowCount, 0);
+		});
+
+		it('can\'t replace the authenticator of an account with 2FA from a login waiting on its code', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const browser = new Browser();
+
+			await addServerAdmin(playerId);
+			assert.deepStrictEqual(await logIn(browser), { outcome: 'twoFactor' });
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 409);
+			assert.strictEqual((await enableAtLogin(browser, authenticatorCode(authenticator.secret))).status, 409);
+			assert.strictEqual(await browser.username(), null);
+			assert.ok((await setupSecret(playerId)).equals(authenticator.secret));
+		});
+
+		it('turns it on after resetting their password', async () =>
+		{
+			const playerId = await addAda();
+			const browser = new Browser();
+
+			await addServerAdmin(playerId);
+			assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'resetPassword', email: EMAIL, locale: 'en' })).status, 204);
+			await waitUntil(() => (emails.length === 1));
+
+			const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[0].text)?.[1];
+
+			assert.strictEqual((await browser.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'resetPassword', email: EMAIL, code })).status, 200);
+			assert.deepStrictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: null })).body, { outcome: 'twoFactorSetup' });
+			assert.strictEqual(await browser.username(), null);
+			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 200);
+			assert.strictEqual((await enableAtLogin(browser, authenticatorCode(await setupSecret(playerId)))).status, 200);
+			assert.strictEqual(await browser.username(), 'ada');
+		});
+
+		it('logs in again, rather than finish a login that waited on a code while 2FA went', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const browser = new Browser();
+
+			await addServerAdmin(playerId);
+			await logIn(browser);
+			await pool.query('DELETE FROM authenticators');
+
+			const refused = await sendCode(browser, authenticatorCode(authenticator.secret));
+
+			assert.strictEqual(refused.status, 403);
+			assert.strictEqual(refused.body.error.id, 'error.auth.twoFactorLoginAgain');
+			assert.strictEqual(await browser.username(), null);
+			assert.deepStrictEqual(await logIn(browser), { outcome: 'twoFactorSetup' });
 		});
 	});
 

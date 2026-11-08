@@ -3,12 +3,14 @@ import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageT
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
+import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { noticeDetails } from '../logic/saveNotices.js';
 import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { serverAdminChanges } from '../players/serverAdminChanges.js';
+import { twoFactorChanges } from '../players/twoFactorChanges.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
@@ -43,6 +45,12 @@ interface EditorIdentity
 	serverAdmin: boolean;
 
 	/**
+	 * Whether the player has 2FA on, without which they may not stay once the universe requires it:
+	 * found as the window joins, and changed when the room hears they turned it on or off
+	 */
+	twoFactor: boolean;
+
+	/**
 	 * The player's role in the editor: found as the window joins, and changed when the room hears of a
 	 * new one. The state lists it too, once for each player
 	 */
@@ -60,6 +68,16 @@ interface EditorAdmission
 	 * Whether they are a server admin with 2FA on
 	 */
 	serverAdmin: boolean;
+
+	/**
+	 * Whether they have 2FA on
+	 */
+	twoFactor: boolean;
+
+	/**
+	 * Whether the universe requires its editors to have 2FA on and they don't, which keeps them out
+	 */
+	twoFactorRequired: boolean;
 
 	role: EditorRole;
 }
@@ -84,9 +102,10 @@ interface EditorLookup
 /**
  * The changes to who may open the editor, and with what role, that a joining window may miss
  * (JoinChanges): sessions ending, the universe being deleted, roles changing, server admins losing
- * the site admin role, and the universe's stage changing or it being disabled or enabled
+ * the site admin role, players turning 2FA on or off, and the universe's stage changing, it being
+ * disabled or enabled, or whether it requires 2FA changing
  */
-type EditorJoinChange = 'session' | 'universeDeleted' | 'roles' | 'serverAdmin' | 'stage' | 'access';
+type EditorJoinChange = 'session' | 'universeDeleted' | 'roles' | 'serverAdmin' | 'twoFactor' | 'stage' | 'access';
 
 /**
  * Who an editor client is
@@ -109,8 +128,9 @@ function identityOf(client: EditorClient): EditorIdentity
  *
  * Every window with the universe's editor open joins it with the universe's ID (EditorJoinOptions), and
  * every window of the same universe joins the same room (filterBy in app.config.ts). Only players who may
- * open the universe's editor are admitted: those with a role in it, and server admins with 2FA on, who
- * edit with the site admin role when they have no stronger one. Its state lists each player once,
+ * open the universe's editor are admitted: those with a role in it, with 2FA on while the universe
+ * requires it, and server admins with 2FA on, who edit with the site admin role when they have no
+ * stronger one. Its state lists each player once,
  * however many windows they have, with what each window has open (EditorMessageType.Place)
  *
  * The chat is kept (server/src/db/chatRepo.ts): the room loads its messages as it starts, and writes new
@@ -120,10 +140,11 @@ function identityOf(client: EditorClient): EditorIdentity
  *
  * A window whose session ends is turned away (ServerCloseCode.LoggedOut), as are a player's windows when
  * they lose the right to open the editor (ServerCloseCode.AccessLost), by losing their role or by no longer
- * being a server admin with 2FA on, and every window when the universe is deleted. A change to a player's
- * role, to the universe's stage or to whether it is disabled tells
- * the windows it concerns (EditorServerMessageType.AccessChanged), which load the universe again. A
- * window that joins while one of these changes is published looks itself up again once it is listed
+ * being a server admin with 2FA on, and every window when the universe is deleted. The windows of players
+ * without 2FA on are turned away (ServerCloseCode.TwoFactorRequired) when the universe starts requiring
+ * it, and a player's windows when they turn it off while it does. A change to a player's role, to the
+ * universe's stage or to whether it is disabled tells the windows it concerns
+ * (EditorServerMessageType.AccessChanged), which load the universe again. A window that joins while one of these changes is published looks itself up again once it is listed
  * (JoinChanges), so the change reaches it too. Once a save commits, every other window hears of it, with
  * what it changed that the window shows (EditorServerMessageType.Saved)
  */
@@ -162,6 +183,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	private stopFollowingStage?: () => void;
 
 	private stopFollowingAdmins?: () => void;
+
+	private stopFollowingTwoFactor?: () => void;
 
 	private stopFollowingDeletions?: () => void;
 
@@ -307,6 +330,12 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			void this.applyServerAdminLost(playerId);
 		});
 
+		this.stopFollowingTwoFactor = twoFactorChanges.onChange((playerId, on) =>
+		{
+			this.joinChanges.note('twoFactor');
+			void this.applyTwoFactorChange(playerId, on);
+		});
+
 		this.stopFollowingDeletions = accountDeletions.onDeleted((playerId) =>
 		{
 			if (this.chat.forgetAuthor(playerId))
@@ -328,6 +357,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		this.stopFollowingUpdates?.();
 		this.stopFollowingStage?.();
 		this.stopFollowingAdmins?.();
+		this.stopFollowingTwoFactor?.();
 		this.stopFollowingDeletions?.();
 		await this.saveChat();
 	}
@@ -366,7 +396,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			chatRead
 		]);
 
-		if (!admission)
+		if (!admission || admission.twoFactorRequired)
 		{
 			return(false);
 		}
@@ -387,6 +417,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			name: session.name,
 			username: session.username,
 			serverAdmin: admission.serverAdmin,
+			twoFactor: admission.twoFactor,
 			role: admission.role
 		});
 	}
@@ -462,20 +493,30 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	}
 
 	/**
-	 * Finds whether a player is a server admin with 2FA on, and the role they may open the editor with
+	 * Finds whether a player is a server admin with 2FA on, whether they have 2FA on and the universe
+	 * requires it, and the role they may open the editor with
 	 *
 	 * @param playerId The player's ID
-	 * @return Both; undefined when they may not open the editor
+	 * @return What it found; undefined when they have no role that opens the editor
 	 */
 	private async findAdmission(playerId: string): Promise<EditorAdmission | undefined>
 	{
-		const [serverAdmin, universeAccess] = await Promise.all([
+		const [serverAdmin, twoFactor, universeAccess, universe] = await Promise.all([
 			isActiveServerAdmin(playerId),
-			findUniverseAccess(this.universeId, playerId)
+			hasTwoFactor(playerId),
+			findUniverseAccess(this.universeId, playerId),
+			findUniverse(this.universeId)
 		]);
 		const access = editorAccessOf(universeAccess, serverAdmin);
 
-		return((access ? { serverAdmin, role: access.role } : undefined));
+		return((access
+			? {
+				serverAdmin,
+				twoFactor,
+				twoFactorRequired: ((universe?.requireTwoFactor ?? false) && !twoFactor),
+				role: access.role
+			}
+			: undefined));
 	}
 
 	/**
@@ -497,9 +538,10 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	/**
 	 * Looks a joining window up again when a change it may have missed was published while onAuth looked
 	 * it up (JoinChanges). The window is turned away, as the room's listeners would have turned it away,
-	 * when its session has ended, the universe was deleted or its player may no longer open the editor.
-	 * Otherwise it takes the role its player has now, and loads the universe again when that role, the
-	 * universe's stage or whether it is disabled changed, since the window may have loaded it before
+	 * when its session has ended, the universe was deleted, its player may no longer open the editor, or
+	 * the universe requires 2FA its player doesn't have on. Otherwise it takes the role its player has
+	 * now, and loads the universe again when that role, whether its player has 2FA on, the universe's
+	 * stage or whether it is disabled changed, since the window may have loaded it before
 	 *
 	 * @param client The joining client, already among the room's clients
 	 * @return Resolves once the window has the role it has now
@@ -531,9 +573,15 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			throw new ServerError(ServerCloseCode.AccessLost, 'The window\'s player lost access to the editor while it joined');
 		}
 
-		const changed = ((found.admission.role !== identity.role) || missed.has('stage') || missed.has('access'));
+		if (found.admission.twoFactorRequired)
+		{
+			throw new ServerError(ServerCloseCode.TwoFactorRequired, 'The universe requires 2FA the window\'s player stopped having on while it joined');
+		}
+
+		const changed = ((found.admission.role !== identity.role) || (found.admission.twoFactor !== identity.twoFactor) || missed.has('stage') || missed.has('access'));
 
 		identity.serverAdmin = found.admission.serverAdmin;
+		identity.twoFactor = found.admission.twoFactor;
 		identity.role = found.admission.role;
 
 		if (changed)
@@ -568,7 +616,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	/**
 	 * Follows an update for the universe's editors: players whose role a save changed are listed with
 	 * the new one, and their windows load the universe again, or are turned away when they may no longer
-	 * open the editor; a server admin disabling or enabling the universe has every window load it again
+	 * open the editor; a server admin disabling or enabling the universe has every window load it again,
+	 * and the universe starting to require 2FA turns away the windows of players without it on
 	 *
 	 * @param update The update
 	 */
@@ -578,6 +627,18 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		{
 			this.joinChanges.note('access');
 			this.broadcast(EditorServerMessageType.AccessChanged);
+			return;
+		}
+
+		if (update.kind === 'twoFactorRequirement')
+		{
+			this.joinChanges.note('twoFactor');
+
+			if (update.required)
+			{
+				this.turnAway((identity) => !identity.twoFactor, ServerCloseCode.TwoFactorRequired);
+			}
+
 			return;
 		}
 
@@ -728,6 +789,55 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		}
 
 		this.applyRole(playerId, universeAccess?.role);
+	}
+
+	/**
+	 * Follows a player turning 2FA on or off. Turning it off while the universe requires it turns their
+	 * windows away, as does the universe failing to be looked up then, rather than let them stay without
+	 * it. Otherwise their windows load the universe again, since whether a creator may require 2FA follows
+	 * whether they have it on
+	 *
+	 * @param playerId The player's ID
+	 * @param on Whether they have 2FA on now
+	 * @return Resolves once their windows have been told, or turned away
+	 */
+	private async applyTwoFactorChange(playerId: string, on: boolean): Promise<void>
+	{
+		if (this.windowsOf(playerId).length === 0)
+		{
+			return;
+		}
+
+		// Set before the lookup so that the universe starting to require 2FA meanwhile turns them away
+		for (const client of this.windowsOf(playerId))
+		{
+			identityOf(client).twoFactor = on;
+		}
+
+		let required = !on;
+
+		if (!on)
+		{
+			try
+			{
+				required = ((await findUniverse(this.universeId))?.requireTwoFactor ?? false);
+			}
+			catch (error)
+			{
+				console.error('Could not find whether universe', this.universeId, 'requires 2FA once player', playerId, 'turned it off', error);
+			}
+		}
+
+		if (required)
+		{
+			this.turnAway((identity) => (identity.playerId === playerId), ServerCloseCode.TwoFactorRequired);
+			return;
+		}
+
+		for (const client of this.windowsOf(playerId))
+		{
+			client.send(EditorServerMessageType.AccessChanged);
+		}
 	}
 
 	/**

@@ -9,17 +9,18 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { findPlayerLocale, lockPlayer } from '../db/playerRepo.js';
+import { findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
+import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
-import { loadUniverseContext, playerIdOf, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
+import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { isSameVersion, type UniverseVersion } from '../db/universeVersions.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
@@ -118,8 +119,10 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	router.post('/', createUniverseRoute);
 	router.use('/:universeId', loadUniverseContext, universeRouter);
 
-	universeRouter.get('/', getUniverse);
+	// Saving comes before the 2FA check, since a player kept out by it may still save leaving the universe
 	addChangeRoutes(universeRouter);
+	universeRouter.use(refuseWithoutRequiredTwoFactor);
+	universeRouter.get('/', getUniverse);
 	addImpactRoutes(universeRouter);
 	addEditorListRoutes(universeRouter);
 	addCharacterListRoutes(universeRouter);
@@ -149,11 +152,17 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
  */
 async function listUniverses(request: Request, response: Response): Promise<void>
 {
-	const { universeCreationEnabled, universesPerCreator } = await findSiteSettings();
+	const playerId = playerIdOf(request);
+	const [universes, settings, twoFactorCandidate] = await Promise.all([
+		listEditableUniverses(playerId),
+		findSiteSettings(),
+		findTwoFactorCandidate(playerId)
+	]);
 	const payload: EditableUniverseListPayload = {
-		universes: await listEditableUniverses(playerIdOf(request)),
-		universeCreationEnabled,
-		universesPerCreator
+		universes,
+		universeCreationEnabled: settings.universeCreationEnabled,
+		universesPerCreator: settings.universesPerCreator,
+		twoFactorOffer: (twoFactorCandidate ?? null)
 	};
 
 	response.json(payload);
@@ -288,21 +297,22 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 }
 
 /**
- * GET /:universeId: the universe's settings, the player's role in it, and how many translations it has
- * in each language
+ * GET /:universeId: the universe's settings, the player's role in it, whether they have 2FA on, and how
+ * many translations it has in each language
  *
  * @param request The request
  * @param response The response
  */
 async function getUniverse(request: Request, response: Response): Promise<void>
 {
-	const { playerId, universe, version, role, languages, serverAdmin } = universeContextOf(request);
+	const { playerId, universe, version, role, languages, serverAdmin, twoFactor } = universeContextOf(request);
 	const payload: EditableUniverse = {
 		...universe,
 		role,
 		languages: [...languages],
 		playerId,
 		serverAdmin,
+		twoFactor,
 		translationCounts: Object.fromEntries(await countTranslations(version))
 	};
 
@@ -313,7 +323,8 @@ async function getUniverse(request: Request, response: Response): Promise<void>
  * Changes the universe's settings. A name another universe has is refused by the save (editorChanges.ts).
  * Once the save has saved every change, a group size it lowers does what largerGroups says to the groups
  * larger than the new size (see editorDisablings.ts). A coin's name or abbreviation taken out takes its
- * translations and note with it
+ * translations and note with it. Only a player with 2FA on may make the universe require it, so no one
+ * keeps themself from saving by mistake
  *
  * @param context The save
  * @param update The settings to change
@@ -321,6 +332,15 @@ async function getUniverse(request: Request, response: Response): Promise<void>
  */
 export async function applyUniverseChange(context: ChangeContext, update: UniverseSettingsUpdate, largerGroups: GroupSizeLowering): Promise<void>
 {
+	if ((update.requireTwoFactor === true) && !context.universe.requireTwoFactor && !await hasTwoFactor(context.playerId, context.transaction))
+	{
+		refuse(403, {
+			id: 'error.requireTwoFactorWithout',
+			defaultMessage: 'Turn on two-factor authentication for your own account before requiring it of the universe\'s editors.',
+			description: 'Why the setting requiring the universe\'s editors to have two-factor authentication on wasn\'t saved: the player turning it on doesn\'t have it on, so they would no longer be able to save changes themselves'
+		});
+	}
+
 	if (update.groupSize !== undefined)
 	{
 		context.disablings.groupSizeChange(context.universe.groupSize, update.groupSize, largerGroups);

@@ -1,11 +1,14 @@
-import { DISALLOWED_TEXT_CHARACTERS, hasIdShapedSlug, MAX_SHORT_DESCRIPTION_LENGTH,MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, hasIdShapedSlug, MAX_SHORT_DESCRIPTION_LENGTH,MAX_UNIVERSE_NAME_LENGTH, RULESET_NAMES, RULESETS, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, universeSlug, type EditableUniverseListPayload, type EditableUniverseSummary, type NewUniverseRequest, type Ruleset, type TwoFactorOffer, type UniverseListPayload, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
+import type { AuthApi } from '../network/authApi';
 import { describeEditorError } from '../network/editorApi';
 import { editPageUrl, loginPageUrl, universePageUrl } from '../pages';
 import { getElement, namedOptions, setOptions, setPageTitle, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
+import { RecoveryCodesDialog } from './RecoveryCodesDialog';
+import { TwoFactorSetupDialog } from './TwoFactorSetupDialog';
 import { describeUniverseLanguages } from './universeLanguages';
 
 /**
@@ -37,7 +40,7 @@ export interface HomeScreenActions
 /**
  * Home: the universes to play in, a page at a time, each linking to its page; the universes open for
  * testing that the player has a role in, which no one else sees; the universes the player works on,
- * and creating a universe
+ * and creating a universe, which offers to turn on 2FA when the account doesn't have it
  */
 export class HomeScreen
 {
@@ -50,8 +53,12 @@ export class HomeScreen
 	private readonly createName = getElement('create-universe-name', HTMLInputElement);
 	private readonly createDescription = getElement('create-universe-description', HTMLInputElement);
 	private readonly createRuleset = getElement('create-universe-ruleset', HTMLSelectElement);
+	private readonly createTwoFactorField = getElement('create-universe-two-factor-field', HTMLElement);
+	private readonly createTwoFactor = getElement('create-universe-two-factor', HTMLInputElement);
 	private readonly createError = getElement('create-universe-error', HTMLElement);
 	private readonly createSubmit = getElement('create-universe-submit', HTMLButtonElement);
+	private readonly twoFactorDialog: TwoFactorSetupDialog;
+	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
 	private readonly logInLink = getElement('home-log-in', HTMLAnchorElement);
 	private readonly ownUniverses = getElement('own-universes', HTMLElement);
 	private readonly testingUniverses = getElement('testing-universes', HTMLElement);
@@ -84,15 +91,33 @@ export class HomeScreen
 	private ownSummary: { count: number; canCreate: boolean } | undefined;
 
 	/**
+	 * What the Create Universe dialog needs to offer to turn on 2FA, or null when the account can't (or
+	 * its own universes haven't loaded)
+	 */
+	private twoFactorOffer: TwoFactorOffer | null = null;
+
+	/**
+	 * The universe just created and the player's username, while the dialogs turning on 2FA are open
+	 * before the universe opens in the editor
+	 */
+	private twoFactorSetup: { universeId: string; username: string } | undefined;
+
+	/**
 	 * Changes every time the list starts over, so a page that arrives for an older list is ignored
 	 */
 	private listVersion = 0;
 
 	/**
 	 * @param actions What the screen's controls do
+	 * @param authApi The auth routes, which turn on 2FA
 	 */
-	constructor(private readonly actions: HomeScreenActions)
+	constructor(private readonly actions: HomeScreenActions, authApi: AuthApi)
 	{
+		this.twoFactorDialog = new TwoFactorSetupDialog(authApi, (codes) =>
+		{
+			this.showRecoveryCodes(codes);
+		});
+
 		this.moreButton.addEventListener('click', () =>
 		{
 			void this.loadPage();
@@ -142,6 +167,7 @@ export class HomeScreen
 		this.listed = 0;
 		this.firstPageLoaded = false;
 		this.ownSummary = undefined;
+		this.twoFactorOffer = null;
 		this.listVersion++;
 		this.list.replaceChildren();
 		this.publicUniverses.hidden = true;
@@ -299,7 +325,7 @@ export class HomeScreen
 			return;
 		}
 
-		const { universes, universeCreationEnabled, universesPerCreator } = list;
+		const { universes, universeCreationEnabled, universesPerCreator, twoFactorOffer } = list;
 		const created = universes.filter((universe) => (universe.role === 'creator')).length;
 		const testing = universes.filter((universe) => ((universe.stage === 'prologue') && !universe.disabled));
 
@@ -318,6 +344,7 @@ export class HomeScreen
 			count: universes.length,
 			canCreate
 		};
+		this.twoFactorOffer = twoFactorOffer;
 		this.showSections();
 	}
 
@@ -368,11 +395,12 @@ export class HomeScreen
 	}
 
 	/**
-	 * Opens the Create Universe dialog, empty
+	 * Opens the Create Universe dialog, empty, with turning on 2FA checked when the account can
 	 */
 	private openCreateDialog(): void
 	{
 		this.createForm.reset();
+		this.createTwoFactorField.hidden = (this.twoFactorOffer === null);
 		setOptions(this.createRuleset, [
 			{
 				value: '',
@@ -392,7 +420,8 @@ export class HomeScreen
 	}
 
 	/**
-	 * Creates the universe the dialog describes, and opens it in the editor
+	 * Creates the universe the dialog describes, and opens it in the editor. With turning on 2FA
+	 * checked, the dialog setting it up comes first
 	 */
 	private async createUniverse(): Promise<void>
 	{
@@ -428,9 +457,18 @@ export class HomeScreen
 		try
 		{
 			const universeId = await this.actions.createUniverse({ name, shortDescription, ruleset: this.createRuleset.value as Ruleset, locale: currentLocale() });
+			const offer = this.twoFactorOffer;
 
 			this.createDialog.close();
-			this.actions.edit(universeId);
+
+			if ((offer !== null) && !this.createTwoFactorField.hidden && this.createTwoFactor.checked)
+			{
+				this.setUpTwoFactor(universeId, offer);
+			}
+			else
+			{
+				this.actions.edit(universeId);
+			}
 		}
 		catch (error)
 		{
@@ -441,5 +479,48 @@ export class HomeScreen
 			}));
 			this.createSubmit.disabled = false;
 		}
+	}
+
+	/**
+	 * Opens the dialog turning on 2FA, after creating a universe. Skipping it opens the universe in the
+	 * editor; turning 2FA on shows the recovery codes first
+	 *
+	 * @param universeId The universe just created
+	 * @param offer The account's username and address, and whether it has a password
+	 */
+	private setUpTwoFactor(universeId: string, offer: TwoFactorOffer): void
+	{
+		this.twoFactorSetup = {
+			universeId,
+			username: offer.username
+		};
+		this.twoFactorDialog.open(offer, () =>
+		{
+			this.twoFactorSetup = undefined;
+			this.actions.edit(universeId);
+		});
+	}
+
+	/**
+	 * Shows the recovery codes once 2FA is on, then opens the universe just created in the editor
+	 *
+	 * @param codes The recovery codes
+	 */
+	private showRecoveryCodes(codes: string[]): void
+	{
+		const setup = this.twoFactorSetup;
+
+		this.twoFactorSetup = undefined;
+		this.twoFactorOffer = null;
+
+		if (setup === undefined)
+		{
+			return;
+		}
+
+		this.recoveryCodesDialog.open(codes, setup.username, () =>
+		{
+			this.actions.edit(setup.universeId);
+		});
 	}
 }

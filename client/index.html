@@ -58,6 +58,13 @@
 							Ruleset
 							<select id="create-universe-ruleset" required></select>
 						</label>
+						<div id="create-universe-two-factor-field" class="form-group" hidden>
+							<label class="checkbox" data-message="home.create.twoFactor" data-translation-context="Checkbox in the Create Universe dialog, shown when the player's account has a password and two-factor authentication is off: checked, creating the universe opens the dialog that sets it up">
+								<input id="create-universe-two-factor" type="checkbox" checked aria-describedby="create-universe-two-factor-hint" />
+								Turn on two-factor authentication
+							</label>
+							<p id="create-universe-two-factor-hint" class="hint" data-message="home.create.twoFactorHint" data-translation-context="Under the Create Universe dialog's checkbox for turning on two-factor authentication, saying why it keeps the new universe safe">Your universe is only as safe as your account: anyone who learns your password could change or delete everything you build. Two-factor authentication also asks for a code from an app on your phone when you log in, so a password alone isn't enough to get in.</p>
+						</div>
 						<p id="create-universe-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="create-universe-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
@@ -65,6 +72,7 @@
 						</div>
 					</form>
 				</dialog>
+				<!-- include two-factor-dialogs.html -->
 			</section>
 		</main>
 		<!-- include footer.html -->

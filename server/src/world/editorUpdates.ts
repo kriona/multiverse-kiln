@@ -36,11 +36,14 @@ export interface SavedUpdate
  *
  * - roles: a save gave players a role, changed it or took it away (undefined), by player ID
  * - access: a server admin disabled the universe or enabled it again, which changes who may save
+ * - twoFactorRequirement: a save made the universe require its editors to have 2FA on (required), or
+ *   stop requiring it, which changes whether editors without it may open its editor
  * - saved: a save committed (SavedUpdate)
  */
 export type EditorUpdate =
 	| { kind: 'roles'; universeId: string; roles: ReadonlyMap<string, UniverseRole | undefined> }
 	| { kind: 'access'; universeId: string }
+	| { kind: 'twoFactorRequirement'; universeId: string; required: boolean }
 	| SavedUpdate;
 
 /**

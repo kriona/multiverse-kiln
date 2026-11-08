@@ -1,5 +1,5 @@
 import assert from 'assert';
-import type { EditableUniverse, EditorChange, PlayerSearchPayload, UniverseEditorListPayload } from '@multiverse-kiln/shared';
+import { EDITOR_TWO_FACTOR_ERROR_ID, PROFILE_PATH, type EditableUniverse, type EditorChange, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type UniverseEditorListPayload } from '@multiverse-kiln/shared';
 
 import { keyedHash } from '../src/auth/keyedHashes.js';
 import { MAX_ROLE_EMAILS_PER_PLAYER_DAY } from '../src/auth/rateLimits.js';
@@ -13,7 +13,8 @@ import { universeAccessChanges, type AccessLost, type StageChange } from '../src
 import { createUniverse, logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
 import { addPlayer, usernameFor } from './players.js';
 import { discardEmail } from './setup.js';
-import { getTestServer } from './testServer.js';
+import { getTestServer, testServerUrl } from './testServer.js';
+import { turnOnTwoFactor } from './twoFactorAccounts.js';
 
 /**
  * A change to the world, which only creators and builders may make: deleting an uploaded tileset that
@@ -331,6 +332,97 @@ describe('Editing a universe\'s editors', () =>
 		// A creator can still change the universe, and bring it back from the end of time
 		await saveAll(ada, universeId, [{ kind: 'universe', update: { stage: 'let_there_be_light' } }]);
 		assert.strictEqual((await saveChanges(bob, universeId, [worldChange])).status, 404, 'the builder may save again, and is told the tileset doesn\'t exist');
+	});
+
+	describe('requiring 2FA', () =>
+	{
+		const requireTwoFactor: EditorChange = { kind: 'universe', update: { requireTwoFactor: true } };
+
+		it('lets only creators with 2FA on require it of the universe\'s editors', async () =>
+		{
+			const bob = await logIn('Bob');
+
+			await setUniverseRole(universeId, bob.playerId, 'builder');
+			await turnOnTwoFactor(bob.playerId);
+
+			const withoutTwoFactor = await saveChanges(ada, universeId, [requireTwoFactor]);
+
+			assert.strictEqual(withoutTwoFactor.status, 403);
+			assert.strictEqual(withoutTwoFactor.body.changeIndex, 0);
+			assert.strictEqual((await saveChanges(bob, universeId, [requireTwoFactor])).status, 403);
+
+			let universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+
+			assert.deepStrictEqual([universe.requireTwoFactor, universe.twoFactor], [false, false]);
+
+			await turnOnTwoFactor(ada.playerId);
+			await saveAll(ada, universeId, [requireTwoFactor]);
+			universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+			assert.deepStrictEqual([universe.requireTwoFactor, universe.twoFactor], [true, true]);
+		});
+
+		it('refuses editors without 2FA on everything but leaving, until they turn it on or the universe stops requiring it', async () =>
+		{
+			const bob = await logIn('Bob');
+			const grace = await logIn('Grace');
+			const alan = await logIn('Alan');
+
+			await setUniverseRole(universeId, bob.playerId, 'builder');
+			await setUniverseRole(universeId, grace.playerId, 'beta_tester');
+			await setUniverseRole(universeId, alan.playerId, 'builder');
+			await turnOnTwoFactor(ada.playerId);
+			await saveAll(ada, universeId, [requireTwoFactor]);
+
+			const refused = await saveChanges(bob, universeId, [worldChange]);
+
+			assert.strictEqual(refused.status, 403);
+			assert.strictEqual(refused.body.changeIndex, null);
+
+			for (const path of ['', '/editors', '/races', '/areas', '/audit', '/changes/impact'])
+			{
+				const read = await ((path === '/changes/impact')
+					? send<ErrorPayload>(bob, 'POST', `/${universeId}${path}`, { body: { changes: [] } })
+					: send<ErrorPayload>(bob, 'GET', `/${universeId}${path}`));
+
+				assert.strictEqual(read.status, 403, path);
+				assert.strictEqual(read.body.error.id, EDITOR_TWO_FACTOR_ERROR_ID, path);
+			}
+
+			assert.strictEqual((await send(ada, 'GET', `/${universeId}/editors`)).status, 200);
+			assert.strictEqual((await saveChanges(grace, universeId, [{ kind: 'removeEditor', playerId: grace.playerId }])).status, 200);
+			assert.strictEqual(await findUniverseAccess(universeId, grace.playerId), undefined);
+
+			await turnOnTwoFactor(bob.playerId);
+			assert.strictEqual((await send(bob, 'GET', `/${universeId}`)).status, 200);
+			assert.strictEqual((await saveChanges(bob, universeId, [worldChange])).status, 404, 'the builder may save once 2FA is on, and is told the tileset doesn\'t exist');
+			assert.strictEqual((await saveChanges(alan, universeId, [worldChange])).status, 403);
+
+			// The universe holds it once, so the draft requires it too, and stops requiring it with the live version
+			await saveAll(ada, universeId, [{ kind: 'startDraft' }]);
+			assert.strictEqual((await send(alan, 'GET', `/${universeId}?version=draft`)).status, 403);
+			assert.strictEqual((await send(alan, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [worldChange] } })).status, 403);
+			assert.strictEqual((await send(ada, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'universe', update: { requireTwoFactor: false } }] } })).status, 200);
+			assert.strictEqual((await send<EditableUniverse>(alan, 'GET', `/${universeId}`)).body.requireTwoFactor, false);
+			assert.strictEqual((await saveChanges(alan, universeId, [worldChange])).status, 404);
+		});
+
+		it('lists the universes a player has a role in that require 2FA on their profile, for turning it off', async () =>
+		{
+			const bob = await logIn('Bob');
+			const otherId = await createUniverse(ada, 'Second Sphere');
+			const thirdId = await createUniverse(ada, 'Third Realm');
+
+			await turnOnTwoFactor(ada.playerId);
+			await setUniverseRole(universeId, bob.playerId, 'builder');
+			await setUniverseRole(otherId, bob.playerId, 'beta_tester');
+			await setUniverseRole(thirdId, bob.playerId, 'builder');
+			await saveAll(ada, universeId, [requireTwoFactor]);
+			await saveAll(ada, otherId, [requireTwoFactor]);
+
+			const profile = await fetch(`${testServerUrl}${PROFILE_PATH}`, { headers: { Cookie: bob.cookie } });
+
+			assert.deepStrictEqual(((await profile.json()) as OwnProfilePayload).twoFactorUniverses, ['Kilnhaven', 'Second Sphere']);
+		});
 	});
 
 	it('emails the players a save gives a role, in their language, once it commits', async () =>

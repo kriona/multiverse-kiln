@@ -137,6 +137,20 @@
 								<tbody id="editors-rows"></tbody>
 							</table>
 						</div>
+						<section id="editors-security" class="panel" aria-labelledby="editors-security-heading">
+							<h2 id="editors-security-heading" data-message="editor.editors.securityHeading" data-translation-context="Heading of the part of the editor's Editors tab with the setting that requires the universe's editors to have two-factor authentication on">Security</h2>
+							<form id="editors-form" class="form">
+								<fieldset id="editors-fields" class="plain">
+									<label class="checkbox" data-message="editor.editors.requireTwoFactor" data-translation-context="Checkbox on the editor's Editors tab for whether the universe's editors need two-factor authentication on to save changes to it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										<input id="editors-require-two-factor" type="checkbox" aria-describedby="editors-require-two-factor-hint" />
+										Editors need two-factor authentication
+									</label>
+									<p id="editors-require-two-factor-hint" class="hint" data-message="editor.editors.requireTwoFactorHint" data-translation-context="Explains the checkbox on the editor's Editors tab that requires the universe's editors to have two-factor authentication on">Editors without two-factor authentication on can't open the universe in the editor, only leave it, though they can still play it. Only creators can change this.</p>
+									<p id="editors-two-factor-own" class="hint" hidden><span data-message="editor.editors.requireTwoFactorOwn" data-translation-context="On the editor's Editors tab, under the checkbox that requires the universe's editors to have two-factor authentication on, for a creator who doesn't have it on, so the checkbox is disabled; a link to turn it on follows">Turn on two-factor authentication for your own account before requiring it of others.</span> <a id="editors-two-factor-link" href="/profile?setUpTwoFactor" data-message="editor.turnOnTwoFactor" data-translation-context="Link in the world editor, for a player who doesn't have two-factor authentication on, that goes to their profile to set it up">Turn on two-factor authentication</a></p>
+									<p id="editors-settings-error" class="form-error" role="alert" hidden></p>
+								</fieldset>
+							</form>
+						</section>
 					</section>
 
 					<section id="editor-panel-ruleset" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-ruleset" hidden>
@@ -1108,17 +1122,6 @@
 						</fieldset>
 					</form>
 				</dialog>
-				<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
-					<form id="confirm-form" class="form">
-						<h2 id="confirm-title"></h2>
-						<p id="confirm-question"></p>
-						<p id="confirm-note" hidden></p>
-						<div class="dialog-buttons">
-							<button id="confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="confirm-submit" type="submit" class="danger"></button>
-						</div>
-					</form>
-				</dialog>
 				<dialog id="conflict-dialog" class="panel dialog" aria-labelledby="conflict-title" aria-describedby="conflict-explanation">
 					<form id="conflict-form" class="form">
 						<h2 id="conflict-title" data-message="editor.conflict.title" data-translation-context="Title of the dialog the editor's Save opens when other editors saved different values for settings the player also changed, asking whose to keep">Settings Changed by Others</h2>
@@ -1357,6 +1360,36 @@
 					</form>
 				</dialog>
 			</section>
+
+			<section id="editor-two-factor-screen" class="screen" hidden>
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<h1 id="editor-two-factor-title" data-message="editor.title" data-translation-context="Heading of the world editor until the universe's name has loaded">Edit Universe</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="editor-two-factor">
+					<h2 data-message="editor.twoFactorHeading" data-translation-context="Heading of the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it">Two-Factor Authentication Required</h2>
+					<p id="editor-two-factor-message" role="alert"></p>
+					<p id="editor-two-factor-error" class="form-error" role="alert" hidden></p>
+					<div class="form-buttons">
+						<a id="editor-two-factor-link" class="button" href="/profile?setUpTwoFactor" data-shortcut="Alt+T" data-message="editor.turnOnTwoFactor" data-translation-context="Link in the world editor, for a player who doesn't have two-factor authentication on, that goes to their profile to set it up"><!-- icon ph:shield-check -->Turn on two-factor authentication</a>
+						<button id="editor-two-factor-leave" type="button" class="secondary" aria-describedby="editor-two-factor-error" data-message="editor.twoFactorLeave" data-translation-context="Button on the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it: gives up their role in the universe, after asking"><!-- icon ph:sign-out -->Leave Universe</button>
+						<a class="button secondary" href="/" data-shortcut="Alt+H" data-message="page.backToHome" data-translation-context="Link that goes back to the list of universes (Home), below a message filling the page, such as one saying a universe couldn't be found"><!-- icon ph:house -->Back to Home</a>
+					</div>
+				</div>
+			</section>
+
+			<dialog id="confirm-dialog" class="panel dialog" aria-labelledby="confirm-title" aria-describedby="confirm-question confirm-note">
+				<form id="confirm-form" class="form">
+					<h2 id="confirm-title"></h2>
+					<p id="confirm-question"></p>
+					<p id="confirm-note" hidden></p>
+					<div class="dialog-buttons">
+						<button id="confirm-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+						<button id="confirm-submit" type="submit" class="danger"></button>
+					</div>
+				</form>
+			</dialog>
 		</main>
 		<!-- include footer.html -->
 		<!-- include accessibility.html -->

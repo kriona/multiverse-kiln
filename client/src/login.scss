@@ -1,6 +1,7 @@
 // The login page (login.html): logging in, creating an account and resetting a password
 
 @use 'shared' as *;
+@use 'twoFactorDialogs';
 
 // The toolbar goes above whichever screen is showing
 main

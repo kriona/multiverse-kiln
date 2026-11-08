@@ -6,7 +6,7 @@ import { detailsForVersionOpen, type UniverseEditDetail } from '@multiverse-kiln
  */
 const DETAILS: UniverseEditDetail[] = [
 	{ subject: 'race', action: 'changed', target: { key: null, name: 'Dwarf' }, fields: [{ field: 'name', value: 'Dwarf' }], count: 1 },
-	{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 4 }, { field: 'stage', value: 'prologue' }], count: 1 },
+	{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'groupSize', value: 4 }, { field: 'stage', value: 'prologue' }, { field: 'requireTwoFactor', value: true }], count: 1 },
 	{ subject: 'cells', action: 'changed', target: { key: null, name: 'Cave' }, fields: [], count: 40 },
 	{ subject: 'editor', action: 'added', target: { key: null, name: 'bea' }, fields: [{ field: 'role', value: 'builder' }], count: 1 },
 	{ subject: 'draft', action: 'added', target: null, fields: [], count: 1 }
@@ -22,10 +22,10 @@ describe('editorRoom', () =>
 			assert.deepStrictEqual(detailsForVersionOpen(DETAILS, 'draft', 'draft'), DETAILS);
 		});
 
-		it('follows only the editors, the stage and the draft of a save to the other version', () =>
+		it('follows only the editors, the stage, whether 2FA is required and the draft of a save to the other version', () =>
 		{
 			const universeWide = [
-				{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'stage', value: 'prologue' }], count: 1 },
+				{ subject: 'settings', action: 'changed', target: null, fields: [{ field: 'stage', value: 'prologue' }, { field: 'requireTwoFactor', value: true }], count: 1 },
 				DETAILS[3],
 				DETAILS[4]
 			];
@@ -43,7 +43,7 @@ describe('editorRoom', () =>
 		it('leaves the save\'s details as they were', () =>
 		{
 			detailsForVersionOpen(DETAILS, 'draft', 'live');
-			assert.strictEqual(DETAILS[1].fields.length, 2);
+			assert.strictEqual(DETAILS[1].fields.length, 3);
 		});
 	});
 });

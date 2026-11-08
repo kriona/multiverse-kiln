@@ -28,7 +28,8 @@ describe('universeRepo', () =>
 			startingAreaId: undefined,
 			startingColumn: 0,
 			startingRow: 0,
-			disabled: false
+			disabled: false,
+			requireTwoFactor: false
 		});
 	});
 
