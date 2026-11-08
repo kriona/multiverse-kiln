@@ -1645,7 +1645,11 @@
 	},
 	"editor.audit.draftSave": {
 		"defaultMessage": "Saved to the draft",
-		"description": "At the top of the Changes column of the editor's Audit tab, for a save made to the universe's draft (a copy players don't see until it is applied) rather than its live version"
+		"description": "Read out by screen readers, and shown when the pointer rests on the Draft tag, after the time of a save on the editor's Audit tab that was made to the universe's draft (a copy players don't see until it is applied) rather than its live version"
+	},
+	"editor.audit.draftTag": {
+		"defaultMessage": "Draft",
+		"description": "Short tag after the time of a save on the editor's Audit tab, in the draft's purple, for a save made to the universe's draft (a copy players don't see until it is applied) rather than its live version"
 	},
 	"editor.audit.field.coinAbbreviations": {
 		"defaultMessage": "Coin abbreviations",

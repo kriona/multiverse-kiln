@@ -217,24 +217,46 @@ function createRow(edit: UniverseEdit, ruleset: Ruleset): HTMLTableRowElement
 
 	role.textContent = t(EDITOR_ROLE_NAMES[edit.role]);
 
-	const changes = createChangesCell(edit, ruleset);
-
 	if (edit.draft)
 	{
-		const note = document.createElement('p');
-
-		note.className = 'hint';
-		note.textContent = t({
-			id: 'editor.audit.draftSave',
-			defaultMessage: 'Saved to the draft',
-			description: 'At the top of the Changes column of the editor\'s Audit tab, for a save made to the universe\'s draft (a copy players don\'t see until it is applied) rather than its live version'
-		});
-		changes.prepend(note);
+		saved.append(' ', draftTag());
 	}
 
-	row.append(saved, player, role, changes);
+	row.append(saved, player, role, createChangesCell(edit, ruleset));
 
 	return(row);
+}
+
+/**
+ * The tag after the time of a save made to the universe's draft: a short "Draft" in the draft's purple,
+ * which screen readers, and the pointer resting on it, give in full
+ *
+ * @return The tag
+ */
+function draftTag(): HTMLElement
+{
+	const tag = document.createElement('span');
+	const shown = document.createElement('span');
+	const spoken = document.createElement('span');
+	const full = t({
+		id: 'editor.audit.draftSave',
+		defaultMessage: 'Saved to the draft',
+		description: 'Read out by screen readers, and shown when the pointer rests on the Draft tag, after the time of a save on the editor\'s Audit tab that was made to the universe\'s draft (a copy players don\'t see until it is applied) rather than its live version'
+	});
+
+	tag.className = 'audit-draft';
+	tag.title = full;
+	shown.textContent = t({
+		id: 'editor.audit.draftTag',
+		defaultMessage: 'Draft',
+		description: 'Short tag after the time of a save on the editor\'s Audit tab, in the draft\'s purple, for a save made to the universe\'s draft (a copy players don\'t see until it is applied) rather than its live version'
+	});
+	shown.setAttribute('aria-hidden', 'true');
+	spoken.className = 'visually-hidden';
+	spoken.textContent = full;
+	tag.append(shown, spoken);
+
+	return(tag);
 }
 
 /**

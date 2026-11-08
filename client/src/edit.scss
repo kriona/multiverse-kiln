@@ -1277,6 +1277,18 @@ div.ability-modifiers
 	}
 }
 
+// After the time of a save made to the draft, in the draft's colors, as its buttons are
+.audit-draft
+{
+	display: inline-block;
+	padding: 0 6px;
+	border: 1px solid $draft;
+	border-radius: 4px;
+	background: $draft-background;
+	font-size: 0.85em;
+	white-space: nowrap;
+}
+
 // The Translations tab's table of the universe's text, below its languages
 .translations-text
 {

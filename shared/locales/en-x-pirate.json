@@ -1647,6 +1647,10 @@
 		"message": "Stowed in the draft",
 		"source": "Saved to the draft"
 	},
+	"editor.audit.draftTag": {
+		"message": "Draft",
+		"source": "Draft"
+	},
 	"editor.audit.field.coinAbbreviations": {
 		"message": "Coin marks",
 		"source": "Coin abbreviations"
