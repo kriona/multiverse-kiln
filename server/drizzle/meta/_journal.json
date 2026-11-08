@@ -708,6 +708,13 @@
       "when": 1794148862268,
       "tag": "0100_universe_require_two_factor",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1794156291573,
+      "tag": "0101_append_only_audit_tables",
+      "breakpoints": true
     }
   ]
 }

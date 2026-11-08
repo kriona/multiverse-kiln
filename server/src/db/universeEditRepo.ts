@@ -2,7 +2,7 @@
  * The record of saves made in universes' editors, for the editor's Audit tab: the only module that reads
  * or writes the universe_edits table
  */
-import { and, asc, count, desc, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
 import type { AuditField, AuditSubject, EditorRole, UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -113,6 +113,9 @@ export async function recordUniverseEdit(edit: NewUniverseEdit, executor: Execut
  * so it holds its locks briefly and writes a small transaction, however many saves are due; the
  * universe_edits_saved_at_index finds them without reading the rest
  *
+ * The server's role can't delete saves itself: the database's delete_universe_edits_before() deletes
+ * them, and never one from the last 90 days, however late `before` is
+ *
  * @param before Saves made before this are deleted
  * @param limit The most to delete
  * @param executor The database, or a transaction
@@ -120,18 +123,9 @@ export async function recordUniverseEdit(edit: NewUniverseEdit, executor: Execut
  */
 export async function deleteUniverseEditsBefore(before: Date, limit: number, executor: Executor = db): Promise<number>
 {
-	const due = executor
-		.select({
-			id: universeEdits.id
-		})
-		.from(universeEdits)
-		.where(lt(universeEdits.savedAt, before))
-		.limit(limit);
-	const result = await executor
-		.delete(universeEdits)
-		.where(inArray(universeEdits.id, due));
+	const result = await executor.execute<{ deleted: number }>(sql`SELECT public.delete_universe_edits_before(${before}, ${limit}) AS deleted`);
 
-	return(result.rowCount ?? 0);
+	return(result.rows[0]?.deleted ?? 0);
 }
 
 /**

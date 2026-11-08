@@ -12,7 +12,8 @@ const SWEEP_INTERVAL_MS = HOUR_MS;
 
 /**
  * How long a save is kept, in days. The Audit tab's hint (client/edit.html) and the privacy policy
- * (client/privacy.html) say so
+ * (client/privacy.html) say so. The database's delete_universe_edits_before() never deletes one sooner
+ * (server/drizzle/0101_append_only_audit_tables.sql), so keeping them a shorter time needs a migration too
  */
 export const UNIVERSE_EDIT_DAYS = 90;
 

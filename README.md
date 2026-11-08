@@ -197,7 +197,7 @@ The first start runs the scripts in `docker/postgres/init/`, which create two ro
 | Role | Used by | Can |
 |---|---|---|
 | `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
-| `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
+| `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables. The audit records (`admin_events`, `auth_events`, `universe_edits`) are append-only for it: it deletes old auth events and saves only through functions that keep the last 90 days |
 
 `npm test` rebuilds each test database it uses from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so they never need migrating by hand.
 
