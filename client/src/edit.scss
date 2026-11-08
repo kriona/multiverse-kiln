@@ -1305,8 +1305,8 @@ div.ability-modifiers
 	gap: 6px;
 }
 
-// Delete Universe, on its own under the Universe tab's cards, and why it is turned off
-.universe-delete
+// Export Universe and Delete Universe, under the Universe tab's cards, with why deleting is turned off
+.universe-actions
 {
 	display: flex;
 	flex-direction: column;
@@ -1317,6 +1317,19 @@ div.ability-modifiers
 	{
 		margin: 0;
 	}
+}
+
+.universe-action-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+// "Exporting..." at the far left of the export dialog's buttons, which it pushes to the right
+.dialog-buttons .universe-export-status
+{
+	margin: 0 auto 0 0;
 }
 
 // What deleting the universe deletes, in the first dialog that deletes it

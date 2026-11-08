@@ -33,6 +33,7 @@ import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
 import { TranslationTable } from './TranslationTable';
 import { UniverseDeleteSection } from './UniverseDeleteSection';
+import { UniverseExportSection } from './UniverseExportSection';
 import { UniverseTab } from './UniverseTab';
 import type { AreaClaims } from './areaClaims';
 import { AreaSelectDialog } from './AreaSelectDialog';
@@ -201,6 +202,7 @@ export class EditorScreen
 	private readonly tabStrip = new ScrollingTabs(this.tabList, getElement('editor-tabs-back', HTMLButtonElement), getElement('editor-tabs-forward', HTMLButtonElement));
 	private readonly universeTab: UniverseTab;
 	private readonly universeDeleteSection: UniverseDeleteSection;
+	private readonly universeExportSection: UniverseExportSection;
 	private readonly draftSection: DraftSection;
 	private readonly startDraftDialog: StartDraftDialog;
 	private readonly rulesetTab: RulesetTab;
@@ -286,6 +288,7 @@ export class EditorScreen
 			this.updateUniverse(update);
 		});
 		this.universeDeleteSection = new UniverseDeleteSection(api, accountApis.auth, accountApis.admin, hasUnsavedWork);
+		this.universeExportSection = new UniverseExportSection(api);
 		this.draftSection = new DraftSection(() => this.hasTabChanges(), (announce) => this.saveBar.save(announce), (action) =>
 		{
 			// Starting a draft opens it; applying or discarding one leaves only the live version
@@ -627,6 +630,7 @@ export class EditorScreen
 
 		this.universeTab.open(universe);
 		this.universeDeleteSection.open(universe);
+		this.universeExportSection.open(universe);
 		this.draftSection.open(universe, this.saveBar.isLocked());
 		void this.rulesetTab.open(universe);
 		// Before the Characters tab, which writes its money in the abbreviations this shows
@@ -976,6 +980,7 @@ export class EditorScreen
 	{
 		this.saveBar.setLocked(true);
 		this.universeDeleteSection.lock();
+		this.universeExportSection.lock();
 		this.showNotice(message);
 	}
 

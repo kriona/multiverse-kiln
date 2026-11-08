@@ -314,20 +314,49 @@ export async function findEditorArea(areaId: string, executor: Executor = db): P
 			universeId: row.universeId,
 			draft: row.draft
 		},
-		area: {
-			id: row.id,
-			name: row.name,
-			parentAreaId: row.parentAreaId,
-			enabled: row.enabled,
-			indoors: row.indoors,
-			lightLevel: row.lightLevel,
-			defaultTileId: row.defaultTileId,
-			passageOfTime: row.passageOfTime,
-			faerieMorning: row.faerieMorning,
-			loopsEastWest: row.loopsEastWest,
-			loopsNorthSouth: row.loopsNorthSouth,
-			bounds: boundsOf(row)
-		}
+		area: editorAreaOf(row)
+	});
+}
+
+/**
+ * Every area of a universe with every setting the editor shows, by name
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The areas
+ */
+export async function listEditorAreas(version: UniverseVersion, executor: Executor = db): Promise<EditorArea[]>
+{
+	const rows = await executor
+		.select()
+		.from(areas)
+		.where(inVersion(areas, version))
+		.orderBy(areas.name, areas.id);
+
+	return(rows.map(editorAreaOf));
+}
+
+/**
+ * An area's row as the editor shows it
+ *
+ * @param row The row
+ * @return The area
+ */
+function editorAreaOf(row: typeof areas.$inferSelect): EditorArea
+{
+	return({
+		id: row.id,
+		name: row.name,
+		parentAreaId: row.parentAreaId,
+		enabled: row.enabled,
+		indoors: row.indoors,
+		lightLevel: row.lightLevel,
+		defaultTileId: row.defaultTileId,
+		passageOfTime: row.passageOfTime,
+		faerieMorning: row.faerieMorning,
+		loopsEastWest: row.loopsEastWest,
+		loopsNorthSouth: row.loopsNorthSouth,
+		bounds: boundsOf(row)
 	});
 }
 
@@ -462,6 +491,34 @@ export async function loadChunks(areaId: string, range: ChunkRange, executor: Ex
 			between(mapChunks.chunkRow, range.minChunkRow, range.maxChunkRow)
 		))
 		.orderBy(mapChunks.chunkRow, mapChunks.chunkColumn));
+}
+
+/**
+ * A page of the stored chunks of an area's ground, by column then row (the order of the table's key),
+ * for going through all of them a page at a time
+ *
+ * @param areaId The area's ID
+ * @param after The last chunk of the page before, or undefined for the first page
+ * @param limit The most chunks the page holds
+ * @param executor The database, or a transaction
+ * @return The chunks; fewer than limit on the last page
+ */
+export async function loadChunkPage(areaId: string, after: { chunkColumn: number; chunkRow: number } | undefined, limit: number, executor: Executor = db): Promise<AreaChunk[]>
+{
+	return(executor
+		.select({
+			chunkColumn: mapChunks.chunkColumn,
+			chunkRow: mapChunks.chunkRow,
+			cells: mapChunks.cells
+		})
+		.from(mapChunks)
+		.where(and(
+			eq(mapChunks.areaId, areaId),
+			eq(mapChunks.layer, GROUND_LAYER),
+			((after === undefined) ? undefined : sql`(${mapChunks.chunkColumn}, ${mapChunks.chunkRow}) > (${after.chunkColumn}, ${after.chunkRow})`)
+		))
+		.orderBy(mapChunks.chunkColumn, mapChunks.chunkRow)
+		.limit(limit));
 }
 
 /**
@@ -676,6 +733,32 @@ export async function listAreaLinks(areaId: string, executor: Executor = db): Pr
 		.from(areaLinks)
 		.where(eq(areaLinks.areaId, areaId))
 		.orderBy(areaLinks.row, areaLinks.column));
+}
+
+/**
+ * The links on the cells of every area of a universe
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The links with their areas, by area, then row, then column
+ */
+export async function listVersionAreaLinks(version: UniverseVersion, executor: Executor = db): Promise<(EditorAreaLink & { areaId: string })[]>
+{
+	return(executor
+		.select({
+			areaId: areaLinks.areaId,
+			column: areaLinks.column,
+			row: areaLinks.row,
+			targetAreaId: areaLinks.targetAreaId,
+			targetColumn: areaLinks.targetColumn,
+			targetRow: areaLinks.targetRow,
+			mode: areaLinks.mode,
+			requiresWholeGroup: areaLinks.requiresWholeGroup
+		})
+		.from(areaLinks)
+		.innerJoin(areas, eq(areas.id, areaLinks.areaId))
+		.where(inVersion(areas, version))
+		.orderBy(areaLinks.areaId, areaLinks.row, areaLinks.column));
 }
 
 /**

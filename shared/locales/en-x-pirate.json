@@ -3687,6 +3687,34 @@
 		"message": "The ship's officers have laid up this universe, so it can't be sailed and its crew can't stow changes. As a ship's officer, ye can still stow changes to it. Reason: {reason}",
 		"source": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}"
 	},
+	"editor.universeExport.button": {
+		"message": "Box Up the Universe",
+		"source": "Export Universe"
+	},
+	"editor.universeExport.explanation": {
+		"message": "Boxes up everythin' ye can change in the universe as a zip chest, save for the hands players made an' the ship's log.",
+		"source": "Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history."
+	},
+	"editor.universeExport.exported": {
+		"message": "Boxed up. The zip chest be in yer downloads.",
+		"source": "Exported. The zip file is in your downloads."
+	},
+	"editor.universeExport.exporting": {
+		"message": "Boxin' up...",
+		"source": "Exporting..."
+	},
+	"editor.universeExport.failed": {
+		"message": "Couldn't box up the universe.",
+		"source": "Could not export the universe."
+	},
+	"editor.universeExport.submit": {
+		"message": "Box Her Up",
+		"source": "Export Universe"
+	},
+	"editor.universeExport.title": {
+		"message": "Box Up {universe}",
+		"source": "Export {universe}"
+	},
 	"editor.universeLocked": {
 		"message": "This universe has sunk to the depths, so only her captains can change her. Ye can still jump ship on the Officers tab.",
 		"source": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab."
@@ -3986,6 +4014,10 @@
 	"error.alreadyEditor": {
 		"message": "{username} already serves aboard this universe.",
 		"source": "{username} already has a role in this universe."
+	},
+	"error.alreadyExporting": {
+		"message": "Ye be boxin' up a universe already. Try again once she's come ashore.",
+		"source": "You're already exporting a universe. Try again once it has downloaded."
 	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",

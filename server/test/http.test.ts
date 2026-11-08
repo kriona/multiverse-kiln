@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSE_DELETION_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../src/db/adminClient.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
@@ -108,6 +108,7 @@ describe('HTTP responses', () =>
 			`${editorUniversePath}/translations`,
 			`${editorUniversePath}/translations/all`,
 			`${editorUniversePath}${UNIVERSE_DELETION_PATH}`,
+			`${editorUniversePath}${UNIVERSE_EXPORT_PATH}`,
 			'/__healthcheck',
 			'/nothing-here',
 			invitePath('no-such-invite-token')

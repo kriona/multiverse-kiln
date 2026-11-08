@@ -59,13 +59,14 @@ An engine for making multiplayer browser-based role-playing games.
   src/db/            Drizzle client, schema, and repository modules
   src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
   src/images/        checking and re-encoding uploaded images, such as tilesets
+  src/archives/      making and reading zip archives, such as a universe's export
   src/auth/          logins: sessions (the session cookie to a player, sessions.ts), password hashing, keyed
                      hashes, tokens, rate limits, the breached password check and the Google and Discord
                      clients (providers.ts)
   src/email/         sending email (SMTP; Mailpit locally), how every email is laid out, and the emails logins
                      send and players given a role in a universe get, in each player's language
   src/http/          REST routes (health, logins and accounts (auth.ts, and providerAuth.ts for Google and Discord), profiles, universes for Home, characters, groups and
-                     invite links, the world editor's API, uploaded tilesets, the admin page's site settings). The world editor saves
+                     invite links, the world editor's API, uploaded tilesets, exporting a universe, the admin page's site settings). The world editor saves
                      every change through one route, editorChanges.ts, in one transaction; each kind of
                      change is checked and saved by its module (editorAreas.ts, editorItems.ts and so on)
   scripts/           development tools run by hand, such as the seed script

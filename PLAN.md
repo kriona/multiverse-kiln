@@ -381,7 +381,14 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [✅] Delete Universe under the Universe tab's settings, for creators and the site admin role, in two dialogs like deleting an account: what it deletes (`GET /:universeId/deletion`), then the password and 2FA code, or the username and an emailed code (purpose `deleteUniverse`). Done at once, the exception to staging, then goes to Home (`client/src/ui/editor/UniverseDeleteSection.ts`)
 	- [✅] The deletion shared with deleting an account (`server/src/http/universeDeletion.ts`): the role checked again once the universe is locked, its uploads deleted from storage, its rooms told, and its other editors emailed. A creator is refused while the admins keep its creators from deleting it; a server admin deleting it as an admin goes through `POST /admin/universes/:universeId/deletion`, recorded as an admin event that keeps the universe's name
 	- [✅] Tests (`server/test/universeDeletion.test.ts`)
-11. Finishing
+11. Exporting a universe
+	- [✅] Export Universe left of Delete Universe, for every role but beta tester, opening a dialog that says what the export holds and whose Export Universe downloads a zip file of what the role can change in the version open (`client/src/ui/editor/UniverseExportSection.ts`)
+	- [✅] The format (`shared/src/universeExport.ts`): `universe.json` with a section for each kind of thing the role can change, each area's map in `areas/`, and uploaded tilesets' images in `tilesets/`, named by the version's IDs, with the ruleset's defaults listed by key
+	- [✅] `GET /:universeId/export` (`server/src/http/universeExport.ts`), read in one read-only snapshot, one export at a time per player; zip archives written and read with Node's zlib (`server/src/archives/zip.ts`)
+	- [✅] Tests (`server/test/universeExport.test.ts`, `server/test/archives/zip.test.ts`)
+12. Importing a universe
+	- [ ] Read the export format back into a universe
+13. Finishing
 	- [✅] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
 	- [✅] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
 	- [✅] Review the new routes against `SECURITY-PRACTICES.md`, and cover them in `server/test/http.test.ts`

@@ -115,8 +115,11 @@
 							</div>
 							<p id="universe-draft-error" class="form-error" role="alert" hidden></p>
 						</section>
-						<div id="universe-delete" class="universe-delete" hidden>
-							<button id="universe-delete-open" type="button" class="danger" aria-describedby="universe-delete-prevented" data-message="editor.universeDelete.open" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins"><!-- icon ph:trash -->Delete Universe</button>
+						<div id="universe-actions" class="universe-actions" hidden>
+							<div class="universe-action-buttons">
+								<button id="universe-export" type="button" class="secondary" data-shortcut="Alt+X" data-message="editor.universeExport.button" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialog exporting what the player can edit in the universe as a zip file, for every role but beta tester"><!-- icon ph:download-simple -->Export Universe</button>
+								<button id="universe-delete-open" type="button" class="danger" aria-describedby="universe-delete-prevented" data-message="editor.universeDelete.open" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins" hidden><!-- icon ph:trash -->Delete Universe</button>
+							</div>
 							<p id="universe-delete-prevented" class="hint" hidden></p>
 						</div>
 					</section>
@@ -1161,6 +1164,18 @@
 						<div class="dialog-buttons">
 							<button id="start-draft-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="start-draft-submit" class="draft" type="submit" data-shortcut="Alt+S"></button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-export-dialog" class="panel dialog" aria-labelledby="universe-export-title" aria-describedby="universe-export-explanation">
+					<form id="universe-export-form" class="form">
+						<h2 id="universe-export-title"></h2>
+						<p id="universe-export-explanation" data-message="editor.universeExport.explanation" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)">Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.</p>
+						<p id="universe-export-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<p id="universe-export-status" class="universe-export-status" role="status"></p>
+							<button id="universe-export-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-export-submit" type="submit" data-shortcut="Alt+S" aria-describedby="universe-export-error" data-message="editor.universeExport.submit" data-translation-context="Button in the dialog Export Universe opens on the editor's Universe tab that makes the universe's zip file and downloads it"><!-- icon ph:download-simple -->Export Universe</button>
 						</div>
 					</form>
 				</dialog>

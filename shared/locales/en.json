@@ -3687,6 +3687,34 @@
 		"defaultMessage": "The site's admins have disabled this universe, so it can't be played and its editors can't save. As a site admin, you can still save changes to it. Reason: {reason}",
 		"description": "Shown above the editor's tabs to one of the site's admins for a universe the admins disabled; {reason} is the reason the admin gave, as they typed it"
 	},
+	"editor.universeExport.button": {
+		"defaultMessage": "Export Universe",
+		"description": "Button under the settings on the editor's Universe tab that opens the dialog exporting what the player can edit in the universe as a zip file, for every role but beta tester"
+	},
+	"editor.universeExport.explanation": {
+		"defaultMessage": "Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.",
+		"description": "In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)"
+	},
+	"editor.universeExport.exported": {
+		"defaultMessage": "Exported. The zip file is in your downloads.",
+		"description": "Read out once the dialog Export Universe opens on the editor's Universe tab has downloaded the universe's zip file and closed"
+	},
+	"editor.universeExport.exporting": {
+		"defaultMessage": "Exporting...",
+		"description": "Shown at the left of the buttons in the dialog Export Universe opens on the editor's Universe tab, and read out, while the universe's zip file is being made and downloaded"
+	},
+	"editor.universeExport.failed": {
+		"defaultMessage": "Could not export the universe.",
+		"description": "Shown in the dialog Export Universe opens on the editor's Universe tab when the universe's zip file couldn't be made or downloaded"
+	},
+	"editor.universeExport.submit": {
+		"defaultMessage": "Export Universe",
+		"description": "Button in the dialog Export Universe opens on the editor's Universe tab that makes the universe's zip file and downloads it"
+	},
+	"editor.universeExport.title": {
+		"defaultMessage": "Export {universe}",
+		"description": "Title of the dialog Export Universe opens on the editor's Universe tab; {universe} is the universe's name"
+	},
 	"editor.universeLocked": {
 		"defaultMessage": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab.",
 		"description": "Shown above the editor's tabs to a builder, beta tester or translator of a universe in the stage end of time, which locks it"
@@ -3986,6 +4014,10 @@
 	"error.alreadyEditor": {
 		"defaultMessage": "{username} already has a role in this universe.",
 		"description": "Why a player couldn't be added to a universe's editors: they are one already; {username} is their username"
+	},
+	"error.alreadyExporting": {
+		"defaultMessage": "You're already exporting a universe. Try again once it has downloaded.",
+		"description": "Why a universe wasn't exported: the player is already exporting one, in this window or another, and each player exports one at a time"
 	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",

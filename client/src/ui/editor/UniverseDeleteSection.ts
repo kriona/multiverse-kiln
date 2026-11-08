@@ -32,16 +32,16 @@ const DELETE_UNIVERSE_CODE: EmailCodeUse = {
 };
 
 /**
- * Delete Universe, under the settings card on the editor's Universe tab, and the two dialogs that delete the
- * universe (see Deleting a universe in STRUCTURE-OVERVIEW.md): for its creators, and for server admins
- * with the site admin role. The first dialog says what deleting it deletes. The second asks for the
+ * Delete Universe, under the settings card on the editor's Universe tab beside Export Universe, and the
+ * two dialogs that delete the universe (see Deleting a universe in STRUCTURE-OVERVIEW.md): for its
+ * creators, and for server admins with the site admin role. The first dialog says what deleting it
+ * deletes. The second asks for the
  * password (and authenticator code with 2FA), or for an account without a password, a code emailed to its
  * address (when it has one) and the username, then deletes the universe and goes to Home. Deleting is
  * the exception to staging changes until Save: the universe is deleted as a whole, at once
  */
 export class UniverseDeleteSection
 {
-	private readonly section = getElement('universe-delete', HTMLElement);
 	private readonly prevented = getElement('universe-delete-prevented', HTMLElement);
 	private readonly openButton = getElement('universe-delete-open', HTMLButtonElement);
 	private readonly dialog = getElement('universe-delete-dialog', HTMLDialogElement);
@@ -148,12 +148,13 @@ export class UniverseDeleteSection
 	 */
 	open(universe: EditableUniverse): void
 	{
+		const allowed = canDeleteUniverse(universe.role);
 		const prevented = (universe.deletionPrevented && !universe.serverAdmin);
 
 		this.universe = universe;
-		this.section.hidden = !canDeleteUniverse(universe.role);
+		this.openButton.hidden = !allowed;
 		this.openButton.disabled = prevented;
-		showMessage(this.prevented, (prevented ? t(UNIVERSE_DELETION_PREVENTED) : undefined));
+		showMessage(this.prevented, ((allowed && prevented) ? t(UNIVERSE_DELETION_PREVENTED) : undefined));
 	}
 
 	/**

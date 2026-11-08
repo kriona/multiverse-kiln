@@ -570,6 +570,19 @@ export function canEditWorld(role: EditorRole): boolean
 }
 
 /**
+ * Whether a role may export a universe (see Exporting a universe in STRUCTURE-OVERVIEW.md): every role
+ * that may change something in it, which is every role but beta tester. The export holds what the role
+ * may change (universeExportContents())
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canExportUniverse(role: EditorRole): boolean
+{
+	return(canEditWorld(role) || (role === 'translator'));
+}
+
+/**
  * Whether a role may still change a universe at the end of time, when it is locked: only creators and
  * server admins may
  *
