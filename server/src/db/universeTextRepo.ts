@@ -297,8 +297,10 @@ export async function listThingNames(version: UniverseVersion, executor: Executo
 		executor
 			.select({
 				// A default level the draft has with no live row it was copied from is written into the
-				// live version's level with the same key, if there is one
-				...columns('difficultyLevel', sql<string>`${difficultyLevels.id}::text`, sql<string>`coalesce(${difficultyLevels.originId}, (SELECT l.id FROM ${difficultyLevels} AS l WHERE l.universe_id = ${difficultyLevels.universeId} AND NOT l.draft AND l.key = ${difficultyLevels.key}), ${difficultyLevels.id})::text`),
+				// live version's level with the same key, if there is one. Drizzle writes a select's
+				// columns without their table, which inside the subquery would name l's own, so the
+				// outer row's are named by the table
+				...columns('difficultyLevel', sql<string>`${difficultyLevels.id}::text`, sql<string>`coalesce(${difficultyLevels.originId}, (SELECT l.id FROM ${difficultyLevels} AS l WHERE l.universe_id = ${difficultyLevels}.universe_id AND NOT l.draft AND l.key = ${difficultyLevels}.key), ${difficultyLevels.id})::text`),
 				name: sql<string>`${difficultyLevels.name}`
 			})
 			.from(difficultyLevels)
