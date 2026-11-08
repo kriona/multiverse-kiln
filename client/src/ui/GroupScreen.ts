@@ -9,7 +9,7 @@ import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
 import { ChatLog } from './ChatLog';
 import { getElement, setButtonLabel, setPageTitle, showMessage } from './dom';
-import { describeLeaving, leaveButtonLabel } from './leavingGroup';
+import { describeLeaving, showLeaveButton } from './leavingGroup';
 import type { MapView } from './MapView';
 import { addShortcut } from './shortcuts';
 import { describeTimeOfDay } from './timeOfDay';
@@ -686,7 +686,7 @@ export class GroupScreen
 		this.inviteButton.hidden = ((this.locked ?? false) || (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId));
 		this.leaveButton.hidden = (this.locked ?? false);
 		this.createCharacterButton.hidden = (this.locked ?? false);
-		setButtonLabel(this.leaveButton, signOutIcon, leaveButtonLabel(this.characterId === this.anchorId));
+		showLeaveButton(this.leaveButton, (this.characterId === this.anchorId));
 		this.characterChoices.render(this.characters, this.characterId, this.groupId);
 		this.renderMembers();
 		this.renderHere();

@@ -1,6 +1,9 @@
 import { defineMessages } from '@multiverse-kiln/shared';
+import signOutIcon from 'virtual:icon/ph:sign-out';
 
 import { t } from '../localization';
+import { setButtonLabel } from './dom';
+import { setShortcut } from './shortcuts';
 
 /**
  * Text about leaving a group that the group screen and the character sheet both show (see src/localization.ts)
@@ -14,13 +17,26 @@ export const leavingMessages = defineMessages({
 });
 
 /**
- * The label of the button that asks whether to leave a group: in a group, for the character the window
- * plays, and on the sheet of a character who can't play because their race or class is disabled
+ * Shows the button that asks whether to leave a group as Leave group (Alt+L), or as Disband Group
+ * (Alt+B) for the anchor being: in a group, for the character the window plays, and on the sheet of a
+ * character who can't play because their race or class is disabled
+ *
+ * @param button The button
+ * @param isAnchor Whether the character is the group's anchor being, whose leaving disbands it
+ */
+export function showLeaveButton(button: HTMLButtonElement, isAnchor: boolean): void
+{
+	setShortcut(button, (isAnchor ? 'Alt+B' : 'Alt+L'));
+	setButtonLabel(button, signOutIcon, leaveButtonLabel(isAnchor));
+}
+
+/**
+ * The label of the button that asks whether to leave a group
  *
  * @param isAnchor Whether the character is the group's anchor being, whose leaving disbands it
  * @return The label
  */
-export function leaveButtonLabel(isAnchor: boolean): string
+function leaveButtonLabel(isAnchor: boolean): string
 {
 	return((isAnchor
 		? t({

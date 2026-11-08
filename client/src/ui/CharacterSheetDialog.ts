@@ -9,7 +9,7 @@ import type { GroupApi } from '../network/groupApi';
 import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { createItemIcon, itemName } from './itemNames';
-import { describeLeaving, leaveButtonLabel, leavingMessages } from './leavingGroup';
+import { describeLeaving, leavingMessages, showLeaveButton } from './leavingGroup';
 import { moneyElement } from './moneyField';
 import { characterDescription, themeName } from './raceAndClassNames';
 
@@ -262,7 +262,7 @@ export class CharacterSheetDialog
 
 		if (sheet.group)
 		{
-			setButtonLabel(this.leaveButton, signOutIcon, leaveButtonLabel(sheet.group.isAnchor));
+			showLeaveButton(this.leaveButton, sheet.group.isAnchor);
 		}
 	}
 
