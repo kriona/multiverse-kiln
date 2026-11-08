@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, VOID_CELL, type EditableUniverse, type ExportedAreaCells, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, VOID_CELL, type EditableUniverse, type ExportedAreaCells, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
 
 import { readZip } from '../src/archives/zip.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
@@ -154,6 +154,15 @@ describe('exporting a universe', () =>
 		assert.deepStrictEqual(manifest.areas?.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
 		assert.ok(cave && lobby);
 		assert.strictEqual(cave.file, `areas/${caveId}.json`);
+
+		// The legend beside the cells names each number they hold and each file's area
+		const legend = files.get(UNIVERSE_EXPORT_AREA_LEGEND)?.toString('utf8') ?? '';
+
+		assert.match(legend, /^# Kilnhaven: area cells$/m);
+		assert.ok(legend.includes(`| ${mossId} | Moss | #2A7A30 |`), legend);
+		assert.ok(legend.includes(`| ${defaultTiles.get('grass')} | Grass |`), legend);
+		assert.ok(legend.includes('| -1 | Void (nothing) |  |'), legend);
+		assert.ok(legend.includes(`| \`${caveId}.json\` | Cave | Grass | Columns -15 to 15, rows -8 to 8 |`), legend);
 		assert.deepStrictEqual(lobby.links, [{ column: 1, row: 0, targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true }]);
 
 		const cellsText = files.get(cave.file)?.toString('utf8') ?? '';

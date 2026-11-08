@@ -1,6 +1,6 @@
 import { canExportUniverse, universeExportFileName, type EditableUniverse } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
+import { currentLocale, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { announce } from '../announcer';
 import { getElement, showMessage } from '../dom';
@@ -153,7 +153,7 @@ export class UniverseExportSection
 
 		try
 		{
-			const archive = await this.api.exportUniverse(universe.id);
+			const archive = await this.api.exportUniverse(universe.id, currentLocale());
 
 			if (run !== this.run)
 			{

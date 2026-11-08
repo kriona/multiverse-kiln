@@ -4915,6 +4915,98 @@
 		"defaultMessage": "These settings are for a different ruleset than the universe's.",
 		"description": "Why a universe's ruleset settings were refused: they were made for another set of game rules"
 	},
+	"export.legend.areaColumn": {
+		"defaultMessage": "Area",
+		"description": "Heading of the column of area names in the legend file's table of areas in a universe's exported zip file"
+	},
+	"export.legend.areasHeading": {
+		"defaultMessage": "Areas",
+		"description": "Heading of the table in the legend file of a universe's exported zip file listing which area each file holds"
+	},
+	"export.legend.cells": {
+		"defaultMessage": "\"cells\" holds the chunk's {count, number} cells row by row, starting at its north-west corner: the first {size, number} are its top row, from west to east, then the next row down, and so on.",
+		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"cells\" as it is, since it is the field's name in the file. {count} is how many cells a chunk has, {size} how many along each side"
+	},
+	"export.legend.chunkSize": {
+		"defaultMessage": "\"chunkSize\" is how many cells run along each side of a chunk: {size, number}.",
+		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"chunkSize\" as it is, since it is the field's name in the file. {size} is the number"
+	},
+	"export.legend.chunks": {
+		"defaultMessage": "\"chunks\" lists the area's chunks: squares of {size, number} by {size, number} cells. A chunk that isn't listed holds only the area's default tile.",
+		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"chunks\" as it is, since it is the field's name in the file. {size} is the cells along each side of a chunk"
+	},
+	"export.legend.colorColumn": {
+		"defaultMessage": "Color",
+		"description": "Heading of the column of tile colors, as hex codes such as #7AFF3D, in the legend file's table of tiles in a universe's exported zip file"
+	},
+	"export.legend.defaultTile": {
+		"defaultMessage": "The area's default tile",
+		"description": "In the legend file's table of tiles in a universe's exported zip file: what the number 0 in an area's cells stands for"
+	},
+	"export.legend.defaultTileColumn": {
+		"defaultMessage": "Default tile",
+		"description": "Heading of the column naming each area's default tile, which cells holding 0 are, in the legend file's table of areas in a universe's exported zip file"
+	},
+	"export.legend.example": {
+		"defaultMessage": "For example, place {place, number} of the list in the chunk at column -1, row 0 is the second cell of the chunk's second row: column {column, number}, row 1 of the area.",
+		"description": "Line of the legend file in a universe's exported zip file working through finding one cell's square; {place} is the place in a chunk's list of cells, and {column} the column it works out to"
+	},
+	"export.legend.extent": {
+		"defaultMessage": "Columns {minColumn, number} to {maxColumn, number}, rows {minRow, number} to {maxRow, number}",
+		"description": "In the legend file's table of areas in a universe's exported zip file: which columns and rows an area's ground covers, both ends included"
+	},
+	"export.legend.fileColumn": {
+		"defaultMessage": "File",
+		"description": "Heading of the column of file names in the legend file's table of areas in a universe's exported zip file"
+	},
+	"export.legend.formula": {
+		"defaultMessage": "The cell at place n in the list, counting from 0, is on column chunkColumn × {size, number} + (n mod {size, number}) and row chunkRow × {size, number} + floor(n ÷ {size, number}) of the area.",
+		"description": "Line of the legend file in a universe's exported zip file giving the arithmetic that finds a cell's square from its place in a chunk's list; keep chunkColumn and chunkRow as they are, since they are the fields' names in the file. {size} is the cells along each side of a chunk"
+	},
+	"export.legend.intro": {
+		"defaultMessage": "Each JSON file in this folder holds one area's cells: which tile is on each square of its ground. The Areas table below says which area each file is.",
+		"description": "First paragraph of the legend file in the areas folder of a universe's exported zip file"
+	},
+	"export.legend.numberColumn": {
+		"defaultMessage": "Number",
+		"description": "Heading of the column of numbers, as the cells hold them, in the legend file's table of tiles in a universe's exported zip file"
+	},
+	"export.legend.outside": {
+		"defaultMessage": "A chunk on the edge of an area can reach past it. Its cells outside the columns and rows the Areas table gives aren't part of the area.",
+		"description": "Line of the legend file in a universe's exported zip file explaining that chunks are whole squares even where an area's edge cuts through them"
+	},
+	"export.legend.position": {
+		"defaultMessage": "\"chunkColumn\" and \"chunkRow\" say where a chunk is, counted in chunks. The chunk at column 0, row 0 starts at the area's cell at column 0, row 0 and runs east and south from it; columns grow to the east and rows to the south.",
+		"description": "Line of the legend file in a universe's exported zip file explaining two fields of an area's file; keep \"chunkColumn\" and \"chunkRow\" as they are, since they are the fields' names in the file"
+	},
+	"export.legend.readingHeading": {
+		"defaultMessage": "Reading a file",
+		"description": "Heading of the part of the legend file in a universe's exported zip file that explains how an area's cells are laid out in its file"
+	},
+	"export.legend.sizeColumn": {
+		"defaultMessage": "Columns and rows",
+		"description": "Heading of the column giving each area's extent in the legend file's table of areas in a universe's exported zip file, such as \"-15 to 15, -8 to 8\""
+	},
+	"export.legend.tileColumn": {
+		"defaultMessage": "Tile",
+		"description": "Heading of the column of tile names in the legend file's table of tiles in a universe's exported zip file"
+	},
+	"export.legend.tilesHeading": {
+		"defaultMessage": "Tiles",
+		"description": "Heading of the table in the legend file of a universe's exported zip file listing what each number in an area's cells stands for"
+	},
+	"export.legend.title": {
+		"defaultMessage": "{universe}: area cells",
+		"description": "Heading of the legend file in the areas folder of a universe's exported zip file, which explains the files holding each area's cells; {universe} is the universe's name"
+	},
+	"export.legend.values": {
+		"defaultMessage": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {voidCell, number} for nothing at all: void, drawn black, which no one can enter.",
+		"description": "Line of the legend file in a universe's exported zip file explaining the numbers in an area's cells; {defaultCell} and {voidCell} are the two numbers that aren't tiles"
+	},
+	"export.legend.voidCell": {
+		"defaultMessage": "Void (nothing)",
+		"description": "In the legend file's table of tiles in a universe's exported zip file: what the number -1 in an area's cells stands for, a cell with nothing on it"
+	},
 	"filter.any": {
 		"defaultMessage": "Any",
 		"description": "Choice of a filter that shows everything: on the editor's Items, Tilesets or Character List tab (such as items of every type, tiles whether passable or not, or characters of every race), or on the admin pages' lists of sessions and players (such as players whether server admins or not)"

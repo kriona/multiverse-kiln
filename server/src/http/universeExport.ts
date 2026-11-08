@@ -8,7 +8,8 @@
  * browser downloads it. Areas' cells are deflated a page of chunks at a time as they are read
  */
 import type { Request, Response, Router } from 'express';
-import { canExportUniverse, CHUNK_SIZE, defineMessages, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedLiveIds, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { z } from 'zod';
+import { canExportUniverse, CHUNK_SIZE, defineMessages, MAX_LOCALE_LENGTH, SOURCE_LOCALE, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedLiveIds, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { zipArchive, zipFile, type ZipFile } from '../archives/zip.js';
 import { listEditorAreas, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
@@ -28,9 +29,11 @@ import { findAllDraftOrigins, type DraftOrigins } from '../db/universeDraftRepo.
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { listTranslations, listTranslatorNotes } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
+import { emailTranslator } from '../email/emailLocales.js';
 import { getObject } from '../storage/objectStorage.js';
 import { findEditorAccess, requireRole, universeContextOf } from './editorAccess.js';
 import { errorMessages, sendError } from './errors.js';
+import { areaCellsLegend } from './universeExportLegend.js';
 
 /**
  * How many chunks of an area are read, and deflated, at once
@@ -41,6 +44,11 @@ const CHUNKS_PER_PAGE = 500;
  * How many tilesets' images are read from storage at once
  */
 const TILESETS_AT_ONCE = 8;
+
+/**
+ * The language the legend beside the areas' cells is written in (?locale=, the page's language)
+ */
+const exportLocale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
 
 /**
  * The players an export is being made for, each of whom has one made at a time, so one player can't
@@ -124,15 +132,37 @@ async function exportRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const tilesets = await readTilesets(snapshot);
-		const manifest = await zipFile(UNIVERSE_EXPORT_MANIFEST, [`${JSON.stringify(snapshot.manifest, null, '\t')}\n`]);
+		const { manifest } = snapshot;
+		const manifestFile = await zipFile(UNIVERSE_EXPORT_MANIFEST, [`${JSON.stringify(manifest, null, '\t')}\n`]);
+		const locale = exportLocale.safeParse(request.query.locale);
+		const legend = await legendFiles(manifest, (locale.success ? locale.data : SOURCE_LOCALE));
 
 		response.attachment(universeExportFileName(universe.name, universe.version, exportedAt));
-		response.send(zipArchive([manifest, ...snapshot.areaFiles, ...tilesets], exportedAt));
+		response.send(zipArchive([manifestFile, ...legend, ...snapshot.areaFiles, ...tilesets], exportedAt));
 	}
 	finally
 	{
 		exporting.delete(playerId);
 	}
+}
+
+/**
+ * The legend beside an export's areas' cells, for an export holding the world
+ *
+ * @param manifest The export
+ * @param locale The language the player exporting reads, by tag
+ * @return The legend, ready for the archive, or nothing for an export without areas
+ */
+async function legendFiles(manifest: UniverseExport, locale: string): Promise<ZipFile[]>
+{
+	const { universe, tiles, areas } = manifest;
+
+	if ((tiles === undefined) || (areas === undefined))
+	{
+		return([]);
+	}
+
+	return([await zipFile(UNIVERSE_EXPORT_AREA_LEGEND, [areaCellsLegend(universe.name, universe.ruleset, tiles, areas, emailTranslator(locale))])]);
 }
 
 /**

@@ -4915,6 +4915,98 @@
 		"message": "These articles be for a different ship than this universe.",
 		"source": "These settings are for a different ruleset than the universe's."
 	},
+	"export.legend.areaColumn": {
+		"message": "Area",
+		"source": "Area"
+	},
+	"export.legend.areasHeading": {
+		"message": "Areas",
+		"source": "Areas"
+	},
+	"export.legend.cells": {
+		"message": "\"cells\" holds the chunk's {count, number} cells row by row, startin' at its north-west corner: the first {size, number} be its top row, from west to east, then the next row down, an' so on.",
+		"source": "\"cells\" holds the chunk's {count, number} cells row by row, starting at its north-west corner: the first {size, number} are its top row, from west to east, then the next row down, and so on."
+	},
+	"export.legend.chunkSize": {
+		"message": "\"chunkSize\" be how many cells run along each side o' a chunk: {size, number}.",
+		"source": "\"chunkSize\" is how many cells run along each side of a chunk: {size, number}."
+	},
+	"export.legend.chunks": {
+		"message": "\"chunks\" lists the area's chunks: squares o' {size, number} by {size, number} cells. A chunk that ain't listed holds naught but the area's default tile.",
+		"source": "\"chunks\" lists the area's chunks: squares of {size, number} by {size, number} cells. A chunk that isn't listed holds only the area's default tile."
+	},
+	"export.legend.colorColumn": {
+		"message": "Color o' the flag",
+		"source": "Color"
+	},
+	"export.legend.defaultTile": {
+		"message": "The area's default tile",
+		"source": "The area's default tile"
+	},
+	"export.legend.defaultTileColumn": {
+		"message": "Default tile",
+		"source": "Default tile"
+	},
+	"export.legend.example": {
+		"message": "Fer example, place {place, number} o' the list in the chunk at column -1, row 0 be the second cell o' the chunk's second row: column {column, number}, row 1 o' the area.",
+		"source": "For example, place {place, number} of the list in the chunk at column -1, row 0 is the second cell of the chunk's second row: column {column, number}, row 1 of the area."
+	},
+	"export.legend.extent": {
+		"message": "Columns {minColumn, number} to {maxColumn, number}, rows {minRow, number} to {maxRow, number}",
+		"source": "Columns {minColumn, number} to {maxColumn, number}, rows {minRow, number} to {maxRow, number}"
+	},
+	"export.legend.fileColumn": {
+		"message": "Scroll",
+		"source": "File"
+	},
+	"export.legend.formula": {
+		"message": "The cell at place n in the list, countin' from 0, sits on column chunkColumn × {size, number} + (n mod {size, number}) an' row chunkRow × {size, number} + floor(n ÷ {size, number}) o' the area.",
+		"source": "The cell at place n in the list, counting from 0, is on column chunkColumn × {size, number} + (n mod {size, number}) and row chunkRow × {size, number} + floor(n ÷ {size, number}) of the area."
+	},
+	"export.legend.intro": {
+		"message": "Each JSON scroll in this hold keeps one area's cells: which tile lies on each square o' its ground. The Areas table below says which area each scroll be.",
+		"source": "Each JSON file in this folder holds one area's cells: which tile is on each square of its ground. The Areas table below says which area each file is."
+	},
+	"export.legend.numberColumn": {
+		"message": "Number",
+		"source": "Number"
+	},
+	"export.legend.outside": {
+		"message": "A chunk on the edge o' an area can reach past it. Its cells outside the columns an' rows the Areas table gives ain't part o' the area.",
+		"source": "A chunk on the edge of an area can reach past it. Its cells outside the columns and rows the Areas table gives aren't part of the area."
+	},
+	"export.legend.position": {
+		"message": "\"chunkColumn\" an' \"chunkRow\" say where a chunk lies, counted in chunks. The chunk at column 0, row 0 starts at the area's cell at column 0, row 0 an' runs east an' south from it; columns grow to the east an' rows to the south.",
+		"source": "\"chunkColumn\" and \"chunkRow\" say where a chunk is, counted in chunks. The chunk at column 0, row 0 starts at the area's cell at column 0, row 0 and runs east and south from it; columns grow to the east and rows to the south."
+	},
+	"export.legend.readingHeading": {
+		"message": "Readin' a scroll",
+		"source": "Reading a file"
+	},
+	"export.legend.sizeColumn": {
+		"message": "Columns an' rows",
+		"source": "Columns and rows"
+	},
+	"export.legend.tileColumn": {
+		"message": "Tile",
+		"source": "Tile"
+	},
+	"export.legend.tilesHeading": {
+		"message": "Tiles",
+		"source": "Tiles"
+	},
+	"export.legend.title": {
+		"message": "{universe}: area cells",
+		"source": "{universe}: area cells"
+	},
+	"export.legend.values": {
+		"message": "Each cell holds the number o' a tile in the Tiles table below, {defaultCell, number} fer the area's default tile (which the Areas table names), or {voidCell, number} fer nothin' at all: the void, drawn black, which no hand can enter.",
+		"source": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {voidCell, number} for nothing at all: void, drawn black, which no one can enter."
+	},
+	"export.legend.voidCell": {
+		"message": "The void (naught)",
+		"source": "Void (nothing)"
+	},
 	"filter.any": {
 		"message": "Any",
 		"source": "Any"

@@ -6,6 +6,8 @@
  * names, as it is saved, holding:
  * - UNIVERSE_EXPORT_MANIFEST: a UniverseExport, as JSON
  * - universeExportAreaPath(): each area's cells, an ExportedAreaCells as JSON, when the export holds the world
+ * - UNIVERSE_EXPORT_AREA_LEGEND: how to read those files, which tile each number in them is and which
+ *   area each file is, in Markdown, in the language of the player exporting; an import doesn't read it
  * - universeExportTilesetPath(): each uploaded tileset's PNG, when the export holds the world
  *
  * Things are named by the IDs the version gives them, as the editor names them: a default tile, item,
@@ -43,6 +45,11 @@ export const UNIVERSE_EXPORT_FORMAT_VERSION = 1;
  * The path in the archive of the UniverseExport
  */
 export const UNIVERSE_EXPORT_MANIFEST = 'universe.json';
+
+/**
+ * The path in the archive of the legend beside the areas' cells
+ */
+export const UNIVERSE_EXPORT_AREA_LEGEND = 'areas/legend.md';
 
 /**
  * The path in the archive of an area's cells

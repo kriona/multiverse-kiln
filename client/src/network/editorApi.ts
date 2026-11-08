@@ -117,11 +117,12 @@ export class EditorApi
 	 * (see shared/src/universeExport.ts)
 	 *
 	 * @param universeId The universe's ID
+	 * @param locale The language the legend of the areas' cells is written in, by tag
 	 * @return The archive
 	 */
-	async exportUniverse(universeId: string): Promise<Blob>
+	async exportUniverse(universeId: string, locale: string): Promise<Blob>
 	{
-		return(this.send<Blob>('GET', `${universePath(universeId)}${UNIVERSE_EXPORT_PATH}`));
+		return(this.send<Blob>('GET', `${universePath(universeId)}${UNIVERSE_EXPORT_PATH}?${queryString({ locale })}`));
 	}
 
 	/**
