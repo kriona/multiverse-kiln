@@ -883,6 +883,10 @@
 		"message": "Be ye truly, deeply sure ye want to throw {name} overboard? This be forever (a mighty long voyage!) and there be no bringin' 'em back.",
 		"source": "Are you absolutely sure you want to delete {name}? This is permanent (a very long time!) and cannot be undone."
 	},
+	"characterDelete.inGroup": {
+		"message": "To throw {name} overboard, ye must first jump ship from this crew.",
+		"source": "To delete {name}, you must first leave this group."
+	},
 	"characterDelete.lastRites": {
 		"message": "Last Rites (throw 'em overboard in {days, plural, one {# day} other {# days}})",
 		"source": "Last Rites (delete in {days, plural, one {# day} other {# days}})"
@@ -4864,8 +4868,8 @@
 		"source": "Disband the Group?"
 	},
 	"leaveGroup.question": {
-		"message": "{name} jumps ship and rows to the tavern. To come back aboard, they need a fresh summons.",
-		"source": "{name} leaves the group and goes to the lobby. To come back, they need a new invite."
+		"message": "If ye jump ship from this crew, {name} will row back to the tavern. To come back aboard, ye'll need a fresh summons.",
+		"source": "If you leave this group, {name} will return to the lobby. To rejoin this group, you will need to be reinvited."
 	},
 	"leaveGroup.title": {
 		"message": "Jump Ship?",

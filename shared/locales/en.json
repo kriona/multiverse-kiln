@@ -883,6 +883,10 @@
 		"defaultMessage": "Are you absolutely sure you want to delete {name}? This is permanent (a very long time!) and cannot be undone.",
 		"description": "In the last dialog before deleting a character; {name} is the character's name. Playful: \"permanent\" is joked about as a very long time"
 	},
+	"characterDelete.inGroup": {
+		"defaultMessage": "To delete {name}, you must first leave this group.",
+		"description": "Shown above the question whether to leave the group, when the player asks to delete a character who is in a group from their sheet; once they have left, the player is asked whether to delete them. {name} is the character's name"
+	},
 	"characterDelete.lastRites": {
 		"defaultMessage": "Last Rites (delete in {days, plural, one {# day} other {# days}})",
 		"description": "Button that deletes a character after some days, and lets the player restore them until then. Last Rites is a playful way of saying it (the rites said for someone about to die); the words in parentheses say plainly what it does. {days} is how many days it waits"
@@ -921,7 +925,7 @@
 	},
 	"characterSheet.leftGroup": {
 		"defaultMessage": "{name} has left the group.",
-		"description": "Read out by screen readers once a character who can't play, because their race or class is disabled, has been taken out of their group from their sheet; {name} is the character's name"
+		"description": "Read out by screen readers once a character has been taken out of their group from their sheet; {name} is the character's name"
 	},
 	"characterSheet.lightSensitivityValue": {
 		"defaultMessage": "{lightSensitivity, select, true {Yes} other {No}}",
@@ -4561,7 +4565,7 @@
 	},
 	"group.leaveFailed": {
 		"defaultMessage": "Could not leave the group.",
-		"description": "Shown when the character couldn't be taken out of their group: in a group, or on the sheet of a character who can't play because their race or class is disabled"
+		"description": "Shown when the character couldn't be taken out of their group: in a group, or from a character's sheet"
 	},
 	"group.locked": {
 		"defaultMessage": "This universe has reached the end of time, so it is locked. You can look around and switch between your characters, but nothing can move or change.",
@@ -4861,15 +4865,15 @@
 	},
 	"leaveGroup.disbandTitle": {
 		"defaultMessage": "Disband the Group?",
-		"description": "Title of the dialog that asks the anchor being's player whether to leave the group, which ends it: from the group, or from the sheet of a character who can't play because their race or class is disabled"
+		"description": "Title of the dialog that asks the anchor being's player whether to leave the group, which ends it: from the group, or from their sheet (its Delete button, since a character in a group can't be deleted, or its Disband Group button when they can't play because their race or class is disabled)"
 	},
 	"leaveGroup.question": {
-		"defaultMessage": "{name} leaves the group and goes to the lobby. To come back, they need a new invite.",
+		"defaultMessage": "If you leave this group, {name} will return to the lobby. To rejoin this group, you will need to be reinvited.",
 		"description": "Asked before a character leaves their group, from the group or from their sheet; {name} is the character's name"
 	},
 	"leaveGroup.title": {
 		"defaultMessage": "Leave the Group?",
-		"description": "Title of the dialog that asks whether to take a character out of their group: from the group, or from the sheet of a character who can't play because their race or class is disabled"
+		"description": "Title of the dialog that asks whether to take a character out of their group: from the group, or from their sheet (its Delete button, since a character in a group can't be deleted, or its Leave group button when they can't play because their race or class is disabled)"
 	},
 	"license.agpl": {
 		"defaultMessage": "{siteName}™ is free software: you can redistribute it and/or modify it under the terms of the {license} as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.",

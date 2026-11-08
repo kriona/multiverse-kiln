@@ -2,6 +2,8 @@ import { defineMessages } from '@multiverse-kiln/shared';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 
 import { t } from '../localization';
+import { describeEditorError } from '../network/editorApi';
+import type { GroupApi } from '../network/groupApi';
 import { setButtonLabel } from './dom';
 import { setShortcut } from './shortcuts';
 
@@ -12,9 +14,30 @@ export const leavingMessages = defineMessages({
 	leaveFailed: {
 		id: 'group.leaveFailed',
 		defaultMessage: 'Could not leave the group.',
-		description: 'Shown when the character couldn\'t be taken out of their group: in a group, or on the sheet of a character who can\'t play because their race or class is disabled'
+		description: 'Shown when the character couldn\'t be taken out of their group: in a group, or from a character\'s sheet'
 	}
 });
+
+/**
+ * Takes a character out of their group, disbanding it when they are its anchor being
+ *
+ * @param groupApi The routes that take characters out of groups
+ * @param universeId The universe the group is in
+ * @param groupId The group's ID
+ * @param characterId The character's ID
+ * @return Resolves once they have left; rejects with an Error whose message says why they couldn't
+ */
+export async function takeOutOfGroup(groupApi: GroupApi, universeId: string, groupId: string, characterId: string): Promise<void>
+{
+	try
+	{
+		await groupApi.leaveGroup(universeId, groupId, characterId);
+	}
+	catch (error)
+	{
+		throw new Error(describeEditorError(error, leavingMessages.leaveFailed), { cause: error });
+	}
+}
 
 /**
  * Shows the button that asks whether to leave a group as Leave group (Alt+L), or as Disband Group
@@ -66,7 +89,7 @@ export function describeLeaving(name: string, isAnchor: boolean): { title: strin
 			title: t({
 				id: 'leaveGroup.disbandTitle',
 				defaultMessage: 'Disband the Group?',
-				description: 'Title of the dialog that asks the anchor being\'s player whether to leave the group, which ends it: from the group, or from the sheet of a character who can\'t play because their race or class is disabled'
+				description: 'Title of the dialog that asks the anchor being\'s player whether to leave the group, which ends it: from the group, or from their sheet (its Delete button, since a character in a group can\'t be deleted, or its Disband Group button when they can\'t play because their race or class is disabled)'
 			}),
 			question: t({
 				id: 'leaveGroup.disbandQuestion',
@@ -87,11 +110,11 @@ export function describeLeaving(name: string, isAnchor: boolean): { title: strin
 		title: t({
 			id: 'leaveGroup.title',
 			defaultMessage: 'Leave the Group?',
-			description: 'Title of the dialog that asks whether to take a character out of their group: from the group, or from the sheet of a character who can\'t play because their race or class is disabled'
+			description: 'Title of the dialog that asks whether to take a character out of their group: from the group, or from their sheet (its Delete button, since a character in a group can\'t be deleted, or its Leave group button when they can\'t play because their race or class is disabled)'
 		}),
 		question: t({
 			id: 'leaveGroup.question',
-			defaultMessage: '{name} leaves the group and goes to the lobby. To come back, they need a new invite.',
+			defaultMessage: 'If you leave this group, {name} will return to the lobby. To rejoin this group, you will need to be reinvited.',
 			description: 'Asked before a character leaves their group, from the group or from their sheet; {name} is the character\'s name'
 		}, {
 			name

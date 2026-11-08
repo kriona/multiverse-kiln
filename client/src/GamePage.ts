@@ -17,7 +17,7 @@ import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { InviteDialog } from './ui/InviteDialog';
 import { InviteScreen } from './ui/InviteScreen';
-import { leavingMessages } from './ui/leavingGroup';
+import { takeOutOfGroup } from './ui/leavingGroup';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { MapView } from './ui/MapView';
 import { UniverseText } from './ui/universeText';
@@ -153,6 +153,13 @@ export class GamePage
 			{
 				void this.loadCharacters();
 			}
+		}, (universeId, groupId, characterId) =>
+		{
+			const destination = this.destination;
+			const playingThem = ((destination.kind === 'group') && (destination.characterId === characterId) && (this.joinedGroup?.groupId === groupId));
+
+			// The window playing them in the group goes to the lobby with them, as the group's Leave group does
+			return((playingThem ? this.leaveGroup(characterId) : takeOutOfGroup(this.groupApi, universeId, groupId, characterId)));
 		});
 
 		this.createGroupDialog = new CreateGroupDialog(this.groupApi, (groupId, characterId) =>
@@ -787,12 +794,12 @@ export class GamePage
 
 		try
 		{
-			await this.groupApi.leaveGroup(this.universe.id, joined.groupId, characterId);
+			await takeOutOfGroup(this.groupApi, this.universe.id, joined.groupId, characterId);
 		}
 		catch (error)
 		{
 			this.leavingCharacterId = undefined;
-			throw new Error(describeEditorError(error, leavingMessages.leaveFailed), { cause: error });
+			throw error;
 		}
 
 		// Loaded first, so the lobby knows the character is free to play there

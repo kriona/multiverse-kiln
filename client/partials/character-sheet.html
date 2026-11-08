@@ -35,8 +35,9 @@
 		<button id="character-sheet-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 	</div>
 </dialog>
-<dialog id="character-leave-dialog" class="panel dialog" aria-labelledby="character-leave-title" aria-describedby="character-leave-question">
+<dialog id="character-leave-dialog" class="panel dialog" aria-labelledby="character-leave-title" aria-describedby="character-leave-reason character-leave-question">
 	<h2 id="character-leave-title"></h2>
+	<p id="character-leave-reason" hidden></p>
 	<p id="character-leave-question"></p>
 	<p id="character-leave-error" class="form-error" role="alert" hidden></p>
 	<div class="dialog-buttons">
