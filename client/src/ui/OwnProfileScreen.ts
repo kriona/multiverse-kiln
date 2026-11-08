@@ -224,7 +224,7 @@ export class OwnProfileScreen
 
 			showToast(t({
 				id: 'profile.emailChanged',
-				defaultMessage: 'Email address changed. We\'ve told both addresses.',
+				defaultMessage: 'Email address changed. We\'ve informed both addresses.',
 				description: 'Shown once the player has changed their email address from their profile'
 			}), {
 				kind: 'success'

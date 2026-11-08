@@ -12,7 +12,8 @@
  * DATABASE_URL and ADMIN_DATABASE_URL. This runs before anything imports src/db/client.ts or
  * src/db/adminClient.ts, which read them when they are first imported. When
  * the tests run in parallel, each worker process loads this file and uses a test database of its own
- * (workerDatabaseUrl(), testWorker.ts)
+ * (workerDatabaseUrl(), testWorker.ts). The kiln-review skill's repro tests run in a review slot, with a
+ * database of the slot's own (reviewDatabaseUrl(), reviewSlot.ts)
  *
  * Keyed hashes and authenticator secrets use fixed test keys (AUTH_HMAC_KEY, TOTP_ENCRYPTION_KEY),
  * whatever server/.env says
@@ -28,8 +29,23 @@ import { existsSync } from 'fs';
 
 import type { EmailSender } from '../src/email/mailer.js';
 import type { TestServerHooks } from './testServerHooks.js';
-import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDatabaseUrl, workerDatabaseUrl } from './testDatabase.js';
+import { reviewSlot } from './reviewSlot.js';
+import { buildTestDatabase, closeTestDatabase, emptyTestDatabase, requireTestDatabaseUrl, reviewDatabaseUrl, workerDatabaseUrl } from './testDatabase.js';
 import { testWorker } from './testWorker.js';
+
+/**
+ * Reads a test database connection string from the environment and gives this process's own copy of
+ * it: its review slot's database when it has one, or else its worker's
+ *
+ * @param name Name of the environment variable
+ * @return The connection string
+ */
+function processDatabaseUrl(name: string): string
+{
+	const connectionString = requireTestDatabaseUrl(name);
+
+	return(((reviewSlot > 0) ? reviewDatabaseUrl(connectionString, reviewSlot) : workerDatabaseUrl(connectionString, testWorker)));
+}
 
 /**
  * The booted test server's hooks. Imported when used rather than above: this file is loaded with mocha's
@@ -66,8 +82,8 @@ process.env.ENABLE_DEV_TOOLS = '';
 process.env.ENABLE_DEV_CODES = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
 process.env.SITE_URL = testSiteUrl;
-process.env.DATABASE_URL = workerDatabaseUrl(requireTestDatabaseUrl('TEST_DATABASE_URL'), testWorker);
-process.env.ADMIN_DATABASE_URL = workerDatabaseUrl(requireTestDatabaseUrl('TEST_ADMIN_DATABASE_URL'), testWorker);
+process.env.DATABASE_URL = processDatabaseUrl('TEST_DATABASE_URL');
+process.env.ADMIN_DATABASE_URL = processDatabaseUrl('TEST_ADMIN_DATABASE_URL');
 
 // Fixed keys, so tests don't depend on the developer's own (32 bytes of 0x2a and of 0x2b in base64)
 process.env.AUTH_HMAC_KEY = Buffer.alloc(32, 0x2a).toString('base64');
@@ -80,7 +96,7 @@ if (!process.env.TEST_STORAGE_BUCKET)
 
 process.env.STORAGE_BUCKET = process.env.TEST_STORAGE_BUCKET;
 
-const migrationDatabaseUrl = workerDatabaseUrl(requireTestDatabaseUrl('TEST_MIGRATION_DATABASE_URL'), testWorker);
+const migrationDatabaseUrl = processDatabaseUrl('TEST_MIGRATION_DATABASE_URL');
 
 /**
  * Preparing this process for its tests, once it has started (see prepareProcess())

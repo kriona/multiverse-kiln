@@ -194,7 +194,7 @@ Nobody can open Kilnhaven in the world editor unless you name its creator: `npm 
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
-The first start runs the scripts in `docker/postgres/init/`, which create three roles and the databases: `kiln` for the game, and `kiln_test` and `kiln_test_1` to `kiln_test_8` for the test suite (one for each of its parallel workers).
+The first start runs the scripts in `docker/postgres/init/`, which create three roles and the databases: `kiln` for the game, and `kiln_test` and `kiln_test_1` to `kiln_test_8` for the test suite (one for each of its parallel workers), and `kiln_review_1_test` to `kiln_review_4_test` for the kiln-review skill's repro tests (one for each verifier running them at once; `server/test/reviewSlot.ts`).
 
 | Role | Used by | Can |
 |---|---|---|
@@ -204,7 +204,7 @@ The first start runs the scripts in `docker/postgres/init/`, which create three 
 
 `npm test` rebuilds each test database it uses from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so they never need migrating by hand.
 
-The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before the test databases existed can add them without losing data:
+The setup scripts and the passwords in `.env` only take effect when the data volume is first created. A volume created before the test or review databases existed can add them without losing data (the script leaves the databases it finds alone):
 
 ```bash
 docker compose exec postgres sh /docker-entrypoint-initdb.d/02-databases.sh

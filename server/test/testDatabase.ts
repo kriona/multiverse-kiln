@@ -91,6 +91,25 @@ export function workerDatabaseUrl(connectionString: string, worker: number): str
 }
 
 /**
+ * The connection string for a review slot's database (reviewSlot.ts): the test database's name with
+ * review and the slot's number before its _test, such as kiln_review_2_test for kiln_test's slot 2
+ *
+ * @param connectionString The test database's connection string, whose name ends in _test
+ * (requireTestDatabaseUrl())
+ * @param slot The slot, from 1
+ * @return The slot's connection string
+ */
+export function reviewDatabaseUrl(connectionString: string, slot: number): string
+{
+	const url = new URL(connectionString);
+	const database = decodeURIComponent(url.pathname.slice(1));
+
+	url.pathname = `/${encodeURIComponent(`${database.slice(0, -'_test'.length)}_review_${slot}_test`)}`;
+
+	return(url.toString());
+}
+
+/**
  * Builds the test database from nothing: drops every table, type and function, applies every migration, and
  * keeps a copy of the rows the migrations inserted
  *
