@@ -61,5 +61,11 @@ export enum ServerCloseCode
 	 * The universe's creators lowered its group size, which took the character the window controls out
 	 * of the group, or disbanded it
 	 */
-	GroupSizeLowered = 4021
+	GroupSizeLowered = 4021,
+
+	/**
+	 * The universe requires its editors to have 2FA on, and the player doesn't: its creators started
+	 * requiring it, or the player turned 2FA off
+	 */
+	TwoFactorRequired = 4022
 }

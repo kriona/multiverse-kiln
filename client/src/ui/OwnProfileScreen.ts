@@ -4,7 +4,7 @@ import { availableLocales, chooseLocale, currentLocale, formatList, t } from '..
 import type { AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { profileFieldOf, type ProfileApi } from '../network/profileApi';
-import { currentPageAddress, loginPageUrl, playerPageUrl, PROVIDER_LINKED_PARAMETER, readPageParameter, rememberLoginAddress, replacePageParameters, takeProviderLinkError, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
+import { currentPageAddress, loginPageUrl, NEXT_PARAMETER, playerPageUrl, PROVIDER_LINKED_PARAMETER, readNextPage, readPageParameter, rememberLoginAddress, replacePageParameters, takeProviderLinkError, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
 import { AccountDeleteDialog } from './AccountDeleteDialog';
 import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
@@ -141,6 +141,12 @@ export class OwnProfileScreen
 	private profile: OwnProfilePayload | undefined;
 
 	/**
+	 * The page to go back to once 2FA is on, when the address that opened the dialog setting it up named
+	 * one (twoFactorSetupPageUrl())
+	 */
+	private setupReturn: string | undefined;
+
+	/**
 	 * The providers the site offers, which the account can link
 	 */
 	private offeredProviders: LoginProvider[] = [];
@@ -256,7 +262,10 @@ export class OwnProfileScreen
 			}), {
 				kind: 'success'
 			});
-			this.recoveryCodesDialog.open(codes, (this.profile?.username ?? ''));
+			this.recoveryCodesDialog.open(codes, (this.profile?.username ?? ''), () =>
+			{
+				this.goBackFromSetup();
+			});
 		});
 		this.twoFactorConfirmDialog = new TwoFactorConfirmDialog(authApi, () =>
 		{
@@ -284,12 +293,12 @@ export class OwnProfileScreen
 
 		this.twoFactorOffButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('turnOff', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false));
+			this.twoFactorConfirmDialog.open('turnOff', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false), (this.profile?.twoFactorUniverses ?? []));
 		});
 
 		this.twoFactorCodesButton.addEventListener('click', () =>
 		{
-			this.twoFactorConfirmDialog.open('newCodes', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false));
+			this.twoFactorConfirmDialog.open('newCodes', this.twoFactorAccount(), (this.profile?.serverAdmin ?? false), []);
 		});
 
 		this.forgetBrowsersButton.addEventListener('click', () =>
@@ -412,7 +421,9 @@ export class OwnProfileScreen
 
 	/**
 	 * Opens the dialog setting up 2FA, when the address asks for it (as the page after creating an
-	 * account links to) and the account can have it, then takes the request out of the address
+	 * account and the editor's links to turn it on do) and the account can have it, then takes the request
+	 * out of the address. When the address names a page to go back to, the profile goes there once 2FA is
+	 * on and the recovery codes are closed, or at once when it is on already
 	 */
 	private openRequestedSetup(): void
 	{
@@ -421,13 +432,34 @@ export class OwnProfileScreen
 			return;
 		}
 
+		this.setupReturn = ((readPageParameter(NEXT_PARAMETER) === undefined) ? undefined : readNextPage());
 		replacePageParameters({
-			[TWO_FACTOR_SETUP_PARAMETER]: undefined
+			[TWO_FACTOR_SETUP_PARAMETER]: undefined,
+			[NEXT_PARAMETER]: undefined
 		});
 
-		if (this.profile && canHaveTwoFactor(this.profile) && (this.profile.twoFactor === null))
+		if (this.profile?.twoFactor)
+		{
+			this.goBackFromSetup();
+		}
+		else if (this.profile && canHaveTwoFactor(this.profile))
 		{
 			this.twoFactorDialog.open(this.twoFactorAccount());
+		}
+	}
+
+	/**
+	 * Goes back to the page that asked for 2FA to be set up, when it named one
+	 */
+	private goBackFromSetup(): void
+	{
+		const setupReturn = this.setupReturn;
+
+		this.setupReturn = undefined;
+
+		if (setupReturn !== undefined)
+		{
+			window.location.assign(setupReturn);
 		}
 	}
 

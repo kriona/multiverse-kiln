@@ -172,6 +172,13 @@ export const universes = pgTable('universes', {
 	slug: text('slug').notNull(),
 
 	stage: universeStage('stage').notNull().default('in_the_beginning'),
+
+	/**
+	 * Whether its editors need 2FA on to save changes to it, other than leaving it. Held once for the
+	 * live version and the draft, like the stage
+	 */
+	requireTwoFactor: boolean('require_two_factor').notNull().default(false),
+
 	ruleset: ruleset('ruleset').notNull(),
 	...universeVersionColumns(),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -110,6 +110,22 @@ $editor-chat-inset: 16px;
 	min-width: 0;
 }
 
+// Why the universe doesn't open, in place of the editor, for an editor without the 2FA it requires
+.editor-two-factor
+{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 16px;
+
+	.form-buttons
+	{
+		flex-wrap: wrap;
+		justify-content: flex-start;
+	}
+}
+
 #editor-screen:has(> .editor-chat:not([hidden])) .tab-strip
 {
 	padding-right: calc(#{$editor-chat-width} + #{$editor-chat-inset});

@@ -17,6 +17,7 @@ import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { findTwoFactorState } from '../db/twoFactorRepo.js';
+import { listTwoFactorUniverseNames } from '../db/universeEditorRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { displayText } from '../rooms/payloads.js';
 import { deletionRoute, exportRoute } from './accountData.js';
@@ -296,11 +297,12 @@ async function playerProfileRoute(request: Request, response: Response): Promise
 async function ownProfileRoute(request: Request, response: Response): Promise<void>
 {
 	const playerId = playerIdOf(request);
-	const [profile, providers, twoFactor, serverAdmin, records] = await Promise.all([
+	const [profile, providers, twoFactor, serverAdmin, twoFactorUniverses, records] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
 		findTwoFactorState(playerId, new Date()),
 		isServerAdmin(playerId),
+		listTwoFactorUniverseNames(playerId),
 		listProfileCharacters(playerId, {})
 	]);
 
@@ -324,6 +326,7 @@ async function ownProfileRoute(request: Request, response: Response): Promise<vo
 		providers,
 		twoFactor,
 		serverAdmin,
+		twoFactorUniverses,
 		showCharacters: profile.showCharacters,
 		characters: await nameCharacters(request, records)
 	};

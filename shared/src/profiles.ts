@@ -232,6 +232,12 @@ export interface OwnProfilePayload extends ProfileFields
 	serverAdmin: boolean;
 
 	/**
+	 * The names of the universes the player has a role in that require their editors to have 2FA on,
+	 * which they can't open in the editor while it is off; by name
+	 */
+	twoFactorUniverses: string[];
+
+	/**
 	 * The language the player chose, or null when the pages follow the browser's settings
 	 */
 	locale: string | null;
@@ -332,6 +338,12 @@ export interface SoleCreatedUniversePayload
 	deletionPrevented: boolean;
 
 	/**
+	 * Whether it requires its editors to have 2FA on and the player doesn't, so it can only be handed on:
+	 * with no editors to hand it to, the account can't be deleted until 2FA is on
+	 */
+	twoFactorRequired: boolean;
+
+	/**
 	 * Everyone else with a role in it, by username; empty when there is no one to hand it to
 	 */
 	editors: UniverseEditorChoice[];
@@ -395,6 +407,19 @@ export const UNHANDABLE_UNIVERSE_DELETION: MessageDescriptor = defineMessages({
 		description: 'In the dialog that deletes the player\'s account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that the site\'s admins disabled and kept from being deleted, so it can\'t be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name'
 	}
 }).unhandableUniverse;
+
+/**
+ * Why an account without 2FA on can't be deleted while it is the only creator of a universe that requires
+ * its editors to have it on, with no other editor to hand it to, shown in the dialog that deletes it and
+ * given by the server when it refuses. Takes the universe's name as {universe}
+ */
+export const UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION: MessageDescriptor = defineMessages({
+	unhandableTwoFactorUniverse: {
+		id: 'profile.deleteUnhandableTwoFactorUniverse',
+		defaultMessage: '{universe} requires its editors to have two-factor authentication on, and it has no other editors to hand it to. Turn on two-factor authentication to delete it with your account.',
+		description: 'In the dialog that deletes the player\'s account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that requires its editors to have two-factor authentication on, which they don\'t, so it can\'t be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name'
+	}
+}).unhandableTwoFactorUniverse;
 
 /**
  * A character in the data export

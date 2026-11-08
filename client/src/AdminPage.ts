@@ -1,7 +1,7 @@
 import { ADMIN_TWO_FACTOR_ERROR_ID, SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { AdminApi } from './network/adminApi';
-import { EditorApiError } from './network/editorApi';
+import { EditorApiError, errorId } from './network/editorApi';
 import { createClient, type ServerConnection } from './network/serverConnection';
 import { startPage } from './pageStart';
 import { currentPageAddress, loginPageUrl } from './pages';
@@ -97,22 +97,4 @@ export function showAdminRefusal(error: unknown): boolean
 	}
 
 	return(true);
-}
-
-/**
- * The ID of the message an error response carries (ErrorPayload)
- *
- * @param data The response's body
- * @return The ID, or undefined when the body isn't an ErrorPayload
- */
-function errorId(data: unknown): string | undefined
-{
-	if ((typeof data !== 'object') || (data === null) || !('error' in data))
-	{
-		return(undefined);
-	}
-
-	const { error } = data;
-
-	return((((typeof error === 'object') && (error !== null) && ('id' in error) && (typeof error.id === 'string')) ? error.id : undefined));
 }

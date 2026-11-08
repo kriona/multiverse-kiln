@@ -43,6 +43,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Stage',
 		description: 'Heading of the choice of how far along a universe is, from being built to being retired; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	requireTwoFactor: {
+		id: 'editor.editors.requireTwoFactor',
+		defaultMessage: 'Editors need two-factor authentication',
+		description: 'Checkbox on the editor\'s Editors tab for whether the universe\'s editors need two-factor authentication on to save changes to it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	passageOfTime: {
 		id: 'editor.passageOfTime',
 		defaultMessage: 'Passage of time',
@@ -617,6 +622,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'staminaPointsPerLevel':
 		case 'mobScale':
 			return(new Intl.NumberFormat(currentLocale()).format(change.value));
+		case 'requireTwoFactor':
 		case 'lobbyNoVisionCost':
 		case 'needsSleep':
 		case 'coinsHaveWeight':

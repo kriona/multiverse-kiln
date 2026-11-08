@@ -1136,8 +1136,8 @@
 		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
 	"editor.accessChanged": {
-		"defaultMessage": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.",
-		"description": "Shown above the editor's tabs when the player's role in the universe, its stage, or whether the site's admins disabled it changed while they had unsaved changes, which loading the universe again would throw away"
+		"defaultMessage": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.",
+		"description": "Shown above the editor's tabs when the player's role in the universe, its stage or whether the site's admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away"
 	},
 	"editor.accessLost": {
 		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
@@ -2047,6 +2047,18 @@
 		"defaultMessage": "(loses their role when saved)",
 		"description": "Read out by screen readers after the username of an editor on the editor's Editors tab who will be removed, or is leaving, when the tab is saved; on screen the row is struck through"
 	},
+	"editor.editors.requireTwoFactor": {
+		"defaultMessage": "Editors need two-factor authentication",
+		"description": "Checkbox on the editor's Editors tab for whether the universe's editors need two-factor authentication on to save changes to it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.editors.requireTwoFactorHint": {
+		"defaultMessage": "Editors without two-factor authentication on can't open the universe in the editor, only leave it, though they can still play it. Only creators can change this.",
+		"description": "Explains the checkbox on the editor's Editors tab that requires the universe's editors to have two-factor authentication on"
+	},
+	"editor.editors.requireTwoFactorOwn": {
+		"defaultMessage": "Turn on two-factor authentication for your own account before requiring it of others.",
+		"description": "On the editor's Editors tab, under the checkbox that requires the universe's editors to have two-factor authentication on, for a creator who doesn't have it on, so the checkbox is disabled; a link to turn it on follows"
+	},
 	"editor.editors.role": {
 		"defaultMessage": "Role",
 		"description": "Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -2054,6 +2066,14 @@
 	"editor.editors.saveFailed": {
 		"defaultMessage": "Could not save the changes to {username}.",
 		"description": "Shown on the editor's Editors tab when the server refused a change to one of the universe's editors, followed by why; {username} is their username. Nothing was saved"
+	},
+	"editor.editors.securityHeading": {
+		"defaultMessage": "Security",
+		"description": "Heading of the part of the editor's Editors tab with the setting that requires the universe's editors to have two-factor authentication on"
+	},
+	"editor.editors.settingsSaveFailed": {
+		"defaultMessage": "Could not save whether editors need two-factor authentication.",
+		"description": "Shown on the editor's Editors tab when the server refused the setting that requires the universe's editors to have two-factor authentication on, followed by why; nothing was saved"
 	},
 	"editor.editors.undoRemove": {
 		"defaultMessage": "Undo Remove",
@@ -3527,6 +3547,30 @@
 		"defaultMessage": "This file can't be read as {format}: see line {line, number}.",
 		"description": "Shown on the editor's Translations tab and on the admin page's Translations tool when an imported translation file isn't in the format its name says (or the format chosen); {format} is the format's name, such as Gettext PO, and {line} the line with the problem"
 	},
+	"editor.turnOnTwoFactor": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Link in the world editor, for a player who doesn't have two-factor authentication on, that goes to their profile to set it up"
+	},
+	"editor.twoFactorHeading": {
+		"defaultMessage": "Two-Factor Authentication Required",
+		"description": "Heading of the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it"
+	},
+	"editor.twoFactorLeave": {
+		"defaultMessage": "Leave Universe",
+		"description": "Button on the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it: gives up their role in the universe, after asking"
+	},
+	"editor.twoFactorLeaveFailed": {
+		"defaultMessage": "Could not leave the universe.",
+		"description": "Shown on the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, when leaving the universe failed, followed by why"
+	},
+	"editor.twoFactorLeaveQuestion": {
+		"defaultMessage": "You lose your role in this universe and can no longer open it in the editor. Only a creator can give you a role again.",
+		"description": "Asked before a player leaves a universe from the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it"
+	},
+	"editor.twoFactorLeaveTitle": {
+		"defaultMessage": "Leave this universe?",
+		"description": "Title of the dialog asking a player to confirm leaving a universe, from the page the world editor shows in place of a universe that requires its editors to have two-factor authentication on, to a player without it"
+	},
 	"editor.universe.longDescription": {
 		"defaultMessage": "Long description (Markdown)",
 		"description": "Label of the field for a universe's full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -3855,6 +3899,10 @@
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
 	},
+	"error.auth.deleteUniverseNeedsTwoFactor": {
+		"defaultMessage": "{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication.",
+		"description": "Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but it requires its editors to have two-factor authentication on and the player doesn't, perhaps since a moment ago; {universe} is its name"
+	},
 	"error.auth.deleteUniversePrevented": {
 		"defaultMessage": "The site's admins disabled {universe} and kept it from being deleted. Make another of its editors its creator.",
 		"description": "Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but the site's admins disabled it and kept it from being deleted, perhaps a moment ago; {universe} is its name"
@@ -4050,6 +4098,10 @@
 	"error.draftExists": {
 		"defaultMessage": "The universe already has a draft. Apply it or discard it before starting another.",
 		"description": "Why a draft of the universe couldn't be started (see Universe versions): it has one already, perhaps started by another editor"
+	},
+	"error.editorNeedsTwoFactor": {
+		"defaultMessage": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.",
+		"description": "Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn't; {universe} is the universe's name. Buttons to turn it on, leave the universe and go back to Home follow"
 	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
@@ -4311,6 +4363,10 @@
 		"defaultMessage": "That race can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the race chosen was deleted or disabled while the player was making the character"
 	},
+	"error.requireTwoFactorWithout": {
+		"defaultMessage": "Turn on two-factor authentication for your own account before requiring it of the universe's editors.",
+		"description": "Why the setting requiring the universe's editors to have two-factor authentication on wasn't saved: the player turning it on doesn't have it on, so they would no longer be able to save changes themselves"
+	},
 	"error.resizeDiscards": {
 		"defaultMessage": "Resizing would discard painted cells or links.",
 		"description": "Why a map wasn't made smaller without asking: the part it would lose has painting or links"
@@ -4386,6 +4442,10 @@
 	"error.translationsNotAllowed": {
 		"defaultMessage": "Your role doesn't let you see the translations into that language.",
 		"description": "Why the editor's Translations tab couldn't list the universe's text: the player is a translator of other languages, or a beta tester"
+	},
+	"error.twoFactorRequiredSave": {
+		"defaultMessage": "This universe requires its editors to have two-factor authentication on. Turn it on for your account to save changes.",
+		"description": "Why the world editor couldn't save: the universe's creators require its editors to have two-factor authentication on, and the player doesn't. Leaving the universe can still be saved"
 	},
 	"error.universeAlreadyDisabled": {
 		"defaultMessage": "The universe is already disabled.",
@@ -6491,6 +6551,10 @@
 		"defaultMessage": "Type your username to confirm",
 		"description": "Label of the field in the dialog deleting an account without a password, where the player types their username to confirm"
 	},
+	"profile.deleteUnhandableTwoFactorUniverse": {
+		"defaultMessage": "{universe} requires its editors to have two-factor authentication on, and it has no other editors to hand it to. Turn on two-factor authentication to delete it with your account.",
+		"description": "In the dialog that deletes the player's account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that requires its editors to have two-factor authentication on, which they don't, so it can't be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name"
+	},
 	"profile.deleteUnhandableUniverse": {
 		"defaultMessage": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it.",
 		"description": "In the dialog that deletes the player's account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that the site's admins disabled and kept from being deleted, so it can't be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name"
@@ -6506,6 +6570,10 @@
 	"profile.deleteUniverseHandTo": {
 		"defaultMessage": "Make {name} (@{username}, {role}) its creator",
 		"description": "A choice for a universe in the dialog that deletes the player's account: another of its editors becomes its creator; {name} and {username} are theirs, and {role} their role in it now, such as Builder"
+	},
+	"profile.deleteUniverseNeedsTwoFactor": {
+		"defaultMessage": "This universe requires its editors to have two-factor authentication on, so another of its editors has to become its creator. Turn it on to delete the universe instead.",
+		"description": "Under a universe's choice in the dialog that deletes the player's account, which then has no choice to delete it: the universe requires its editors to have two-factor authentication on, and the player doesn't"
 	},
 	"profile.deleteUniversePrevented": {
 		"defaultMessage": "The site's admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator.",
@@ -6822,6 +6890,10 @@
 	"profile.twoFactorDisableTitle": {
 		"defaultMessage": "Turn off two-factor authentication",
 		"description": "Title of the dialog that turns off two-factor authentication"
+	},
+	"profile.twoFactorDisableUniverses": {
+		"defaultMessage": "{count, plural, one {{universes} requires its editors to have it on, so you won't be able to save changes to it until you turn it back on.} other {{universes} require their editors to have it on, so you won't be able to save changes to them until you turn it back on.}}",
+		"description": "In the dialog that turns off two-factor authentication, after what turning it off means, for a player with a role in universes whose creators require their editors to have it on; {universes} is a list of their names, {count} how many there are"
 	},
 	"profile.twoFactorDisabled": {
 		"defaultMessage": "Two-factor authentication is off.",

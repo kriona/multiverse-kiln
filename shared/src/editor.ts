@@ -367,6 +367,13 @@ export interface UniverseSettings
 	translationLanguages: string[];
 
 	stage: UniverseStage;
+
+	/**
+	 * Whether the universe's editors need 2FA on to open it in the editor and save changes to it, other
+	 * than leaving it (the Editors tab). Like the stage, the universe has it once for both versions
+	 */
+	requireTwoFactor: boolean;
+
 	passageOfTime: PassageOfTime;
 
 	/**
@@ -474,6 +481,13 @@ export type UniverseVersionName = typeof UNIVERSE_VERSIONS[number];
 export const EDITOR_VERSION_PARAM = 'version';
 
 /**
+ * ID of the message every route under EDITOR_UNIVERSES_PATH/:universeId but saving refuses a player with
+ * while the universe requires its editors to have 2FA on and they don't, so the editor can offer to
+ * turn it on or leave the universe (the only save they may make)
+ */
+export const EDITOR_TWO_FACTOR_ERROR_ID = 'error.editorNeedsTwoFactor';
+
+/**
  * Response of GET EDITOR_UNIVERSES_PATH/:universeId
  */
 export interface EditableUniverse extends UniverseSettings
@@ -525,6 +539,12 @@ export interface EditableUniverse extends UniverseSettings
 	serverAdmin: boolean;
 
 	/**
+	 * Whether the player has 2FA on. A universe that requires it (requireTwoFactor) opens in the editor
+	 * only for players with it on, so this is false only while the universe doesn't require it
+	 */
+	twoFactor: boolean;
+
+	/**
 	 * How many translations the universe has in each language, by tag, leaving out languages with none
 	 */
 	translationCounts: Record<string, number>;
@@ -533,7 +553,7 @@ export interface EditableUniverse extends UniverseSettings
 /**
  * A universe as the server reads it, before it is told whose editor it is for
  */
-export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'translationCounts'>;
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'twoFactor' | 'translationCounts'>;
 
 /**
  * Someone with a role in a universe, as the Editors tab lists them
@@ -767,6 +787,7 @@ export const AUDIT_FIELDS = [
 	'sourceLanguage',
 	'translationLanguages',
 	'stage',
+	'requireTwoFactor',
 	'passageOfTime',
 	'displayTime',
 	'lobbyPassageOfTime',
@@ -866,6 +887,7 @@ export interface AuditFieldValues
 	sourceLanguage: string;
 	translationLanguages: string[];
 	stage: UniverseStage;
+	requireTwoFactor: boolean;
 	passageOfTime: AuditPassageOfTime;
 	displayTime: DisplayTime;
 	lobbyPassageOfTime: AuditPassageOfTime;

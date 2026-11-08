@@ -1136,8 +1136,8 @@
 		"source": "Story"
 	},
 	"editor.accessChanged": {
-		"message": "What ye can do in this universe has changed: yer rank, her stage, or whether the ship's officers have laid her up. Stow or undo yer changes, then reload the page to see what ye can do now.",
-		"source": "What you can do in this universe has changed: your role, its stage, or whether the site's admins have disabled it. Save or undo your changes, then reload the page to see what you can do now."
+		"message": "What ye can do in this universe has changed: yer rank, her stage, whether the ship's officers have laid her up, or whether ye have two-factor authentication raised. Stow or undo yer changes, then reload the page to see what ye can do now.",
+		"source": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now."
 	},
 	"editor.accessLost": {
 		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
@@ -2047,6 +2047,18 @@
 		"message": "(put ashore when saved)",
 		"source": "(loses their role when saved)"
 	},
+	"editor.editors.requireTwoFactor": {
+		"message": "Officers must raise two-factor authentication",
+		"source": "Editors need two-factor authentication"
+	},
+	"editor.editors.requireTwoFactorHint": {
+		"message": "Officers without two-factor authentication raised can't open the universe in the editor, only jump ship, though they can still sail her. Only captains can change this.",
+		"source": "Editors without two-factor authentication on can't open the universe in the editor, only leave it, though they can still play it. Only creators can change this."
+	},
+	"editor.editors.requireTwoFactorOwn": {
+		"message": "Raise two-factor authentication on yer own account before demandin' it o' others.",
+		"source": "Turn on two-factor authentication for your own account before requiring it of others."
+	},
 	"editor.editors.role": {
 		"message": "Post",
 		"source": "Role"
@@ -2054,6 +2066,14 @@
 	"editor.editors.saveFailed": {
 		"message": "Couldn't stow the changes to {username}.",
 		"source": "Could not save the changes to {username}."
+	},
+	"editor.editors.securityHeading": {
+		"message": "Watch on Deck",
+		"source": "Security"
+	},
+	"editor.editors.settingsSaveFailed": {
+		"message": "Couldn't stow whether officers must raise two-factor authentication.",
+		"source": "Could not save whether editors need two-factor authentication."
 	},
 	"editor.editors.undoRemove": {
 		"message": "Keep Aboard",
@@ -3527,6 +3547,30 @@
 		"message": "This scroll can't be read as {format}: see line {line, number}.",
 		"source": "This file can't be read as {format}: see line {line, number}."
 	},
+	"editor.turnOnTwoFactor": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
+	"editor.twoFactorHeading": {
+		"message": "Two-Factor Authentication Be Required",
+		"source": "Two-Factor Authentication Required"
+	},
+	"editor.twoFactorLeave": {
+		"message": "Jump Ship",
+		"source": "Leave Universe"
+	},
+	"editor.twoFactorLeaveFailed": {
+		"message": "Couldn't jump ship from the universe.",
+		"source": "Could not leave the universe."
+	},
+	"editor.twoFactorLeaveQuestion": {
+		"message": "Ye give up yer post in this universe and can no longer open it in the editor. Only a captain can give ye a post again.",
+		"source": "You lose your role in this universe and can no longer open it in the editor. Only a creator can give you a role again."
+	},
+	"editor.twoFactorLeaveTitle": {
+		"message": "Jump ship from this universe?",
+		"source": "Leave this universe?"
+	},
 	"editor.universe.longDescription": {
 		"message": "Long tale (Markdown)",
 		"source": "Long description (Markdown)"
@@ -3855,6 +3899,10 @@
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
 	},
+	"error.auth.deleteUniverseNeedsTwoFactor": {
+		"message": "{universe} demands her officers raise two-factor authentication, so she can only be scuttled with yer account while ye have it raised. Make another o' her crew her captain, or raise two-factor authentication.",
+		"source": "{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication."
+	},
 	"error.auth.deleteUniversePrevented": {
 		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin'. Make another o' her crew her captain.",
 		"source": "The site's admins disabled {universe} and kept it from being deleted. Make another of its editors its creator."
@@ -4050,6 +4098,10 @@
 	"error.draftExists": {
 		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
 		"source": "The universe already has a draft. Apply it or discard it before starting another."
+	},
+	"error.editorNeedsTwoFactor": {
+		"message": "{universe} demands her officers raise two-factor authentication. Raise it to open the universe in the editor.",
+		"source": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor."
 	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
@@ -4311,6 +4363,10 @@
 		"message": "Those folk be off the books now. Choose another.",
 		"source": "That race can't be chosen any more. Choose another."
 	},
+	"error.requireTwoFactorWithout": {
+		"message": "Raise two-factor authentication on yer own account before demandin' it o' the universe's officers.",
+		"source": "Turn on two-factor authentication for your own account before requiring it of the universe's editors."
+	},
 	"error.resizeDiscards": {
 		"message": "Resizin' would toss painted cells or passages overboard.",
 		"source": "Resizing would discard painted cells or links."
@@ -4386,6 +4442,10 @@
 	"error.translationsNotAllowed": {
 		"message": "Yer rank don't let ye see the translations into that tongue.",
 		"source": "Your role doesn't let you see the translations into that language."
+	},
+	"error.twoFactorRequiredSave": {
+		"message": "This universe demands her officers raise two-factor authentication. Raise it on yer account to stow changes.",
+		"source": "This universe requires its editors to have two-factor authentication on. Turn it on for your account to save changes."
 	},
 	"error.universeAlreadyDisabled": {
 		"message": "That universe be laid up already.",
@@ -6491,6 +6551,10 @@
 		"message": "Write yer username to swear to it",
 		"source": "Type your username to confirm"
 	},
+	"profile.deleteUnhandableTwoFactorUniverse": {
+		"message": "{universe} demands her officers raise two-factor authentication, an' she has no other crew to hand her to. Raise two-factor authentication to scuttle her with yer account.",
+		"source": "{universe} requires its editors to have two-factor authentication on, and it has no other editors to hand it to. Turn on two-factor authentication to delete it with your account."
+	},
 	"profile.deleteUnhandableUniverse": {
 		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin', an' she has no other crew to hand her to. Yer account can't be scuttled till the officers set her sailin' again.",
 		"source": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it."
@@ -6506,6 +6570,10 @@
 	"profile.deleteUniverseHandTo": {
 		"message": "Make {name} (@{username}, {role}) its captain",
 		"source": "Make {name} (@{username}, {role}) its creator"
+	},
+	"profile.deleteUniverseNeedsTwoFactor": {
+		"message": "This universe demands her officers raise two-factor authentication, so another o' her crew has to become her captain. Raise it to send the universe to the deep instead.",
+		"source": "This universe requires its editors to have two-factor authentication on, so another of its editors has to become its creator. Turn it on to delete the universe instead."
 	},
 	"profile.deleteUniversePrevented": {
 		"message": "The ship's officers have laid up this universe an' forbid her scuttlin', so another o' her crew has to become her captain.",
@@ -6822,6 +6890,10 @@
 	"profile.twoFactorDisableTitle": {
 		"message": "Strike two-factor authentication",
 		"source": "Turn off two-factor authentication"
+	},
+	"profile.twoFactorDisableUniverses": {
+		"message": "{count, plural, one {{universes} demands her officers keep it raised, so ye won't be able to stow changes to her till ye raise it again.} other {{universes} demand their officers keep it raised, so ye won't be able to stow changes to them till ye raise it again.}}",
+		"source": "{count, plural, one {{universes} requires its editors to have it on, so you won't be able to save changes to it until you turn it back on.} other {{universes} require their editors to have it on, so you won't be able to save changes to them until you turn it back on.}}"
 	},
 	"profile.twoFactorDisabled": {
 		"message": "Two-factor authentication be struck.",

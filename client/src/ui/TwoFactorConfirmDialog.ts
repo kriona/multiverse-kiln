@@ -1,6 +1,6 @@
 import { MAX_PASSWORD_LENGTH } from '@multiverse-kiln/shared';
 
-import { currentLocale, t } from '../localization';
+import { currentLocale, formatList, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { ChangeTracker } from './changeTracker';
@@ -25,6 +25,7 @@ export class TwoFactorConfirmDialog
 	private readonly form = getElement('two-factor-confirm-form', HTMLFormElement);
 	private readonly title = getElement('two-factor-confirm-title', HTMLElement);
 	private readonly intro = getElement('two-factor-confirm-intro', HTMLElement);
+	private readonly universes = getElement('two-factor-confirm-universes', HTMLElement);
 	private readonly email = getElement('two-factor-confirm-email', HTMLInputElement);
 	private readonly passwordField = getElement('two-factor-confirm-password-field', HTMLElement);
 	private readonly password = getElement('two-factor-confirm-password', HTMLInputElement);
@@ -87,10 +88,12 @@ export class TwoFactorConfirmDialog
 	 * @param change What it changes
 	 * @param account The account's address, and whether it has a password
 	 * @param serverAdmin Whether the player is a server admin, who is warned that turning 2FA off takes away the admin pages
+	 * @param universes The names of the universes the player edits that require 2FA, which turning it off keeps them from saving to
 	 */
-	open(change: TwoFactorChange, account: TwoFactorAccount, serverAdmin: boolean): void
+	open(change: TwoFactorChange, account: TwoFactorAccount, serverAdmin: boolean, universes: readonly string[]): void
 	{
 		this.change = change;
+		showMessage(this.universes, undefined);
 
 		if (change === 'turnOff')
 		{
@@ -100,6 +103,18 @@ export class TwoFactorConfirmDialog
 				description: 'Title of the dialog that turns off two-factor authentication'
 			});
 			this.intro.textContent = this.turnOffIntro(account.hasPassword, serverAdmin);
+
+			if (universes.length > 0)
+			{
+				showMessage(this.universes, t({
+					id: 'profile.twoFactorDisableUniverses',
+					defaultMessage: '{count, plural, one {{universes} requires its editors to have it on, so you won\'t be able to save changes to it until you turn it back on.} other {{universes} require their editors to have it on, so you won\'t be able to save changes to them until you turn it back on.}}',
+					description: 'In the dialog that turns off two-factor authentication, after what turning it off means, for a player with a role in universes whose creators require their editors to have it on; {universes} is a list of their names, {count} how many there are'
+				}, {
+					count: universes.length,
+					universes: formatList(universes, 'conjunction')
+				}));
+			}
 		}
 		else
 		{

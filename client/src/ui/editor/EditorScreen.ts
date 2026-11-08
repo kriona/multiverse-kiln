@@ -1,13 +1,14 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
-import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError, EditorApiError, errorId, errorValue, type EditorApi } from '../../network/editorApi';
 import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
 import { StartDraftDialog } from './StartDraftDialog';
 import { editPageUrl, HOME_PAGE_URL, universePageUrl } from '../../pages';
 import { AuditTab } from './AuditTab';
+import { EditorsSettingsSection } from './EditorsSettingsSection';
 import { EditorsTab } from './EditorsTab';
 import { closeOpenDialogs, getElement, setPageTitle, showMessage, titleLink } from '../dom';
 import { ScrollingTabs } from '../scrollingTabs';
@@ -105,6 +106,14 @@ export interface EditorScreenActions
 	 * The Areas tab has loaded the universe's areas, so areaName() knows their names
 	 */
 	areasLoaded: () => void;
+
+	/**
+	 * The universe requires its editors to have 2FA on and the player doesn't, so it didn't open
+	 *
+	 * @param message Why, in the player's language, naming the universe
+	 * @param universeName The universe's name, or undefined when the server didn't give it
+	 */
+	twoFactorRequired: (message: string, universeName: string | undefined) => void;
 }
 
 /**
@@ -120,6 +129,40 @@ function tabName(name: EditorTab): string
 	button.querySelector('.tab-changes')?.remove();
 
 	return(button.textContent.trim());
+}
+
+/**
+ * The editor's heading in its toolbar, naming the universe and linking to the editor's first tab
+ *
+ * @param universeId The universe's ID
+ * @param name The universe's name
+ * @return The link
+ */
+export function editorTitleLink(universeId: string, name: string): HTMLAnchorElement
+{
+	return(titleLink(t({
+		id: 'editor.universeTitle',
+		defaultMessage: 'Edit {universe}',
+		description: 'Heading of the world editor, linking to the editor\'s first tab; {universe} is the universe\'s name'
+	}, {
+		universe: name
+	}), editPageUrl(universeId)));
+}
+
+/**
+ * Sets the browser tab's title to the editor's, naming the universe
+ *
+ * @param name The universe's name
+ */
+export function setEditorPageTitle(name: string): void
+{
+	setPageTitle(t({
+		id: 'editor.pageTitle',
+		defaultMessage: 'Edit {universe}',
+		description: 'The browser tab\'s title for the world editor, before the game engine\'s name; {universe} is the universe\'s name'
+	}, {
+		universe: name
+	}));
 }
 
 /**
@@ -169,6 +212,7 @@ export class EditorScreen
 	private readonly areasTab: AreasTab;
 	private readonly itemsTab: ItemsTab;
 	private readonly editorsTab: EditorsTab;
+	private readonly editorsSettings: EditorsSettingsSection;
 	private readonly auditTab: AuditTab;
 	private readonly translationsTab: TranslationsTab;
 	private readonly translationTable: TranslationTable;
@@ -316,6 +360,10 @@ export class EditorScreen
 				this.ownChangeSaved = 'left';
 			}
 		});
+		this.editorsSettings = new EditorsSettingsSection((update) =>
+		{
+			this.updateUniverse(update);
+		});
 		this.saveBar = new SaveBar(api, () => this.universe, (tab) =>
 		{
 			const name = ((tab === this.draftSection) ? 'universe' : SAVE_ORDER.find((candidate) => (this.savableTabs[candidate] === tab)));
@@ -355,7 +403,7 @@ export class EditorScreen
 		});
 
 		this.savableTabs = {
-			editors: this.editorsTab,
+			editors: combineTabs(this.editorsTab, this.editorsSettings),
 			universe: this.universeTab,
 			ruleset: combineTabs(this.rulesetTab, this.coinsSection, this.difficultySection),
 			lobby: this.lobbyTab,
@@ -404,6 +452,13 @@ export class EditorScreen
 					this.translationsTab.open(universe);
 					this.translationTable.useUniverse(universe);
 				}
+			},
+			editors: {
+				changes: this.editorsSettings.changes,
+				open: (universe) =>
+				{
+					this.editorsSettings.open(universe);
+				}
 			}
 		};
 
@@ -439,7 +494,7 @@ export class EditorScreen
 			universe: [settingsForm('universe')],
 			lobby: [settingsForm('lobby')],
 			areas: [this.areasTab],
-			editors: [this.editorsTab],
+			editors: [this.editorsTab, settingsForm('editors')],
 			translations: [settingsForm('translations'), this.translationTable]
 		};
 
@@ -532,6 +587,13 @@ export class EditorScreen
 				return;
 			}
 
+			if ((version === this.openVersion) && (error instanceof EditorApiError) && (errorId(error.data) === EDITOR_TWO_FACTOR_ERROR_ID))
+			{
+				this.savesWhileOpening = [];
+				this.actions.twoFactorRequired(error.message, errorValue(error.data, 'universe'));
+				return;
+			}
+
 			if (version === this.openVersion)
 			{
 				this.savesWhileOpening = [];
@@ -573,6 +635,7 @@ export class EditorScreen
 		this.areasTab.open(universe, place.areaId);
 		this.itemsTab.open(universe);
 		this.editorsTab.open(universe);
+		this.editorsSettings.open(universe);
 		this.auditTab.open(universe);
 		this.translationsTab.open(universe);
 		this.translationTable.open(universe);
@@ -701,9 +764,10 @@ export class EditorScreen
 	}
 
 	/**
-	 * Loads the universe again after what the player may do in it changed (their role, its stage, or
-	 * whether the site's admins have disabled it), on the tab and area showing. While anything is
-	 * unsaved it only says so, since loading again would throw the changes away
+	 * Loads the universe again after what the player may do in it changed (their role, its stage, whether
+	 * the site's admins have disabled it, or whether they have 2FA on, which a creator needs to require
+	 * it), on the tab and area showing. While anything is unsaved it only says so, since loading again
+	 * would throw the changes away
 	 *
 	 * @return True when the universe loads again
 	 */
@@ -711,8 +775,8 @@ export class EditorScreen
 	{
 		return(this.reloadUniverse(t({
 			id: 'editor.accessChanged',
-			defaultMessage: 'What you can do in this universe has changed: your role, its stage, or whether the site\'s admins have disabled it. Save or undo your changes, then reload the page to see what you can do now.',
-			description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage, or whether the site\'s admins disabled it changed while they had unsaved changes, which loading the universe again would throw away'
+			defaultMessage: 'What you can do in this universe has changed: your role, its stage, whether the site\'s admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.',
+			description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage or whether the site\'s admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away'
 		})));
 	}
 
@@ -1083,20 +1147,8 @@ export class EditorScreen
 	private setUniverse(universe: EditableUniverse): void
 	{
 		this.universe = universe;
-		this.title.replaceChildren(titleLink(t({
-			id: 'editor.universeTitle',
-			defaultMessage: 'Edit {universe}',
-			description: 'Heading of the world editor, linking to the editor\'s first tab; {universe} is the universe\'s name'
-		}, {
-			universe: universe.name
-		}), editPageUrl(universe.id)));
-		setPageTitle(t({
-			id: 'editor.pageTitle',
-			defaultMessage: 'Edit {universe}',
-			description: 'The browser tab\'s title for the world editor, before the game engine\'s name; {universe} is the universe\'s name'
-		}, {
-			universe: universe.name
-		}));
+		this.title.replaceChildren(editorTitleLink(universe.id, universe.name));
+		setEditorPageTitle(universe.name);
 		this.role.textContent = t(EDITOR_ROLE_NAMES[universe.role]);
 		this.showViewLink(universe);
 		this.areasTab.setUniverse(universe);

@@ -15,6 +15,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
+import { twoFactorChanges } from '../src/players/twoFactorChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { EditorRoom } from '../src/rooms/EditorRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
@@ -724,6 +725,70 @@ describe('EditorRoom', () =>
 				universeId: randomUUID()
 			});
 			await assert.rejects(window.inbox.take(EditorServerMessageType.AccessChanged, 200));
+		});
+
+		it('turns away the windows of players without 2FA on once the universe requires it, and admits only players with it on', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+
+			await turnOnTwoFactor(ada.playerId);
+
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+			const room = roomOf(adaWindow);
+			const left = closeOf(graceWindow);
+
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { requireTwoFactor: true } }])).status, 200);
+			assert.strictEqual(await left, ServerCloseCode.TwoFactorRequired);
+			await waitUntil(() => !room.state.editors.has(grace.playerId));
+			assert.strictEqual(adaWindow.inbox.pending(EditorServerMessageType.AccessChanged), 0);
+			await assert.rejects(openEditor(grace, universeId));
+
+			await turnOnTwoFactor(grace.playerId);
+			await openEditor(grace, universeId);
+			assert.ok(room.state.editors.has(grace.playerId));
+		});
+
+		it('turns away a player\'s windows when they turn 2FA off while the universe requires it, and has them load it again otherwise', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+
+			await turnOnTwoFactor(ada.playerId);
+			await turnOnTwoFactor(grace.playerId);
+
+			const graceWindow = await openEditor(grace, universeId);
+
+			// A creator needs 2FA on to require it, so the editor shows what they may do afresh
+			twoFactorChanges.publish(grace.playerId, false);
+			await graceWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			twoFactorChanges.publish(grace.playerId, true);
+			await graceWindow.inbox.take(EditorServerMessageType.AccessChanged);
+
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { requireTwoFactor: true } }])).status, 200);
+
+			const left = closeOf(graceWindow);
+
+			await deleteTwoFactor(grace.playerId);
+			twoFactorChanges.publish(grace.playerId, false);
+			assert.strictEqual(await left, ServerCloseCode.TwoFactorRequired);
+		});
+
+		it('turns away a window whose universe starts requiring 2FA its player doesn\'t have on while it joins', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+
+			await turnOnTwoFactor(ada.playerId);
+
+			const room = roomOf(await openEditor(ada, universeId));
+
+			changeDuringNextLookup(room, 'findAdmission', async () =>
+			{
+				assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { requireTwoFactor: true } }])).status, 200);
+			});
+
+			await assert.rejects(openEditor(grace, universeId), refusedWith(ServerCloseCode.TwoFactorRequired));
+			await waitUntil(() => (room.clients.length === 1));
+			assert.deepStrictEqual([...room.state.editors.keys()], [ada.playerId]);
 		});
 
 		it('turns away every window when the universe is deleted, and a browser\'s windows when its session ends', async () =>

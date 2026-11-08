@@ -94,6 +94,7 @@ export async function deletionRoute(request: Request, response: Response): Promi
 			id: universe.id,
 			name: universe.name,
 			deletionPrevented: universe.deletionPrevented,
+			twoFactorRequired: (universe.requireTwoFactor && !twoFactor),
 			editors: await listOtherUniverseEditors(universe.id, playerId)
 		}))),
 		anchorsGroups,

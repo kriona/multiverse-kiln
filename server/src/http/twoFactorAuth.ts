@@ -37,6 +37,7 @@ import { sendEmailInBackground } from '../email/mailer.js';
 import { DAY_MS, decideLimit, MAX_GUESSES_PER_NETWORK_HOUR, type SendDecision } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { serverAdminChanges } from '../players/serverAdminChanges.js';
+import { twoFactorChanges } from '../players/twoFactorChanges.js';
 import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpStep, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
 import { accountPasswordLimits, authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { clientNetworkHash } from './clientNetwork.js';
@@ -722,7 +723,7 @@ async function setupRoute(request: Request, response: Response): Promise<void>
 /**
  * POST AUTH_TWO_FACTOR_ENABLE_PATH: turns on 2FA for the logged-in account, once the authenticator app
  * just set up gives a right code, and makes its recovery codes. Every other browser logged in to the
- * account is logged out
+ * account is logged out, and the player's open editors of universes that require 2FA may save again
  *
  * @param request The request, with a TwoFactorEnableRequest
  * @param response The response: a RecoveryCodesPayload
@@ -819,6 +820,7 @@ async function enableRoute(request: Request, response: Response): Promise<void>
 	}
 
 	connectedSessions.end(outcome.ended);
+	twoFactorChanges.publish(playerId, true);
 
 	const payload: RecoveryCodesPayload = { recoveryCodes: outcome.codes };
 
@@ -916,8 +918,8 @@ async function changeTwoFactor<Result>(request: Request, response: Response, pla
 /**
  * POST AUTH_TWO_FACTOR_DISABLE_PATH: turns off 2FA for the logged-in account, once its password (or
  * without one, an emailed code) and an authenticator or recovery code are given. Its recovery codes and
- * trusted browsers go with it, and a server admin's open editors stop letting them edit with the site
- * admin role
+ * trusted browsers go with it, a server admin's open editors stop letting them edit with the site admin
+ * role, and the player's open editors of universes that require 2FA stop letting them save
  *
  * @param request The request, with a TwoFactorDisableRequest
  * @param response The response: 204
@@ -954,6 +956,7 @@ async function disableRoute(request: Request, response: Response): Promise<void>
 	}
 
 	serverAdminChanges.publishLost(playerId);
+	twoFactorChanges.publish(playerId, false);
 	response.sendStatus(204);
 
 	const recipient = await findEmailRecipient(playerId);

@@ -574,6 +574,51 @@ function describeServerError(status: number, data: unknown): string
 }
 
 /**
+ * The ID of the message an error response carries (ErrorPayload), such as EDITOR_TWO_FACTOR_ERROR_ID
+ *
+ * @param data The response's body, from EditorApiError.data
+ * @return The ID, or undefined when the body isn't an ErrorPayload
+ */
+export function errorId(data: unknown): string | undefined
+{
+	if ((typeof data !== 'object') || (data === null) || !('error' in data))
+	{
+		return(undefined);
+	}
+
+	const { error } = data;
+
+	return((((typeof error === 'object') && (error !== null) && ('id' in error) && (typeof error.id === 'string')) ? error.id : undefined));
+}
+
+/**
+ * One of the arguments of the message an error response carries (ErrorPayload), such as the universe
+ * EDITOR_TWO_FACTOR_ERROR_ID names
+ *
+ * @param data The response's body, from EditorApiError.data
+ * @param name The argument's name
+ * @return Its value, or undefined when the message has no such argument holding text
+ */
+export function errorValue(data: unknown, name: string): string | undefined
+{
+	if ((typeof data !== 'object') || (data === null) || !('error' in data))
+	{
+		return(undefined);
+	}
+
+	const { error } = data;
+
+	if ((typeof error !== 'object') || (error === null) || !('values' in error) || (typeof error.values !== 'object') || (error.values === null))
+	{
+		return(undefined);
+	}
+
+	const value: unknown = (error.values as Record<string, unknown>)[name];
+
+	return(((typeof value === 'string') ? value : undefined));
+}
+
+/**
  * A message to show for a failed editor request
  *
  * @param error What was thrown

@@ -10,7 +10,7 @@
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_UNIVERSE_DELETION, type AccountDeleteRequest } from '@multiverse-kiln/shared';
+import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION, UNHANDABLE_UNIVERSE_DELETION, type AccountDeleteRequest } from '@multiverse-kiln/shared';
 
 import { forgetChatAuthor } from '../db/chatRepo.js';
 import type { Executor } from '../db/client.js';
@@ -22,7 +22,8 @@ import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { listOtherUniverseEditors, listSoleCreatedUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
-import { deleteUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
+import { hasTwoFactor } from '../db/twoFactorRepo.js';
+import { deleteUniverse, findUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
 import { accountDeletedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { accountDeletions } from '../players/accountDeletions.js';
@@ -53,6 +54,11 @@ const deletionMessages = defineMessages({
 		id: 'error.auth.deleteUniversePrevented',
 		defaultMessage: 'The site\'s admins disabled {universe} and kept it from being deleted. Make another of its editors its creator.',
 		description: 'Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but the site\'s admins disabled it and kept it from being deleted, perhaps a moment ago; {universe} is its name'
+	},
+	universeNeedsTwoFactor: {
+		id: 'error.auth.deleteUniverseNeedsTwoFactor',
+		defaultMessage: '{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication.',
+		description: 'Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but it requires its editors to have two-factor authentication on and the player doesn\'t, perhaps since a moment ago; {universe} is its name'
 	}
 });
 
@@ -234,6 +240,7 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
  * @param executor A transaction that has locked the player
  * @return What was deleted, or the refusal when the player is the site's only server admin, the
  * decisions don't match the player's universes, or one chosen to be deleted is kept from being deleted
+ * or requires 2FA the player doesn't have on
  */
 async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, string | null>, executor: Executor): Promise<AuthRefusal | Deletion>
 {
@@ -250,6 +257,8 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 			message: LAST_SERVER_ADMIN_DELETION
 		});
 	}
+
+	const twoFactor = await hasTwoFactor(playerId, executor);
 
 	for (const universe of await listSoleCreatedUniverses(playerId, executor))
 	{
@@ -272,6 +281,19 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 			return({
 				status: 409,
 				message: ((editors.length === 0) ? UNHANDABLE_UNIVERSE_DELETION : deletionMessages.universeDeletionPrevented),
+				values: {
+					universe: universe.name
+				}
+			});
+		}
+
+		// Read again once locked too: a save may have made it require 2FA since it was listed. Deleting it
+		// with the account would otherwise let an account without 2FA do what the editor refuses it
+		if ((newCreatorId === null) && !twoFactor && ((await findUniverse(universe.id, executor))?.requireTwoFactor ?? false))
+		{
+			return({
+				status: 409,
+				message: ((editors.length === 0) ? UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION : deletionMessages.universeNeedsTwoFactor),
 				values: {
 					universe: universe.name
 				}

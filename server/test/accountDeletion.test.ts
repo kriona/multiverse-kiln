@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, UNHANDABLE_UNIVERSE_DELETION, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION, UNHANDABLE_UNIVERSE_DELETION, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { recordAdminEvent } from '../src/db/adminEventRepo.js';
@@ -11,7 +11,8 @@ import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { recordUniverseEdit } from '../src/db/universeEditRepo.js';
 import { findUniverseRole, setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { setUniverseDisabled } from '../src/db/universeRepo.js';
+import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { liveVersion } from '../src/db/universeVersions.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
@@ -286,6 +287,7 @@ describe('account deletion and data export', () =>
 				id: alone,
 				name: 'Alone',
 				deletionPrevented: false,
+				twoFactorRequired: false,
 				editors: [{
 					playerId: grace.id,
 					username: grace.username,
@@ -486,6 +488,62 @@ describe('account deletion and data export', () =>
 		await setUniverseDisabled(unhandable, null);
 		assert.strictEqual((await deleteAccount(browser, {
 			password: PASSWORD,
+			universes: [{ universeId: handed, newCreatorId: grace.id }, { universeId: unhandable, newCreatorId: null }]
+		})).status, 204);
+		assert.strictEqual(await findUniverseRole(handed, grace.id), 'creator');
+		assert.strictEqual((await pool.query('SELECT id FROM universes WHERE id = $1', [unhandable])).rowCount, 0);
+	});
+
+	it('only hands on a universe that requires 2FA the player doesn\'t have on, and refuses when there is no one to hand it to, until 2FA is on', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+		const grace = await addPlayer('Grace');
+		const handed = await addUniverse('Handed On');
+		const unhandable = await addUniverse('Unhandable');
+
+		for (const universeId of [handed, unhandable])
+		{
+			await setUniverseRole(universeId, playerId, 'creator');
+			await updateUniverseSettings(liveVersion(universeId), { requireTwoFactor: true });
+		}
+
+		await setUniverseRole(handed, grace.id, 'builder');
+
+		/**
+		 * Whether the deletion dialog is told each universe can only be handed on for want of 2FA
+		 *
+		 * @return Each universe's name, and whether it is
+		 */
+		const listTwoFactorRequired = async (): Promise<[string, boolean][]> => (await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.universes
+			.map((universe) => [universe.name, universe.twoFactorRequired]);
+
+		assert.deepStrictEqual(await listTwoFactorRequired(), [['Handed On', true], ['Unhandable', true]]);
+
+		const deleting = await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId: handed, newCreatorId: null }, { universeId: unhandable, newCreatorId: null }]
+		});
+
+		assert.strictEqual(deleting.status, 409);
+		assert.strictEqual(deleting.body.error.id, 'error.auth.deleteUniverseNeedsTwoFactor');
+		assert.ok(await accountExists(playerId));
+
+		const alone = await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId: handed, newCreatorId: grace.id }, { universeId: unhandable, newCreatorId: null }]
+		});
+
+		assert.strictEqual(alone.status, 409);
+		assert.strictEqual(alone.body.error.id, UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION.id);
+		assert.strictEqual(await findUniverseRole(handed, grace.id), 'builder');
+
+		// With 2FA on, the account may delete them as their editors may
+		const authenticator = await turnOnTwoFactor(playerId);
+
+		assert.deepStrictEqual(await listTwoFactorRequired(), [['Handed On', false], ['Unhandable', false]]);
+		assert.strictEqual((await deleteAccount(browser, {
+			password: PASSWORD,
+			twoFactorCode: authenticatorCode(authenticator.secret),
 			universes: [{ universeId: handed, newCreatorId: grace.id }, { universeId: unhandable, newCreatorId: null }]
 		})).status, 204);
 		assert.strictEqual(await findUniverseRole(handed, grace.id), 'creator');

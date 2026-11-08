@@ -701,6 +701,13 @@
       "when": 1794147186420,
       "tag": "0099_email_code_change_two_factor",
       "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1794148862268,
+      "tag": "0100_universe_require_two_factor",
+      "breakpoints": true
     }
   ]
 }

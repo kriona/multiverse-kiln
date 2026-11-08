@@ -7,6 +7,7 @@ import { EDITOR_VERSION_PARAM, UNIVERSE_VERSIONS, editorAccessOf, type EditableU
 
 import type { Executor } from '../db/client.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
+import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { findUniverseAccess } from '../db/universeEditorRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { findEditorArea } from '../db/areaRepo.js';
@@ -47,6 +48,12 @@ export interface UniverseContext
 	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
 	 */
 	serverAdmin: boolean;
+
+	/**
+	 * Whether the player has 2FA on, without which a universe that requires it refuses every request but
+	 * a save that only leaves it (refuseWithoutRequiredTwoFactor())
+	 */
+	twoFactor: boolean;
 }
 
 /**
@@ -159,9 +166,10 @@ export async function loadUniverseContext(request: Request, response: Response, 
 	if (universeId.success && versionName.success)
 	{
 		const version = ((versionName.data === 'draft') ? draftVersion(universeId.data) : liveVersion(universeId.data));
-		const [universe, { access, serverAdmin }] = await Promise.all([
+		const [universe, { access, serverAdmin }, twoFactor] = await Promise.all([
 			findEditableUniverse(version),
-			findEditorAccess(universeId.data, playerId)
+			findEditorAccess(universeId.data, playerId),
+			hasTwoFactor(playerId)
 		]);
 
 		if (universe && access)
@@ -172,7 +180,8 @@ export async function loadUniverseContext(request: Request, response: Response, 
 				version,
 				role: access.role,
 				languages: access.languages,
-				serverAdmin
+				serverAdmin,
+				twoFactor
 			});
 			next();
 			return;
@@ -187,6 +196,34 @@ export async function loadUniverseContext(request: Request, response: Response, 
 	}
 
 	sendError(response, 404, errorMessages.noSuchUniverse);
+}
+
+/**
+ * Middleware for routes under /:universeId that answers 403 while the universe requires its editors to
+ * have 2FA on and the player doesn't, naming the universe (EDITOR_TWO_FACTOR_ERROR_ID). Saving comes
+ * before it, since such a player may still save leaving the universe (editorChanges.ts)
+ *
+ * @param request The request
+ * @param response The response
+ * @param next Continues to the next handler
+ */
+export function refuseWithoutRequiredTwoFactor(request: Request, response: Response, next: NextFunction): void
+{
+	const { universe, twoFactor } = universeContextOf(request);
+
+	if (universe.requireTwoFactor && !twoFactor)
+	{
+		sendError(response, 403, {
+			id: 'error.editorNeedsTwoFactor',
+			defaultMessage: '{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.',
+			description: 'Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn\'t; {universe} is the universe\'s name. Buttons to turn it on, leave the universe and go back to Home follow'
+		}, {
+			universe: universe.name
+		});
+		return;
+	}
+
+	next();
 }
 
 /**

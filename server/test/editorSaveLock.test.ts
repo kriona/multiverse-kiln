@@ -49,7 +49,8 @@ describe('Saving after another save took the universe\'s lock', () =>
 			version: liveVersion(universeId),
 			role,
 			languages: [],
-			serverAdmin: false
+			serverAdmin: false,
+			twoFactor: false
 		}, parsed.changes));
 	}
 
