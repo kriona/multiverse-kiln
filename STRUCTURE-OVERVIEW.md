@@ -228,6 +228,8 @@ Creating a universe
 - creates a lobby area, and a default area that it sets as the starting area for all races
 - makes you its creator
 
+When the player's account has a password and 2FA is off, the dialog also has a "Turn on two-factor authentication" checkbox, checked by default, explaining that the universe is only as safe as the account: anyone who learns the password could change or delete everything built in it, and 2FA asks for a code from an app as well. With it checked, Create makes the universe and then opens the dialog that sets up 2FA (the profile's, see [Login](#login)), with Skip Setup in place of Cancel. Skipping it, or closing it any other way, opens the new universe in the editor; turning 2FA on shows the recovery codes first, then opens it. An account without a password (one that only logs in with Google or Discord) isn't offered it, since it uses the provider's 2FA.
+
 The [admin page](#admin) decides how many universes a user can create. The admin page can also turn off creating universes for everyone, which disables the Create Universe button.
 
 ## Admin

@@ -9,7 +9,7 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { findPlayerLocale, lockPlayer } from '../db/playerRepo.js';
+import { findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
@@ -149,11 +149,17 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
  */
 async function listUniverses(request: Request, response: Response): Promise<void>
 {
-	const { universeCreationEnabled, universesPerCreator } = await findSiteSettings();
+	const playerId = playerIdOf(request);
+	const [universes, settings, twoFactorCandidate] = await Promise.all([
+		listEditableUniverses(playerId),
+		findSiteSettings(),
+		findTwoFactorCandidate(playerId)
+	]);
 	const payload: EditableUniverseListPayload = {
-		universes: await listEditableUniverses(playerIdOf(request)),
-		universeCreationEnabled,
-		universesPerCreator
+		universes,
+		universeCreationEnabled: settings.universeCreationEnabled,
+		universesPerCreator: settings.universesPerCreator,
+		twoFactorOffer: (twoFactorCandidate ?? null)
 	};
 
 	response.json(payload);

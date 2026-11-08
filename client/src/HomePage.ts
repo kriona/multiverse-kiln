@@ -1,6 +1,7 @@
 import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
+import { AuthApi } from './network/authApi';
 import { EditorApi } from './network/editorApi';
 import { listUniverses, type ServerConnection } from './network/serverConnection';
 import { onLoginElsewhere } from './network/sessionBroadcast';
@@ -43,7 +44,7 @@ export class HomePage
 			{
 				window.location.assign(editPageUrl(universeId));
 			}
-		});
+		}, new AuthApi(client));
 
 		session.onMessage(SessionServerMessageType.Account, (account: AccountPayload) =>
 		{

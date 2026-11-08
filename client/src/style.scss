@@ -2,6 +2,7 @@
 
 @use 'shared' as *;
 @use 'characterSheet';
+@use 'twoFactorDialogs';
 
 // Everything on Home below its toolbar, scrolling between the toolbar and the footer
 .home-page

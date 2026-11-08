@@ -4671,6 +4671,10 @@
 		"defaultMessage": "Could not create the universe.",
 		"description": "Shown in the Create Universe dialog when the universe couldn't be made"
 	},
+	"home.create.skipTwoFactor": {
+		"defaultMessage": "Skip Setup",
+		"description": "Button in the dialog that sets up two-factor authentication, in place of Cancel when it opens after creating a universe: closes it without turning two-factor authentication on, and opens the new universe in the editor"
+	},
 	"home.create.submit": {
 		"defaultMessage": "Create",
 		"description": "Button that makes the new universe"
@@ -4678,6 +4682,14 @@
 	"home.create.title": {
 		"defaultMessage": "Create Universe",
 		"description": "Title of the dialog for making a new universe"
+	},
+	"home.create.twoFactor": {
+		"defaultMessage": "Turn on two-factor authentication",
+		"description": "Checkbox in the Create Universe dialog, shown when the player's account has a password and two-factor authentication is off: checked, creating the universe opens the dialog that sets it up"
+	},
+	"home.create.twoFactorHint": {
+		"defaultMessage": "Your universe is only as safe as your account: anyone who learns your password could change or delete everything you build. Two-factor authentication also asks for a code from an app on your phone when you log in, so a password alone isn't enough to get in.",
+		"description": "Under the Create Universe dialog's checkbox for turning on two-factor authentication, saying why it keeps the new universe safe"
 	},
 	"home.createUniverse": {
 		"defaultMessage": "Create Universe",

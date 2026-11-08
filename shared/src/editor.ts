@@ -293,6 +293,29 @@ export interface EditableUniverseListPayload
 	 * Most universes the player may create (SiteSettings)
 	 */
 	universesPerCreator: number;
+
+	/**
+	 * What the Create Universe dialog needs to offer to turn on 2FA, when the player's account can (it
+	 * has a password, which setting it up asks for, and 2FA is off); null when it can't
+	 */
+	twoFactorOffer: TwoFactorOffer | null;
+}
+
+/**
+ * The Create Universe dialog's offer to turn on 2FA (EditableUniverseListPayload.twoFactorOffer)
+ */
+export interface TwoFactorOffer
+{
+	/**
+	 * The account's username, which the recovery codes' file names
+	 */
+	username: string;
+
+	/**
+	 * The account's email address, which tells password managers which account the password asked for
+	 * is for, or null when it has none
+	 */
+	email: string | null;
 }
 
 /**

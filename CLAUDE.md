@@ -35,7 +35,7 @@ An engine for making multiplayer browser-based role-playing games.
                  in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
                  src/LoginPage.ts, src/login.scss) and profile.html (the player's own profile at /profile, and
                  other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile, Site admin for server admins and Log out, Site Admin in the admin tools' toolbars and their refusal notice, status and notice screens,
-                 footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
+                 the dialogs turning on 2FA and showing recovery codes (on the profile and Home), footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
                  player's language

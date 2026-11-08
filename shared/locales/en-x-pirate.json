@@ -2601,7 +2601,7 @@
 	},
 	"editor.resize.discard": {
 		"message": "Resize and Toss Overboard",
-		"source": "Resize and Fiscard"
+		"source": "Resize and Discard"
 	},
 	"editor.resize.east": {
 		"message": "East",
@@ -4671,6 +4671,10 @@
 		"message": "Couldn't create the universe.",
 		"source": "Could not create the universe."
 	},
+	"home.create.skipTwoFactor": {
+		"message": "Sail On Without It",
+		"source": "Skip Setup"
+	},
 	"home.create.submit": {
 		"message": "Create",
 		"source": "Create"
@@ -4678,6 +4682,14 @@
 	"home.create.title": {
 		"message": "Create Universe",
 		"source": "Create Universe"
+	},
+	"home.create.twoFactor": {
+		"message": "Raise two-factor authentication",
+		"source": "Turn on two-factor authentication"
+	},
+	"home.create.twoFactorHint": {
+		"message": "Yer universe be only as safe as yer account: any scallywag who learns yer password could plunder or scuttle everythin' ye build. Two-factor authentication also asks for a code from an app on yer phone when ye come aboard, so a password alone won't get 'em on deck.",
+		"source": "Your universe is only as safe as your account: anyone who learns your password could change or delete everything you build. Two-factor authentication also asks for a code from an app on your phone when you log in, so a password alone isn't enough to get in."
 	},
 	"home.createUniverse": {
 		"message": "Create Universe",

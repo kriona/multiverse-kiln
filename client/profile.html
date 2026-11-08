@@ -246,57 +246,7 @@
 				</form>
 			</dialog>
 
-			<dialog id="two-factor-dialog" class="panel dialog" aria-labelledby="two-factor-dialog-title">
-				<form id="two-factor-dialog-form" class="form" novalidate>
-					<h2 id="two-factor-dialog-title" data-message="profile.twoFactorSetupTitle" data-translation-context="Title of the dialog that sets up two-factor authentication">Turn on two-factor authentication</h2>
-					<div id="two-factor-dialog-password-step" class="form-group">
-						<p data-message="profile.twoFactorSetupIntro" data-translation-context="First paragraph of the dialog that sets up two-factor authentication, which asks for the player's password first">With two-factor authentication, logging in also asks for a code from an app on your phone, so someone who learns your password still can't get in. Every other browser logged in to your account is logged out when it turns on. First, enter your password.</p>
-						<!-- Not shown: tells password managers which account the password is for -->
-						<input id="two-factor-dialog-email" type="email" autocomplete="username" hidden />
-						<div class="password-field">
-							<label data-message="login.password" data-translation-context="Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile">
-								Password
-								<input id="two-factor-dialog-password" type="password" autocomplete="current-password" />
-							</label>
-							<button id="two-factor-dialog-password-toggle" type="button" class="secondary password-toggle" aria-controls="two-factor-dialog-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
-						</div>
-					</div>
-					<div id="two-factor-dialog-scan-step" class="form-group" hidden>
-						<p data-message="profile.twoFactorScan" data-translation-context="In the dialog that sets up two-factor authentication, above the QR code; the app names are examples of authenticator apps and stay as they are">Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft Authenticator, Aegis or 2FAS. Then enter the 6-digit code the app shows.</p>
-						<div id="two-factor-dialog-qr" class="qr-code-frame"></div>
-						<p class="hint" data-message="profile.twoFactorManual" data-translation-context="In the dialog that sets up two-factor authentication, above the secret key shown as text, for players who can't scan the QR code">Can't scan it? Add the account in the app by hand, with this key:</p>
-						<div class="two-factor-secret">
-							<code id="two-factor-dialog-secret" translate="no"></code>
-							<button id="two-factor-dialog-copy" type="button" class="secondary" aria-describedby="two-factor-dialog-copy-status" data-shortcut="Alt+Y" data-message="profile.copyKey" data-translation-context="Button in the dialog that sets up two-factor authentication: copies the secret key, for typing into an authenticator app"><!-- icon ph:copy -->Copy key</button>
-						</div>
-						<p id="two-factor-dialog-copy-status" class="hint" role="status"></p>
-						<label data-message="profile.twoFactorAppCode" data-translation-context="Label of the field for the 6-digit code the authenticator app shows, in the dialog that sets up two-factor authentication">
-							Code from the app
-							<input id="two-factor-dialog-code" autocomplete="one-time-code" inputmode="numeric" spellcheck="false" data-code="authenticator" data-auto-submit />
-						</label>
-					</div>
-					<p id="two-factor-dialog-error" class="form-error" role="alert" hidden></p>
-					<div class="form-buttons">
-						<button id="two-factor-dialog-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-						<button id="two-factor-dialog-continue" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+C" data-message="profile.twoFactorContinue" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the password and shows the QR code"><!-- icon ph:arrow-right -->Continue</button>
-						<button id="two-factor-dialog-enable" type="submit" aria-describedby="two-factor-dialog-error" data-shortcut="Alt+T" data-message="profile.twoFactorEnable" data-translation-context="Button in the dialog that sets up two-factor authentication: checks the code from the authenticator app and turns two-factor authentication on" hidden><!-- icon ph:shield-check -->Turn on</button>
-					</div>
-				</form>
-			</dialog>
-
-			<dialog id="recovery-codes-dialog" class="panel dialog" aria-labelledby="recovery-codes-dialog-title">
-				<div class="form">
-					<h2 id="recovery-codes-dialog-title" data-message="profile.recoveryCodesTitle" data-translation-context="Title of the dialog that shows the player's new recovery codes for two-factor authentication">Save your recovery codes</h2>
-					<p id="recovery-codes-dialog-intro" data-message="profile.recoveryCodesIntro" data-translation-context="In the dialog that shows the player's new recovery codes for two-factor authentication">If you lose your phone, each of these codes logs you in once in place of a code from the app. Keep them somewhere safe, such as your password manager. This is the only time they're shown.</p>
-					<ol id="recovery-codes-list" class="recovery-codes" translate="no" aria-describedby="recovery-codes-dialog-intro"></ol>
-					<p id="recovery-codes-status" class="hint" role="status"></p>
-					<div class="form-buttons">
-						<button id="recovery-codes-copy" type="button" class="secondary" aria-describedby="recovery-codes-status" data-shortcut="Alt+Y" data-message="profile.copyRecoveryCodes" data-translation-context="Button in the dialog that shows the player's new recovery codes: copies them all"><!-- icon ph:copy -->Copy</button>
-						<button id="recovery-codes-download" type="button" class="secondary" data-shortcut="Alt+W" data-message="profile.downloadRecoveryCodes" data-translation-context="Button in the dialog that shows the player's new recovery codes: saves them as a text file"><!-- icon ph:download-simple -->Download</button>
-						<button id="recovery-codes-done" type="button" data-shortcut="Alt+V" data-message="profile.recoveryCodesSaved" data-translation-context="Button that closes the dialog showing the player's new recovery codes, once they have saved them"><!-- icon ph:check -->I've saved them</button>
-					</div>
-				</div>
-			</dialog>
+			<!-- include two-factor-dialogs.html -->
 
 			<dialog id="two-factor-confirm-dialog" class="panel dialog" aria-labelledby="two-factor-confirm-title">
 				<form id="two-factor-confirm-form" class="form" novalidate>

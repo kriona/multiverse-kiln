@@ -11,9 +11,9 @@ import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors
 import { drawQrCode } from './qrCode';
 
 /**
- * The dialog that turns on 2FA (profile.html): the player's password, then a QR code for their
- * authenticator app and the code the app shows. Once that is right, the account's recovery codes are
- * shown (RecoveryCodesDialog)
+ * The dialog that turns on 2FA (partials/two-factor-dialogs.html, on the profile and Home): the
+ * player's password, then a QR code for their authenticator app and the code the app shows. Once that
+ * is right, the account's recovery codes are shown (RecoveryCodesDialog)
  *
  * The secret comes in the body of the setup request's answer, and is only drawn as a QR code and shown
  * as text in the dialog: it is never put in an address, a link or an image's source, and it is cleared
@@ -34,7 +34,14 @@ export class TwoFactorSetupDialog
 	private readonly error = getElement('two-factor-dialog-error', HTMLElement);
 	private readonly continueButton = getElement('two-factor-dialog-continue', HTMLButtonElement);
 	private readonly enableButton = getElement('two-factor-dialog-enable', HTMLButtonElement);
+	private readonly cancelButton = getElement('two-factor-dialog-cancel', HTMLButtonElement);
+	private readonly skipButton = getElement('two-factor-dialog-skip', HTMLButtonElement);
 	private readonly tracker = new ChangeTracker({ root: this.form });
+
+	/**
+	 * Called when the dialog closes without turning 2FA on, while it offers to skip setting it up
+	 */
+	private skipped: (() => void) | undefined;
 
 	/**
 	 * @param api The auth routes
@@ -64,17 +71,24 @@ export class TwoFactorSetupDialog
 			void this.copySecret();
 		});
 
-		getElement('two-factor-dialog-cancel', HTMLButtonElement).addEventListener('click', () =>
+		for (const button of [this.cancelButton, this.skipButton])
 		{
-			if (this.tracker.confirmDiscard())
+			button.addEventListener('click', () =>
 			{
-				this.dialog.close();
-			}
-		});
+				if (this.tracker.confirmDiscard())
+				{
+					this.dialog.close();
+				}
+			});
+		}
 
 		this.dialog.addEventListener('close', () =>
 		{
+			const skipped = this.skipped;
+
+			this.skipped = undefined;
 			this.forgetSecret();
+			skipped?.();
 		});
 	}
 
@@ -82,9 +96,14 @@ export class TwoFactorSetupDialog
 	 * Opens the dialog, asking for the password
 	 *
 	 * @param email The account's address, which tells password managers which account the password is for
+	 * @param skipped When given, Skip Setup takes Cancel's place, and this is called when the dialog closes
+	 * without turning 2FA on, however it closes
 	 */
-	open(email: string | null): void
+	open(email: string | null, skipped?: () => void): void
 	{
+		this.skipped = skipped;
+		this.cancelButton.hidden = (skipped !== undefined);
+		this.skipButton.hidden = (skipped === undefined);
 		this.email.value = (email ?? '');
 		this.password.value = '';
 		resetCodeInput(this.code);
@@ -149,6 +168,7 @@ export class TwoFactorSetupDialog
 				});
 
 				this.tracker.markSaved();
+				this.skipped = undefined;
 				this.dialog.close();
 				this.enabled(codes);
 			}

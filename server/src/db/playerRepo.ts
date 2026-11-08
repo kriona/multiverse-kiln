@@ -51,6 +51,19 @@ export interface LocalLogin
 }
 
 /**
+ * An account that can turn on 2FA (findTwoFactorCandidate)
+ */
+export interface TwoFactorCandidate
+{
+	username: string;
+
+	/**
+	 * The address the account logs in with, or null when it has none
+	 */
+	email: string | null;
+}
+
+/**
  * What other players can read of a player's profile
  */
 export interface ProfileDetails
@@ -369,6 +382,40 @@ export async function findPasswordHash(playerId: string, executor: Executor = db
 		.limit(1);
 
 	return((row?.passwordHash ?? null));
+}
+
+/**
+ * An account that can turn on 2FA: one with a password, which setting it up asks for, and 2FA off.
+ * Reads the authenticators table for that
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return Its username and email address, or undefined when it can't turn 2FA on or doesn't exist
+ */
+export async function findTwoFactorCandidate(playerId: string, executor: Executor = db): Promise<TwoFactorCandidate | undefined>
+{
+	const [row] = await executor
+		.select({
+			username: players.username,
+			email: players.email
+		})
+		.from(players)
+		.where(and(
+			eq(players.id, playerId),
+			isNotNull(players.passwordHash),
+			not(exists(executor
+				.select({
+					playerId: authenticators.playerId
+				})
+				.from(authenticators)
+				.where(and(
+					eq(authenticators.playerId, players.id),
+					isNotNull(authenticators.enabledAt)
+				))))
+		))
+		.limit(1);
+
+	return(row);
 }
 
 /**

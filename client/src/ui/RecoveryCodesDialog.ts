@@ -5,9 +5,9 @@ import { announce } from './announcer';
 import { getElement } from './dom';
 
 /**
- * The dialog that shows the player's new recovery codes for 2FA (profile.html), the only time they are
- * shown: after turning 2FA on, and after making new ones. The player can copy them or save them as a
- * text file
+ * The dialog that shows the player's new recovery codes for 2FA (partials/two-factor-dialogs.html, on
+ * the profile and Home), the only time they are shown: after turning 2FA on, and after making new ones.
+ * The player can copy them or save them as a text file
  */
 export class RecoveryCodesDialog
 {
@@ -24,6 +24,11 @@ export class RecoveryCodesDialog
 	 * The player's username, which the saved file names
 	 */
 	private username = '';
+
+	/**
+	 * Called once the dialog closes
+	 */
+	private closed: (() => void) | undefined;
 
 	/**
 	 * Sets up the dialog's buttons
@@ -47,9 +52,13 @@ export class RecoveryCodesDialog
 
 		this.dialog.addEventListener('close', () =>
 		{
+			const closed = this.closed;
+
 			// Not left in the page once the dialog closes
 			this.codes = [];
 			this.list.replaceChildren();
+			this.closed = undefined;
+			closed?.();
 		});
 	}
 
@@ -58,11 +67,13 @@ export class RecoveryCodesDialog
 	 *
 	 * @param codes The codes
 	 * @param username The player's username
+	 * @param closed Called once the dialog closes
 	 */
-	open(codes: readonly string[], username: string): void
+	open(codes: readonly string[], username: string, closed?: () => void): void
 	{
 		this.codes = [...codes];
 		this.username = username;
+		this.closed = closed;
 		this.status.textContent = '';
 		this.list.replaceChildren(...codes.map((code) =>
 		{
