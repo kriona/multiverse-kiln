@@ -2,11 +2,11 @@
  * The record of saves made in universes' editors, for the editor's Audit tab: the only module that reads
  * or writes the universe_edits table
  */
-import { and, count, desc, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, lt, sql } from 'drizzle-orm';
 import type { AuditField, AuditSubject, EditorRole, UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { players, universeEdits } from './schema.js';
+import { players, universeEdits, universes } from './schema.js';
 
 /**
  * A save to record
@@ -48,6 +48,35 @@ export interface UniverseEditRecord
 	 */
 	draft: boolean;
 	changeDetails: UniverseEditDetail[] | null;
+	savedAt: Date;
+}
+
+/**
+ * A recorded save, with the universe it was made in, for a player's data export
+ */
+export interface PlayerUniverseEditRecord
+{
+	universeId: string;
+	universeName: string;
+	role: EditorRole;
+	draft: boolean;
+	changeDetails: UniverseEditDetail[] | null;
+	savedAt: Date;
+}
+
+/**
+ * A save that added a player as an editor, changed their role or removed them, for their data export
+ */
+export interface EditorChangeRecord
+{
+	universeId: string;
+	universeName: string;
+
+	/**
+	 * Only what the save did to the player
+	 */
+	changeDetails: UniverseEditDetail[];
+
 	savedAt: Date;
 }
 
@@ -139,6 +168,72 @@ export async function findLastSaver(universeId: string, draft: boolean, setting:
 		.limit(1);
 
 	return(row);
+}
+
+/**
+ * The saves a player made in every universe's editor
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The saves, oldest first, with what each changed as the Audit tab lists it
+ */
+export async function listPlayerUniverseEdits(playerId: string, executor: Executor = db): Promise<PlayerUniverseEditRecord[]>
+{
+	const rows = await executor
+		.select({
+			universeId: universeEdits.universeId,
+			universeName: universes.name,
+			role: universeEdits.role,
+			draft: universeEdits.draft,
+			changeDetails: universeEdits.changeDetails,
+			savedAt: universeEdits.savedAt
+		})
+		.from(universeEdits)
+		.innerJoin(universes, eq(universes.id, universeEdits.universeId))
+		.where(eq(universeEdits.playerId, playerId))
+		.orderBy(asc(universeEdits.savedAt), asc(universeEdits.id));
+
+	return(rows.map((row) => ({
+		...row,
+		changeDetails: (row.changeDetails?.map((detail) => omitId(detail)) ?? null)
+	})));
+}
+
+/**
+ * The saves other players made that added a player as an editor, changed their role or removed them,
+ * found by the player's ID, which the save records with each change to an editor (SavedEditDetail)
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The saves, oldest first, each with only the changes to the player
+ */
+export async function listEditorChanges(playerId: string, executor: Executor = db): Promise<EditorChangeRecord[]>
+{
+	const pattern = JSON.stringify([{
+		subject: 'editor',
+		id: playerId
+	}]);
+	const rows = await executor
+		.select({
+			universeId: universeEdits.universeId,
+			universeName: universes.name,
+			changeDetails: universeEdits.changeDetails,
+			savedAt: universeEdits.savedAt
+		})
+		.from(universeEdits)
+		.innerJoin(universes, eq(universes.id, universeEdits.universeId))
+		.where(and(
+			sql`${universeEdits.playerId} IS DISTINCT FROM ${playerId}`,
+			sql`${universeEdits.changeDetails} @> ${pattern}::jsonb`
+		))
+		.orderBy(asc(universeEdits.savedAt), asc(universeEdits.id));
+
+	return(rows.map(({ changeDetails, ...row }) => ({
+		...row,
+		changeDetails: (changeDetails ?? [])
+			.filter((detail: UniverseEditDetail & { id?: unknown }) => ((detail.subject === 'editor') && (detail.id === playerId)))
+			.map((detail) => omitId(detail))
+	})));
 }
 
 /**

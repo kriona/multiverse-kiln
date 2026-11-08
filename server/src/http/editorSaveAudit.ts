@@ -10,6 +10,7 @@ import { findEditorArea } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { listDifficultyLevels } from '../db/difficultyRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
+import { findPlayerByUsername } from '../db/playerRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadRulesetSettings } from '../db/rulesetRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
@@ -393,6 +394,8 @@ export class SaveAudit
 				return;
 
 			case 'addEditor':
+				// Unlike other things added, the player already has an ID, which the data export finds the save by
+				this.changeId = ((await findPlayerByUsername(change.username, this.context.transaction))?.id ?? null);
 				this.add('editor', 'added', { key: null, name: change.username }, 1, roleFields(change.settings));
 				return;
 

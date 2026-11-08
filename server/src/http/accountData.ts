@@ -7,6 +7,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { accountExportFileName, DEFAULT_CLASS_NAMES, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, MAX_LOCALE_LENGTH, type AccountDeletionPayload, type AccountExport, type ExportedCharacter, type MessageDescriptor, type Ruleset, type Translator } from '@multiverse-kiln/shared';
 
+import { findPlayerAdminEvents } from '../db/adminEventRepo.js';
 import { findPlayerAuthEvents } from '../db/authEventRepo.js';
 import { listOwnChatMessages, listOwnChatReads } from '../db/chatRepo.js';
 import { findCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
@@ -20,6 +21,7 @@ import { loadEditorRaces } from '../db/raceRepo.js';
 import { listPlayerSessions } from '../db/sessionRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { findTwoFactorState, hasTwoFactor } from '../db/twoFactorRepo.js';
+import { listEditorChanges, listPlayerUniverseEdits } from '../db/universeEditRepo.js';
 import { listEditableUniverses, listOtherUniverseEditors, listSoleCreatedUniverses } from '../db/universeEditorRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { emailTranslator } from '../email/emailLocales.js';
@@ -180,7 +182,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 	const now = new Date();
 	const locale = exportLocale.safeParse(request.query.locale);
 	const translator = emailTranslator((locale.success ? locale.data : 'en'));
-	const [profile, providers, twoFactor, sessions, events, universes, records, drafts, chats, reads] = await Promise.all([
+	const [profile, providers, twoFactor, sessions, events, universes, records, drafts, chats, reads, edits, editorChanges, adminEvents] = await Promise.all([
 		findOwnProfile(playerId),
 		listProviderLogins(playerId),
 		findTwoFactorState(playerId, now),
@@ -190,7 +192,10 @@ export async function exportRoute(request: Request, response: Response): Promise
 		listProfileCharacters(playerId, {}),
 		listCharacterDrafts(playerId),
 		listOwnChatMessages(playerId),
-		listOwnChatReads(playerId)
+		listOwnChatReads(playerId),
+		listPlayerUniverseEdits(playerId),
+		listEditorChanges(playerId),
+		findPlayerAdminEvents(playerId)
 	]);
 
 	if (!profile)
@@ -238,6 +243,29 @@ export async function exportRoute(request: Request, response: Response): Promise
 		chatReads: reads.map((read) => ({
 			...read,
 			readAt: read.readAt.toISOString()
+		})),
+		universeEdits: edits.map(({ changeDetails, savedAt, ...edit }) => ({
+			...edit,
+			changes: changeDetails,
+			savedAt: savedAt.toISOString()
+		})),
+		editorChanges: editorChanges.map(({ changeDetails, savedAt, ...change }) => ({
+			...change,
+			changes: changeDetails,
+			savedAt: savedAt.toISOString()
+		})),
+		adminEvents: adminEvents.map((event) => ({
+			kind: event.kind,
+			byPlayer: (event.adminId === playerId),
+			playerId: event.playerId,
+			universe: (((event.universeId === null) || (event.universeName === null))
+				? null
+				: {
+					id: event.universeId,
+					name: event.universeName
+				}),
+			reason: event.reason,
+			occurredAt: event.occurredAt.toISOString()
 		}))
 	};
 

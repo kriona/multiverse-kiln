@@ -5,7 +5,7 @@
 import { asc, eq, or } from 'drizzle-orm';
 
 import { db, type Executor } from './client.js';
-import { adminEvents, type ADMIN_EVENT_KINDS } from './schema.js';
+import { adminEvents, universes, type ADMIN_EVENT_KINDS } from './schema.js';
 
 /**
  * What a server admin did
@@ -42,6 +42,12 @@ export interface AdminEventRecord
 	kind: AdminEventKind;
 	playerId: string | null;
 	universeId: string | null;
+
+	/**
+	 * The universe's name, or null when the event names none
+	 */
+	universeName: string | null;
+
 	reason: string | null;
 	occurredAt: Date;
 }
@@ -61,10 +67,12 @@ export async function findPlayerAdminEvents(playerId: string, executor: Executor
 			kind: adminEvents.kind,
 			playerId: adminEvents.playerId,
 			universeId: adminEvents.universeId,
+			universeName: universes.name,
 			reason: adminEvents.reason,
 			occurredAt: adminEvents.occurredAt
 		})
 		.from(adminEvents)
+		.leftJoin(universes, eq(universes.id, adminEvents.universeId))
 		.where(or(
 			eq(adminEvents.adminId, playerId),
 			eq(adminEvents.playerId, playerId)
@@ -87,10 +95,12 @@ export async function findUniverseAdminEvents(universeId: string, executor: Exec
 			kind: adminEvents.kind,
 			playerId: adminEvents.playerId,
 			universeId: adminEvents.universeId,
+			universeName: universes.name,
 			reason: adminEvents.reason,
 			occurredAt: adminEvents.occurredAt
 		})
 		.from(adminEvents)
+		.leftJoin(universes, eq(universes.id, adminEvents.universeId))
 		.where(eq(adminEvents.universeId, universeId))
 		.orderBy(asc(adminEvents.occurredAt), asc(adminEvents.id)));
 }

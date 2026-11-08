@@ -168,8 +168,9 @@ export interface SavedEditDetail extends UniverseEditDetail
 {
 	/**
 	 * The ID of the tile, item, race, class, theme, difficulty level, area (the one whose map or links it
-	 * changed, for cells and links) or uploaded tileset, or the editor's player ID; null for something
-	 * added, and for the settings, the ruleset, translations and the draft
+	 * changed, for cells and links) or uploaded tileset, or the editor's player ID (an editor added
+	 * included); null for anything else added, and for the settings, the ruleset, translations and the
+	 * draft
 	 */
 	id: number | string | null;
 

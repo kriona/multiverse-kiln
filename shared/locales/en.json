@@ -6107,6 +6107,10 @@
 		"defaultMessage": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back.",
 		"description": "In the privacy policy, how long a deleted character is kept before it is removed for good, during which the player can restore them; {days} is the number of days the site sets"
 	},
+	"privacy.howLongEditRecord": {
+		"defaultMessage": "The record of saves made in universe editors for 90 days, or until the universe is deleted, even after you delete your account.",
+		"description": "In the privacy policy, how long the record of saves made in universes' editors is kept: 90 days, or until the universe is deleted, even after the player deletes their account"
+	},
 	"privacy.howLongSecurity": {
 		"defaultMessage": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account.",
 		"description": "In the privacy policy, how long security records are kept"
@@ -6140,8 +6144,8 @@
 		"description": "In the privacy policy, how long chat is kept: a lobby's only in the game server's memory, and only the most recent messages"
 	},
 	"privacy.playEditRecord": {
-		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account.",
-		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab, kept for 90 days or until the universe is deleted, naming the player until they delete their account"
+		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for 90 days, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away.",
+		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab. Each save is kept for 90 days, or until the universe is deleted, even after the player deletes their account: deleting it takes their name off their own saves, but their username stays in the saves that gave them a role in a universe, changed it or took it away"
 	},
 	"privacy.playKeptChat": {
 		"defaultMessage": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps its newest 200 messages, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name.",

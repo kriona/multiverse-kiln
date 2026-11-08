@@ -5,10 +5,11 @@
 import type { LoginProvider } from './accounts.js';
 import type { OptionName } from './characters.js';
 import { SITE_NAME } from './constants.js';
+import type { UniverseEditDetail } from './editor.js';
 import { defineMessages, type LocalizedMessage, type MessageDescriptor } from './localization.js';
 import type { Money } from './money.js';
 import type { AbilityScores } from './racesAndClasses.js';
-import type { Ruleset, UniverseRole } from './universes.js';
+import type { EditorRole, Ruleset, UniverseRole } from './universes.js';
 
 /**
  * Most characters in a profile's pronouns, such as "she/her" or "they/them"
@@ -528,5 +529,80 @@ export interface AccountExport
 
 		groupName: string | null;
 		readAt: string;
+	}[];
+
+	/**
+	 * The saves the player made in universes' editors that are still kept (for 90 days), oldest first
+	 */
+	universeEdits: {
+		universeId: string;
+		universeName: string;
+
+		/**
+		 * The role they saved with, the site admin role included
+		 */
+		role: EditorRole;
+
+		/**
+		 * Whether the save changed the universe's draft rather than its live version
+		 */
+		draft: boolean;
+
+		/**
+		 * What the save changed, as the editor's Audit tab lists it, or null for a save recorded before
+		 * its details were
+		 */
+		changes: UniverseEditDetail[] | null;
+
+		savedAt: string;
+	}[];
+
+	/**
+	 * The saves other players made that added the player as an editor of a universe, changed their role or
+	 * removed them, still kept (for 90 days), oldest first: only what each save did to the player, without
+	 * who saved
+	 */
+	editorChanges: {
+		universeId: string;
+		universeName: string;
+		changes: UniverseEditDetail[];
+		savedAt: string;
+	}[];
+
+	/**
+	 * What server admins did on the admin pages that the player did or was the subject of, oldest first,
+	 * without the other admin who did it
+	 */
+	adminEvents: {
+		/**
+		 * What was done: adminAdded, adminRemoved, universeDisabled or universeEnabled
+		 */
+		kind: string;
+
+		/**
+		 * Whether the player was the admin who did it, rather than the player made or removed as an admin
+		 */
+		byPlayer: boolean;
+
+		/**
+		 * The player made or removed as an admin, by ID, or null for other kinds and once their account is
+		 * deleted
+		 */
+		playerId: string | null;
+
+		/**
+		 * The universe disabled or enabled, or null for other kinds and once it is deleted
+		 */
+		universe: {
+			id: string;
+			name: string;
+		} | null;
+
+		/**
+		 * The reason given for disabling a universe, or null for other kinds
+		 */
+		reason: string | null;
+
+		occurredAt: string;
 	}[];
 }
