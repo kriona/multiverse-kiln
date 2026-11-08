@@ -381,6 +381,12 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	{
 		let uploads: UploadedTileGraphic[];
 
+		// Only roles that change the world may load the uploads (see shared/src/editor.ts)
+		if (!canEditWorld(universe.role))
+		{
+			return;
+		}
+
 		try
 		{
 			uploads = await this.api.listTileGraphics(universe.id);
@@ -654,7 +660,8 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		const universe = this.universe;
 		const version = ++this.requestVersion;
 
-		if (!universe)
+		// Only roles that change the world may load the tiles (see shared/src/editor.ts)
+		if (!universe || !canEditWorld(universe.role))
 		{
 			return;
 		}

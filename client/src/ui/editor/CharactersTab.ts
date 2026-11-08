@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, loadedFor, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseCoinAbbreviations, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, loadedFor, MAX_GROUP_PLAYERS, MIN_GROUP_SIZE, type EditableUniverse, type StartingCell, type UniverseCoinAbbreviations, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -201,7 +201,8 @@ export class CharactersTab implements SavableTab
 		this.startingAreaName = '';
 		this.areaName.textContent = '';
 
-		if (!universe || (areaId === null))
+		// Only roles that change the world may load the areas (see shared/src/editor.ts)
+		if (!universe || (areaId === null) || !canEditWorld(universe.role))
 		{
 			return;
 		}

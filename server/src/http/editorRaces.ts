@@ -4,12 +4,12 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { defineMessages, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { universeContextOf } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 
@@ -46,7 +46,7 @@ const messages = defineMessages({
  */
 export function addRaceRoutes(router: express.Router): void
 {
-	router.get('/races', listRaces);
+	router.get('/races', requireRole(canEditWorld), listRaces);
 }
 
 /**

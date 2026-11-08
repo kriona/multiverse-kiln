@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, loadedFrom, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHOD_NAMES, PF1E_STAT_METHODS, RULESET_NAMES, SF1E_MAX_ABILITY_POINTS, SF1E_MIN_ABILITY_POINTS, type EditableUniverse, type LoadedSettings, type Pf1eStatMethod, type RulesetSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, loadedFrom, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MIN_POINT_BUY_BUDGET, PF1E_STAT_METHOD_NAMES, PF1E_STAT_METHODS, RULESET_NAMES, SF1E_MAX_ABILITY_POINTS, SF1E_MIN_ABILITY_POINTS, type EditableUniverse, type LoadedSettings, type Pf1eStatMethod, type RulesetSettings } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -97,6 +97,12 @@ export class RulesetTab implements SavableTab
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
+
+		// Only roles that change the world may load the ruleset's settings (see shared/src/editor.ts)
+		if (!canEditWorld(universe.role))
+		{
+			return;
+		}
 
 		let ruleset: RulesetSettings;
 

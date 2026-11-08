@@ -309,7 +309,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		const universe = this.universe;
 		const version = ++this.requestVersion;
 
-		if (!universe)
+		// Only roles that change the world may load the items (see shared/src/editor.ts)
+		if (!universe || !canEditWorld(universe.role))
 		{
 			return;
 		}

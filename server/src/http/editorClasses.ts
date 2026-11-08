@@ -4,13 +4,13 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfClass } from '../db/characterRepo.js';
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass } from '../db/classRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { universeContextOf } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 
@@ -47,7 +47,7 @@ const messages = defineMessages({
  */
 export function addClassRoutes(router: express.Router): void
 {
-	router.get('/classes', listClasses);
+	router.get('/classes', requireRole(canEditWorld), listClasses);
 }
 
 /**

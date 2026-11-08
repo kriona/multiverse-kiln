@@ -1,4 +1,4 @@
-import { loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -296,7 +296,8 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 		const universe = this.universe;
 		const version = ++this.requestVersion;
 
-		if (!universe)
+		// Only roles that change the world may load the options (see shared/src/editor.ts)
+		if (!universe || !canEditWorld(universe.role))
 		{
 			return;
 		}

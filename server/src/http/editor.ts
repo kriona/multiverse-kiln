@@ -6,7 +6,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
@@ -20,7 +20,7 @@ import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
-import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, universeContextOf } from './editorAccess.js';
+import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { isSameVersion, type UniverseVersion } from '../db/universeVersions.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
@@ -127,9 +127,9 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addEditorListRoutes(universeRouter);
 	addCharacterListRoutes(universeRouter);
 	addAuditRoutes(universeRouter);
-	universeRouter.get('/ruleset', getRulesetSettings);
-	universeRouter.get('/tiles', listTiles);
-	universeRouter.get('/tiles/:tileId/usage', tileUsage);
+	universeRouter.get('/ruleset', requireRole(canEditWorld), getRulesetSettings);
+	universeRouter.get('/tiles', requireRole(canEditWorld), listTiles);
+	universeRouter.get('/tiles/:tileId/usage', requireRole(canEditWorld), tileUsage);
 	addItemRoutes(universeRouter);
 	addRaceRoutes(universeRouter);
 	addClassRoutes(universeRouter);

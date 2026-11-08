@@ -459,6 +459,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
+		// A role that can't load areas gets the empty list instead
+		if (!canEditWorld(universe.role))
+		{
+			await this.showList();
+			return;
+		}
+
 		const version = ++this.openVersion;
 
 		// Any unsaved painting has been discarded, so the map loads afresh
@@ -523,8 +530,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.editorView.hidden = true;
 		this.showClaim();
 
-		if (!universe)
+		// Only roles that change the world may load the areas (see shared/src/editor.ts)
+		if (!universe || !canEditWorld(universe.role))
 		{
+			this.list.replaceChildren();
 			return;
 		}
 

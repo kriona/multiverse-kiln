@@ -1,4 +1,4 @@
-import type { EditableUniverse, EditorItem, ItemQuantity } from '@multiverse-kiln/shared';
+import { canEditWorld, type EditableUniverse, type EditorItem, type ItemQuantity } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -87,7 +87,8 @@ export class StartingItemsField
 		// Choosing needs every item, or the items not loaded would be dropped from the equipment
 		this.elements.choose.disabled = (startingItems.length > 0);
 
-		if (startingItems.length === 0)
+		// Only roles that change the world may load the items (see shared/src/editor.ts)
+		if ((startingItems.length === 0) || !canEditWorld(universe.role))
 		{
 			return;
 		}
