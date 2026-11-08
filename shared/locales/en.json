@@ -6620,7 +6620,7 @@
 		"description": "Label of the player's email address, on their own profile page"
 	},
 	"profile.emailChanged": {
-		"defaultMessage": "Email address changed. We've told both addresses.",
+		"defaultMessage": "Email address changed. We've informed both addresses.",
 		"description": "Shown once the player has changed their email address from their profile"
 	},
 	"profile.forgetBrowsers": {

@@ -1,14 +1,16 @@
 import { ColyseusTestServer } from '@colyseus/testing';
 
 import appConfig from '../src/app.config.js';
+import { reviewSlot } from './reviewSlot.js';
 import { registerTestServer } from './testServerHooks.js';
-import { testWorker } from './testWorker.js';
+import { MAX_TEST_WORKERS, testWorker } from './testWorker.js';
 
 /**
  * The test server's port: 2568, the port @colyseus/testing uses, when the tests run in one process,
- * and the ports after it for parallel workers, so each worker's server has a port of its own
+ * the ports after it for parallel workers, so each worker's server has a port of its own, and the ports
+ * after the workers' for review slots (2577 to 2580)
  */
-const testServerPort = 2568 + testWorker;
+const testServerPort = ((reviewSlot > 0) ? (2568 + MAX_TEST_WORKERS + reviewSlot) : (2568 + testWorker));
 
 /**
  * Base URL of the test server for plain HTTP requests

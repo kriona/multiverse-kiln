@@ -101,6 +101,8 @@ export default defineConfig(
 		'server/ecosystem.config.cjs',
 		// Third-party agent skills, installed and updated by `npx skills`
 		'.agents/',
+		// Claude Code workflow scripts, which run with the workflow tool's own globals and a top-level return
+		'.claude/workflows/',
 		// Scratch work, which git ignores too (see CLAUDE.md)
 		'scratchpad/'
 	]),
