@@ -23,7 +23,10 @@
 						<p id="universe-summary" class="universe-summary"></p>
 						<div id="universe-description" class="markdown"></div>
 						<p id="universe-locked" class="notice" data-message="universePage.locked" data-translation-context="On the page of a universe in the stage end of time, above Enter Universe: what being locked means" hidden>This universe has reached the end of time, so it is locked. Its lobby can't be entered and no characters can be made, but characters in a group can still open it to look around.</p>
-						<a id="universe-enter" class="button universe-enter" href="/game" data-shortcut="Alt+U" data-message="universePage.enter" data-translation-context="Button on a universe's page that takes the player into the universe, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</a>
+						<div class="universe-actions">
+							<a id="universe-enter" class="button" href="/game" data-shortcut="Alt+U" data-message="universePage.enter" data-translation-context="Button on a universe's page that takes the player into the universe, starting in its lobby"><!-- icon game-icons:magic-portal -->Enter Universe</a>
+							<a id="universe-edit" class="button draft" href="/edit" data-shortcut="Alt+I" hidden data-message="universePage.edit" data-translation-context="Button on a universe's page, beside Enter Universe and shown only to its creators, builders and translators and the site's admins, that opens the universe in the world editor"><!-- icon ph:pencil-simple -->Edit Universe</a>
+						</div>
 					</article>
 					<section class="panel universe-languages" aria-labelledby="universe-languages-heading">
 						<h2 id="universe-languages-heading" data-message="universePage.languagesHeading" data-translation-context="Heading of the section of a universe's page that lists the languages the universe can be played in, and lets the player choose one">Languages</h2>

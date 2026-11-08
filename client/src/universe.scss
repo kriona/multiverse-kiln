@@ -1,5 +1,5 @@
-// A universe's page (universe.html): its name, ruleset and descriptions, Enter Universe, its languages
-// and the player's characters in it
+// A universe's page (universe.html): its name, ruleset and descriptions, Enter Universe and Edit
+// Universe, its languages and the player's characters in it
 
 @use 'shared' as *;
 @use 'characterSheet';
@@ -37,8 +37,12 @@
 	font-size: 17px;
 }
 
-.universe-enter
+// Enter Universe, and Edit Universe beside it for players who work on the universe
+.universe-actions
 {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 	margin-top: 8px;
 }
 

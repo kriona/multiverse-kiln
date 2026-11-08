@@ -7363,6 +7363,10 @@
 		"message": "by the real clock",
 		"source": "real time"
 	},
+	"universePage.edit": {
+		"message": "Refit Universe",
+		"source": "Edit Universe"
+	},
 	"universePage.enter": {
 		"message": "Set Sail",
 		"source": "Enter Universe"

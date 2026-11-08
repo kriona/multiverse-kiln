@@ -705,6 +705,18 @@ export interface UniverseDetails extends UniverseSummary
 }
 
 /**
+ * Response of GET UNIVERSES_PATH/:key: the universe, and what the browser asking may do with it
+ */
+export interface UniversePagePayload extends UniverseDetails
+{
+	/**
+	 * Whether the browser's player may work on the universe in the editor: a creator, builder or
+	 * translator, or a server admin with 2FA on
+	 */
+	editable: boolean;
+}
+
+/**
  * Response of GET UNIVERSES_PATH
  */
 export interface UniverseListPayload

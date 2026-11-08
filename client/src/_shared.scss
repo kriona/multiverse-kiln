@@ -323,7 +323,8 @@ button.danger
 	}
 }
 
-button.draft
+button.draft,
+a.button.draft
 {
 	border-color: $draft;
 	background: $draft-background;

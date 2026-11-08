@@ -1,11 +1,12 @@
 import type { Application } from 'express';
 import { z } from 'zod';
-import { canViewUniverse, MAX_UNIVERSE_NAME_LENGTH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload } from '@multiverse-kiln/shared';
+import { canViewUniverse, editorAccessOf, MAX_UNIVERSE_NAME_LENGTH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseTextPayload } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { listAreas } from '../db/areaRepo.js';
+import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
-import { findUniverseRole } from '../db/universeEditorRepo.js';
+import { findUniverseAccess, findUniverseRole } from '../db/universeEditorRepo.js';
 import { findUniverseDetails, listUniverses } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
@@ -48,6 +49,37 @@ async function maySeeUniverse(universe: UniverseDetails, cookieHeader: string | 
 }
 
 /**
+ * What the browser asking may do with a universe's page: see it, as maySeeUniverse() says, and work on
+ * it in the editor, as its creators, builders and translators and server admins with 2FA on may. Beta
+ * testers only play it, so they aren't shown the editor
+ *
+ * @param universe The universe
+ * @param cookieHeader The request's Cookie header
+ * @return Whether they may see it, and whether they may edit it
+ */
+async function findPageAccess(universe: UniverseDetails, cookieHeader: string | undefined): Promise<{ visible: boolean; editable: boolean }>
+{
+	const session = await resolveSession(cookieHeader);
+
+	if (session === undefined)
+	{
+		return({
+			visible: canViewUniverse(universe.stage, undefined),
+			editable: false
+		});
+	}
+
+	const access = await findUniverseAccess(universe.id, session.playerId);
+	const visible = canViewUniverse(universe.stage, access?.role);
+	const editor = (visible ? editorAccessOf(access, await isActiveServerAdmin(session.playerId)) : undefined);
+
+	return({
+		visible,
+		editable: ((editor !== undefined) && (editor.role !== 'beta_tester'))
+	});
+}
+
+/**
  * The names a universe's rooms leave to the client to look up by ID, in the languages a request asks for
  *
  * @param universe The universe
@@ -78,8 +110,8 @@ async function loadUniverseText(universe: UniverseDetails, requested: readonly s
  * - GET UNIVERSES_PATH lists them by name, a page at a time. Answers 400 for an offset or limit that
  *   isn't a whole number in range
  * - GET UNIVERSES_PATH/:key gives a universe in full, by its ID or its slug: one Home lists, one at the
- *   end of time, or one whose stage the player's role lets them play it in (maySeeUniverse). Answers
- *   404 for any other, and for a disabled universe
+ *   end of time, or one whose stage the player's role lets them play it in (maySeeUniverse), with
+ *   whether the player may edit it (findPageAccess). Answers 404 for any other, and for a disabled universe
  * - GET UNIVERSES_PATH/:key/text gives the names its rooms leave to the client (UniverseTextPayload),
  *   for the same universes, with an ETag that changes with the text, answering 304 while it is the same.
  *   The text is kept for each universe and language (universeTextCache) until it changes
@@ -103,19 +135,21 @@ export function addUniversesRoutes(app: Application): void
 		try
 		{
 			const universe = await findUniverseDetails(key.data);
+			const access = (universe ? await findPageAccess(universe, request.headers.cookie) : undefined);
 
-			if (!universe || !await maySeeUniverse(universe, request.headers.cookie))
+			if (!universe || !access?.visible)
 			{
 				sendError(response, 404, errorMessages.noSuchUniverse);
 				return;
 			}
 
 			const translator = await UniverseTextTranslator.load(universe, await requestLanguages(request), ['universe']);
-			const payload: UniverseDetails = {
+			const payload: UniversePagePayload = {
 				...universe,
 				name: translator.text('universe', universe.id, 'name', universe.name),
 				shortDescription: translator.text('universe', universe.id, 'shortDescription', universe.shortDescription),
-				longDescription: translator.text('universe', universe.id, 'longDescription', universe.longDescription)
+				longDescription: translator.text('universe', universe.id, 'longDescription', universe.longDescription),
+				editable: access.editable
 			};
 
 			response.set('Vary', 'Accept-Language, Cookie');

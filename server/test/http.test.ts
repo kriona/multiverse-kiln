@@ -2,8 +2,9 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_PATH, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseStage } from '@multiverse-kiln/shared';
 
+import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createUniverse } from '../src/db/universeRepo.js';
 import { DEV_BOT_LOGIN_PATH } from '../src/http/devLogin.js';
@@ -11,6 +12,7 @@ import { HEALTH_PATH } from '../src/http/health.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { turnOnTwoFactor } from './twoFactorAccounts.js';
 
 const otherOrigin = 'https://evil.example';
 
@@ -270,8 +272,44 @@ describe('Universe list', () =>
 			ruleset: 'pf1e',
 			sourceLanguage: 'de',
 			translationLanguages: [],
-			stage: 'let_there_be_light'
+			stage: 'let_there_be_light',
+			editable: false
 		});
+	});
+
+	it('says a universe is editable only to its creators, builders and translators, and to server admins with 2FA on', async () =>
+	{
+		const universeId = await addUniverseIn('Kilnhaven', 'let_there_be_light');
+		const creator = await logInBrowser((await addPlayer('Cora')).id);
+		const builder = await logInBrowser((await addPlayer('Bob')).id);
+		const tester = await logInBrowser((await addPlayer('Tess')).id);
+		const translator = await logInBrowser((await addPlayer('Tran')).id);
+		const stranger = await logInBrowser((await addPlayer('Sam')).id);
+		const admin = await logInBrowser((await addPlayer('Ada')).id);
+		const adminWithout2fa = await logInBrowser((await addPlayer('Abe')).id);
+
+		await setUniverseRole(universeId, creator.playerId, 'creator');
+		await setUniverseRole(universeId, builder.playerId, 'builder');
+		await setUniverseRole(universeId, tester.playerId, 'beta_tester');
+		await setUniverseRole(universeId, translator.playerId, 'translator');
+		await addServerAdmin(admin.playerId);
+		await turnOnTwoFactor(admin.playerId);
+		await addServerAdmin(adminWithout2fa.playerId);
+
+		/**
+		 * Whether a browser is told it may edit the universe
+		 *
+		 * @param browser The browser, or undefined for one that isn't logged in
+		 * @return The response's editable
+		 */
+		const editableFor = async (browser?: TestBrowser): Promise<boolean> =>
+		{
+			const response = await fetch(`${testServerUrl}${UNIVERSES_PATH}/${universeId}`, { headers: (browser ? { Cookie: browser.cookie } : {}) });
+
+			return(((await response.json()) as UniversePagePayload).editable);
+		};
+
+		assert.deepStrictEqual(await Promise.all([undefined, creator, builder, tester, translator, stranger, admin, adminWithout2fa].map((browser) => editableFor(browser))), [false, true, true, false, true, false, true, false]);
 	});
 
 	it('gives a universe at the end of time to anyone, and one not open to everyone only to players whose role lets them play it', async () =>

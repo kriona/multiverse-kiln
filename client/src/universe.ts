@@ -1,5 +1,5 @@
 import { ServerError } from '@colyseus/sdk';
-import { RULESET_NAMES, SessionServerMessageType, type AccountPayload, type UniverseDetails } from '@multiverse-kiln/shared';
+import { RULESET_NAMES, SessionServerMessageType, type AccountPayload, type UniverseDetails, type UniversePagePayload } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
 import { AuthApi } from './network/authApi';
@@ -8,7 +8,7 @@ import { GroupApi } from './network/groupApi';
 import { ProfileApi } from './network/profileApi';
 import { createClient, getUniverseDetails, type ServerConnection } from './network/serverConnection';
 import { startPage } from './pageStart';
-import { gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
+import { editPageUrl, gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
 import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { showMarkdown } from './ui/markdown';
@@ -17,13 +17,14 @@ import { UniverseCharacters } from './ui/UniverseCharacters';
 import { reportSiteLanguageChange, UniverseLanguageChooser } from './ui/UniverseLanguageChooser';
 
 /**
- * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, and Enter
- * Universe, which goes to its lobby, or to the player's group in a locked universe. The address ends
- * with the slug, so one opened by ID changes to it
+ * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, Enter
+ * Universe, which goes to its lobby, or to the player's group in a locked universe, and Edit Universe,
+ * which opens it in the world editor, for players who work on it (creators, builders, translators and
+ * server admins with 2FA on). The address ends with the slug, so one opened by ID changes to it
  *
  * @param universe The universe
  */
-function showUniverse(universe: UniverseDetails): void
+function showUniverse(universe: UniversePagePayload): void
 {
 	getElement('universe-name', HTMLElement).textContent = universe.name;
 	getElement('universe-ruleset', HTMLElement).textContent = t(RULESET_NAMES[universe.ruleset]);
@@ -31,9 +32,20 @@ function showUniverse(universe: UniverseDetails): void
 	showMarkdown(getElement('universe-description', HTMLElement), universe.longDescription);
 	getElement('universe-locked', HTMLElement).hidden = (universe.stage !== 'end_of_time');
 	getElement('universe-enter', HTMLAnchorElement).href = gamePageUrl(universe.slug);
+	getElement('universe-edit', HTMLAnchorElement).href = editPageUrl(universe.id);
+	getElement('universe-edit', HTMLAnchorElement).hidden = !universe.editable;
 	replacePagePath(universePageUrl(universe.slug));
 	setPageTitle(universe.name);
 	showScreen('universe');
+}
+
+/**
+ * Hides Edit Universe once the browser is no longer logged in. Whether it shows before then is what the
+ * server said as the page loaded (UniversePagePayload.editable)
+ */
+function hideEditLink(): void
+{
+	getElement('universe-edit', HTMLAnchorElement).hidden = true;
 }
 
 /**
@@ -57,9 +69,10 @@ interface PlayerFollowers
 }
 
 /**
- * Lists the player's characters in the universe while the browser is logged in, and tells the Languages
- * section about their profile's language, following the session as the player logs in or out in any
- * window. The page works without it, so a failed connection only leaves the list hidden
+ * Lists the player's characters in the universe while the browser is logged in, hides Edit Universe once
+ * it isn't, and tells the Languages section about their profile's language, following the session as
+ * the player logs in or out in any window. The page works without it, so a failed connection only
+ * leaves the list hidden
  *
  * @param shown The universe once it is shown, or undefined when it couldn't be
  * @param connection The page's connection to the server (startPage())
@@ -88,6 +101,11 @@ async function followPlayer(shown: Promise<ShownUniverse | undefined>, connectio
 		{
 			if (parts)
 			{
+				if (account.player === null)
+				{
+					hideEditLink();
+				}
+
 				void parts.characters.follow(account.player !== null);
 				void followProfileLocale(parts.languages, parts.auth, ((account.player === null) ? undefined : parts.profiles));
 			}
@@ -100,6 +118,7 @@ async function followPlayer(shown: Promise<ShownUniverse | undefined>, connectio
 		{
 			if (parts)
 			{
+				hideEditLink();
 				void parts.characters.follow(false);
 				parts.languages.setPlayer(undefined, null);
 			}
@@ -188,7 +207,7 @@ async function start(): Promise<void>
  */
 async function loadUniverse(key: string): Promise<ShownUniverse | undefined>
 {
-	let universe: UniverseDetails;
+	let universe: UniversePagePayload;
 
 	try
 	{

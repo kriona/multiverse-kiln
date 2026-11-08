@@ -1,5 +1,5 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type EditorJoinOptions, type GameJoinOptions, type LobbyJoinOptions, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type EditorJoinOptions, type GameJoinOptions, type LobbyJoinOptions, type UniverseListPayload, type UniversePagePayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { wantedLanguages } from '../localization';
 import { leaveOnPageHide } from '../pageLifecycle';
@@ -265,17 +265,17 @@ export async function listUniverses(client: Client, offset: number): Promise<Uni
 }
 
 /**
- * One of the universes Home lists, in full
+ * One of the universes Home lists, in full, with whether the browser's player may edit it
  *
  * @param client Client for the server
  * @param key The universe's ID or slug
  * @return The universe
  */
-export async function getUniverseDetails(client: Client, key: string): Promise<UniverseDetails>
+export async function getUniverseDetails(client: Client, key: string): Promise<UniversePagePayload>
 {
 	const response = await client.http.get(`${UNIVERSES_PATH}/${encodeURIComponent(key)}`);
 
-	return(response.data as UniverseDetails);
+	return(response.data as UniversePagePayload);
 }
 
 /**

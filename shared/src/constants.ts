@@ -38,7 +38,7 @@ export const EDITOR_ROOM_NAME = 'editor';
  * Server route listing the universes Home shows (GET, answered with UniverseListPayload)
  *
  * Takes optional `offset` and `limit` query parameters; limit is at most MAX_UNIVERSES_PER_PAGE.
- * GET UNIVERSES_PATH/:id answers with one of them as UniverseDetails, and GET UNIVERSES_PATH/:id/text
+ * GET UNIVERSES_PATH/:id answers with one of them as UniversePagePayload, and GET UNIVERSES_PATH/:id/text
  * with the names its rooms leave to the client as UniverseTextPayload. Universe text in these, and in
  * the other routes players read it from, is in the request's language: the player's profile's, then
  * the Accept-Language header the client sends

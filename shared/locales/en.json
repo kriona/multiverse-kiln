@@ -7363,6 +7363,10 @@
 		"defaultMessage": "real time",
 		"description": "Passage of time for a universe's lobby, where the time of day follows the real clock, with a day as long as the universe chooses"
 	},
+	"universePage.edit": {
+		"defaultMessage": "Edit Universe",
+		"description": "Button on a universe's page, beside Enter Universe and shown only to its creators, builders and translators and the site's admins, that opens the universe in the world editor"
+	},
 	"universePage.enter": {
 		"defaultMessage": "Enter Universe",
 		"description": "Button on a universe's page that takes the player into the universe, starting in its lobby"
