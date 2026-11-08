@@ -571,7 +571,7 @@ export class GamePage
 		this.showOutside(t({
 			id: 'game.universeDeleted',
 			defaultMessage: '{universe} was deleted, with everything in it.',
-			description: 'Shown on the game\'s page when the universe being played was deleted, along with its creator\'s account; {universe} is its name'
+			description: 'Shown on the game\'s page when the universe being played was deleted, by one of its creators or the site\'s admins, or along with its creator\'s account; {universe} is its name'
 		}, {
 			universe
 		}));

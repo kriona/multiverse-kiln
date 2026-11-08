@@ -53,8 +53,8 @@
 					<button id="editor-tabs-forward" type="button" class="tab-scroll tab-scroll-forward" tabindex="-1" aria-hidden="true" hidden><!-- icon ph:caret-right --></button>
 				</div>
 				<div class="editor-body">
-					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
-						<form id="universe-form" class="form">
+					<section id="editor-panel-universe" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-universe">
+						<form id="universe-form" class="panel form">
 							<fieldset id="universe-fields" class="plain">
 								<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Name
@@ -107,7 +107,7 @@
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
-						<section id="universe-draft" class="universe-draft" aria-labelledby="universe-draft-heading" hidden>
+						<section id="universe-draft" class="panel" aria-labelledby="universe-draft-heading" hidden>
 							<h2 id="universe-draft-heading" data-message="editor.draft.heading" data-translation-context="Heading of the part of the editor's Universe tab shown when starting, applying or discarding the universe's draft (a copy of the universe editors change without players seeing it) couldn't be saved">Draft</h2>
 							<p id="universe-draft-status" role="status"></p>
 							<div class="form-buttons">
@@ -115,6 +115,10 @@
 							</div>
 							<p id="universe-draft-error" class="form-error" role="alert" hidden></p>
 						</section>
+						<div id="universe-delete" class="universe-delete" hidden>
+							<button id="universe-delete-open" type="button" class="danger" aria-describedby="universe-delete-prevented" data-message="editor.universeDelete.open" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins"><!-- icon ph:trash -->Delete Universe</button>
+							<p id="universe-delete-prevented" class="hint" hidden></p>
+						</div>
 					</section>
 
 					<section id="editor-panel-editors" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-editors" hidden>
@@ -1157,6 +1161,58 @@
 						<div class="dialog-buttons">
 							<button id="start-draft-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="start-draft-submit" class="draft" type="submit" data-shortcut="Alt+S"></button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-delete-dialog" class="panel dialog" aria-labelledby="universe-delete-title" aria-describedby="universe-delete-intro">
+					<form id="universe-delete-form" class="form" novalidate>
+						<h2 id="universe-delete-title"></h2>
+						<p id="universe-delete-intro"></p>
+						<ul id="universe-delete-list" class="universe-delete-list" hidden></ul>
+						<p id="universe-delete-admin" class="notice" data-message="editor.universeDelete.asAdmin" data-translation-context="In the first dialog that deletes a universe, for one of the site's admins deleting it as an admin: the universe's editors aren't told which admin deleted it, but the site's admin records keep it" hidden>You're deleting it as one of the site's admins. Its editors are told the site's admins deleted it, and the site's admin records keep its name and who deleted it.</p>
+						<p id="universe-delete-unsaved" data-message="editor.universeDelete.unsaved" data-translation-context="In the first dialog that deletes a universe, when the editor has changes that haven't been saved" hidden>Your unsaved changes are thrown away with it.</p>
+						<p id="universe-delete-status" role="status"></p>
+						<p id="universe-delete-error" class="form-error" role="alert" hidden></p>
+						<div class="form-buttons universe-delete-buttons">
+							<button id="universe-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-delete-submit" type="submit" class="danger" aria-describedby="universe-delete-error" disabled data-message="editor.universeDelete.next" data-translation-context="Button in the first dialog that deletes a universe: opens a second dialog that checks it's the player before deleting it"><!-- icon ph:trash -->Delete Universe</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-delete-confirm-dialog" class="panel dialog" aria-labelledby="universe-delete-confirm-title" aria-describedby="universe-delete-confirm-question">
+					<form id="universe-delete-confirm-form" class="form" novalidate>
+						<h2 id="universe-delete-confirm-title"></h2>
+						<p id="universe-delete-confirm-question"></p>
+						<!-- Not shown: tells password managers which account the password is for -->
+						<input id="universe-delete-email" type="email" autocomplete="username" hidden />
+						<div id="universe-delete-password-field" class="password-field" hidden>
+							<label data-message="login.password" data-translation-context="Label of the password field when logging in, when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor">
+								Password
+								<input id="universe-delete-password" type="password" autocomplete="current-password" />
+							</label>
+							<button id="universe-delete-password-toggle" type="button" class="secondary password-toggle" aria-controls="universe-delete-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+						</div>
+						<p id="universe-delete-email-note" hidden></p>
+						<label id="universe-delete-email-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+							Code
+							<input id="universe-delete-email-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+						</label>
+						<label id="universe-delete-username-field" hidden>
+							<span data-message="editor.universeDelete.typeUsername" data-translation-context="Label of the field in the second dialog deleting a universe, for an account without a password, where the player types their username to confirm">Type your username to confirm</span>
+							<input id="universe-delete-username" class="username-input" autocomplete="off" autocapitalize="none" spellcheck="false" />
+						</label>
+						<div id="universe-delete-code-field" hidden>
+							<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, when turning it off, making new recovery codes, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor">
+								Authenticator code
+								<input id="universe-delete-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="universe-delete-code-hint" data-code="twoFactor" />
+							</label>
+							<p id="universe-delete-code-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, when turning it off, making new recovery codes, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+						</div>
+						<p id="universe-delete-confirm-error" class="form-error" role="alert" hidden></p>
+						<div class="form-buttons">
+							<button id="universe-delete-send" type="submit" aria-describedby="universe-delete-confirm-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes, and in the world editor, to check it's the player deleting a universe" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+							<button id="universe-delete-confirm-submit" type="submit" class="danger" aria-describedby="universe-delete-confirm-error" data-message="editor.universeDelete.confirm" data-translation-context="Button in the second dialog that deletes a universe: checks what was typed and deletes the universe for good"><!-- icon ph:trash -->Delete Universe</button>
+							<button id="universe-delete-confirm-cancel" type="button" data-message="characterDelete.mistake" data-translation-context="Button that closes the last question before deleting a character, the player's account or a universe, keeping it. A playful way of saying Cancel">I've Made A Terrible Mistake</button>
 						</div>
 					</form>
 				</dialog>

@@ -625,7 +625,7 @@ export interface AccountExport
 	 */
 	adminEvents: {
 		/**
-		 * What was done: adminAdded, adminRemoved, universeDisabled or universeEnabled
+		 * What was done: adminAdded, adminRemoved, universeDisabled, universeEnabled or universeDeleted
 		 */
 		kind: string;
 
@@ -641,10 +641,11 @@ export interface AccountExport
 		playerId: string | null;
 
 		/**
-		 * The universe disabled or enabled, or null for other kinds and once it is deleted
+		 * The universe disabled, enabled or deleted, or null for other kinds. Once it is deleted, only a
+		 * record of deleting it keeps its name, with a null ID; the others are null
 		 */
 		universe: {
-			id: string;
+			id: string | null;
 			name: string;
 		} | null;
 

@@ -262,7 +262,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 			kind: event.kind,
 			byPlayer: (event.adminId === playerId),
 			playerId: event.playerId,
-			universe: (((event.universeId === null) || (event.universeName === null))
+			universe: ((event.universeName === null)
 				? null
 				: {
 					id: event.universeId,

@@ -99,6 +99,12 @@ const LOGIN_ADDRESS_KEY = 'kiln-login-address';
 const PROVIDER_LINK_ERROR_KEY = 'kiln-provider-link-error';
 
 /**
+ * Where a page going to Home keeps what Home says once it shows, such as that a universe was deleted,
+ * in the tab's session storage
+ */
+const HOME_NOTICE_KEY = 'kiln-home-notice';
+
+/**
  * Path of the world editor's page, followed by /<universe ID>
  */
 const EDIT_PAGE = '/edit';
@@ -330,6 +336,44 @@ export function takeProviderLinkError(): string | undefined
 		const message = sessionStorage.getItem(PROVIDER_LINK_ERROR_KEY);
 
 		sessionStorage.removeItem(PROVIDER_LINK_ERROR_KEY);
+
+		return((message ?? undefined));
+	}
+	catch
+	{
+		return(undefined);
+	}
+}
+
+/**
+ * Keeps a message for Home to show once the browser goes there (takeHomeNotice())
+ *
+ * @param message The message, in the player's language
+ */
+export function keepHomeNotice(message: string): void
+{
+	try
+	{
+		sessionStorage.setItem(HOME_NOTICE_KEY, message);
+	}
+	catch
+	{
+		// Session storage is blocked, so Home has nothing to say
+	}
+}
+
+/**
+ * Takes the message a page going to Home kept for it (keepHomeNotice())
+ *
+ * @return The message, or undefined when there's nothing kept
+ */
+export function takeHomeNotice(): string | undefined
+{
+	try
+	{
+		const message = sessionStorage.getItem(HOME_NOTICE_KEY);
+
+		sessionStorage.removeItem(HOME_NOTICE_KEY);
 
 		return((message ?? undefined));
 	}

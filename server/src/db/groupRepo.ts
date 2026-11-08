@@ -386,6 +386,25 @@ export async function countGroupMembers(groupId: string, executor: Executor = db
 }
 
 /**
+ * How many groups play in a universe
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The number of groups
+ */
+export async function countUniverseGroups(universeId: string, executor: Executor = db): Promise<number>
+{
+	const [row] = await executor
+		.select({
+			total: count()
+		})
+		.from(groups)
+		.where(eq(groups.universeId, universeId));
+
+	return(row.total);
+}
+
+/**
  * Puts a character in a group. Call it inside a transaction, after locking the group (lockGroup) and
  * checking that the character isn't in a group and the group has room
  *

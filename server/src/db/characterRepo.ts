@@ -4,7 +4,7 @@
  * tell which characters are in a group, universes only to name a profile's characters' universes, and
  * players only to name and search for the players of the editor's list of a universe's characters
  */
-import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import { isPf1eRollMethod, type AbilityScores, type BarredOptions, type CharacterDraft, type EditorCharacterSortColumn, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type SortDirection, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -677,6 +677,30 @@ export async function countCharacters(playerId: string, universeId: string, exec
 		));
 
 	return(row.total);
+}
+
+/**
+ * How many characters players have in a universe, and how many players they belong to, counting those
+ * given their last rites until their time comes
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The number of characters, and of their players
+ */
+export async function countUniverseCharacters(universeId: string, executor: Executor = db): Promise<{ characters: number; players: number }>
+{
+	const [row] = await executor
+		.select({
+			characters: count(),
+			players: countDistinct(characters.playerId)
+		})
+		.from(characters)
+		.where(and(
+			eq(characters.universeId, universeId),
+			notExpired
+		));
+
+	return(row);
 }
 
 /**

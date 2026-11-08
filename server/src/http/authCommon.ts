@@ -26,7 +26,7 @@ export const authMessages = defineMessages({
 	enterCodeFirst: {
 		id: 'error.auth.enterCodeFirst',
 		defaultMessage: 'Enter the code from the email first, or ask for a new one if it has been more than a few minutes.',
-		description: 'Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code was refused: this browser hasn\'t entered the email code, or entered it too long ago'
+		description: 'Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code, or deleting an account or a universe from an account without a password, was refused: this browser hasn\'t entered the email code, or entered it too long ago'
 	},
 	emailMismatch: {
 		id: 'error.auth.emailMismatch',

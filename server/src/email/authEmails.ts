@@ -123,6 +123,19 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, name: st
 			description: 'First paragraph of the email with the code that checks it\'s the owner deleting an account without a password, shown just above the code; {siteName} is the site\'s name'
 		}, values);
 	}
+	else if (purpose === 'deleteUniverse')
+	{
+		subject = translator.format({
+			id: 'email.code.deleteUniverse.subject',
+			defaultMessage: 'Your code to delete a universe on {siteName}',
+			description: 'Subject of the email with the code that checks it\'s the owner of an account without a password deleting a universe in the world editor; {siteName} is the site\'s name'
+		}, values);
+		intro = translator.format({
+			id: 'email.code.deleteUniverse.intro',
+			defaultMessage: 'Someone logged in to your account on {siteName} asked to delete a universe, with its world and every character in it, which can\'t be undone. If it was you, enter this code to go on:',
+			description: 'First paragraph of the email with the code that checks it\'s the owner of an account without a password deleting a universe in the world editor, shown just above the code; {siteName} is the site\'s name'
+		}, values);
+	}
 	else if (purpose === 'confirmEmailChange')
 	{
 		subject = translator.format({

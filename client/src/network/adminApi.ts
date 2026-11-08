@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type ServerAdminSummary, type SiteSettings, type UniverseDisableRequest } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type ServerAdminSummary, type SiteSettings, type UniverseDeleteRequest, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
 
 import { queryString, sendRequest } from './editorApi';
 
@@ -149,5 +149,16 @@ export class AdminApi
 	async enableUniverse(universeId: string): Promise<void>
 	{
 		await sendRequest(this.client, 'DELETE', `${ADMIN_UNIVERSES_PATH}/${encodeURIComponent(universeId)}/disabled`);
+	}
+
+	/**
+	 * Deletes a universe as a server admin, which is recorded
+	 *
+	 * @param universeId The universe's ID
+	 * @param request How the admin confirms it
+	 */
+	async deleteUniverse(universeId: string, request: UniverseDeleteRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'POST', `${ADMIN_UNIVERSES_PATH}/${encodeURIComponent(universeId)}${UNIVERSE_DELETION_PATH}`, request);
 	}
 }

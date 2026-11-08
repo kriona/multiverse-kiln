@@ -84,6 +84,16 @@ export function hasUnsavedWork(): boolean
 }
 
 /**
+ * Lets the page close without the browser asking, throwing away its unsaved work, such as once what it
+ * edits is deleted and nothing on it can be saved
+ */
+export function abandonUnsavedWork(): void
+{
+	unsavedWork.clear();
+	refreshUnsavedWork();
+}
+
+/**
  * Asks the browser to warn before the page closes exactly while something holds unsaved work. The
  * warning is only listened for while it is needed, since browsers don't keep pages that listen for it
  * in their back-forward cache

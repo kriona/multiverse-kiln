@@ -2,6 +2,8 @@ import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canMana
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
+import type { AdminApi } from '../../network/adminApi';
+import type { AuthApi } from '../../network/authApi';
 import { describeEditorError, EditorApiError, errorId, errorValue, type EditorApi } from '../../network/editorApi';
 import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
@@ -30,6 +32,7 @@ import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
 import { TranslationTable } from './TranslationTable';
+import { UniverseDeleteSection } from './UniverseDeleteSection';
 import { UniverseTab } from './UniverseTab';
 import type { AreaClaims } from './areaClaims';
 import { AreaSelectDialog } from './AreaSelectDialog';
@@ -197,6 +200,7 @@ export class EditorScreen
 	private readonly tabList = getElement('editor-tabs', HTMLElement);
 	private readonly tabStrip = new ScrollingTabs(this.tabList, getElement('editor-tabs-back', HTMLButtonElement), getElement('editor-tabs-forward', HTMLButtonElement));
 	private readonly universeTab: UniverseTab;
+	private readonly universeDeleteSection: UniverseDeleteSection;
 	private readonly draftSection: DraftSection;
 	private readonly startDraftDialog: StartDraftDialog;
 	private readonly rulesetTab: RulesetTab;
@@ -273,13 +277,15 @@ export class EditorScreen
 	/**
 	 * @param api The editor's API
 	 * @param actions What the screen's controls do
+	 * @param accountApis The auth routes and the admin routes, which deleting the universe uses
 	 */
-	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions)
+	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions, accountApis: { auth: AuthApi; admin: AdminApi })
 	{
 		this.universeTab = new UniverseTab((update) =>
 		{
 			this.updateUniverse(update);
 		});
+		this.universeDeleteSection = new UniverseDeleteSection(api, accountApis.auth, accountApis.admin, hasUnsavedWork);
 		this.draftSection = new DraftSection(() => this.hasTabChanges(), (announce) => this.saveBar.save(announce), (action) =>
 		{
 			// Starting a draft opens it; applying or discarding one leaves only the live version
@@ -620,6 +626,7 @@ export class EditorScreen
 		this.startDraftButton.hidden = (universe.hasDraft || !canManageVersions(universe.role) || this.saveBar.isLocked());
 
 		this.universeTab.open(universe);
+		this.universeDeleteSection.open(universe);
 		this.draftSection.open(universe, this.saveBar.isLocked());
 		void this.rulesetTab.open(universe);
 		// Before the Characters tab, which writes its money in the abbreviations this shows
@@ -968,6 +975,7 @@ export class EditorScreen
 	lockOut(message: string): void
 	{
 		this.saveBar.setLocked(true);
+		this.universeDeleteSection.lock();
 		this.showNotice(message);
 	}
 

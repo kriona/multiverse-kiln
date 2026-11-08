@@ -1,6 +1,6 @@
 /**
- * The emails sent about a player's place in a universe: the notice sent when someone gives them a role
- * in one. Each is written in its recipient's language
+ * The emails sent about a player's place in a universe: the notices sent when someone gives them a role
+ * in one, and when a universe they have a role in is deleted. Each is written in its recipient's language
  */
 import { SITE_NAME, UNIVERSE_ROLE_NAMES, type UniverseRole } from '@multiverse-kiln/shared';
 
@@ -33,6 +33,67 @@ export interface RoleGiven
 	universeName: string;
 	universeSlug: string;
 	role: UniverseRole;
+}
+
+/**
+ * Who deleted a universe
+ */
+export interface UniverseDeleted
+{
+	/**
+	 * The name of the player who deleted it, or null when a server admin did, as an admin: an admin isn't
+	 * named to the universe's editors
+	 */
+	deleterName: string | null;
+
+	universeName: string;
+}
+
+/**
+ * The email sent to each of a universe's editors, other than the player who deleted it, when it is deleted
+ *
+ * @param deleted Who deleted which universe
+ * @param name The recipient's display name
+ * @param locale The language the recipient reads
+ * @return The email
+ */
+export function universeDeletedEmail(deleted: UniverseDeleted, name: string, locale: string): EmailContent
+{
+	const translator = emailTranslator(locale);
+	const values = {
+		siteName: SITE_NAME,
+		universe: deleted.universeName
+	};
+
+	return(layOut(translator, {
+		subject: translator.format({
+			id: 'email.universeDeleted.subject',
+			defaultMessage: '{universe} was deleted on {siteName}',
+			description: 'Subject of the email sent to a universe\'s editors (everyone with a role in it, such as builder or beta tester) when it is deleted; {universe} is the universe\'s name and {siteName} the site\'s name'
+		}, values),
+		recipientName: name,
+		paragraphs: [
+			((deleted.deleterName === null)
+				? translator.format({
+					id: 'email.universeDeleted.byAdmin',
+					defaultMessage: 'The site\'s admins deleted the universe {universe} on {siteName}, with its world and every character in it.',
+					description: 'First paragraph of the email sent to a universe\'s editors when one of the site\'s admins deleted it; {universe} is the universe\'s name and {siteName} the site\'s name'
+				}, values)
+				: translator.format({
+					id: 'email.universeDeleted.body',
+					defaultMessage: '{deleter} deleted the universe {universe} on {siteName}, with its world and every character in it.',
+					description: 'First paragraph of the email sent to a universe\'s editors when one of its creators deleted it; {deleter} is the name of the creator who deleted it, {universe} the universe\'s name and {siteName} the site\'s name'
+				}, {
+					...values,
+					deleter: deleted.deleterName
+				})),
+			translator.format({
+				id: 'email.universeDeleted.role',
+				defaultMessage: 'Your role in it went with it. It can\'t be brought back.',
+				description: 'Last paragraph of the email sent to a universe\'s editors when it is deleted: the recipient no longer has a role (such as builder) in it'
+			})
+		]
+	}));
 }
 
 /**

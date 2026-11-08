@@ -722,6 +722,13 @@
       "when": 1794156807576,
       "tag": "0102_admin_role_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1794166475073,
+      "tag": "0103_universe_deletion",
+      "breakpoints": true
     }
   ]
 }

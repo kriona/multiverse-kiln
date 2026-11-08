@@ -905,7 +905,7 @@
 	},
 	"characterDelete.mistake": {
 		"defaultMessage": "I've Made A Terrible Mistake",
-		"description": "Button that closes the last question before deleting a character or the player's account, keeping it. A playful way of saying Cancel"
+		"description": "Button that closes the last question before deleting a character, the player's account or a universe, keeping it. A playful way of saying Cancel"
 	},
 	"characterDelete.question": {
 		"defaultMessage": "Do you want to delete {name}?",
@@ -3587,6 +3587,94 @@
 		"defaultMessage": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready.",
 		"description": "Under the stage choice on the editor's Universe tab, when the universe is in the stage \"in the beginning\" and another stage is chosen; {stage} is the name of the stage \"in the beginning\", shown in italics"
 	},
+	"editor.universeDelete.asAdmin": {
+		"defaultMessage": "You're deleting it as one of the site's admins. Its editors are told the site's admins deleted it, and the site's admin records keep its name and who deleted it.",
+		"description": "In the first dialog that deletes a universe, for one of the site's admins deleting it as an admin: the universe's editors aren't told which admin deleted it, but the site's admin records keep it"
+	},
+	"editor.universeDelete.characters": {
+		"defaultMessage": "{characters, plural, one {# character} other {# characters}} that {players, plural, one {# player} other {# players}} made in it",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: the characters players made in it; {characters} is how many, {players} how many players made them"
+	},
+	"editor.universeDelete.codeFailed": {
+		"defaultMessage": "Could not email you a code.",
+		"description": "Shown in the second dialog that deletes a universe, for an account without a password, when the code couldn't be emailed to the account's address"
+	},
+	"editor.universeDelete.codeIntro": {
+		"defaultMessage": "To check it's you, we'll email a code to {email}.",
+		"description": "In the second dialog that deletes a universe, for an account without a password, above the button that emails a code to the account's address; {email} is that address"
+	},
+	"editor.universeDelete.codeSent": {
+		"defaultMessage": "We've emailed a code to {email}. Enter it to delete the universe. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the second dialog that deletes a universe, for an account without a password, once a code was sent to the account's address; {email} is that address"
+	},
+	"editor.universeDelete.confirm": {
+		"defaultMessage": "Delete Universe",
+		"description": "Button in the second dialog that deletes a universe: checks what was typed and deletes the universe for good"
+	},
+	"editor.universeDelete.deleted": {
+		"defaultMessage": "{universe} was deleted.",
+		"description": "Shown on Home once the player deleted a universe in the world editor, which went there; {universe} is its name"
+	},
+	"editor.universeDelete.draft": {
+		"defaultMessage": "Its draft",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it, when the universe has a draft (a copy editors change without players seeing it)"
+	},
+	"editor.universeDelete.editors": {
+		"defaultMessage": "{editors, plural, one {The role of # other editor, who is emailed that it was deleted} other {The roles of # other editors, who are emailed that it was deleted}}",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: the roles (such as builder or beta tester) everyone else has in it; {editors} is how many others have one"
+	},
+	"editor.universeDelete.failed": {
+		"defaultMessage": "Could not delete the universe.",
+		"description": "Shown in the second dialog that deletes a universe when it couldn't be deleted, followed by why"
+	},
+	"editor.universeDelete.farewell": {
+		"defaultMessage": "Are you absolutely sure you want to delete {universe}? This is permanent (a very long time!) and cannot be undone.",
+		"description": "In the second dialog that deletes a universe, above the password or other fields that check it's the player; {universe} is its name. Playful: the word permanent is joked about as a very long time, as in the last dialogs before deleting a character or an account"
+	},
+	"editor.universeDelete.groups": {
+		"defaultMessage": "{groups, plural, one {# group, which disbands} other {# groups, which disband}}",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: the groups playing in it; {groups} is how many"
+	},
+	"editor.universeDelete.intro": {
+		"defaultMessage": "{universe} is deleted for everyone, and can't be brought back. Deleting it deletes:",
+		"description": "In the first dialog that deletes a universe, above the list of what it deletes; {universe} is its name"
+	},
+	"editor.universeDelete.loadFailed": {
+		"defaultMessage": "Could not check what deleting the universe deletes. Close this and try again.",
+		"description": "Shown in the first dialog that deletes a universe when what it deletes couldn't be loaded"
+	},
+	"editor.universeDelete.next": {
+		"defaultMessage": "Delete Universe",
+		"description": "Button in the first dialog that deletes a universe: opens a second dialog that checks it's the player before deleting it"
+	},
+	"editor.universeDelete.open": {
+		"defaultMessage": "Delete Universe",
+		"description": "Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins"
+	},
+	"editor.universeDelete.saves": {
+		"defaultMessage": "Its record of saves",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: the record of every save made in its editor, which its Audit tab lists"
+	},
+	"editor.universeDelete.title": {
+		"defaultMessage": "Delete {universe}",
+		"description": "Title of both dialogs that delete a universe: the first, which says what it deletes, and the second, which checks it's the player; {universe} is its name"
+	},
+	"editor.universeDelete.typeUsername": {
+		"defaultMessage": "Type your username to confirm",
+		"description": "Label of the field in the second dialog deleting a universe, for an account without a password, where the player types their username to confirm"
+	},
+	"editor.universeDelete.unsaved": {
+		"defaultMessage": "Your unsaved changes are thrown away with it.",
+		"description": "In the first dialog that deletes a universe, when the editor has changes that haven't been saved"
+	},
+	"editor.universeDelete.world": {
+		"defaultMessage": "Its world and everything else in the editor",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: the first item, followed by what the world holds"
+	},
+	"editor.universeDelete.worldContents": {
+		"defaultMessage": "Its areas and their maps, tilesets and uploads, items, races, classes, translations",
+		"description": "In the list of what deleting a universe deletes, in the first dialog that deletes it: what its world holds, after the item for its world"
+	},
 	"editor.universeDeleted": {
 		"defaultMessage": "This universe has been deleted, so changes to it can't be saved.",
 		"description": "Shown above the editor's tabs, and in the editors' chat panel, when the universe was deleted while the player had its editor open"
@@ -3722,6 +3810,14 @@
 	"email.code.deleteAccount.subject": {
 		"defaultMessage": "Your code to delete your account on {siteName}",
 		"description": "Subject of the email with the code that checks it's the owner deleting an account without a password; {siteName} is the site's name"
+	},
+	"email.code.deleteUniverse.intro": {
+		"defaultMessage": "Someone logged in to your account on {siteName} asked to delete a universe, with its world and every character in it, which can't be undone. If it was you, enter this code to go on:",
+		"description": "First paragraph of the email with the code that checks it's the owner of an account without a password deleting a universe in the world editor, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.deleteUniverse.subject": {
+		"defaultMessage": "Your code to delete a universe on {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner of an account without a password deleting a universe in the world editor; {siteName} is the site's name"
 	},
 	"email.code.lifetime": {
 		"defaultMessage": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}.",
@@ -3859,6 +3955,22 @@
 		"defaultMessage": "Two-factor authentication is on for your account on {siteName}",
 		"description": "Subject of the email sent when two-factor authentication (an authenticator app code asked for at login) is turned on for an account; {siteName} is the site's name"
 	},
+	"email.universeDeleted.body": {
+		"defaultMessage": "{deleter} deleted the universe {universe} on {siteName}, with its world and every character in it.",
+		"description": "First paragraph of the email sent to a universe's editors when one of its creators deleted it; {deleter} is the name of the creator who deleted it, {universe} the universe's name and {siteName} the site's name"
+	},
+	"email.universeDeleted.byAdmin": {
+		"defaultMessage": "The site's admins deleted the universe {universe} on {siteName}, with its world and every character in it.",
+		"description": "First paragraph of the email sent to a universe's editors when one of the site's admins deleted it; {universe} is the universe's name and {siteName} the site's name"
+	},
+	"email.universeDeleted.role": {
+		"defaultMessage": "Your role in it went with it. It can't be brought back.",
+		"description": "Last paragraph of the email sent to a universe's editors when it is deleted: the recipient no longer has a role (such as builder) in it"
+	},
+	"email.universeDeleted.subject": {
+		"defaultMessage": "{universe} was deleted on {siteName}",
+		"description": "Subject of the email sent to a universe's editors (everyone with a role in it, such as builder or beta tester) when it is deleted; {universe} is the universe's name and {siteName} the site's name"
+	},
 	"email.wrongAuthenticatorCodes.body": {
 		"defaultMessage": "{count} wrong codes from an authenticator app were typed for your account on {siteName} today.",
 		"description": "Paragraph of the email sent when many wrong authenticator app codes were typed for an account in a day; {siteName} is the site's name, and {count} how many (always more than one)"
@@ -3925,7 +4037,7 @@
 	},
 	"error.auth.enterCodeFirst": {
 		"defaultMessage": "Enter the code from the email first, or ask for a new one if it has been more than a few minutes.",
-		"description": "Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code was refused: this browser hasn't entered the email code, or entered it too long ago"
+		"description": "Why creating an account, choosing a new password, changing an email address or linking a Google or Discord login with an email code, or deleting an account or a universe from an account without a password, was refused: this browser hasn't entered the email code, or entered it too long ago"
 	},
 	"error.auth.noPassword": {
 		"defaultMessage": "Your account has no password to change. To give it one, log out and use \"Forgot your password?\" on the login page.",
@@ -4451,6 +4563,10 @@
 		"defaultMessage": "Creating universes is turned off for now.",
 		"description": "Why a new universe wasn't made: the site's admins have stopped everyone from creating universes"
 	},
+	"error.universeDeletion.wrongUsername": {
+		"defaultMessage": "Type your username exactly as it is to confirm.",
+		"description": "Shown under the username field when deleting a universe from an account that has no password: what was typed isn't the account's username"
+	},
 	"error.universeDisabledSave": {
 		"defaultMessage": "The site's admins have disabled this universe, so changes to it can't be saved.",
 		"description": "Why the world editor couldn't save: one of the site's admins disabled the universe, for a reason the editor shows. Leaving the universe can still be saved"
@@ -4601,7 +4717,7 @@
 	},
 	"game.universeDeleted": {
 		"defaultMessage": "{universe} was deleted, with everything in it.",
-		"description": "Shown on the game's page when the universe being played was deleted, along with its creator's account; {universe} is its name"
+		"description": "Shown on the game's page when the universe being played was deleted, by one of its creators or the site's admins, or along with its creator's account; {universe} is its name"
 	},
 	"game.universeDisabled": {
 		"defaultMessage": "The site's admins have disabled {universe}, so it can't be played for now.",
@@ -5237,7 +5353,7 @@
 	},
 	"login.linkWithCode": {
 		"defaultMessage": "Email me a code",
-		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes"
+		"description": "Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes, and in the world editor, to check it's the player deleting a universe"
 	},
 	"login.newPassword": {
 		"defaultMessage": "Password",
@@ -5253,7 +5369,7 @@
 	},
 	"login.password": {
 		"defaultMessage": "Password",
-		"description": "Label of the password field when logging in, and when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile"
+		"description": "Label of the password field when logging in, when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor"
 	},
 	"login.passwordHint": {
 		"defaultMessage": "At least {min} characters. A few words strung together are easy to remember and hard to guess.",
@@ -5369,11 +5485,11 @@
 	},
 	"login.twoFactorCode": {
 		"defaultMessage": "Authenticator code",
-		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile"
+		"description": "Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, when turning it off, making new recovery codes, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor"
 	},
 	"login.twoFactorCodeHint": {
 		"defaultMessage": "The 6-digit code from your authenticator app, or one of your recovery codes.",
-		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, and when turning it off, making new recovery codes, changing the email address or deleting the account on the profile"
+		"description": "Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, when turning it off, making new recovery codes, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor"
 	},
 	"login.twoFactorIntro": {
 		"defaultMessage": "Your account has two-factor authentication. Open your authenticator app and enter the 6-digit code it shows for this site.",
@@ -7290,6 +7406,10 @@
 	"toast.close": {
 		"defaultMessage": "Got It",
 		"description": "Button in a toast that stays at the top of the page until it is closed, such as the editor's warning that another editor saved changes meeting the player's unsaved ones: closes the toast, as clicking it does"
+	},
+	"universe.deletionPrevented": {
+		"defaultMessage": "The site's admins disabled this universe and kept its creators from deleting it.",
+		"description": "On the editor's Universe tab, under the turned-off Delete Universe button, and the reason deleting a universe was refused: a server admin disabled the universe and kept its creators from deleting it"
 	},
 	"universe.displayTime.none": {
 		"defaultMessage": "nothing",

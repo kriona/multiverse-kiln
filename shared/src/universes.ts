@@ -531,6 +531,34 @@ export function canManageVersions(role: EditorRole): boolean
 }
 
 /**
+ * Whether a role may delete a universe, with its world and every character in it (see Deleting a
+ * universe in STRUCTURE-OVERVIEW.md)
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canDeleteUniverse(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether deleting a universe is a server admin's act, recorded as an admin event: one deleting it with
+ * ADMIN_ROLE, or one deleting a universe the site's admins disabled and kept its creators from deleting,
+ * which only a server admin may. A server admin deleting a universe they create, which nothing keeps
+ * from being deleted, deletes it as its creator
+ *
+ * @param role The user's role in the editor
+ * @param serverAdmin Whether they are a server admin with 2FA on
+ * @param deletionPrevented Whether the site's admins disabled the universe and kept its creators from deleting it
+ * @return True when it is
+ */
+export function deletesUniverseAsAdmin(role: EditorRole, serverAdmin: boolean, deletionPrevented: boolean): boolean
+{
+	return((serverAdmin && ((role === ADMIN_ROLE) || deletionPrevented)));
+}
+
+/**
  * Whether a role may change a universe's world: its tiles, items, areas, maps and links
  *
  * @param role The user's role in the editor

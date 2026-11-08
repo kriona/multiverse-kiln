@@ -3587,6 +3587,94 @@
 		"message": "Once the universe leaves the stage {stage}, new areas start battened down, so no hand can wander into 'em before they be finished. Open each one on the Areas tab when she's ready.",
 		"source": "Once the universe leaves the stage {stage}, new areas start disabled, so players can't wander into them before they are finished. Enable each one on the Areas tab when it's ready."
 	},
+	"editor.universeDelete.asAdmin": {
+		"message": "Ye be scuttlin' her as one o' the ship's officers. Her officers be told the ship's officers scuttled her, an' the officers' log keeps her name an' who sank her.",
+		"source": "You're deleting it as one of the site's admins. Its editors are told the site's admins deleted it, and the site's admin records keep its name and who deleted it."
+	},
+	"editor.universeDelete.characters": {
+		"message": "{characters, plural, one {# hand} other {# hands}} that {players, plural, one {# sailor} other {# sailors}} signed on in her",
+		"source": "{characters, plural, one {# character} other {# characters}} that {players, plural, one {# player} other {# players}} made in it"
+	},
+	"editor.universeDelete.codeFailed": {
+		"message": "Couldn't send ye a letter with a code.",
+		"source": "Could not email you a code."
+	},
+	"editor.universeDelete.codeIntro": {
+		"message": "To prove it be ye, we'll send a letter with a code to {email}.",
+		"source": "To check it's you, we'll email a code to {email}."
+	},
+	"editor.universeDelete.codeSent": {
+		"message": "We've sent a letter with a code to {email}. Enter it to scuttle the universe. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "We've emailed a code to {email}. Enter it to delete the universe. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
+	},
+	"editor.universeDelete.confirm": {
+		"message": "Scuttle Her",
+		"source": "Delete Universe"
+	},
+	"editor.universeDelete.deleted": {
+		"message": "{universe} was sent to the deep.",
+		"source": "{universe} was deleted."
+	},
+	"editor.universeDelete.draft": {
+		"message": "Her draft",
+		"source": "Its draft"
+	},
+	"editor.universeDelete.editors": {
+		"message": "{editors, plural, one {The post o' # other officer, who gets a letter sayin' she sank} other {The posts o' # other officers, who get a letter sayin' she sank}}",
+		"source": "{editors, plural, one {The role of # other editor, who is emailed that it was deleted} other {The roles of # other editors, who are emailed that it was deleted}}"
+	},
+	"editor.universeDelete.failed": {
+		"message": "Couldn't scuttle the universe.",
+		"source": "Could not delete the universe."
+	},
+	"editor.universeDelete.farewell": {
+		"message": "Be ye truly, deeply sure ye want to scuttle {universe}? This be forever (a mighty long voyage!) and there be no raisin' her again.",
+		"source": "Are you absolutely sure you want to delete {universe}? This is permanent (a very long time!) and cannot be undone."
+	},
+	"editor.universeDelete.groups": {
+		"message": "{groups, plural, one {# crew, which breaks up} other {# crews, which break up}}",
+		"source": "{groups, plural, one {# group, which disbands} other {# groups, which disband}}"
+	},
+	"editor.universeDelete.intro": {
+		"message": "{universe} goes to the deep for every soul, never to be raised. Scuttlin' her sinks:",
+		"source": "{universe} is deleted for everyone, and can't be brought back. Deleting it deletes:"
+	},
+	"editor.universeDelete.loadFailed": {
+		"message": "Couldn't see what scuttlin' the universe sinks. Close this and try again.",
+		"source": "Could not check what deleting the universe deletes. Close this and try again."
+	},
+	"editor.universeDelete.next": {
+		"message": "Scuttle Her",
+		"source": "Delete Universe"
+	},
+	"editor.universeDelete.open": {
+		"message": "Scuttle the Universe",
+		"source": "Delete Universe"
+	},
+	"editor.universeDelete.saves": {
+		"message": "Her ship's log",
+		"source": "Its record of saves"
+	},
+	"editor.universeDelete.title": {
+		"message": "Scuttle {universe}",
+		"source": "Delete {universe}"
+	},
+	"editor.universeDelete.typeUsername": {
+		"message": "Write yer username to swear to it",
+		"source": "Type your username to confirm"
+	},
+	"editor.universeDelete.unsaved": {
+		"message": "Yer unstowed changes go down with her.",
+		"source": "Your unsaved changes are thrown away with it."
+	},
+	"editor.universeDelete.world": {
+		"message": "Her world an' all else in the editor",
+		"source": "Its world and everything else in the editor"
+	},
+	"editor.universeDelete.worldContents": {
+		"message": "Her areas an' their charts, tilesets an' hauls, booty, races, classes, tongues",
+		"source": "Its areas and their maps, tilesets and uploads, items, races, classes, translations"
+	},
 	"editor.universeDeleted": {
 		"message": "This universe has been scuttled, so changes to her can't be stowed.",
 		"source": "This universe has been deleted, so changes to it can't be saved."
@@ -3723,6 +3811,14 @@
 		"message": "Yer code to scuttle yer account on {siteName}",
 		"source": "Your code to delete your account on {siteName}"
 	},
+	"email.code.deleteUniverse.intro": {
+		"message": "Some scallywag aboard yer account on {siteName} asked to scuttle a universe, with her world an' every hand in her, an' there be no raisin' her after. If 'twas ye, enter this code to sail on:",
+		"source": "Someone logged in to your account on {siteName} asked to delete a universe, with its world and every character in it, which can't be undone. If it was you, enter this code to go on:"
+	},
+	"email.code.deleteUniverse.subject": {
+		"message": "Yer code to scuttle a universe on {siteName}",
+		"source": "Your code to delete a universe on {siteName}"
+	},
 	"email.code.lifetime": {
 		"message": "The code works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"source": "The code works once, for {minutes, plural, one {# minute} other {# minutes}}."
@@ -3858,6 +3954,22 @@
 	"email.twoFactorEnabled.subject": {
 		"message": "Two-factor authentication be on for yer account on {siteName}",
 		"source": "Two-factor authentication is on for your account on {siteName}"
+	},
+	"email.universeDeleted.body": {
+		"message": "{deleter} scuttled the universe {universe} on {siteName}, with her world an' every hand in her.",
+		"source": "{deleter} deleted the universe {universe} on {siteName}, with its world and every character in it."
+	},
+	"email.universeDeleted.byAdmin": {
+		"message": "The ship's officers scuttled the universe {universe} on {siteName}, with her world an' every hand in her.",
+		"source": "The site's admins deleted the universe {universe} on {siteName}, with its world and every character in it."
+	},
+	"email.universeDeleted.role": {
+		"message": "Yer post in her went down with her. There be no raisin' it again.",
+		"source": "Your role in it went with it. It can't be brought back."
+	},
+	"email.universeDeleted.subject": {
+		"message": "{universe} was scuttled on {siteName}",
+		"source": "{universe} was deleted on {siteName}"
 	},
 	"email.wrongAuthenticatorCodes.body": {
 		"message": "{count} wrong codes from an authenticator app were tried on yer account on {siteName} this day.",
@@ -4450,6 +4562,10 @@
 	"error.universeCreationDisabled": {
 		"message": "The captain's forbidden creatin' universes fer now.",
 		"source": "Creating universes is turned off for now."
+	},
+	"error.universeDeletion.wrongUsername": {
+		"message": "Write yer username exactly as it be to swear to it.",
+		"source": "Type your username exactly as it is to confirm."
 	},
 	"error.universeDisabledSave": {
 		"message": "The ship's officers have laid up this universe, so changes to it can't be stowed.",
@@ -7290,6 +7406,10 @@
 	"toast.close": {
 		"message": "Aye, Got It",
 		"source": "Got It"
+	},
+	"universe.deletionPrevented": {
+		"message": "The ship's officers have laid up this universe an' forbid her captains to scuttle her.",
+		"source": "The site's admins disabled this universe and kept its creators from deleting it."
 	},
 	"universe.displayTime.none": {
 		"message": "naught",

@@ -417,7 +417,8 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
 			stage: universes.stage,
 			requireTwoFactor: universes.requireTwoFactor,
 			ruleset: universes.ruleset,
-			disabledReason: universes.disabledReason
+			disabledReason: universes.disabledReason,
+			deletionPrevented: universes.deletionPrevented
 		})
 		.from(universes)
 		.where(eq(universes.id, version.universeId))

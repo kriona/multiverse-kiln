@@ -1305,10 +1305,32 @@ div.ability-modifiers
 	gap: 6px;
 }
 
-// Starting, applying and discarding the draft, under the Universe tab's settings
-.universe-draft
+// Delete Universe, on its own under the Universe tab's cards, and why it is turned off
+.universe-delete
 {
-	margin-top: 24px;
-	padding-top: 16px;
-	border-top: 1px solid $border;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+
+	.hint
+	{
+		margin: 0;
+	}
+}
+
+// What deleting the universe deletes, in the first dialog that deletes it
+.universe-delete-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding-left: 24px;
+}
+
+// The first dialog's Delete Universe only goes on to the second dialog, so it sits beside Cancel
+.form-buttons.universe-delete-buttons .danger
+{
+	margin-right: 0;
 }

@@ -29,6 +29,8 @@ import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, Passag
  * - POST   /                                       NewUniverseRequest -> CreatedPayload: a universe the player creates
  * - GET    /:universeId                            EditableUniverse
  * - POST   /:universeId/changes                    SaveChangesRequest -> SaveChangesPayload: saves the editor's changes, all or nothing (see editorChanges.ts)
+ * - GET    /:universeId/deletion                   UniverseDeletionPayload: what deleting the universe deletes (canDeleteUniverse(); see universeDeletion.ts)
+ * - POST   /:universeId/deletion                   UniverseDeleteRequest: deletes the universe as one of its creators (canDeleteUniverse())
  * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
  * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
  * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
@@ -518,6 +520,12 @@ export interface EditableUniverse extends UniverseSettings
 	 * can't be played, and the editor can't save
 	 */
 	disabledReason: string | null;
+
+	/**
+	 * Whether the server admin who disabled the universe kept its creators from deleting it, so only a
+	 * server admin may; false while it isn't disabled
+	 */
+	deletionPrevented: boolean;
 
 	/**
 	 * The player's role in the editor, which decides what they may change: ADMIN_ROLE for a server admin

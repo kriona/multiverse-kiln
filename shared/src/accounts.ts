@@ -249,10 +249,11 @@ export const MAX_TWO_FACTOR_CODE_INPUT_LENGTH = 32;
 /**
  * What an email code is for. 'changeEmail' is sent to the new address, and 'confirmEmailChange' to the
  * current address of an account without a password, to check it's the owner changing it.
- * 'deleteAccount' checks it's the owner deleting an account without a password, and 'changeTwoFactor'
- * that it's the owner turning 2FA on or off, or making new recovery codes, for an account without one
+ * 'deleteAccount' checks it's the owner deleting an account without a password, 'changeTwoFactor'
+ * that it's the owner turning 2FA on or off, or making new recovery codes, for an account without one,
+ * and 'deleteUniverse' that it's the owner deleting a universe, for an account without one
  */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount', 'changeTwoFactor'] as const;
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount', 'changeTwoFactor', 'deleteUniverse'] as const;
 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 

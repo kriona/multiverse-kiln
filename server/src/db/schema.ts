@@ -1970,13 +1970,14 @@ export const authEvents = pgTable('auth_events', {
 /**
  * What a server admin did in an admin event
  */
-export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled'] as const;
+export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled', 'universeDeleted'] as const;
 export const adminEventKind = pgEnum('admin_event_kind', ADMIN_EVENT_KINDS);
 
 /**
- * A record of what server admins do on the admin pages: adding and removing admins, and disabling and
- * enabling universes. Their saves in the world editor are in universe_edits, with every other save. Kept
- * after the accounts and universes it names are deleted, which empties their columns
+ * A record of what server admins do as admins: adding and removing admins, disabling and enabling
+ * universes, and deleting universes as admins (deletesUniverseAsAdmin()). Their saves in the world editor
+ * are in universe_edits, with every other save. Kept after the accounts and universes it names are
+ * deleted, which empties their columns
  */
 export const adminEvents = pgTable('admin_events', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -1994,9 +1995,14 @@ export const adminEvents = pgTable('admin_events', {
 	playerId: uuid('player_id').references(() => players.id, { onDelete: 'set null' }),
 
 	/**
-	 * The universe disabled or enabled, or null for other kinds and once it is deleted
+	 * The universe disabled, enabled or deleted, or null for other kinds and once it is deleted
 	 */
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'set null' }),
+
+	/**
+	 * The name of the universe deleted, which outlives it, or null for other kinds
+	 */
+	universeName: text('universe_name'),
 
 	/**
 	 * The reason given for disabling a universe, or null for other kinds
