@@ -206,8 +206,8 @@ export const RECOVERY_CODE_LENGTH = 10;
 export const TWO_FACTOR_CODE_LENGTH = 6;
 
 /**
- * The dev code for a code of a length: all 1s. On a local development server it is right for any email
- * or authenticator code of that length (server/src/auth/devCodes.ts)
+ * The dev code for a code of a length: all 1s. On a local development server with ENABLE_DEV_CODES=true
+ * it is right for any email or authenticator code of that length (server/src/auth/devCodes.ts)
  *
  * @param length How many characters the code has
  * @return The dev code

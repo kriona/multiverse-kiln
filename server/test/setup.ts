@@ -62,6 +62,7 @@ process.env.NODE_ENV = 'test';
 process.env.SSL_KEY_FILE = '';
 process.env.SSL_CERT_FILE = '';
 process.env.ENABLE_DEV_TOOLS = '';
+process.env.ENABLE_DEV_CODES = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
 process.env.SITE_URL = testSiteUrl;
 process.env.DATABASE_URL = workerDatabaseUrl(requireTestDatabaseUrl('TEST_DATABASE_URL'), testWorker);

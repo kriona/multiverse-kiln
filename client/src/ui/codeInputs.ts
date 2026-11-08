@@ -103,7 +103,8 @@ export function startCodeInputs(): void
 
 /**
  * Adds a line under a code field in development builds showing the dev code (all 1s), which a local
- * development server takes for any email or authenticator code (server/src/auth/devCodes.ts).
+ * development server with ENABLE_DEV_CODES=true takes for any email or authenticator code
+ * (server/src/auth/devCodes.ts).
  * Clicking the code fills it in and submits the form. Players never see it, so it isn't a message
  *
  * @param input The field

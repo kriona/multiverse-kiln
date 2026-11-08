@@ -4,9 +4,9 @@ import { isDevCode } from '../../src/auth/devCodes.js';
 
 describe('isDevCode', () =>
 {
-	const development = { ENABLE_DEV_TOOLS: 'true' };
+	const development = { ENABLE_DEV_CODES: 'true' };
 
-	it('takes all 1s of the code\'s length on a local development server', () =>
+	it('takes all 1s of the code\'s length when dev codes are on', () =>
 	{
 		assert.strictEqual(isDevCode('111111', 6, development), true);
 		assert.strictEqual(isDevCode('111111', 6, {
@@ -18,10 +18,19 @@ describe('isDevCode', () =>
 		assert.strictEqual(isDevCode('111112', 6, development), false);
 	});
 
-	it('takes nothing while dev tools are off', () =>
+	it('takes nothing while ENABLE_DEV_CODES is unset, even with dev tools on', () =>
 	{
 		assert.strictEqual(isDevCode('111111', 6, {}), false);
 		assert.strictEqual(isDevCode('111111', 6, { NODE_ENV: 'development' }), false);
+		assert.strictEqual(isDevCode('111111', 6, { ENABLE_DEV_TOOLS: 'true' }), false);
+	});
+
+	it('takes nothing when ENABLE_DEV_CODES is anything but "true"', () =>
+	{
+		for (const value of ['', 'false', '1', 'yes', 'TRUE', 'True', ' true'])
+		{
+			assert.strictEqual(isDevCode('111111', 6, { ENABLE_DEV_CODES: value }), false, `ENABLE_DEV_CODES=${JSON.stringify(value)}`);
+		}
 	});
 
 	it('takes nothing when NODE_ENV is set to anything but development', () =>
