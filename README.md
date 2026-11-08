@@ -60,18 +60,18 @@ These are the official agent skills (documentation written for AI coding agents)
 
 ### 3. Point the dev hostname at your machine
 
-Local development uses a custom hostname - `www.multiversekiln-dev.com`. The rest of this README assumes it. The `.env.example` files and the certificate step below use it too.
+Local development uses a custom hostname - `www.multiversekiln.localhost`. The rest of this README assumes it. The `.env.example` files and the certificate step below use it too.
 
-Add this line to your hosts file so the hostname resolves to your own machine:
+`.localhost` is reserved for the local machine (RFC 6761), so the name can never belong to a real site on the internet. Chrome and Firefox resolve it to `127.0.0.1` on their own, but the dev servers and scripts run on Node, which asks the operating system, and not every system resolves names under `localhost`. Add this line to your hosts file so they always find it:
 
 ```
-127.0.0.1 www.multiversekiln-dev.com
+127.0.0.1 www.multiversekiln.localhost
 ```
 
 - **Windows:** the file is `C:\Windows\System32\drivers\etc\hosts`. Editing it needs administrator rights: run Notepad as administrator, then open the file (choose "All Files" in the open dialog, since it has no extension).
 - **macOS / Linux:** run `sudo nano /etc/hosts`.
 
-Check it with `ping www.multiversekiln-dev.com`, which should reply from `127.0.0.1`. Without this entry, the browser looks the name up on the internet instead of reaching your dev server.
+Check it with `ping www.multiversekiln.localhost`, which should reply from `127.0.0.1`.
 
 ### 4. Create your environment files
 
@@ -118,9 +118,9 @@ Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_AP
 | `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` | `.env` | Keys for the local object storage's S3 API, which refuses requests without them. The same pair goes in `server/.env`. |
 | `STORAGE_PORT` | `.env` | Host port for the local storage's S3 API, bound to `127.0.0.1` only (default `8333`). |
 | `MAILPIT_SMTP_PORT`, `MAILPIT_WEB_PORT` | `.env` | Host ports for Mailpit, which catches the server's emails, bound to `127.0.0.1` only: SMTP (default `1025`) and its web inbox (default `8025`). |
-| `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln-dev.com` (must be in your hosts file; see step 3). |
+| `DEV_HOST` | `client/.env` | Hostname for the Vite dev server: `www.multiversekiln.localhost` (must be in your hosts file; see step 3). |
 | `DEV_PORT` | `client/.env` | Port for the Vite dev server (default `5173`). |
-| `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln-dev.com:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
+| `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln.localhost:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
 | `VITE_SOURCE_URL` | `client/.env` | Where players can get the game engine's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
 | `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` to enable `/monitor`, the playground, and the bot login the load test uses (`POST /dev/bot-login`, which makes an account without email and logs it in). Off when unset, and always off when `NODE_ENV=production`. Never set it in production. |
@@ -130,13 +130,13 @@ Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_AP
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
 | `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
 | `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that the tests use. `npm test` runs them in parallel, each worker with a database of its own named after this one (`kiln_test_1` to `kiln_test_8`). The tests empty their database before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
-| `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln-dev.com:2567`. |
+| `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln.localhost:2567`. |
 | `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_FORCE_PATH_STYLE` | `server/.env` | Object storage for uploads such as tilesets: any S3-compatible service. Locally the storage container (`http://127.0.0.1:8333`, path-style, the keys from `.env`); in production Cloudflare R2, AWS S3, Backblaze B2 or similar, with a bucket made in its own tools. |
 | `TEST_STORAGE_BUCKET` | `server/.env` | The bucket `npm test` uploads to, on the same storage (`kiln-test`). The tests create it if it doesn't exist. |
 | `AUTH_HMAC_KEY` | `server/.env` | Secret key for the keyed hashes stored in place of email addresses waiting on a code, the codes themselves, recovery codes and networks: at least 32 random bytes in base64 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`). Use a different key in each environment. |
 | `TOTP_ENCRYPTION_KEY` | `server/.env` | Secret key that encrypts the authenticator app secrets of accounts with two-factor authentication: exactly 32 random bytes in base64, made the same way. Keep it outside the database and its backups, and keep it as long as the database: changing it leaves every stored secret unreadable. |
 | `SMTP_URL`, `EMAIL_FROM` | `server/.env` | Where the server sends email, and the address it comes from. Locally Mailpit (`smtp://127.0.0.1:1025`); in production a real SMTP service, over TLS (`smtps://user:password@host:465`). |
-| `SITE_URL` | `server/.env` | The client's address, `https://` with nothing after the host and port: `https://www.multiversekiln-dev.com:5173` locally. Required: emails link to its pages, and Google and Discord send players back to `<SITE_URL>/login`. |
+| `SITE_URL` | `server/.env` | The client's address, `https://` with nothing after the host and port: `https://www.multiversekiln.localhost:5173` locally. Required: emails link to its pages, and Google and Discord send players back to `<SITE_URL>/login`. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `server/.env` | Logging in with Google and Discord, each offered once both its values are set. Make a Google OAuth client (web application) at https://console.cloud.google.com/apis/credentials and a Discord application at https://discord.com/developers/applications, each with `<SITE_URL>/login` as a redirect URI. Leave them empty to offer only email logins. |
 | `DEV_SSL_KEY_FILE`, `DEV_SSL_CERT_FILE` | `client/.env` | Local certificate for the HTTPS dev server (required). The example values point at `certs/` (see step 5). |
 
@@ -159,7 +159,7 @@ Local development always runs over HTTPS and WSS, matching production. Certifica
 	```bash
 	mkcert -install
 	mkdir certs
-	mkcert -key-file certs/dev-key.pem -cert-file certs/dev-cert.pem www.multiversekiln-dev.com localhost 127.0.0.1
+	mkcert -key-file certs/dev-key.pem -cert-file certs/dev-cert.pem www.multiversekiln.localhost localhost 127.0.0.1
 	```
 
 	`certs/` and `*.pem` are git-ignored. Every developer generates their own.
@@ -233,10 +233,10 @@ This builds `shared` once, then runs three processes in one terminal with colore
 | Process | What it does | URL |
 |---|---|---|
 | `shared` | Recompiles `shared` on change | - |
-| `server` | Colyseus server with auto-restart (`tsx watch`) | `https://www.multiversekiln-dev.com:2567` (playground), `/monitor` (both need `ENABLE_DEV_TOOLS=true`) |
-| `client` | Vite dev server with hot reload | `https://www.multiversekiln-dev.com:5173` |
+| `server` | Colyseus server with auto-restart (`tsx watch`) | `https://www.multiversekiln.localhost:2567` (playground), `/monitor` (both need `ENABLE_DEV_TOOLS=true`) |
+| `client` | Vite dev server with hot reload | `https://www.multiversekiln.localhost:5173` |
 
-Open the game at `https://www.multiversekiln-dev.com:5173`. The server's output includes a line from Colyseus saying `Listening on http://localhost:2567`. Ignore it: Colyseus prints `http://`, and this server only accepts HTTPS. The line just before it (`HTTPS/WSS: open https://...`) gives the real address.
+Open the game at `https://www.multiversekiln.localhost:5173`. The server's output includes a line from Colyseus saying `Listening on http://localhost:2567`. Ignore it: Colyseus prints `http://`, and this server only accepts HTTPS. The line just before it (`HTTPS/WSS: open https://...`) gives the real address.
 
 Press `Ctrl+C` to stop all three. If any one exits, the others are stopped too.
 

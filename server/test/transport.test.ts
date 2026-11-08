@@ -66,7 +66,7 @@ describe('firstDnsName', () =>
 {
 	it('returns the first DNS name', () =>
 	{
-		assert.strictEqual(firstDnsName('DNS:www.multiversekiln-dev.com, DNS:localhost, IP Address:127.0.0.1'), 'www.multiversekiln-dev.com');
+		assert.strictEqual(firstDnsName('DNS:www.multiversekiln.localhost, DNS:localhost, IP Address:127.0.0.1'), 'www.multiversekiln.localhost');
 	});
 
 	it('skips entries that are not DNS names', () =>

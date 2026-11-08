@@ -9,7 +9,7 @@ describe('parseSiteUrl', () =>
 	{
 		assert.strictEqual(parseSiteUrl('https://www.example.com'), 'https://www.example.com');
 		assert.strictEqual(parseSiteUrl('https://www.example.com/'), 'https://www.example.com');
-		assert.strictEqual(parseSiteUrl('https://www.multiversekiln-dev.com:5173'), 'https://www.multiversekiln-dev.com:5173');
+		assert.strictEqual(parseSiteUrl('https://www.multiversekiln.localhost:5173'), 'https://www.multiversekiln.localhost:5173');
 	});
 
 	it('refuses a missing address, plain http, and anything after the host', () =>

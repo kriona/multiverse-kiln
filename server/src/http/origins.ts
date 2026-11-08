@@ -15,7 +15,7 @@ export function parseAllowedOrigins(value: string | undefined): Set<string>
 
 	if (entries.length === 0)
 	{
-		throw new Error('ALLOWED_ORIGINS is required: a comma-separated list of origins allowed to use the server from a browser, e.g. https://www.multiversekiln-dev.com:5173');
+		throw new Error('ALLOWED_ORIGINS is required: a comma-separated list of origins allowed to use the server from a browser, e.g. https://www.multiversekiln.localhost:5173');
 	}
 
 	const origins = new Set<string>();

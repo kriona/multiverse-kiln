@@ -38,19 +38,19 @@ describe('parseAllowedOrigins', () =>
 
 describe('isOriginAllowed', () =>
 {
-	const allowed = parseAllowedOrigins('https://www.multiversekiln-dev.com:5173');
+	const allowed = parseAllowedOrigins('https://www.multiversekiln.localhost:5173');
 
 	it('allows an exact match', () =>
 	{
-		assert.strictEqual(isOriginAllowed('https://www.multiversekiln-dev.com:5173', allowed), true);
+		assert.strictEqual(isOriginAllowed('https://www.multiversekiln.localhost:5173', allowed), true);
 	});
 
 	it('rejects a different scheme, host or port', () =>
 	{
-		assert.strictEqual(isOriginAllowed('http://www.multiversekiln-dev.com:5173', allowed), false);
-		assert.strictEqual(isOriginAllowed('https://multiversekiln-dev.com:5173', allowed), false);
-		assert.strictEqual(isOriginAllowed('https://www.multiversekiln-dev.com:2567', allowed), false);
-		assert.strictEqual(isOriginAllowed('https://www.multiversekiln-dev.com:5173.evil.example', allowed), false);
+		assert.strictEqual(isOriginAllowed('http://www.multiversekiln.localhost:5173', allowed), false);
+		assert.strictEqual(isOriginAllowed('https://multiversekiln.localhost:5173', allowed), false);
+		assert.strictEqual(isOriginAllowed('https://www.multiversekiln.localhost:2567', allowed), false);
+		assert.strictEqual(isOriginAllowed('https://www.multiversekiln.localhost:5173.evil.example', allowed), false);
 	});
 
 	it('rejects a missing origin', () =>
