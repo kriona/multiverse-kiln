@@ -123,4 +123,19 @@ describe('Saving after another save took the universe\'s lock', () =>
 
 		assert.strictEqual(saved.stage, 'prologue');
 	});
+
+	it('refuses the whole save, not its first change, from an editor removed in the meantime', async () =>
+	{
+		await setUniverseRole(universeId, grace.playerId, 'builder');
+
+		const stale = await readBeforeLock();
+
+		await saveAll(ada, universeId, [{ kind: 'removeEditor', playerId: grace.playerId }]);
+
+		const outcome = await saveFromStaleRead(stale, 'builder', [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave' } }]);
+
+		assert.strictEqual(outcome.saved, false);
+		assert.strictEqual(outcome.refusal.refusal.status, 403);
+		assert.strictEqual(outcome.changeIndex, null);
+	});
 });

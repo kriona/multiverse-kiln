@@ -240,6 +240,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 			if (!access)
 			{
+				refusedWhole = true;
 				refuse(403, {
 					id: 'error.noLongerEditor',
 					defaultMessage: 'You no longer have a role in this universe, so your changes can\'t be saved.',
