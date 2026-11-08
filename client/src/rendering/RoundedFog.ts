@@ -27,22 +27,24 @@ void main()
 `;
 
 /**
- * Sets up fog with rounded edges; draw it with the cells out of sight covered
+ * Sets up a flat color with rounded edges, such as fog to draw over the cells out of sight. Its opacity
+ * can be changed later through its uAlpha uniform
  *
  * @param scene The scene
- * @param columns How many cells wide the fog covers at most
+ * @param name Names its shader and mask (see CellMaskShaderConfig.name), such as 'rounded-fog'
+ * @param columns How many cells wide it covers at most
  * @param rows How many cells tall it covers at most
  * @param depth The depth it is drawn at
- * @param color The fog's color, such as 0x000000
+ * @param color Its color, such as 0x000000
  * @param alpha How opaque it is, from 0 to 1
- * @return The fog, hidden until drawn over cells out of sight
+ * @return The color, hidden until drawn over cells
  */
-export function createRoundedFog(scene: Phaser.Scene, columns: number, rows: number, depth: number, color: number, alpha: number): CellMaskShader
+export function createRoundedFog(scene: Phaser.Scene, name: string, columns: number, rows: number, depth: number, color: number, alpha: number): CellMaskShader
 {
 	const rgb = Phaser.Display.Color.IntegerToColor(color);
 
 	return(new CellMaskShader(scene, {
-		name: 'rounded-fog',
+		name,
 		columns,
 		rows,
 		depth,

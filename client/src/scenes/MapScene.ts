@@ -89,10 +89,15 @@ const GLARE_COLOR = 0xf5efcf;
 const GLARE_ALPHA = NIGHT_ALPHA;
 
 /**
- * Depth of the night color and the glare: over the map and players, under their names and the link
- * prompt
+ * Depth of the night color: over the map and players, under their names and the link prompt
  */
 const NIGHT_DEPTH = 0.5;
+
+/**
+ * Depth of the glare, drawn over the cells in sight: over the map, the players and what overhangs them,
+ * under the paper, which is drawn rather than seen and so isn't dazzling
+ */
+const GLARE_DEPTH = 0.35;
 
 /**
  * The color laid over cells out of sight
@@ -125,8 +130,8 @@ const FOG_COLUMNS = ((Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN) * 2) + 1;
 const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
 
 /**
- * Depth of the paper drawn over cells the group has never seen and past the map's edges: over the fog,
- * under the night
+ * Depth of the paper drawn over cells the group has never seen and past the map's edges: over the fog
+ * and the glare, under the night
  */
 const PAPER_DEPTH = 0.4;
 
@@ -238,7 +243,7 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Brightens the view in daylight outdoors for a character whom bright light dazzles
 	 */
-	private glare?: Phaser.GameObjects.Rectangle;
+	private glare?: CellMaskShader;
 
 	/**
 	 * The area's map as vision sees it, from the chunks received so far
@@ -365,12 +370,8 @@ export class MapScene extends Phaser.Scene
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
 			.setAlpha(0);
-		this.glare = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, GLARE_COLOR)
-			.setOrigin(0, 0)
-			.setScrollFactor(0)
-			.setDepth(NIGHT_DEPTH)
-			.setAlpha(0);
-		this.fog = createRoundedFog(this, FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
+		this.glare = createRoundedFog(this, 'rounded-glare', FOG_COLUMNS, FOG_ROWS, GLARE_DEPTH, GLARE_COLOR, 0);
+		this.fog = createRoundedFog(this, 'rounded-fog', FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
 		this.paper = createUnexploredPaper(this, FOG_COLUMNS, FOG_ROWS, PAPER_DEPTH);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
@@ -420,6 +421,8 @@ export class MapScene extends Phaser.Scene
 			this.areaRenderer = undefined;
 			this.fog?.destroy();
 			this.fog = undefined;
+			this.glare?.destroy();
+			this.glare = undefined;
 			this.paper?.destroy();
 			this.paper = undefined;
 		});
@@ -527,9 +530,10 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws fog over the cells around the view's center that aren't visible, and paper over those the
-	 * group has never seen. A cell that has just come into sight keeps its paper until its tile arrives.
-	 * Past an edge of the map that doesn't loop is drawn as never seen, in a lobby too
+	 * Draws fog over the cells around the view's center that aren't visible, the glare over those that
+	 * are, and paper over those the group has never seen. A cell that has just come into sight keeps its
+	 * paper until its tile arrives. Past an edge of the map that doesn't loop is drawn as never seen, in a
+	 * lobby too
 	 *
 	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
 	 * @param visible The cells in sight, by visionKey()
@@ -538,13 +542,15 @@ export class MapScene extends Phaser.Scene
 	{
 		const left = center.column - Math.floor(FOG_COLUMNS / 2);
 		const top = center.row - Math.floor(FOG_ROWS / 2);
-
-		this.fog?.draw(left, top, (column, row) =>
+		const isFogged = (column: number, row: number): boolean =>
 		{
 			const cell = this.mapCellAt(left + column, top + row);
 
 			return((cell === undefined) || !visible.has(visionKey(cell.column, cell.row)));
-		});
+		};
+
+		this.fog?.draw(left, top, isFogged);
+		this.glare?.draw(left, top, (column, row) => !isFogged(column, row));
 
 		this.paper?.draw(left, top, (column, row) =>
 		{
@@ -650,7 +656,7 @@ export class MapScene extends Phaser.Scene
 		const darkAdapted = ((own.darkvision > 0) && own.lightSensitivity);
 
 		this.night?.setAlpha((1 - light) * (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA));
-		this.glare?.setAlpha(((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0));
+		this.glare?.setUniform('uAlpha', ((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0));
 
 		if (outdoors)
 		{

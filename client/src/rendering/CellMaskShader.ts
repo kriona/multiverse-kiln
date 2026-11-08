@@ -260,6 +260,17 @@ export class CellMaskShader
 	}
 
 	/**
+	 * Changes one of the shader's own uniforms (see CellMaskShaderConfig.uniforms)
+	 *
+	 * @param name The uniform's name
+	 * @param value Its new value
+	 */
+	setUniform(name: string, value: unknown): void
+	{
+		this.shader.setUniform(name, value);
+	}
+
+	/**
 	 * Removes the shader from the scene
 	 */
 	destroy(): void
