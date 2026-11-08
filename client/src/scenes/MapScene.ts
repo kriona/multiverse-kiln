@@ -8,6 +8,9 @@ import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnecti
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
+import type { CellMaskShader } from '../rendering/CellMaskShader';
+import { createRoundedFog } from '../rendering/RoundedFog';
+import { createUnexploredPaper, preloadUnexploredPaper } from '../rendering/UnexploredPaper';
 import { isTextEntry } from '../ui/dom';
 import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
@@ -84,11 +87,6 @@ const FOG_COLOR = 0x000000;
 const FOG_ALPHA = 0.55;
 
 /**
- * How opaque the fog is over cells the group has never seen, in a group's room: they are hidden
- */
-const UNSEEN_ALPHA = 1;
-
-/**
  * Depth of the fog: over the map, the players and what overhangs them, such as mountains' peaks, which
  * would otherwise show undimmed over cells out of sight; under the night. The players the room shows are
  * in sight, so the fog doesn't cover them
@@ -100,6 +98,19 @@ const FOG_DEPTH = 0.3;
  * camera catches up with the player
  */
 const FOG_MARGIN = 2;
+
+/**
+ * How many cells wide and tall the fog is drawn, centered on the cell the player is drawn in
+ */
+const FOG_COLUMNS = ((Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN) * 2) + 1;
+
+const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
+
+/**
+ * Depth of the paper drawn over cells the group has never seen, in a group's room: over the fog, under
+ * the night
+ */
+const PAPER_DEPTH = 0.4;
 
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 	fontFamily: 'sans-serif',
@@ -214,7 +225,12 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Darkens the cells out of sight
 	 */
-	private fog?: Phaser.GameObjects.Graphics;
+	private fog?: CellMaskShader;
+
+	/**
+	 * Hides the cells the group has never seen under paper
+	 */
+	private paper?: CellMaskShader;
 
 	/**
 	 * What the fog was last drawn from (see updateFog), so it is drawn again only when that changes
@@ -253,15 +269,17 @@ export class MapScene extends Phaser.Scene
 		this.announcer = new MapAnnouncer();
 		this.night = undefined;
 		this.fog = undefined;
+		this.paper = undefined;
 		this.fogKey = '';
 	}
 
 	/**
-	 * Loads the tile graphics the map is drawn with
+	 * Loads the tile graphics the map is drawn with, and the paper over cells never seen
 	 */
 	preload(): void
 	{
 		preloadTileGraphics(this);
+		preloadUnexploredPaper(this);
 	}
 
 	/**
@@ -323,7 +341,8 @@ export class MapScene extends Phaser.Scene
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
 			.setAlpha(0);
-		this.fog = this.add.graphics().setDepth(FOG_DEPTH);
+		this.fog = createRoundedFog(this, FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
+		this.paper = createUnexploredPaper(this, FOG_COLUMNS, FOG_ROWS, PAPER_DEPTH);
 
 		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
@@ -370,6 +389,10 @@ export class MapScene extends Phaser.Scene
 
 			this.areaRenderer?.destroy();
 			this.areaRenderer = undefined;
+			this.fog?.destroy();
+			this.fog = undefined;
+			this.paper?.destroy();
+			this.paper = undefined;
 		});
 
 		this.watchPlayers();
@@ -475,43 +498,49 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws fog over the cells around the view's center that aren't visible
+	 * Draws fog over the cells around the view's center that aren't visible, and paper over those the
+	 * group has never seen. A cell that has just come into sight keeps its paper until its tile arrives
 	 *
 	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
 	 * @param visible The cells in sight, by visionKey()
 	 */
 	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
 	{
-		const fog = this.fog;
+		const left = center.column - Math.floor(FOG_COLUMNS / 2);
+		const top = center.row - Math.floor(FOG_ROWS / 2);
 
-		if (!fog)
+		this.fog?.draw(left, top, (column, row) =>
 		{
-			return;
-		}
+			const cell = this.mapCellAt(left + column, top + row);
 
+			return((cell !== undefined) && !visible.has(visionKey(cell.column, cell.row)));
+		});
+
+		this.paper?.draw(left, top, (column, row) =>
+		{
+			const cell = this.mapCellAt(left + column, top + row);
+
+			return((cell !== undefined) && this.isUnseen(cell.column, cell.row));
+		});
+	}
+
+	/**
+	 * The cell of the area drawn at a place in the world: past a looping edge the map carries on from the
+	 * far side, drawn next to the player
+	 *
+	 * @param column The column in the world
+	 * @param row The row in the world
+	 * @return The cell on the map, or undefined past an edge that doesn't loop
+	 */
+	private mapCellAt(column: number, row: number): { column: number; row: number } | undefined
+	{
 		const { bounds } = this.area;
-		const halfColumns = Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN;
-		const halfRows = Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN;
 		const width = (bounds.maxColumn - bounds.minColumn) + 1;
 		const height = (bounds.maxRow - bounds.minRow) + 1;
+		const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
+		const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
 
-		fog.clear();
-
-		for (let row = center.row - halfRows; row <= center.row + halfRows; row++)
-		{
-			for (let column = center.column - halfColumns; column <= center.column + halfColumns; column++)
-			{
-				// Past a looping edge the map carries on from the far side, drawn next to the player
-				const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
-				const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
-
-				if (isInBounds(bounds, mapColumn, mapRow) && !visible.has(visionKey(mapColumn, mapRow)))
-				{
-					fog.fillStyle(FOG_COLOR, (this.isUnseen(mapColumn, mapRow) ? UNSEEN_ALPHA : FOG_ALPHA));
-					fog.fillRect(column * GRID_CELL_SIZE, row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
-				}
-			}
-		}
+		return((isInBounds(bounds, mapColumn, mapRow) ? { column: mapColumn, row: mapRow } : undefined));
 	}
 
 	/**
