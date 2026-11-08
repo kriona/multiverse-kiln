@@ -12,9 +12,77 @@ export type TileSheetResult =
 	| { ok: false; problem: 'tooLarge' | 'notPng' | 'wrongSize' };
 
 /**
+ * The eight bytes every PNG starts with
+ */
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/**
+ * The bytes a PNG chunk has besides its data: its length, type and CRC
+ */
+const PNG_CHUNK_OVERHEAD = 12;
+
+/**
+ * The PNG chunks an upload keeps before it is decoded: the ones its pixels need. Every other chunk, such as
+ * text, ICC profiles and Exif, is dropped first, since libpng inflates compressed chunks while it reads the
+ * header, and a few hundred KB of them can inflate to hundreds of MB
+ */
+const PNG_IMAGE_CHUNKS = new Set(['IHDR', 'PLTE', 'tRNS', 'IDAT', 'IEND']);
+
+/**
+ * Copies a PNG keeping only its PNG_IMAGE_CHUNKS, up to and including its IEND chunk
+ *
+ * @param upload The uploaded bytes
+ * @return The PNG with only its image chunks, or null when it isn't a whole PNG: it has no PNG
+ * signature, a chunk runs past its end, it has no IEND chunk, or it has a critical chunk that isn't an
+ * image chunk, which a decoder must refuse
+ */
+export function pngImageChunks(upload: Buffer): Buffer | null
+{
+	if (!upload.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE))
+	{
+		return(null);
+	}
+
+	const kept: Buffer[] = [PNG_SIGNATURE];
+	let offset = PNG_SIGNATURE.length;
+
+	while ((offset + PNG_CHUNK_OVERHEAD) <= upload.length)
+	{
+		const end = offset + PNG_CHUNK_OVERHEAD + upload.readUInt32BE(offset);
+		const type = upload.toString('latin1', offset + 4, offset + 8);
+		// A critical chunk's type starts with an upper case letter: bit 5 of its first byte is clear
+		const critical = ((upload[offset + 4] & 0x20) === 0);
+
+		if (end > upload.length)
+		{
+			return(null);
+		}
+
+		if (PNG_IMAGE_CHUNKS.has(type))
+		{
+			kept.push(upload.subarray(offset, end));
+		}
+		else if (critical)
+		{
+			return(null);
+		}
+
+		if (type === 'IEND')
+		{
+			return(Buffer.concat(kept));
+		}
+
+		offset = end;
+	}
+
+	return(null);
+}
+
+/**
  * Checks that an upload is a PNG of a sheet in a format, that format's size (TILE_GRAPHIC_SIZES) and at
- * most MAX_TILE_GRAPHIC_BYTES, and re-encodes it. Re-encoding keeps only the pixels: metadata (such as
- * where a photo was taken), extra chunks and anything hidden after the image are dropped
+ * most MAX_TILE_GRAPHIC_BYTES, and re-encodes it. Only the chunks its pixels need are decoded, and
+ * re-encoding keeps only the pixels: metadata (such as where a photo was taken), extra chunks and anything
+ * hidden after the image are dropped
  *
  * @param upload The uploaded bytes
  * @param format The sheet's format
@@ -29,8 +97,15 @@ export async function prepareTileSheet(upload: Buffer, format: TileGraphicFormat
 		return({ ok: false, problem: 'tooLarge' });
 	}
 
+	const imageChunks = pngImageChunks(upload);
+
+	if (imageChunks === null)
+	{
+		return({ ok: false, problem: 'notPng' });
+	}
+
 	// A sheet's worth of pixels is all a valid upload has, so a larger image is refused before it is decoded
-	const image = sharp(upload, {
+	const image = sharp(imageChunks, {
 		limitInputPixels: width * height,
 		failOn: 'error'
 	});
