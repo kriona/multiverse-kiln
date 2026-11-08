@@ -369,9 +369,8 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	}
 
 	/**
-	 * Follows a save made in another window that took editors' roles away: a new role given here to one
-	 * of them is kept as adding them again, which deleting discards, and taking their role away here is
-	 * dropped, since it is gone already
+	 * Follows a save made in another window that took editors' roles away (followGone()), and takes them
+	 * off the list, so a dialog still open on one of them gives them a role as a new editor
 	 *
 	 * @param save The save
 	 */
@@ -380,19 +379,40 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 		const removed = new Set(save.details
 			.filter((detail) => ((detail.subject === 'editor') && (detail.action === 'deleted')))
 			.map((detail) => detail.id));
+
+		if (removed.size === 0)
+		{
+			return;
+		}
+
+		this.followGone((playerId) => removed.has(playerId));
+		this.editors = this.editors.filter((editor) => !removed.has(editor.playerId));
+		this.changed();
+	}
+
+	/**
+	 * Follows editors whose roles were taken away elsewhere, from the editors as last loaded: a new role
+	 * given here to one of them is kept as adding them again, which deleting discards, and taking their
+	 * role away here is dropped, since it is gone already
+	 *
+	 * @param gone Whether an editor's role was taken away, by their player ID
+	 * @return Whether any change made here was followed
+	 */
+	private followGone(gone: (playerId: string) => boolean): boolean
+	{
 		const dropped = new Map<string, undefined>();
 		let followed = false;
 
 		for (const [playerId, staged] of [...this.staged])
 		{
-			const saved = this.editors.find((editor) => (editor.playerId === playerId));
-
-			if (!removed.has(playerId) || staged.added || !saved)
+			if (staged.added || !gone(playerId))
 			{
 				continue;
 			}
 
-			if (staged.removed || !staged.settings)
+			const saved = this.editors.find((editor) => (editor.playerId === playerId));
+
+			if (staged.removed || !staged.settings || !saved)
 			{
 				this.staged.delete(playerId);
 				dropped.set(playerId, undefined);
@@ -414,10 +434,7 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 
 		this.changedSince.move(dropped);
 
-		if (followed)
-		{
-			this.changed();
-		}
+		return(followed);
 	}
 
 	/**
@@ -462,7 +479,8 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	}
 
 	/**
-	 * Loads the editors, then shows them with the changes made since
+	 * Loads the editors, then shows them with the changes made since, following those made here to
+	 * editors other windows removed or added meanwhile
 	 */
 	private async refresh(): Promise<void>
 	{
@@ -480,10 +498,14 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 
 			if (version === this.requestVersion)
 			{
+				const gone = this.followGone((playerId) => !editors.some((editor) => (editor.playerId === playerId)));
+
 				this.editors = editors;
 				this.ownPlayerId = editors.find((editor) => (editor.playerId === universe.playerId))?.playerId;
 
-				if (this.followAdded())
+				const added = this.followAdded();
+
+				if (gone || added)
 				{
 					this.changed();
 				}
@@ -692,15 +714,16 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 
 	/**
 	 * Takes an editor's role away when the tab is saved, or takes that back. A player added since the
-	 * last save just goes
+	 * last save just goes, and one whose role another window took away has lost it already
 	 *
 	 * @param playerId The editor's player ID
 	 */
 	private toggleRemoved(playerId: string): void
 	{
 		const staged = this.staged.get(playerId);
+		const saved = this.editors.some((editor) => (editor.playerId === playerId));
 
-		if (staged?.removed || staged?.added)
+		if (staged?.removed || staged?.added || !saved)
 		{
 			this.staged.delete(playerId);
 		}

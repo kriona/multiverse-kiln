@@ -209,6 +209,12 @@ export class StagedChanges<S> implements ChangeSource
 	 */
 	private readonly recreated = new Map<number, number>();
 
+	/**
+	 * The things saves in other windows deleted, for a dialog still open on one: changing it adds it
+	 * again, and deleting it does nothing
+	 */
+	private readonly gone = new Set<number>();
+
 	private readonly listeners = new Set<(unsaved: boolean) => void>();
 
 	/**
@@ -274,7 +280,8 @@ export class StagedChanges<S> implements ChangeSource
 
 	/**
 	 * Changes a thing's settings. The change is made from the settings an earlier change gave it, or
-	 * else from those it was loaded with
+	 * else from those it was loaded with. One another window deleted is kept as a new thing with the
+	 * settings, which saving adds again
 	 *
 	 * @param id Its ID
 	 * @param settings Its settings
@@ -283,6 +290,13 @@ export class StagedChanges<S> implements ChangeSource
 	save(id: number, settings: S, loaded?: LoadedSettings): void
 	{
 		const current = this.currentId(id);
+
+		if (this.gone.has(current))
+		{
+			this.recreated.set(current, this.create(settings));
+			return;
+		}
+
 		const earlier = this.settingsOf(current);
 
 		this.changes.push({
@@ -295,13 +309,19 @@ export class StagedChanges<S> implements ChangeSource
 	}
 
 	/**
-	 * Deletes a thing, or restores a default it changed. A thing added since the last save just goes
+	 * Deletes a thing, or restores a default it changed. A thing added since the last save just goes, and
+	 * one another window deleted is gone already
 	 *
 	 * @param id Its ID
 	 */
 	remove(id: number): void
 	{
 		const current = this.currentId(id);
+
+		if (this.gone.has(current))
+		{
+			return;
+		}
 
 		if (isNewId(current))
 		{
@@ -331,7 +351,8 @@ export class StagedChanges<S> implements ChangeSource
 	/**
 	 * Follows a save made in another window: the changes made here to each thing it deleted are kept as
 	 * a new thing with the settings they give it, which saving adds again and deleting discards, and those
-	 * that delete it are dropped, since it is gone already
+	 * that delete it are dropped, since it is gone already. Changes made to it later, from a dialog still
+	 * open on it, are kept the same way (save(), remove())
 	 *
 	 * @param save The save
 	 * @param subject What the list holds, as the Audit tab names it
@@ -350,6 +371,8 @@ export class StagedChanges<S> implements ChangeSource
 			{
 				continue;
 			}
+
+			this.gone.add(id);
 
 			const first = this.changes.findIndex((change) => (change.id === id));
 
