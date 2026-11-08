@@ -24,9 +24,10 @@ export type AdminEvent =
  * Records what a server admin did
  *
  * @param event What happened
- * @param executor The database, or a transaction (the change's own, so the record is kept exactly when the change is)
+ * @param executor The change's own transaction, so the record is kept exactly when the change is: one of the
+ * admin role's (inAdminTransaction()), since the server's own role can't write admin_events
  */
-export async function recordAdminEvent(event: AdminEvent, executor: Executor = db): Promise<void>
+export async function recordAdminEvent(event: AdminEvent, executor: Executor): Promise<void>
 {
 	await executor
 		.insert(adminEvents)

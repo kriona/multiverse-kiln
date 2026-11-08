@@ -6621,7 +6621,7 @@
 	},
 	"profile.emailChanged": {
 		"message": "Email address changed. We've sent word to both addresses.",
-		"source": "Email address changed. We've told both addresses."
+		"source": "Email address changed. We've informed both addresses."
 	},
 	"profile.forgetBrowsers": {
 		"message": "Stop trustin' them",

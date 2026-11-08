@@ -2,6 +2,7 @@ import assert from 'assert';
 import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION, UNHANDABLE_UNIVERSE_DELETION, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
+import { adminDb } from '../src/db/adminClient.js';
 import { recordAdminEvent } from '../src/db/adminEventRepo.js';
 import { addChatMessages, listChatMessages, saveChatReads } from '../src/db/chatRepo.js';
 import { pool } from '../src/db/client.js';
@@ -220,9 +221,9 @@ describe('account deletion and data export', () =>
 			changeDetails: [painted],
 			savedAt: new Date(Date.UTC(2026, 10, 2))
 		});
-		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId, occurredAt: new Date(Date.UTC(2026, 10, 3)) });
-		await recordAdminEvent({ kind: 'universeDisabled', adminId: playerId, universeId, reason: 'Spam', preventsDeletion: true, occurredAt: new Date(Date.UTC(2026, 10, 4)) });
-		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId: grace.id, occurredAt: new Date(Date.UTC(2026, 10, 5)) });
+		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId, occurredAt: new Date(Date.UTC(2026, 10, 3)) }, adminDb);
+		await recordAdminEvent({ kind: 'universeDisabled', adminId: playerId, universeId, reason: 'Spam', preventsDeletion: true, occurredAt: new Date(Date.UTC(2026, 10, 4)) }, adminDb);
+		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId: grace.id, occurredAt: new Date(Date.UTC(2026, 10, 5)) }, adminDb);
 
 		const exported = (await browser.send<AccountExport>('GET', `${PROFILE_EXPORT_PATH}?locale=en`)).body;
 
@@ -325,7 +326,7 @@ describe('account deletion and data export', () =>
 		const { playerId, browser } = await addLocalAccount('ada');
 		const authenticator = await turnOnTwoFactor(playerId);
 
-		await addServerAdmin(playerId);
+		await addServerAdmin(playerId, adminDb);
 		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.lastServerAdmin, true);
 
 		const refused = await deleteAccount(browser, { password: PASSWORD, twoFactorCode: authenticatorCode(authenticator.secret) });
@@ -335,7 +336,7 @@ describe('account deletion and data export', () =>
 		assert.ok(await accountExists(playerId));
 		assert.ok(await isServerAdmin(playerId));
 
-		await addServerAdmin((await addPlayer('Grace')).id);
+		await addServerAdmin((await addPlayer('Grace')).id, adminDb);
 		assert.strictEqual((await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH)).body.lastServerAdmin, false);
 		assert.strictEqual((await deleteAccount(browser, { password: PASSWORD, twoFactorCode: authenticatorCode(authenticator.secret, 1) })).status, 204);
 		assert.ok(!await accountExists(playerId));

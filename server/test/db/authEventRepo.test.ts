@@ -62,6 +62,25 @@ describe('authEventRepo', () =>
 		assert.strictEqual((await findPlayerAuthEvents(player.id)).length, 1);
 	});
 
+	it('never deletes events from the last 90 days, however late the time given', async () =>
+	{
+		const player = await addPlayer('Ada');
+		const now = Date.now();
+
+		for (const days of [91, 89])
+		{
+			await recordAuthEvent({
+				playerId: player.id,
+				kind: 'loggedIn',
+				networkHash: null,
+				occurredAt: new Date(now - (days * DAY_MS))
+			});
+		}
+
+		assert.strictEqual(await deleteAuthEventsBefore(new Date(now + DAY_MS)), 1);
+		assert.strictEqual((await findPlayerAuthEvents(player.id)).length, 1);
+	});
+
 	it('refuses a network hash of the wrong length', async () =>
 	{
 		await assert.rejects(recordAuthEvent({

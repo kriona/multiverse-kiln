@@ -4,11 +4,13 @@
  *
  *   npm run admin:add -w server -- <username>
  *
- * Run it by hand on the server, with the server's DATABASE_URL, to make the site's first admin. The
- * account must exist already: register it first
+ * Run it by hand on the server, with the server's ADMIN_DATABASE_URL (the only role that can add admins)
+ * and DATABASE_URL, to make the site's first admin; that admin can add the others on the Admins admin
+ * page. The account must exist already: register it first
  */
 import { parseArgs } from 'node:util';
 
+import { adminDb, adminPool } from '../src/db/adminClient.js';
 import { pool } from '../src/db/client.js';
 import { findPlayerByUsername } from '../src/db/playerRepo.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
@@ -29,7 +31,7 @@ async function main(): Promise<number>
 		return(1);
 	}
 
-	const player = await findPlayerByUsername(positionals[0]);
+	const player = await findPlayerByUsername(positionals[0], adminDb);
 
 	if (!player)
 	{
@@ -37,11 +39,11 @@ async function main(): Promise<number>
 		return(1);
 	}
 
-	const added = await addServerAdmin(player.id);
+	const added = await addServerAdmin(player.id, adminDb);
 
 	console.log((added ? `${player.username} is now a server admin.` : `${player.username} was already a server admin.`));
 
-	if (!await hasTwoFactor(player.id))
+	if (!await hasTwoFactor(player.id, adminDb))
 	{
 		console.log('They don\'t have two-factor authentication on, so they are logged out, and their next login asks them to turn it on.');
 	}
@@ -55,5 +57,5 @@ try
 }
 finally
 {
-	await pool.end();
+	await Promise.all([pool.end(), adminPool.end()]);
 }

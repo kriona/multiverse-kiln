@@ -5,6 +5,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
 import { EDITOR_ROOM_NAME, EditorMessageType, EditorServerMessageType, EditorState, MAX_CHAT_MESSAGE_LENGTH, NoticeReason, ServerCloseCode, VOID_CELL, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorJoinOptions, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type RaceListPayload, type UniverseRole } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { adminDb, adminPool } from '../src/db/adminClient.js';
 import { findChatRead, listChatMessages } from '../src/db/chatRepo.js';
 import { pool } from '../src/db/client.js';
 import { deletePlayer } from '../src/db/playerRepo.js';
@@ -153,7 +154,7 @@ describe('EditorRoom', () =>
 		{
 			const unguarded = await logIn('Grace');
 
-			await addServerAdmin(unguarded.playerId);
+			await addServerAdmin(unguarded.playerId, adminDb);
 			await assert.rejects(connect(unguarded.cookie, { universeId }));
 			await turnOnTwoFactor(unguarded.playerId);
 
@@ -568,7 +569,7 @@ describe('EditorRoom', () =>
 		{
 			const grace = await addEditor('Grace', 'builder');
 
-			await addServerAdmin(grace.playerId);
+			await addServerAdmin(grace.playerId, adminDb);
 			await turnOnTwoFactor(grace.playerId);
 
 			const window = await openEditor(grace, universeId);
@@ -589,7 +590,7 @@ describe('EditorRoom', () =>
 
 			for (const admin of [grace, alan, ada])
 			{
-				await addServerAdmin(admin.playerId);
+				await addServerAdmin(admin.playerId, adminDb);
 				await turnOnTwoFactor(admin.playerId);
 			}
 
@@ -628,11 +629,11 @@ describe('EditorRoom', () =>
 			const adaWindow = await openEditor(ada, universeId);
 			const room = roomOf(adaWindow);
 
-			await addServerAdmin(grace.playerId);
+			await addServerAdmin(grace.playerId, adminDb);
 			await turnOnTwoFactor(grace.playerId);
 			changeDuringNextLookup(room, 'findAdmission', async () =>
 			{
-				await pool.query('DELETE FROM server_admins WHERE player_id = $1', [grace.playerId]);
+				await adminPool.query('DELETE FROM server_admins WHERE player_id = $1', [grace.playerId]);
 				serverAdminChanges.publishLost(grace.playerId);
 			});
 

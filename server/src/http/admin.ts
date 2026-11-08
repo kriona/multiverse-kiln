@@ -4,18 +4,21 @@
  * universes. Only server admins with 2FA on may use the routes under ADMIN_PATH; anyone may read the
  * public settings. Adding and removing admins, and disabling and enabling universes, are recorded as
  * admin events in the same transaction
+ *
+ * Changes are made as the admin role (adminClient.ts), the only one that can write server admins, site
+ * settings and admin events
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
+import { adminDb, inAdminTransaction } from '../db/adminClient.js';
 import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { findPlayerByUsername, listPlayersForAdmin } from '../db/playerRepo.js';
 import { addServerAdmin, isServerAdmin, listServerAdmins, removeServerAdmin, searchPlayersToMakeAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions, findPlayersWithSessions, listActiveSessions } from '../db/sessionRepo.js';
 import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
-import { inTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listUniversesForAdmin, lockUniverse, setUniverseDisabled } from '../db/universeRepo.js';
 import { sessionExpiresAt } from '../logic/sessionLifetimes.js';
@@ -276,7 +279,7 @@ async function updateSiteSettings(request: Request, response: Response): Promise
 		return;
 	}
 
-	await saveSiteSettings(body.data);
+	await saveSiteSettings(body.data, adminDb);
 	response.sendStatus(204);
 }
 
@@ -453,7 +456,7 @@ async function addAdmin(request: Request, response: Response): Promise<void>
 
 	const adminId = adminOf(request).playerId;
 	let ended: string[] = [];
-	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	const refusal = await inAdminTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		const player = await findPlayerByUsername(body.data.username, transaction);
 
@@ -533,7 +536,7 @@ async function removeAdmin(request: Request, response: Response): Promise<void>
 
 	const adminId = adminOf(request).playerId;
 	let removedId: string | undefined;
-	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	const refusal = await inAdminTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		const player = await findPlayerByUsername(username.data, transaction);
 		const removal = (player ? await removeServerAdmin(player.id, transaction) : 'notAdmin');
@@ -649,7 +652,7 @@ async function disableUniverse(request: Request, response: Response): Promise<vo
 
 	const { reason, preventDeletion } = body.data;
 	const adminId = adminOf(request).playerId;
-	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	const refusal = await inAdminTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		// The universe's lock makes an editor save in progress commit first, and later ones see it disabled
 		if (!await lockUniverse(universeId.data, transaction))
@@ -718,7 +721,7 @@ async function enableUniverse(request: Request, response: Response): Promise<voi
 	}
 
 	const adminId = adminOf(request).playerId;
-	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	const refusal = await inAdminTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		if (!await lockUniverse(universeId.data, transaction))
 		{

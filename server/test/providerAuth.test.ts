@@ -3,6 +3,7 @@ import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { ProviderLoginError, setProviderClients, type ProviderClient, type ProviderUser } from '../src/auth/providers.js';
+import { adminDb } from '../src/db/adminClient.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { addProviderLogin } from '../src/db/providerLoginRepo.js';
@@ -517,7 +518,7 @@ describe('provider login routes', () =>
 	{
 		const playerId = await addLocalAccount('ada@example.com', 'ada');
 
-		await addServerAdmin(playerId);
+		await addServerAdmin(playerId, adminDb);
 
 		const linking = new Browser();
 

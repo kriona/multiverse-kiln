@@ -25,7 +25,8 @@ import { connectedSessions } from './players/connectedSessions.js';
 const SWEEP_INTERVAL_MS = SESSION_TOUCH_INTERVAL_MS;
 
 /**
- * How long auth events are kept
+ * How long auth events are kept. The database's delete_auth_events_before() never deletes one sooner
+ * (server/drizzle/0101_append_only_audit_tables.sql), so keeping them a shorter time needs a migration too
  */
 const AUTH_EVENT_DAYS = 90;
 

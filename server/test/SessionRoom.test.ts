@@ -4,6 +4,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
 import { SESSION_ROOM_NAME, SessionServerMessageType, type AccountPayload, type AccountPlayer } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { adminDb } from '../src/db/adminClient.js';
 import { pool } from '../src/db/client.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
 import { SESSION_LIFETIMES } from '../src/logic/sessionLifetimes.js';
@@ -116,7 +117,7 @@ describe('SessionRoom', () =>
 	{
 		const browser = await logInNewBrowser('Ada');
 
-		await addServerAdmin(browser.playerId);
+		await addServerAdmin(browser.playerId, adminDb);
 		await turnOnTwoFactor(browser.playerId);
 
 		assert.strictEqual((await openWindow(browser.cookie)).account?.serverAdmin, true);
@@ -126,7 +127,7 @@ describe('SessionRoom', () =>
 	{
 		const browser = await logInNewBrowser('Ada');
 
-		await addServerAdmin(browser.playerId);
+		await addServerAdmin(browser.playerId, adminDb);
 
 		const window = await openWindow(browser.cookie);
 		const remaining = await pool.query('SELECT id FROM sessions WHERE id = $1', [browser.sessionId]);

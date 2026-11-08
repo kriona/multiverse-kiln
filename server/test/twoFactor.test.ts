@@ -4,6 +4,7 @@ import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH
 import { keyedHash } from '../src/auth/keyedHashes.js';
 import { hashPassword } from '../src/auth/passwords.js';
 import { decryptTotpSecret } from '../src/auth/totpSecrets.js';
+import { adminDb } from '../src/db/adminClient.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
@@ -567,7 +568,7 @@ describe('2FA routes', () =>
 			const authenticator = await turnOnTwoFactor(playerId);
 			const browser = new Browser();
 
-			await addServerAdmin(playerId);
+			await addServerAdmin(playerId, adminDb);
 			await logIn(browser);
 			assert.strictEqual((await sendCode(browser, authenticatorCode(authenticator.secret))).status, 204);
 
@@ -616,7 +617,7 @@ describe('2FA routes', () =>
 			const playerId = await addAda();
 			const browser = new Browser();
 
-			await addServerAdmin(playerId);
+			await addServerAdmin(playerId, adminDb);
 			assert.deepStrictEqual(await logIn(browser), { outcome: 'twoFactorSetup' });
 			assert.strictEqual(await browser.username(), null);
 			assert.strictEqual((await new Browser().send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 403);
@@ -650,7 +651,7 @@ describe('2FA routes', () =>
 			const playerId = await addAda();
 			const browser = new Browser();
 
-			await addServerAdmin(playerId);
+			await addServerAdmin(playerId, adminDb);
 			await logIn(browser);
 			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 200);
 
@@ -673,7 +674,7 @@ describe('2FA routes', () =>
 			const authenticator = await turnOnTwoFactor(playerId);
 			const browser = new Browser();
 
-			await addServerAdmin(playerId);
+			await addServerAdmin(playerId, adminDb);
 			assert.deepStrictEqual(await logIn(browser), { outcome: 'twoFactor' });
 			assert.strictEqual((await browser.send('POST', AUTH_TWO_FACTOR_LOGIN_SETUP_PATH)).status, 409);
 			assert.strictEqual((await enableAtLogin(browser, authenticatorCode(authenticator.secret))).status, 409);
@@ -686,7 +687,7 @@ describe('2FA routes', () =>
 			const playerId = await addAda();
 			const browser = new Browser();
 
-			await addServerAdmin(playerId);
+			await addServerAdmin(playerId, adminDb);
 			assert.strictEqual((await browser.send('POST', AUTH_CODE_PATH, { purpose: 'resetPassword', email: EMAIL, locale: 'en' })).status, 204);
 			await waitUntil(() => (emails.length === 1));
 
@@ -706,7 +707,7 @@ describe('2FA routes', () =>
 			const authenticator = await turnOnTwoFactor(playerId);
 			const browser = new Browser();
 
-			await addServerAdmin(playerId);
+			await addServerAdmin(playerId, adminDb);
 			await logIn(browser);
 			await pool.query('DELETE FROM authenticators');
 

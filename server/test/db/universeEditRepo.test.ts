@@ -67,7 +67,7 @@ describe('universeEditRepo', () =>
 		const universeId = await addUniverse();
 		const otherId = await addUniverse('Elsewhere');
 		const ada = await addPlayer('Ada');
-		const cutoff = new Date(Date.UTC(2026, 10, 1, 12, 0));
+		const cutoff = new Date(Date.UTC(2025, 10, 1, 12, 0));
 
 		for (const [minute, universe] of [[-3, universeId], [-2, otherId], [-1, universeId], [0, universeId], [1, otherId]] as const)
 		{
@@ -85,5 +85,27 @@ describe('universeEditRepo', () =>
 		assert.strictEqual(await deleteUniverseEditsBefore(cutoff, 2), 0);
 		assert.strictEqual((await listUniverseEdits(universeId, { offset: 0, limit: 10 })).total, 1);
 		assert.strictEqual((await listUniverseEdits(otherId, { offset: 0, limit: 10 })).total, 1);
+	});
+
+	it('never deletes saves from the last 90 days, however late the time given', async () =>
+	{
+		const universeId = await addUniverse();
+		const ada = await addPlayer('Ada');
+		const now = Date.now();
+		const dayMs = (24 * 60 * 60 * 1000);
+
+		for (const days of [91, 89])
+		{
+			await recordUniverseEdit({
+				universeId,
+				playerId: ada.id,
+				role: 'creator',
+				changeDetails: [{ subject: 'difficultyLevel', action: 'changed', target: { key: 'hard', name: null }, fields: [{ field: 'mobScale', value: days }], count: 1 }],
+				savedAt: new Date(now - (days * dayMs))
+			});
+		}
+
+		assert.strictEqual(await deleteUniverseEditsBefore(new Date(now + dayMs), 10), 1);
+		assert.strictEqual((await listUniverseEdits(universeId, { offset: 0, limit: 10 })).total, 1);
 	});
 });

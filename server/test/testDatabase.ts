@@ -91,7 +91,7 @@ export function workerDatabaseUrl(connectionString: string, worker: number): str
 }
 
 /**
- * Builds the test database from nothing: drops every table and type, applies every migration, and
+ * Builds the test database from nothing: drops every table, type and function, applies every migration, and
  * keeps a copy of the rows the migrations inserted
  *
  * Starting from nothing means rows left by an earlier run never count as migration data, and every
@@ -123,6 +123,7 @@ export async function buildTestDatabase(connectionString: string): Promise<void>
 	await migrationPool.query(`DROP SCHEMA IF EXISTS ${BASELINE_SCHEMA} CASCADE`);
 	await dropAll(migrationPool, `SELECT format('%I.%I', schemaname, tablename) FROM pg_tables WHERE schemaname = 'public'`, 'TABLE');
 	await dropAll(migrationPool, `SELECT format('%I.%I', n.nspname, t.typname) FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typtype = 'e'`, 'TYPE');
+	await dropAll(migrationPool, `SELECT format('%I.%I(%s)', n.nspname, p.proname, pg_get_function_identity_arguments(p.oid)) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.prokind = 'f'`, 'FUNCTION');
 
 	await migrate(drizzle(migrationPool), { migrationsFolder: fileURLToPath(new URL('../drizzle', import.meta.url)) });
 
@@ -285,9 +286,9 @@ export async function closeTestDatabase(): Promise<void>
  *
  * @param pool The connection
  * @param namesQuery A query returning one column of qualified, quoted names
- * @param kind TABLE or TYPE
+ * @param kind TABLE, TYPE or FUNCTION
  */
-async function dropAll(pool: pg.Pool, namesQuery: string, kind: 'TABLE' | 'TYPE'): Promise<void>
+async function dropAll(pool: pg.Pool, namesQuery: string, kind: 'TABLE' | 'TYPE' | 'FUNCTION'): Promise<void>
 {
 	const result = await pool.query<{ names: string | null }>(`SELECT string_agg(name, ', ') AS names FROM (${namesQuery}) AS objects(name)`);
 	const names = result.rows[0]?.names;

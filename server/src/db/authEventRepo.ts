@@ -2,7 +2,7 @@
  * The record of logins and changes to how accounts log in: the only module that reads or writes the
  * auth_events table
  */
-import { eq, lte } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { db, type Executor } from './client.js';
 import { authEvents, type AUTH_EVENT_KINDS } from './schema.js';
@@ -67,7 +67,9 @@ export async function findPlayerAuthEvents(playerId: string, executor: Executor 
 }
 
 /**
- * Deletes the events old enough to stop keeping
+ * Deletes the events old enough to stop keeping. The server's role can't delete auth events itself: the
+ * database's delete_auth_events_before() deletes them, and never one from the last 90 days, however
+ * late `before` is
  *
  * @param before Events at or before this time are deleted
  * @param executor The database, or a transaction
@@ -75,12 +77,7 @@ export async function findPlayerAuthEvents(playerId: string, executor: Executor 
  */
 export async function deleteAuthEventsBefore(before: Date, executor: Executor = db): Promise<number>
 {
-	const rows = await executor
-		.delete(authEvents)
-		.where(lte(authEvents.occurredAt, before))
-		.returning({
-			id: authEvents.id
-		});
+	const result = await executor.execute<{ deleted: number }>(sql`SELECT public.delete_auth_events_before(${before}) AS deleted`);
 
-	return(rows.length);
+	return(result.rows[0]?.deleted ?? 0);
 }

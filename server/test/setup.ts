@@ -8,8 +8,9 @@
  * Dev tools are cleared too, so tests see the production routes whatever server/.env says, and
  * ALLOWED_ORIGINS and SITE_URL are set to fixed test origins
  *
- * The server connects to the test database (TEST_DATABASE_URL) instead of DATABASE_URL. This runs
- * before anything imports src/db/client.ts, which reads DATABASE_URL when it is first imported. When
+ * The server connects to the test database (TEST_DATABASE_URL and TEST_ADMIN_DATABASE_URL) instead of
+ * DATABASE_URL and ADMIN_DATABASE_URL. This runs before anything imports src/db/client.ts or
+ * src/db/adminClient.ts, which read them when they are first imported. When
  * the tests run in parallel, each worker process loads this file and uses a test database of its own
  * (workerDatabaseUrl(), testWorker.ts)
  *
@@ -66,6 +67,7 @@ process.env.ENABLE_DEV_CODES = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
 process.env.SITE_URL = testSiteUrl;
 process.env.DATABASE_URL = workerDatabaseUrl(requireTestDatabaseUrl('TEST_DATABASE_URL'), testWorker);
+process.env.ADMIN_DATABASE_URL = workerDatabaseUrl(requireTestDatabaseUrl('TEST_ADMIN_DATABASE_URL'), testWorker);
 
 // Fixed keys, so tests don't depend on the developer's own (32 bytes of 0x2a and of 0x2b in base64)
 process.env.AUTH_HMAC_KEY = Buffer.alloc(32, 0x2a).toString('base64');
@@ -141,9 +143,10 @@ export const mochaHooks = {
 		}
 
 		const { pool } = await import('../src/db/client.js');
+		const { adminPool } = await import('../src/db/adminClient.js');
 
 		await (await testServerHooks())?.shutDown();
 		await closeTestDatabase();
-		await pool.end();
+		await Promise.all([pool.end(), adminPool.end()]);
 	}
 };

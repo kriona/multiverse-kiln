@@ -93,7 +93,7 @@ It copies each `.env.example` with a new secret in place of each placeholder, ea
 
 To make them by hand instead, use one of two formats. Use the right one for each setting: a base64 value in a hex setting breaks it.
 
-**Hex** - the database passwords and storage keys: `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`, in the root `.env`:
+**Hex** - the database passwords and storage keys: `POSTGRES_PASSWORD`, `KILN_MIGRATOR_PASSWORD`, `KILN_APP_PASSWORD`, `KILN_ADMIN_PASSWORD`, `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY`, in the root `.env`:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
@@ -107,13 +107,14 @@ Hex has only letters and digits, which these settings need: the passwords go in 
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_APP_PASSWORD` in `DATABASE_URL` and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL` (and the same passwords in `TEST_DATABASE_URL` and `TEST_MIGRATION_DATABASE_URL`), and the same `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY` pair in both files.
+Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_APP_PASSWORD` in `DATABASE_URL`, `KILN_ADMIN_PASSWORD` in `ADMIN_DATABASE_URL` and `KILN_MIGRATOR_PASSWORD` in `MIGRATION_DATABASE_URL` (and the same passwords in `TEST_DATABASE_URL`, `TEST_ADMIN_DATABASE_URL` and `TEST_MIGRATION_DATABASE_URL`), and the same `STORAGE_ACCESS_KEY_ID` and `STORAGE_SECRET_ACCESS_KEY` pair in both files.
 
 | Variable | File | Purpose |
 |---|---|---|
 | `POSTGRES_PASSWORD` | `.env` | Password for the local Postgres superuser. Only the container's setup script uses it. |
 | `KILN_MIGRATOR_PASSWORD` | `.env` | Password for `kiln_migrator`, the role migrations run as. |
 | `KILN_APP_PASSWORD` | `.env` | Password for `kiln_app`, the role the game server runs as. |
+| `KILN_ADMIN_PASSWORD` | `.env` | Password for `kiln_admin`, the role the admin pages and `npm run admin:add -w server` run as. |
 | `POSTGRES_PORT` | `.env` | Host port for Postgres, bound to `127.0.0.1` only (default `5432`). |
 | `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` | `.env` | Keys for the local object storage's S3 API, which refuses requests without them. The same pair goes in `server/.env`. |
 | `STORAGE_PORT` | `.env` | Host port for the local storage's S3 API, bound to `127.0.0.1` only (default `8333`). |
@@ -128,8 +129,9 @@ Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_AP
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
 | `DATABASE_URL` | `server/.env` | Postgres connection string for the game server, as `kiln_app`. In production: Neon's pooled connection string. |
+| `ADMIN_DATABASE_URL` | `server/.env` | Postgres connection string for the admin pages and `npm run admin:add -w server`, as `kiln_admin`, the only role that can change server admins and site settings. The server refuses to start without it. In production: Neon's pooled connection string for `kiln_admin`. |
 | `MIGRATION_DATABASE_URL` | `server/.env` | Postgres connection string for `npm run db:migrate -w server`, as `kiln_migrator`. Never give it to the running server. |
-| `TEST_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same two connection strings for the `kiln_test` database that the tests use. `npm test` runs them in parallel, each worker with a database of its own named after this one (`kiln_test_1` to `kiln_test_8`). The tests empty their database before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
+| `TEST_DATABASE_URL`, `TEST_ADMIN_DATABASE_URL`, `TEST_MIGRATION_DATABASE_URL` | `server/.env` | The same three connection strings for the `kiln_test` database that the tests use. `npm test` runs them in parallel, each worker with a database of its own named after this one (`kiln_test_1` to `kiln_test_8`). The tests empty their database before every test, so they refuse to run against a database whose name doesn't end in `_test`. |
 | `LOADTEST_ENDPOINT` | `server/.env` | Server URL that `npm run loadtest -w server` connects to: `wss://www.multiversekiln.localhost:2567`. |
 | `STORAGE_ENDPOINT`, `STORAGE_REGION`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY`, `STORAGE_FORCE_PATH_STYLE` | `server/.env` | Object storage for uploads such as tilesets: any S3-compatible service. Locally the storage container (`http://127.0.0.1:8333`, path-style, the keys from `.env`); in production Cloudflare R2, AWS S3, Backblaze B2 or similar, with a bucket made in its own tools. |
 | `TEST_STORAGE_BUCKET` | `server/.env` | The bucket `npm test` uploads to, on the same storage (`kiln-test`). The tests create it if it doesn't exist. |
@@ -192,12 +194,13 @@ Nobody can open Kilnhaven in the world editor unless you name its creator: `npm 
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 
-The first start runs the scripts in `docker/postgres/init/`, which create two roles and the databases: `kiln` for the game, and `kiln_test` and `kiln_test_1` to `kiln_test_8` for the test suite (one for each of its parallel workers).
+The first start runs the scripts in `docker/postgres/init/`, which create three roles and the databases: `kiln` for the game, and `kiln_test` and `kiln_test_1` to `kiln_test_8` for the test suite (one for each of its parallel workers).
 
 | Role | Used by | Can |
 |---|---|---|
 | `kiln_migrator` | `npm run db:migrate -w server` (`MIGRATION_DATABASE_URL`) | Create, alter and drop tables (it owns them) |
-| `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables |
+| `kiln_app` | The game server (`DATABASE_URL`) | Read and write rows, but not change tables. The audit records (`admin_events`, `auth_events`, `universe_edits`) are append-only for it: it deletes old auth events and saves only through functions that keep the last 90 days. It can read server admins, site settings and admin events but not change them |
+| `kiln_admin` | The admin pages and `npm run admin:add -w server` (`ADMIN_DATABASE_URL`) | Everything `kiln_app` can (it is a member of it), and change server admins, site settings and admin events |
 
 `npm test` rebuilds each test database it uses from the migrations at the start of every run and empties it before every test (keeping the rows migrations insert, such as default tiles), so they never need migrating by hand.
 
@@ -205,6 +208,12 @@ The setup scripts and the passwords in `.env` only take effect when the data vol
 
 ```bash
 docker compose exec postgres sh /docker-entrypoint-initdb.d/02-databases.sh
+```
+
+A volume created before `kiln_admin` existed can add it the same way, once `KILN_ADMIN_PASSWORD` is in `.env` and `docker compose up -d` has passed it to the container. Add it before migrating, since the migrations grant to it:
+
+```bash
+docker compose exec postgres sh /docker-entrypoint-initdb.d/03-admin-role.sh
 ```
 
 In Git Bash, put `MSYS_NO_PATHCONV=1` before that command, or it rewrites the container path into a Windows one.
