@@ -58,10 +58,12 @@ export const controlPayload = z.object({
 }) satisfies z.ZodType<ControlPayload>;
 
 /**
- * Options a universe's lobby or editor room is created and joined with: which universe
+ * Options a universe's lobby or editor room is created and joined with: which universe. The ID must be
+ * lowercase, as the database writes it, since matchmaking's filterBy compares it as a string and would
+ * give the same universe written in capitals a room of its own
  */
 export const roomOptions = z.object({
-	universeId: z.uuid()
+	universeId: z.uuid().lowercase()
 }) satisfies z.ZodType<LobbyJoinOptions & EditorJoinOptions>;
 
 /**
@@ -75,10 +77,11 @@ export const editorPlacePayload = z.object({
 }) satisfies z.ZodType<EditorPlacePayload>;
 
 /**
- * Options a group's game room is created and joined with: which group, and which character the window plays
+ * Options a group's game room is created and joined with: which group, and which character the window
+ * plays. The group's ID must be lowercase, like the universe's in roomOptions
  */
 export const gameJoinOptions = z.object({
-	groupId: z.uuid(),
+	groupId: z.uuid().lowercase(),
 	characterId: z.uuid()
 }) satisfies z.ZodType<GameJoinOptions>;
 

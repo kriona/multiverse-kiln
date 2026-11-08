@@ -17,6 +17,7 @@ import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/edi
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
+import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { chatPayload, chatReadPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
 
@@ -124,10 +125,17 @@ function identityOf(client: EditorClient): EditorIdentity
 }
 
 /**
+ * The open editor room of each universe, by universe ID
+ */
+const editorRooms = new OneRoomPerKey<EditorRoom>('universe');
+
+/**
  * A universe's editor room: who has its editor open, the editors' chat, and what each saves
  *
  * Every window with the universe's editor open joins it with the universe's ID (EditorJoinOptions), and
- * every window of the same universe joins the same room (filterBy in app.config.ts). Only players who may
+ * every window of the same universe joins the same room (filterBy in app.config.ts). A second room for a
+ * universe that has one is refused (editorRooms), since it would split the editors and their chat between
+ * them. Only players who may
  * open the universe's editor are admitted: those with a role in it, with 2FA on while the universe
  * requires it, and server admins with 2FA on, who edit with the site admin role when they have no
  * stronger one. Its state lists each player once,
@@ -279,6 +287,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	{
 		const { universeId } = roomOptions.parse(options);
 
+		editorRooms.claim(universeId, this);
+
 		if (!await findUniverse(universeId))
 		{
 			throw new Error(`Universe ${universeId} has no editor to join`);
@@ -352,6 +362,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 */
 	async onDispose(): Promise<void>
 	{
+		editorRooms.release(this);
 		this.stopFollowingSessions?.();
 		this.stopFollowingWorld?.();
 		this.stopFollowingUpdates?.();

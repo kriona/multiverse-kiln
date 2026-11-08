@@ -1,6 +1,7 @@
 import {
 	defineServer,
 	defineRoom,
+	matchMaker,
 	monitor,
 	playground,
 } from 'colyseus';
@@ -35,6 +36,10 @@ import { siteUrl } from './siteUrl.js';
 const allowedOrigins = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
 
 configureResponseHeaders(allowedOrigins);
+
+// Clients find rooms only through matchmaking that honors filterBy, or by room ID. Colyseus also offers
+// create, which always makes a new room, such as a second room for a group that has one
+matchMaker.controller.exposedMethods = ['joinOrCreate', 'join', 'joinById', 'reconnect'];
 
 // The client's address, which emails link to; startup fails if SITE_URL is missing or isn't an https:// origin
 siteUrl();

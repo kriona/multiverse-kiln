@@ -150,6 +150,17 @@ describe('EditorRoom', () =>
 			assert.strictEqual(await findChatRead({ kind: 'editors', universeId }, alan.playerId), undefined);
 		});
 
+		it('refuses a second room for a universe while its room is open, and its ID in capitals', async () =>
+		{
+			const room = await colyseus.createRoom(EDITOR_ROOM_NAME, { universeId });
+
+			await assert.rejects(colyseus.createRoom(EDITOR_ROOM_NAME, { universeId }), /already has a room/);
+			await assert.rejects(colyseus.createRoom(EDITOR_ROOM_NAME, { universeId: universeId.toUpperCase() }));
+
+			await room.disconnect();
+			await colyseus.createRoom(EDITOR_ROOM_NAME, { universeId });
+		});
+
 		it('admits a server admin with 2FA on with the site admin role, but not one without 2FA', async () =>
 		{
 			const unguarded = await logIn('Grace');
