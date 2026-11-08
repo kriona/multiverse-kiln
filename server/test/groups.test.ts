@@ -480,7 +480,10 @@ describe('group routes', () =>
 	{
 		const answer = await changeWhileWaitingForUniverse(universe.universeId, () => send(grace, 'POST', groupsPath(universe.universeId), groupRequest(grace.characterId)), async (transaction) =>
 		{
-			await setUniverseDisabled(universe.universeId, 'Spam', transaction);
+			await setUniverseDisabled(universe.universeId, {
+				reason: 'Spam',
+				preventDeletion: false
+			}, transaction);
 		});
 
 		assert.strictEqual(answer.status, 404);

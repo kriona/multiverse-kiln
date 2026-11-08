@@ -60,6 +60,11 @@
 						<textarea id="universe-disable-reason" rows="4" required></textarea>
 					</label>
 					<p id="universe-disable-reason-error" class="field-error field-message-slot"></p>
+					<label class="checkbox" data-message="admin.universes.preventDeletion" data-translation-context="Checkbox in the dialog that disables a universe, checked at first: whether the universe's creators are kept from deleting it while it is disabled">
+						<input id="universe-disable-prevent-deletion" type="checkbox" aria-describedby="universe-disable-prevent-deletion-hint" />
+						Prevent its creators from deleting the universe
+					</label>
+					<p id="universe-disable-prevent-deletion-hint" class="hint" data-message="admin.universes.preventDeletionHint" data-translation-context="Explains the checkbox in the dialog that disables a universe that keeps its creators from deleting it">A creator who deletes their account has to make another of its editors its creator, rather than deleting it and what it was disabled for.</p>
 					<p id="universe-disable-error" class="form-error" role="alert" hidden></p>
 					<div class="dialog-buttons">
 						<button id="universe-disable-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>

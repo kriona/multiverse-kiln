@@ -507,6 +507,10 @@
 		"defaultMessage": "Creators",
 		"description": "Heading of the column in the admin page's list of universes naming each one's creators"
 	},
+	"admin.universes.deletionPreventedNote": {
+		"defaultMessage": "Its creators can't delete it.",
+		"description": "Under when and why a universe was disabled in the admin page's list of universes, when the admin who disabled it kept its creators from deleting it"
+	},
 	"admin.universes.disable": {
 		"defaultMessage": "Disable",
 		"description": "Button in a row of the admin page's list of universes that opens the dialog disabling it, and the button in that dialog that disables it"
@@ -578,6 +582,14 @@
 	"admin.universes.none": {
 		"defaultMessage": "No universes match.",
 		"description": "Shown instead of the admin page's list of universes when none match the search and filter"
+	},
+	"admin.universes.preventDeletion": {
+		"defaultMessage": "Prevent its creators from deleting the universe",
+		"description": "Checkbox in the dialog that disables a universe, checked at first: whether the universe's creators are kept from deleting it while it is disabled"
+	},
+	"admin.universes.preventDeletionHint": {
+		"defaultMessage": "A creator who deletes their account has to make another of its editors its creator, rather than deleting it and what it was disabled for.",
+		"description": "Explains the checkbox in the dialog that disables a universe that keeps its creators from deleting it"
 	},
 	"admin.universes.reason": {
 		"defaultMessage": "Reason, shown to its editors",
@@ -3835,6 +3847,10 @@
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
 	},
+	"error.auth.deleteUniversePrevented": {
+		"defaultMessage": "The site's admins disabled {universe} and kept it from being deleted. Make another of its editors its creator.",
+		"description": "Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but the site's admins disabled it and kept it from being deleted, perhaps a moment ago; {universe} is its name"
+	},
 	"error.auth.deleteUniversesChanged": {
 		"defaultMessage": "The universes you alone create have changed. Look at them again before deleting your account.",
 		"description": "Why deleting an account was refused: the universes the player is the only creator of, or their editors, changed since the deletion dialog listed them"
@@ -6451,6 +6467,10 @@
 		"defaultMessage": "Type your username to confirm",
 		"description": "Label of the field in the dialog deleting an account without a password, where the player types their username to confirm"
 	},
+	"profile.deleteUnhandableUniverse": {
+		"defaultMessage": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it.",
+		"description": "In the dialog that deletes the player's account, in place of what it asks, and the reason deleting it was refused: the player is the only creator of a universe that the site's admins disabled and kept from being deleted, so it can't be deleted with the account, and no one else has a role in it to become its creator; {universe} is its name"
+	},
 	"profile.deleteUniverseChoose": {
 		"defaultMessage": "Choose...",
 		"description": "The first choice for a universe in the dialog that deletes the player's account, before they choose what becomes of it"
@@ -6462,6 +6482,10 @@
 	"profile.deleteUniverseHandTo": {
 		"defaultMessage": "Make {name} (@{username}, {role}) its creator",
 		"description": "A choice for a universe in the dialog that deletes the player's account: another of its editors becomes its creator; {name} and {username} are theirs, and {role} their role in it now, such as Builder"
+	},
+	"profile.deleteUniversePrevented": {
+		"defaultMessage": "The site's admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator.",
+		"description": "Under a universe's choice in the dialog that deletes the player's account, which then has no choice to delete it: the site's admins disabled the universe and kept it from being deleted"
 	},
 	"profile.deleteUniverseUnchosen": {
 		"defaultMessage": "Choose what becomes of {universe}.",

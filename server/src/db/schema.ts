@@ -185,11 +185,18 @@ export const universes = pgTable('universes', {
 	/**
 	 * Why the server admin disabled it, which its editors are shown; set exactly when disabledAt is
 	 */
-	disabledReason: text('disabled_reason')
+	disabledReason: text('disabled_reason'),
+
+	/**
+	 * Whether the server admin who disabled it kept its creators from deleting it: a creator deleting
+	 * their account has to hand it to another editor. Only while it is disabled
+	 */
+	deletionPrevented: boolean('deletion_prevented').notNull().default(false)
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
 	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
 	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
+	check('universes_deletion_prevented_disabled', sql`NOT ${table.deletionPrevented} OR (${table.disabledAt} IS NOT NULL)`),
 	...universeVersionConstraints('universes', table)
 ]);
 
@@ -1988,6 +1995,11 @@ export const adminEvents = pgTable('admin_events', {
 	 * The reason given for disabling a universe, or null for other kinds
 	 */
 	reason: text('reason'),
+
+	/**
+	 * Whether disabling a universe kept its creators from deleting it, or null for other kinds
+	 */
+	preventsDeletion: boolean('prevents_deletion'),
 
 	occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [

@@ -93,6 +93,7 @@ export async function deletionRoute(request: Request, response: Response): Promi
 		universes: await Promise.all(universes.map(async (universe) => ({
 			id: universe.id,
 			name: universe.name,
+			deletionPrevented: universe.deletionPrevented,
 			editors: await listOtherUniverseEditors(universe.id, playerId)
 		}))),
 		anchorsGroups,
@@ -267,6 +268,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 					name: event.universeName
 				}),
 			reason: event.reason,
+			preventsDeletion: event.preventsDeletion,
 			occurredAt: event.occurredAt.toISOString()
 		}))
 	};

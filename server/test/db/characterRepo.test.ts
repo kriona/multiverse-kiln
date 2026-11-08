@@ -339,7 +339,10 @@ describe('characterRepo', () =>
 			assert.deepStrictEqual((await listProfileCharacters(playerId, { stages: ['let_there_be_light'] })).map((character) => character.name), ['Brokk', 'Zed']);
 
 			// Others don't see characters in a universe a server admin has disabled
-			await setUniverseDisabled(otherUniverseId, 'Spam');
+			await setUniverseDisabled(otherUniverseId, {
+				reason: 'Spam',
+				preventDeletion: false
+			});
 			assert.deepStrictEqual(await listProfileCharacters(playerId, { stages: ['let_there_be_light'] }), []);
 			assert.strictEqual((await listProfileCharacters(playerId, {})).length, 3);
 			await setUniverseDisabled(otherUniverseId, null);

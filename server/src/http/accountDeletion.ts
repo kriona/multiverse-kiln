@@ -4,12 +4,13 @@
  * The player confirms with their password, and their authenticator or recovery code when the account
  * has 2FA, or with their username when the account has no password. Each universe they are the only
  * creator of is handed to another of its editors or deleted first, as they chose (GET
- * PROFILE_DELETION_PATH lists them). Groups whose anchor being was one of their characters disband, and
+ * PROFILE_DELETION_PATH lists them); one a server admin disabled and kept from being deleted can only be
+ * handed on. Groups whose anchor being was one of their characters disband, and
  * every window of theirs is turned away
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, type AccountDeleteRequest } from '@multiverse-kiln/shared';
+import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_UNIVERSE_DELETION, type AccountDeleteRequest } from '@multiverse-kiln/shared';
 
 import { forgetChatAuthor } from '../db/chatRepo.js';
 import type { Executor } from '../db/client.js';
@@ -21,7 +22,7 @@ import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { listOtherUniverseEditors, listSoleCreatedUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
-import { deleteUniverse, lockUniverse } from '../db/universeRepo.js';
+import { deleteUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
 import { accountDeletedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { accountDeletions } from '../players/accountDeletions.js';
@@ -47,6 +48,11 @@ const deletionMessages = defineMessages({
 		id: 'error.auth.deleteUniversesChanged',
 		defaultMessage: 'The universes you alone create have changed. Look at them again before deleting your account.',
 		description: 'Why deleting an account was refused: the universes the player is the only creator of, or their editors, changed since the deletion dialog listed them'
+	},
+	universeDeletionPrevented: {
+		id: 'error.auth.deleteUniversePrevented',
+		defaultMessage: 'The site\'s admins disabled {universe} and kept it from being deleted. Make another of its editors its creator.',
+		description: 'Why deleting an account was refused: the player chose to delete a universe they are the only creator of, but the site\'s admins disabled it and kept it from being deleted, perhaps a moment ago; {universe} is its name'
 	}
 });
 
@@ -226,8 +232,8 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
  * @param playerId The account
  * @param decisions The new creator of each universe the player is the only creator of, by universe ID; null deletes it
  * @param executor A transaction that has locked the player
- * @return What was deleted, or the refusal when the player is the site's only server admin or the
- * decisions don't match the player's universes
+ * @return What was deleted, or the refusal when the player is the site's only server admin, the
+ * decisions don't match the player's universes, or one chosen to be deleted is kept from being deleted
  */
 async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, string | null>, executor: Executor): Promise<AuthRefusal | Deletion>
 {
@@ -257,6 +263,18 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 			return({
 				status: 409,
 				message: deletionMessages.universesChanged
+			});
+		}
+
+		// Read again once locked: an admin may have disabled it since it was listed
+		if ((newCreatorId === null) && await isUniverseDeletionPrevented(universe.id, executor))
+		{
+			return({
+				status: 409,
+				message: ((editors.length === 0) ? UNHANDABLE_UNIVERSE_DELETION : deletionMessages.universeDeletionPrevented),
+				values: {
+					universe: universe.name
+				}
 			});
 		}
 

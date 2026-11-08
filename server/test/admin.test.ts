@@ -10,7 +10,7 @@ import { addProviderLogin } from '../src/db/providerLoginRepo.js';
 import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { findDisabledReason, setUniverseDisabled } from '../src/db/universeRepo.js';
+import { findDisabledReason, isUniverseDeletionPrevented, setUniverseDisabled } from '../src/db/universeRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { serverAdminChanges } from '../src/players/serverAdminChanges.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
@@ -724,11 +724,12 @@ describe('Admin universe list', () =>
 	 *
 	 * @param universeId The universe
 	 * @param reason Why
+	 * @param preventDeletion Whether its creators are kept from deleting it
 	 * @return The response
 	 */
-	function disable(universeId: string, reason: unknown): Promise<Response>
+	function disable(universeId: string, reason: unknown, preventDeletion: unknown = false): Promise<Response>
 	{
-		return(send('PUT', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin, body: { reason } }));
+		return(send('PUT', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin, body: { reason, preventDeletion } }));
 	}
 
 	it('lists every universe by name ignoring case, with its creators, searched and filtered', async () =>
@@ -739,13 +740,16 @@ describe('Admin universe list', () =>
 		await setUniverseRole(kilnhaven, (await addPlayer('Grace Hopper')).id, 'creator');
 		await setUniverseRole(kilnhaven, (await addPlayer('ada')).id, 'creator');
 		await setUniverseRole(kilnhaven, (await addPlayer('Alan Turing')).id, 'builder');
-		await setUniverseDisabled(zed, 'Spam');
+		await setUniverseDisabled(zed, {
+			reason: 'Spam',
+			preventDeletion: true
+		});
 
 		const page = await listUniverses();
 
-		assert.deepStrictEqual(page.universes.map((universe) => [universe.name, universe.stage, universe.disabledReason]), [
-			['Kilnhaven', 'in_the_beginning', null],
-			['zed', 'in_the_beginning', 'Spam']
+		assert.deepStrictEqual(page.universes.map((universe) => [universe.name, universe.stage, universe.disabledReason, universe.deletionPrevented]), [
+			['Kilnhaven', 'in_the_beginning', null, false],
+			['zed', 'in_the_beginning', 'Spam', true]
 		]);
 		assert.deepStrictEqual(page.universes[0].creators, [
 			{ username: 'ada', displayName: 'ada' },
@@ -769,7 +773,7 @@ describe('Admin universe list', () =>
 
 		try
 		{
-			assert.strictEqual((await disable(universeId, '  Copied from another game\r\nwithout permission  ')).status, 204);
+			assert.strictEqual((await disable(universeId, '  Copied from another game\r\nwithout permission  ', true)).status, 204);
 		}
 		finally
 		{
@@ -778,12 +782,28 @@ describe('Admin universe list', () =>
 
 		assert.deepStrictEqual(published, [{ kind: 'universeDisabled', universeId }]);
 		assert.strictEqual(await findDisabledReason(universeId), 'Copied from another game\nwithout permission');
-		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => [event.kind, event.adminId, event.reason]), [
-			['universeDisabled', admin.playerId, 'Copied from another game\nwithout permission']
+		assert.strictEqual(await isUniverseDeletionPrevented(universeId), true);
+		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => [event.kind, event.adminId, event.reason, event.preventsDeletion]), [
+			['universeDisabled', admin.playerId, 'Copied from another game\nwithout permission', true]
 		]);
 	});
 
-	it('refuses a reason that is empty, too long or holds control characters, a universe disabled already, and one that doesn\'t exist', async () =>
+	it('disables a universe without keeping its creators from deleting it, and lets them once it is enabled', async () =>
+	{
+		const universeId = await addUniverse();
+
+		assert.strictEqual((await disable(universeId, 'Spam')).status, 204);
+		assert.strictEqual(await isUniverseDeletionPrevented(universeId), false);
+		assert.deepStrictEqual((await findUniverseAdminEvents(universeId)).map((event) => event.preventsDeletion), [false]);
+
+		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin })).status, 204);
+		assert.strictEqual((await disable(universeId, 'Spam again', true)).status, 204);
+		assert.strictEqual(await isUniverseDeletionPrevented(universeId), true);
+		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin })).status, 204);
+		assert.strictEqual(await isUniverseDeletionPrevented(universeId), false);
+	});
+
+	it('refuses a reason that is empty, too long or holds control characters, no choice about deleting it, a universe disabled already, and one that doesn\'t exist', async () =>
 	{
 		const universeId = await addUniverse();
 
@@ -791,6 +811,8 @@ describe('Admin universe list', () =>
 		assert.strictEqual((await disable(universeId, 'x'.repeat(MAX_DISABLED_REASON_LENGTH + 1))).status, 400);
 		assert.strictEqual((await disable(universeId, 'Bad\u0007')).status, 400);
 		assert.strictEqual((await disable(universeId, 7)).status, 400);
+		assert.strictEqual((await disable(universeId, 'Spam', 'yes')).status, 400);
+		assert.strictEqual((await disable(universeId, 'Spam', null)).status, 400);
 		assert.strictEqual(await findDisabledReason(universeId), null);
 		assert.strictEqual((await disable(universeId, 'x'.repeat(MAX_DISABLED_REASON_LENGTH))).status, 204);
 
@@ -807,7 +829,10 @@ describe('Admin universe list', () =>
 	{
 		const universeId = await addUniverse();
 
-		await setUniverseDisabled(universeId, 'Spam');
+		await setUniverseDisabled(universeId, {
+			reason: 'Spam',
+			preventDeletion: false
+		});
 
 		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin })).status, 204);
 		assert.strictEqual(await findDisabledReason(universeId), null);
@@ -979,7 +1004,10 @@ describe('Editing universes as a server admin', () =>
 
 		await setUniverseRole(universeId, creator.playerId, 'creator');
 		await setUniverseRole(universeId, admin.playerId, 'creator');
-		await setUniverseDisabled(universeId, 'Spam');
+		await setUniverseDisabled(universeId, {
+			reason: 'Spam',
+			preventDeletion: false
+		});
 
 		assert.strictEqual((await saveChanges(admin, universeId, [{ kind: 'universe', update: { shortDescription: 'Fixed' } }])).status, 200);
 		assert.strictEqual((await saveChanges(creator, universeId, [{ kind: 'universe', update: { shortDescription: 'Mine' } }])).status, 403);

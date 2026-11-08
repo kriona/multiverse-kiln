@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, UNHANDABLE_UNIVERSE_DELETION, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { recordAdminEvent } from '../src/db/adminEventRepo.js';
@@ -11,6 +11,7 @@ import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { recordUniverseEdit } from '../src/db/universeEditRepo.js';
 import { findUniverseRole, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setUniverseDisabled } from '../src/db/universeRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
@@ -219,7 +220,7 @@ describe('account deletion and data export', () =>
 			savedAt: new Date(Date.UTC(2026, 10, 2))
 		});
 		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId, occurredAt: new Date(Date.UTC(2026, 10, 3)) });
-		await recordAdminEvent({ kind: 'universeDisabled', adminId: playerId, universeId, reason: 'Spam', occurredAt: new Date(Date.UTC(2026, 10, 4)) });
+		await recordAdminEvent({ kind: 'universeDisabled', adminId: playerId, universeId, reason: 'Spam', preventsDeletion: true, occurredAt: new Date(Date.UTC(2026, 10, 4)) });
 		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId: grace.id, occurredAt: new Date(Date.UTC(2026, 10, 5)) });
 
 		const exported = (await browser.send<AccountExport>('GET', `${PROFILE_EXPORT_PATH}?locale=en`)).body;
@@ -247,6 +248,7 @@ describe('account deletion and data export', () =>
 				playerId,
 				universe: null,
 				reason: null,
+				preventsDeletion: null,
 				occurredAt: '2026-11-03T00:00:00.000Z'
 			},
 			{
@@ -258,6 +260,7 @@ describe('account deletion and data export', () =>
 					name: 'Workshop'
 				},
 				reason: 'Spam',
+				preventsDeletion: true,
 				occurredAt: '2026-11-04T00:00:00.000Z'
 			}
 		]);
@@ -282,6 +285,7 @@ describe('account deletion and data export', () =>
 			universes: [{
 				id: alone,
 				name: 'Alone',
+				deletionPrevented: false,
 				editors: [{
 					playerId: grace.id,
 					username: grace.username,
@@ -435,6 +439,74 @@ describe('account deletion and data export', () =>
 		assert.strictEqual((await pool.query('SELECT id FROM universes WHERE id = $1', [deleted])).rowCount, 0);
 		await waitUntil(() => (areaChangesSeen.length > 0));
 		assert.deepStrictEqual(areaChangesSeen, [{ kind: 'universeDeleted', universeId: deleted }]);
+	});
+
+	it('only hands on a universe the site\'s admins disabled and kept from being deleted, and refuses when there is no one to hand it to', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+		const grace = await addPlayer('Grace');
+		const handed = await addUniverse('Handed On');
+		const unhandable = await addUniverse('Unhandable');
+		const preventDeletion = {
+			reason: 'Spam',
+			preventDeletion: true
+		};
+
+		await setUniverseRole(handed, playerId, 'creator');
+		await setUniverseRole(handed, grace.id, 'builder');
+		await setUniverseDisabled(handed, preventDeletion);
+
+		const listed = await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH);
+
+		assert.deepStrictEqual(listed.body.universes.map((universe) => [universe.name, universe.deletionPrevented]), [['Handed On', true]]);
+
+		const deleting = await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId: handed, newCreatorId: null }]
+		});
+
+		assert.strictEqual(deleting.status, 409);
+		assert.strictEqual(deleting.body.error.id, 'error.auth.deleteUniversePrevented');
+		assert.ok(await accountExists(playerId));
+		assert.strictEqual((await pool.query('SELECT id FROM universes WHERE id = $1', [handed])).rowCount, 1);
+
+		// With no other editor, it can't be handed on either, until it is enabled
+		await setUniverseRole(unhandable, playerId, 'creator');
+		await setUniverseDisabled(unhandable, preventDeletion);
+
+		const alone = await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId: handed, newCreatorId: grace.id }, { universeId: unhandable, newCreatorId: null }]
+		});
+
+		assert.strictEqual(alone.status, 409);
+		assert.strictEqual(alone.body.error.id, UNHANDABLE_UNIVERSE_DELETION.id);
+		assert.strictEqual(await findUniverseRole(handed, grace.id), 'builder');
+
+		await setUniverseDisabled(unhandable, null);
+		assert.strictEqual((await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId: handed, newCreatorId: grace.id }, { universeId: unhandable, newCreatorId: null }]
+		})).status, 204);
+		assert.strictEqual(await findUniverseRole(handed, grace.id), 'creator');
+		assert.strictEqual((await pool.query('SELECT id FROM universes WHERE id = $1', [unhandable])).rowCount, 0);
+	});
+
+	it('deletes a disabled universe the site\'s admins didn\'t keep from being deleted', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+		const universeId = await addUniverse('Disabled');
+
+		await setUniverseRole(universeId, playerId, 'creator');
+		await setUniverseDisabled(universeId, {
+			reason: 'Spam',
+			preventDeletion: false
+		});
+		assert.strictEqual((await deleteAccount(browser, {
+			password: PASSWORD,
+			universes: [{ universeId, newCreatorId: null }]
+		})).status, 204);
+		assert.strictEqual((await pool.query('SELECT id FROM universes WHERE id = $1', [universeId])).rowCount, 0);
 	});
 
 	it('leaves the messages the player wrote in the editors\' chat of a universe handed on, without their name', async () =>

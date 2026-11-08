@@ -408,7 +408,10 @@ describe('GameRoom', () =>
 		const left = waitForLeave(client);
 
 		await joinGroup(member);
-		await setUniverseDisabled(universe.universeId, 'Breaks the rules');
+		await setUniverseDisabled(universe.universeId, {
+			reason: 'Breaks the rules',
+			preventDeletion: false
+		});
 		await assert.rejects(joinAs(room, randomUUID(), member));
 
 		areaChanges.publish({
@@ -428,7 +431,10 @@ describe('GameRoom', () =>
 		await joinGroup(member);
 		changeDuringNextLookup(room, 'lookUp', async () =>
 		{
-			await setUniverseDisabled(universe.universeId, 'Breaks the rules');
+			await setUniverseDisabled(universe.universeId, {
+				reason: 'Breaks the rules',
+				preventDeletion: false
+			});
 			areaChanges.publish({
 				kind: 'universeDisabled',
 				universeId: universe.universeId

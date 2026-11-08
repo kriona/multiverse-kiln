@@ -680,6 +680,20 @@
       "when": 1794116352232,
       "tag": "0096_role_email_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1794116738807,
+      "tag": "0097_universe_deletion_prevented",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1794116745237,
+      "tag": "0098_admin_events_prevents_deletion",
+      "breakpoints": true
     }
   ]
 }

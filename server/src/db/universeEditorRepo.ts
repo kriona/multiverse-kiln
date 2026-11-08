@@ -16,6 +16,11 @@ export interface SoleCreatedUniverse
 {
 	id: string;
 	name: string;
+
+	/**
+	 * Whether a server admin who disabled it kept its creators from deleting it
+	 */
+	deletionPrevented: boolean;
 }
 
 /**
@@ -286,7 +291,7 @@ export async function listEditableUniverses(playerId: string, executor: Executor
 
 /**
  * The universes a player is a creator of that have no other creator, which deleting the player's
- * account has to hand on or delete
+ * account has to hand on or delete (only hand on, when a server admin prevented deleting it)
  *
  * @param playerId The player's ID
  * @param executor The database, or a transaction
@@ -299,7 +304,8 @@ export async function listSoleCreatedUniverses(playerId: string, executor: Execu
 	return(executor
 		.select({
 			id: universes.id,
-			name: universes.name
+			name: universes.name,
+			deletionPrevented: universes.deletionPrevented
 		})
 		.from(universeEditors)
 		.innerJoin(universes, eq(universes.id, universeEditors.universeId))

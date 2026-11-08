@@ -128,6 +128,19 @@ function universeRow(universe: AdminUniverse, actions: UniverseRowActions): HTML
 		notes.append(reason);
 	}
 
+	if ((universe.disabledAt !== null) && universe.deletionPrevented)
+	{
+		const prevented = document.createElement('p');
+
+		prevented.className = 'admin-reason';
+		prevented.textContent = t({
+			id: 'admin.universes.deletionPreventedNote',
+			defaultMessage: 'Its creators can\'t delete it.',
+			description: 'Under when and why a universe was disabled in the admin page\'s list of universes, when the admin who disabled it kept its creators from deleting it'
+		});
+		notes.append(prevented);
+	}
+
 	button.type = 'button';
 	actionCell.className = 'admin-actions';
 
@@ -297,7 +310,8 @@ async function enableUniverse(api: AdminApi, universe: AdminUniverse, changed: (
 }
 
 /**
- * The dialog that disables a universe, asking why: the reason is shown to its editors
+ * The dialog that disables a universe, asking why (the reason is shown to its editors) and whether its
+ * creators are kept from deleting it
  */
 class UniverseDisableDialog
 {
@@ -305,6 +319,7 @@ class UniverseDisableDialog
 	private readonly form = getElement('universe-disable-form', HTMLFormElement);
 	private readonly intro = getElement('universe-disable-intro', HTMLElement);
 	private readonly reason = getElement('universe-disable-reason', HTMLTextAreaElement);
+	private readonly preventDeletion = getElement('universe-disable-prevent-deletion', HTMLInputElement);
 	private readonly error = getElement('universe-disable-error', HTMLElement);
 	private readonly submitButton = getElement('universe-disable-submit', HTMLButtonElement);
 	private readonly changes: ChangeTracker;
@@ -368,6 +383,7 @@ class UniverseDisableDialog
 			universe: universe.name
 		});
 		this.reason.value = '';
+		this.preventDeletion.checked = true;
 		clearFieldErrors(this.form);
 		showMessage(this.error, undefined);
 		this.changes.markSaved();
@@ -404,7 +420,10 @@ class UniverseDisableDialog
 
 		try
 		{
-			await this.api.disableUniverse(universe.id, { reason });
+			await this.api.disableUniverse(universe.id, {
+				reason,
+				preventDeletion: this.preventDeletion.checked
+			});
 			this.changes.markSaved();
 			this.dialog.close();
 			showToast(t({

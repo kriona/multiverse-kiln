@@ -556,6 +556,26 @@ export async function findDisabledReason(universeId: string, executor: Executor 
 }
 
 /**
+ * Whether a server admin who disabled a universe kept its creators from deleting it
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return Whether they did: false when it isn't disabled or doesn't exist
+ */
+export async function isUniverseDeletionPrevented(universeId: string, executor: Executor = db): Promise<boolean>
+{
+	const [row] = await executor
+		.select({
+			deletionPrevented: universes.deletionPrevented
+		})
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.limit(1);
+
+	return((row?.deletionPrevented ?? false));
+}
+
+/**
  * A universe as the Universes admin page lists it
  */
 export interface AdminUniverseRecord
@@ -574,6 +594,7 @@ export interface AdminUniverseRecord
 
 	disabledAt: Date | null;
 	disabledReason: string | null;
+	deletionPrevented: boolean;
 }
 
 /**
@@ -613,7 +634,8 @@ export async function listUniversesForAdmin(filter: { search?: string; disabled?
 				createdAt: universes.createdAt,
 				creators,
 				disabledAt: universes.disabledAt,
-				disabledReason: universes.disabledReason
+				disabledReason: universes.disabledReason,
+				deletionPrevented: universes.deletionPrevented
 			})
 			.from(universes)
 			.where(where)
@@ -635,24 +657,41 @@ export async function listUniversesForAdmin(filter: { search?: string; disabled?
 }
 
 /**
+ * How a server admin disables a universe
+ */
+export interface UniverseDisabling
+{
+	/**
+	 * Why it is disabled, from 1 to MAX_DISABLED_REASON_LENGTH characters
+	 */
+	reason: string;
+
+	/**
+	 * Whether its creators are kept from deleting it while it is disabled
+	 */
+	preventDeletion: boolean;
+}
+
+/**
  * Disables a universe, or enables it again
  *
  * @param universeId The universe's ID
- * @param reason Why it is disabled, which must have 1 to MAX_DISABLED_REASON_LENGTH characters; null enables it
+ * @param disabling Why it is disabled and whether its creators may delete it; null enables it
  * @param executor The database, or a transaction
  * @return Whether it changed: false when it doesn't exist, or was already disabled (or enabled)
  */
-export async function setUniverseDisabled(universeId: string, reason: string | null, executor: Executor = db): Promise<boolean>
+export async function setUniverseDisabled(universeId: string, disabling: UniverseDisabling | null, executor: Executor = db): Promise<boolean>
 {
 	const rows = await executor
 		.update(universes)
 		.set({
-			disabledAt: ((reason === null) ? null : new Date()),
-			disabledReason: reason
+			disabledAt: ((disabling === null) ? null : new Date()),
+			disabledReason: (disabling?.reason ?? null),
+			deletionPrevented: (disabling?.preventDeletion ?? false)
 		})
 		.where(and(
 			eq(universes.id, universeId),
-			((reason === null) ? isNotNull(universes.disabledAt) : isNull(universes.disabledAt))
+			((disabling === null) ? isNotNull(universes.disabledAt) : isNull(universes.disabledAt))
 		))
 		.returning({
 			id: universes.id

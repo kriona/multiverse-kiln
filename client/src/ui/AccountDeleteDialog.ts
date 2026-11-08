@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, LAST_SERVER_ADMIN_DELETION, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LAST_SERVER_ADMIN_DELETION, MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_UNIVERSE_DELETION, UNIVERSE_ROLE_NAMES, type AccountDeletionPayload, type UniverseDecision } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
@@ -193,9 +193,19 @@ export class AccountDeleteDialog
 		this.status.textContent = '';
 		this.anchors.hidden = !deletion.anchorsGroups;
 
+		const unhandable = deletion.universes.find((universe) => (universe.deletionPrevented && (universe.editors.length === 0)));
+
 		if (deletion.lastServerAdmin)
 		{
 			showMessage(this.error, t(LAST_SERVER_ADMIN_DELETION));
+			this.cancelButton.focus();
+			return;
+		}
+		else if (unhandable)
+		{
+			showMessage(this.error, t(UNHANDABLE_UNIVERSE_DELETION, {
+				universe: unhandable.name
+			}));
 			this.cancelButton.focus();
 			return;
 		}
@@ -336,7 +346,8 @@ export class AccountDeleteDialog
 
 	/**
 	 * Lists the universes the player is the only creator of, each with a choice of who creates it next
-	 * or deleting it. Nothing is chosen at first, so deleting a universe is never a default
+	 * or deleting it, unless the site's admins kept it from being deleted. Nothing is chosen at first, so
+	 * deleting a universe is never a default
 	 *
 	 * @param deletion What deleting the account asks
 	 */
@@ -346,6 +357,7 @@ export class AccountDeleteDialog
 		this.universes.hidden = (deletion.universes.length === 0);
 		this.universeList.replaceChildren(...deletion.universes.map((universe) =>
 		{
+			const item = document.createElement('div');
 			const label = document.createElement('label');
 			const name = document.createElement('span');
 			const select = document.createElement('select');
@@ -357,6 +369,7 @@ export class AccountDeleteDialog
 
 			placeholder.disabled = true;
 			placeholder.selected = true;
+			item.className = 'account-delete-universe';
 			name.textContent = universe.name;
 			name.translate = false;
 			select.id = `account-delete-universe-${universe.id}`;
@@ -368,19 +381,39 @@ export class AccountDeleteDialog
 				name: editor.displayName,
 				username: editor.username,
 				role: t(UNIVERSE_ROLE_NAMES[editor.role])
-			}), editor.playerId)), new Option(t({
-				id: 'profile.deleteUniverseDelete',
-				defaultMessage: 'Delete it',
-				description: 'A choice for a universe in the dialog that deletes the player\'s account: the universe is deleted, with its world and every character in it'
-			}), DELETE_UNIVERSE));
+			}), editor.playerId)));
 			select.addEventListener('change', () =>
 			{
 				setFieldError(select, undefined);
 			});
 			label.append(name, select);
+			item.append(label);
 			this.choices.set(universe.id, select);
 
-			return(label);
+			if (universe.deletionPrevented)
+			{
+				const hint = document.createElement('p');
+
+				hint.id = `account-delete-universe-${universe.id}-hint`;
+				hint.className = 'hint';
+				hint.textContent = t({
+					id: 'profile.deleteUniversePrevented',
+					defaultMessage: 'The site\'s admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator.',
+					description: 'Under a universe\'s choice in the dialog that deletes the player\'s account, which then has no choice to delete it: the site\'s admins disabled the universe and kept it from being deleted'
+				});
+				select.setAttribute('aria-describedby', hint.id);
+				item.append(hint);
+			}
+			else
+			{
+				select.append(new Option(t({
+					id: 'profile.deleteUniverseDelete',
+					defaultMessage: 'Delete it',
+					description: 'A choice for a universe in the dialog that deletes the player\'s account: the universe is deleted, with its world and every character in it'
+				}), DELETE_UNIVERSE));
+			}
+
+			return(item);
 		}));
 	}
 

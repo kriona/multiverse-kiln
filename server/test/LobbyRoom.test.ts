@@ -255,7 +255,10 @@ describe('LobbyRoom', () =>
 				ada.room.onLeave(resolve);
 			});
 
-			await setUniverseDisabled(universe.universeId, 'Breaks the rules');
+			await setUniverseDisabled(universe.universeId, {
+				reason: 'Breaks the rules',
+				preventDeletion: false
+			});
 			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
 
 			areaChanges.publish({

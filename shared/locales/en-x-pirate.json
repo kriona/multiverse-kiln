@@ -507,6 +507,10 @@
 		"message": "Captains",
 		"source": "Creators"
 	},
+	"admin.universes.deletionPreventedNote": {
+		"message": "Her captains can't scuttle her.",
+		"source": "Its creators can't delete it."
+	},
 	"admin.universes.disable": {
 		"message": "Lay Up",
 		"source": "Disable"
@@ -578,6 +582,14 @@
 	"admin.universes.none": {
 		"message": "No universes match.",
 		"source": "No universes match."
+	},
+	"admin.universes.preventDeletion": {
+		"message": "Forbid her captains from scuttlin' the universe",
+		"source": "Prevent its creators from deleting the universe"
+	},
+	"admin.universes.preventDeletionHint": {
+		"message": "A captain who scuttles their account has to make another o' her crew her captain, rather than sendin' her to the deep along with what she were laid up for.",
+		"source": "A creator who deletes their account has to make another of its editors its creator, rather than deleting it and what it was disabled for."
 	},
 	"admin.universes.reason": {
 		"message": "Reason, shown to its officers",
@@ -3835,6 +3847,10 @@
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
 	},
+	"error.auth.deleteUniversePrevented": {
+		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin'. Make another o' her crew her captain.",
+		"source": "The site's admins disabled {universe} and kept it from being deleted. Make another of its editors its creator."
+	},
 	"error.auth.deleteUniversesChanged": {
 		"message": "The universes ye captain alone have changed. Look 'em over again afore scuttlin' yer account.",
 		"source": "The universes you alone create have changed. Look at them again before deleting your account."
@@ -6451,6 +6467,10 @@
 		"message": "Write yer username to swear to it",
 		"source": "Type your username to confirm"
 	},
+	"profile.deleteUnhandableUniverse": {
+		"message": "The ship's officers have laid up {universe} an' forbid her scuttlin', an' she has no other crew to hand her to. Yer account can't be scuttled till the officers set her sailin' again.",
+		"source": "The site's admins disabled {universe} and kept it from being deleted, and it has no other editors to hand it to. Your account can't be deleted until the admins enable it."
+	},
 	"profile.deleteUniverseChoose": {
 		"message": "Choose...",
 		"source": "Choose..."
@@ -6462,6 +6482,10 @@
 	"profile.deleteUniverseHandTo": {
 		"message": "Make {name} (@{username}, {role}) its captain",
 		"source": "Make {name} (@{username}, {role}) its creator"
+	},
+	"profile.deleteUniversePrevented": {
+		"message": "The ship's officers have laid up this universe an' forbid her scuttlin', so another o' her crew has to become her captain.",
+		"source": "The site's admins disabled this universe and kept it from being deleted, so another of its editors has to become its creator."
 	},
 	"profile.deleteUniverseUnchosen": {
 		"message": "Choose what becomes o' {universe}.",

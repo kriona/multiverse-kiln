@@ -122,7 +122,8 @@ const universeDisableBody = z.strictObject({
 		.pipe(z.string()
 			.min(1)
 			.max(MAX_DISABLED_REASON_LENGTH)
-			.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replaceAll('\n', '')), 'Contains disallowed characters'))
+			.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replaceAll('\n', '')), 'Contains disallowed characters')),
+	preventDeletion: z.boolean()
 }) satisfies z.ZodType<UniverseDisableRequest, unknown>;
 
 /**
@@ -620,7 +621,8 @@ async function listUniverses(request: Request, response: Response): Promise<void
 			createdAt: universe.createdAt.toISOString(),
 			creators: universe.creators,
 			disabledAt: (universe.disabledAt?.toISOString() ?? null),
-			disabledReason: universe.disabledReason
+			disabledReason: universe.disabledReason,
+			deletionPrevented: universe.deletionPrevented
 		})),
 		total: page.total
 	};
@@ -652,7 +654,7 @@ async function disableUniverse(request: Request, response: Response): Promise<vo
 		return;
 	}
 
-	const { reason } = body.data;
+	const { reason, preventDeletion } = body.data;
 	const adminId = adminOf(request).playerId;
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
@@ -665,7 +667,7 @@ async function disableUniverse(request: Request, response: Response): Promise<vo
 			});
 		}
 
-		if (!await setUniverseDisabled(universeId.data, reason, transaction))
+		if (!await setUniverseDisabled(universeId.data, { reason, preventDeletion }, transaction))
 		{
 			return({
 				status: 409,
@@ -682,6 +684,7 @@ async function disableUniverse(request: Request, response: Response): Promise<vo
 			adminId,
 			universeId: universeId.data,
 			reason,
+			preventsDeletion: preventDeletion,
 			occurredAt: new Date()
 		}, transaction);
 

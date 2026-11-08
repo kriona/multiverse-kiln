@@ -17,7 +17,7 @@ export type AdminEventKind = (typeof ADMIN_EVENT_KINDS)[number];
  */
 export type AdminEvent =
 	| { kind: 'adminAdded' | 'adminRemoved'; adminId: string | null; playerId: string | null; occurredAt: Date }
-	| { kind: 'universeDisabled'; adminId: string | null; universeId: string | null; reason: string; occurredAt: Date }
+	| { kind: 'universeDisabled'; adminId: string | null; universeId: string | null; reason: string; preventsDeletion: boolean; occurredAt: Date }
 	| { kind: 'universeEnabled'; adminId: string | null; universeId: string | null; occurredAt: Date };
 
 /**
@@ -49,6 +49,12 @@ export interface AdminEventRecord
 	universeName: string | null;
 
 	reason: string | null;
+
+	/**
+	 * Whether disabling a universe kept its creators from deleting it, or null for other kinds
+	 */
+	preventsDeletion: boolean | null;
+
 	occurredAt: Date;
 }
 
@@ -69,6 +75,7 @@ export async function findPlayerAdminEvents(playerId: string, executor: Executor
 			universeId: adminEvents.universeId,
 			universeName: universes.name,
 			reason: adminEvents.reason,
+			preventsDeletion: adminEvents.preventsDeletion,
 			occurredAt: adminEvents.occurredAt
 		})
 		.from(adminEvents)
@@ -97,6 +104,7 @@ export async function findUniverseAdminEvents(universeId: string, executor: Exec
 			universeId: adminEvents.universeId,
 			universeName: universes.name,
 			reason: adminEvents.reason,
+			preventsDeletion: adminEvents.preventsDeletion,
 			occurredAt: adminEvents.occurredAt
 		})
 		.from(adminEvents)

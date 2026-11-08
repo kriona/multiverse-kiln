@@ -332,6 +332,11 @@ export interface AdminUniverse
 	 * Why it was disabled, or null while it isn't
 	 */
 	disabledReason: string | null;
+
+	/**
+	 * Whether the server admin who disabled it kept its creators from deleting it
+	 */
+	deletionPrevented: boolean;
 }
 
 /**
@@ -348,10 +353,19 @@ export interface AdminUniverseListPayload
 }
 
 /**
- * Body of PUT ADMIN_UNIVERSES_PATH/:universeId/disabled: why the universe is disabled, which its editors
- * are shown. Trimmed, from 1 to MAX_DISABLED_REASON_LENGTH characters
+ * Body of PUT ADMIN_UNIVERSES_PATH/:universeId/disabled
  */
 export interface UniverseDisableRequest
 {
+	/**
+	 * Why the universe is disabled, which its editors are shown. Trimmed, from 1 to
+	 * MAX_DISABLED_REASON_LENGTH characters
+	 */
 	reason: string;
+
+	/**
+	 * Whether its creators are kept from deleting it while it is disabled: a creator deleting their
+	 * account has to hand it to another of its editors
+	 */
+	preventDeletion: boolean;
 }

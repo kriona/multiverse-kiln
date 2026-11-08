@@ -437,7 +437,10 @@ describe('Character routes', () =>
 		const create = (): Promise<Answer<unknown>> => send(ada, 'POST', charactersPath(universeId), request);
 		const disabled = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
 		{
-			await setUniverseDisabled(universeId, 'Spam', transaction);
+			await setUniverseDisabled(universeId, {
+				reason: 'Spam',
+				preventDeletion: false
+			}, transaction);
 		});
 
 		assert.strictEqual(disabled.status, 404);
