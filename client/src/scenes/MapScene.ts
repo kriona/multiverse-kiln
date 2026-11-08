@@ -125,8 +125,8 @@ const FOG_COLUMNS = ((Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN) * 2) + 1;
 const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
 
 /**
- * Depth of the paper drawn over cells the group has never seen, in a group's room: over the fog, under
- * the night
+ * Depth of the paper drawn over cells the group has never seen and past the map's edges: over the fog,
+ * under the night
  */
 const PAPER_DEPTH = 0.4;
 
@@ -251,7 +251,7 @@ export class MapScene extends Phaser.Scene
 	private fog?: CellMaskShader;
 
 	/**
-	 * Hides the cells the group has never seen under paper
+	 * Hides the cells the group has never seen, and past the map's edges, under paper
 	 */
 	private paper?: CellMaskShader;
 
@@ -528,7 +528,8 @@ export class MapScene extends Phaser.Scene
 
 	/**
 	 * Draws fog over the cells around the view's center that aren't visible, and paper over those the
-	 * group has never seen. A cell that has just come into sight keeps its paper until its tile arrives
+	 * group has never seen. A cell that has just come into sight keeps its paper until its tile arrives.
+	 * Past an edge of the map that doesn't loop is drawn as never seen, in a lobby too
 	 *
 	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
 	 * @param visible The cells in sight, by visionKey()
@@ -542,14 +543,14 @@ export class MapScene extends Phaser.Scene
 		{
 			const cell = this.mapCellAt(left + column, top + row);
 
-			return((cell !== undefined) && !visible.has(visionKey(cell.column, cell.row)));
+			return((cell === undefined) || !visible.has(visionKey(cell.column, cell.row)));
 		});
 
 		this.paper?.draw(left, top, (column, row) =>
 		{
 			const cell = this.mapCellAt(left + column, top + row);
 
-			return((cell !== undefined) && this.isUnseen(cell.column, cell.row));
+			return((cell === undefined) || this.isUnseen(cell.column, cell.row));
 		});
 	}
 

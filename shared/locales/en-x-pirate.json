@@ -2600,8 +2600,8 @@
 		"source": "The smaller map cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the map is saved. Resize anyway?"
 	},
 	"editor.resize.discard": {
-		"message": "Resize and toss overboard",
-		"source": "Resize and discard"
+		"message": "Resize and Toss Overboard",
+		"source": "Resize and Fiscard"
 	},
 	"editor.resize.east": {
 		"message": "East",

@@ -2688,7 +2688,7 @@
 		"description": "Warns before making a map smaller cuts off cells painted with something other than the default tile, and area links"
 	},
 	"editor.resize.discard": {
-		"defaultMessage": "Resize and discard",
+		"defaultMessage": "Resize and Discard",
 		"description": "Button that makes the map smaller after the player was warned it loses painting or links"
 	},
 	"editor.resize.east": {
