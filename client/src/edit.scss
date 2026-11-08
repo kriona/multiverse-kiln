@@ -180,6 +180,26 @@ $editor-chat-inset: 16px;
 	}
 }
 
+// While the draft is open, the tabs' borders, the line under them and the save bar's border are the
+// draft's purple, as its buttons are, so the version being edited shows on every tab
+.editing-draft
+{
+	.tabs
+	{
+		background: linear-gradient(to top, $draft-background 1px, transparent 1px);
+
+		button
+		{
+			border-color: $draft-background;
+		}
+	}
+
+	.editor-save-bar
+	{
+		border-top-color: $draft-background;
+	}
+}
+
 // An arrow over an end of the tabs with tabs hidden past it, fading the tabs out under it. It stops short
 // of the line under the tabs, which stays drawn across the whole strip
 .tab-scroll

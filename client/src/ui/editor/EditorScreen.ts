@@ -218,6 +218,7 @@ export class EditorScreen
 	private readonly connectionNotice = getElement('editor-connection-notice', HTMLElement);
 	private readonly versionField = getElement('editor-version-field', HTMLElement);
 	private readonly versionChoice = getElement('editor-version', HTMLSelectElement);
+	private readonly screen = getElement('editor-screen', HTMLElement);
 	private readonly versionNotice = getElement('editor-version-notice', HTMLElement);
 	private readonly versionNoticeText = getElement('editor-version-notice-text', HTMLElement);
 	private readonly versionNoticeDismiss = getElement('editor-version-notice-dismiss', HTMLButtonElement);
@@ -1113,6 +1114,9 @@ export class EditorScreen
 		this.versionField.hidden = !universe.hasDraft;
 		this.versionChoice.value = universe.version;
 		this.versionNoticeKind = kind;
+
+		// The tabs and the save bar are drawn in the draft's purple while it is open (edit.scss)
+		this.screen.classList.toggle('editing-draft', (universe.version === 'draft'));
 
 		// The draft is gone, so a new one shows both notices again
 		if (!universe.hasDraft)
