@@ -1,13 +1,15 @@
 import assert from 'assert';
-import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload } from '@multiverse-kiln/shared';
+import { accountExportFileName, AUTH_ACCOUNT_DELETE_PATH, AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, LAST_SERVER_ADMIN_DELETION, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, type AccountDeletionPayload, type AccountExport, type AuthErrorPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { hashPassword } from '../src/auth/passwords.js';
+import { recordAdminEvent } from '../src/db/adminEventRepo.js';
 import { addChatMessages, listChatMessages, saveChatReads } from '../src/db/chatRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findMembership } from '../src/db/groupRepo.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
+import { recordUniverseEdit } from '../src/db/universeEditRepo.js';
 import { findUniverseRole, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setEmailSender, type Email } from '../src/email/mailer.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
@@ -190,6 +192,76 @@ describe('account deletion and data export', () =>
 
 		// Nothing that could log in, or tell where the player logged in from
 		assert.doesNotMatch(text, /argon2|password_hash|networkHash|tokenHash|secret/i);
+	});
+
+	it('exports the player\'s saves in universes\' editors, the saves that changed their role, and the admin records about them', async () =>
+	{
+		const { playerId, browser } = await addLocalAccount('ada');
+		const grace = await addPlayer('Grace');
+		const universeId = await addUniverse('Workshop');
+		const added: SavedEditDetail = { subject: 'editor', action: 'added', target: { key: null, name: 'ada' }, fields: [{ field: 'role', value: 'builder' }], count: 1, id: playerId };
+		const otherEditor: SavedEditDetail = { subject: 'editor', action: 'added', target: { key: null, name: 'alan' }, fields: [{ field: 'role', value: 'builder' }], count: 1, id: grace.id };
+		const painted: SavedEditDetail = { subject: 'cells', action: 'changed', target: { key: null, name: 'Cave' }, fields: [], count: 12, id: 'area' };
+
+		await recordUniverseEdit({
+			universeId,
+			playerId: grace.id,
+			role: 'creator',
+			changeDetails: [otherEditor, added],
+			savedAt: new Date(Date.UTC(2026, 10, 1))
+		});
+		await recordUniverseEdit({
+			universeId,
+			playerId,
+			role: 'builder',
+			draft: true,
+			changeDetails: [painted],
+			savedAt: new Date(Date.UTC(2026, 10, 2))
+		});
+		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId, occurredAt: new Date(Date.UTC(2026, 10, 3)) });
+		await recordAdminEvent({ kind: 'universeDisabled', adminId: playerId, universeId, reason: 'Spam', occurredAt: new Date(Date.UTC(2026, 10, 4)) });
+		await recordAdminEvent({ kind: 'adminAdded', adminId: grace.id, playerId: grace.id, occurredAt: new Date(Date.UTC(2026, 10, 5)) });
+
+		const exported = (await browser.send<AccountExport>('GET', `${PROFILE_EXPORT_PATH}?locale=en`)).body;
+
+		assert.deepStrictEqual(exported.universeEdits, [{
+			universeId,
+			universeName: 'Workshop',
+			role: 'builder',
+			draft: true,
+			changes: [{ subject: 'cells', action: 'changed', target: { key: null, name: 'Cave' }, fields: [], count: 12 }],
+			savedAt: '2026-11-02T00:00:00.000Z'
+		}]);
+
+		// Only what Grace's save did to the player, without who saved
+		assert.deepStrictEqual(exported.editorChanges, [{
+			universeId,
+			universeName: 'Workshop',
+			changes: [{ subject: 'editor', action: 'added', target: { key: null, name: 'ada' }, fields: [{ field: 'role', value: 'builder' }], count: 1 }],
+			savedAt: '2026-11-01T00:00:00.000Z'
+		}]);
+		assert.deepStrictEqual(exported.adminEvents, [
+			{
+				kind: 'adminAdded',
+				byPlayer: false,
+				playerId,
+				universe: null,
+				reason: null,
+				occurredAt: '2026-11-03T00:00:00.000Z'
+			},
+			{
+				kind: 'universeDisabled',
+				byPlayer: true,
+				playerId: null,
+				universe: {
+					id: universeId,
+					name: 'Workshop'
+				},
+				reason: 'Spam',
+				occurredAt: '2026-11-04T00:00:00.000Z'
+			}
+		]);
+		assert.doesNotMatch(JSON.stringify(exported), new RegExp(grace.id));
 	});
 
 	it('lists the universes only the player creates, with who else could create them', async () =>

@@ -265,7 +265,8 @@ export class PlayerSearch
 			}));
 		}
 
-		if (this.pending !== undefined)
+		// A search still going may be for something typed earlier, while what is typed now was found already
+		if (this.pending === this.query())
 		{
 			return(t({
 				id: 'playerSearch.searching',
