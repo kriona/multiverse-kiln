@@ -5979,6 +5979,10 @@
 		"defaultMessage": "{name} removed",
 		"description": "Read out by screen readers after the player takes back the player chosen in a field that finds a player, such as the one for adding an editor on the editor's Editors tab; {name} is the player's name"
 	},
+	"playerSearch.failed": {
+		"defaultMessage": "Could not search for players. Try again in a moment.",
+		"description": "Shown in the list under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, when looking for players matching what was typed failed, such as when the server can't be reached"
+	},
 	"playerSearch.noMatches": {
 		"defaultMessage": "No players match",
 		"description": "Shown in the list under a field that finds a player, such as the one for adding an editor on the editor's Editors tab, when no player's name or username matches what was typed (or none who can be added)"

@@ -77,6 +77,11 @@ export class PlayerSearch
 	 */
 	private pending: string | undefined;
 
+	/**
+	 * What was searched for when its search last failed, or undefined
+	 */
+	private failed: string | undefined;
+
 	private chosen: PlayerMatch | undefined;
 	private timer: number | undefined;
 
@@ -131,6 +136,7 @@ export class PlayerSearch
 		this.found.clear();
 		this.players = [];
 		this.pending = undefined;
+		this.failed = undefined;
 		this.chosen = undefined;
 		this.field.value = '';
 		this.list.close();
@@ -169,6 +175,11 @@ export class PlayerSearch
 
 			this.found.set(query, players);
 
+			if (this.failed === query)
+			{
+				this.failed = undefined;
+			}
+
 			// The player may have typed on while the server answered
 			if (this.query() === query)
 			{
@@ -178,6 +189,13 @@ export class PlayerSearch
 		catch (error)
 		{
 			console.error('Searching for players failed:', error);
+
+			// A failed search isn't kept in found, so typing the same again searches again
+			if (this.query() === query)
+			{
+				this.players = [];
+				this.failed = query;
+			}
 		}
 		finally
 		{
@@ -247,8 +265,8 @@ export class PlayerSearch
 	}
 
 	/**
-	 * What the list says when it offers no one: to type, that the search is still going, or that no one
-	 * was found
+	 * What the list says when it offers no one: to type, that the search is still going, that it failed,
+	 * or that no one was found
 	 *
 	 * @return The words
 	 */
@@ -272,6 +290,15 @@ export class PlayerSearch
 				id: 'playerSearch.searching',
 				defaultMessage: 'Searching...',
 				description: 'Shown in the list under a field that finds a player, such as the one for adding an editor on the editor\'s Editors tab, while the site looks for players matching what was typed'
+			}));
+		}
+
+		if (this.failed === this.query())
+		{
+			return(t({
+				id: 'playerSearch.failed',
+				defaultMessage: 'Could not search for players. Try again in a moment.',
+				description: 'Shown in the list under a field that finds a player, such as the one for adding an editor on the editor\'s Editors tab, when looking for players matching what was typed failed, such as when the server can\'t be reached'
 			}));
 		}
 

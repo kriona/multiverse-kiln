@@ -5979,6 +5979,10 @@
 		"message": "{name} tossed overboard",
 		"source": "{name} removed"
 	},
+	"playerSearch.failed": {
+		"message": "Couldn't spy any sailors through the fog. Try again in a moment.",
+		"source": "Could not search for players. Try again in a moment."
+	},
 	"playerSearch.noMatches": {
 		"message": "No sailors answer to that",
 		"source": "No players match"
@@ -6103,6 +6107,10 @@
 		"message": "A hand ye send to Davy Jones, for {days, plural, one {# day} other {# days}}, while ye can still haul 'em back.",
 		"source": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back."
 	},
+	"privacy.howLongEditRecord": {
+		"message": "The record o' changes stowed in universe editors fer 90 days, or until the universe be deleted, even after ye delete yer account.",
+		"source": "The record of saves made in universe editors for 90 days, or until the universe is deleted, even after you delete your account."
+	},
 	"privacy.howLongSecurity": {
 		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs 'em, an' the officers' log with yer name in it till ye delete yer account.",
 		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account."
@@ -6136,8 +6144,8 @@
 		"source": "Lobby chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
 	},
 	"privacy.playEditRecord": {
-		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. It be kept fer 90 days, or until the universe be deleted if that comes sooner, an' names ye until ye delete yer account.",
-		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. It is kept for 90 days, or until the universe is deleted if that is sooner, and names you until you delete your account."
+		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. Each one be kept fer 90 days, or until the universe be deleted if that comes sooner, even after ye delete yer account. Deletin' yer account strikes yer name off the changes ye stowed yerself, but yer username stays in the ones that gave ye a role in a universe, changed it or took it away.",
+		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for 90 days, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away."
 	},
 	"privacy.playKeptChat": {
 		"message": "Each crew's chatter and the chatter o' a universe's editors be saved, so hands who arrive can read them: each keeps its newest 200 messages, until the crew disbands or the universe be deleted. When ye delete yer account, yer messages stay in them without yer name.",
