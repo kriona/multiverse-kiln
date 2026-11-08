@@ -3963,13 +3963,17 @@
 		"defaultMessage": "Editing",
 		"description": "Label of the choice in the editor's toolbar of which version of the universe to edit: the live version players play, or the draft being built beside it"
 	},
+	"editor.version.dismiss": {
+		"defaultMessage": "Dismiss",
+		"description": "Name of the X button at the right of the notice above the editor's tabs saying the universe's draft (a copy players don't see until it is applied) is open, or that the live version has one: hides the notice for this universe until it no longer has a draft"
+	},
 	"editor.version.draft": {
 		"defaultMessage": "Draft",
 		"description": "Choice in the editor's toolbar for editing the universe's draft, a copy players don't see until it is applied"
 	},
 	"editor.version.draftNotice": {
 		"defaultMessage": "You are editing the draft version of this universe. Players will not see changes until they are applied.",
-		"description": "Shown above the editor's tabs while the universe's draft (a copy players don't see) is open"
+		"description": "Shown above the editor's tabs while the universe's draft (a copy players don't see) is open, until the player dismisses it"
 	},
 	"editor.version.live": {
 		"defaultMessage": "Live version",
@@ -3977,7 +3981,7 @@
 	},
 	"editor.version.liveWithDraftNotice": {
 		"defaultMessage": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.",
-		"description": "Shown above the editor's tabs while the live version of a universe with a draft is open"
+		"description": "Shown above the editor's tabs while the live version of a universe with a draft is open, until the player dismisses it"
 	},
 	"editor.view": {
 		"defaultMessage": "View Universe",

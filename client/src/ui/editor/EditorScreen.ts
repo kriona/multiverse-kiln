@@ -9,6 +9,7 @@ import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
 import { StartDraftDialog } from './StartDraftDialog';
 import { editPageUrl, HOME_PAGE_URL, universePageUrl } from '../../pages';
+import { readPlayerValue, rememberPlayerValue } from '../../rememberedValues';
 import { AuditTab } from './AuditTab';
 import { EditorsSettingsSection } from './EditorsSettingsSection';
 import { EditorsTab } from './EditorsTab';
@@ -122,6 +123,26 @@ export interface EditorScreenActions
 }
 
 /**
+ * The notices above the tabs about the version open, which the player can dismiss: the draft is open,
+ * or the live version of a universe with a draft is
+ */
+const VERSION_NOTICES = ['draft', 'liveWithDraft'] as const;
+
+type VersionNotice = typeof VERSION_NOTICES[number];
+
+/**
+ * The key a dismissed notice about the version open is remembered under, for the player
+ *
+ * @param universeId The universe's ID
+ * @param notice The notice
+ * @return The key
+ */
+function versionNoticeKey(universeId: string, notice: VersionNotice): string
+{
+	return(`editor.versionNoticeDismissed.${universeId}.${notice}`);
+}
+
+/**
  * A tab's name as its button shows it, without the words screen readers hear for its unsaved changes
  *
  * @param name The tab
@@ -198,6 +219,13 @@ export class EditorScreen
 	private readonly versionField = getElement('editor-version-field', HTMLElement);
 	private readonly versionChoice = getElement('editor-version', HTMLSelectElement);
 	private readonly versionNotice = getElement('editor-version-notice', HTMLElement);
+	private readonly versionNoticeText = getElement('editor-version-notice-text', HTMLElement);
+	private readonly versionNoticeDismiss = getElement('editor-version-notice-dismiss', HTMLButtonElement);
+
+	/**
+	 * Which notice about the version open shows above the tabs, if any, for its X to dismiss
+	 */
+	private versionNoticeKind: VersionNotice | undefined;
 	private readonly startDraftButton = getElement('editor-start-draft', HTMLButtonElement);
 	private readonly tabList = getElement('editor-tabs', HTMLElement);
 	private readonly tabStrip = new ScrollingTabs(this.tabList, getElement('editor-tabs-back', HTMLButtonElement), getElement('editor-tabs-forward', HTMLButtonElement));
@@ -312,6 +340,10 @@ export class EditorScreen
 		{
 			// The save says the changes were saved only when there were some besides starting the draft
 			void this.draftSection.stageAndSave('start', this.hasTabChanges());
+		});
+		this.versionNoticeDismiss.addEventListener('click', () =>
+		{
+			this.dismissVersionNotice();
 		});
 		this.startDraftButton.addEventListener('click', () =>
 		{
@@ -1076,29 +1108,59 @@ export class EditorScreen
 	 */
 	private showVersion(universe: EditableUniverse): void
 	{
+		const kind = ((universe.version === 'draft') ? 'draft' : (universe.hasDraft ? 'liveWithDraft' : undefined));
+
 		this.versionField.hidden = !universe.hasDraft;
 		this.versionChoice.value = universe.version;
+		this.versionNoticeKind = kind;
 
-		if (universe.version === 'draft')
+		// The draft is gone, so a new one shows both notices again
+		if (!universe.hasDraft)
 		{
-			showMessage(this.versionNotice, t({
-				id: 'editor.version.draftNotice',
-				defaultMessage: 'You are editing the draft version of this universe. Players will not see changes until they are applied.',
-				description: 'Shown above the editor\'s tabs while the universe\'s draft (a copy players don\'t see) is open'
-			}));
+			for (const each of VERSION_NOTICES)
+			{
+				rememberPlayerValue(versionNoticeKey(universe.id, each), null);
+			}
 		}
-		else if (universe.hasDraft)
+
+		switch (kind)
 		{
-			showMessage(this.versionNotice, t({
-				id: 'editor.version.liveWithDraftNotice',
-				defaultMessage: 'You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.',
-				description: 'Shown above the editor\'s tabs while the live version of a universe with a draft is open'
-			}));
+			case 'draft':
+				this.versionNoticeText.textContent = t({
+					id: 'editor.version.draftNotice',
+					defaultMessage: 'You are editing the draft version of this universe. Players will not see changes until they are applied.',
+					description: 'Shown above the editor\'s tabs while the universe\'s draft (a copy players don\'t see) is open, until the player dismisses it'
+				});
+				break;
+
+			case 'liveWithDraft':
+				this.versionNoticeText.textContent = t({
+					id: 'editor.version.liveWithDraftNotice',
+					defaultMessage: 'You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.',
+					description: 'Shown above the editor\'s tabs while the live version of a universe with a draft is open, until the player dismisses it'
+				});
+				break;
+
+			default:
+				this.versionNoticeText.textContent = '';
 		}
-		else
+
+		this.versionNotice.hidden = ((kind === undefined) || (readPlayerValue(versionNoticeKey(universe.id, kind)) !== null));
+	}
+
+	/**
+	 * Hides the notice about the version open, for this universe until it no longer has a draft, and
+	 * moves focus to the tab showing, since the notice's X goes with it
+	 */
+	private dismissVersionNotice(): void
+	{
+		if (this.universe && this.versionNoticeKind)
 		{
-			showMessage(this.versionNotice, undefined);
+			rememberPlayerValue(versionNoticeKey(this.universe.id, this.versionNoticeKind), 'dismissed');
 		}
+
+		this.versionNotice.hidden = true;
+		this.tabList.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
 	}
 
 	/**

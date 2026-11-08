@@ -3963,6 +3963,10 @@
 		"message": "Workin' on",
 		"source": "Editing"
 	},
+	"editor.version.dismiss": {
+		"message": "Cast it overboard",
+		"source": "Dismiss"
+	},
 	"editor.version.draft": {
 		"message": "Draft",
 		"source": "Draft"

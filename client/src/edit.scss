@@ -1305,18 +1305,43 @@ div.ability-modifiers
 	gap: 6px;
 }
 
-// Export Universe and Delete Universe, under the Universe tab's cards, with why deleting is turned off
+// The notice above the tabs saying the draft is open, or that the live version has one, with its X at the right
+.dismissable-notice
+{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+
+	p
+	{
+		flex: 1 1 auto;
+		margin: 0;
+	}
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+button.notice-dismiss
+{
+	flex: 0 0 auto;
+	padding: 2px 6px;
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
+// Export Universe, Import Universe and Delete Universe, under the Universe tab's cards
 .universe-actions
 {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 8px;
-
-	.hint
-	{
-		margin: 0;
-	}
 }
 
 .universe-action-buttons
