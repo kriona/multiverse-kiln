@@ -8,7 +8,7 @@
  * browser downloads it. Areas' cells are deflated a page of chunks at a time as they are read
  */
 import type { Request, Response, Router } from 'express';
-import { canExportUniverse, CHUNK_SIZE, defineMessages, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { canExportUniverse, CHUNK_SIZE, defineMessages, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedLiveIds, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { zipArchive, zipFile, type ZipFile } from '../archives/zip.js';
 import { listEditorAreas, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
@@ -24,6 +24,7 @@ import { listTileGraphicFiles } from '../db/tileGraphicRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
 import { inSnapshot } from '../db/transactions.js';
 import { listUniverseEditors } from '../db/universeEditorRepo.js';
+import { findAllDraftOrigins, type DraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { listTranslations, listTranslatorNotes } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
@@ -197,7 +198,32 @@ async function readExport(version: UniverseVersion, playerId: string, exportedAt
 
 	await readText(snapshot.manifest, contents, version, executor);
 
+	if (version.draft)
+	{
+		snapshot.manifest.liveIds = liveIdsOf(await findAllDraftOrigins(version.universeId, executor));
+	}
+
 	return(snapshot);
+}
+
+/**
+ * A draft's live rows as an export lists them, with the draft's IDs as keys
+ *
+ * @param origins Each draft row's live row, by kind
+ * @return The live rows, by kind
+ */
+function liveIdsOf(origins: DraftOrigins): ExportedLiveIds
+{
+	return({
+		tileGraphics: Object.fromEntries(origins.tileGraphics),
+		tiles: Object.fromEntries(origins.tiles),
+		items: Object.fromEntries(origins.items),
+		areas: Object.fromEntries(origins.areas),
+		races: Object.fromEntries(origins.races),
+		classes: Object.fromEntries(origins.classes),
+		themes: Object.fromEntries(origins.themes),
+		difficultyLevels: Object.fromEntries(origins.difficultyLevels)
+	});
 }
 
 /**

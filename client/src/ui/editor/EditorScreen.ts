@@ -34,6 +34,7 @@ import { TranslationsTab } from './TranslationsTab';
 import { TranslationTable } from './TranslationTable';
 import { UniverseDeleteSection } from './UniverseDeleteSection';
 import { UniverseExportSection } from './UniverseExportSection';
+import { UniverseImportSection } from './UniverseImportSection';
 import { UniverseTab } from './UniverseTab';
 import type { AreaClaims } from './areaClaims';
 import { AreaSelectDialog } from './AreaSelectDialog';
@@ -203,6 +204,7 @@ export class EditorScreen
 	private readonly universeTab: UniverseTab;
 	private readonly universeDeleteSection: UniverseDeleteSection;
 	private readonly universeExportSection: UniverseExportSection;
+	private readonly universeImportSection: UniverseImportSection;
 	private readonly draftSection: DraftSection;
 	private readonly startDraftDialog: StartDraftDialog;
 	private readonly rulesetTab: RulesetTab;
@@ -289,6 +291,18 @@ export class EditorScreen
 		});
 		this.universeDeleteSection = new UniverseDeleteSection(api, accountApis.auth, accountApis.admin, hasUnsavedWork);
 		this.universeExportSection = new UniverseExportSection(api);
+		this.universeImportSection = new UniverseImportSection(api, {
+			canStart: () => ((this.universe !== undefined) && canManageVersions(this.universe.role) && !this.saveBar.isLocked()),
+			hasUnsavedChanges: () => this.hasTabChanges(),
+			// The save says the changes were saved only when there were some besides starting the draft
+			start: () => this.draftSection.stageAndSave('start', this.hasTabChanges()),
+			open: () => this.chooseVersion('draft'),
+			imported: () =>
+			{
+				// The import may have made and deleted anything in the draft, the area open included
+				this.switchVersion('draft');
+			}
+		});
 		this.draftSection = new DraftSection(() => this.hasTabChanges(), (announce) => this.saveBar.save(announce), (action) =>
 		{
 			// Starting a draft opens it; applying or discarding one leaves only the live version
@@ -631,6 +645,7 @@ export class EditorScreen
 		this.universeTab.open(universe);
 		this.universeDeleteSection.open(universe);
 		this.universeExportSection.open(universe);
+		this.universeImportSection.open(universe);
 		this.draftSection.open(universe, this.saveBar.isLocked());
 		void this.rulesetTab.open(universe);
 		// Before the Characters tab, which writes its money in the abbreviations this shows
@@ -981,6 +996,7 @@ export class EditorScreen
 		this.saveBar.setLocked(true);
 		this.universeDeleteSection.lock();
 		this.universeExportSection.lock();
+		this.universeImportSection.lock();
 		this.showNotice(message);
 	}
 
@@ -1100,21 +1116,23 @@ export class EditorScreen
 	 * changes, which belong to the version open
 	 *
 	 * @param version The version
+	 * @return Whether the version opens: false when it is open already, or the player keeps their changes
 	 */
-	private chooseVersion(version: UniverseVersionName): void
+	private chooseVersion(version: UniverseVersionName): boolean
 	{
 		if ((version === this.api.version) || !this.universe)
 		{
-			return;
+			return(false);
 		}
 
 		if (hasUnsavedWork() && !window.confirm(t(changeMessages.discardChanges)))
 		{
 			this.versionChoice.value = this.api.version;
-			return;
+			return(false);
 		}
 
 		this.switchVersion(version);
+		return(true);
 	}
 
 	/**

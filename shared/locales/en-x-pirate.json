@@ -3791,6 +3791,166 @@
 		"message": "Box Up {universe}",
 		"source": "Export {universe}"
 	},
+	"editor.universeImport.button": {
+		"message": "Haul In a Universe",
+		"source": "Import Universe"
+	},
+	"editor.universeImport.explanation": {
+		"message": "Hauls a zip chest Box Up the Universe made into the draft. What the chest holds takes the place o' what ye can change in the draft. No hand sees any of it till the draft be launched.",
+		"source": "Imports a zip file Export Universe made into the draft. What the file holds replaces what you can edit in the draft. Players see nothing of it until the draft is applied."
+	},
+	"editor.universeImport.failed": {
+		"message": "Couldn't haul in the chest. Nothin' came aboard.",
+		"source": "Could not import the file. Nothing was imported."
+	},
+	"editor.universeImport.file": {
+		"message": "Chest",
+		"source": "File"
+	},
+	"editor.universeImport.imported": {
+		"message": "Hauled into the draft. Look her over, then launch the draft when she's ready.",
+		"source": "Imported into the draft. Check it, then apply the draft when it's ready."
+	},
+	"editor.universeImport.importing": {
+		"message": "Haulin' in...",
+		"source": "Importing..."
+	},
+	"editor.universeImport.leavesOut": {
+		"message": "It leaves ashore:",
+		"source": "It leaves out:"
+	},
+	"editor.universeImport.leftOut.keptForSettings": {
+		"message": "Scuttlin' the draft's lobby, startin' areas an' startin' gear the chest don't hold, since yer post can't change the settings that name 'em",
+		"source": "Deleting the draft's lobby, starting areas and starting equipment that the file doesn't have, since your role can't change the settings naming them"
+	},
+	"editor.universeImport.leftOut.nameTaken": {
+		"message": "Its name, which another universe flies, so the draft keeps its own",
+		"source": "Its name, which another universe has, so the draft keeps its own"
+	},
+	"editor.universeImport.leftOut.noTranslationRole": {
+		"message": "Its words marked as needin' no translatin', which yer post can't change",
+		"source": "Its text marked as needing no translation, which your role can't change"
+	},
+	"editor.universeImport.leftOut.settingsRole": {
+		"message": "Its settings, races, classes, themes an' Ruleset tab, which yer post can't change",
+		"source": "Its settings, races, classes, themes and Ruleset tab, which your role can't change"
+	},
+	"editor.universeImport.leftOut.translationLanguages": {
+		"message": "Its translations into tongues the universe don't speak, or that ye can't translate into",
+		"source": "Its translations into languages the universe isn't translated into, or that you can't translate into"
+	},
+	"editor.universeImport.leftOut.universeOnly": {
+		"message": "Its officers, stage an' two-factor settin', which belong to the universe rather than her draft",
+		"source": "Its editors, stage and two-factor setting, which belong to the universe rather than its draft"
+	},
+	"editor.universeImport.leftOut.worldRole": {
+		"message": "Its tilesets, tiles, booty, areas an' notes for translators, which yer post can't change",
+		"source": "Its tilesets, tiles, items, areas and notes for translators, which your role can't change"
+	},
+	"editor.universeImport.needsDraft.creatorsStart": {
+		"message": "Chests must be hauled into the universe's draft. The universe has no draft yet, an' only her captains can lay one down.",
+		"source": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one."
+	},
+	"editor.universeImport.needsDraft.open": {
+		"message": "Chests must be hauled into the universe's draft. Open the draft to haul into it.",
+		"source": "Files must be imported into the universe's draft. Open the draft to import into it."
+	},
+	"editor.universeImport.needsDraft.start": {
+		"message": "Chests must be hauled into the universe's draft. The universe has no draft yet; ye must lay one down to haul in changes.",
+		"source": "Files must be imported into the universe's draft. The universe has no draft yet; you must start one to import changes."
+	},
+	"editor.universeImport.openDraftButton": {
+		"message": "Open the Draft",
+		"source": "Open Draft"
+	},
+	"editor.universeImport.otherUniverse": {
+		"message": "The chest be from another universe, so all in it comes aboard the draft fresh.",
+		"source": "The file is of another universe, so everything in it is added to the draft anew."
+	},
+	"editor.universeImport.part.areas": {
+		"message": "{count, plural, one {# area} other {# areas}}, with their cells an' passages",
+		"source": "{count, plural, one {# area} other {# areas}}, with their cells and links"
+	},
+	"editor.universeImport.part.items": {
+		"message": "Booty, with {count, plural, one {# piece o' booty} other {# pieces o' booty}} the chest's universe added or changed",
+		"source": "Items, with {count, plural, one {# item} other {# items}} the file's universe added or changed"
+	},
+	"editor.universeImport.part.noTranslation": {
+		"message": "{count, plural, one {# scrap o' words} other {# scraps o' words}} marked as needin' no translatin'",
+		"source": "{count, plural, one {# piece of text} other {# pieces of text}} marked as needing no translation"
+	},
+	"editor.universeImport.part.notes": {
+		"message": "{count, plural, one {# note for translators} other {# notes for translators}}",
+		"source": "{count, plural, one {# note for translators} other {# notes for translators}}"
+	},
+	"editor.universeImport.part.races": {
+		"message": "Races an' classes, with {races, plural, one {# race} other {# races}} an' {classes, plural, one {# class} other {# classes}} the chest's universe added or changed",
+		"source": "Races and classes, with {races, plural, one {# race} other {# races}} and {classes, plural, one {# class} other {# classes}} the file's universe added or changed"
+	},
+	"editor.universeImport.part.settings": {
+		"message": "Settings, from the Universe, Lobby, Characters, Ruleset an' Translations tabs, with {levels, plural, one {# difficulty level} other {# difficulty levels}}",
+		"source": "Settings, from the Universe, Lobby, Characters, Ruleset and Translations tabs, with {levels, plural, one {# difficulty level} other {# difficulty levels}}"
+	},
+	"editor.universeImport.part.themes": {
+		"message": "Themes, with {count, plural, one {# theme} other {# themes}} the chest's universe added or changed",
+		"source": "Themes, with {count, plural, one {# theme} other {# themes}} the file's universe added or changed"
+	},
+	"editor.universeImport.part.tiles": {
+		"message": "Tiles an' tilesets, with {tiles, plural, one {# tile} other {# tiles}} the chest's universe added or changed, an' {uploads, plural, one {# tileset} other {# tilesets}} to haul aboard",
+		"source": "Tiles and tilesets, with {tiles, plural, one {# tile} other {# tiles}} the file's universe added or changed, and {uploads, plural, one {# tileset} other {# tilesets}} to upload"
+	},
+	"editor.universeImport.part.translations": {
+		"message": "{count, plural, one {# translation} other {# translations}} into {languages}",
+		"source": "{count, plural, one {# translation} other {# translations}} into {languages}"
+	},
+	"editor.universeImport.readFailed": {
+		"message": "Couldn't read the chest.",
+		"source": "Could not read the file."
+	},
+	"editor.universeImport.reading": {
+		"message": "Pryin' the chest open...",
+		"source": "Reading the file..."
+	},
+	"editor.universeImport.replaces": {
+		"message": "It takes the place o' the draft's:",
+		"source": "It replaces the draft's:"
+	},
+	"editor.universeImport.rights": {
+		"message": "I have the rights to use the tilesets' pictures in this chest",
+		"source": "I have the rights to use the tilesets' images in this file"
+	},
+	"editor.universeImport.rightsNeeded": {
+		"message": "Swear ye have the rights to use the tilesets' pictures.",
+		"source": "Confirm you have the rights to use the tilesets' images."
+	},
+	"editor.universeImport.sameUniverse": {
+		"message": "The chest be from this very universe, so all it holds keeps its berth: hands an' crews go on namin' the same areas, races, classes an' booty once the draft be launched.",
+		"source": "The file is of this universe, so what it holds keeps its place: characters and groups go on naming the same areas, races, classes and items once the draft is applied."
+	},
+	"editor.universeImport.saveFirst": {
+		"message": "Stow or undo yer changes first, since haulin' in takes the place o' the draft they belong to.",
+		"source": "Save or undo your changes first, since importing replaces the draft they belong to."
+	},
+	"editor.universeImport.source": {
+		"message": "{universe}, {version, select, draft {her draft} other {her live version}}, boxed up {date} by {name} (@{username}).",
+		"source": "{universe}, {version, select, draft {its draft} other {its live version}}, exported {date} by {name} (@{username})."
+	},
+	"editor.universeImport.startingDraft": {
+		"message": "Layin' down the draft...",
+		"source": "Starting the draft..."
+	},
+	"editor.universeImport.submit": {
+		"message": "Haul Into the Draft",
+		"source": "Import into Draft"
+	},
+	"editor.universeImport.title": {
+		"message": "Haul Into the Draft",
+		"source": "Import into the Draft"
+	},
+	"editor.universeImport.tooLarge": {
+		"message": "The chest can hold at most {max, number} MB.",
+		"source": "The file can be at most {max, number} MB."
+	},
 	"editor.universeLocked": {
 		"message": "This universe has sunk to the depths, so only her captains can change her. Ye can still jump ship on the Officers tab.",
 		"source": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab."
@@ -4095,6 +4255,10 @@
 		"message": "Ye be boxin' up a universe already. Try again once she's come ashore.",
 		"source": "You're already exporting a universe. Try again once it has downloaded."
 	},
+	"error.alreadyImporting": {
+		"message": "Ye be haulin' in a chest already. Try again once she's aboard.",
+		"source": "You're already importing a file. Try again once it has finished."
+	},
 	"error.alreadyInGroup": {
 		"message": "That hand already sails with a crew. They have to jump ship first.",
 		"source": "That character is already in a group. They have to leave it first."
@@ -4346,6 +4510,30 @@
 	"error.groupFull": {
 		"message": "The crew be full: it already has {max, plural, one {# hand} other {# hands}} aboard.",
 		"source": "The group is full: it already has {max, plural, one {# character} other {# characters}}."
+	},
+	"error.importDraftOnly": {
+		"message": "A chest can only be hauled into the universe's draft. Open the draft to haul into it.",
+		"source": "A file can only be imported into the universe's draft. Open the draft to import into it."
+	},
+	"error.importNewerFormat": {
+		"message": "This chest was boxed up by a newer ship's editor, so it can't be hauled in here.",
+		"source": "This file was exported by a newer version of the editor, so it can't be imported here."
+	},
+	"error.importNotAnExport": {
+		"message": "This chest ain't a boxed-up universe, or it be stove in ({problem}).",
+		"source": "This file isn't a universe export, or it's damaged ({problem})."
+	},
+	"error.importNotZip": {
+		"message": "Choose the zip chest Box Up the Universe made.",
+		"source": "Choose the zip file Export Universe made."
+	},
+	"error.importOtherRuleset": {
+		"message": "This chest be from a universe sailin' by different rules, so it can't be hauled into this one.",
+		"source": "This file is of a universe with a different ruleset, so it can't be imported into this one."
+	},
+	"error.importRightsNeeded": {
+		"message": "Swear ye have the rights to use the tilesets' pictures in the chest.",
+		"source": "Confirm you have the rights to use the tilesets' images in the file."
 	},
 	"error.invalidRequest": {
 		"message": "That request be no good ({problem}).",

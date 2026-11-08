@@ -42,6 +42,7 @@ import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAr
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { addUniverseDeletionRoutes } from './universeDeletion.js';
 import { addUniverseExportRoutes } from './universeExport.js';
+import { addUniverseImportRoutes } from './universeImport.js';
 
 /**
  * Reasons the tile routes give in more than one place (see shared/src/localization.ts)
@@ -142,6 +143,7 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addTranslationRoutes(universeRouter);
 	addUniverseDeletionRoutes(universeRouter);
 	addUniverseExportRoutes(universeRouter);
+	addUniverseImportRoutes(universeRouter);
 
 	router.use(handleEditorError);
 

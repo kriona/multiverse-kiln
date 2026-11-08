@@ -42,7 +42,6 @@ const DELETE_UNIVERSE_CODE: EmailCodeUse = {
  */
 export class UniverseDeleteSection
 {
-	private readonly prevented = getElement('universe-delete-prevented', HTMLElement);
 	private readonly openButton = getElement('universe-delete-open', HTMLButtonElement);
 	private readonly dialog = getElement('universe-delete-dialog', HTMLDialogElement);
 	private readonly form = getElement('universe-delete-form', HTMLFormElement);
@@ -141,20 +140,15 @@ export class UniverseDeleteSection
 	}
 
 	/**
-	 * Shows Delete Universe for a role that may delete the universe, turned off with why when the site's
-	 * admins kept its creators from deleting it and the player isn't a server admin
+	 * Shows Delete Universe for a role that may delete the universe. While the site's admins keep its
+	 * creators from deleting it, the first dialog says so in place of what deleting it deletes
 	 *
 	 * @param universe The universe open in the editor
 	 */
 	open(universe: EditableUniverse): void
 	{
-		const allowed = canDeleteUniverse(universe.role);
-		const prevented = (universe.deletionPrevented && !universe.serverAdmin);
-
 		this.universe = universe;
-		this.openButton.hidden = !allowed;
-		this.openButton.disabled = prevented;
-		showMessage(this.prevented, ((allowed && prevented) ? t(UNIVERSE_DELETION_PREVENTED) : undefined));
+		this.openButton.hidden = !canDeleteUniverse(universe.role);
 	}
 
 	/**

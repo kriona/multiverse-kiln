@@ -583,6 +583,18 @@ export function canExportUniverse(role: EditorRole): boolean
 }
 
 /**
+ * Whether a role may import an export into a universe's draft (see Importing a universe in
+ * STRUCTURE-OVERVIEW.md): every role that may export it. The import changes only what the role may change
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canImportUniverse(role: EditorRole): boolean
+{
+	return(canExportUniverse(role));
+}
+
+/**
  * Whether a role may still change a universe at the end of time, when it is locked: only creators and
  * server admins may
  *

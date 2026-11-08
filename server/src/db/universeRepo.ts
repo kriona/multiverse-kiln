@@ -60,6 +60,30 @@ function isSlugTaken(error: unknown): boolean
 }
 
 /**
+ * Whether another universe has a name, or one too much like it, as setting the name would find
+ * (settingName()), such as before importing a name from another universe's export
+ *
+ * @param name The name
+ * @param universeId The universe that would have it
+ * @param executor The database, or a transaction
+ * @return True when another universe has it
+ */
+export async function isUniverseNameTaken(name: string, universeId: string, executor: Executor = db): Promise<boolean>
+{
+	const key = nameKey(name);
+	const slug = universeSlug(name);
+	const others = await executor
+		.select({
+			id: universes.id,
+			name: universes.name,
+			slug: universes.slug
+		})
+		.from(universes);
+
+	return(others.some((other) => ((other.id !== universeId) && ((nameKey(other.name) === key) || (other.slug === slug)))));
+}
+
+/**
  * Runs a query that sets a universe's name, if no other universe has a name with the same key
  *
  * The keys are compared here rather than kept in the database, so a change to how names are reduced

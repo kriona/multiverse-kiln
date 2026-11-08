@@ -244,16 +244,21 @@ export class DraftSection implements SavableTab
 	 *
 	 * @param action The action
 	 * @param announce Whether the save says the changes were saved, for other changes saved with it
+	 * @return Whether it was saved
 	 */
-	async stageAndSave(action: DraftAction, announce: boolean): Promise<void>
+	async stageAndSave(action: DraftAction, announce: boolean): Promise<boolean>
 	{
 		showMessage(this.error, undefined);
 		this.stage(action);
 
-		if (!await this.save(announce) && this.section.hidden)
+		const saved = await this.save(announce);
+
+		if (!saved && this.section.hidden)
 		{
 			this.stage(undefined);
 		}
+
+		return(saved);
 	}
 
 	/**

@@ -346,4 +346,27 @@ export interface UniverseExport
 	noTranslation?: UniverseTextRef[];
 
 	translations?: ExportedTranslations;
+
+	/**
+	 * For an export of the draft, the live row each thing the draft copied was copied from, so an import
+	 * finds it once the draft is applied and the draft's IDs are gone. What the draft added isn't listed:
+	 * it keeps its ID when the draft is applied
+	 */
+	liveIds?: ExportedLiveIds;
+}
+
+/**
+ * The live row each of a draft's rows was copied from, by kind, by the draft's ID. An edited copy of one
+ * of the ruleset's defaults is listed too, though nothing names it: everything names the default's ID
+ */
+export interface ExportedLiveIds
+{
+	tileGraphics: Record<string, string>;
+	tiles: Record<string, number>;
+	items: Record<string, number>;
+	areas: Record<string, string>;
+	races: Record<string, number>;
+	classes: Record<string, number>;
+	themes: Record<string, number>;
+	difficultyLevels: Record<string, number>;
 }

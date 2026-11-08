@@ -1326,10 +1326,29 @@ div.ability-modifiers
 	gap: 8px;
 }
 
-// "Exporting..." at the far left of the export dialog's buttons, which it pushes to the right
-.dialog-buttons .universe-export-status
+// "Exporting..." and "Importing..." at the far left of the export and import dialogs' buttons, which
+// it pushes to the right
+.dialog-buttons .universe-dialog-status
 {
 	margin: 0 auto 0 0;
+}
+
+// What a file chosen in the import dialog holds
+.universe-import-preview
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+// What importing it replaces, and what it leaves out
+.universe-import-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding-left: 24px;
 }
 
 // What deleting the universe deletes, in the first dialog that deletes it

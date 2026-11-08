@@ -767,6 +767,44 @@ export async function discardDraft(universeId: string, executor: Executor): Prom
 }
 
 /**
+ * The live row each of a universe's draft rows was copied from, for every kind of thing the draft has a
+ * copy of, by the draft row's ID; a row the draft added has none
+ */
+export interface DraftOrigins
+{
+	tileGraphics: Map<string, string>;
+	tiles: Map<number, number>;
+	items: Map<number, number>;
+	areas: Map<string, string>;
+	races: Map<number, number>;
+	classes: Map<number, number>;
+	themes: Map<number, number>;
+	difficultyLevels: Map<number, number>;
+}
+
+/**
+ * The live row each of a universe's draft rows was copied from, of every kind, such as for an export
+ * of the draft, which names its things by the draft's IDs
+ *
+ * @param universeId The universe's ID
+ * @param executor The database, or a transaction
+ * @return The live rows, by kind
+ */
+export async function findAllDraftOrigins(universeId: string, executor: Executor = db): Promise<DraftOrigins>
+{
+	return({
+		tileGraphics: await findDraftOrigins<string>(tileGraphics, universeId, executor),
+		tiles: await findDraftOrigins<number>(tiles, universeId, executor),
+		items: await findDraftOrigins<number>(items, universeId, executor),
+		areas: await findDraftOrigins<string>(areas, universeId, executor),
+		races: await findDraftOrigins<number>(races, universeId, executor),
+		classes: await findDraftOrigins<number>(classes, universeId, executor),
+		themes: await findDraftOrigins<number>(themes, universeId, executor),
+		difficultyLevels: await findDraftOrigins<number>(difficultyLevels, universeId, executor)
+	});
+}
+
+/**
  * The live row each of a universe's draft rows was copied from, for comparing the draft with the live
  * version
  *

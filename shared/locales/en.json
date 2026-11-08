@@ -2181,7 +2181,7 @@
 	},
 	"editor.draft.start": {
 		"defaultMessage": "Start Draft",
-		"description": "Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"
+		"description": "Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar, the dialog explaining drafts and the one Import Universe opens while the universe has none"
 	},
 	"editor.draft.startStaged": {
 		"defaultMessage": "A draft will be started when the editor is saved, as a copy of the live version with the other changes being saved.",
@@ -2965,7 +2965,7 @@
 	},
 	"editor.startDraft.saveAndStart": {
 		"defaultMessage": "Save Changes And Start Draft",
-		"description": "Button in the dialog explaining drafts, when the editor has unsaved changes: saves them to the live version, then starts a draft (a copy of the universe editors change without players seeing it) with them"
+		"description": "Button in the dialog explaining drafts, and in the one Import Universe opens while the universe has none, when the editor has unsaved changes: saves them to the live version, then starts a draft (a copy of the universe editors change without players seeing it) with them"
 	},
 	"editor.startDraft.title": {
 		"defaultMessage": "Start a Draft",
@@ -3791,6 +3791,166 @@
 		"defaultMessage": "Export {universe}",
 		"description": "Title of the dialog Export Universe opens on the editor's Universe tab; {universe} is the universe's name"
 	},
+	"editor.universeImport.button": {
+		"defaultMessage": "Import Universe",
+		"description": "Button under the settings on the editor's Universe tab, beside Export Universe, that opens the dialog importing a zip file Export Universe made into the universe's draft, for every role but beta tester"
+	},
+	"editor.universeImport.explanation": {
+		"defaultMessage": "Imports a zip file Export Universe made into the draft. What the file holds replaces what you can edit in the draft. Players see nothing of it until the draft is applied.",
+		"description": "In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file"
+	},
+	"editor.universeImport.failed": {
+		"defaultMessage": "Could not import the file. Nothing was imported.",
+		"description": "Shown in the dialog importing a zip file into the universe's draft when the server refused it, followed by why; it saves all of it or none of it"
+	},
+	"editor.universeImport.file": {
+		"defaultMessage": "File",
+		"description": "Label of the field choosing the zip file to import into the universe's draft"
+	},
+	"editor.universeImport.imported": {
+		"defaultMessage": "Imported into the draft. Check it, then apply the draft when it's ready.",
+		"description": "Toast once a zip file is imported into the universe's draft (a copy players don't see until it is applied); the editor then shows the draft again"
+	},
+	"editor.universeImport.importing": {
+		"defaultMessage": "Importing...",
+		"description": "Shown at the left of the buttons in the dialog importing a zip file into the universe's draft, and read out, while it is imported"
+	},
+	"editor.universeImport.leavesOut": {
+		"defaultMessage": "It leaves out:",
+		"description": "In the dialog importing a zip file into the universe's draft, once a file is chosen: heading of the list of what in the file isn't imported, and why"
+	},
+	"editor.universeImport.leftOut.keptForSettings": {
+		"defaultMessage": "Deleting the draft's lobby, starting areas and starting equipment that the file doesn't have, since your role can't change the settings naming them",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out, for a builder: the draft's areas and items its settings name are kept, though the file doesn't have them"
+	},
+	"editor.universeImport.leftOut.nameTaken": {
+		"defaultMessage": "Its name, which another universe has, so the draft keeps its own",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: the file's universe name, since names are unique among universes"
+	},
+	"editor.universeImport.leftOut.noTranslationRole": {
+		"defaultMessage": "Its text marked as needing no translation, which your role can't change",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out, for a role that can't mark text as needing no translation"
+	},
+	"editor.universeImport.leftOut.settingsRole": {
+		"defaultMessage": "Its settings, races, classes, themes and Ruleset tab, which your role can't change",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out, for a builder or translator: what only the universe's creators change"
+	},
+	"editor.universeImport.leftOut.translationLanguages": {
+		"defaultMessage": "Its translations into languages the universe isn't translated into, or that you can't translate into",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: translations the player's role, or the universe's languages, don't take"
+	},
+	"editor.universeImport.leftOut.universeOnly": {
+		"defaultMessage": "Its editors, stage and two-factor setting, which belong to the universe rather than its draft",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: the parts of the universe a draft has no copy of"
+	},
+	"editor.universeImport.leftOut.worldRole": {
+		"defaultMessage": "Its tilesets, tiles, items, areas and notes for translators, which your role can't change",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out, for a translator: what only creators and builders change"
+	},
+	"editor.universeImport.needsDraft.creatorsStart": {
+		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one.",
+		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a builder or translator, while the universe has no draft, which only its creators can start"
+	},
+	"editor.universeImport.needsDraft.open": {
+		"defaultMessage": "Files must be imported into the universe's draft. Open the draft to import into it.",
+		"description": "In the dialog Import Universe opens on the editor's Universe tab while the editor shows the live version and the universe has a draft; Open Draft follows"
+	},
+	"editor.universeImport.needsDraft.start": {
+		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet; you must start one to import changes.",
+		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a creator, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file"
+	},
+	"editor.universeImport.openDraftButton": {
+		"defaultMessage": "Open Draft",
+		"description": "Button in the dialog Import Universe opens while the editor shows the universe's live version and the universe has a draft: opens the draft, then the dialog importing a file into it"
+	},
+	"editor.universeImport.otherUniverse": {
+		"defaultMessage": "The file is of another universe, so everything in it is added to the draft anew.",
+		"description": "In the dialog importing a zip file into the universe's draft, when the file was exported from another universe, perhaps on another site"
+	},
+	"editor.universeImport.part.areas": {
+		"defaultMessage": "{count, plural, one {# area} other {# areas}}, with their cells and links",
+		"description": "In the list of what importing a zip file replaces in the universe's draft: its areas; {count} is how many the file has"
+	},
+	"editor.universeImport.part.items": {
+		"defaultMessage": "Items, with {count, plural, one {# item} other {# items}} the file's universe added or changed",
+		"description": "In the list of what importing a zip file replaces in the universe's draft; {count} counts the items the file's universe added, or changed from the ruleset's"
+	},
+	"editor.universeImport.part.noTranslation": {
+		"defaultMessage": "{count, plural, one {# piece of text} other {# pieces of text}} marked as needing no translation",
+		"description": "In the list of what importing a zip file replaces in the universe's draft: which text needs no translation, such as proper names; {count} is how many pieces of text the file marks"
+	},
+	"editor.universeImport.part.notes": {
+		"defaultMessage": "{count, plural, one {# note for translators} other {# notes for translators}}",
+		"description": "In the list of what importing a zip file replaces in the universe's draft: the notes its editors wrote for translators; {count} is how many the file has"
+	},
+	"editor.universeImport.part.races": {
+		"defaultMessage": "Races and classes, with {races, plural, one {# race} other {# races}} and {classes, plural, one {# class} other {# classes}} the file's universe added or changed",
+		"description": "In the list of what importing a zip file replaces in the universe's draft; {races} and {classes} count those the file's universe added, or changed from the ruleset's"
+	},
+	"editor.universeImport.part.settings": {
+		"defaultMessage": "Settings, from the Universe, Lobby, Characters, Ruleset and Translations tabs, with {levels, plural, one {# difficulty level} other {# difficulty levels}}",
+		"description": "In the list of what importing a zip file replaces in the universe's draft: the universe's settings; {levels} is how many difficulty levels the file has"
+	},
+	"editor.universeImport.part.themes": {
+		"defaultMessage": "Themes, with {count, plural, one {# theme} other {# themes}} the file's universe added or changed",
+		"description": "In the list of what importing a zip file replaces in the universe's draft, for a ruleset with themes (Starfinder); {count} counts those the file's universe added, or changed from the ruleset's"
+	},
+	"editor.universeImport.part.tiles": {
+		"defaultMessage": "Tiles and tilesets, with {tiles, plural, one {# tile} other {# tiles}} the file's universe added or changed, and {uploads, plural, one {# tileset} other {# tilesets}} to upload",
+		"description": "In the list of what importing a zip file replaces in the universe's draft; {tiles} counts the tiles the file's universe added, or changed from the ruleset's, and {uploads} its uploaded tilesets the draft doesn't have"
+	},
+	"editor.universeImport.part.translations": {
+		"defaultMessage": "{count, plural, one {# translation} other {# translations}} into {languages}",
+		"description": "In the list of what importing a zip file replaces in the universe's draft: its translations; {count} is how many the file has, and {languages} lists the languages, such as \"French and German\""
+	},
+	"editor.universeImport.readFailed": {
+		"defaultMessage": "Could not read the file.",
+		"description": "Shown under the field choosing the file in the dialog importing it into the universe's draft, when the server couldn't read it, followed by why"
+	},
+	"editor.universeImport.reading": {
+		"defaultMessage": "Reading the file...",
+		"description": "Shown at the left of the buttons in the dialog importing a zip file into the universe's draft, and read out, while the server reads the file chosen"
+	},
+	"editor.universeImport.replaces": {
+		"defaultMessage": "It replaces the draft's:",
+		"description": "In the dialog importing a zip file into the universe's draft, once a file is chosen: heading of the list of what importing it replaces in the draft"
+	},
+	"editor.universeImport.rights": {
+		"defaultMessage": "I have the rights to use the tilesets' images in this file",
+		"description": "Checkbox in the dialog importing a zip file into the universe's draft, shown when the file uploads tilesets' pictures: the player confirms they made them, own them or have permission to use them"
+	},
+	"editor.universeImport.rightsNeeded": {
+		"defaultMessage": "Confirm you have the rights to use the tilesets' images.",
+		"description": "Shown under the checkbox in the dialog importing a zip file into the universe's draft, when it is left unchecked and the file uploads tilesets' pictures"
+	},
+	"editor.universeImport.sameUniverse": {
+		"defaultMessage": "The file is of this universe, so what it holds keeps its place: characters and groups go on naming the same areas, races, classes and items once the draft is applied.",
+		"description": "In the dialog importing a zip file into the universe's draft, when the file was exported from this universe: its things are matched with the draft's rather than made anew"
+	},
+	"editor.universeImport.saveFirst": {
+		"defaultMessage": "Save or undo your changes first, since importing replaces the draft they belong to.",
+		"description": "In the dialog importing a zip file into the universe's draft, while the editor has unsaved changes: importing waits for them, since it replaces the draft they belong to"
+	},
+	"editor.universeImport.source": {
+		"defaultMessage": "{universe}, {version, select, draft {its draft} other {its live version}}, exported {date} by {name} (@{username}).",
+		"description": "In the dialog importing a zip file into the universe's draft, once a file is chosen: which universe and version it was exported from, when and by whom; {universe} is the universe's name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player's"
+	},
+	"editor.universeImport.startingDraft": {
+		"defaultMessage": "Starting the draft...",
+		"description": "Shown at the left of the buttons in the dialog Import Universe opens while the universe has no draft, and read out, while Start Draft starts one"
+	},
+	"editor.universeImport.submit": {
+		"defaultMessage": "Import into Draft",
+		"description": "Button in the dialog importing a zip file into the universe's draft that imports it, saving it to the draft at once"
+	},
+	"editor.universeImport.title": {
+		"defaultMessage": "Import into the Draft",
+		"description": "Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft"
+	},
+	"editor.universeImport.tooLarge": {
+		"defaultMessage": "The file can be at most {max, number} MB.",
+		"description": "Shown under the field choosing the file in the dialog importing it into the universe's draft, when the file is too big; {max} is the most it can be, in megabytes"
+	},
 	"editor.universeLocked": {
 		"defaultMessage": "This universe has reached the end of time, so only its creators can change it. You can still leave it on the Editors tab.",
 		"description": "Shown above the editor's tabs to a builder, beta tester or translator of a universe in the stage end of time, which locks it"
@@ -4095,6 +4255,10 @@
 		"defaultMessage": "You're already exporting a universe. Try again once it has downloaded.",
 		"description": "Why a universe wasn't exported: the player is already exporting one, in this window or another, and each player exports one at a time"
 	},
+	"error.alreadyImporting": {
+		"defaultMessage": "You're already importing a file. Try again once it has finished.",
+		"description": "Why a file wasn't imported into a universe's draft: the player is already importing one, in this window or another, and each player imports one at a time"
+	},
 	"error.alreadyInGroup": {
 		"defaultMessage": "That character is already in a group. They have to leave it first.",
 		"description": "Why a character couldn't make or join a group: a character can be in only one group at a time"
@@ -4346,6 +4510,30 @@
 	"error.groupFull": {
 		"defaultMessage": "The group is full: it already has {max, plural, one {# character} other {# characters}}.",
 		"description": "Why a character couldn't join a group with an invite link; {max} is the most characters the universe allows in a group"
+	},
+	"error.importDraftOnly": {
+		"defaultMessage": "A file can only be imported into the universe's draft. Open the draft to import into it.",
+		"description": "Why a file wasn't imported into a universe: the editor has its live version open, and imports go into its draft (a copy players don't see until it is applied)"
+	},
+	"error.importNewerFormat": {
+		"defaultMessage": "This file was exported by a newer version of the editor, so it can't be imported here.",
+		"description": "Why a file couldn't be imported into a universe's draft: it was made by a later version of the site's software, in a format this one can't read"
+	},
+	"error.importNotAnExport": {
+		"defaultMessage": "This file isn't a universe export, or it's damaged ({problem}).",
+		"description": "Why a file couldn't be imported into a universe's draft: it isn't a zip file Export Universe made, or it was changed or damaged since; {problem} is a technical description in English"
+	},
+	"error.importNotZip": {
+		"defaultMessage": "Choose the zip file Export Universe made.",
+		"description": "Why a file wasn't imported into a universe's draft: what was sent isn't a zip file"
+	},
+	"error.importOtherRuleset": {
+		"defaultMessage": "This file is of a universe with a different ruleset, so it can't be imported into this one.",
+		"description": "Why a file couldn't be imported into a universe's draft: the universe it was exported from plays Pathfinder and this one Starfinder, or the other way round"
+	},
+	"error.importRightsNeeded": {
+		"defaultMessage": "Confirm you have the rights to use the tilesets' images in the file.",
+		"description": "Why a file wasn't imported into a universe's draft: it uploads tilesets' images, and the player didn't check that they have the rights to use them"
 	},
 	"error.invalidRequest": {
 		"defaultMessage": "The request isn't valid ({problem}).",
@@ -7441,7 +7629,7 @@
 	},
 	"universe.deletionPrevented": {
 		"defaultMessage": "The site's admins disabled this universe and kept its creators from deleting it.",
-		"description": "On the editor's Universe tab, under the turned-off Delete Universe button, and the reason deleting a universe was refused: a server admin disabled the universe and kept its creators from deleting it"
+		"description": "In the first dialog deleting a universe, in place of what deleting it deletes, and the reason deleting a universe was refused: a server admin disabled the universe and kept its creators from deleting it"
 	},
 	"universe.displayTime.none": {
 		"defaultMessage": "nothing",

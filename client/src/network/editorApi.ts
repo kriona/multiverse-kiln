@@ -1,7 +1,12 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
+
+/**
+ * The media type of a universe's export, which importing sends
+ */
+const ZIP_TYPE = 'application/zip';
 
 /**
  * A request to the world editor's API that the server refused or couldn't answer
@@ -117,6 +122,44 @@ export class EditorApi
 	async exportUniverse(universeId: string): Promise<Blob>
 	{
 		return(this.send<Blob>('GET', `${universePath(universeId)}${UNIVERSE_EXPORT_PATH}`));
+	}
+
+	/**
+	 * What importing an export into the draft open would change (see shared/src/universeImport.ts)
+	 *
+	 * @param universeId The universe's ID
+	 * @param file The export's zip file
+	 * @return What it would change
+	 */
+	async previewImport(universeId: string, file: Blob): Promise<UniverseImportPreview>
+	{
+		return(this.send<UniverseImportPreview>('POST', `${universePath(universeId)}${UNIVERSE_IMPORT_PREVIEW_PATH}`, file, ZIP_TYPE));
+	}
+
+	/**
+	 * Imports an export into the draft open, as one save, which other windows hear of as any save
+	 *
+	 * @param universeId The universe's ID
+	 * @param file The export's zip file
+	 * @param rightsConfirmed Whether the player confirms their rights to the images of the tilesets it uploads
+	 */
+	async importUniverse(universeId: string, file: Blob, rightsConfirmed: boolean): Promise<void>
+	{
+		const query = new URLSearchParams({ [UNIVERSE_IMPORT_RIGHTS_PARAM]: String(rightsConfirmed) });
+
+		if (this.windowId !== undefined)
+		{
+			query.set('windowId', this.windowId);
+		}
+
+		try
+		{
+			await this.send('POST', `${universePath(universeId)}${UNIVERSE_IMPORT_PATH}?${query.toString()}`, file, ZIP_TYPE);
+		}
+		finally
+		{
+			this.forgetLists();
+		}
 	}
 
 	/**
@@ -458,14 +501,15 @@ export class EditorApi
 	 *
 	 * @param method The HTTP method
 	 * @param path The path under EDITOR_UNIVERSES_PATH
-	 * @param body The JSON body, if any
+	 * @param body The JSON body, or a file with its type in contentType, if any
+	 * @param contentType The body's media type when it is a file
 	 * @return The response body
 	 */
-	private async send<T = unknown>(method: HttpMethod, path: string, body?: object): Promise<T>
+	private async send<T = unknown>(method: HttpMethod, path: string, body?: object, contentType?: string): Promise<T>
 	{
 		const versioned = (((path === '') || (this.version === 'live')) ? path : `${path}${path.includes('?') ? '&' : '?'}${EDITOR_VERSION_PARAM}=${this.version}`);
 
-		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${versioned}`, body));
+		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${versioned}`, body, contentType));
 	}
 }
 
@@ -480,14 +524,17 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
  * @param client Client for the server
  * @param method The HTTP method
  * @param url The route's path
- * @param body The JSON body, if any
+ * @param body The JSON body, or a file with its type in contentType, if any
+ * @param contentType The body's media type when it is a file, such as application/zip; a JSON body
+ * leaves it out
  * @return The response body
  * @throws EditorApiError when the server refuses the request or can't be reached
  */
-export async function sendRequest<T = unknown>(client: Client, method: HttpMethod, url: string, body?: object): Promise<T>
+export async function sendRequest<T = unknown>(client: Client, method: HttpMethod, url: string, body?: object, contentType?: string): Promise<T>
 {
 	const http = client.http;
-	const options = ((body === undefined) ? undefined : { body });
+	const headers = ((contentType === undefined) ? undefined : { 'content-type': contentType });
+	const options = ((body === undefined) ? undefined : { body, headers });
 
 	try
 	{

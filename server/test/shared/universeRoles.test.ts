@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, stageChangesEditorAccess, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, onlyLeaves, stageChangesEditorAccess, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -103,7 +103,7 @@ describe('Universe roles (shared)', () =>
 
 	it('lets only creators and the site admin role save at the end of time, and anyone leave', () =>
 	{
-		const savers = EDITOR_ROLES.map((role) => [role, maySaveInStage([paint], 'end_of_time', { role, languages: [] }, playerId)]);
+		const savers = EDITOR_ROLES.map((role) => [role, maySaveInStage(onlyLeaves([paint], playerId), 'end_of_time', { role, languages: [] })]);
 
 		assert.deepStrictEqual(savers, [
 			['creator', true],
@@ -112,10 +112,10 @@ describe('Universe roles (shared)', () =>
 			['translator', false],
 			[ADMIN_ROLE, true]
 		]);
-		assert.strictEqual(maySaveInStage([leave], 'end_of_time', accessOf('beta_tester'), playerId), true);
-		assert.strictEqual(maySaveInStage([leave, paint], 'end_of_time', accessOf('builder'), playerId), false);
-		assert.strictEqual(maySaveInStage([removeOther], 'end_of_time', accessOf('builder'), playerId), false);
-		assert.strictEqual(maySaveInStage([paint], 'let_there_be_light', accessOf('builder'), playerId), true);
+		assert.strictEqual(maySaveInStage(onlyLeaves([leave], playerId), 'end_of_time', accessOf('beta_tester')), true);
+		assert.strictEqual(maySaveInStage(onlyLeaves([leave, paint], playerId), 'end_of_time', accessOf('builder')), false);
+		assert.strictEqual(maySaveInStage(onlyLeaves([removeOther], playerId), 'end_of_time', accessOf('builder')), false);
+		assert.strictEqual(maySaveInStage(onlyLeaves([paint], playerId), 'let_there_be_light', accessOf('builder')), true);
 	});
 
 	it('names a check for every kind of change', () =>

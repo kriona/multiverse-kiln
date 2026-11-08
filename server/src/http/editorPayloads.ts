@@ -674,169 +674,174 @@ export const universeEditListQuery = z.object({
 const numericIdKey = z.string().regex(/^[1-9][0-9]{0,9}$/);
 
 /**
- * SaveChangesRequest, by the universe's ruleset. Whether what each change names exists in the universe
- * is checked as the change is saved
+ * One EditorChange, by the universe's ruleset: what a save sends, and what importing a universe makes
+ * from its file. Whether what each change names exists in the universe is checked as the change is saved
+ */
+export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', [
+	z.object({
+		kind: z.literal('addEditor'),
+		username: z.string().trim().min(1).max(MAX_USERNAME_LENGTH),
+		settings: editorRoleSettings
+	}),
+	z.object({
+		kind: z.literal('saveEditor'),
+		playerId: z.uuid(),
+		settings: editorRoleSettings,
+		loaded: loadedSettings
+	}),
+	z.object({
+		kind: z.literal('removeEditor'),
+		playerId: z.uuid()
+	}),
+	z.object({
+		kind: z.literal('universe'),
+		update: universeSettingsUpdate[ruleset],
+		loaded: loadedSettings,
+		largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+	}),
+	z.object({
+		kind: z.literal('ruleset'),
+		settings: rulesetSettings,
+		loaded: loadedSettings
+	}),
+	z.object({
+		kind: z.literal('uploadTileGraphic'),
+		ref: newRef,
+		upload: tileGraphicUploadRequest
+	}),
+	z.object({
+		kind: z.literal('deleteTileGraphic'),
+		graphicId: z.uuid()
+	}),
+	z.object({
+		kind: z.literal('createTile'),
+		ref: newRef,
+		settings: tileChangeSettings
+	}),
+	z.object({
+		kind: z.literal('saveTile'),
+		id: numberRef,
+		settings: tileChangeSettings,
+		loaded: loadedSettings
+	}),
+	z.object({
+		kind: z.literal('removeTile'),
+		id: numberRef,
+		replaceWith: numberRef.nullable()
+	}),
+	...listChanges('Item', itemSettings, {
+		whenDisabled: z.enum(ITEM_DISABLINGS).optional()
+	}),
+	...listChanges('Race', raceSettings[ruleset]),
+	...listChanges('Class', classSettings[ruleset]),
+	...listChanges('Theme', themeSettings),
+	...listChanges('DifficultyLevel', difficultyLevelSettings),
+	z.object({
+		kind: z.literal('createArea'),
+		ref: newRef,
+		area: z.object({
+			...areaChangeFields,
+			name: displayText(MAX_AREA_NAME_LENGTH)
+		})
+	}),
+	z.object({
+		kind: z.literal('updateArea'),
+		areaId: stringRef,
+		update: z.object(areaChangeFields),
+		loaded: loadedSettings,
+		moveTo: z.enum(AREA_EVACUATIONS).optional()
+	}),
+	z.object({
+		kind: z.literal('deleteArea'),
+		areaId: stringRef
+	}),
+	z.object({
+		kind: z.literal('resizeArea'),
+		areaId: stringRef,
+		bounds: areaBounds,
+		discard: z.boolean()
+	}),
+	z.object({
+		kind: z.literal('editCells'),
+		areaId: stringRef,
+		changes: z.array(z.tuple([cellCoordinate, cellCoordinate, z.union([z.number().int().min(VOID_CELL).max(2147483647), newRef])])).min(1).max(MAX_CELL_CHANGES)
+	}),
+	z.object({
+		kind: z.literal('saveLink'),
+		areaId: stringRef,
+		column: cellCoordinate,
+		row: cellCoordinate,
+		target: areaLinkTarget.extend({ targetAreaId: stringRef })
+	}),
+	z.object({
+		kind: z.literal('deleteLink'),
+		areaId: stringRef,
+		column: cellCoordinate,
+		row: cellCoordinate
+	}),
+	z.object({
+		kind: z.literal('saveTranslation'),
+		text: universeTextRef,
+		language: languageTag,
+		translation: z.string().nullable(),
+		sourceHash: z.string().regex(/^[0-9a-f]{64}$/),
+		loaded: loadedText
+	})
+		.transform((change, context) =>
+		{
+			const translation = universeTextTranslation(change.text, change.translation);
+
+			if (translation === undefined)
+			{
+				context.addIssue({
+					code: 'custom',
+					path: ['translation'],
+					message: `Too long for ${change.text.field}, contains disallowed characters, or isn't a coin abbreviation a money field can read`
+				});
+
+				return(z.NEVER);
+			}
+
+			return({ ...change, translation });
+		}),
+	z.object({
+		kind: z.literal('saveTranslatorNote'),
+		text: universeTextRef,
+		note: z.string()
+			.trim()
+			.max(MAX_TRANSLATOR_NOTE_LENGTH)
+			.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replace(/[\t\n\r]/g, '')), 'Contains disallowed characters')
+			.transform((note) => ((note === '') ? null : note))
+			.nullable(),
+		loaded: loadedText
+	}),
+	z.object({
+		kind: z.literal('saveNoTranslation'),
+		text: universeTextRef,
+		noTranslation: z.boolean()
+	}),
+	z.object({
+		kind: z.literal('startDraft')
+	}),
+	z.object({
+		kind: z.literal('applyDraft'),
+		choices: z.object({
+			races: z.record(numericIdKey, z.boolean()),
+			classes: z.record(numericIdKey, z.boolean()),
+			items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
+			areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
+			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+		})
+	}),
+	z.object({
+		kind: z.literal('discardDraft')
+	})
+]));
+
+/**
+ * SaveChangesRequest, by the universe's ruleset
  */
 export const saveChangesRequest = byRuleset((ruleset) => z.object({
-	changes: z.array(z.discriminatedUnion('kind', [
-		z.object({
-			kind: z.literal('addEditor'),
-			username: z.string().trim().min(1).max(MAX_USERNAME_LENGTH),
-			settings: editorRoleSettings
-		}),
-		z.object({
-			kind: z.literal('saveEditor'),
-			playerId: z.uuid(),
-			settings: editorRoleSettings,
-			loaded: loadedSettings
-		}),
-		z.object({
-			kind: z.literal('removeEditor'),
-			playerId: z.uuid()
-		}),
-		z.object({
-			kind: z.literal('universe'),
-			update: universeSettingsUpdate[ruleset],
-			loaded: loadedSettings,
-			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
-		}),
-		z.object({
-			kind: z.literal('ruleset'),
-			settings: rulesetSettings,
-			loaded: loadedSettings
-		}),
-		z.object({
-			kind: z.literal('uploadTileGraphic'),
-			ref: newRef,
-			upload: tileGraphicUploadRequest
-		}),
-		z.object({
-			kind: z.literal('deleteTileGraphic'),
-			graphicId: z.uuid()
-		}),
-		z.object({
-			kind: z.literal('createTile'),
-			ref: newRef,
-			settings: tileChangeSettings
-		}),
-		z.object({
-			kind: z.literal('saveTile'),
-			id: numberRef,
-			settings: tileChangeSettings,
-			loaded: loadedSettings
-		}),
-		z.object({
-			kind: z.literal('removeTile'),
-			id: numberRef,
-			replaceWith: numberRef.nullable()
-		}),
-		...listChanges('Item', itemSettings, {
-			whenDisabled: z.enum(ITEM_DISABLINGS).optional()
-		}),
-		...listChanges('Race', raceSettings[ruleset]),
-		...listChanges('Class', classSettings[ruleset]),
-		...listChanges('Theme', themeSettings),
-		...listChanges('DifficultyLevel', difficultyLevelSettings),
-		z.object({
-			kind: z.literal('createArea'),
-			ref: newRef,
-			area: z.object({
-				...areaChangeFields,
-				name: displayText(MAX_AREA_NAME_LENGTH)
-			})
-		}),
-		z.object({
-			kind: z.literal('updateArea'),
-			areaId: stringRef,
-			update: z.object(areaChangeFields),
-			loaded: loadedSettings,
-			moveTo: z.enum(AREA_EVACUATIONS).optional()
-		}),
-		z.object({
-			kind: z.literal('deleteArea'),
-			areaId: stringRef
-		}),
-		z.object({
-			kind: z.literal('resizeArea'),
-			areaId: stringRef,
-			bounds: areaBounds,
-			discard: z.boolean()
-		}),
-		z.object({
-			kind: z.literal('editCells'),
-			areaId: stringRef,
-			changes: z.array(z.tuple([cellCoordinate, cellCoordinate, z.union([z.number().int().min(VOID_CELL).max(2147483647), newRef])])).min(1).max(MAX_CELL_CHANGES)
-		}),
-		z.object({
-			kind: z.literal('saveLink'),
-			areaId: stringRef,
-			column: cellCoordinate,
-			row: cellCoordinate,
-			target: areaLinkTarget.extend({ targetAreaId: stringRef })
-		}),
-		z.object({
-			kind: z.literal('deleteLink'),
-			areaId: stringRef,
-			column: cellCoordinate,
-			row: cellCoordinate
-		}),
-		z.object({
-			kind: z.literal('saveTranslation'),
-			text: universeTextRef,
-			language: languageTag,
-			translation: z.string().nullable(),
-			sourceHash: z.string().regex(/^[0-9a-f]{64}$/),
-			loaded: loadedText
-		})
-			.transform((change, context) =>
-			{
-				const translation = universeTextTranslation(change.text, change.translation);
-
-				if (translation === undefined)
-				{
-					context.addIssue({
-						code: 'custom',
-						path: ['translation'],
-						message: `Too long for ${change.text.field}, contains disallowed characters, or isn't a coin abbreviation a money field can read`
-					});
-
-					return(z.NEVER);
-				}
-
-				return({ ...change, translation });
-			}),
-		z.object({
-			kind: z.literal('saveTranslatorNote'),
-			text: universeTextRef,
-			note: z.string()
-				.trim()
-				.max(MAX_TRANSLATOR_NOTE_LENGTH)
-				.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replace(/[\t\n\r]/g, '')), 'Contains disallowed characters')
-				.transform((note) => ((note === '') ? null : note))
-				.nullable(),
-			loaded: loadedText
-		}),
-		z.object({
-			kind: z.literal('saveNoTranslation'),
-			text: universeTextRef,
-			noTranslation: z.boolean()
-		}),
-		z.object({
-			kind: z.literal('startDraft')
-		}),
-		z.object({
-			kind: z.literal('applyDraft'),
-			choices: z.object({
-				races: z.record(numericIdKey, z.boolean()),
-				classes: z.record(numericIdKey, z.boolean()),
-				items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
-				areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
-				largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
-			})
-		}),
-		z.object({
-			kind: z.literal('discardDraft')
-		})
-	])).max(MAX_CHANGES_PER_SAVE),
+	changes: z.array(editorChange[ruleset]).max(MAX_CHANGES_PER_SAVE),
 	windowId: z.string().min(1).max(MAX_WINDOW_ID_LENGTH).optional()
 }) satisfies z.ZodType<SaveChangesRequest>);

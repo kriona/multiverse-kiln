@@ -29,6 +29,7 @@ export * from './vision.js';
 export * from './universes.js';
 export * from './universeDeletion.js';
 export * from './universeExport.js';
+export * from './universeImport.js';
 export * from './universeText.js';
 export * from './translationFiles.js';
 export * from './engineTranslations.js';

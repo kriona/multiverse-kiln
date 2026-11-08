@@ -110,6 +110,6 @@ export const UNIVERSE_DELETION_PREVENTED: MessageDescriptor = defineMessages({
 	deletionPrevented: {
 		id: 'universe.deletionPrevented',
 		defaultMessage: 'The site\'s admins disabled this universe and kept its creators from deleting it.',
-		description: 'On the editor\'s Universe tab, under the turned-off Delete Universe button, and the reason deleting a universe was refused: a server admin disabled the universe and kept its creators from deleting it'
+		description: 'In the first dialog deleting a universe, in place of what deleting it deletes, and the reason deleting a universe was refused: a server admin disabled the universe and kept its creators from deleting it'
 	}
 }).deletionPrevented;

@@ -387,7 +387,10 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [✅] `GET /:universeId/export` (`server/src/http/universeExport.ts`), read in one read-only snapshot, one export at a time per player; zip archives written and read with Node's zlib (`server/src/archives/zip.ts`)
 	- [✅] Tests (`server/test/universeExport.test.ts`, `server/test/archives/zip.test.ts`)
 12. Importing a universe
-	- [ ] Read the export format back into a universe
+	- [✅] Import Universe beside Export Universe, for every role but beta tester, into the draft only: while the live version is open, a dialog that opens the draft or starts one (creators), then the import dialog, which previews the file (`POST /:universeId/import/preview`), asks for the rights to tilesets it uploads, and imports it at once, as Apply Draft saves, waiting until nothing else is unsaved (`client/src/ui/editor/UniverseImportSection.ts`)
+	- [✅] Reading and checking the file (`server/src/http/universeImportFile.ts`) and planning it as editor changes (`server/src/http/universeImportPlan.ts`): each part the role can change replaces the draft's, defaults matched by key, and the same universe's things matched by their live rows (`liveIds` in a draft's export) so they keep their place once applied
+	- [✅] Saved as one save through `saveChanges()`, which takes changes made once the changes before them are saved (`PendingChange`), for settings naming things the same save makes (`server/src/http/universeImport.ts`)
+	- [✅] Tests (`server/test/universeImport.test.ts`)
 13. Finishing
 	- [✅] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
 	- [✅] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)

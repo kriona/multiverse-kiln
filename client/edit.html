@@ -21,7 +21,7 @@
 							<option value="draft" data-message="editor.version.draft" data-translation-context="Choice in the editor's toolbar for editing the universe's draft, a copy players don't see until it is applied">Draft</option>
 						</select>
 					</label>
-					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"><!-- icon ph:copy -->Start Draft</button>
+					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar, the dialog explaining drafts and the one Import Universe opens while the universe has none"><!-- icon ph:copy -->Start Draft</button>
 					<button id="editor-apply-draft" class="draft" type="button" hidden data-message="editor.draft.apply" data-translation-context="Button in the editor's toolbar that applies the universe's draft to the live version after asking, so players see everything changed in it"><!-- icon ph:rocket-launch -->Apply Draft</button>
 					<button id="editor-discard-draft" class="danger" type="button" hidden data-message="editor.draft.discard" data-translation-context="Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"><!-- icon ph:trash -->Discard Draft</button>
 					<span class="editor-chat-toggle">
@@ -118,9 +118,9 @@
 						<div id="universe-actions" class="universe-actions" hidden>
 							<div class="universe-action-buttons">
 								<button id="universe-export" type="button" class="secondary" data-shortcut="Alt+X" data-message="editor.universeExport.button" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialog exporting what the player can edit in the universe as a zip file, for every role but beta tester"><!-- icon ph:download-simple -->Export Universe</button>
-								<button id="universe-delete-open" type="button" class="danger" aria-describedby="universe-delete-prevented" data-message="editor.universeDelete.open" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins" hidden><!-- icon ph:trash -->Delete Universe</button>
+								<button id="universe-import" type="button" class="secondary" data-shortcut="Alt+I" data-message="editor.universeImport.button" data-translation-context="Button under the settings on the editor's Universe tab, beside Export Universe, that opens the dialog importing a zip file Export Universe made into the universe's draft, for every role but beta tester"><!-- icon ph:upload-simple -->Import Universe</button>
+								<button id="universe-delete-open" type="button" class="danger" data-message="editor.universeDelete.open" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins" hidden><!-- icon ph:trash -->Delete Universe</button>
 							</div>
-							<p id="universe-delete-prevented" class="hint" hidden></p>
 						</div>
 					</section>
 
@@ -1173,9 +1173,52 @@
 						<p id="universe-export-explanation" data-message="editor.universeExport.explanation" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)">Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.</p>
 						<p id="universe-export-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
-							<p id="universe-export-status" class="universe-export-status" role="status"></p>
+							<p id="universe-export-status" class="universe-dialog-status" role="status"></p>
 							<button id="universe-export-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
 							<button id="universe-export-submit" type="submit" data-shortcut="Alt+S" aria-describedby="universe-export-error" data-message="editor.universeExport.submit" data-translation-context="Button in the dialog Export Universe opens on the editor's Universe tab that makes the universe's zip file and downloads it"><!-- icon ph:download-simple -->Export Universe</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-import-draft-dialog" class="panel dialog" aria-labelledby="universe-import-draft-title" aria-describedby="universe-import-draft-text">
+					<form id="universe-import-draft-form" class="form">
+						<h2 id="universe-import-draft-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
+						<p id="universe-import-draft-text"></p>
+						<p id="universe-import-draft-unsaved" data-message="editor.startDraft.unsaved" data-translation-context="In the dialog explaining drafts before one is started, when the editor has unsaved changes: they are saved first, so the draft starts with them" hidden>Your unsaved changes are saved to the live version first, so the draft starts with them.</p>
+						<p id="universe-import-draft-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<p id="universe-import-draft-status" class="universe-dialog-status" role="status"></p>
+							<button id="universe-import-draft-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-import-draft-start" type="submit" class="draft" data-shortcut="Alt+S" hidden></button>
+							<button id="universe-import-draft-open" type="submit" class="draft" data-shortcut="Alt+O" data-message="editor.universeImport.openDraftButton" data-translation-context="Button in the dialog Import Universe opens while the editor shows the universe's live version and the universe has a draft: opens the draft, then the dialog importing a file into it" hidden><!-- icon ph:copy -->Open Draft</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-import-dialog" class="panel dialog" aria-labelledby="universe-import-title" aria-describedby="universe-import-explanation">
+					<form id="universe-import-form" class="form" novalidate>
+						<h2 id="universe-import-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
+						<p id="universe-import-explanation" data-message="editor.universeImport.explanation" data-translation-context="In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file">Imports a zip file Export Universe made into the draft. What the file holds replaces what you can edit in the draft. Players see nothing of it until the draft is applied.</p>
+						<label data-message="editor.universeImport.file" data-translation-context="Label of the field choosing the zip file to import into the universe's draft">
+							File
+							<input id="universe-import-file" type="file" accept=".zip,application/zip" required aria-describedby="universe-import-error" />
+						</label>
+						<div id="universe-import-preview" class="universe-import-preview" hidden>
+							<p id="universe-import-source"></p>
+							<p id="universe-import-match" class="hint"></p>
+							<p data-message="editor.universeImport.replaces" data-translation-context="In the dialog importing a zip file into the universe's draft, once a file is chosen: heading of the list of what importing it replaces in the draft">It replaces the draft's:</p>
+							<ul id="universe-import-parts" class="universe-import-list"></ul>
+							<p id="universe-import-left-out-heading" data-message="editor.universeImport.leavesOut" data-translation-context="In the dialog importing a zip file into the universe's draft, once a file is chosen: heading of the list of what in the file isn't imported, and why" hidden>It leaves out:</p>
+							<ul id="universe-import-left-out" class="universe-import-list" hidden></ul>
+							<label id="universe-import-rights-field" class="checkbox" data-message="editor.universeImport.rights" data-translation-context="Checkbox in the dialog importing a zip file into the universe's draft, shown when the file uploads tilesets' pictures: the player confirms they made them, own them or have permission to use them" hidden>
+								<input id="universe-import-rights" type="checkbox" />
+								I have the rights to use the tilesets' images in this file
+							</label>
+						</div>
+						<p id="universe-import-unsaved" class="notice" data-message="editor.universeImport.saveFirst" data-translation-context="In the dialog importing a zip file into the universe's draft, while the editor has unsaved changes: importing waits for them, since it replaces the draft they belong to" hidden>Save or undo your changes first, since importing replaces the draft they belong to.</p>
+						<p id="universe-import-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<p id="universe-import-status" class="universe-dialog-status" role="status"></p>
+							<button id="universe-import-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-import-submit" type="submit" data-shortcut="Alt+I" aria-describedby="universe-import-error universe-import-unsaved" disabled data-message="editor.universeImport.submit" data-translation-context="Button in the dialog importing a zip file into the universe's draft that imports it, saving it to the draft at once"><!-- icon ph:upload-simple -->Import into Draft</button>
 						</div>
 					</form>
 				</dialog>

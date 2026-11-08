@@ -303,20 +303,14 @@ export function mayMakeChange(change: EditorChange, access: EditorAccess, player
  * Whether a save may be made in the universe's stage: at the end of time only its creators (and server
  * admins with ADMIN_ROLE) may change it, though anyone may still leave it
  *
- * @param changes The save's changes
+ * @param leaving Whether the save only has the player leave the universe (onlyLeaves())
  * @param stage The universe's stage
  * @param access The player's role in the editor, and their languages
- * @param playerId The player's ID
  * @return True when it may
  */
-export function maySaveInStage(changes: readonly EditorChange[], stage: UniverseStage, access: EditorAccess, playerId: string): boolean
+export function maySaveInStage(leaving: boolean, stage: UniverseStage, access: EditorAccess): boolean
 {
-	if ((stage !== 'end_of_time') || canEditAtEndOfTime(access.role))
-	{
-		return(true);
-	}
-
-	return(onlyLeaves(changes, playerId));
+	return((stage !== 'end_of_time') || canEditAtEndOfTime(access.role) || leaving);
 }
 
 /**
