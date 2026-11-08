@@ -2,6 +2,7 @@ import assert from 'assert';
 import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type ErrorPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
+import { listChatMessages, type KeptChat } from '../src/db/chatRepo.js';
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
 import { findGroup, findMembership, listGroupMembers } from '../src/db/groupRepo.js';
 import { loadEditorRaces, saveEditedDefaultRace } from '../src/db/raceRepo.js';
@@ -14,6 +15,7 @@ import { addCharacter, addPlayableUniverse, defaultClassId, defaultRaceId, type 
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { changeWhileWaitingForUniverse } from './universeLock.js';
+import { waitUntil } from './waitUntil.js';
 
 /**
  * A logged-in browser, and a character its player has in the test universe
@@ -213,7 +215,8 @@ describe('group routes', () =>
 				kind: 'joined',
 				groupId,
 				universeId: universe.universeId,
-				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true }
+				character: { characterId: ada.characterId, playerId: ada.playerId, name: 'Ada', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true },
+				created: true
 			}]);
 		});
 
@@ -529,6 +532,26 @@ describe('group routes', () =>
 				universeId: universe.universeId,
 				character: { characterId: grace.characterId, playerId: grace.playerId, name: 'Grace', raceId: await defaultRaceId('dwarf'), classId: await defaultClassId('fighter'), playable: true }
 			});
+		});
+
+		it('says in the group\'s chat who created it, who joined and who left, with no room open', async () =>
+		{
+			const groupId = await createGroup(ada);
+			const chat: KeptChat = {
+				kind: 'group',
+				universeId: universe.universeId,
+				groupId
+			};
+
+			await send(grace, 'POST', invitePath(await invite(ada, groupId)), { characterId: grace.characterId });
+			await send(grace, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: grace.characterId });
+			await waitUntil(async () => ((await listChatMessages(chat)).length === 3));
+
+			assert.deepStrictEqual((await listChatMessages(chat)).map(({ playerId, name, notice, text }) => [playerId, name, notice, text]), [
+				[ada.playerId, 'Ada', 'created', ''],
+				[grace.playerId, 'Grace', 'joined', ''],
+				[grace.playerId, 'Grace', 'left', '']
+			]);
 		});
 
 		it('disbands the group when the anchor being leaves, freeing every member', async () =>

@@ -524,20 +524,43 @@ export interface ChatHistoryPayload
 export const MAX_KEPT_CHAT_MESSAGES = 200;
 
 /**
+ * What the server can say in a kept chat, in a notice of its own rather than a message a player wrote:
+ *
+ * - created: a character created the group, as its anchor being
+ * - joined: a character joined the group
+ * - left: a character left the group
+ */
+export const CHAT_NOTICES = [
+	'created',
+	'joined',
+	'left'
+] as const;
+
+export type ChatNotice = typeof CHAT_NOTICES[number];
+
+/**
  * One message of a chat that is kept: a group's or the editors'
  */
 export interface KeptChatMessage
 {
 	/**
-	 * The player who wrote it, or null once their account is deleted
+	 * The player who wrote it, or null once their account is deleted. For a notice, the player of the
+	 * character it is about
 	 */
 	playerId: string | null;
 
 	/**
 	 * The writer's name: in a group's chat, their character's when they wrote it, and in the editors'
-	 * chat the player's display name. Empty once their account is deleted
+	 * chat the player's display name. Empty once their account is deleted. For a notice, the name of the
+	 * character it is about
 	 */
 	name: string;
+
+	/**
+	 * For a notice the server wrote, what it says, which each window writes in its player's language,
+	 * with text empty; null for a message a player wrote
+	 */
+	notice: ChatNotice | null;
 
 	/**
 	 * In the editors' chat, the writer's username; null in a group's chat, and once their account is deleted

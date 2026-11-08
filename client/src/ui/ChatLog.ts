@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatNotice } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { getElement, setUnreadChatCount } from './dom';
@@ -25,6 +25,12 @@ export interface ChatLine
 	 * In the editors' chat, the writer's username, shown when the name is pointed at
 	 */
 	username?: string | null;
+
+	/**
+	 * In a kept chat, for a notice the server wrote, what it says about the character named; null or
+	 * absent for a message a player wrote
+	 */
+	notice?: ChatNotice | null;
 
 	text: string;
 
@@ -53,9 +59,9 @@ export interface ChatElementIds
  * A chat's messages and the field for sending one, as the lobby, the group screen and the editors'
  * chat show them
  *
- * The player's own messages are marked, the newest are followed while the list is scrolled to the
- * bottom, and only the newest maxLines are kept. A message with characters the server refuses
- * (DISALLOWED_TEXT_CHARACTERS) isn't sent
+ * The player's own messages are marked, notices the server wrote (such as a character leaving a group)
+ * are set apart, the newest are followed while the list is scrolled to the bottom, and only the newest
+ * maxLines are kept. A message with characters the server refuses (DISALLOWED_TEXT_CHARACTERS) isn't sent
  *
  * Messages from others that arrive while the chat can't be seen (its tab is hidden, or the chat is, or it
  * is scrolled out of view) are counted before the page's title until it is seen again. A chat that
@@ -85,9 +91,10 @@ export class ChatLog
 	private closeTooFast: (() => void) | undefined;
 
 	/**
-	 * Who wrote each message on screen, and when, oldest first, for counting those that are unread
+	 * Who wrote each message on screen, and when, oldest first, for counting those that are unread, with
+	 * what each notice says
 	 */
-	private messages: Pick<ChatLine, 'playerId' | 'sentAt'>[] = [];
+	private messages: Pick<ChatLine, 'playerId' | 'sentAt' | 'notice'>[] = [];
 
 	/**
 	 * When the newest message the player has seen was sent, in milliseconds since the epoch: others'
@@ -274,11 +281,19 @@ export class ChatLog
 
 			const line = lines.at(index);
 			const name = line?.querySelector('.chat-name');
+			const notice = message.notice;
 
 			message.playerId = null;
 			line?.classList.remove('chat-own');
 
-			if (name instanceof HTMLElement)
+			if (line && notice)
+			{
+				line.querySelector('.chat-notice-text')?.replaceChildren(noticeText(notice, chatAuthorName({
+					playerId: null,
+					name: ''
+				})));
+			}
+			else if (name instanceof HTMLElement)
 			{
 				name.textContent = chatAuthorName({
 					playerId: null,
@@ -402,26 +417,43 @@ export class ChatLog
 	{
 		const line = document.createElement('li');
 		const time = document.createElement('span');
-		const name = document.createElement('span');
-		const text = document.createElement('span');
+		const notice = (message.notice ?? null);
 
 		time.className = 'chat-time';
 		time.textContent = new Date(message.sentAt).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' });
-		name.className = 'chat-name';
-		name.textContent = chatAuthorName(message);
 
-		if ((message.username !== undefined) && (message.username !== null))
+		if (notice)
 		{
-			name.title = `@${message.username}`;
+			const text = document.createElement('span');
+
+			text.className = 'chat-notice-text';
+			text.textContent = noticeText(notice, chatAuthorName(message));
+			line.className = 'chat-notice';
+			line.append(time, text);
+		}
+		else
+		{
+			const name = document.createElement('span');
+			const text = document.createElement('span');
+
+			name.className = 'chat-name';
+			name.textContent = chatAuthorName(message);
+
+			if ((message.username !== undefined) && (message.username !== null))
+			{
+				name.title = `@${message.username}`;
+			}
+
+			text.textContent = message.text;
+			line.classList.toggle('chat-own', ((message.playerId !== null) && (message.playerId === this.ownPlayerId)));
+			line.append(time, name, text);
 		}
 
-		text.textContent = message.text;
-		line.classList.toggle('chat-own', ((message.playerId !== null) && (message.playerId === this.ownPlayerId)));
-		line.append(time, name, text);
 		this.log.append(line);
 		this.messages.push({
 			playerId: message.playerId,
-			sentAt: message.sentAt
+			sentAt: message.sentAt,
+			notice
 		});
 
 		while (this.log.childElementCount > this.maxLines)
@@ -430,6 +462,52 @@ export class ChatLog
 		}
 
 		this.messages = this.messages.slice(-this.maxLines);
+	}
+}
+
+/**
+ * What a notice the server wrote in a chat says
+ *
+ * @param notice The notice
+ * @param name The name of the character it is about, or the stand-in for a deleted account
+ * @return The sentence
+ */
+export function noticeText(notice: ChatNotice, name: string): string
+{
+	switch (notice)
+	{
+		case 'created':
+		{
+			return(t({
+				id: 'chat.created',
+				defaultMessage: '{name} created the group.',
+				description: 'In a group\'s chat, shown in place of a message as its first line, when a character creates the group (they are its anchor being). {name} is the character\'s name, or "[deleted user]" once their player has deleted their account'
+			}, {
+				name
+			}));
+		}
+
+		case 'joined':
+		{
+			return(t({
+				id: 'chat.joined',
+				defaultMessage: '{name} joined the group.',
+				description: 'In a group\'s chat, shown in place of a message when a character joins the group through an invite link. {name} is the character\'s name, or "[deleted user]" once their player has deleted their account'
+			}, {
+				name
+			}));
+		}
+
+		case 'left':
+		{
+			return(t({
+				id: 'chat.left',
+				defaultMessage: '{name} has left this group.',
+				description: 'In a group\'s chat, shown in place of a message when a character leaves the group, in any way: from the group or their sheet, because the universe\'s group size was lowered, or because their player deleted their account. {name} is the character\'s name, or "[deleted user]" once their player has deleted their account'
+			}, {
+				name
+			}));
+		}
 	}
 }
 

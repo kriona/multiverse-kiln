@@ -1007,9 +1007,21 @@
 		"defaultMessage": "You haven't made a character in this universe yet.",
 		"description": "Shown instead of the list of the player's characters, in a universe's lobby and on its page, when they haven't made one in the universe"
 	},
+	"chat.created": {
+		"defaultMessage": "{name} created the group.",
+		"description": "In a group's chat, shown in place of a message as its first line, when a character creates the group (they are its anchor being). {name} is the character's name, or \"[deleted user]\" once their player has deleted their account"
+	},
 	"chat.deletedAccount": {
 		"defaultMessage": "[deleted user]",
 		"description": "In a chat (a universe's lobby, a group's or the editors'), in place of the name of a player who wrote a message and has since deleted their account; the brackets mark it as a stand-in rather than a name"
+	},
+	"chat.joined": {
+		"defaultMessage": "{name} joined the group.",
+		"description": "In a group's chat, shown in place of a message when a character joins the group through an invite link. {name} is the character's name, or \"[deleted user]\" once their player has deleted their account"
+	},
+	"chat.left": {
+		"defaultMessage": "{name} has left this group.",
+		"description": "In a group's chat, shown in place of a message when a character leaves the group, in any way: from the group or their sheet, because the universe's group size was lowered, or because their player deleted their account. {name} is the character's name, or \"[deleted user]\" once their player has deleted their account"
 	},
 	"chat.tooFast": {
 		"defaultMessage": "You are sending messages too quickly. Wait a moment and try again.",

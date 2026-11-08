@@ -1007,9 +1007,21 @@
 		"message": "Ye haven't signed on a hand in this universe yet.",
 		"source": "You haven't made a character in this universe yet."
 	},
+	"chat.created": {
+		"message": "{name} raised this crew.",
+		"source": "{name} created the group."
+	},
 	"chat.deletedAccount": {
 		"message": "[scuttled sailor]",
 		"source": "[deleted user]"
+	},
+	"chat.joined": {
+		"message": "{name} came aboard the crew.",
+		"source": "{name} joined the group."
+	},
+	"chat.left": {
+		"message": "{name} has jumped ship from this crew.",
+		"source": "{name} has left this group."
 	},
 	"chat.tooFast": {
 		"message": "Ye be squawkin' too fast. Wait a moment and try again.",

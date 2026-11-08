@@ -8,6 +8,7 @@ import {
 import { EDITOR_ROOM_NAME, GAME_ROOM_NAME, LOBBY_ROOM_NAME, SESSION_ROOM_NAME } from '@multiverse-kiln/shared';
 import { EditorRoom } from './rooms/EditorRoom.js';
 import { GameRoom } from './rooms/GameRoom.js';
+import { startGroupChatNotices } from './rooms/groupChatNotices.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
@@ -50,12 +51,14 @@ const server = defineServer({
 	transport: createTransport({ beforeUpgrade: createOriginCheck(allowedOrigins) }),
 
 	/**
-	 * Deletes characters whose last rites are over and audit records of editor saves 90 days old, now
-	 * and every hour, and tidies the login records (expired sessions, old email codes and rate limit
-	 * records) now and every few minutes
+	 * Starts writing a notice in a group's chat when a character leaves the group. Deletes characters
+	 * whose last rites are over and audit records of editor saves 90 days old, now and every hour, and
+	 * tidies the login records (expired sessions, old email codes and rate limit records) now and every
+	 * few minutes
 	 */
 	beforeListen: () =>
 	{
+		startGroupChatNotices();
 		startCharacterSweep();
 		startUniverseEditSweep();
 		startAuthSweep();

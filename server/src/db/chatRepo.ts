@@ -3,7 +3,7 @@
  * Each chat holds its newest MAX_KEPT_CHAT_MESSAGES messages, and remembers how far each player has read it
  */
 import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
-import { MAX_KEPT_CHAT_MESSAGES, type KeptChatMessage } from '@multiverse-kiln/shared';
+import { MAX_KEPT_CHAT_MESSAGES, type ChatNotice, type KeptChatMessage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { chatMessages, chatReads, groups, players, universes } from './schema.js';
@@ -27,14 +27,21 @@ export type KeptChat =
 export interface NewChatMessage
 {
 	/**
-	 * Who wrote it, or null once their account is deleted
+	 * Who wrote it, or null once their account is deleted. For a notice, the player of the character it
+	 * is about
 	 */
 	playerId: string | null;
 
 	/**
-	 * In a group's chat, the name of the character who wrote it; null in the editors' chat
+	 * In a group's chat, the name of the character who wrote it, or for a notice the character it is
+	 * about; null in the editors' chat
 	 */
 	authorName: string | null;
+
+	/**
+	 * For a notice the server wrote, what it says, with text empty; null for a message a player wrote
+	 */
+	notice: ChatNotice | null;
 
 	text: string;
 	sentAt: Date;
@@ -106,6 +113,7 @@ export async function listChatMessages(chat: KeptChat, executor: Executor = db):
 			authorName: chatMessages.authorName,
 			displayName: players.displayName,
 			username: players.username,
+			notice: chatMessages.notice,
 			text: chatMessages.text,
 			sentAt: chatMessages.sentAt
 		})
@@ -121,6 +129,7 @@ export async function listChatMessages(chat: KeptChat, executor: Executor = db):
 			playerId: row.playerId,
 			name: ((chat.kind === 'editors') ? (row.displayName ?? '') : (row.authorName ?? '')),
 			username: ((chat.kind === 'editors') ? row.username : null),
+			notice: row.notice,
 			text: row.text,
 			sentAt: row.sentAt.getTime()
 		})));
@@ -237,6 +246,7 @@ async function saveChatMessages(chat: KeptChat, messages: readonly NewChatMessag
 				groupId: ((chat.kind === 'group') ? chat.groupId : null),
 				playerId: message.playerId,
 				authorName: message.authorName,
+				notice: message.notice,
 				text: message.text,
 				sentAt: message.sentAt
 			})));
@@ -255,7 +265,8 @@ async function saveChatMessages(chat: KeptChat, messages: readonly NewChatMessag
 }
 
 /**
- * The messages the chats still keep that a player wrote, for their data download
+ * The messages the chats still keep that a player wrote, for their data download. Notices about their
+ * characters aren't messages they wrote, so they are left out
  *
  * @param playerId The player's ID
  * @param executor The database, or a transaction
@@ -275,7 +286,7 @@ export async function listOwnChatMessages(playerId: string, executor: Executor =
 		.from(chatMessages)
 		.innerJoin(universes, eq(universes.id, chatMessages.universeId))
 		.leftJoin(groups, eq(groups.id, chatMessages.groupId))
-		.where(eq(chatMessages.playerId, playerId))
+		.where(and(eq(chatMessages.playerId, playerId), isNull(chatMessages.notice)))
 		.orderBy(asc(chatMessages.id)));
 }
 

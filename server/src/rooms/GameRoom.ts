@@ -224,9 +224,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly joinChanges = new JoinChanges<GameJoinChange, GameLookup>();
 
 	/**
-	 * The group's chat, loaded in onCreate
+	 * The group's chat, loaded in onCreate. It takes in the notices written in it, such as a character
+	 * leaving, and sends them to the room's windows
 	 */
-	private readonly chat = new KeptChatLog();
+	private readonly chat = new KeptChatLog((message) =>
+	{
+		this.broadcast(GameServerMessageType.Chat, message);
+	});
 
 	private readonly stopListening: (() => void)[] = [];
 
@@ -634,6 +638,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		}
 
 		console.log('Room of group', this.groupId, 'disposing');
+		this.chat.close();
 		await this.saveChat();
 	}
 

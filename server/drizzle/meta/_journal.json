@@ -659,6 +659,20 @@
       "when": 1794065936833,
       "tag": "0093_foreign_key_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1794112062618,
+      "tag": "0094_chat_notices",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1794112332580,
+      "tag": "0095_chat_notices_created_joined",
+      "breakpoints": true
     }
   ]
 }

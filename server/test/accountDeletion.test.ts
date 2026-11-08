@@ -154,6 +154,7 @@ describe('account deletion and data export', () =>
 		await addChatMessages({ kind: 'editors', universeId: universe.universeId }, [{
 			playerId,
 			authorName: null,
+			notice: null,
 			text: 'Kept for the editors',
 			sentAt: new Date(Date.UTC(2026, 10, 1))
 		}]);
@@ -356,6 +357,7 @@ describe('account deletion and data export', () =>
 		await addChatMessages({ kind: 'editors', universeId }, [{
 			playerId,
 			authorName: null,
+			notice: null,
 			text: 'It is yours now',
 			sentAt: new Date()
 		}]);

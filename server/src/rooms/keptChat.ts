@@ -1,4 +1,4 @@
-import { MAX_KEPT_CHAT_MESSAGES, type KeptChatHistoryPayload, type KeptChatMessage } from '@multiverse-kiln/shared';
+import { MAX_KEPT_CHAT_MESSAGES, type ChatNotice, type KeptChatHistoryPayload, type KeptChatMessage } from '@multiverse-kiln/shared';
 
 import { addChatMessages, findChatRead, listChatMessages, saveChatReads, type KeptChat, type NewChatMessage } from '../db/chatRepo.js';
 
@@ -13,6 +13,28 @@ export const CHAT_SAVE_INTERVAL_MS = 5000;
  * can be loading it meanwhile
  */
 const writesGoingOn = new Map<string, Promise<void>>();
+
+/**
+ * The logs that take in notices for their chat, by chatKey(), from when they start loading until their
+ * room closes them
+ */
+const openLogs = new Map<string, KeptChatLog>();
+
+/**
+ * Who a notice in a kept chat is about
+ */
+export interface NoticeSubject
+{
+	/**
+	 * Their player's ID
+	 */
+	playerId: string;
+
+	/**
+	 * Their character's name
+	 */
+	name: string;
+}
 
 /**
  * Who wrote a message to a kept chat
@@ -41,6 +63,9 @@ export interface ChatAuthor
  * The room loads it as it starts and calls save() every CHAT_SAVE_INTERVAL_MS and as it closes, so
  * adding a message or reading the chat never waits for the database. A log loading a chat waits for
  * the writes of any other log of the same chat, such as one whose room is closing
+ *
+ * A log made with a notice listener takes in the notices postNotice() writes in its chat, from when it
+ * starts loading until close(), which its room calls as it closes, before its last save()
  */
 export class KeptChatLog
 {
@@ -48,6 +73,11 @@ export class KeptChatLog
 	 * Which chat it is, once loaded
 	 */
 	private chat: KeptChat | undefined;
+
+	/**
+	 * The chatKey() it takes in notices for, from when it starts loading until close()
+	 */
+	private openKey: string | undefined;
 
 	private messages: KeptChatMessage[] = [];
 
@@ -73,16 +103,67 @@ export class KeptChatLog
 	private saving: Promise<void> = Promise.resolve();
 
 	/**
+	 * @param onNotice Called with each notice the log takes in, for the room to send its windows; a log
+	 * without it takes in no notices
+	 */
+	constructor(private readonly onNotice?: (message: KeptChatMessage) => void)
+	{
+	}
+
+	/**
 	 * Reads the messages the database keeps for a chat, which the log holds from then on, once another
-	 * log's write of the chat going on is done
+	 * log's write of the chat going on is done. A log that takes in notices takes them from the start,
+	 * so one written while the chat loads comes after the messages kept before it
 	 *
 	 * @param chat The chat
 	 */
 	async load(chat: KeptChat): Promise<void>
 	{
-		await writesGoingOn.get(chatKey(chat));
-		this.messages = await listChatMessages(chat);
+		const key = chatKey(chat);
+
+		if (this.onNotice)
+		{
+			this.openKey = key;
+			openLogs.set(key, this);
+		}
+
+		try
+		{
+			await writesGoingOn.get(key);
+
+			const kept = await listChatMessages(chat);
+
+			this.messages = [...kept, ...this.messages].slice(-MAX_KEPT_CHAT_MESSAGES);
+		}
+		catch (error)
+		{
+			this.close();
+
+			// The notices taken in while it loaded go to the database, as if no room had the chat open
+			for (const notice of this.unsaved)
+			{
+				void writeNotice(chat, notice);
+			}
+
+			this.unsaved = [];
+			throw error;
+		}
+
 		this.chat = chat;
+	}
+
+	/**
+	 * Stops taking in notices, as the room closes; postNotice() writes them to the database from then on.
+	 * Call it before the room's last save(), so that write comes before any notice's
+	 */
+	close(): void
+	{
+		if ((this.openKey !== undefined) && (openLogs.get(this.openKey) === this))
+		{
+			openLogs.delete(this.openKey);
+		}
+
+		this.openKey = undefined;
 	}
 
 	/**
@@ -202,6 +283,7 @@ export class KeptChatLog
 			playerId: author.playerId,
 			name: author.name,
 			username: author.username,
+			notice: null,
 			text,
 			sentAt: Date.now()
 		};
@@ -210,11 +292,28 @@ export class KeptChatLog
 		this.unsaved.push({
 			playerId: author.playerId,
 			authorName: ((this.chat.kind === 'group') ? author.name : null),
+			notice: null,
 			text,
 			sentAt: new Date(message.sentAt)
 		});
 
 		return(message);
+	}
+
+	/**
+	 * Adds a notice, as add() does a message, and calls the notice listener with it. It may come before
+	 * the chat has loaded, which puts it after the messages kept
+	 *
+	 * @param notice What it says
+	 * @param subject Who it is about
+	 */
+	addNotice(notice: ChatNotice, subject: NoticeSubject): void
+	{
+		const message = noticeMessage(notice, subject);
+
+		this.messages = [...this.messages, message].slice(-MAX_KEPT_CHAT_MESSAGES);
+		this.unsaved.push(keptNotice(message));
+		this.onNotice?.(message);
 	}
 
 	/**
@@ -350,6 +449,94 @@ export class KeptChatLog
 			console.error('Could not keep how far players have read', describeChat(chat), error);
 		}
 	}
+}
+
+/**
+ * Writes a notice in a chat: through the log that has the chat open, which sends it to its room's
+ * windows and writes it with its messages, or, when no log has, to the database after any write of the
+ * chat going on, which a log loading the chat waits for
+ *
+ * @param chat The chat
+ * @param notice What it says
+ * @param subject Who it is about
+ * @return Resolves once a log has taken it in, or it is written to the database or has failed to be
+ */
+export function postNotice(chat: KeptChat, notice: ChatNotice, subject: NoticeSubject): Promise<void>
+{
+	const log = openLogs.get(chatKey(chat));
+
+	if (log)
+	{
+		log.addNotice(notice, subject);
+		return(Promise.resolve());
+	}
+
+	return(writeNotice(chat, keptNotice(noticeMessage(notice, subject))));
+}
+
+/**
+ * Writes a notice to the database, after any write of its chat going on
+ *
+ * @param chat The chat
+ * @param notice The notice
+ * @return Resolves once it is written, or has failed to be
+ */
+function writeNotice(chat: KeptChat, notice: NewChatMessage): Promise<void>
+{
+	const write = (writesGoingOn.get(chatKey(chat)) ?? Promise.resolve()).then(async () =>
+	{
+		try
+		{
+			if (!await addChatMessages(chat, [notice]))
+			{
+				console.log('Dropped a notice of', describeChat(chat), 'whose universe or group no longer exists');
+			}
+		}
+		catch (error)
+		{
+			console.error('Could not keep a notice of', describeChat(chat), error);
+		}
+	});
+
+	holdWrite(chat, write);
+
+	return(write);
+}
+
+/**
+ * A notice as the chat shows it
+ *
+ * @param notice What it says
+ * @param subject Who it is about
+ * @return The message
+ */
+function noticeMessage(notice: ChatNotice, subject: NoticeSubject): KeptChatMessage
+{
+	return({
+		playerId: subject.playerId,
+		name: subject.name,
+		username: null,
+		notice,
+		text: '',
+		sentAt: Date.now()
+	});
+}
+
+/**
+ * A notice as the database keeps it
+ *
+ * @param message The notice as the chat shows it
+ * @return The message to keep
+ */
+function keptNotice(message: KeptChatMessage): NewChatMessage
+{
+	return({
+		playerId: message.playerId,
+		authorName: message.name,
+		notice: message.notice,
+		text: '',
+		sentAt: new Date(message.sentAt)
+	});
 }
 
 /**

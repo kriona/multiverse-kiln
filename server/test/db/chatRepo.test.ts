@@ -20,6 +20,7 @@ function messagesOf(playerId: string, texts: readonly string[], authorName: stri
 	return(texts.map((text, index) => ({
 		playerId,
 		authorName,
+		notice: null,
 		text,
 		sentAt: new Date(Date.UTC(2026, 10, 1, 12, 0, index))
 	})));

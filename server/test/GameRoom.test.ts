@@ -88,6 +88,36 @@ let anchor: Member;
 const browserMembers = new Map<string, Member>();
 
 /**
+ * The messages players wrote, leaving out the notices the server writes as characters join and leave
+ *
+ * @param messages A chat's messages
+ * @return The messages players wrote, in the same order
+ */
+function playerMessages(messages: readonly KeptChatMessage[]): KeptChatMessage[]
+{
+	return(messages.filter((message) => (message.notice === null)));
+}
+
+/**
+ * Takes the next chat message a player wrote that a window received, passing over notices
+ *
+ * @param chat The window's messages
+ * @return The message
+ */
+async function takePlayerMessage(chat: Inbox<GameServerMessageType>): Promise<KeptChatMessage>
+{
+	for (;;)
+	{
+		const message = await chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+
+		if (message.notice === null)
+		{
+			return(message);
+		}
+	}
+}
+
+/**
  * Adds a player with a character to the test universe
  *
  * @param name The character's name
@@ -1023,23 +1053,23 @@ describe('GameRoom', () =>
 			const adaWindow = await joinAs(room, browserIdA, ada);
 			const other = await joinFromBrowser(room, browserIdB, 'Cleo');
 
-			assert.deepStrictEqual((await adaWindow.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages, []);
+			assert.deepStrictEqual(playerMessages((await adaWindow.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages), []);
 			adaWindow.client.send(GameMessageType.Chat, { text: '  Which way to the tower?  ' });
 
-			const received = await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+			const received = await takePlayerMessage(other.chat);
 
 			assert.deepStrictEqual([received.playerId, received.name, received.username, received.text], [ada.playerId, 'Ada', null, 'Which way to the tower?']);
-			assert.strictEqual((await adaWindow.chat.take<KeptChatMessage>(GameServerMessageType.Chat)).text, received.text);
+			assert.strictEqual((await takePlayerMessage(adaWindow.chat)).text, received.text);
 
 			const welcome = nextMessage<WelcomePayload>(adaWindow.client, ServerMessageType.Welcome);
 
 			adaWindow.client.send(GameMessageType.Control, { characterId: second.characterId });
 			await welcome;
 			adaWindow.client.send(GameMessageType.Chat, { text: 'North' });
-			assert.strictEqual((await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat)).name, 'Byron');
+			assert.strictEqual((await takePlayerMessage(other.chat)).name, 'Byron');
 
 			const later = await joinFromBrowser(room, browserIdB);
-			const history = (await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
+			const history = playerMessages((await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages);
 
 			assert.deepStrictEqual(history.map((message) => [message.name, message.text]), [['Ada', 'Which way to the tower?'], ['Byron', 'North']]);
 		});
@@ -1055,12 +1085,12 @@ describe('GameRoom', () =>
 			const other = await joinFromBrowser(room, browserIdB, 'Cleo');
 
 			adaWindow.client.send(GameMessageType.Chat, { text: 'Off I go' });
-			await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+			await takePlayerMessage(other.chat);
 			accountDeletions.publish(ada.playerId);
 			assert.deepStrictEqual(await other.chat.take<ChatAuthorDeletedPayload>(GameServerMessageType.ChatAuthorDeleted), { playerId: ada.playerId });
 
 			const later = await joinFromBrowser(room, browserIdB);
-			const history = (await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
+			const history = playerMessages((await later.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages);
 
 			assert.deepStrictEqual(history.map((message) => [message.playerId, message.name, message.text]), [[null, '', 'Off I go']]);
 		});
@@ -1081,7 +1111,7 @@ describe('GameRoom', () =>
 			}
 
 			assert.strictEqual((await notice).reason, NoticeReason.ChatTooFast);
-			assert.strictEqual((await chat.take<KeptChatMessage>(GameServerMessageType.Chat)).text, 'Line 0');
+			assert.strictEqual((await takePlayerMessage(chat)).text, 'Line 0');
 			assert.strictEqual(chat.pending(GameServerMessageType.Chat), 4);
 		});
 
@@ -1094,13 +1124,13 @@ describe('GameRoom', () =>
 			const window = await joinFromBrowser(room, browserIdA, 'Ada');
 
 			window.client.send(GameMessageType.Chat, { text: 'Saved for later' });
-			await window.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
-			assert.deepStrictEqual(await listChatMessages(chat), []);
+			await takePlayerMessage(window.chat);
+			assert.deepStrictEqual(playerMessages(await listChatMessages(chat)), []);
 			await window.client.leave();
-			await waitUntil(async () => ((await listChatMessages(chat)).length === 1));
+			await waitUntil(async () => (playerMessages(await listChatMessages(chat)).length === 1));
 
 			const reopened = await joinFromBrowser(await createGameRoom(), browserIdA);
-			const [kept] = (await reopened.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages;
+			const [kept] = playerMessages((await reopened.chat.take<KeptChatHistoryPayload>(GameServerMessageType.ChatHistory)).messages);
 
 			assert.deepStrictEqual([kept.playerId, kept.name, kept.username, kept.text], [browserMembers.get(browserIdA)?.playerId, 'Ada', null, 'Saved for later']);
 		});
@@ -1111,9 +1141,9 @@ describe('GameRoom', () =>
 			const window = await joinFromBrowser(room, browserIdA);
 
 			window.client.send(GameMessageType.Chat, { text: 'Checkpoint' });
-			await window.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+			await takePlayerMessage(window.chat);
 			await room.saveChat();
-			assert.deepStrictEqual((await listChatMessages({ kind: 'group', universeId: universe.universeId, groupId })).map((message) => message.text), ['Checkpoint']);
+			assert.deepStrictEqual(playerMessages(await listChatMessages({ kind: 'group', universeId: universe.universeId, groupId })).map((message) => message.text), ['Checkpoint']);
 		});
 	});
 
@@ -1239,7 +1269,7 @@ describe('GameRoom', () =>
 			assert.strictEqual(room.clients[0].sessionId, other.client.sessionId);
 		});
 
-		it('disconnects every window of a character who leaves the group', async () =>
+		it('disconnects every window of a character who leaves the group, and says so in the chat', async () =>
 		{
 			const room = await createGameRoom();
 			const window1 = await joinFromBrowser(room, browserIdA);
@@ -1258,6 +1288,10 @@ describe('GameRoom', () =>
 			await waitUntil(() => !room.state.players.has(member.characterId));
 			assert.strictEqual(room.state.members.has(member.characterId), false);
 			assert.ok(room.state.players.has(playerIdOf(room, other.client)));
+
+			const notice = await other.chat.take<KeptChatMessage>(GameServerMessageType.Chat);
+
+			assert.deepStrictEqual([notice.playerId, notice.name, notice.notice, notice.text], [member.playerId, member.name, 'left', '']);
 		});
 
 		it('disconnects everyone when the group is disbanded', async () =>

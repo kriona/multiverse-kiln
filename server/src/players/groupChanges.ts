@@ -3,7 +3,7 @@ import type { GroupCharacter, Membership } from '../db/groupRepo.js';
 /**
  * A change to who is in a group
  *
- * - joined: a character joined the group
+ * - joined: a character joined the group, or created it as its anchor being (created set)
  * - left: a character left the group, or was deleted
  * - disbanded: the anchor being left or was deleted, so the group is no more; members lists every
  *   character who was in it
@@ -12,7 +12,7 @@ import type { GroupCharacter, Membership } from '../db/groupRepo.js';
  * groupSizeLowered set, so the room can tell its players why
  */
 export type GroupChange =
-	| { kind: 'joined'; groupId: string; universeId: string; character: GroupCharacter }
+	| { kind: 'joined'; groupId: string; universeId: string; character: GroupCharacter; created?: true }
 	| { kind: 'left'; groupId: string; universeId: string; character: GroupCharacter; groupSizeLowered?: true }
 	| { kind: 'disbanded'; groupId: string; universeId: string; members: GroupCharacter[]; groupSizeLowered?: true };
 

@@ -296,7 +296,8 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		kind: 'joined',
 		groupId: result.groupId,
 		universeId: universe.id,
-		character: result.anchor
+		character: result.anchor,
+		created: true
 	});
 
 	const payload: GroupCreatedPayload = { groupId: result.groupId };

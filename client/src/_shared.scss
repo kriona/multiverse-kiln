@@ -53,6 +53,7 @@ $link: #00B2EE;
 $focus: #ffd54f;
 $link-hover: #ffd54f;
 $chat-name: #42a5f5;
+$chat-notice: #90caf9;
 $error: #ef9a9a;
 $success: #81c784;
 
@@ -436,6 +437,13 @@ button.sort-button
 	{
 		color: $accent;
 	}
+}
+
+// A notice the server writes in a chat, such as a character leaving a group: the whole sentence is
+// blue, lighter than the names, so it doesn't read as someone's message
+.chat-notice
+{
+	color: $chat-notice;
 }
 
 // Who wrote a chat message a toast shows, in the chat's color for names
