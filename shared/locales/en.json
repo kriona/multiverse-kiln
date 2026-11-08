@@ -1015,6 +1015,10 @@
 		"defaultMessage": "[deleted user]",
 		"description": "In a chat (a universe's lobby, a group's or the editors'), in place of the name of a player who wrote a message and has since deleted their account; the brackets mark it as a stand-in rather than a name"
 	},
+	"chat.focusShortcut": {
+		"defaultMessage": "Write in the chat",
+		"description": "In the list of keyboard shortcuts, what Ctrl+Enter does: puts focus in the chat's field, showing the editors' chat first when it is hidden"
+	},
 	"chat.joined": {
 		"defaultMessage": "{name} joined the group.",
 		"description": "In a group's chat, shown in place of a message when a character joins the group through an invite link. {name} is the character's name, or \"[deleted user]\" once their player has deleted their account"

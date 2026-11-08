@@ -5,12 +5,13 @@ import { playerPageUrl } from '../../pages';
 import { announce } from '../announcer';
 import { chatAuthorName, ChatLog } from '../ChatLog';
 import { getElement, showMessage } from '../dom';
+import { addShortcut } from '../shortcuts';
 import { showToast } from '../toast';
 
 /**
  * The editors' chat, in a panel the Chat button in the editor's toolbar shows and hides: the messages of
  * the universe's editors, kept by the server, and the names of who has the editor open. The save bar
- * shows where each of the others is (EditorPresenceBar)
+ * shows where each of the others is (EditorPresenceBar). Ctrl+Enter shows the panel and puts focus in its field
  *
  * Messages from others that arrive while the panel or its tab is hidden, and those written since the
  * player last saw the chat in any window, are counted over the button's icon and before the page's title
@@ -66,6 +67,21 @@ export class EditorChat
 		getElement('editor-chat-close', HTMLButtonElement).addEventListener('click', () =>
 		{
 			this.setOpen(false);
+		});
+
+		// Works wherever the Chat button can be seen
+		addShortcut({
+			keys: 'Control+Enter',
+			scope: this.toggle,
+			description: () => t({
+				id: 'chat.focusShortcut',
+				defaultMessage: 'Write in the chat',
+				description: 'In the list of keyboard shortcuts, what Ctrl+Enter does: puts focus in the chat\'s field, showing the editors\' chat first when it is hidden'
+			}),
+			run: () =>
+			{
+				this.setOpen(true);
+			}
 		});
 
 		this.panel.addEventListener('keydown', (event) =>

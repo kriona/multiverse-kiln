@@ -1015,6 +1015,10 @@
 		"message": "[scuttled sailor]",
 		"source": "[deleted user]"
 	},
+	"chat.focusShortcut": {
+		"message": "Squawk in the chat",
+		"source": "Write in the chat"
+	},
 	"chat.joined": {
 		"message": "{name} came aboard the crew.",
 		"source": "{name} joined the group."
