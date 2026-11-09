@@ -19,6 +19,11 @@ export const formMessages = defineMessages({
 		defaultMessage: 'Choose a name that doesn\'t look like a universe\'s ID.',
 		description: 'Shown by the field for a universe\'s name when it has the form of the long code that identifies a universe (32 letters and digits in groups split by hyphens); the name is made into the universe\'s web address, where that form would name another universe'
 	},
+	universeNameLinkLike: {
+		id: 'form.universeNameLinkLike',
+		defaultMessage: 'A universe\'s name can\'t look like a web or email address or hold angle brackets. Put a space after a period between letters.',
+		description: 'Shown by the field for a universe\'s name when it holds something a mail client could make into a link, such as a web or email address, or angle brackets (< and >); emails name the universe. A period between letters with no space after it, as in a web address, counts, so the second sentence says how to keep one'
+	},
 	wholeNumber: {
 		id: 'form.wholeNumber',
 		defaultMessage: 'Enter a whole number from {min, number} to {max, number}.',

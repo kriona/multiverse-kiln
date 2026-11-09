@@ -74,9 +74,10 @@ export type UniverseImportPart = typeof UNIVERSE_IMPORT_PARTS[number];
  * - translationLanguages: translations into languages the universe isn't translated into, or the
  *   player can't translate into
  * - nameTaken: its name, which another universe has, as have the copy names the import tries
+ * - nameLinkLike: its name, which holds text a mail client could make into a link (hasLinkLikeText())
  * - keptForSettings: areas and items the draft's settings still name, kept since the settings aren't imported
  */
-export const UNIVERSE_IMPORT_LEFT_OUT = ['universeOnly', 'settingsRole', 'worldRole', 'noTranslationRole', 'translationLanguages', 'nameTaken', 'keptForSettings'] as const;
+export const UNIVERSE_IMPORT_LEFT_OUT = ['universeOnly', 'settingsRole', 'worldRole', 'noTranslationRole', 'translationLanguages', 'nameTaken', 'nameLinkLike', 'keptForSettings'] as const;
 
 export type UniverseImportLeftOut = typeof UNIVERSE_IMPORT_LEFT_OUT[number];
 
@@ -163,7 +164,8 @@ export interface UniverseImportPreview
 	/**
 	 * The name it gives the draft, or null when it keeps the draft's: the file's own for a file of the
 	 * same universe, and for another universe's, "Kilnhaven (copy)" in the player's language (numbered when
-	 * that is taken too). Null when it doesn't replace the settings, or every name it would give is taken
+	 * that is taken too). Null when it doesn't replace the settings, the file's name holds text that could
+	 * be made into a link, or every name it would give is taken
 	 */
 	name: string | null;
 

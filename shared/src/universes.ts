@@ -734,3 +734,25 @@ export function hasIdShapedSlug(name: string): boolean
 {
 	return(UNIVERSE_ID_PATTERN.test(universeSlug(name)));
 }
+
+/**
+ * Text a mail client could make into a link or read as markup: angle brackets, a scheme's ://, the
+ * mailto:, tel: and sms: schemes, and anything shaped like a domain, a letter or digit followed by a dot
+ * and two letters (evil.example, www.evil, an email address). The ideographic full stop counts as a dot,
+ * as domain names take it
+ */
+const LINK_LIKE_TEXT = /[<>]|:\/\/|\b(?:mailto|tel|sms):|[\p{L}\p{N}][.。]\p{L}{2}/iu;
+
+/**
+ * Whether a universe's name holds text a mail client could make into a link or read as markup
+ * (LINK_LIKE_TEXT), which a universe can't be named, since emails sent from the site's own address name
+ * it. The name is checked in its NFKC form with its invisible characters taken out, so full-width and
+ * other look-alike forms, and invisible characters between the parts of a domain, don't get around it
+ *
+ * @param name The universe's name
+ * @return True when it holds such text
+ */
+export function hasLinkLikeText(name: string): boolean
+{
+	return(LINK_LIKE_TEXT.test(name.normalize('NFKC').replace(/\p{Default_Ignorable_Code_Point}/gu, '')));
+}

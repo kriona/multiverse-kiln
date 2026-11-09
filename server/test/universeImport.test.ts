@@ -670,6 +670,28 @@ describe('importing a universe', () =>
 		assert.deepStrictEqual((await draftOf(ada, otherId)).areas.map((area) => area.name), ['Lobby', 'Starting Area']);
 	});
 
+	it('keeps the draft\'s name when the file\'s could be made into a link, importing the rest', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId, 'draft'));
+
+		assert.ok(contents.manifest.settings);
+		contents.manifest.settings.name = 'Visit evil.example';
+
+		const archive = await archiveOf(contents);
+		const preview = await importArchive<UniverseImportPreview>(ada, kilnhavenId, archive, { preview: true });
+
+		assert.strictEqual(preview.status, 200, JSON.stringify(preview.body));
+		assert.deepStrictEqual(preview.body.leftOut, ['universeOnly', 'nameLinkLike']);
+		assert.strictEqual(preview.body.name, null);
+
+		const imported = await importArchive(ada, kilnhavenId, archive);
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+		assert.strictEqual((await draftOf(ada, kilnhavenId)).manifest.settings?.name, 'Kilnhaven');
+	});
+
 	it('refuses a file with more tilesets than a universe may have, or naming one image for two, before uploading any', async () =>
 	{
 		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));

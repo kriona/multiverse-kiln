@@ -3839,6 +3839,10 @@
 		"message": "Scuttlin' the draft's lobby, startin' areas an' startin' gear the chest don't hold, since yer post can't change the settings that name 'em",
 		"source": "Deleting the draft's lobby, starting areas and starting equipment that the file doesn't have, since your role can't change the settings naming them"
 	},
+	"editor.universeImport.leftOut.nameLinkLike": {
+		"message": "Its name, which looks like a web or email address or holds angle brackets, so the draft keeps its own colors",
+		"source": "Its name, which looks like a web or email address or holds angle brackets, so the draft keeps its own"
+	},
 	"editor.universeImport.leftOut.nameTaken": {
 		"message": "Its name, which another universe flies, so the draft keeps its own",
 		"source": "Its name, which another universe has, so the draft keeps its own"
@@ -5130,6 +5134,10 @@
 	"form.universeNameLikeId": {
 		"message": "Pick a name that don't look like a universe's ID, matey.",
 		"source": "Choose a name that doesn't look like a universe's ID."
+	},
+	"form.universeNameLinkLike": {
+		"message": "A universe's name can't look like a web or email address or carry angle brackets, matey. Put a space after a period 'tween letters.",
+		"source": "A universe's name can't look like a web or email address or hold angle brackets. Put a space after a period between letters."
 	},
 	"form.universeNameNoLetters": {
 		"message": "A universe's name needs at least one letter or number, matey.",

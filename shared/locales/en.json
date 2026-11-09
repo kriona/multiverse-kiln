@@ -3839,6 +3839,10 @@
 		"defaultMessage": "Deleting the draft's lobby, starting areas and starting equipment that the file doesn't have, since your role can't change the settings naming them",
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out, for a builder: the draft's areas and items its settings name are kept, though the file doesn't have them"
 	},
+	"editor.universeImport.leftOut.nameLinkLike": {
+		"defaultMessage": "Its name, which looks like a web or email address or holds angle brackets, so the draft keeps its own",
+		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: the file's universe name, which universe names can't be since emails name the universe and mail clients would make it a link; a period between letters with no space after it, as in a web address, counts"
+	},
 	"editor.universeImport.leftOut.nameTaken": {
 		"defaultMessage": "Its name, which another universe has, so the draft keeps its own",
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: the file's universe name, since names are unique among universes"
@@ -5126,6 +5130,10 @@
 	"form.universeNameLikeId": {
 		"defaultMessage": "Choose a name that doesn't look like a universe's ID.",
 		"description": "Shown by the field for a universe's name when it has the form of the long code that identifies a universe (32 letters and digits in groups split by hyphens); the name is made into the universe's web address, where that form would name another universe"
+	},
+	"form.universeNameLinkLike": {
+		"defaultMessage": "A universe's name can't look like a web or email address or hold angle brackets. Put a space after a period between letters.",
+		"description": "Shown by the field for a universe's name when it holds something a mail client could make into a link, such as a web or email address, or angle brackets (< and >); emails name the universe. A period between letters with no space after it, as in a web address, counts, so the second sentence says how to keep one"
 	},
 	"form.universeNameNoLetters": {
 		"defaultMessage": "A universe's name needs at least one letter or number.",
