@@ -458,7 +458,7 @@ describe('account deletion and data export', () =>
 
 		await setUniverseRole(handed, playerId, 'creator');
 		await setUniverseRole(handed, grace.id, 'builder');
-		await setUniverseDisabled(handed, preventDeletion);
+		await setUniverseDisabled(handed, preventDeletion, adminDb);
 
 		const listed = await browser.send<AccountDeletionPayload>('GET', PROFILE_DELETION_PATH);
 
@@ -476,7 +476,7 @@ describe('account deletion and data export', () =>
 
 		// With no other editor, it can't be handed on either, until it is enabled
 		await setUniverseRole(unhandable, playerId, 'creator');
-		await setUniverseDisabled(unhandable, preventDeletion);
+		await setUniverseDisabled(unhandable, preventDeletion, adminDb);
 
 		const alone = await deleteAccount(browser, {
 			password: PASSWORD,
@@ -487,7 +487,7 @@ describe('account deletion and data export', () =>
 		assert.strictEqual(alone.body.error.id, UNHANDABLE_UNIVERSE_DELETION.id);
 		assert.strictEqual(await findUniverseRole(handed, grace.id), 'builder');
 
-		await setUniverseDisabled(unhandable, null);
+		await setUniverseDisabled(unhandable, null, adminDb);
 		assert.strictEqual((await deleteAccount(browser, {
 			password: PASSWORD,
 			universes: [{ universeId: handed, newCreatorId: grace.id }, { universeId: unhandable, newCreatorId: null }]
@@ -561,7 +561,7 @@ describe('account deletion and data export', () =>
 		await setUniverseDisabled(universeId, {
 			reason: 'Spam',
 			preventDeletion: false
-		});
+		}, adminDb);
 		assert.strictEqual((await deleteAccount(browser, {
 			password: PASSWORD,
 			universes: [{ universeId, newCreatorId: null }]

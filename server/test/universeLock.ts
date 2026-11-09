@@ -28,14 +28,16 @@ export async function someoneWaitsForALock(): Promise<boolean>
  * @param universeId The universe's ID
  * @param send Sends the request
  * @param change Makes the change, in the transaction holding the lock
+ * @param transact Runs the transaction: inTransaction as the server's role, or inAdminTransaction for a
+ * change only server admins may make, such as disabling the universe
  * @return What the request answered
  */
-export async function changeWhileWaitingForUniverse<T>(universeId: string, send: () => Promise<T>, change: (transaction: Executor) => Promise<void>): Promise<T>
+export async function changeWhileWaitingForUniverse<T>(universeId: string, send: () => Promise<T>, change: (transaction: Executor) => Promise<void>, transact: (work: (transaction: Executor) => Promise<void>) => Promise<void> = inTransaction): Promise<T>
 {
 	let answered = false;
 	let answer: Promise<T> | undefined;
 
-	await inTransaction(async (transaction) =>
+	await transact(async (transaction) =>
 	{
 		await lockUniverse(universeId, transaction);
 

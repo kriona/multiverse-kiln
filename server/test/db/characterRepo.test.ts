@@ -1,6 +1,7 @@
 import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
+import { adminDb } from '../../src/db/adminClient.js';
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
@@ -342,10 +343,10 @@ describe('characterRepo', () =>
 			await setUniverseDisabled(otherUniverseId, {
 				reason: 'Spam',
 				preventDeletion: false
-			});
+			}, adminDb);
 			assert.deepStrictEqual(await listProfileCharacters(playerId, { stages: ['let_there_be_light'] }), []);
 			assert.strictEqual((await listProfileCharacters(playerId, {})).length, 3);
-			await setUniverseDisabled(otherUniverseId, null);
+			await setUniverseDisabled(otherUniverseId, null, adminDb);
 
 			assert.strictEqual(await setCharacterVisibility(playerId, zedId, false), true);
 			assert.deepStrictEqual((await listProfileCharacters(playerId, { onlyVisible: true })).map((character) => character.name), ['Brokk', 'Dain']);

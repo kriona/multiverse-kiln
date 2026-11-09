@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomUUID } from 'crypto';
 import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
-import { adminDb } from '../src/db/adminClient.js';
+import { adminDb, inAdminTransaction } from '../src/db/adminClient.js';
 import { countCharacters } from '../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../src/db/classRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
@@ -442,10 +442,10 @@ describe('Character routes', () =>
 				reason: 'Spam',
 				preventDeletion: false
 			}, transaction);
-		});
+		}, inAdminTransaction);
 
 		assert.strictEqual(disabled.status, 404);
-		await setUniverseDisabled(universeId, null);
+		await setUniverseDisabled(universeId, null, adminDb);
 
 		const ended = await changeWhileWaitingForUniverse(universeId, create, async (transaction) =>
 		{
