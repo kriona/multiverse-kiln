@@ -223,6 +223,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 			locale: profile.locale,
 			socials: profile.socials,
 			showCharacters: profile.showCharacters,
+			dismissedNotices: profile.dismissedNotices,
 			createdAt: profile.createdAt.toISOString(),
 			lastLoginAt: (profile.lastLoginAt?.toISOString() ?? null)
 		},

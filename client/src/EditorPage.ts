@@ -5,6 +5,7 @@ import { t } from './localization';
 import { AdminApi } from './network/adminApi';
 import { AuthApi } from './network/authApi';
 import { EditorApi } from './network/editorApi';
+import { ProfileApi } from './network/profileApi';
 import { joinEditorRoom, type EditorRoom, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
 import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
@@ -154,7 +155,8 @@ export class EditorPage
 			}
 		}, {
 			auth: new AuthApi(client),
-			admin: new AdminApi(client)
+			admin: new AdminApi(client),
+			profile: new ProfileApi(client)
 		});
 
 		window.addEventListener('popstate', (event) =>

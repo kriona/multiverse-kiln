@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { playerProfilePath, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, PROFILE_LOCALE_PATH, PROFILE_PATH, profileCharacterPath, type AccountDeletionPayload, type AccountExport, type OwnProfilePayload, type PlayerProfilePayload, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest } from '@multiverse-kiln/shared';
+import { playerProfilePath, PROFILE_DELETION_PATH, PROFILE_EXPORT_PATH, PROFILE_LOCALE_PATH, PROFILE_NOTICES_PATH, PROFILE_PATH, profileCharacterPath, profileNoticePath, type AccountDeletionPayload, type AccountExport, type DismissibleNotice, type OwnProfilePayload, type PlayerProfilePayload, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest } from '@multiverse-kiln/shared';
 
 import { EditorApiError, sendRequest } from './editorApi';
 
@@ -59,6 +59,34 @@ export class ProfileApi
 	async setCharacterVisibility(characterId: string, visibleOnProfile: boolean): Promise<void>
 	{
 		await sendRequest(this.client, 'PUT', profileCharacterPath(characterId), { visibleOnProfile });
+	}
+
+	/**
+	 * Dismisses a notice for the logged-in player, so it doesn't show again
+	 *
+	 * @param notice The notice
+	 */
+	async dismissNotice(notice: DismissibleNotice): Promise<void>
+	{
+		await sendRequest(this.client, 'PUT', profileNoticePath(notice));
+	}
+
+	/**
+	 * Shows a notice the logged-in player dismissed again
+	 *
+	 * @param notice The notice
+	 */
+	async forgetDismissedNotice(notice: DismissibleNotice): Promise<void>
+	{
+		await sendRequest(this.client, 'DELETE', profileNoticePath(notice));
+	}
+
+	/**
+	 * Shows every notice the logged-in player dismissed again
+	 */
+	async forgetDismissedNotices(): Promise<void>
+	{
+		await sendRequest(this.client, 'DELETE', PROFILE_NOTICES_PATH);
 	}
 
 	/**

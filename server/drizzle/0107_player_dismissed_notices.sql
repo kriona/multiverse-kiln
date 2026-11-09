@@ -1,0 +1,1 @@
+ALTER TABLE "players" ADD COLUMN "dismissed_notices" text[] DEFAULT '{}' NOT NULL;

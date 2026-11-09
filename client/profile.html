@@ -143,6 +143,17 @@
 						<p id="profile-character-error" class="form-error" role="alert" hidden></p>
 					</section>
 
+					<section class="panel profile-panel" aria-labelledby="profile-notices-heading">
+						<h2 id="profile-notices-heading" data-message="profile.notices" data-translation-context="Heading of the part of the player's own profile page about the notices they dismissed (such as the editor's notice that a universe's draft is open), which they can show again">Dismissed notices</h2>
+						<p class="hint" data-message="profile.noticesHint" data-translation-context="Under the Dismissed notices heading on the player's own profile page, above the list of the notices they dismissed">Notices you dismiss with their X, such as the editor's notice that a draft is open, don't show again in any universe or browser until you show them again here.</p>
+						<ul id="profile-notice-list" class="profile-notice-list"></ul>
+						<p id="profile-notice-none" class="hint" data-message="profile.noNotices" data-translation-context="Shown on the player's own profile page instead of the list of notices they dismissed, when they haven't dismissed any" hidden>You haven't dismissed any notices.</p>
+						<div class="profile-data-buttons">
+							<button id="profile-show-notices" type="button" class="secondary" data-shortcut="Alt+I" data-message="profile.showAllNotices" data-translation-context="Button on the player's own profile page, below the list of notices they dismissed, that shows every one of them again"><!-- icon ph:arrow-counter-clockwise -->Show all notices again</button>
+						</div>
+						<p id="profile-notices-error" class="form-error" role="alert" hidden></p>
+					</section>
+
 					<section class="panel profile-panel" aria-labelledby="profile-data-heading">
 						<h2 id="profile-data-heading" data-message="profile.yourData" data-translation-context="Heading of the part of the player's own profile page where they download their data or delete their account">Your data</h2>
 						<p class="hint" data-message="profile.yourDataHint" data-translation-context="Under the Your data heading on the player's own profile page, above the buttons that download their data and delete their account">Download everything kept about you as a file, or delete your account and everything in it.</p>

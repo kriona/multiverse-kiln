@@ -334,6 +334,7 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.name, 'Kilnhaven');
 			assert.strictEqual(universe.stage, 'in_the_beginning');
 			assert.strictEqual(universe.role, 'creator');
+			assert.deepStrictEqual(universe.dismissedNotices, []);
 			assert.deepStrictEqual(areas.areas.map((area) => area.name), ['Lobby', 'Starting Area']);
 			assert.strictEqual(areas.lobbyAreaId, universe.lobbyAreaId);
 			assert.strictEqual(areas.startingAreaId, universe.startingAreaId);

@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type DismissibleNotice, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
@@ -9,7 +9,9 @@ import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
 import { StartDraftDialog } from './StartDraftDialog';
 import { editPageUrl, HOME_PAGE_URL, universePageUrl } from '../../pages';
-import { readPlayerValue, rememberPlayerValue } from '../../rememberedValues';
+import type { ProfileApi } from '../../network/profileApi';
+import { DISMISSIBLE_NOTICE_TEXT } from '../dismissibleNotices';
+import { showToast } from '../toast';
 import { AuditTab } from './AuditTab';
 import { EditorsSettingsSection } from './EditorsSettingsSection';
 import { EditorsTab } from './EditorsTab';
@@ -123,26 +125,6 @@ export interface EditorScreenActions
 }
 
 /**
- * The notices above the tabs about the version open, which the player can dismiss: the draft is open,
- * or the live version of a universe with a draft is
- */
-const VERSION_NOTICES = ['draft', 'liveWithDraft'] as const;
-
-type VersionNotice = typeof VERSION_NOTICES[number];
-
-/**
- * The key a dismissed notice about the version open is remembered under, for the player
- *
- * @param universeId The universe's ID
- * @param notice The notice
- * @return The key
- */
-function versionNoticeKey(universeId: string, notice: VersionNotice): string
-{
-	return(`editor.versionNoticeDismissed.${universeId}.${notice}`);
-}
-
-/**
  * A tab's name as its button shows it, without the words screen readers hear for its unsaved changes
  *
  * @param name The tab
@@ -226,7 +208,14 @@ export class EditorScreen
 	/**
 	 * Which notice about the version open shows above the tabs, if any, for its X to dismiss
 	 */
-	private versionNoticeKind: VersionNotice | undefined;
+	private versionNoticeKind: DismissibleNotice | undefined;
+
+	/**
+	 * The notices the player dismissed: those the universe said when it last loaded, and those dismissed
+	 * here since, which a load that crossed with saving the dismissal may not include
+	 */
+	private readonly dismissedNotices = new Set<DismissibleNotice>();
+	private readonly profileApi: ProfileApi;
 	private readonly startDraftButton = getElement('editor-start-draft', HTMLButtonElement);
 	private readonly tabList = getElement('editor-tabs', HTMLElement);
 	private readonly tabStrip = new ScrollingTabs(this.tabList, getElement('editor-tabs-back', HTMLButtonElement), getElement('editor-tabs-forward', HTMLButtonElement));
@@ -310,10 +299,12 @@ export class EditorScreen
 	/**
 	 * @param api The editor's API
 	 * @param actions What the screen's controls do
-	 * @param accountApis The auth routes and the admin routes, which deleting the universe uses
+	 * @param accountApis The auth routes and the admin routes, which deleting the universe uses, and the
+	 * profile routes, which remember the notices the player dismisses
 	 */
-	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions, accountApis: { auth: AuthApi; admin: AdminApi })
+	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions, accountApis: { auth: AuthApi; admin: AdminApi; profile: ProfileApi })
 	{
+		this.profileApi = accountApis.profile;
 		this.universeTab = new UniverseTab((update) =>
 		{
 			this.updateUniverse(update);
@@ -1102,14 +1093,15 @@ export class EditorScreen
 
 	/**
 	 * Shows which version of the universe is open, with the choice of the other while it has a draft, and
-	 * says what saving it does: the draft reaches no player until it is applied, and changes saved to the
-	 * live version while there is a draft are replaced when it is applied
+	 * says what saving it does, unless the player dismissed the notice saying it: the draft reaches no
+	 * player until it is applied, and changes saved to the live version while there is a draft are
+	 * replaced when it is applied
 	 *
 	 * @param universe The universe
 	 */
 	private showVersion(universe: EditableUniverse): void
 	{
-		const kind = ((universe.version === 'draft') ? 'draft' : (universe.hasDraft ? 'liveWithDraft' : undefined));
+		const kind = ((universe.version === 'draft') ? 'editorDraft' : (universe.hasDraft ? 'editorLiveWithDraft' : undefined));
 
 		this.versionField.hidden = !universe.hasDraft;
 		this.versionChoice.value = universe.version;
@@ -1118,53 +1110,54 @@ export class EditorScreen
 		// The tabs and the save bar are drawn in the draft's purple while it is open (edit.scss)
 		this.screen.classList.toggle('editing-draft', (universe.version === 'draft'));
 
-		// The draft is gone, so a new one shows both notices again
-		if (!universe.hasDraft)
+		for (const notice of universe.dismissedNotices)
 		{
-			for (const each of VERSION_NOTICES)
-			{
-				rememberPlayerValue(versionNoticeKey(universe.id, each), null);
-			}
+			this.dismissedNotices.add(notice);
 		}
 
-		switch (kind)
-		{
-			case 'draft':
-				this.versionNoticeText.textContent = t({
-					id: 'editor.version.draftNotice',
-					defaultMessage: 'You are editing the draft version of this universe. Players will not see changes until they are applied.',
-					description: 'Shown above the editor\'s tabs while the universe\'s draft (a copy players don\'t see) is open, until the player dismisses it'
-				});
-				break;
-
-			case 'liveWithDraft':
-				this.versionNoticeText.textContent = t({
-					id: 'editor.version.liveWithDraftNotice',
-					defaultMessage: 'You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.',
-					description: 'Shown above the editor\'s tabs while the live version of a universe with a draft is open, until the player dismisses it'
-				});
-				break;
-
-			default:
-				this.versionNoticeText.textContent = '';
-		}
-
-		this.versionNotice.hidden = ((kind === undefined) || (readPlayerValue(versionNoticeKey(universe.id, kind)) !== null));
+		this.versionNoticeText.textContent = ((kind === undefined) ? '' : t(DISMISSIBLE_NOTICE_TEXT[kind]));
+		this.versionNotice.hidden = ((kind === undefined) || this.dismissedNotices.has(kind));
 	}
 
 	/**
-	 * Hides the notice about the version open, for this universe until it no longer has a draft, and
-	 * moves focus to the tab showing, since the notice's X goes with it
+	 * Hides the notice about the version open, in every universe until the player shows dismissed notices
+	 * again from their profile, and moves focus to the tab showing, since the notice's X goes with it
 	 */
 	private dismissVersionNotice(): void
 	{
-		if (this.universe && this.versionNoticeKind)
-		{
-			rememberPlayerValue(versionNoticeKey(this.universe.id, this.versionNoticeKind), 'dismissed');
-		}
+		const notice = this.versionNoticeKind;
 
 		this.versionNotice.hidden = true;
 		this.tabList.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
+
+		if ((notice !== undefined) && !this.dismissedNotices.has(notice))
+		{
+			this.dismissedNotices.add(notice);
+			void this.saveDismissedNotice(notice);
+		}
+	}
+
+	/**
+	 * Has the player's account remember a notice they dismissed, saying so when it couldn't
+	 *
+	 * @param notice The notice
+	 */
+	private async saveDismissedNotice(notice: DismissibleNotice): Promise<void>
+	{
+		try
+		{
+			await this.profileApi.dismissNotice(notice);
+		}
+		catch (error)
+		{
+			showToast(describeEditorError(error, {
+				id: 'editor.version.dismissFailed',
+				defaultMessage: 'Could not remember that you dismissed the notice, so it will show again the next time you open the editor.',
+				description: 'Shown when the player dismissed the notice above the editor\'s tabs about the version of the universe open (its draft or live version), but saving that they dismissed it failed'
+			}), {
+				kind: 'warning'
+			});
+		}
 	}
 
 	/**

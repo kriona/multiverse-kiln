@@ -9,7 +9,7 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
+import { findDismissedNotices, findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
@@ -303,8 +303,8 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 }
 
 /**
- * GET /:universeId: the universe's settings, the player's role in it, whether they have 2FA on, and how
- * many translations it has in each language
+ * GET /:universeId: the universe's settings, the player's role in it, whether they have 2FA on, how
+ * many translations it has in each language, and the notices the player dismissed
  *
  * @param request The request
  * @param response The response
@@ -312,6 +312,10 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 async function getUniverse(request: Request, response: Response): Promise<void>
 {
 	const { playerId, universe, version, role, languages, serverAdmin, twoFactor } = universeContextOf(request);
+	const [translationCounts, dismissedNotices] = await Promise.all([
+		countTranslations(version),
+		findDismissedNotices(playerId)
+	]);
 	const payload: EditableUniverse = {
 		...universe,
 		role,
@@ -319,7 +323,8 @@ async function getUniverse(request: Request, response: Response): Promise<void>
 		playerId,
 		serverAdmin,
 		twoFactor,
-		translationCounts: Object.fromEntries(await countTranslations(version))
+		translationCounts: Object.fromEntries(translationCounts),
+		dismissedNotices
 	};
 
 	response.json(payload);

@@ -2,7 +2,7 @@
  * Player accounts: the only module that reads or writes the players table
  */
 import { and, count, eq, exists, isNotNull, not, or, sql, type SQL } from 'drizzle-orm';
-import type { LoginProvider, PlayerMatch, ProfileLanguage, SocialSite, SocialUsernames } from '@multiverse-kiln/shared';
+import { DISMISSIBLE_NOTICES, type DismissibleNotice, type LoginProvider, type PlayerMatch, type ProfileLanguage, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { authenticators, players, providerLogins, serverAdmins } from './schema.js';
@@ -104,12 +104,17 @@ export interface OwnProfileDetails extends ProfileDetails
 	 * When the player last logged in, or null when they never have
 	 */
 	lastLoginAt: Date | null;
+
+	/**
+	 * The notices the player dismissed, which don't show again until they show them again
+	 */
+	dismissedNotices: DismissibleNotice[];
 }
 
 /**
  * What a player can change on their profile
  */
-export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt' | 'lastLoginAt'>;
+export type ProfileChanges = Omit<OwnProfileDetails, 'id' | 'email' | 'hasPassword' | 'createdAt' | 'lastLoginAt' | 'dismissedNotices'>;
 
 /**
  * Thrown when a new account would take a username or email address another account has, ignoring capitals
@@ -511,13 +516,103 @@ export async function findOwnProfile(playerId: string, executor: Executor = db):
 			email: players.email,
 			hasPassword: sql<boolean>`${players.passwordHash} IS NOT NULL`,
 			createdAt: players.createdAt,
-			lastLoginAt: players.lastLoginAt
+			lastLoginAt: players.lastLoginAt,
+			dismissedNotices: players.dismissedNotices
 		})
 		.from(players)
 		.where(eq(players.id, playerId))
 		.limit(1);
 
-	return((row ? toProfile(row) : undefined));
+	if (!row)
+	{
+		return(undefined);
+	}
+
+	return({
+		...toProfile(row),
+		dismissedNotices: knownNotices(row.dismissedNotices)
+	});
+}
+
+/**
+ * The notices of a list that the code still has, leaving out any it no longer does
+ *
+ * @param notices The notices, as stored
+ * @return The ones the code has, in the same order
+ */
+function knownNotices(notices: readonly string[]): DismissibleNotice[]
+{
+	return(notices.filter((notice): notice is DismissibleNotice => (DISMISSIBLE_NOTICES as readonly string[]).includes(notice)));
+}
+
+/**
+ * The notices a player dismissed
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ * @return The notices, or none when the account doesn't exist
+ */
+export async function findDismissedNotices(playerId: string, executor: Executor = db): Promise<DismissibleNotice[]>
+{
+	const [row] = await executor
+		.select({
+			dismissedNotices: players.dismissedNotices
+		})
+		.from(players)
+		.where(eq(players.id, playerId))
+		.limit(1);
+
+	return(knownNotices((row?.dismissedNotices ?? [])));
+}
+
+/**
+ * Dismisses a notice for a player, so it doesn't show again. A notice already dismissed stays as it is
+ *
+ * @param playerId The account's ID
+ * @param notice The notice
+ * @param executor The database, or a transaction
+ */
+export async function dismissNotice(playerId: string, notice: DismissibleNotice, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(players)
+		.set({
+			dismissedNotices: sql`array_append(${players.dismissedNotices}, ${notice}::text)`
+		})
+		.where(and(eq(players.id, playerId), not(sql`${notice}::text = ANY(${players.dismissedNotices})`)));
+}
+
+/**
+ * Shows a notice a player dismissed again. A notice they didn't dismiss stays as it is
+ *
+ * @param playerId The account's ID
+ * @param notice The notice
+ * @param executor The database, or a transaction
+ */
+export async function forgetDismissedNotice(playerId: string, notice: DismissibleNotice, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(players)
+		.set({
+			dismissedNotices: sql`array_remove(${players.dismissedNotices}, ${notice}::text)`
+		})
+		.where(eq(players.id, playerId));
+}
+
+/**
+ * Shows every notice a player dismissed again
+ *
+ * @param playerId The account's ID
+ * @param executor The database, or a transaction
+ */
+export async function forgetDismissedNotices(playerId: string, executor: Executor = db): Promise<void>
+{
+	await executor
+		.update(players)
+		.set({
+			dismissedNotices: sql`'{}'`
+		})
+		.where(eq(players.id, playerId));
 }
 
 /**

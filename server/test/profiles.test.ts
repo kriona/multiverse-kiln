@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_SESSION_PATH, MAX_PROFILE_LANGUAGES, playerProfilePath, PROFILE_LANGUAGES, PROFILE_LOCALE_PATH, PROFILE_PATH, profileCharacterPath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileErrorPayload, type ProfileUpdateRequest, type SessionPayload } from '@multiverse-kiln/shared';
+import { AUTH_SESSION_PATH, MAX_PROFILE_LANGUAGES, playerProfilePath, PROFILE_LANGUAGES, PROFILE_LOCALE_PATH, PROFILE_NOTICES_PATH, PROFILE_PATH, profileCharacterPath, profileNoticePath, type OwnProfilePayload, type PlayerProfilePayload, type ProfileErrorPayload, type ProfileUpdateRequest, type SessionPayload } from '@multiverse-kiln/shared';
 
 import { pool } from '../src/db/client.js';
 import { scheduleCharacterDeletion } from '../src/db/characterRepo.js';
@@ -105,8 +105,35 @@ describe('profile routes', () =>
 			twoFactorUniverses: [],
 			locale: null,
 			showCharacters: true,
+			dismissedNotices: [],
 			characters: []
 		});
+	});
+
+	it('remembers the notices the player dismisses, each once, until they show one or all of them again', async () =>
+	{
+		const { browser } = await logIn('Ada');
+		const { browser: other } = await logIn('Bea');
+
+		assert.strictEqual((await new Browser().send('PUT', profileNoticePath('editorDraft'))).status, 401);
+		assert.strictEqual((await new Browser().send('DELETE', PROFILE_NOTICES_PATH)).status, 401);
+
+		assert.strictEqual((await browser.send('PUT', profileNoticePath('editorDraft'))).status, 204);
+		assert.strictEqual((await browser.send('PUT', profileNoticePath('editorLiveWithDraft'))).status, 204);
+		assert.strictEqual((await browser.send('PUT', profileNoticePath('editorDraft'))).status, 204);
+		assert.strictEqual((await browser.send('PUT', `${PROFILE_NOTICES_PATH}/noSuchNotice`)).status, 404);
+		assert.deepStrictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.dismissedNotices, ['editorDraft', 'editorLiveWithDraft']);
+		assert.deepStrictEqual((await other.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.dismissedNotices, []);
+
+		assert.strictEqual((await new Browser().send('DELETE', profileNoticePath('editorDraft'))).status, 401);
+		assert.strictEqual((await browser.send('DELETE', profileNoticePath('editorDraft'))).status, 204);
+		assert.strictEqual((await browser.send('DELETE', profileNoticePath('editorDraft'))).status, 204);
+		assert.strictEqual((await browser.send('DELETE', `${PROFILE_NOTICES_PATH}/noSuchNotice`)).status, 404);
+		assert.deepStrictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.dismissedNotices, ['editorLiveWithDraft']);
+
+		assert.strictEqual((await browser.send('PUT', profileNoticePath('editorDraft'))).status, 204);
+		assert.strictEqual((await browser.send('DELETE', PROFILE_NOTICES_PATH)).status, 204);
+		assert.deepStrictEqual((await browser.send<OwnProfilePayload>('GET', PROFILE_PATH)).body.dismissedNotices, []);
 	});
 
 	it('saves the profile, which other players can then read by username', async () =>
@@ -141,6 +168,7 @@ describe('profile routes', () =>
 			twoFactor: undefined,
 			serverAdmin: undefined,
 			twoFactorUniverses: undefined,
+			dismissedNotices: [],
 			characters: undefined
 		});
 		assert.deepStrictEqual((await (await logIn('Grace')).browser.send<PlayerProfilePayload>('GET', playerProfilePath('ada_l'))).body, {

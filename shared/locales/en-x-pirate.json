@@ -3995,6 +3995,10 @@
 		"message": "Cast it overboard",
 		"source": "Dismiss"
 	},
+	"editor.version.dismissFailed": {
+		"message": "Couldn't remember ye cast that notice overboard, so it'll wash up again next time ye open the editor.",
+		"source": "Could not remember that you dismissed the notice, so it will show again the next time you open the editor."
+	},
 	"editor.version.draft": {
 		"message": "Draft",
 		"source": "Draft"
@@ -4790,6 +4794,10 @@
 	"error.profile.noSuchCharacter": {
 		"message": "Ye have no such hand.",
 		"source": "You have no such character."
+	},
+	"error.profile.noSuchNotice": {
+		"message": "There be no such notice.",
+		"source": "There is no such notice."
 	},
 	"error.profile.socialUsername": {
 		"message": "That ain't a username on {site}. Enter the username alone, not a link.",
@@ -7203,6 +7211,10 @@
 		"message": "None",
 		"source": "None"
 	},
+	"profile.noNotices": {
+		"message": "Ye haven't cast any notices overboard.",
+		"source": "You haven't dismissed any notices."
+	},
 	"profile.noPassword": {
 		"message": "None: ye come aboard with Google or Discord. To add a password, go ashore an' use \"Forgot yer password?\" on the boardin' page.",
 		"source": "None: you log in with Google or Discord. To add a password, log out and use \"Forgot your password?\" on the login page."
@@ -7214,6 +7226,22 @@
 	"profile.notFound": {
 		"message": "No sailor goes by that username. Mayhap they changed it.",
 		"source": "No player has that username. They may have changed it."
+	},
+	"profile.noticeShown": {
+		"message": "That notice be hauled back aboard.",
+		"source": "The notice will show again."
+	},
+	"profile.notices": {
+		"message": "Notices cast overboard",
+		"source": "Dismissed notices"
+	},
+	"profile.noticesHint": {
+		"message": "Notices ye cast overboard with their X, like the editor's notice that a draft be open, won't show again in any universe or browser till ye haul them back aboard here.",
+		"source": "Notices you dismiss with their X, such as the editor's notice that a draft is open, don't show again in any universe or browser until you show them again here."
+	},
+	"profile.noticesShown": {
+		"message": "The notices ye cast overboard be hauled back aboard.",
+		"source": "The notices you dismissed will show again."
 	},
 	"profile.password": {
 		"message": "Password",
@@ -7283,6 +7311,10 @@
 		"message": "Stow the password",
 		"source": "Save password"
 	},
+	"profile.showAllNotices": {
+		"message": "Haul all notices back aboard",
+		"source": "Show all notices again"
+	},
 	"profile.showCharacters": {
 		"message": "Show me hands",
 		"source": "Show my characters"
@@ -7290,6 +7322,14 @@
 	"profile.showCharactersHint": {
 		"message": "Unchecked, yer profile shows only the hands ye mark below. Other sailors in yer crew can always find yer profile from yer hand.",
 		"source": "Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character."
+	},
+	"profile.showNotice": {
+		"message": "Haul it back",
+		"source": "Show again"
+	},
+	"profile.showNoticesFailed": {
+		"message": "Couldn't haul yer notices back aboard.",
+		"source": "Could not show your dismissed notices again."
 	},
 	"profile.socials": {
 		"message": "Social ports",

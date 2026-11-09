@@ -3993,7 +3993,11 @@
 	},
 	"editor.version.dismiss": {
 		"defaultMessage": "Dismiss",
-		"description": "Name of the X button at the right of the notice above the editor's tabs saying the universe's draft (a copy players don't see until it is applied) is open, or that the live version has one: hides the notice for this universe until it no longer has a draft"
+		"description": "Name of the X button at the right of the notice above the editor's tabs saying the universe's draft (a copy players don't see until it is applied) is open, or that the live version has one: hides the notice in every universe until the player shows dismissed notices again from their profile"
+	},
+	"editor.version.dismissFailed": {
+		"defaultMessage": "Could not remember that you dismissed the notice, so it will show again the next time you open the editor.",
+		"description": "Shown when the player dismissed the notice above the editor's tabs about the version of the universe open (its draft or live version), but saving that they dismissed it failed"
 	},
 	"editor.version.draft": {
 		"defaultMessage": "Draft",
@@ -4001,7 +4005,7 @@
 	},
 	"editor.version.draftNotice": {
 		"defaultMessage": "You are editing the draft version of this universe. Players will not see changes until they are applied.",
-		"description": "Shown above the editor's tabs while the universe's draft (a copy players don't see) is open, until the player dismisses it"
+		"description": "Shown above the editor's tabs while the universe's draft (a copy players don't see) is open, until the player dismisses it; also listed on the player's own profile page among the notices they dismissed, which they can show again"
 	},
 	"editor.version.live": {
 		"defaultMessage": "Live version",
@@ -4009,7 +4013,7 @@
 	},
 	"editor.version.liveWithDraftNotice": {
 		"defaultMessage": "You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.",
-		"description": "Shown above the editor's tabs while the live version of a universe with a draft is open, until the player dismisses it"
+		"description": "Shown above the editor's tabs while the live version of a universe with a draft is open, until the player dismisses it; also listed on the player's own profile page among the notices they dismissed, which they can show again"
 	},
 	"editor.view": {
 		"defaultMessage": "View Universe",
@@ -4790,6 +4794,10 @@
 	"error.profile.noSuchCharacter": {
 		"defaultMessage": "You have no such character.",
 		"description": "Why showing or hiding a character on the player's profile was refused: the character isn't theirs, or was deleted"
+	},
+	"error.profile.noSuchNotice": {
+		"defaultMessage": "There is no such notice.",
+		"description": "Why dismissing a notice (such as the editor's notice that the draft is open), or showing one again, was refused: the page named a notice the server doesn't know, such as from an out-of-date page"
 	},
 	"error.profile.socialUsername": {
 		"defaultMessage": "That isn't a username on {site}. Enter the username alone, not a link.",
@@ -7203,6 +7211,10 @@
 		"defaultMessage": "None",
 		"description": "Shown on the player's own profile page in place of their email address, or of their linked logins, when they have none"
 	},
+	"profile.noNotices": {
+		"defaultMessage": "You haven't dismissed any notices.",
+		"description": "Shown on the player's own profile page instead of the list of notices they dismissed, when they haven't dismissed any"
+	},
 	"profile.noPassword": {
 		"defaultMessage": "None: you log in with Google or Discord. To add a password, log out and use \"Forgot your password?\" on the login page.",
 		"description": "Shown on the player's own profile page in place of their password when the account has none, since it logs in only with Google or Discord"
@@ -7214,6 +7226,22 @@
 	"profile.notFound": {
 		"defaultMessage": "No player has that username. They may have changed it.",
 		"description": "Shown on the whole of a player's profile page when no player has the username its address names"
+	},
+	"profile.noticeShown": {
+		"defaultMessage": "The notice will show again.",
+		"description": "Shown once the player has chosen to show one notice they dismissed again, from the list on their own profile page"
+	},
+	"profile.notices": {
+		"defaultMessage": "Dismissed notices",
+		"description": "Heading of the part of the player's own profile page about the notices they dismissed (such as the editor's notice that a universe's draft is open), which they can show again"
+	},
+	"profile.noticesHint": {
+		"defaultMessage": "Notices you dismiss with their X, such as the editor's notice that a draft is open, don't show again in any universe or browser until you show them again here.",
+		"description": "Under the Dismissed notices heading on the player's own profile page, above the list of the notices they dismissed"
+	},
+	"profile.noticesShown": {
+		"defaultMessage": "The notices you dismissed will show again.",
+		"description": "Shown once the player has chosen to show every notice they dismissed again, from their own profile page"
 	},
 	"profile.password": {
 		"defaultMessage": "Password",
@@ -7283,6 +7311,10 @@
 		"defaultMessage": "Save password",
 		"description": "Button in the dialog that changes the player's password: saves the new one"
 	},
+	"profile.showAllNotices": {
+		"defaultMessage": "Show all notices again",
+		"description": "Button on the player's own profile page, below the list of notices they dismissed, that shows every one of them again"
+	},
 	"profile.showCharacters": {
 		"defaultMessage": "Show my characters",
 		"description": "Checkbox on the player's own profile page: whether other players see all of the player's characters on their profile"
@@ -7290,6 +7322,14 @@
 	"profile.showCharactersHint": {
 		"defaultMessage": "Unchecked, your profile shows only the characters you mark below. Other players in your group can always find your profile from your character.",
 		"description": "Under the Show my characters checkbox on the player's own profile page, explaining what unchecking it does"
+	},
+	"profile.showNotice": {
+		"defaultMessage": "Show again",
+		"description": "Button beside one of the notices the player dismissed, listed on their own profile page, that shows that notice again"
+	},
+	"profile.showNoticesFailed": {
+		"defaultMessage": "Could not show your dismissed notices again.",
+		"description": "Shown on the player's own profile page when showing the notices they dismissed again, one or all of them, failed"
 	},
 	"profile.socials": {
 		"defaultMessage": "Social sites",

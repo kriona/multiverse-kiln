@@ -12,6 +12,7 @@ import type { AreaBounds } from './areaCells.js';
 import type { AreaChunk } from './messages.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
+import type { DismissibleNotice } from './profiles.js';
 import type { Pf1eCastingStyle, Pf1eMagicTradition } from './rulesets/pf1e/classes.js';
 import type { Pf1eSettings } from './rulesets/pf1e/settings.js';
 import type { Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
@@ -558,12 +559,18 @@ export interface EditableUniverse extends UniverseSettings
 	 * How many translations the universe has in each language, by tag, leaving out languages with none
 	 */
 	translationCounts: Record<string, number>;
+
+	/**
+	 * The notices the player dismissed, such as the one saying the draft is open, which the editor
+	 * doesn't show
+	 */
+	dismissedNotices: DismissibleNotice[];
 }
 
 /**
  * A universe as the server reads it, before it is told whose editor it is for
  */
-export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'twoFactor' | 'translationCounts'>;
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'twoFactor' | 'translationCounts' | 'dismissedNotices'>;
 
 /**
  * Someone with a role in a universe, as the Editors tab lists them

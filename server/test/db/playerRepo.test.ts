@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 import { pool } from '../../src/db/client.js';
-import { AccountTakenError, createPlayer, findEmailRecipient, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, findTwoFactorCandidate, replaceProfileLocale, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
+import { AccountTakenError, createPlayer, dismissNotice, findDismissedNotices, findEmailRecipient, findLocalLogin, findOwnProfile, findPasswordHash, findPlayer, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, findProfileByUsername, findTwoFactorCandidate, forgetDismissedNotice, forgetDismissedNotices, replaceProfileLocale, saveEmail, savePasswordHash, saveProfile, type NewPlayer, type ProfileChanges } from '../../src/db/playerRepo.js';
 import { saveAuthenticatorSetup } from '../../src/db/twoFactorRepo.js';
 import { turnOnTwoFactor } from '../twoFactorAccounts.js';
 
@@ -242,7 +242,8 @@ describe('playerRepo', () =>
 				email: 'ada@example.com',
 				hasPassword: true,
 				createdAt: own.createdAt,
-				lastLoginAt: null
+				lastLoginAt: null,
+				dismissedNotices: []
 			});
 			assert.deepStrictEqual(await findProfileByUsername('ADA_L'), {
 				id: ada.id,
@@ -287,6 +288,45 @@ describe('playerRepo', () =>
 			assert.strictEqual((await findOwnProfile(ada.id))?.locale, 'de');
 			assert.strictEqual(await replaceProfileLocale(grace.id, 'de'), false);
 			assert.strictEqual((await findOwnProfile(grace.id))?.locale, null);
+		});
+	});
+
+	describe('dismissed notices', () =>
+	{
+		it('keeps each notice once, in the order dismissed, until they are forgotten', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+			const grace = await createPlayer(localAccount('Grace', 'grace@example.com'));
+
+			assert.deepStrictEqual(await findDismissedNotices(ada.id), []);
+
+			await dismissNotice(ada.id, 'editorLiveWithDraft');
+			await dismissNotice(ada.id, 'editorDraft');
+			await dismissNotice(ada.id, 'editorLiveWithDraft');
+
+			assert.deepStrictEqual(await findDismissedNotices(ada.id), ['editorLiveWithDraft', 'editorDraft']);
+			assert.deepStrictEqual((await findOwnProfile(ada.id))?.dismissedNotices, ['editorLiveWithDraft', 'editorDraft']);
+			assert.deepStrictEqual(await findDismissedNotices(grace.id), []);
+
+			await forgetDismissedNotice(ada.id, 'editorLiveWithDraft');
+			await forgetDismissedNotice(grace.id, 'editorDraft');
+
+			assert.deepStrictEqual(await findDismissedNotices(ada.id), ['editorDraft']);
+
+			await dismissNotice(ada.id, 'editorLiveWithDraft');
+			await forgetDismissedNotices(ada.id);
+
+			assert.deepStrictEqual(await findDismissedNotices(ada.id), []);
+		});
+
+		it('leaves out notices the code no longer has', async () =>
+		{
+			const ada = await createPlayer(localAccount('Ada', 'ada@example.com'));
+
+			await pool.query('UPDATE players SET dismissed_notices = $1 WHERE id = $2', [['retiredNotice', 'editorDraft'], ada.id]);
+
+			assert.deepStrictEqual(await findDismissedNotices(ada.id), ['editorDraft']);
+			assert.deepStrictEqual((await findOwnProfile(ada.id))?.dismissedNotices, ['editorDraft']);
 		});
 	});
 });
