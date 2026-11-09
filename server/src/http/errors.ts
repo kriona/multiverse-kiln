@@ -105,6 +105,22 @@ export function sendInvalidRequest(response: Response, error: z.ZodError): void
 }
 
 /**
+ * Where a request went, for logging its failure: the route's pattern, such as /invites/:token, rather
+ * than the URL it was sent to, so no token from the path and nothing typed into the query string, such
+ * as a search, reaches the logs. An error before any route matched gives only where its router is
+ * mounted
+ *
+ * @param request The request
+ * @return The route
+ */
+export function requestRoute(request: Request): string
+{
+	const pattern = (request.route as { path?: unknown } | undefined)?.path;
+
+	return((`${request.baseUrl}${((typeof pattern === 'string') ? pattern : '')}` || '/'));
+}
+
+/**
  * Answers errors no router's own handler answered, such as a path whose percent-encoding can't be
  * decoded: 4xx errors as unreadable, anything else as 500. Registered after every route, so Express's
  * default handler, which puts the error's stack in its page unless NODE_ENV is production, never answers
@@ -130,6 +146,6 @@ export function handleUnansweredError(error: unknown, request: Request, response
 		return;
 	}
 
-	console.error('Request %s %s failed:', request.method, request.originalUrl, error);
+	console.error('Request %s %s failed:', request.method, requestRoute(request), error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }

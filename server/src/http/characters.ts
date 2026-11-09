@@ -30,7 +30,7 @@ import { characterChanges } from '../players/characterChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
 import { displayText } from '../rooms/payloads.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
-import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { requestLanguages } from './requestLanguages.js';
 import { UniverseTextTranslator } from './universeTextTranslator.js';
 
@@ -946,6 +946,6 @@ function handleCharacterError(error: unknown, request: Request, response: Respon
 		return;
 	}
 
-	console.error('Character request %s %s failed:', request.method, request.originalUrl, error);
+	console.error('Character request %s %s failed:', request.method, requestRoute(request), error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }

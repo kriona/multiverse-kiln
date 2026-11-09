@@ -39,7 +39,7 @@ import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
 import { addEditorListRoutes } from './editorEditors.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
-import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { addUniverseDeletionRoutes } from './universeDeletion.js';
 import { addUniverseExportRoutes } from './universeExport.js';
 import { addUniverseImportRoutes } from './universeImport.js';
@@ -778,6 +778,6 @@ function handleEditorError(error: unknown, request: Request, response: Response,
 		return;
 	}
 
-	console.error('Editor request %s %s failed:', request.method, request.originalUrl, error);
+	console.error('Editor request %s %s failed:', request.method, requestRoute(request), error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }

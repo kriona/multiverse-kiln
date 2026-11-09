@@ -40,7 +40,7 @@ import { accountPasswordLimits, authMessages, checkDisplayName, checkUsername, c
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
-import { errorMessages, sendInvalidRequest } from './errors.js';
+import { errorMessages, requestRoute, sendInvalidRequest } from './errors.js';
 import { addProviderRoutes } from './providerAuth.js';
 import { addTwoFactorRoutes, checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, startLogin, waitForSecondFactor, type SecondFactorOutcome } from './twoFactorAuth.js';
 
@@ -1300,7 +1300,7 @@ function handleAuthError(error: unknown, request: Request, response: Response, n
 		return;
 	}
 
-	console.error('Auth request %s %s failed:', request.method, request.originalUrl, error);
+	console.error('Auth request %s %s failed:', request.method, requestRoute(request), error);
 	sendRefusal(response, {
 		status: 500,
 		message: errorMessages.somethingWentWrong
