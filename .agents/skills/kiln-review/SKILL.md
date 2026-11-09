@@ -1,12 +1,12 @@
 ---
 name: kiln-review
-description: "Reviews the branch's changes (or the whole repository with full) for bugs, security, performance and rules, verifies each finding, and writes them to scratchpad/"
+description: "Reviews the branch's changes (or the whole repository with full) for bugs, security, performance and rules, verifies each finding, and writes them to scratchpad/review/<branch>/"
 argument-hint: "[full] [bugs] [security] [performance] [rules]"
 disable-model-invocation: true
 ---
 # Kiln review
 
-Reviews the code in up to four passes, has every finding checked by a verifier that didn't make it, and writes one file of numbered findings per pass to `scratchpad/`. The reviewers and verifiers run in one workflow, `.claude/workflows/review-passes.js`; this skill does the setup before it and writes the files after it.
+Reviews the code in up to four passes, has every finding checked by a verifier that didn't make it, and writes one file of numbered findings per pass to the branch's review folder, `scratchpad/review/{branch}/`. The reviewers and verifiers run in one workflow, `.claude/workflows/review-passes.js`; this skill does the setup before it and writes the files after it.
 
 Running `/kiln-review` is the user's opt-in to the workflow it starts: call the Workflow tool in step 6 without asking again.
 
@@ -25,7 +25,7 @@ Diff mode reviews the branch's changes: from the merge-base with `main` to the w
 | Path | What |
 |---|---|
 | `scratchpad/kiln-review.md` | The settings (universe and accounts) and the Runs table, one per copy of the code. No passwords or session tokens |
-| `scratchpad/{branch}-{pass}.md` | A run's findings for one pass. `/` in the branch name becomes `-`. A later run on the branch adds `-2`, `-3` and so on |
+| `scratchpad/review/{branch}/{pass}.md` | A run's findings for one pass, such as `bugs.md`. A later run on the branch adds `-2`, `-3` and so on (`bugs-2.md`) |
 | `scratchpad/review/{branch}/` | Repro tests, live checks and benchmarks, kept for later runs, named `<ID>-<name>.<ext>` |
 | `scratchpad/review/{branch}/.sessions.json` | The run's session tokens, for the verifiers. Deleted when the run ends. Never copy a token anywhere else |
 | `references/areas.md` | The areas, their paths and which passes review each |
@@ -259,10 +259,10 @@ Every reviewer and verifier grades with these:
 ## Runs
 | Date | Branch | Commit | Mode | Passes | Agents | Findings | Files |
 |---|---|---|---|---|---|---|---|
-| 2026-11-07 | phase-15 | d7fe432 | diff | all | 9 | B 4, S 2, P 3, R 1 | phase-15-bugs.md, phase-15-security.md, phase-15-performance.md, phase-15-rules.md |
+| 2026-11-07 | phase-15 | d7fe432 | diff | all | 9 | B 4, S 2, P 3, R 1 | bugs.md, security.md, performance.md, rules.md |
 ```
 
-Findings counts leave out rejected ones.
+Findings counts leave out rejected ones. Files are the run's findings files, in the branch's review folder.
 
 ## Setup notes
 
