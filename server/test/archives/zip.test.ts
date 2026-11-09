@@ -5,6 +5,11 @@ import { readZip, zipArchive, zipFile, ZipError } from '../../src/archives/zip.j
 
 const MODIFIED = new Date(2026, 10, 8, 13, 59, 30);
 
+/**
+ * The compression method of deflated files
+ */
+const DEFLATED = 8;
+
 describe('zip archives', () =>
 {
 	it('reads back the files it writes, deflated, stored and given in pieces', async () =>
@@ -66,5 +71,38 @@ describe('zip archives', () =>
 		assert.ok(archive.length < 5000);
 		await assert.rejects(readZip(archive, 999999), ZipError);
 		assert.strictEqual((await readZip(archive, 1000000)).get('bomb.json')?.length, 1000000);
+	});
+
+	it('refuses two files with one name, or listed at one place in the archive', async () =>
+	{
+		const twice = zipArchive([await zipFile('a.json', ['{}']), await zipFile('a.json', ['[]'])], MODIFIED);
+		const overlapping = zipArchive([await zipFile('a.json', ['{}']), await zipFile('b.json', ['[]'])], MODIFIED);
+
+		// The list of files starts where the end record (the last 22 bytes) says; b.json's entry follows
+		// a.json's 46-byte header and 6-byte name, and its local header's offset is 42 bytes into it
+		const listStart = overlapping.readUInt32LE(overlapping.length - 22 + 16);
+
+		overlapping.writeUInt32LE(0, listStart + 46 + 6 + 42);
+
+		await assert.rejects(readZip(twice, 1000), /twice/);
+		await assert.rejects(readZip(overlapping, 1000), /overlaps/);
+	});
+
+	it('refuses a file whose deflated data is much larger than its content, before inflating it', async () =>
+	{
+		// Empty stored blocks, each 5 bytes, inflate to nothing but take zlib's time to work through
+		const blocks = Buffer.alloc(5000);
+
+		for (let start = 0; start < blocks.length; start += 5)
+		{
+			blocks.set([((start === (blocks.length - 5)) ? 0x01 : 0x00), 0x00, 0x00, 0xFF, 0xFF], start);
+		}
+
+		const empty = zipArchive([{ name: 'empty.json', method: DEFLATED, crc: 0, size: 0, data: blocks }], MODIFIED);
+		const random = randomBytes(100000);
+		const incompressible = zipArchive([await zipFile('noise.bin', [random])], MODIFIED);
+
+		await assert.rejects(readZip(empty, 1000), /damaged/);
+		assert.ok((await readZip(incompressible, 100000)).get('noise.bin')?.equals(random));
 	});
 });

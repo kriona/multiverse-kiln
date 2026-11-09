@@ -8,6 +8,7 @@ import { adminDb } from '../src/db/adminClient.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { createTileGraphic, tileGraphicStorageKey } from '../src/db/tileGraphicRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
+import { isImporting } from '../src/http/universeImport.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createArea, createUniverse, logIn, saveAll, send, solidPng, type Editor } from './editorRequests.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -262,25 +263,34 @@ async function startUnfinishedImport(editor: Editor, universeId: string): Promis
 }
 
 /**
- * Previews a file that isn't a zip file again and again until the server answers with a status, since
- * the server takes a moment to reach an unfinished import sent just before
+ * Waits until an import holds a player's place, or doesn't, since the server takes a moment to reach a
+ * file sent or given up just before
+ *
+ * @param playerId The player's ID
+ * @param held Whether to wait for the place to be held
+ */
+async function waitForImportPlace(playerId: string, held: boolean): Promise<void>
+{
+	const end = Date.now() + 2000;
+
+	while ((isImporting(playerId) !== held) && (Date.now() < end))
+	{
+		await new Promise((resolve) => setTimeout(resolve, 5));
+	}
+
+	assert.strictEqual(isImporting(playerId), held);
+}
+
+/**
+ * Previews a file that isn't a zip file
  *
  * @param editor The browser sending it
  * @param universeId The universe's ID
- * @param status The status waited for
- * @return The last status answered, the one waited for unless 2 seconds passed first
+ * @return The status answered
  */
-async function previewUntil(editor: Editor, universeId: string, status: number): Promise<number>
+async function previewNotZip(editor: Editor, universeId: string): Promise<number>
 {
-	const end = Date.now() + 2000;
-	let answered = 0;
-
-	while ((answered !== status) && (Date.now() < end))
-	{
-		answered = (await importArchive(editor, universeId, Buffer.from('not a zip'), { preview: true })).status;
-	}
-
-	return(answered);
+	return((await importArchive(editor, universeId, Buffer.from('not a zip'), { preview: true })).status);
 }
 
 /**
@@ -594,14 +604,17 @@ describe('importing a universe', () =>
 		try
 		{
 			open.push(await startUnfinishedImport(ada, kilnhavenId));
-			assert.strictEqual(await previewUntil(ada, kilnhavenId, 429), 429);
+			await waitForImportPlace(ada.playerId, true);
+			assert.strictEqual(await previewNotZip(ada, kilnhavenId), 429);
 
 			open.push(await startUnfinishedImport(bea, beaUniverseId));
-			assert.strictEqual(await previewUntil(cyd, cydUniverseId, 503), 503);
+			await waitForImportPlace(bea.playerId, true);
+			assert.strictEqual(await previewNotZip(cyd, cydUniverseId), 503);
 
 			// Once Ada's unfinished file is given up, Ada's place is free again
 			open.shift()?.destroy();
-			assert.strictEqual(await previewUntil(ada, kilnhavenId, 400), 400);
+			await waitForImportPlace(ada.playerId, false);
+			assert.strictEqual(await previewNotZip(ada, kilnhavenId), 400);
 		}
 		finally
 		{

@@ -124,6 +124,17 @@ class ImportPlace
 }
 
 /**
+ * Whether an import holds a player's place, for tests that wait for a file still arriving to take it
+ *
+ * @param playerId The player's ID
+ * @return Whether one does
+ */
+export function isImporting(playerId: string): boolean
+{
+	return(importing.has(playerId));
+}
+
+/**
  * Each import request's place, taken by takeImportPlace
  */
 const importPlaces = new WeakMap<Response, ImportPlace>();

@@ -236,7 +236,56 @@ export function zipArchive(files: readonly ZipFile[], modified: Date): Buffer
 }
 
 /**
- * Reads the files of an archive, leaving out folders
+ * A file listed in an archive's list of files
+ */
+interface ZipEntry
+{
+	name: string;
+
+	/**
+	 * STORED or DEFLATED
+	 */
+	method: number;
+
+	/**
+	 * The CRC-32 of its content
+	 */
+	crc: number;
+
+	/**
+	 * Its content's length
+	 */
+	size: number;
+
+	/**
+	 * Where its local header starts
+	 */
+	headerStart: number;
+
+	/**
+	 * Where its data starts and ends, after its local header
+	 */
+	dataStart: number;
+	dataEnd: number;
+}
+
+/**
+ * The most bytes a file's deflated data may take, a little more than its content: a deflater stores what
+ * doesn't compress, and even one that doesn't adds at most an eighth. Data that is larger inflates to
+ * little but still takes zlib's time to work through, so it is refused before being inflated
+ *
+ * @param size The file's content's length
+ * @return The most bytes its data may take
+ */
+function mostDeflatedBytes(size: number): number
+{
+	return(size + Math.ceil(size / 8) + 64);
+}
+
+/**
+ * Reads the files of an archive, leaving out folders. Every file is checked before any is inflated: no
+ * two may share a name or overlap in the archive, and none may take much more than its content, so the
+ * work of inflating them is bounded by the archive's length and maxSize
  *
  * @param archive The archive
  * @param maxSize The most bytes its files may hold in all once inflated, so a small archive can't
@@ -246,13 +295,46 @@ export function zipArchive(files: readonly ZipFile[], modified: Date): Buffer
  */
 export async function readZip(archive: Buffer, maxSize: number): Promise<Map<string, Buffer>>
 {
-	const end = findEnd(archive);
-	const count = archive.readUInt16LE(end + 10);
+	const entries = readEntries(archive, maxSize);
 	const files = new Map<string, Buffer>();
-	let position = archive.readUInt32LE(end + 16);
 	let remaining = maxSize;
 
-	if ((count === MAX_FILES) || (position === MAX_FIELD))
+	for (const entry of entries)
+	{
+		const data = await readFileData(archive, entry, remaining);
+
+		if ((data.length !== entry.size) || (zlib.crc32(data) !== entry.crc))
+		{
+			throw new ZipError(`${entry.name} is damaged`);
+		}
+
+		remaining -= data.length;
+		files.set(entry.name, data);
+	}
+
+	return(files);
+}
+
+/**
+ * Reads and checks an archive's list of files, leaving out folders
+ *
+ * @param archive The archive
+ * @param maxSize The most bytes its files may hold in all once inflated
+ * @return Its files, in the order the list gives them
+ * @throws ZipError when the list can't be read, its files share a name or overlap, one takes much more
+ * than its content, or they hold more than maxSize
+ */
+function readEntries(archive: Buffer, maxSize: number): ZipEntry[]
+{
+	const end = findEnd(archive);
+	const count = archive.readUInt16LE(end + 10);
+	const listStart = archive.readUInt32LE(end + 16);
+	const entries: ZipEntry[] = [];
+	const names = new Set<string>();
+	let position = listStart;
+	let total = 0;
+
+	if ((count === MAX_FILES) || (listStart === MAX_FIELD))
 	{
 		throw new ZipError('Zip64 archives aren\'t supported');
 	}
@@ -292,23 +374,60 @@ export async function readZip(archive: Buffer, maxSize: number): Promise<Map<str
 			throw new ZipError(`${name} is encrypted`);
 		}
 
-		if (size > remaining)
+		if ((method !== STORED) && (method !== DEFLATED))
+		{
+			throw new ZipError(`${name} is compressed in a way that isn't supported`);
+		}
+
+		if (names.has(name))
+		{
+			throw new ZipError(`${name} is in the archive twice`);
+		}
+
+		total += size;
+
+		if (total > maxSize)
 		{
 			throw new ZipError('The archive holds more than allowed');
 		}
 
-		const data = await readFileData(archive, localOffset, compressedSize, method, remaining, name);
-
-		if ((data.length !== size) || (zlib.crc32(data) !== crc))
+		if (compressedSize > mostDeflatedBytes(size))
 		{
 			throw new ZipError(`${name} is damaged`);
 		}
 
-		remaining -= data.length;
-		files.set(name, data);
+		const dataStart = findFileData(archive, localOffset, name);
+		const dataEnd = (dataStart + compressedSize);
+
+		if (dataEnd > listStart)
+		{
+			throw new ZipError(`${name} is damaged`);
+		}
+
+		names.add(name);
+		entries.push({
+			name,
+			method,
+			crc,
+			size,
+			headerStart: localOffset,
+			dataStart,
+			dataEnd
+		});
 	}
 
-	return(files);
+	const byPlace = [...entries]
+		.sort((a, b) => (a.headerStart - b.headerStart));
+
+	for (let index = 1; index < byPlace.length; index++)
+	{
+		if (byPlace[index].headerStart < byPlace[index - 1].dataEnd)
+		{
+			throw new ZipError(`${byPlace[index].name} overlaps another file in the archive`);
+		}
+	}
+
+	return(entries);
 }
 
 /**
@@ -335,41 +454,40 @@ function findEnd(archive: Buffer): number
 }
 
 /**
- * One file's content, from its local header
+ * Where a file's data starts, after its local header
  *
  * @param archive The archive
  * @param offset Where its local header starts
- * @param compressedSize How many bytes it takes in the archive
- * @param method How it is compressed
- * @param maxSize The most bytes it may inflate to
  * @param name Its path in the archive, for errors
- * @return Its content
- * @throws ZipError when it can't be read
+ * @return Where its data starts
+ * @throws ZipError when there is no local header there
  */
-async function readFileData(archive: Buffer, offset: number, compressedSize: number, method: number, maxSize: number, name: string): Promise<Buffer>
+function findFileData(archive: Buffer, offset: number, name: string): number
 {
 	if ((offset + LOCAL_HEADER_SIZE > archive.length) || (archive.readUInt32LE(offset) !== LOCAL_HEADER_SIGNATURE))
 	{
 		throw new ZipError(`${name} is damaged`);
 	}
 
-	const start = (offset + LOCAL_HEADER_SIZE + archive.readUInt16LE(offset + 26) + archive.readUInt16LE(offset + 28));
+	return(offset + LOCAL_HEADER_SIZE + archive.readUInt16LE(offset + 26) + archive.readUInt16LE(offset + 28));
+}
 
-	if (start + compressedSize > archive.length)
-	{
-		throw new ZipError(`${name} is damaged`);
-	}
+/**
+ * One file's content
+ *
+ * @param archive The archive
+ * @param entry The file, as the list of files gives it
+ * @param maxSize The most bytes it may inflate to
+ * @return Its content
+ * @throws ZipError when it can't be read
+ */
+async function readFileData(archive: Buffer, entry: ZipEntry, maxSize: number): Promise<Buffer>
+{
+	const data = archive.subarray(entry.dataStart, entry.dataEnd);
 
-	const data = archive.subarray(start, (start + compressedSize));
-
-	if (method === STORED)
+	if (entry.method === STORED)
 	{
 		return(data);
-	}
-
-	if (method !== DEFLATED)
-	{
-		throw new ZipError(`${name} is compressed in a way that isn't supported`);
 	}
 
 	try
@@ -378,6 +496,6 @@ async function readFileData(archive: Buffer, offset: number, compressedSize: num
 	}
 	catch
 	{
-		throw new ZipError(`${name} is damaged, or holds more than allowed`);
+		throw new ZipError(`${entry.name} is damaged, or holds more than allowed`);
 	}
 }
