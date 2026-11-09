@@ -109,45 +109,50 @@ async function contentsOf(archive: Buffer): Promise<ExportContents>
  * tilesets' images
  *
  * @param contents What the files hold
+ * @param folder The folder to put them in, such as "Kilnhaven/", or '' for the archive's root
+ * @param others Other files to add, by their paths in the archive, as zipping a folder can
  * @return The archive
  */
-async function archiveOf(contents: ExportContents): Promise<Buffer>
+async function archiveOf(contents: ExportContents, folder = '', others: Record<string, string> = {}): Promise<Buffer>
 {
-	const files = [await zipFile(UNIVERSE_EXPORT_MANIFEST, [JSON.stringify(contents.manifest)])];
+	const files = new Map<string, unknown>([[UNIVERSE_EXPORT_MANIFEST, contents.manifest]]);
 
 	if (contents.races && contents.classes)
 	{
-		files.push(await zipFile(UNIVERSE_EXPORT_RACES, [JSON.stringify(contents.races)]));
-		files.push(await zipFile(UNIVERSE_EXPORT_CLASSES, [JSON.stringify(contents.classes)]));
+		files.set(UNIVERSE_EXPORT_RACES, contents.races);
+		files.set(UNIVERSE_EXPORT_CLASSES, contents.classes);
 	}
 
 	if (contents.tilesets && contents.items)
 	{
-		files.push(await zipFile(UNIVERSE_EXPORT_TILESETS, [JSON.stringify(contents.tilesets)]));
-		files.push(await zipFile(UNIVERSE_EXPORT_ITEMS, [JSON.stringify(contents.items)]));
+		files.set(UNIVERSE_EXPORT_TILESETS, contents.tilesets);
+		files.set(UNIVERSE_EXPORT_ITEMS, contents.items);
 	}
 
 	if (contents.areaPaths)
 	{
-		files.push(await zipFile(UNIVERSE_EXPORT_AREAS, [JSON.stringify(contents.areaPaths)]));
+		files.set(UNIVERSE_EXPORT_AREAS, contents.areaPaths);
 	}
 
 	for (const [index, path] of (contents.areaPaths ?? []).entries())
 	{
-		files.push(await zipFile(path, [JSON.stringify(contents.areas[index])]));
+		files.set(path, contents.areas[index]);
 	}
 
 	if (contents.translations)
 	{
-		files.push(await zipFile(UNIVERSE_EXPORT_TRANSLATIONS, [JSON.stringify(contents.translations)]));
+		files.set(UNIVERSE_EXPORT_TRANSLATIONS, contents.translations);
 	}
 
 	if (contents.liveIds)
 	{
-		files.push(await zipFile(UNIVERSE_EXPORT_LIVE_IDS, [JSON.stringify(contents.liveIds)]));
+		files.set(UNIVERSE_EXPORT_LIVE_IDS, contents.liveIds);
 	}
 
-	return(zipArchive(files, new Date()));
+	const zipped = await Promise.all([...files].map(([path, value]) => zipFile(`${folder}${path}`, [JSON.stringify(value)])));
+	const extra = await Promise.all(Object.entries(others).map(([path, text]) => zipFile(path, [text])));
+
+	return(zipArchive([...zipped, ...extra], new Date()));
 }
 
 /**
@@ -566,5 +571,30 @@ describe('importing a universe', () =>
 		assert.ok(resized);
 		assert.deepStrictEqual(resized.bounds, cave.bounds);
 		assert.deepStrictEqual(resized.rows, cave.rows);
+	});
+
+	it('reads a file whose export is all in one folder, as zipping the folder it was extracted into makes', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId, 'draft'));
+		const folder = 'MultiverseKiln.kilnhaven.draft.2026-11-08/';
+
+		// macOS's metadata beside the folder doesn't count as another folder
+		const zipped = await importArchive<UniverseImportPreview>(ada, kilnhavenId, await archiveOf(contents, folder, { [`__MACOSX/${folder}._universe.json`]: '' }), { preview: true });
+
+		assert.strictEqual(zipped.status, 200, JSON.stringify(zipped.body));
+		assert.strictEqual(zipped.body.counts.areas, 3);
+		assert.strictEqual(zipped.body.sameUniverse, true);
+
+		// Another folder, or a file beside the folder, leaves no one folder to look in
+		const twoFolders = await importArchive(ada, kilnhavenId, await archiveOf(contents, folder, { 'Other/notes.txt': '' }), { preview: true });
+		const besideIt = await importArchive(ada, kilnhavenId, await archiveOf(contents, folder, { 'notes.txt': '' }), { preview: true });
+
+		for (const refused of [twoFolders, besideIt])
+		{
+			assert.strictEqual(refused.status, 400);
+			assert.match(refused.body.error.values?.problem as string, /universe\.json is missing/);
+		}
 	});
 });
