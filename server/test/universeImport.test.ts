@@ -1,8 +1,10 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { EDITOR_UNIVERSES_PATH, emptyMoney, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREAS_PER_UNIVERSE, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
+import { adminDb } from '../src/db/adminClient.js';
+import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { createTileGraphic, tileGraphicStorageKey } from '../src/db/tileGraphicRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
@@ -604,6 +606,48 @@ describe('importing a universe', () =>
 		const noLiveIds = await importArchive(ada, kilnhavenId, await archiveOf({ ...contents, liveIds: undefined }), { preview: true });
 
 		assert.match(noLiveIds.body.error.values?.problem as string, /liveIds\.json is missing/);
+	});
+
+	it('refuses a file listing an area\'s file twice, two files of one area, or more areas than the site allows', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId, 'draft'));
+		const cave = contents.areas.find((area) => (area.name === 'Cave'));
+		const cavePath = contents.areaPaths?.[contents.areas.findIndex((area) => (area.name === 'Cave'))];
+
+		assert.ok(cave && cavePath && contents.areaPaths);
+
+		const twice = await importArchive(ada, kilnhavenId, await archiveOf({
+			...contents,
+			areaPaths: [...contents.areaPaths, cavePath],
+			areas: [...contents.areas, cave]
+		}), { preview: true });
+		const copied = await importArchive(ada, kilnhavenId, await archiveOf({
+			...contents,
+			areaPaths: [...contents.areaPaths, 'areas/copy.json'],
+			areas: [...contents.areas, cave]
+		}), { preview: true });
+		// No site allows that many, so the list is refused before any area's file is read
+		const pastAnySite = await importArchive(ada, kilnhavenId, await archiveOf({ ...contents, areaPaths: undefined, areas: [] }, '', {
+			[UNIVERSE_EXPORT_AREAS]: JSON.stringify(Array.from({ length: (MAX_AREAS_PER_UNIVERSE + 1) }, (unused, index) => `areas/${index}.json`))
+		}), { preview: true });
+
+		assert.strictEqual(twice.status, 400);
+		assert.match(twice.body.error.values?.problem as string, new RegExp(`lists ${cavePath} more than once`));
+		assert.strictEqual(copied.status, 400);
+		assert.match(copied.body.error.values?.problem as string, new RegExp(`areas/copy\\.json is area ${cave.id}, as another area's file is`));
+		assert.strictEqual(pastAnySite.status, 400);
+		assert.match(pastAnySite.body.error.values?.problem as string, new RegExp(`${UNIVERSE_EXPORT_AREAS}: .*${MAX_AREAS_PER_UNIVERSE}`));
+
+		// The file's three areas are more than this site allows
+		await saveSiteSettings({ ...DEFAULT_SITE_SETTINGS, areasPerUniverse: 2 }, adminDb);
+
+		const pastThisSite = await importArchive(ada, kilnhavenId, await archiveOf(contents), { preview: true });
+
+		assert.strictEqual(pastThisSite.status, 400);
+		assert.strictEqual(pastThisSite.body.error.id, 'error.areaLimit');
+		assert.strictEqual(pastThisSite.body.error.values?.max, 2);
 	});
 
 	it('resizes an area whose bounds and rows a file changes together', async () =>

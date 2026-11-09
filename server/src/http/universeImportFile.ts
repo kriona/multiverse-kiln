@@ -5,11 +5,12 @@
  * validators a save's changes go through (editorChange in editorPayloads.ts), as the import makes its
  * changes from them
  */
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
 import { z } from 'zod';
 
 import { readZip, ZipError } from '../archives/zip.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
+import { areaMessages } from './editorAreas.js';
 
 /**
  * Why a file can't be imported (see shared/src/localization.ts)
@@ -119,9 +120,10 @@ const universeExport = z.object({
 });
 
 /**
- * The archive's list of the areas' files
+ * The archive's list of the areas' files. An export is of one version, which holds no more areas than its
+ * site allows, and no site allows more than MAX_AREAS_PER_UNIVERSE
  */
-const areaPaths = z.array(z.string().max(200));
+const areaPaths = z.array(z.string().max(200)).max(MAX_AREAS_PER_UNIVERSE);
 
 /**
  * The archive's live IDs, an ExportedLiveIds
@@ -258,11 +260,12 @@ export interface ImportFile
  *
  * @param archive The archive
  * @param ruleset The ruleset of the universe it is imported into
+ * @param areasPerUniverse The most areas the site lets a universe have (SiteSettings)
  * @return The export
- * @throws ImportProblem when it isn't an export, is damaged, is in a newer format, or is of a universe
- * with another ruleset
+ * @throws ImportProblem when it isn't an export, is damaged, is in a newer format, is of a universe
+ * with another ruleset, or has more areas than the site allows
  */
-export async function readImportFile(archive: Buffer, ruleset: string): Promise<ImportFile>
+export async function readImportFile(archive: Buffer, ruleset: string, areasPerUniverse: number): Promise<ImportFile>
 {
 	let files: Map<string, Buffer>;
 
@@ -334,14 +337,44 @@ export async function readImportFile(archive: Buffer, ruleset: string): Promise<
 		manifest.tileGraphics = tilesets.tileGraphics;
 		manifest.tiles = tilesets.tiles;
 		manifest.items = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_ITEMS), UNIVERSE_EXPORT_ITEMS);
-		manifest.areas = checked(areaPaths, parseJson(files, UNIVERSE_EXPORT_AREAS), UNIVERSE_EXPORT_AREAS).map((path) =>
+
+		const areas: ImportArea[] = [];
+		const paths = new Set<string>();
+		const listed = checked(areaPaths, parseJson(files, UNIVERSE_EXPORT_AREAS), UNIVERSE_EXPORT_AREAS);
+
+		if (listed.length > areasPerUniverse)
 		{
+			throw new ImportProblem(areaMessages.limit, {
+				max: areasPerUniverse
+			});
+		}
+
+		for (const path of listed)
+		{
+			// Each area has a file of its own, so no file is read more than once
+			if (paths.has(path))
+			{
+				throw new ImportProblem(importMessages.notAnExport, {
+					problem: `${UNIVERSE_EXPORT_AREAS} lists ${path} more than once`
+				});
+			}
+
+			paths.add(path);
+
 			const { rows, ...area } = checked(exportedArea, parseJson(files, path), path);
 
-			cells.set(area.id, chunksOfRows(rows, area.bounds, path));
+			if (cells.has(area.id))
+			{
+				throw new ImportProblem(importMessages.notAnExport, {
+					problem: `${path} is area ${area.id}, as another area's file is`
+				});
+			}
 
-			return(area);
-		});
+			cells.set(area.id, chunksOfRows(rows, area.bounds, path));
+			areas.push(area);
+		}
+
+		manifest.areas = areas;
 	}
 
 	if (manifest.universe.version === 'draft')

@@ -1280,7 +1280,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 * Adds the tab's changes to a save: the areas deleted, the areas added, then the area open in the area
 	 * editor, its cells first and then its settings as the form shows them
 	 *
-	 * Deleting goes first, so deleting areas can make room for new ones (MAX_AREAS); a new area is added
+	 * Deleting goes first, so deleting areas can make room for new ones (the site's areasPerUniverse); a new area is added
 	 * after the area it is inside, so it can name it. Tiles staged for deletion on the Tilesets tab are
 	 * sent as the tiles chosen to replace them, as the Tilesets tab's changes repaint the saved areas
 	 *

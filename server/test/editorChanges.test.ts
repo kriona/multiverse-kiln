@@ -1,7 +1,9 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
 
+import { adminDb } from '../src/db/adminClient.js';
+import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { createArea, createUniverse, logIn, saveAll, saveChanges, send, solidPng, type Editor } from './editorRequests.js';
@@ -152,6 +154,21 @@ describe('Saving editor changes', () =>
 		assert.strictEqual(refused.status, 409);
 		assert.strictEqual(refused.body.error.id, 'error.tileGraphicLimit');
 		assert.strictEqual(refused.body.changeIndex, MAX_UPLOADED_TILE_GRAPHICS);
+	});
+
+	it('refuses an area past the most the site lets a universe have', async () =>
+	{
+		const universeId = await createUniverse(ada);
+
+		// A new universe has its lobby and its starting area
+		await saveSiteSettings({ ...DEFAULT_SITE_SETTINGS, areasPerUniverse: 3 }, adminDb);
+		await createArea(ada, universeId, { name: 'Cave' });
+
+		const refused = await saveChanges(ada, universeId, [{ kind: 'createArea', ref: 'new:mine', area: { name: 'Mine' } }]);
+
+		assert.strictEqual(refused.status, 409);
+		assert.strictEqual(refused.body.error.id, 'error.areaLimit');
+		assert.strictEqual(refused.body.error.values?.max, 3);
 	});
 
 	it('deletes a tileset\'s image only once the save is saved', async () =>

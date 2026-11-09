@@ -115,6 +115,14 @@
 		"defaultMessage": "You",
 		"description": "Note in the admin page's list of server admins on the player looking at it"
 	},
+	"admin.areasPerUniverse": {
+		"defaultMessage": "Areas each universe can have",
+		"description": "Label of the field on the site settings page for the most areas (maps of the game world) one universe may have"
+	},
+	"admin.areasPerUniverseHint": {
+		"defaultMessage": "This counts the live universe and its draft separately, and applies to importing a universe too. A universe with more areas keeps them, but can't add more until it has fewer.",
+		"description": "Explains the field on the site settings page for the most areas one universe may have. A universe's draft is the copy its editors change before players see it"
+	},
 	"admin.back": {
 		"defaultMessage": "Site Admin",
 		"description": "In the toolbar of each admin tool (the site settings, the lists of sessions, players, server admins and universes, and the translation files), between the game engine's name and the tool's heading: links back to the admin page that links to them all"
@@ -4289,7 +4297,7 @@
 	},
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
-		"description": "Why a new area wasn't made: the universe has as many areas as allowed"
+		"description": "Why a new area wasn't made, or a file couldn't be imported into a universe's draft: the universe would have more areas than the site allows; {max} is the most it can have"
 	},
 	"error.auth.adminKeepsTwoFactor": {
 		"defaultMessage": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first.",

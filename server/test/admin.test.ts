@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../src/db/adminClient.js';
 import { findPlayerAdminEvents, findUniverseAdminEvents } from '../src/db/adminEventRepo.js';
@@ -25,6 +25,7 @@ import { turnOnTwoFactor } from './twoFactorAccounts.js';
 const closed: SiteSettings = {
 	universeCreationEnabled: false,
 	universesPerCreator: 12,
+	areasPerUniverse: 40,
 	characterDeletionDays: 0,
 	socials: {
 		...DEFAULT_SITE_SETTINGS.socials,
@@ -254,6 +255,10 @@ describe('Site settings', () =>
 			{ ...closed, universesPerCreator: 0 },
 			{ ...closed, universesPerCreator: MAX_UNIVERSES_PER_CREATOR + 1 },
 			{ ...closed, universesPerCreator: 2.5 },
+			{ ...closed, areasPerUniverse: MIN_AREAS_PER_UNIVERSE - 1 },
+			{ ...closed, areasPerUniverse: MAX_AREAS_PER_UNIVERSE + 1 },
+			{ ...closed, areasPerUniverse: 40.5 },
+			{ ...closed, areasPerUniverse: undefined },
 			{ ...closed, characterDeletionDays: -1 },
 			{ ...closed, characterDeletionDays: MAX_CHARACTER_DELETION_DAYS + 1 },
 			{ ...closed, characterDeletionDays: 1.5 },

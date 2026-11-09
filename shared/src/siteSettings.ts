@@ -31,6 +31,17 @@ export const MIN_UNIVERSES_PER_CREATOR = 1;
 export const MAX_UNIVERSES_PER_CREATOR = 1000;
 
 /**
+ * Fewest areas the site can let each universe have: a new universe starts with its lobby and its
+ * starting area
+ */
+export const MIN_AREAS_PER_UNIVERSE = 2;
+
+/**
+ * Most areas the site can let each universe have
+ */
+export const MAX_AREAS_PER_UNIVERSE = 10000;
+
+/**
  * Most days the site can wait after a character's last rites before deleting them
  */
 export const MAX_CHARACTER_DELETION_DAYS = 365;
@@ -114,6 +125,12 @@ export interface SiteSettings
 	universesPerCreator: number;
 
 	/**
+	 * Most areas one version of a universe may have, from MIN_AREAS_PER_UNIVERSE to
+	 * MAX_AREAS_PER_UNIVERSE. A universe with more keeps them, but can't add any until it has fewer
+	 */
+	areasPerUniverse: number;
+
+	/**
 	 * How many days after their last rites a character is deleted, from 0 to MAX_CHARACTER_DELETION_DAYS.
 	 * 0 turns last rites off, so characters can only be deleted. Characters already given
 	 * their last rites keep the day they were given
@@ -143,6 +160,7 @@ export type PublicSiteSettings = Pick<SiteSettings, 'characterDeletionDays' | 's
 export const DEFAULT_SITE_SETTINGS: Readonly<SiteSettings> = {
 	universeCreationEnabled: true,
 	universesPerCreator: 5,
+	areasPerUniverse: 1000,
 	characterDeletionDays: 7,
 	socials: {
 		discord: null,

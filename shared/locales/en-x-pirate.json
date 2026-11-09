@@ -115,6 +115,14 @@
 		"message": "Ye",
 		"source": "You"
 	},
+	"admin.areasPerUniverse": {
+		"message": "Areas each universe can hold",
+		"source": "Areas each universe can have"
+	},
+	"admin.areasPerUniverseHint": {
+		"message": "The live universe and its draft be counted apart, and this holds fer haulin' in a universe too. A universe with more areas keeps 'em, but can't lay down more till it has fewer.",
+		"source": "This counts the live universe and its draft separately, and applies to importing a universe too. A universe with more areas keeps them, but can't add more until it has fewer."
+	},
 	"admin.back": {
 		"message": "The Captain's Quarters",
 		"source": "Site Admin"

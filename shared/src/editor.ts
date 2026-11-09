@@ -172,11 +172,6 @@ export const MAX_CUSTOM_THEMES = 100;
 export const MAX_AREA_NAME_LENGTH = 60;
 
 /**
- * Most areas in one universe
- */
-export const MAX_AREAS = 1000;
-
-/**
  * The bounds a new area starts with: one screen's worth of cells around column 0, row 0
  */
 export const NEW_AREA_BOUNDS: Readonly<AreaBounds> = {

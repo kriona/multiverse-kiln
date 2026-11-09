@@ -736,6 +736,13 @@
       "when": 1794171945017,
       "tag": "0104_rename_map_chunks_to_area_chunks",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1794187540990,
+      "tag": "0105_site_areas_per_universe",
+      "breakpoints": true
     }
   ]
 }

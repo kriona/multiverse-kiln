@@ -11,6 +11,7 @@ import express, { type Request, type Response, type Router } from 'express';
 import { canImportUniverse, defineMessages, localize, MAX_LOCALE_LENGTH, MAX_UNIVERSE_IMPORT_BYTES, SOURCE_LOCALE, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type ErrorPayload, type UniverseImportPreview } from '@multiverse-kiln/shared';
 import { z } from 'zod';
 
+import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { emailTranslator } from '../email/emailLocales.js';
 import { requireRole, universeContextOf, type UniverseContext } from './editorAccess.js';
 import { saveChanges } from './editorChanges.js';
@@ -181,7 +182,8 @@ async function planRequest(request: Request, response: Response): Promise<Import
 	{
 		try
 		{
-			const file = await readImportFile(archive, context.universe.ruleset);
+			const { areasPerUniverse } = await findSiteSettings();
+			const file = await readImportFile(archive, context.universe.ruleset, areasPerUniverse);
 			const access = {
 				role: context.role,
 				languages: context.languages

@@ -243,6 +243,7 @@ What admins do as admins (adding and removing admins, disabling and enabling uni
 Settings for the whole site (`/admin/settings`), stored in one row of the `site_settings` table. Anyone can read the ones the pages show (the character deletion days, the social sites and the privacy contact) through a public route of their own.
 - universe creation enabled: whether players can create universes
 - universes per creator: the most universes one player may create, from 1 to 1000
+- areas per universe: the most areas each version of a universe (its live version and its draft, counted apart) may have, from 2 to 10000 (1000 by default). Making an area past it is refused, and so is importing a file listing more. A universe with more keeps them, but can't add any until it has fewer
 - character deletion days: how many days [Last Rites](#deleting-a-character) waits before deleting a character, from 0 to 365 (7 by default). 0 turns Last Rites off. Characters already given their last rites keep their day
 - social sites: links to the site's own pages on Discord, Facebook, Instagram, TikTok, X and YouTube, each optional. Every page's footer shows each one's logo, linking to it. A link must be https and on that site's hosts (`SITE_SOCIAL_HOSTS`), so it always goes to the site its logo says
 - privacy contact: the email address the [privacy policy](#privacy) tells players to write to about their information. Empty leaves the line out of the policy
