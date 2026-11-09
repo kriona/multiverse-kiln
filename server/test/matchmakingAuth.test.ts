@@ -1,6 +1,7 @@
 import assert from 'assert';
+import { randomUUID } from 'node:crypto';
 import type { ColyseusTestServer } from '@colyseus/testing';
-import { matchMaker } from 'colyseus';
+import { ErrorCode, matchMaker } from 'colyseus';
 import { EDITOR_ROOM_NAME, GAME_ROOM_NAME, LOBBY_ROOM_NAME } from '@multiverse-kiln/shared';
 
 import type appConfig from '../src/app.config.js';
@@ -15,9 +16,9 @@ import { getTestServer, testServerUrl } from './testServer.js';
  * @param roomName The room type
  * @param options The join options
  * @param cookie The Cookie header the browser sends, if any
- * @return Whether matchmaking reserved a seat
+ * @return Whether matchmaking reserved a seat, and the answer's body
  */
-async function matchmake(roomName: string, options: object, cookie?: string): Promise<boolean>
+async function matchmakeAnswer(roomName: string, options: object, cookie?: string): Promise<{ ok: boolean; body: string }>
 {
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
@@ -32,9 +33,23 @@ async function matchmake(roomName: string, options: object, cookie?: string): Pr
 		body: JSON.stringify(options)
 	});
 
-	await response.text();
+	return({
+		ok: response.ok,
+		body: await response.text()
+	});
+}
 
-	return(response.ok);
+/**
+ * Asks matchmaking to join or make a room (matchmakeAnswer())
+ *
+ * @param roomName The room type
+ * @param options The join options
+ * @param cookie The Cookie header the browser sends, if any
+ * @return Whether matchmaking reserved a seat
+ */
+async function matchmake(roomName: string, options: object, cookie?: string): Promise<boolean>
+{
+	return((await matchmakeAnswer(roomName, options, cookie)).ok);
 }
 
 describe('matchmaking', () =>
@@ -86,5 +101,28 @@ describe('matchmaking', () =>
 
 		assert.strictEqual(await matchmake(LOBBY_ROOM_NAME, { universeId }, cookie), true);
 		assert.strictEqual((await matchMaker.query({ name: LOBBY_ROOM_NAME })).length, 1);
+	});
+
+	it('tells a logged-in browser nothing of why a room for a group or universe that doesn\'t exist couldn\'t be made', async () =>
+	{
+		const { cookie } = await logInBrowser((await addPlayer('Ada')).id);
+		const missingId = randomUUID();
+		const requests: [string, object][] = [
+			[LOBBY_ROOM_NAME, { universeId: missingId }],
+			[EDITOR_ROOM_NAME, { universeId: missingId }],
+			[GAME_ROOM_NAME, { groupId: missingId, characterId }]
+		];
+
+		for (const [roomName, options] of requests)
+		{
+			const answer = await matchmakeAnswer(roomName, options, cookie);
+
+			assert.strictEqual(answer.ok, false, roomName);
+			assert.deepStrictEqual(JSON.parse(answer.body), {
+				code: ErrorCode.MATCHMAKE_UNHANDLED,
+				error: 'The room could not be opened'
+			}, roomName);
+			assert.ok(!answer.body.includes(missingId), roomName);
+		}
 	});
 });

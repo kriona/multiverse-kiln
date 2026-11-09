@@ -24,6 +24,7 @@ import { editorUpdates } from '../src/world/editorUpdates.js';
 import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
+import { loggedErrors } from './loggedErrors.js';
 import { logInBrowser, usernameFor } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { turnOnTwoFactor } from './twoFactorAccounts.js';
@@ -154,7 +155,9 @@ describe('EditorRoom', () =>
 		{
 			const room = await colyseus.createRoom(EDITOR_ROOM_NAME, { universeId });
 
-			await assert.rejects(colyseus.createRoom(EDITOR_ROOM_NAME, { universeId }), /already has a room/);
+			const logged = await loggedErrors(() => assert.rejects(colyseus.createRoom(EDITOR_ROOM_NAME, { universeId }), /The room could not be opened/));
+
+			assert.match(logged.join('\n'), /already has a room/);
 			await assert.rejects(colyseus.createRoom(EDITOR_ROOM_NAME, { universeId: universeId.toUpperCase() }));
 
 			await room.disconnect();

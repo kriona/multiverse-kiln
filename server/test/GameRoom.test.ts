@@ -28,6 +28,7 @@ import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
+import { loggedErrors } from './loggedErrors.js';
 import { addPlayer, TestBrowsers } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -528,7 +529,9 @@ describe('GameRoom', () =>
 	{
 		const room = await createGameRoom();
 
-		await assert.rejects(createGameRoom(), /already has a room/);
+		const logged = await loggedErrors(() => assert.rejects(createGameRoom(), /The room could not be opened/));
+
+		assert.match(logged.join('\n'), /already has a room/);
 
 		await room.disconnect();
 		await createGameRoom();

@@ -25,6 +25,7 @@ import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
+import { loggedErrors } from './loggedErrors.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -199,7 +200,9 @@ describe('LobbyRoom', () =>
 		{
 			const room = await colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId });
 
-			await assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId }), /already has a room/);
+			const logged = await loggedErrors(() => assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId }), /The room could not be opened/));
+
+			assert.match(logged.join('\n'), /already has a room/);
 			await assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId.toUpperCase() }));
 
 			await room.disconnect();

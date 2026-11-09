@@ -1,10 +1,11 @@
-import { Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { ErrorCode, Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { JoinChanges } from './joinChanges.js';
+import { withoutErrorDetails } from './roomErrors.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -95,7 +96,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 
 	/**
 	 * Admits every window, finding out from its session cookie whether its browser is logged in, and
-	 * whether its player is a server admin
+	 * whether its player is a server admin. A failure looking it up tells the client nothing of what went
+	 * wrong (withoutErrorDetails())
 	 *
 	 * @param client The joining client
 	 * @param _options Join options from the client (unused)
@@ -108,7 +110,17 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 
 		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader));
 
-		return(this.lookUp(cookieHeader));
+		return(withoutErrorDetails('Admitting a window to the session room', ErrorCode.APPLICATION_ERROR, () => this.lookUp(cookieHeader)));
+	}
+
+	/**
+	 * Lets a client in (join()), telling it nothing of why that failed (withoutErrorDetails())
+	 *
+	 * @param client The joining client
+	 */
+	async onJoin(client: SessionClient): Promise<void>
+	{
+		await withoutErrorDetails('Joining the session room', ErrorCode.APPLICATION_ERROR, () => this.join(client));
 	}
 
 	/**
@@ -118,7 +130,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 *
 	 * @param client The joining client
 	 */
-	async onJoin(client: SessionClient): Promise<void>
+	private async join(client: SessionClient): Promise<void>
 	{
 		const rechecked = await this.joinChanges.recheck(client);
 
