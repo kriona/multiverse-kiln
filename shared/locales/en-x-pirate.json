@@ -3816,8 +3816,8 @@
 		"source": "File"
 	},
 	"editor.universeImport.imported": {
-		"message": "Hauled into the draft. Look her over, then launch the draft when she's ready.",
-		"source": "Imported into the draft. Check it, then apply the draft when it's ready."
+		"message": "Hauled into the draft.",
+		"source": "Imported into the draft."
 	},
 	"editor.universeImport.importing": {
 		"message": "Haulin' in...",
@@ -3872,8 +3872,12 @@
 		"source": "Open Draft"
 	},
 	"editor.universeImport.otherUniverse": {
-		"message": "The chest be from another universe, so all in it comes aboard the draft fresh.",
-		"source": "The file is of another universe, so everything in it is added to the draft anew."
+		"message": "This chest be from another universe; everythin' in yer universe will be thrown overboard for what this chest holds.",
+		"source": "This file is from another universe; everything in your universe will be replaced by the contents of this file."
+	},
+	"editor.universeImport.otherUniverseRenamed": {
+		"message": "This chest be from another universe; everythin' in yer universe will be thrown overboard for what this chest holds, an' she'll be christened {name}.",
+		"source": "This file is from another universe; everything in your universe will be replaced by the contents of this file, and it will be named {name}."
 	},
 	"editor.universeImport.part.areas": {
 		"message": "{count, plural, one {# area} other {# areas}}, with their cells an' passages",
@@ -3940,8 +3944,8 @@
 		"source": "Save or undo your changes first, since importing replaces the draft they belong to."
 	},
 	"editor.universeImport.source": {
-		"message": "{universe}, {version, select, draft {her draft} other {her live version}}, boxed up {date} by {name} (@{username}).",
-		"source": "{universe}, {version, select, draft {its draft} other {its live version}}, exported {date} by {name} (@{username})."
+		"message": "{universe} ({version, select, draft {draft version} other {live version}}) first boxed up {date} by {name} (@{username}).",
+		"source": "{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username})."
 	},
 	"editor.universeImport.startingDraft": {
 		"message": "Layin' down the draft...",
@@ -4935,18 +4939,6 @@
 		"message": "Areas",
 		"source": "Areas"
 	},
-	"export.legend.cells": {
-		"message": "\"cells\" holds the chunk's {count, number} cells row by row, startin' at its north-west corner: the first {size, number} be its top row, from west to east, then the next row down, an' so on.",
-		"source": "\"cells\" holds the chunk's {count, number} cells row by row, starting at its north-west corner: the first {size, number} are its top row, from west to east, then the next row down, and so on."
-	},
-	"export.legend.chunkSize": {
-		"message": "\"chunkSize\" be how many cells run along each side o' a chunk: {size, number}.",
-		"source": "\"chunkSize\" is how many cells run along each side of a chunk: {size, number}."
-	},
-	"export.legend.chunks": {
-		"message": "\"chunks\" lists the area's chunks: squares o' {size, number} by {size, number} cells. A chunk that ain't listed holds naught but the area's default tile.",
-		"source": "\"chunks\" lists the area's chunks: squares of {size, number} by {size, number} cells. A chunk that isn't listed holds only the area's default tile."
-	},
 	"export.legend.colorColumn": {
 		"message": "Color o' the flag",
 		"source": "Color"
@@ -4959,9 +4951,13 @@
 		"message": "Default tile",
 		"source": "Default tile"
 	},
+	"export.legend.exactly": {
+		"message": "There be a row fer every row o' the area, an' each row has a cell fer every column o' it, as \"bounds\" gives 'em. A scroll whose rows don't match its bounds be turned away at the gangplank, so to make the area larger or smaller, change both together.",
+		"source": "There is a row for every row of the area, and each row has a cell for every column of it, as \"bounds\" gives them. Importing a file whose rows don't match its bounds is refused, so to make the area larger or smaller, change both together."
+	},
 	"export.legend.example": {
-		"message": "Fer example, place {place, number} o' the list in the chunk at column -1, row 0 be the second cell o' the chunk's second row: column {column, number}, row 1 o' the area.",
-		"source": "For example, place {place, number} of the list in the chunk at column -1, row 0 is the second cell of the chunk's second row: column {column, number}, row 1 of the area."
+		"message": "Fer example, in a scroll whose bounds have a minColumn o' {minColumn, number} an' a minRow o' {minRow, number}, the third cell o' the second row lies on column {column, number}, row {row, number}.",
+		"source": "For example, in a file whose bounds have a minColumn of {minColumn, number} and a minRow of {minRow, number}, the third cell of the second row is on column {column, number}, row {row, number}."
 	},
 	"export.legend.extent": {
 		"message": "Columns {minColumn, number} to {maxColumn, number}, rows {minRow, number} to {maxRow, number}",
@@ -4971,33 +4967,33 @@
 		"message": "Scroll",
 		"source": "File"
 	},
-	"export.legend.formula": {
-		"message": "The cell at place n in the list, countin' from 0, sits on column chunkColumn × {size, number} + (n mod {size, number}) an' row chunkRow × {size, number} + floor(n ÷ {size, number}) o' the area.",
-		"source": "The cell at place n in the list, counting from 0, is on column chunkColumn × {size, number} + (n mod {size, number}) and row chunkRow × {size, number} + floor(n ÷ {size, number}) of the area."
-	},
 	"export.legend.intro": {
-		"message": "Each JSON scroll in this hold keeps one area's cells: which tile lies on each square o' its ground. The Areas table below says which area each scroll be.",
-		"source": "Each JSON file in this folder holds one area's cells: which tile is on each square of its ground. The Areas table below says which area each file is."
+		"message": "Each JSON scroll in this hold keeps one area: its articles, the passages on its cells, an' its cells, which say which tile lies on each square o' its ground. The Areas table below says which area each scroll be.",
+		"source": "Each JSON file in this folder holds one area: its settings, the links on its cells, and its cells, which say which tile is on each square of its ground. The Areas table below says which area each file is."
 	},
 	"export.legend.numberColumn": {
 		"message": "Number",
 		"source": "Number"
 	},
-	"export.legend.outside": {
-		"message": "A chunk on the edge o' an area can reach past it. Its cells outside the columns an' rows the Areas table gives ain't part o' the area.",
-		"source": "A chunk on the edge of an area can reach past it. Its cells outside the columns and rows the Areas table gives aren't part of the area."
-	},
-	"export.legend.position": {
-		"message": "\"chunkColumn\" an' \"chunkRow\" say where a chunk lies, counted in chunks. The chunk at column 0, row 0 starts at the area's cell at column 0, row 0 an' runs east an' south from it; columns grow to the east an' rows to the south.",
-		"source": "\"chunkColumn\" and \"chunkRow\" say where a chunk is, counted in chunks. The chunk at column 0, row 0 starts at the area's cell at column 0, row 0 and runs east and south from it; columns grow to the east and rows to the south."
+	"export.legend.place": {
+		"message": "The cell at place c o' row r o' the list, countin' both from 0, lies on column minColumn + c an' row minRow + r o' the area, takin' minColumn an' minRow from \"bounds\".",
+		"source": "The cell at place c of row r of the list, counting both from 0, is on column minColumn + c and row minRow + r of the area, taking minColumn and minRow from \"bounds\"."
 	},
 	"export.legend.readingHeading": {
 		"message": "Readin' a scroll",
 		"source": "Reading a file"
 	},
+	"export.legend.rows": {
+		"message": "\"rows\" holds the area's rows from north to south, each with its cells from west to east, so the first cell o' the first row be the north-west corner. Columns grow to the east an' rows to the south.",
+		"source": "\"rows\" holds the area's rows from north to south, each with its cells from west to east, so the first cell of the first row is the north-west corner. Columns grow to the east and rows to the south."
+	},
 	"export.legend.sizeColumn": {
 		"message": "Columns an' rows",
 		"source": "Columns and rows"
+	},
+	"export.legend.start": {
+		"message": "\"bounds\" gives the columns an' rows the area covers, both ends included: \"minColumn\" an' \"minRow\" be its westmost column an' northmost row, the column an' row o' its north-west corner, an' \"maxColumn\" an' \"maxRow\" its eastmost column an' southmost row.",
+		"source": "\"bounds\" gives the columns and rows the area covers, both ends included: \"minColumn\" and \"minRow\" are its westmost column and northmost row, the column and row of its north-west corner, and \"maxColumn\" and \"maxRow\" its eastmost column and southmost row."
 	},
 	"export.legend.tileColumn": {
 		"message": "Tile",
@@ -7730,6 +7726,14 @@
 	"toast.close": {
 		"message": "Aye, Got It",
 		"source": "Got It"
+	},
+	"universe.copyName": {
+		"message": "{name} (copy)",
+		"source": "{name} (copy)"
+	},
+	"universe.copyNameNumbered": {
+		"message": "{name} (copy {number, number})",
+		"source": "{name} (copy {number, number})"
 	},
 	"universe.deletionPrevented": {
 		"message": "The ship's officers have laid up this universe an' forbid her captains to scuttle her.",

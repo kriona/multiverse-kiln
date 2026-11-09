@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, VOID_CELL, type EditableUniverse, type ExportedAreaCells, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
 
 import { readZip } from '../src/archives/zip.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
@@ -57,6 +57,38 @@ function manifestOf(files: Map<string, Buffer>): UniverseExport
 	assert.ok(manifest, `No ${UNIVERSE_EXPORT_MANIFEST} in ${[...files.keys()].join(', ')}`);
 
 	return(JSON.parse(manifest.toString('utf8')) as UniverseExport);
+}
+
+/**
+ * What one of the export's JSON files holds
+ *
+ * @param files The archive's files
+ * @param path The file's path
+ * @return What it holds, or undefined when the archive doesn't have it
+ */
+function jsonOf<T>(files: Map<string, Buffer>, path: string): T | undefined
+{
+	const file = files.get(path);
+
+	return(((file === undefined) ? undefined : JSON.parse(file.toString('utf8')) as T));
+}
+
+/**
+ * The export's areas, from the files its manifest lists
+ *
+ * @param files The archive's files
+ * @return The areas, in the order areas.json lists them
+ */
+function areasOf(files: Map<string, Buffer>): ExportedArea[]
+{
+	return((jsonOf<string[]>(files, UNIVERSE_EXPORT_AREAS) ?? []).map((path) =>
+	{
+		const area = jsonOf<ExportedArea>(files, path);
+
+		assert.ok(area, `No ${path} in ${[...files.keys()].join(', ')}`);
+
+		return(area);
+	}));
 }
 
 describe('exporting a universe', () =>
@@ -125,15 +157,20 @@ describe('exporting a universe', () =>
 		assert.deepStrictEqual(manifest.settings?.startingItems, [{ itemId: dagger, quantity: 1 }]);
 		assert.strictEqual(manifest.rulesetSettings?.ruleset, 'pf1e');
 		assert.ok(manifest.difficultyLevels?.some((level) => (level.key === 'normal') && level.isDefault));
-		assert.ok(manifest.races?.some((race) => (race.key === 'dwarf')));
-		assert.ok(manifest.classes?.some((each) => (each.key === 'wizard')));
+		assert.ok(jsonOf<EditorRace[]>(files, UNIVERSE_EXPORT_RACES)?.some((race) => (race.key === 'dwarf')));
+		assert.ok(jsonOf<EditorClass[]>(files, UNIVERSE_EXPORT_CLASSES)?.some((each) => (each.key === 'wizard')));
+		assert.strictEqual(('races' in manifest) || ('classes' in manifest), false);
 		assert.deepStrictEqual(manifest.themes, []);
 		assert.deepStrictEqual(manifest.editors?.map((editor) => editor.role), ['creator']);
 
 		// The ruleset's defaults are listed with their keys, so an import can find them in another database
-		assert.ok(manifest.items?.some((item) => (item.id === dagger) && (item.key === 'dagger')));
-		assert.ok(manifest.tiles?.some((tile) => (tile.id === defaultTiles.get('grass')) && (tile.key === 'grass') && !tile.edited));
-		assert.deepStrictEqual(manifest.tiles?.find((tile) => (tile.id === mossId)), {
+		const tilesets = jsonOf<ExportedTilesets>(files, UNIVERSE_EXPORT_TILESETS);
+
+		assert.ok(tilesets);
+		assert.strictEqual(('tileGraphics' in manifest) || ('tiles' in manifest) || ('items' in manifest), false);
+		assert.ok(jsonOf<EditorItem[]>(files, UNIVERSE_EXPORT_ITEMS)?.some((item) => (item.id === dagger) && (item.key === 'dagger')));
+		assert.ok(tilesets.tiles.some((tile) => (tile.id === defaultTiles.get('grass')) && (tile.key === 'grass') && !tile.edited));
+		assert.deepStrictEqual(tilesets.tiles.find((tile) => (tile.id === mossId)), {
 			id: mossId,
 			key: null,
 			custom: true,
@@ -141,19 +178,23 @@ describe('exporting a universe', () =>
 			...moss,
 			uploadedGraphicId: graphicId
 		});
-		assert.deepStrictEqual(manifest.tileGraphics, [{ id: graphicId, name: 'Mossy', format: 'dualGrid', drawOrder: 35, file: `tilesets/${graphicId}.png` }]);
+		assert.deepStrictEqual(tilesets.tileGraphics, [{ id: graphicId, name: 'Mossy', format: 'dualGrid', drawOrder: 35, file: `tilesets/${graphicId}.png` }]);
 		// The image as stored, which the upload re-encoded
 		const stored = Buffer.from(await (await fetch(`${testServerUrl}${TILE_GRAPHICS_PATH}/${graphicId}.png`)).arrayBuffer());
 
 		assert.ok(files.get(`tilesets/${graphicId}.png`)?.equals(stored));
 
-		// Each area's cells are a file of their own, holding only the chunks that differ from its default tile
-		const cave = manifest.areas?.find((area) => (area.id === caveId));
-		const lobby = manifest.areas?.find((area) => (area.name === 'Lobby'));
+		// Each area is a file of its own, holding its settings, links and every cell as rows
+		const areas = areasOf(files);
+		const cave = areas.find((area) => (area.id === caveId));
+		const lobby = areas.find((area) => (area.name === 'Lobby'));
 
-		assert.deepStrictEqual(manifest.areas?.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
+		assert.deepStrictEqual(areas.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
 		assert.ok(cave && lobby);
-		assert.strictEqual(cave.file, `areas/${caveId}.json`);
+		assert.strictEqual(jsonOf<string[]>(files, UNIVERSE_EXPORT_AREAS)?.[0], `areas/${caveId}.json`);
+		assert.strictEqual(('areas' in manifest) || ('liveIds' in manifest), false);
+		assert.strictEqual(files.has(UNIVERSE_EXPORT_LIVE_IDS), false);
+		assert.deepStrictEqual(cave.bounds, { minColumn: -15, minRow: -8, maxColumn: 15, maxRow: 8 });
 
 		// The legend beside the cells names each number they hold and each file's area
 		const legend = files.get(UNIVERSE_EXPORT_AREA_LEGEND)?.toString('utf8') ?? '';
@@ -165,25 +206,29 @@ describe('exporting a universe', () =>
 		assert.ok(legend.includes(`| \`${caveId}.json\` | Cave | Grass | Columns -15 to 15, rows -8 to 8 |`), legend);
 		assert.deepStrictEqual(lobby.links, [{ column: 1, row: 0, targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true }]);
 
-		const cellsText = files.get(cave.file)?.toString('utf8') ?? '';
-		const lobbyCellsText = files.get(lobby.file)?.toString('utf8') ?? '';
-		const cells = JSON.parse(cellsText) as ExportedAreaCells;
-		const lobbyCells = JSON.parse(lobbyCellsText) as ExportedAreaCells;
+		// The settings are indented like the manifest, then each row is on a line of its own, from the north-west corner
+		const { rows: lobbyRows, ...lobbySettings } = lobby;
+		const settingsText = JSON.stringify(lobbySettings, null, '\t');
+		const blankRow = `[${new Array(31).fill(0).join(',')}]`;
 
-		// Each chunk is on a line of its own, in one line of JSON
-		assert.strictEqual(cellsText, `{\n\t"chunkSize": 32,\n\t"chunks": [\n\t\t${JSON.stringify(cells.chunks[0])},\n\t\t${JSON.stringify(cells.chunks[1])}\n\t]\n}\n`);
-		assert.strictEqual(lobbyCellsText, '{\n\t"chunkSize": 32,\n\t"chunks": []\n}\n');
+		assert.strictEqual(files.get(`areas/${lobby.id}.json`)?.toString('utf8'), `${settingsText.slice(0, -2)},\n\t"rows": [\n\t\t${new Array(17).fill(blankRow).join(',\n\t\t')}\n\t]\n}\n`);
+		assert.ok(lobbyRows.flat().every((cell) => (cell === 0)));
 
-		assert.strictEqual(cells.chunkSize, 32);
-		assert.deepStrictEqual(cells.chunks.map((chunk) => [chunk.chunkColumn, chunk.chunkRow]), [[0, -1], [0, 0]]);
-		assert.strictEqual(cells.chunks[0].cells[(29 * 32) + 12], VOID_CELL);
-		assert.strictEqual(cells.chunks[1].cells[0], mossId);
-		assert.deepStrictEqual(lobbyCells.chunks, []);
+		assert.strictEqual(cave.rows.length, 17);
+		assert.ok(cave.rows.every((row) => (row.length === 31)));
+		assert.strictEqual(cave.rows[8][15], mossId);
+		assert.strictEqual(cave.rows[5][27], VOID_CELL);
+		assert.strictEqual(cave.rows.flat().filter((cell) => (cell !== 0)).length, 2);
 
-		assert.deepStrictEqual(manifest.translatorNotes, [{ kind: 'area', thingId: caveId, field: 'name', note: 'A dark place' }]);
-		assert.deepStrictEqual(manifest.noTranslation, [{ kind: 'universe', thingId: universeId, field: 'name' }]);
-		assert.deepStrictEqual(manifest.translations?.languages, ['fr', 'de']);
-		assert.deepStrictEqual(manifest.translations?.entries.map((entry) => [entry.language, entry.text]), [['de', 'Höhle'], ['fr', 'Grotte']]);
+		// The notes, marks and translations are in a file of their own
+		const text = jsonOf<ExportedTranslations>(files, UNIVERSE_EXPORT_TRANSLATIONS);
+
+		assert.ok(text);
+		assert.strictEqual(('translatorNotes' in manifest) || ('noTranslation' in manifest) || ('translations' in manifest), false);
+		assert.deepStrictEqual(text.translatorNotes, [{ kind: 'area', thingId: caveId, field: 'name', note: 'A dark place' }]);
+		assert.deepStrictEqual(text.noTranslation, [{ kind: 'universe', thingId: universeId, field: 'name' }]);
+		assert.deepStrictEqual(text.languages, ['fr', 'de']);
+		assert.deepStrictEqual(text.translations?.map((entry) => [entry.language, entry.text]), [['de', 'Höhle'], ['fr', 'Grotte']]);
 	});
 
 	it('gives a builder the world, without the settings or translations', async () =>
@@ -192,20 +237,28 @@ describe('exporting a universe', () =>
 
 		await setUniverseRole(universeId, bea.playerId, 'builder');
 
-		const manifest = manifestOf((await exportUniverse(bea, universeId)).files);
+		const { files } = await exportUniverse(bea, universeId);
+		const manifest = manifestOf(files);
+		const tilesets = jsonOf<ExportedTilesets>(files, UNIVERSE_EXPORT_TILESETS);
 
 		assert.strictEqual(manifest.role, 'builder');
 		assert.strictEqual(manifest.settings, undefined);
 		assert.strictEqual(manifest.rulesetSettings, undefined);
-		assert.strictEqual(manifest.races, undefined);
+		assert.strictEqual(files.has(UNIVERSE_EXPORT_RACES), false);
+		assert.strictEqual(files.has(UNIVERSE_EXPORT_CLASSES), false);
 		assert.strictEqual(manifest.editors, undefined);
-		assert.strictEqual(manifest.translations, undefined);
-		assert.strictEqual(manifest.areas?.length, 3);
-		assert.strictEqual(manifest.tileGraphics?.length, 1);
-		assert.ok(manifest.tiles?.some((tile) => (tile.id === mossId)));
-		assert.ok(manifest.items && (manifest.items.length > 0));
-		assert.strictEqual(manifest.translatorNotes?.length, 1);
-		assert.strictEqual(manifest.noTranslation?.length, 1);
+		assert.strictEqual(areasOf(files).length, 3);
+		assert.ok(tilesets);
+		assert.strictEqual(tilesets.tileGraphics.length, 1);
+		assert.ok(tilesets.tiles.some((tile) => (tile.id === mossId)));
+		assert.ok((jsonOf<EditorItem[]>(files, UNIVERSE_EXPORT_ITEMS)?.length ?? 0) > 0);
+
+		// The text's notes and marks, without translations
+		const text = jsonOf<ExportedTranslations>(files, UNIVERSE_EXPORT_TRANSLATIONS);
+
+		assert.strictEqual(text?.translatorNotes?.length, 1);
+		assert.strictEqual(text.noTranslation?.length, 1);
+		assert.strictEqual(('languages' in text) || ('translations' in text), false);
 	});
 
 	it('gives a translator their languages\' translations and the text needing none', async () =>
@@ -217,15 +270,15 @@ describe('exporting a universe', () =>
 		const { files } = await exportUniverse(cy, universeId);
 		const manifest = manifestOf(files);
 
-		assert.deepStrictEqual([...files.keys()], [UNIVERSE_EXPORT_MANIFEST]);
+		assert.deepStrictEqual([...files.keys()], [UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_TRANSLATIONS]);
 		assert.strictEqual(manifest.role, 'translator');
-		assert.strictEqual(manifest.areas, undefined);
-		assert.strictEqual(manifest.tiles, undefined);
-		assert.strictEqual(manifest.translatorNotes, undefined);
-		assert.deepStrictEqual(manifest.noTranslation, [{ kind: 'universe', thingId: universeId, field: 'name' }]);
-		assert.deepStrictEqual(manifest.translations, {
+		assert.strictEqual(files.has(UNIVERSE_EXPORT_AREAS), false);
+
+		// Without the world, there are no notes for translators
+		assert.deepStrictEqual(jsonOf<ExportedTranslations>(files, UNIVERSE_EXPORT_TRANSLATIONS), {
+			noTranslation: [{ kind: 'universe', thingId: universeId, field: 'name' }],
 			languages: ['fr'],
-			entries: [{ kind: 'area', thingId: caveId, field: 'name', language: 'fr', text: 'Grotte', sourceHash: sourceTextHash('Cave') }]
+			translations: [{ kind: 'area', thingId: caveId, field: 'name', language: 'fr', text: 'Grotte', sourceHash: sourceTextHash('Cave') }]
 		});
 	});
 
@@ -246,8 +299,8 @@ describe('exporting a universe', () =>
 
 		const { status, headers, files } = await exportUniverse(ada, universeId, 'draft');
 		const manifest = manifestOf(files);
-		const draftCave = manifest.areas?.find((area) => (area.name === 'Cave'));
-		const draftMoss = manifest.tiles?.find((tile) => (tile.name === 'Moss'));
+		const draftCave = areasOf(files).find((area) => (area.name === 'Cave'));
+		const draftMoss = jsonOf<ExportedTilesets>(files, UNIVERSE_EXPORT_TILESETS)?.tiles.find((tile) => (tile.name === 'Moss'));
 
 		assert.strictEqual(status, 200);
 		assert.match(headers.get('content-disposition') ?? '', /\.kilnhaven\.draft\.\d{4}-\d{2}-\d{2}\.zip"?$/);
@@ -256,9 +309,13 @@ describe('exporting a universe', () =>
 		assert.notStrictEqual(draftCave.id, caveId);
 		assert.notStrictEqual(draftMoss.id, mossId);
 
-		const cells = JSON.parse(files.get(draftCave.file)?.toString('utf8') ?? '') as ExportedAreaCells;
+		assert.strictEqual(draftCave.rows[8][15], draftMoss.id);
 
-		assert.strictEqual(cells.chunks[1].cells[0], draftMoss.id);
-		assert.deepStrictEqual(manifest.translations?.entries.map((entry) => entry.thingId), [draftCave.id, draftCave.id]);
+		// Each copied thing's live row is in a file of its own
+		const liveIds = jsonOf<ExportedLiveIds>(files, UNIVERSE_EXPORT_LIVE_IDS);
+
+		assert.strictEqual(liveIds?.areas[draftCave.id], caveId);
+		assert.strictEqual(liveIds.tiles[String(draftMoss.id)], mossId);
+		assert.deepStrictEqual(jsonOf<ExportedTranslations>(files, UNIVERSE_EXPORT_TRANSLATIONS)?.translations?.map((entry) => entry.thingId), [draftCave.id, draftCave.id]);
 	});
 });

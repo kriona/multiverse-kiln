@@ -59,7 +59,7 @@ export type UniverseImportPart = typeof UNIVERSE_IMPORT_PARTS[number];
  * - settingsRole, worldRole, noTranslationRole: the player's role can't change that part
  * - translationLanguages: translations into languages the universe isn't translated into, or the
  *   player can't translate into
- * - nameTaken: its name, which another universe has
+ * - nameTaken: its name, which another universe has, as have the copy names the import tries
  * - keptForSettings: areas and items the draft's settings still name, kept since the settings aren't imported
  */
 export const UNIVERSE_IMPORT_LEFT_OUT = ['universeOnly', 'settingsRole', 'worldRole', 'noTranslationRole', 'translationLanguages', 'nameTaken', 'keptForSettings'] as const;
@@ -127,6 +127,13 @@ export interface UniverseImportPreview
 	 * How many of its tilesets' images it uploads, which needs the player to confirm their rights to them
 	 */
 	tilesetUploads: number;
+
+	/**
+	 * The name it gives the draft, or null when it keeps the draft's: the file's own for a file of the
+	 * same universe, and for another universe's, "Kilnhaven (copy)" in the player's language (numbered when
+	 * that is taken too). Null when it doesn't replace the settings, or every name it would give is taken
+	 */
+	name: string | null;
 
 	/**
 	 * What it leaves out, and why, in UNIVERSE_IMPORT_LEFT_OUT order

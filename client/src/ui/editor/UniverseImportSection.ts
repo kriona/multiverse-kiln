@@ -226,10 +226,11 @@ export class UniverseImportSection
 			this.draftDialog.close();
 		});
 
-		// Escape would leave the draft starting with no dialog to say how it went
+		// Escape would leave the draft starting with no dialog to say how it went. The editor closing every
+		// dialog as it opens the draft sends its own cancel, which mustn't be stopped
 		this.draftDialog.addEventListener('cancel', (event) =>
 		{
-			if (this.startingDraft)
+			if (this.startingDraft && event.isTrusted)
 			{
 				event.preventDefault();
 			}
@@ -256,10 +257,11 @@ export class UniverseImportSection
 			this.dialog.close();
 		});
 
-		// Escape would leave the import running with no dialog to say how it went
+		// Escape would leave the import running with no dialog to say how it went. The editor closing every
+		// dialog, such as when it opens another version, sends its own cancel, which mustn't be stopped
 		this.dialog.addEventListener('cancel', (event) =>
 		{
-			if (this.importing)
+			if (this.importing && event.isTrusted)
 			{
 				event.preventDefault();
 			}
@@ -386,10 +388,12 @@ export class UniverseImportSection
 			this.updateButtons();
 		}
 
+		// Opening the draft closes it already; one that couldn't start says why on the Universe tab
+		this.draftDialog.close();
+
 		if (!started)
 		{
 			this.importOnceDraftOpens = false;
-			this.draftDialog.close();
 		}
 	}
 
@@ -471,7 +475,7 @@ export class UniverseImportSection
 
 		try
 		{
-			const preview = await this.api.previewImport(universe.id, file);
+			const preview = await this.api.previewImport(universe.id, file, currentLocale());
 
 			if (reading === this.reading)
 			{
@@ -512,7 +516,7 @@ export class UniverseImportSection
 
 		this.source.textContent = t({
 			id: 'editor.universeImport.source',
-			defaultMessage: '{universe}, {version, select, draft {its draft} other {its live version}}, exported {date} by {name} (@{username}).',
+			defaultMessage: '{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username}).',
 			description: 'In the dialog importing a zip file into the universe\'s draft, once a file is chosen: which universe and version it was exported from, when and by whom; {universe} is the universe\'s name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player\'s'
 		}, {
 			universe: universe.name,
@@ -521,17 +525,10 @@ export class UniverseImportSection
 			name: preview.exportedBy.displayName,
 			username: preview.exportedBy.username
 		});
-		this.match.textContent = (preview.sameUniverse
-			? t({
-				id: 'editor.universeImport.sameUniverse',
-				defaultMessage: 'The file is of this universe, so what it holds keeps its place: characters and groups go on naming the same areas, races, classes and items once the draft is applied.',
-				description: 'In the dialog importing a zip file into the universe\'s draft, when the file was exported from this universe: its things are matched with the draft\'s rather than made anew'
-			})
-			: t({
-				id: 'editor.universeImport.otherUniverse',
-				defaultMessage: 'The file is of another universe, so everything in it is added to the draft anew.',
-				description: 'In the dialog importing a zip file into the universe\'s draft, when the file was exported from another universe, perhaps on another site'
-			}));
+		this.match.textContent = describeMatch(preview);
+
+		// Importing another universe's file replaces everything with things made anew, so it stands out
+		this.match.className = (preview.sameUniverse ? 'hint' : 'notice');
 
 		if (preview.parts.includes('settings'))
 		{
@@ -668,7 +665,7 @@ export class UniverseImportSection
 
 		try
 		{
-			await this.api.importUniverse(universe.id, chosen.file, this.rights.checked);
+			await this.api.importUniverse(universe.id, chosen.file, this.rights.checked, currentLocale());
 		}
 		catch (error)
 		{
@@ -687,13 +684,49 @@ export class UniverseImportSection
 		this.dialog.close();
 		showToast(t({
 			id: 'editor.universeImport.imported',
-			defaultMessage: 'Imported into the draft. Check it, then apply the draft when it\'s ready.',
+			defaultMessage: 'Imported into the draft.',
 			description: 'Toast once a zip file is imported into the universe\'s draft (a copy players don\'t see until it is applied); the editor then shows the draft again'
 		}), {
 			kind: 'success'
 		});
 		this.drafts.imported();
 	}
+}
+
+/**
+ * What the import dialog says of whether a file is of this universe, and for another universe's, the
+ * name the universe is given
+ *
+ * @param preview What the server read
+ * @return The text
+ */
+function describeMatch(preview: UniverseImportPreview): string
+{
+	if (preview.sameUniverse)
+	{
+		return(t({
+			id: 'editor.universeImport.sameUniverse',
+			defaultMessage: 'The file is of this universe, so what it holds keeps its place: characters and groups go on naming the same areas, races, classes and items once the draft is applied.',
+			description: 'In the dialog importing a zip file into the universe\'s draft, when the file was exported from this universe: its things are matched with the draft\'s rather than made anew'
+		}));
+	}
+
+	if (preview.name === null)
+	{
+		return(t({
+			id: 'editor.universeImport.otherUniverse',
+			defaultMessage: 'This file is from another universe; everything in your universe will be replaced by the contents of this file.',
+			description: 'Warning in the dialog importing a zip file into the universe\'s draft, when the file was exported from another universe, perhaps on another site, and the universe keeps its own name'
+		}));
+	}
+
+	return(t({
+		id: 'editor.universeImport.otherUniverseRenamed',
+		defaultMessage: 'This file is from another universe; everything in your universe will be replaced by the contents of this file, and it will be named {name}.',
+		description: 'Warning in the dialog importing a zip file into the universe\'s draft, when the file was exported from another universe, perhaps on another site; {name} is the name the universe is given, such as "Kilnhaven (copy)"'
+	}, {
+		name: preview.name
+	}));
 }
 
 /**

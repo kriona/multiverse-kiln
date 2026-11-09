@@ -383,7 +383,7 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [✅] Tests (`server/test/universeDeletion.test.ts`)
 11. Exporting a universe
 	- [✅] Export Universe left of Delete Universe, for every role but beta tester, opening a dialog that says what the export holds and whose Export Universe downloads a zip file of what the role can change in the version open (`client/src/ui/editor/UniverseExportSection.ts`)
-	- [✅] The format (`shared/src/universeExport.ts`): `universe.json` with a section for each kind of thing the role can change, each area's cells in `areas/` (named by the area's `file`), and uploaded tilesets' images in `tilesets/`, named by the version's IDs, with the ruleset's defaults listed by key
+	- [✅] The format (`shared/src/universeExport.ts`): `universe.json` with a section for each kind of thing the role can change, the races and classes in `races.json` and `classes.json`, the uploaded tilesets and tiles in `tilesets.json`, the items in `items.json`, the notes for translators, needs-no-translation marks and translations in `translations.json`, each area with its settings, links and cells in a file of its own in `areas/` (which `areas.json` lists), the live rows a draft's things were copied from in `liveIds.json`, and uploaded tilesets' images in `tilesets/`, named by the version's IDs, with the ruleset's defaults listed by key
 	- [✅] `GET /:universeId/export` (`server/src/http/universeExport.ts`), read in one read-only snapshot, one export at a time per player; zip archives written and read with Node's zlib (`server/src/archives/zip.ts`)
 	- [✅] Tests (`server/test/universeExport.test.ts`, `server/test/archives/zip.test.ts`)
 12. Importing a universe

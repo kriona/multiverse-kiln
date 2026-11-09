@@ -15,9 +15,9 @@
  * can only name saved things in a save from the editor, so the import makes those changes once the
  * changes before them are saved (PendingChange)
  */
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, DEFAULT_TILE_CELL, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, RULESET_COINS, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
-import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks } from '../db/areaRepo.js';
+import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { listDifficultyLevels } from '../db/difficultyRepo.js';
@@ -96,15 +96,23 @@ export interface ImportTarget
 	startingAreaIds: string[];
 
 	/**
-	 * Whether another universe has the name the file gives the universe
+	 * The name the import gives the draft (importedName()), or undefined to keep the draft's, when the
+	 * file has no name or every name the import would give it is taken
 	 */
-	nameTaken: boolean;
+	name: string | undefined;
 
 	/**
 	 * The areas whose cells use each of the draft's own tiles, for keeping tiles the areas the import
 	 * keeps use; only loaded when the import keeps areas
 	 */
 	tileUsage: Map<number, string[]>;
+
+	/**
+	 * The stored chunks of each of the draft's areas, by area and chunkKey(), which a matched area's cells
+	 * are compared with so only those that differ are painted; only loaded for a file of the same universe,
+	 * the only one whose areas are matched
+	 */
+	areaCells: Map<string, Map<string, number[]>>;
 }
 
 /**
@@ -139,9 +147,10 @@ function textKey(kind: UniverseTextKind, thingId: string, field: string): string
  * @param version The universe's draft
  * @param file The file being imported, whose name is checked against other universes'
  * @param keepsAreas Whether the import may keep some of the draft's areas, so the tiles they use matter
+ * @param translator The language the player importing reads, which a copy's name is written in
  * @return The draft, or undefined when the universe has no draft
  */
-export async function loadImportTarget(version: UniverseVersion, file: ImportFile, keepsAreas: boolean): Promise<ImportTarget | undefined>
+export async function loadImportTarget(version: UniverseVersion, file: ImportFile, keepsAreas: boolean, translator: Translator): Promise<ImportTarget | undefined>
 {
 	return(inSnapshot(async (executor) =>
 	{
@@ -154,7 +163,7 @@ export async function loadImportTarget(version: UniverseVersion, file: ImportFil
 
 		const { ruleset } = universe;
 		const tiles = await loadEditorTiles(version, ruleset, executor);
-		const name = file.manifest.settings?.name;
+		const areas = await listEditorAreas(version, executor);
 
 		return({
 			universe,
@@ -165,17 +174,94 @@ export async function loadImportTarget(version: UniverseVersion, file: ImportFil
 			themes: await loadEditorThemes(version, ruleset, executor),
 			difficultyLevels: await listDifficultyLevels(version, executor),
 			tileGraphics: await listTileGraphics(version, executor),
-			areas: await listEditorAreas(version, executor),
+			areas,
 			links: await listVersionAreaLinks(version, executor),
 			notes: await listTranslatorNotes(version, executor),
 			translations: await listTranslations(version, universe.translationLanguages, executor),
 			texts: await existingTexts(version, universe, executor),
 			origins: await findAllDraftOrigins(version.universeId, executor),
 			startingAreaIds: await listStartingAreaIds(version, executor),
-			nameTaken: ((typeof name === 'string') && (name !== universe.name) && await isUniverseNameTaken(name, universe.id, executor)),
-			tileUsage: (keepsAreas ? await usageOf(version, tiles, executor) : new Map())
+			name: await importedName(file, universe, translator, executor),
+			tileUsage: (keepsAreas ? await usageOf(version, tiles, executor) : new Map()),
+			areaCells: ((file.manifest.universe.id === universe.id) ? await cellsOf(areas, executor) : new Map())
 		});
 	}));
+}
+
+/**
+ * The most copies importedName() tries numbering before keeping the draft's own name
+ */
+const MAX_COPY_NUMBER = 20;
+
+/**
+ * The names a universe made from another universe's file is given (see shared/src/localization.ts)
+ */
+const copyNames = defineMessages({
+	copy: {
+		id: 'universe.copyName',
+		defaultMessage: '{name} (copy)',
+		description: 'Name importing a file into a universe\'s draft gives the universe when the file was exported from another universe, whose name is taken; {name} is that universe\'s name. The creator can rename it'
+	},
+	numbered: {
+		id: 'universe.copyNameNumbered',
+		defaultMessage: '{name} (copy {number, number})',
+		description: 'Name importing a file into a universe\'s draft gives the universe when the file was exported from another universe and the name "{name} (copy)" is taken too; {number} counts up from 2 until a name is free'
+	}
+});
+
+/**
+ * The name importing a file gives the draft: the file's own for a file of the same universe, and for
+ * another universe's, the first of "Kilnhaven (copy)", "Kilnhaven (copy 2)" and so on that no other
+ * universe has, in the importing player's language and cut short to fit MAX_UNIVERSE_NAME_LENGTH
+ *
+ * @param file The file
+ * @param universe The universe it is imported into, in its draft
+ * @param translator The player's language
+ * @param executor The snapshot
+ * @return The name, or undefined to keep the draft's: the file has none, or every name tried is taken
+ */
+async function importedName(file: ImportFile, universe: EditableUniverseDetails, translator: Translator, executor: Executor): Promise<string | undefined>
+{
+	const name = file.manifest.settings?.name;
+
+	if (typeof name !== 'string')
+	{
+		return(undefined);
+	}
+
+	if (file.manifest.universe.id === universe.id)
+	{
+		return((((name === universe.name) || !await isUniverseNameTaken(name, universe.id, executor)) ? name : undefined));
+	}
+
+	for (let number = 1; number <= MAX_COPY_NUMBER; number++)
+	{
+		const copy = copyName(name, number, translator);
+
+		if ((copy === universe.name) || !await isUniverseNameTaken(copy, universe.id, executor))
+		{
+			return(copy);
+		}
+	}
+
+	return(undefined);
+}
+
+/**
+ * A copy's name, with the universe's name cut short so the whole fits MAX_UNIVERSE_NAME_LENGTH
+ *
+ * @param name The universe's name
+ * @param number Which copy: 1 for "(copy)", then "(copy 2)" and so on
+ * @param translator The player's language
+ * @return The name
+ */
+function copyName(name: string, number: number, translator: Translator): string
+{
+	const format = (base: string): string => ((number === 1) ? translator.format(copyNames.copy, { name: base }) : translator.format(copyNames.numbered, { name: base, number }));
+	const characters = [...name];
+	const over = ([...format(name)].length - MAX_UNIVERSE_NAME_LENGTH);
+
+	return(((over > 0) ? format(characters.slice(0, Math.max(1, (characters.length - over))).join('').trim()) : format(name)));
 }
 
 /**
@@ -229,6 +315,50 @@ function universeTextKeys(universeId: string, settings: Record<string, unknown>)
 	}
 
 	return(keys);
+}
+
+/**
+ * How many chunks of an area cellsOf() reads at once
+ */
+const CHUNKS_PER_PAGE = 500;
+
+/**
+ * The stored chunks of each of a draft's areas
+ *
+ * @param areas The draft's areas
+ * @param executor The snapshot
+ * @return Each area's chunks' cells, by area and chunkKey()
+ */
+async function cellsOf(areas: readonly EditorArea[], executor: Executor): Promise<Map<string, Map<string, number[]>>>
+{
+	const cells = new Map<string, Map<string, number[]>>();
+
+	for (const area of areas)
+	{
+		const chunks = new Map<string, number[]>();
+		let after: { chunkColumn: number; chunkRow: number } | undefined;
+
+		for (;;)
+		{
+			const page = await loadChunkPage(area.id, after, CHUNKS_PER_PAGE, executor);
+
+			for (const chunk of page)
+			{
+				chunks.set(chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells);
+			}
+
+			if (page.length < CHUNKS_PER_PAGE)
+			{
+				break;
+			}
+
+			after = page[page.length - 1];
+		}
+
+		cells.set(area.id, chunks);
+	}
+
+	return(cells);
 }
 
 /**
@@ -385,6 +515,18 @@ function savedString(ids: SavedIds, target: Target<string>): string
 }
 
 /**
+ * Whether two areas' bounds are the same
+ *
+ * @param a One area's bounds
+ * @param b The other's
+ * @return True when they are
+ */
+function sameBounds(a: AreaBounds, b: AreaBounds): boolean
+{
+	return((a.minColumn === b.minColumn) && (a.minRow === b.minRow) && (a.maxColumn === b.maxColumn) && (a.maxRow === b.maxRow));
+}
+
+/**
  * Some of a thing's settings
  *
  * @param thing The thing, as the file holds it
@@ -431,6 +573,11 @@ class ImportPlanner
 	readonly parts: UniverseImportPart[] = [];
 	translationLanguages: string[] = [];
 	tilesetUploads = 0;
+
+	/**
+	 * The name the import gives the draft, or undefined when it keeps the draft's
+	 */
+	newName: string | undefined;
 
 	private readonly manifest: ImportManifest;
 	private readonly ruleset: Ruleset;
@@ -779,13 +926,16 @@ class ImportPlanner
 
 	/**
 	 * Adds and changes the draft's areas to the file's, with their cells and links. A matched area is
-	 * first cut down to one cell and given the file's bounds again, which clears its painting and links
-	 * before the file's are painted and linked
+	 * compared with the file's, so only what differs is changed and recorded: its bounds, the cells that
+	 * hold another tile, and the links that go elsewhere, are new or are gone
 	 */
 	private planAreas(): void
 	{
 		const areas = (this.manifest.areas ?? []);
-		const matchedIds = new Set<string>();
+		const draftAreas = new Map(this.target.areas.map((area) => [area.id, area]));
+
+		// The bounds each matched area has once the import is saved, by its ID in the draft
+		const bounds = new Map<string, AreaBounds>();
 
 		for (const area of areas)
 		{
@@ -807,18 +957,11 @@ class ImportPlanner
 			}
 			else
 			{
-				matchedIds.add(matched);
+				bounds.set(matched, area.bounds);
 				this.areaTargets.set(area.id, matched);
 			}
 
 			this.counts.areas++;
-		}
-
-		// Links on the matched areas' cells go before the areas are cut down, which keeps the link on the
-		// cell left
-		for (const link of this.target.links.filter((each) => matchedIds.has(each.areaId)))
-		{
-			this.add({ kind: 'deleteLink', areaId: link.areaId, column: link.column, row: link.row }, `area ${link.areaId}`);
 		}
 
 		for (const area of areas)
@@ -826,9 +969,10 @@ class ImportPlanner
 			const target = this.areaTarget(area.id, `area ${area.id}`);
 			const where = `area ${area.id}`;
 			const parentAreaId = ((area.parentAreaId === null) ? null : this.areaTarget(area.parentAreaId, where));
-			const matched = matchedIds.has(target);
+			const draftArea = draftAreas.get(target);
 
-			if (matched)
+			// The save records only the settings that differ
+			if (draftArea)
 			{
 				this.add({
 					kind: 'updateArea',
@@ -839,60 +983,163 @@ class ImportPlanner
 						parentAreaId
 					}
 				}, where);
-				this.add({ kind: 'resizeArea', areaId: target, bounds: { minColumn: 0, minRow: 0, maxColumn: 0, maxRow: 0 }, discard: true }, where);
 			}
 			else if (parentAreaId !== null)
 			{
 				this.add({ kind: 'updateArea', areaId: target, update: { parentAreaId } }, where);
 			}
 
-			this.add({ kind: 'resizeArea', areaId: target, bounds: area.bounds, discard: true }, where);
-			this.planCells(area.id, target, area.bounds, matched);
+			// Making an area smaller discards its cells and links outside the new bounds, and links into them
+			if (!sameBounds((draftArea?.bounds ?? NEW_AREA_BOUNDS), area.bounds))
+			{
+				this.add({ kind: 'resizeArea', areaId: target, bounds: area.bounds, discard: true }, where);
+			}
+
+			if (draftArea)
+			{
+				this.planChangedCells(area.id, draftArea, area.bounds);
+			}
+			else
+			{
+				this.planCells(area.id, target, area.bounds);
+			}
 		}
 
-		for (const area of areas)
+		this.planLinks(bounds);
+	}
+
+	/**
+	 * Saves the file's links that the draft doesn't have as they are, and deletes the matched areas'
+	 * links the file doesn't have, leaving out those making an area smaller already deleted
+	 *
+	 * @param bounds The bounds each matched area has once the import is saved, by its ID in the draft
+	 */
+	private planLinks(bounds: ReadonlyMap<string, AreaBounds>): void
+	{
+		const kept = new Map<string, EditorAreaLink & { areaId: string }>();
+
+		for (const link of this.target.links.filter((each) => bounds.has(each.areaId)))
+		{
+			const own = bounds.get(link.areaId);
+			const target = bounds.get(link.targetAreaId);
+
+			if ((!own || isInBounds(own, link.column, link.row)) && (!target || isInBounds(target, link.targetColumn, link.targetRow)))
+			{
+				kept.set(`${link.areaId}:${link.column}:${link.row}`, link);
+			}
+		}
+
+		const saved = new Set<string>();
+
+		for (const area of (this.manifest.areas ?? []))
 		{
 			const where = `area ${area.id}`;
+			const areaId = this.areaTarget(area.id, where);
 
 			for (const link of area.links)
 			{
-				this.add({
-					kind: 'saveLink',
-					areaId: this.areaTarget(area.id, where),
-					column: link.column,
-					row: link.row,
-					target: {
-						targetAreaId: this.areaTarget(link.targetAreaId, where),
-						targetColumn: link.targetColumn,
-						targetRow: link.targetRow,
-						mode: link.mode,
-						requiresWholeGroup: link.requiresWholeGroup
-					}
-				}, where);
+				const key = `${areaId}:${link.column}:${link.row}`;
+				const draftLink = kept.get(key);
+				const target = {
+					targetAreaId: this.areaTarget(link.targetAreaId, where),
+					targetColumn: link.targetColumn,
+					targetRow: link.targetRow,
+					mode: link.mode,
+					requiresWholeGroup: link.requiresWholeGroup
+				};
+
+				saved.add(key);
+
+				if (draftLink && (draftLink.targetAreaId === target.targetAreaId) && (draftLink.targetColumn === target.targetColumn) && (draftLink.targetRow === target.targetRow) && (draftLink.mode === target.mode) && (draftLink.requiresWholeGroup === target.requiresWholeGroup))
+				{
+					continue;
+				}
+
+				this.add({ kind: 'saveLink', areaId, column: link.column, row: link.row, target }, where);
+			}
+		}
+
+		for (const [key, link] of kept)
+		{
+			if (!saved.has(key))
+			{
+				this.add({ kind: 'deleteLink', areaId: link.areaId, column: link.column, row: link.row }, `area ${link.areaId}`);
 			}
 		}
 	}
 
 	/**
-	 * Paints an area's cells as the file has them, MAX_CELL_CHANGES at a time, each made as it is saved
-	 * so the import never holds every cell's change at once. Only cells other than the default tile are
-	 * painted, as the area holds nothing else once it is given its bounds, but for the one cell a matched
-	 * area kept when it was cut down
+	 * Paints the cells of a matched area that hold something other than the file has, MAX_CELL_CHANGES at
+	 * a time, comparing the file's chunks with the draft's inside the area's new bounds. A cell the area
+	 * grows to include holds the default tile
+	 *
+	 * @param fileAreaId The area's ID in the file
+	 * @param draftArea The draft's area, as it was before the import
+	 * @param bounds Its bounds once the import is saved
+	 */
+	private planChangedCells(fileAreaId: string, draftArea: EditorArea, bounds: AreaBounds): void
+	{
+		const where = `area ${fileAreaId}'s cells`;
+		const fileChunks = new Map((this.file.cells.get(fileAreaId)?.chunks ?? []).map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
+		const draftChunks = (this.target.areaCells.get(draftArea.id) ?? new Map<string, number[]>());
+		const changes: [number, number, Target<number>][] = [];
+
+		for (const key of new Set([...fileChunks.keys(), ...draftChunks.keys()]))
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(key);
+			const fileCells = fileChunks.get(key);
+			const draftCells = draftChunks.get(key);
+
+			for (let cell = 0; cell < (CHUNK_SIZE * CHUNK_SIZE); cell++)
+			{
+				const column = ((chunkColumn * CHUNK_SIZE) + (cell % CHUNK_SIZE));
+				const row = ((chunkRow * CHUNK_SIZE) + Math.floor(cell / CHUNK_SIZE));
+
+				if (!isInBounds(bounds, column, row))
+				{
+					continue;
+				}
+
+				const value = (fileCells?.[cell] ?? DEFAULT_TILE_CELL);
+				const wanted = (((value === DEFAULT_TILE_CELL) || (value === VOID_CELL)) ? value : this.tileTarget(value, where));
+				const current = (isInBounds(draftArea.bounds, column, row) ? (draftCells?.[cell] ?? DEFAULT_TILE_CELL) : DEFAULT_TILE_CELL);
+
+				if (wanted !== current)
+				{
+					changes.push([column, row, wanted]);
+				}
+			}
+		}
+
+		for (let start = 0; start < changes.length; start += MAX_CELL_CHANGES)
+		{
+			const batch = changes.slice(start, (start + MAX_CELL_CHANGES));
+
+			this.addLater((ids) => ({
+				kind: 'editCells',
+				areaId: draftArea.id,
+				changes: batch.map(([column, row, value]) => [column, row, savedNumber(ids, value)])
+			}), where);
+		}
+	}
+
+	/**
+	 * Paints a new area's cells as the file has them, MAX_CELL_CHANGES at a time, each made as it is
+	 * saved so the import never holds every cell's change at once. Only cells other than the default tile
+	 * are painted, as a new area holds nothing else
 	 *
 	 * @param fileAreaId The area's ID in the file
 	 * @param target The area in the draft
 	 * @param bounds Its bounds
-	 * @param matched Whether it is one of the draft's areas, which kept its cell at column 0, row 0
 	 */
-	private planCells(fileAreaId: string, target: Target<string>, bounds: { minColumn: number; minRow: number; maxColumn: number; maxRow: number }, matched: boolean): void
+	private planCells(fileAreaId: string, target: Target<string>, bounds: AreaBounds): void
 	{
 		const cells = this.file.cells.get(fileAreaId);
-		const inBounds = (column: number, row: number): boolean => ((column >= bounds.minColumn) && (column <= bounds.maxColumn) && (row >= bounds.minRow) && (row <= bounds.maxRow));
+		const inBounds = (column: number, row: number): boolean => isInBounds(bounds, column, row);
 		// Each change's chunks, by their place in the file's list
 		const batches: number[][] = [];
 		let batch: number[] = [];
 		let size = 0;
-		let originPainted = false;
 
 		for (const [index, chunk] of (cells?.chunks ?? []).entries())
 		{
@@ -903,7 +1150,7 @@ class ImportPlanner
 				const column = ((chunk.chunkColumn * CHUNK_SIZE) + (cell % CHUNK_SIZE));
 				const row = ((chunk.chunkRow * CHUNK_SIZE) + Math.floor(cell / CHUNK_SIZE));
 
-				if ((value === DEFAULT_TILE_CELL) || !inBounds(column, row))
+				if (!inBounds(column, row) || (value === DEFAULT_TILE_CELL))
 				{
 					continue;
 				}
@@ -913,7 +1160,6 @@ class ImportPlanner
 					refuseFile(`area ${fileAreaId}'s cells name tile ${value}, which the file doesn't list`);
 				}
 
-				originPainted ||= ((column === 0) && (row === 0));
 				painted++;
 			}
 
@@ -945,12 +1191,6 @@ class ImportPlanner
 				areaId: savedString(ids, target),
 				changes: chunks.flatMap((chunk) => this.cellChanges(cells?.chunks[chunk], inBounds, ids))
 			}), `area ${fileAreaId}'s cells`);
-		}
-
-		// The cell a matched area kept when it was cut down holds what the draft had there
-		if (matched && inBounds(0, 0) && !originPainted)
-		{
-			this.addLater((ids) => ({ kind: 'editCells', areaId: savedString(ids, target), changes: [[0, 0, DEFAULT_TILE_CELL]] }), `area ${fileAreaId}'s cells`);
 		}
 	}
 
@@ -988,19 +1228,22 @@ class ImportPlanner
 	private planSettings(): void
 	{
 		const settings = (this.manifest.settings ?? {});
-		const universe = this.target.universe;
-		const name = settings.name;
+		const { universe, name } = this.target;
 		const startingItems = this.itemQuantities(settings.startingItems, 'settings');
 		const startingAreaId = ((typeof settings.startingAreaId === 'string') ? this.areaTarget(settings.startingAreaId, 'settings') : null);
 		const lobbyAreaId = ((typeof settings.lobbyAreaId === 'string') ? this.areaTarget(settings.lobbyAreaId, 'settings') : null);
-		const keepsName = (this.target.nameTaken || (typeof name !== 'string'));
 
-		if (this.target.nameTaken)
+		if ((name === undefined) && (typeof settings.name === 'string'))
 		{
 			this.leftOut.add('nameTaken');
 		}
 
-		if (universe.lobbyAreaId !== null)
+		this.newName = name;
+
+		// A lobby moving to another area is taken away while the starting areas change, and set last
+		const lobbyMoves = (lobbyAreaId !== universe.lobbyAreaId);
+
+		if (lobbyMoves && (universe.lobbyAreaId !== null))
 		{
 			this.add({ kind: 'universe', update: { lobbyAreaId: null } }, 'settings');
 		}
@@ -1009,7 +1252,7 @@ class ImportPlanner
 			kind: 'universe',
 			update: {
 				...pick(settings, UNIVERSE_FIELDS),
-				...(keepsName ? {} : { name }),
+				...((name === undefined) ? {} : { name }),
 				startingItems: startingItems.map(({ itemId, quantity }) => ({ itemId: savedNumber(ids, itemId), quantity })),
 				startingAreaId: ((startingAreaId === null) ? null : savedString(ids, startingAreaId))
 			}
@@ -1020,7 +1263,7 @@ class ImportPlanner
 		this.planClasses();
 		this.planThemes();
 
-		if (lobbyAreaId !== null)
+		if ((lobbyAreaId !== null) && (lobbyMoves || (settings.lobbyColumn !== universe.lobbyColumn) || (settings.lobbyRow !== universe.lobbyRow)))
 		{
 			this.addLater((ids) => ({
 				kind: 'universe',
@@ -1589,11 +1832,13 @@ class ImportPlanner
 	}
 
 	/**
-	 * Saves the file's notes for translators, and deletes the draft's the file doesn't have
+	 * Saves the file's notes for translators the draft doesn't have as they are, and deletes the draft's
+	 * the file doesn't have
 	 */
 	private planNotes(): void
 	{
 		const written = new Set<string>();
+		const draftNotes = new Map(this.target.notes.map((note) => [textKey(note.kind, note.thingId, note.field), note.note]));
 
 		for (const note of (this.manifest.translatorNotes ?? []))
 		{
@@ -1601,9 +1846,15 @@ class ImportPlanner
 
 			if (text)
 			{
-				written.add(textKey(text.kind, String(text.thingId), text.field));
-				this.addLater((ids) => ({ kind: 'saveTranslatorNote', text: this.savedText(ids, text), note: note.note }), 'notes for translators');
+				const key = textKey(text.kind, String(text.thingId), text.field);
+
+				written.add(key);
 				this.counts.translatorNotes++;
+
+				if (draftNotes.get(key) !== note.note)
+				{
+					this.addLater((ids) => ({ kind: 'saveTranslatorNote', text: this.savedText(ids, text), note: note.note }), 'notes for translators');
+				}
 			}
 		}
 
@@ -1619,7 +1870,8 @@ class ImportPlanner
 	}
 
 	/**
-	 * Marks the file's text needing no translation, and unmarks the draft's the file doesn't mark
+	 * Marks the file's text needing no translation that the draft doesn't mark, and unmarks the draft's
+	 * the file doesn't mark
 	 */
 	private planNoTranslation(): void
 	{
@@ -1637,6 +1889,9 @@ class ImportPlanner
 		}
 
 		const marked = new Set<string>();
+		const draftMarked = new Set(this.target.notes
+			.filter((note) => note.noTranslation)
+			.map((note) => textKey(note.kind, note.thingId, note.field)));
 
 		this.parts.push('noTranslation');
 
@@ -1646,9 +1901,15 @@ class ImportPlanner
 
 			if (text)
 			{
-				marked.add(textKey(text.kind, String(text.thingId), text.field));
-				this.addLater((ids) => ({ kind: 'saveNoTranslation', text: this.savedText(ids, text), noTranslation: true }), 'text needing no translation');
+				const key = textKey(text.kind, String(text.thingId), text.field);
+
+				marked.add(key);
 				this.counts.noTranslation++;
+
+				if (!draftMarked.has(key))
+				{
+					this.addLater((ids) => ({ kind: 'saveNoTranslation', text: this.savedText(ids, text), noTranslation: true }), 'text needing no translation');
+				}
 			}
 		}
 
@@ -1665,7 +1926,8 @@ class ImportPlanner
 
 	/**
 	 * Saves the file's translations into the languages the player may translate the universe into, once
-	 * the import is saved, and deletes the draft's into them the file doesn't have
+	 * the import is saved, that the draft doesn't have as they are, and deletes the draft's into them the
+	 * file doesn't have
 	 *
 	 * @param settings Whether the import replaces the settings, and with them the languages
 	 */
@@ -1693,6 +1955,7 @@ class ImportPlanner
 		}
 
 		const written = new Set<string>();
+		const draftTranslations = new Map(this.target.translations.map((translation) => [`${textKey(translation.kind, translation.thingId, translation.field)}:${translation.language}`, translation]));
 
 		this.parts.push('translations');
 		this.translationLanguages = languages;
@@ -1703,9 +1966,16 @@ class ImportPlanner
 
 			if (text)
 			{
-				written.add(`${textKey(text.kind, String(text.thingId), text.field)}:${entry.language}`);
-				this.addLater((ids) => ({ kind: 'saveTranslation', text: this.savedText(ids, text), language: entry.language, translation: entry.text, sourceHash: entry.sourceHash }), `translations into ${entry.language}`);
+				const key = `${textKey(text.kind, String(text.thingId), text.field)}:${entry.language}`;
+				const draft = draftTranslations.get(key);
+
+				written.add(key);
 				this.counts.translations++;
+
+				if ((draft?.text !== entry.text) || (draft.sourceHash !== entry.sourceHash))
+				{
+					this.addLater((ids) => ({ kind: 'saveTranslation', text: this.savedText(ids, text), language: entry.language, translation: entry.text, sourceHash: entry.sourceHash }), `translations into ${entry.language}`);
+				}
 			}
 		}
 
@@ -1766,7 +2036,8 @@ export function planImport(file: ImportFile, target: ImportTarget, access: Edito
 			counts: planner.counts,
 			translationLanguages: planner.translationLanguages,
 			tilesetUploads: planner.tilesetUploads,
-			leftOut: [...planner.leftOut]
+			name: (planner.newName ?? null),
+			leftOut: UNIVERSE_IMPORT_LEFT_OUT.filter((reason) => planner.leftOut.has(reason))
 		}
 	});
 }

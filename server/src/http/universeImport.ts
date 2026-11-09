@@ -8,9 +8,10 @@
  * editor would be, in one transaction: all of it is imported, or none of it
  */
 import express, { type Request, type Response, type Router } from 'express';
-import { canImportUniverse, defineMessages, localize, MAX_UNIVERSE_IMPORT_BYTES, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type ErrorPayload, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { canImportUniverse, defineMessages, localize, MAX_LOCALE_LENGTH, MAX_UNIVERSE_IMPORT_BYTES, SOURCE_LOCALE, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type ErrorPayload, type UniverseImportPreview } from '@multiverse-kiln/shared';
 import { z } from 'zod';
 
+import { emailTranslator } from '../email/emailLocales.js';
 import { requireRole, universeContextOf, type UniverseContext } from './editorAccess.js';
 import { saveChanges } from './editorChanges.js';
 import { errorMessages, sendError } from './errors.js';
@@ -64,6 +65,11 @@ const importQuery = z.object({
 	[UNIVERSE_IMPORT_RIGHTS_PARAM]: z.enum(['true', 'false']).optional(),
 	windowId: z.string().min(1).max(64).optional()
 });
+
+/**
+ * The language a copy's name is written in, for both routes (?locale=, the page's language)
+ */
+const importLocale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
 
 /**
  * Adds the routes that import a file into a universe's draft, for the roles that may change something in it
@@ -180,7 +186,8 @@ async function planRequest(request: Request, response: Response): Promise<Import
 				role: context.role,
 				languages: context.languages
 			};
-			const target = await loadImportTarget(context.version, file, mayKeepAreas(file, access));
+			const locale = importLocale.safeParse(request.query.locale);
+			const target = await loadImportTarget(context.version, file, mayKeepAreas(file, access), emailTranslator((locale.success ? locale.data : SOURCE_LOCALE)));
 
 			if (!target)
 			{

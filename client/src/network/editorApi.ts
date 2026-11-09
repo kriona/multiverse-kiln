@@ -130,11 +130,12 @@ export class EditorApi
 	 *
 	 * @param universeId The universe's ID
 	 * @param file The export's zip file
+	 * @param locale The language the name of a copy of another universe is written in, by tag
 	 * @return What it would change
 	 */
-	async previewImport(universeId: string, file: Blob): Promise<UniverseImportPreview>
+	async previewImport(universeId: string, file: Blob, locale: string): Promise<UniverseImportPreview>
 	{
-		return(this.send<UniverseImportPreview>('POST', `${universePath(universeId)}${UNIVERSE_IMPORT_PREVIEW_PATH}`, file, ZIP_TYPE));
+		return(this.send<UniverseImportPreview>('POST', `${universePath(universeId)}${UNIVERSE_IMPORT_PREVIEW_PATH}?${queryString({ locale })}`, file, ZIP_TYPE));
 	}
 
 	/**
@@ -143,10 +144,14 @@ export class EditorApi
 	 * @param universeId The universe's ID
 	 * @param file The export's zip file
 	 * @param rightsConfirmed Whether the player confirms their rights to the images of the tilesets it uploads
+	 * @param locale The language the name of a copy of another universe is written in, by tag
 	 */
-	async importUniverse(universeId: string, file: Blob, rightsConfirmed: boolean): Promise<void>
+	async importUniverse(universeId: string, file: Blob, rightsConfirmed: boolean, locale: string): Promise<void>
 	{
-		const query = new URLSearchParams({ [UNIVERSE_IMPORT_RIGHTS_PARAM]: String(rightsConfirmed) });
+		const query = new URLSearchParams({
+			[UNIVERSE_IMPORT_RIGHTS_PARAM]: String(rightsConfirmed),
+			locale
+		});
 
 		if (this.windowId !== undefined)
 		{

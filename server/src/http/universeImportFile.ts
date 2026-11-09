@@ -1,10 +1,11 @@
 /**
  * Reading a universe's export for importing it (see Importing a universe in STRUCTURE-OVERVIEW.md): the
- * zip archive, its UniverseExport and each area's cells, checked for the shape shared/src/universeExport.ts
- * gives them. What the things' settings hold is checked later, by the validators a save's changes go
- * through (editorChange in editorPayloads.ts), as the import makes its changes from them
+ * zip archive, its UniverseExport, races, classes, tilesets, items, areas, translations and live IDs, checked for the shape
+ * shared/src/universeExport.ts gives them. What the things' settings hold is checked later, by the
+ * validators a save's changes go through (editorChange in editorPayloads.ts), as the import makes its
+ * changes from them
  */
-import { CHUNK_SIZE, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
 import { z } from 'zod';
 
 import { readZip, ZipError } from '../archives/zip.js';
@@ -113,83 +114,125 @@ const universeExport = z.object({
 		key: z.string().min(1).max(64).nullable(),
 		isDefault: z.boolean()
 	})).optional(),
-	races: z.array(exportedOption).optional(),
-	classes: z.array(exportedOption).optional(),
 	themes: z.array(exportedOption).optional(),
-	editors: z.array(z.unknown()).optional(),
+	editors: z.array(z.unknown()).optional()
+});
+
+/**
+ * The archive's list of the areas' files
+ */
+const areaPaths = z.array(z.string().max(200));
+
+/**
+ * The archive's live IDs, an ExportedLiveIds
+ */
+const exportedLiveIds = z.object({
+	tileGraphics: idRecord(z.uuid()),
+	tiles: idRecord(numericId),
+	items: idRecord(numericId),
+	areas: idRecord(z.uuid()),
+	races: idRecord(numericId),
+	classes: idRecord(numericId),
+	themes: idRecord(numericId),
+	difficultyLevels: idRecord(numericId)
+}).partial();
+
+/**
+ * The archive's races, classes or items
+ */
+const exportedOptions = z.array(exportedOption);
+
+/**
+ * The archive's uploaded tilesets and tiles, an ExportedTilesets
+ */
+const exportedTilesets = z.object({
 	tileGraphics: z.array(z.object({
 		id: z.uuid(),
 		name: z.string(),
 		format: z.enum(TILE_GRAPHIC_FORMATS),
 		drawOrder: z.number().int().nullable(),
 		file: z.string().max(200).nullable()
-	})).optional(),
-	tiles: z.array(exportedOption).optional(),
-	items: z.array(exportedOption).optional(),
-	areas: z.array(z.looseObject({
-		id: z.uuid(),
-		parentAreaId: z.uuid().nullable(),
-		defaultTileId: numericId,
-		bounds: z.object({
-			minColumn: cellCoordinate,
-			minRow: cellCoordinate,
-			maxColumn: cellCoordinate,
-			maxRow: cellCoordinate
-		}),
-		links: z.array(z.object({
-			column: cellCoordinate,
-			row: cellCoordinate,
-			targetAreaId: z.uuid(),
-			targetColumn: cellCoordinate,
-			targetRow: cellCoordinate,
-			mode: z.enum(AREA_LINK_MODES),
-			requiresWholeGroup: z.boolean()
-		})),
-		file: z.string().max(200)
-	})).optional(),
-	translatorNotes: z.array(textRef.extend({ note: z.string() })).optional(),
-	noTranslation: z.array(textRef).optional(),
-	translations: z.object({
-		languages: z.array(z.string().max(64)),
-		entries: z.array(textRef.extend({
-			language: z.string().max(64),
-			text: z.string(),
-			sourceHash: z.string()
-		}))
-	}).optional(),
-	liveIds: z.object({
-		tileGraphics: idRecord(z.uuid()),
-		tiles: idRecord(numericId),
-		items: idRecord(numericId),
-		areas: idRecord(z.uuid()),
-		races: idRecord(numericId),
-		classes: idRecord(numericId),
-		themes: idRecord(numericId),
-		difficultyLevels: idRecord(numericId)
-	}).partial().optional()
+	})),
+	tiles: exportedOptions
 });
 
 /**
- * An export's UniverseExport, as an import reads it
+ * The archive's notes for translators, needs-no-translation marks and translations, an
+ * ExportedTranslations
  */
-export type ImportManifest = z.infer<typeof universeExport>;
+const exportedTranslations = z.object({
+	translatorNotes: z.array(textRef.extend({ note: z.string() })).optional(),
+	noTranslation: z.array(textRef).optional(),
+	languages: z.array(z.string().max(64)).optional(),
+	translations: z.array(textRef.extend({
+		language: z.string().max(64),
+		text: z.string(),
+		sourceHash: z.string()
+	})).optional()
+});
 
 /**
- * An area's cells, an ExportedAreaCells
+ * An area, as its file has it apart from its cells
  */
-const areaCells = z.object({
-	chunkSize: z.literal(CHUNK_SIZE),
-	chunks: z.array(z.object({
-		chunkColumn: z.number().int(),
-		chunkRow: z.number().int(),
-		cells: z.array(z.number().int()).length(CHUNK_SIZE * CHUNK_SIZE)
+const importArea = z.looseObject({
+	id: z.uuid(),
+	parentAreaId: z.uuid().nullable(),
+	defaultTileId: numericId,
+	bounds: z.object({
+		minColumn: cellCoordinate,
+		minRow: cellCoordinate,
+		maxColumn: cellCoordinate,
+		maxRow: cellCoordinate
+	}),
+	links: z.array(z.object({
+		column: cellCoordinate,
+		row: cellCoordinate,
+		targetAreaId: z.uuid(),
+		targetColumn: cellCoordinate,
+		targetRow: cellCoordinate,
+		mode: z.enum(AREA_LINK_MODES),
+		requiresWholeGroup: z.boolean()
 	}))
 });
 
 /**
- * An area's cells, as an import reads them
+ * An area's file, an ExportedArea
  */
-export type ImportAreaCells = z.infer<typeof areaCells>;
+const exportedArea = importArea.extend({
+	rows: z.array(z.array(z.number().int()))
+});
+
+/**
+ * An area as an import reads it: its file, without its cells, which ImportFile.cells holds
+ */
+export type ImportArea = z.infer<typeof importArea>;
+
+/**
+ * An export as an import reads it: its UniverseExport, with the races, classes, uploaded tilesets, tiles,
+ * items, areas, notes for translators, needs-no-translation marks, translations and live IDs from their
+ * own files where it has them
+ */
+export type ImportManifest = z.infer<typeof universeExport> & {
+	translatorNotes?: z.infer<typeof exportedTranslations>['translatorNotes'];
+	noTranslation?: z.infer<typeof exportedTranslations>['noTranslation'];
+	races?: z.infer<typeof exportedOptions>;
+	classes?: z.infer<typeof exportedOptions>;
+	tileGraphics?: z.infer<typeof exportedTilesets>['tileGraphics'];
+	tiles?: z.infer<typeof exportedOptions>;
+	items?: z.infer<typeof exportedOptions>;
+	areas?: ImportArea[];
+	translations?: { languages: string[]; entries: NonNullable<z.infer<typeof exportedTranslations>['translations']> };
+	liveIds?: z.infer<typeof exportedLiveIds>;
+};
+
+/**
+ * An area's cells, as an import reads them: the chunks of its ground holding anything but its default
+ * tile, made from the file's rows (chunksOfRows())
+ */
+export interface ImportAreaCells
+{
+	chunks: { chunkColumn: number; chunkRow: number; cells: number[] }[];
+}
 
 /**
  * An export, read and checked for its shape
@@ -247,7 +290,7 @@ export async function readImportFile(archive: Buffer, ruleset: string): Promise<
 		throw new ImportProblem(importMessages.newerFormat);
 	}
 
-	const manifest = checked(universeExport, raw, UNIVERSE_EXPORT_MANIFEST);
+	const manifest: ImportManifest = checked(universeExport, raw, UNIVERSE_EXPORT_MANIFEST);
 
 	if (manifest.universe.ruleset !== ruleset)
 	{
@@ -257,9 +300,52 @@ export async function readImportFile(archive: Buffer, ruleset: string): Promise<
 	const cells = new Map<string, ImportAreaCells>();
 	const images = new Map<string, Buffer>();
 
-	for (const area of (manifest.areas ?? []))
+	// The races and classes are there exactly when the settings are
+	if (manifest.settings !== undefined)
 	{
-		cells.set(area.id, checked(areaCells, parseJson(files, area.file), area.file));
+		manifest.races = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_RACES), UNIVERSE_EXPORT_RACES);
+		manifest.classes = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_CLASSES), UNIVERSE_EXPORT_CLASSES);
+	}
+
+	// An export made with a role that may change none of the universe's text has none
+	if (files.has(UNIVERSE_EXPORT_TRANSLATIONS))
+	{
+		const { translatorNotes, noTranslation, languages, translations } = checked(exportedTranslations, parseJson(files, UNIVERSE_EXPORT_TRANSLATIONS), UNIVERSE_EXPORT_TRANSLATIONS);
+
+		if ((languages === undefined) !== (translations === undefined))
+		{
+			throw new ImportProblem(importMessages.notAnExport, {
+				problem: `${UNIVERSE_EXPORT_TRANSLATIONS} has ${((languages === undefined) ? 'translations' : 'languages')} without ${((languages === undefined) ? 'languages' : 'translations')}`
+			});
+		}
+
+		manifest.translatorNotes = translatorNotes;
+		manifest.noTranslation = noTranslation;
+		manifest.translations = (((languages === undefined) || (translations === undefined)) ? undefined : { languages, entries: translations });
+	}
+
+	// The tilesets, tiles, items and areas are there exactly when the areas' list is, with the rest of the
+	// world, whose notes for translators the planner checks are there too
+	if (files.has(UNIVERSE_EXPORT_AREAS))
+	{
+		const tilesets = checked(exportedTilesets, parseJson(files, UNIVERSE_EXPORT_TILESETS), UNIVERSE_EXPORT_TILESETS);
+
+		manifest.tileGraphics = tilesets.tileGraphics;
+		manifest.tiles = tilesets.tiles;
+		manifest.items = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_ITEMS), UNIVERSE_EXPORT_ITEMS);
+		manifest.areas = checked(areaPaths, parseJson(files, UNIVERSE_EXPORT_AREAS), UNIVERSE_EXPORT_AREAS).map((path) =>
+		{
+			const { rows, ...area } = checked(exportedArea, parseJson(files, path), path);
+
+			cells.set(area.id, chunksOfRows(rows, area.bounds, path));
+
+			return(area);
+		});
+	}
+
+	if (manifest.universe.version === 'draft')
+	{
+		manifest.liveIds = checked(exportedLiveIds, parseJson(files, UNIVERSE_EXPORT_LIVE_IDS), UNIVERSE_EXPORT_LIVE_IDS);
 	}
 
 	for (const graphic of (manifest.tileGraphics ?? []))
@@ -277,6 +363,65 @@ export async function readImportFile(archive: Buffer, ruleset: string): Promise<
 		cells,
 		images
 	});
+}
+
+/**
+ * An area's rows of cells as the chunks of its ground that hold anything but its default tile, refusing
+ * rows that don't cover exactly the area's columns and rows
+ *
+ * @param rows The rows, as the area's file has them
+ * @param bounds The area's bounds, as its file gives them
+ * @param path The file's path, for the problem
+ * @return The chunks
+ * @throws ImportProblem when the rows don't match the area's bounds
+ */
+function chunksOfRows(rows: number[][], bounds: AreaBounds, path: string): ImportAreaCells
+{
+	const width = (bounds.maxColumn - bounds.minColumn + 1);
+	const height = (bounds.maxRow - bounds.minRow + 1);
+	const chunks = new Map<string, { chunkColumn: number; chunkRow: number; cells: number[] }>();
+
+	if (rows.length !== height)
+	{
+		throw new ImportProblem(importMessages.notAnExport, {
+			problem: `${path} has ${rows.length} rows, but its bounds have ${height} (rows ${bounds.minRow} to ${bounds.maxRow})`
+		});
+	}
+
+	for (const [index, cellRow] of rows.entries())
+	{
+		const row = (bounds.minRow + index);
+
+		if (cellRow.length !== width)
+		{
+			throw new ImportProblem(importMessages.notAnExport, {
+				problem: `${path}'s row ${row} has ${cellRow.length} cells, but its bounds have ${width} columns (${bounds.minColumn} to ${bounds.maxColumn})`
+			});
+		}
+
+		for (const [offset, value] of cellRow.entries())
+		{
+			const column = (bounds.minColumn + offset);
+
+			if (value === DEFAULT_TILE_CELL)
+			{
+				continue;
+			}
+
+			const key = chunkKey(chunkCoordinate(column), chunkCoordinate(row));
+			let chunk = chunks.get(key);
+
+			if (!chunk)
+			{
+				chunk = { chunkColumn: chunkCoordinate(column), chunkRow: chunkCoordinate(row), cells: new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL) };
+				chunks.set(key, chunk);
+			}
+
+			chunk.cells[cellIndexInChunk(column, row)] = value;
+		}
+	}
+
+	return({ chunks: [...chunks.values()] });
 }
 
 /**

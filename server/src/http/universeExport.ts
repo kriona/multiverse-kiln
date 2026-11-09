@@ -9,10 +9,10 @@
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { canExportUniverse, CHUNK_SIZE, defineMessages, MAX_LOCALE_LENGTH, SOURCE_LOCALE, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type AreaChunk, type EditableUniverseDetails, type ExportedArea, type ExportedLiveIds, type ExportedTileGraphic, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { canExportUniverse, cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, DEFAULT_TILE_CELL, defineMessages, MAX_LOCALE_LENGTH, SOURCE_LOCALE, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type EditableUniverseDetails, type EditorArea, type EditorAreaLink, type ExportedLiveIds, type ExportedTranslations, type ExportedTile, type ExportedTileGraphic, type ExportedTilesets, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { zipArchive, zipFile, type ZipFile } from '../archives/zip.js';
-import { listEditorAreas, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
+import { listEditorAreas, listVersionAreaLinks, loadChunks } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { listDifficultyLevels } from '../db/difficultyRepo.js';
@@ -33,12 +33,7 @@ import { emailTranslator } from '../email/emailLocales.js';
 import { getObject } from '../storage/objectStorage.js';
 import { findEditorAccess, requireRole, universeContextOf } from './editorAccess.js';
 import { errorMessages, sendError } from './errors.js';
-import { areaCellsLegend } from './universeExportLegend.js';
-
-/**
- * How many chunks of an area are read, and deflated, at once
- */
-const CHUNKS_PER_PAGE = 500;
+import { areaCellsLegend, type LegendArea } from './universeExportLegend.js';
 
 /**
  * How many tilesets' images are read from storage at once
@@ -75,9 +70,20 @@ interface ExportSnapshot
 	manifest: UniverseExport;
 
 	/**
-	 * The areas' cells, ready for the archive
+	 * The races, classes, items, areas, translations and live IDs, ready for the archive
 	 */
-	areaFiles: ZipFile[];
+	files: ZipFile[];
+
+	/**
+	 * The uploaded tilesets and the tiles, when the export holds the world, written once the tilesets'
+	 * images are read, since a tileset whose image storage no longer has has no file
+	 */
+	tilesets: ExportedTilesets | undefined;
+
+	/**
+	 * The areas, and their files' paths, for the legend
+	 */
+	legendAreas: LegendArea[];
 
 	/**
 	 * Where each uploaded tileset's image is stored, by the tileset's ID
@@ -131,14 +137,15 @@ async function exportRoute(request: Request, response: Response): Promise<void>
 			return;
 		}
 
-		const tilesets = await readTilesets(snapshot);
+		const images = await readTilesets(snapshot);
 		const { manifest } = snapshot;
-		const manifestFile = await zipFile(UNIVERSE_EXPORT_MANIFEST, [`${JSON.stringify(manifest, null, '\t')}\n`]);
+		const manifestFile = await zipFile(UNIVERSE_EXPORT_MANIFEST, [jsonText(manifest)]);
+		const tilesetsFile = ((snapshot.tilesets === undefined) ? [] : [await zipFile(UNIVERSE_EXPORT_TILESETS, [jsonText(snapshot.tilesets)])]);
 		const locale = exportLocale.safeParse(request.query.locale);
-		const legend = await legendFiles(manifest, (locale.success ? locale.data : SOURCE_LOCALE));
+		const legend = await legendFiles(snapshot, (locale.success ? locale.data : SOURCE_LOCALE));
 
 		response.attachment(universeExportFileName(universe.name, universe.version, exportedAt));
-		response.send(zipArchive([manifestFile, ...legend, ...snapshot.areaFiles, ...tilesets], exportedAt));
+		response.send(zipArchive([manifestFile, ...tilesetsFile, ...snapshot.files, ...legend, ...images], exportedAt));
 	}
 	finally
 	{
@@ -147,22 +154,22 @@ async function exportRoute(request: Request, response: Response): Promise<void>
 }
 
 /**
- * The legend beside an export's areas' cells, for an export holding the world
+ * The legend beside an export's areas' files, for an export holding the world
  *
- * @param manifest The export
+ * @param snapshot The export
  * @param locale The language the player exporting reads, by tag
  * @return The legend, ready for the archive, or nothing for an export without areas
  */
-async function legendFiles(manifest: UniverseExport, locale: string): Promise<ZipFile[]>
+async function legendFiles(snapshot: ExportSnapshot, locale: string): Promise<ZipFile[]>
 {
-	const { universe, tiles, areas } = manifest;
+	const { manifest: { universe }, tilesets } = snapshot;
 
-	if ((tiles === undefined) || (areas === undefined))
+	if (tilesets === undefined)
 	{
 		return([]);
 	}
 
-	return([await zipFile(UNIVERSE_EXPORT_AREA_LEGEND, [areaCellsLegend(universe.name, universe.ruleset, tiles, areas, emailTranslator(locale))])]);
+	return([await zipFile(UNIVERSE_EXPORT_AREA_LEGEND, [areaCellsLegend(universe.name, universe.ruleset, tilesets.tiles, snapshot.legendAreas, emailTranslator(locale))])]);
 }
 
 /**
@@ -212,13 +219,15 @@ async function readExport(version: UniverseVersion, playerId: string, exportedAt
 				sourceLanguage: universe.sourceLanguage
 			}
 		},
-		areaFiles: [],
+		files: [],
+		tilesets: undefined,
+		legendAreas: [],
 		tilesetKeys: new Map()
 	};
 
 	if (contents.settings)
 	{
-		await readSettings(snapshot.manifest, universe, version, executor);
+		await readSettings(snapshot, universe, version, executor);
 	}
 
 	if (contents.world)
@@ -226,11 +235,11 @@ async function readExport(version: UniverseVersion, playerId: string, exportedAt
 		await readWorld(snapshot, universe, version, executor);
 	}
 
-	await readText(snapshot.manifest, contents, version, executor);
+	await readText(snapshot, contents, version, executor);
 
 	if (version.draft)
 	{
-		snapshot.manifest.liveIds = liveIdsOf(await findAllDraftOrigins(version.universeId, executor));
+		snapshot.files.push(await zipFile(UNIVERSE_EXPORT_LIVE_IDS, [jsonText(liveIdsOf(await findAllDraftOrigins(version.universeId, executor)))]));
 	}
 
 	return(snapshot);
@@ -258,22 +267,24 @@ function liveIdsOf(origins: DraftOrigins): ExportedLiveIds
 
 /**
  * Reads what only creators (and the site admin role) change into an export: the universe's settings, the
- * Ruleset tab's settings and difficulty levels, races, classes, themes and editors
+ * Ruleset tab's settings and difficulty levels, themes and editors, and the races and classes in files
+ * of their own
  *
- * @param manifest The export
+ * @param snapshot The export
  * @param universe The universe, in the version exported
  * @param version The version
  * @param executor The snapshot
  */
-async function readSettings(manifest: UniverseExport, universe: EditableUniverseDetails, version: UniverseVersion, executor: Executor): Promise<void>
+async function readSettings(snapshot: ExportSnapshot, universe: EditableUniverseDetails, version: UniverseVersion, executor: Executor): Promise<void>
 {
+	const { manifest } = snapshot;
 	const { ruleset } = universe;
 
 	manifest.settings = universeSettingsOf(universe);
 	manifest.rulesetSettings = await loadRulesetSettings(version, ruleset, executor);
 	manifest.difficultyLevels = await listDifficultyLevels(version, executor);
-	manifest.races = await loadEditorRaces(version, ruleset, executor);
-	manifest.classes = await loadEditorClasses(version, ruleset, executor);
+	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_RACES, [jsonText(await loadEditorRaces(version, ruleset, executor))]));
+	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_CLASSES, [jsonText(await loadEditorClasses(version, ruleset, executor))]));
 	manifest.themes = await loadEditorThemes(version, ruleset, executor);
 	manifest.editors = (await listUniverseEditors(universe.id, executor)).map(({ username, role, languages }) => ({
 		username,
@@ -320,7 +331,8 @@ function universeSettingsOf(universe: EditableUniverseDetails): UniverseSettings
 }
 
 /**
- * Reads the world into an export: uploaded tilesets, tiles, items, and areas with their links and cells
+ * Reads the world into an export: the uploaded tilesets with the tiles, the items, and each area with its
+ * links and cells, in files of their own
  *
  * @param snapshot The export
  * @param universe The universe, in the version exported
@@ -329,13 +341,11 @@ function universeSettingsOf(universe: EditableUniverseDetails): UniverseSettings
  */
 async function readWorld(snapshot: ExportSnapshot, universe: EditableUniverseDetails, version: UniverseVersion, executor: Executor): Promise<void>
 {
-	const { manifest } = snapshot;
 	const { ruleset } = universe;
 	const graphics = await listTileGraphicFiles(version, executor);
 	const links = await listVersionAreaLinks(version, executor);
-	const areas: ExportedArea[] = [];
 
-	manifest.tileGraphics = graphics.map(({ id, name, format, drawOrder, storageKey }): ExportedTileGraphic =>
+	const tileGraphics = graphics.map(({ id, name, format, drawOrder, storageKey }): ExportedTileGraphic =>
 	{
 		snapshot.tilesetKeys.set(id, storageKey);
 
@@ -347,7 +357,7 @@ async function readWorld(snapshot: ExportSnapshot, universe: EditableUniverseDet
 			file: universeExportTilesetPath(id)
 		});
 	});
-	manifest.tiles = (await loadEditorTiles(version, ruleset, executor)).map((tile) => ({
+	const tiles = (await loadEditorTiles(version, ruleset, executor)).map((tile): ExportedTile => ({
 		id: tile.id,
 		key: tile.key,
 		custom: tile.custom,
@@ -362,104 +372,133 @@ async function readWorld(snapshot: ExportSnapshot, universe: EditableUniverseDet
 		walkSeconds: tile.walkSeconds,
 		enabled: tile.enabled
 	}));
-	manifest.items = await loadEditorItems(version, ruleset, executor);
 
-	for (const area of await listEditorAreas(version, executor))
+	snapshot.tilesets = {
+		tileGraphics,
+		tiles
+	};
+	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_ITEMS, [jsonText(await loadEditorItems(version, ruleset, executor))]));
+
+	const areas = await listEditorAreas(version, executor);
+
+	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_AREAS, [jsonText(areas.map((area) => universeExportAreaPath(area.id)))]));
+
+	for (const area of areas)
 	{
 		const file = universeExportAreaPath(area.id);
+		const areaLinks: EditorAreaLink[] = links
+			.filter((link) => (link.areaId === area.id))
+			.map(({ column, row, targetAreaId, targetColumn, targetRow, mode, requiresWholeGroup }) => ({
+				column,
+				row,
+				targetAreaId,
+				targetColumn,
+				targetRow,
+				mode,
+				requiresWholeGroup
+			}));
 
-		areas.push({
-			...area,
-			links: links
-				.filter((link) => (link.areaId === area.id))
-				.map(({ column, row, targetAreaId, targetColumn, targetRow, mode, requiresWholeGroup }) => ({
-					column,
-					row,
-					targetAreaId,
-					targetColumn,
-					targetRow,
-					mode,
-					requiresWholeGroup
-				})),
-			file
-		});
-		snapshot.areaFiles.push(await zipFile(file, areaCellPieces(area.id, executor)));
+		snapshot.legendAreas.push({ ...area, file });
+		snapshot.files.push(await zipFile(file, areaPieces(area, areaLinks, executor)));
 	}
-
-	manifest.areas = areas;
 }
 
 /**
- * An area's cells as an ExportedAreaCells in JSON, a page of chunks at a time, indented with tabs like the
- * manifest but with each chunk on one line of its own
+ * JSON written as the export's files are: indented with tabs, ending with a line break
  *
- * @param areaId The area's ID
+ * @param value What to write
+ * @return The JSON
+ */
+function jsonText(value: unknown): string
+{
+	return(`${JSON.stringify(value, null, '\t')}\n`);
+}
+
+/**
+ * An area's file, an ExportedArea in JSON: its settings and links, then its rows of cells from north to
+ * south, each from west to east, built from one band of stored chunks at a time so a large area is never
+ * held whole. Indented with tabs like the manifest, with each row on one line of its own
+ *
+ * @param area The area
+ * @param links The links on its cells
  * @param executor The snapshot
  * @return The JSON, in pieces
  */
-async function* areaCellPieces(areaId: string, executor: Executor): AsyncGenerator<string>
+async function* areaPieces(area: EditorArea, links: EditorAreaLink[], executor: Executor): AsyncGenerator<string>
 {
-	let after: AreaChunk | undefined;
+	const { minColumn, minRow, maxColumn, maxRow } = area.bounds;
+	const settings = JSON.stringify({ ...area, links }, null, '\t');
 	let separator = '';
 
-	yield `{\n\t"chunkSize": ${CHUNK_SIZE},\n\t"chunks": [`;
+	// The settings' closing brace makes way for the rows
+	yield `${settings.slice(0, settings.lastIndexOf('\n}'))},\n\t"rows": [`;
 
-	for (;;)
+	for (let chunkRow = chunkCoordinate(minRow); chunkRow <= chunkCoordinate(maxRow); chunkRow++)
 	{
-		const page = await loadChunkPage(areaId, after, CHUNKS_PER_PAGE, executor);
+		const chunks = new Map((await loadChunks(area.id, {
+			minChunkColumn: chunkCoordinate(minColumn),
+			minChunkRow: chunkRow,
+			maxChunkColumn: chunkCoordinate(maxColumn),
+			maxChunkRow: chunkRow
+		}, executor)).map((chunk) => [chunk.chunkColumn, chunk.cells]));
+		const rows: string[] = [];
 
-		if (page.length > 0)
+		for (let row = Math.max(minRow, (chunkRow * CHUNK_SIZE)); row <= Math.min(maxRow, ((chunkRow * CHUNK_SIZE) + CHUNK_SIZE - 1)); row++)
 		{
-			yield `${separator}\n\t\t${page.map((chunk) => JSON.stringify(chunk)).join(',\n\t\t')}`;
-			separator = ',';
+			const cells: number[] = [];
+
+			for (let column = minColumn; column <= maxColumn; column++)
+			{
+				cells.push(chunks.get(chunkCoordinate(column))?.[cellIndexInChunk(column, row)] ?? DEFAULT_TILE_CELL);
+			}
+
+			rows.push(`[${cells.join(',')}]`);
 		}
 
-		if (page.length < CHUNKS_PER_PAGE)
-		{
-			break;
-		}
-
-		after = page[page.length - 1];
+		yield `${separator}\n\t\t${rows.join(',\n\t\t')}`;
+		separator = ',';
 	}
 
-	yield `${((separator === '') ? '' : '\n\t')}]\n}\n`;
+	yield '\n\t]\n}\n';
 }
 
 /**
- * Reads the universe text's notes for translators, needs-no-translation marks and translations into an
- * export, as far as its contents hold them
+ * Reads the universe text's notes for translators, needs-no-translation marks and translations into a
+ * file of their own, as far as the export's contents hold them, leaving the file out when they hold none
  *
- * @param manifest The export
+ * @param snapshot The export
  * @param contents What the export holds
  * @param version The version
  * @param executor The snapshot
  */
-async function readText(manifest: UniverseExport, contents: UniverseExportContents, version: UniverseVersion, executor: Executor): Promise<void>
+async function readText(snapshot: ExportSnapshot, contents: UniverseExportContents, version: UniverseVersion, executor: Executor): Promise<void>
 {
 	const notes = ((contents.world || contents.noTranslation) ? (await listTranslatorNotes(version, executor)).sort(compareTextRefs) : []);
+	const text: ExportedTranslations = {};
 
 	if (contents.world)
 	{
-		manifest.translatorNotes = notes.flatMap(({ kind, thingId, field, note }) => ((note === null) ? [] : [{ kind, thingId, field, note }]));
+		text.translatorNotes = notes.flatMap(({ kind, thingId, field, note }) => ((note === null) ? [] : [{ kind, thingId, field, note }]));
 	}
 
 	if (contents.noTranslation)
 	{
-		manifest.noTranslation = notes
+		text.noTranslation = notes
 			.filter((note) => note.noTranslation)
 			.map(({ kind, thingId, field }) => ({ kind, thingId, field }));
 	}
 
 	if (contents.translationLanguages !== undefined)
 	{
-		const translations = await listTranslations(version, contents.translationLanguages, executor);
+		text.languages = contents.translationLanguages;
+		text.translations = (await listTranslations(version, contents.translationLanguages, executor))
+			.sort((a, b) => (compareTextRefs(a, b) || compareText(a.language, b.language)))
+			.map(({ kind, thingId, field, language, text: translation, sourceHash }) => ({ kind, thingId, field, language, text: translation, sourceHash }));
+	}
 
-		manifest.translations = {
-			languages: contents.translationLanguages,
-			entries: translations
-				.sort((a, b) => (compareTextRefs(a, b) || compareText(a.language, b.language)))
-				.map(({ kind, thingId, field, language, text, sourceHash }) => ({ kind, thingId, field, language, text, sourceHash }))
-		};
+	if (Object.keys(text).length > 0)
+	{
+		snapshot.files.push(await zipFile(UNIVERSE_EXPORT_TRANSLATIONS, [jsonText(text)]));
 	}
 }
 
@@ -496,7 +535,7 @@ function compareText(a: string, b: string): number
  */
 async function readTilesets(snapshot: ExportSnapshot): Promise<ZipFile[]>
 {
-	const graphics = (snapshot.manifest.tileGraphics ?? []);
+	const graphics = (snapshot.tilesets?.tileGraphics ?? []);
 	const files: ZipFile[] = [];
 
 	for (let start = 0; start < graphics.length; start += TILESETS_AT_ONCE)

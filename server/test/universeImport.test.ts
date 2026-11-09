@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type ErrorPayload, type ExportedAreaCells, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -40,18 +40,114 @@ async function exportArchive(editor: Editor, universeId: string, version?: 'draf
 }
 
 /**
- * What an archive's files hold: its manifest, and each area's cells by the area's ID
+ * What an export's JSON files hold
+ */
+interface ExportContents
+{
+	manifest: UniverseExport;
+
+	/**
+	 * Undefined when the archive has no races.json or classes.json
+	 */
+	races: EditorRace[] | undefined;
+	classes: EditorClass[] | undefined;
+
+	/**
+	 * Undefined when the archive has no tilesets.json or items.json
+	 */
+	tilesets: ExportedTilesets | undefined;
+	items: EditorItem[] | undefined;
+
+	/**
+	 * The areas' files' paths, as areas.json lists them, or undefined when the archive has no areas.json,
+	 * and the files, in the same order
+	 */
+	areaPaths: string[] | undefined;
+	areas: ExportedArea[];
+
+	/**
+	 * Undefined when the archive has no translations.json
+	 */
+	translations: ExportedTranslations | undefined;
+
+	/**
+	 * Undefined when the archive has no liveIds.json
+	 */
+	liveIds: ExportedLiveIds | undefined;
+}
+
+/**
+ * What an archive's JSON files hold
  *
  * @param archive The archive
- * @return The manifest and the cells
+ * @return The manifest, the races and classes, and the areas
  */
-async function contentsOf(archive: Buffer): Promise<{ manifest: UniverseExport; cells: Map<string, ExportedAreaCells> }>
+async function contentsOf(archive: Buffer): Promise<ExportContents>
 {
 	const files = await readZip(archive, 100000000);
-	const manifest = JSON.parse(files.get(UNIVERSE_EXPORT_MANIFEST)?.toString('utf8') ?? '') as UniverseExport;
-	const cells = new Map((manifest.areas ?? []).map((area) => [area.id, JSON.parse(files.get(area.file)?.toString('utf8') ?? '') as ExportedAreaCells]));
+	const jsonOf = <T>(path: string): T | undefined => ((files.get(path) === undefined) ? undefined : JSON.parse(files.get(path)?.toString('utf8') ?? '') as T);
+	const manifest = jsonOf<UniverseExport>(UNIVERSE_EXPORT_MANIFEST);
+	const areaPaths = jsonOf<string[]>(UNIVERSE_EXPORT_AREAS);
 
-	return({ manifest, cells });
+	assert.ok(manifest);
+
+	return({
+		manifest,
+		races: jsonOf<EditorRace[]>(UNIVERSE_EXPORT_RACES),
+		classes: jsonOf<EditorClass[]>(UNIVERSE_EXPORT_CLASSES),
+		tilesets: jsonOf<ExportedTilesets>(UNIVERSE_EXPORT_TILESETS),
+		items: jsonOf<EditorItem[]>(UNIVERSE_EXPORT_ITEMS),
+		areaPaths,
+		areas: (areaPaths ?? []).map((path) => jsonOf<ExportedArea>(path) ?? assert.fail(`No ${path}`)),
+		translations: jsonOf<ExportedTranslations>(UNIVERSE_EXPORT_TRANSLATIONS),
+		liveIds: jsonOf<ExportedLiveIds>(UNIVERSE_EXPORT_LIVE_IDS)
+	});
+}
+
+/**
+ * An archive of an export's JSON files, as contentsOf() read them and a test changed them, without its
+ * tilesets' images
+ *
+ * @param contents What the files hold
+ * @return The archive
+ */
+async function archiveOf(contents: ExportContents): Promise<Buffer>
+{
+	const files = [await zipFile(UNIVERSE_EXPORT_MANIFEST, [JSON.stringify(contents.manifest)])];
+
+	if (contents.races && contents.classes)
+	{
+		files.push(await zipFile(UNIVERSE_EXPORT_RACES, [JSON.stringify(contents.races)]));
+		files.push(await zipFile(UNIVERSE_EXPORT_CLASSES, [JSON.stringify(contents.classes)]));
+	}
+
+	if (contents.tilesets && contents.items)
+	{
+		files.push(await zipFile(UNIVERSE_EXPORT_TILESETS, [JSON.stringify(contents.tilesets)]));
+		files.push(await zipFile(UNIVERSE_EXPORT_ITEMS, [JSON.stringify(contents.items)]));
+	}
+
+	if (contents.areaPaths)
+	{
+		files.push(await zipFile(UNIVERSE_EXPORT_AREAS, [JSON.stringify(contents.areaPaths)]));
+	}
+
+	for (const [index, path] of (contents.areaPaths ?? []).entries())
+	{
+		files.push(await zipFile(path, [JSON.stringify(contents.areas[index])]));
+	}
+
+	if (contents.translations)
+	{
+		files.push(await zipFile(UNIVERSE_EXPORT_TRANSLATIONS, [JSON.stringify(contents.translations)]));
+	}
+
+	if (contents.liveIds)
+	{
+		files.push(await zipFile(UNIVERSE_EXPORT_LIVE_IDS, [JSON.stringify(contents.liveIds)]));
+	}
+
+	return(zipArchive(files, new Date()));
 }
 
 /**
@@ -59,9 +155,9 @@ async function contentsOf(archive: Buffer): Promise<{ manifest: UniverseExport; 
  *
  * @param editor The browser asking
  * @param universeId The universe's ID
- * @return The draft's manifest and cells
+ * @return What the draft's export holds
  */
-async function draftOf(editor: Editor, universeId: string): Promise<{ manifest: UniverseExport; cells: Map<string, ExportedAreaCells> }>
+async function draftOf(editor: Editor, universeId: string): Promise<ExportContents>
 {
 	return(contentsOf(await exportArchive(editor, universeId, 'draft')));
 }
@@ -122,18 +218,16 @@ async function saveToDraft(editor: Editor, universeId: string, changes: EditorCh
 }
 
 /**
- * The cell an area's cells hold at a column and row
+ * The cell an area's file holds at a column and row
  *
- * @param cells The area's cells
+ * @param area The area's file
  * @param column The column
  * @param row The row
  * @return The cell's value, 0 for the default tile
  */
-function cellAt(cells: ExportedAreaCells | undefined, column: number, row: number): number
+function cellAt(area: ExportedArea, column: number, row: number): number
 {
-	const chunk = cells?.chunks.find((each) => ((each.chunkColumn === Math.floor(column / 32)) && (each.chunkRow === Math.floor(row / 32))));
-
-	return(chunk?.cells[(((row % 32) + 32) % 32) * 32 + (((column % 32) + 32) % 32)] ?? 0);
+	return(area.rows[row - area.bounds.minRow]?.[column - area.bounds.minColumn] ?? 0);
 }
 
 describe('importing a universe', () =>
@@ -212,47 +306,55 @@ describe('importing a universe', () =>
 		assert.strictEqual(preview.body.tilesetUploads, 1);
 		assert.deepStrictEqual(preview.body.translationLanguages, ['fr']);
 
-		// Kilnhaven's name is taken, by Kilnhaven
-		assert.deepStrictEqual(preview.body.leftOut, ['universeOnly', 'nameTaken']);
+		// Kilnhaven's name is taken, by Kilnhaven, so the copy is named for it
+		assert.deepStrictEqual(preview.body.leftOut, ['universeOnly']);
+		assert.strictEqual(preview.body.name, 'Kilnhaven (copy)');
 
 		const imported = await importArchive(ada, otherId, archive);
 
 		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
 
-		const { manifest, cells } = await draftOf(ada, otherId);
-		const cave = manifest.areas?.find((area) => (area.name === 'Cave'));
-		const lobby = manifest.areas?.find((area) => (area.name === 'Lobby'));
-		const tile = manifest.tiles?.find((each) => (each.name === 'Moss'));
-		const lantern = manifest.items?.find((item) => (item.name === 'Lantern'));
-		const race = manifest.races?.find((each) => (each.name === 'Molefolk'));
+		const { manifest, races, tilesets, items, areas, translations } = await draftOf(ada, otherId);
+		const cave = areas.find((area) => (area.name === 'Cave'));
+		const lobby = areas.find((area) => (area.name === 'Lobby'));
+		const tile = tilesets?.tiles.find((each) => (each.name === 'Moss'));
+		const lantern = items?.find((item) => (item.name === 'Lantern'));
+		const race = races?.find((each) => (each.name === 'Molefolk'));
 
-		assert.deepStrictEqual(manifest.areas?.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
+		assert.deepStrictEqual(areas.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
 		assert.ok(cave && lobby && tile && lantern && race);
-		assert.strictEqual(manifest.settings?.name, 'Otherhaven');
+		assert.strictEqual(manifest.settings?.name, 'Kilnhaven (copy)');
 		assert.strictEqual(manifest.settings?.longDescription, 'A small town.');
 		assert.strictEqual(manifest.settings?.lobbyAreaId, lobby.id);
-		assert.strictEqual(cellAt(cells.get(cave.id), 0, 0), tile.id);
-		assert.strictEqual(cellAt(cells.get(cave.id), 12, -3), VOID_CELL);
-		assert.strictEqual(manifest.tileGraphics?.length, 1);
-		assert.strictEqual(tile.uploadedGraphicId, manifest.tileGraphics?.[0]?.id);
+		assert.strictEqual(cellAt(cave, 0, 0), tile.id);
+		assert.strictEqual(cellAt(cave, 12, -3), VOID_CELL);
+		assert.strictEqual(tilesets?.tileGraphics.length, 1);
+		assert.strictEqual(tile.uploadedGraphicId, tilesets.tileGraphics[0]?.id);
 		assert.deepStrictEqual(lobby.links.map((link) => [link.column, link.row, link.targetAreaId, link.requiresWholeGroup]), [[1, 0, cave.id, true]]);
 		assert.deepStrictEqual(race.startingItems, [{ itemId: lantern.id, quantity: 2 }]);
 		assert.strictEqual(race.startingAreaId, cave.id);
-		assert.deepStrictEqual(manifest.translatorNotes, [{ kind: 'area', thingId: cave.id, field: 'name', note: 'A dark place' }]);
-		assert.deepStrictEqual(manifest.noTranslation, [{ kind: 'universe', thingId: otherId, field: 'name' }]);
-		assert.deepStrictEqual(manifest.translations?.entries.map((entry) => [entry.thingId, entry.text]), [[cave.id, 'Grotte']]);
+		assert.deepStrictEqual(translations?.translatorNotes, [{ kind: 'area', thingId: cave.id, field: 'name', note: 'A dark place' }]);
+		assert.deepStrictEqual(translations.noTranslation, [{ kind: 'universe', thingId: otherId, field: 'name' }]);
+		assert.deepStrictEqual(translations.translations?.map((entry) => [entry.thingId, entry.text]), [[cave.id, 'Grotte']]);
 
 		// The draft reaches the live version only once it is applied
 		const live = await contentsOf(await exportArchive(ada, otherId));
 
-		assert.deepStrictEqual(live.manifest.areas?.map((area) => area.name), ['Lobby', 'Starting Area', 'Swamp']);
+		assert.deepStrictEqual(live.areas.map((area) => area.name), ['Lobby', 'Starting Area', 'Swamp']);
 
 		await saveAll(ada, otherId, [{ kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {} } }]);
 
 		const applied = await contentsOf(await exportArchive(ada, otherId));
 
-		assert.deepStrictEqual(applied.manifest.areas?.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
-		assert.ok(applied.manifest.races?.some((each) => (each.name === 'Molefolk')));
+		assert.deepStrictEqual(applied.areas.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
+		assert.ok(applied.races?.some((each) => (each.name === 'Molefolk')));
+		assert.strictEqual(applied.manifest.universe.name, 'Kilnhaven (copy)');
+
+		// With the first copy's name taken now, the next copy is numbered
+		const thirdId = await createUniverse(ada, 'Thirdhaven');
+
+		await saveAll(ada, thirdId, [{ kind: 'startDraft' }]);
+		assert.strictEqual((await importArchive<UniverseImportPreview>(ada, thirdId, archive, { preview: true })).body.name, 'Kilnhaven (copy 2)');
 
 		// The import is recorded as a save to the draft
 		const edits = await listUniverseEdits(otherId, { offset: 0, limit: 10 });
@@ -266,8 +368,8 @@ describe('importing a universe', () =>
 
 		const before = await draftOf(ada, kilnhavenId);
 		const archive = await exportArchive(ada, kilnhavenId, 'draft');
-		const draftCave = before.manifest.areas?.find((area) => (area.name === 'Cave'));
-		const draftMoss = before.manifest.tiles?.find((tile) => (tile.name === 'Moss'));
+		const draftCave = before.areas.find((area) => (area.name === 'Cave'));
+		const draftMoss = before.tilesets?.tiles.find((tile) => (tile.name === 'Moss'));
 
 		assert.ok(draftCave && draftMoss);
 
@@ -283,15 +385,15 @@ describe('importing a universe', () =>
 		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
 
 		const after = await draftOf(ada, kilnhavenId);
-		const cave = after.manifest.areas?.find((area) => (area.id === draftCave.id));
+		const cave = after.areas.find((area) => (area.id === draftCave.id));
 
-		assert.deepStrictEqual(after.manifest.areas?.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
+		assert.deepStrictEqual(after.areas.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
 		assert.ok(cave);
-		assert.strictEqual(cellAt(after.cells.get(cave.id), 0, 0), draftMoss.id);
-		assert.strictEqual(cellAt(after.cells.get(cave.id), 3, 3), 0);
-		assert.strictEqual(cellAt(after.cells.get(cave.id), 12, -3), VOID_CELL);
-		assert.deepStrictEqual(after.manifest.tiles?.find((tile) => (tile.name === 'Moss'))?.id, draftMoss.id);
-		assert.strictEqual(after.manifest.tileGraphics?.length, 1);
+		assert.strictEqual(cellAt(cave, 0, 0), draftMoss.id);
+		assert.strictEqual(cellAt(cave, 3, 3), 0);
+		assert.strictEqual(cellAt(cave, 12, -3), VOID_CELL);
+		assert.deepStrictEqual(after.tilesets?.tiles.find((tile) => (tile.name === 'Moss'))?.id, draftMoss.id);
+		assert.strictEqual(after.tilesets?.tileGraphics.length, 1);
 
 		// Once applied, the live version's cave and race are the ones it had
 		const liveBefore = await contentsOf(await exportArchive(ada, kilnhavenId));
@@ -300,9 +402,30 @@ describe('importing a universe', () =>
 
 		const liveAfter = await contentsOf(await exportArchive(ada, kilnhavenId));
 
-		assert.deepStrictEqual(liveAfter.manifest.areas?.map((area) => area.id).sort(), liveBefore.manifest.areas?.map((area) => area.id).sort());
-		assert.strictEqual(liveAfter.manifest.races?.find((race) => (race.name === 'Molefolk'))?.id, liveBefore.manifest.races?.find((race) => (race.name === 'Molefolk'))?.id);
-		assert.ok(liveAfter.manifest.areas?.some((area) => (area.id === caveId)));
+		assert.deepStrictEqual(liveAfter.areas.map((area) => area.id).sort(), liveBefore.areas.map((area) => area.id).sort());
+		assert.strictEqual(liveAfter.races?.find((race) => (race.name === 'Molefolk'))?.id, liveBefore.races?.find((race) => (race.name === 'Molefolk'))?.id);
+		assert.ok(liveAfter.areas.some((area) => (area.id === caveId)));
+	});
+
+	it('records nothing on the Audit tab when the file holds what the draft does', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const archive = await exportArchive(ada, kilnhavenId, 'draft');
+		const before = (await listUniverseEdits(kilnhavenId, { offset: 0, limit: 100 })).total;
+		const imported = await importArchive(ada, kilnhavenId, archive);
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const after = await listUniverseEdits(kilnhavenId, { offset: 0, limit: 100 });
+
+		assert.strictEqual(after.total, before, JSON.stringify(after.edits[0]?.changeDetails));
+
+		// A live export imported into the draft copied from it holds the same too
+		const live = await exportArchive(ada, kilnhavenId);
+
+		assert.strictEqual((await importArchive(ada, kilnhavenId, live)).status, 204);
+		assert.strictEqual((await listUniverseEdits(kilnhavenId, { offset: 0, limit: 100 })).total, before);
 	});
 
 	it('imports only what the player\'s role can change', async () =>
@@ -326,8 +449,7 @@ describe('importing a universe', () =>
 		assert.deepStrictEqual(translator.body.leftOut, ['universeOnly', 'settingsRole', 'worldRole']);
 
 		// The translator's import changes the translation, and nothing else
-		const { manifest: draft } = await draftOf(ada, kilnhavenId);
-		const draftCave = draft.areas?.find((area) => (area.name === 'Cave'));
+		const draftCave = (await draftOf(ada, kilnhavenId)).areas.find((area) => (area.name === 'Cave'));
 
 		assert.ok(draftCave);
 
@@ -337,10 +459,10 @@ describe('importing a universe', () =>
 		]);
 		assert.strictEqual((await importArchive(cy, kilnhavenId, archive)).status, 204);
 
-		const { manifest: after } = await draftOf(ada, kilnhavenId);
+		const after = await draftOf(ada, kilnhavenId);
 
-		assert.deepStrictEqual(after.translations?.entries.map((entry) => entry.text), ['Grotte']);
-		assert.strictEqual(after.areas?.find((area) => (area.id === draftCave.id))?.enabled, false);
+		assert.deepStrictEqual(after.translations?.translations?.map((entry) => entry.text), ['Grotte']);
+		assert.strictEqual(after.areas.find((area) => (area.id === draftCave.id))?.enabled, false);
 	});
 
 	it('refuses an import into the live version, a beta tester\'s, and files it can\'t import', async () =>
@@ -378,24 +500,71 @@ describe('importing a universe', () =>
 
 	it('refuses a file whose content a save wouldn\'t take, saving none of it', async () =>
 	{
-		const { manifest, cells } = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
 		const otherId = await createUniverse(ada, 'Otherhaven');
-		const cave = manifest.areas?.find((area) => (area.name === 'Cave'));
+		const cave = contents.areas.find((area) => (area.name === 'Cave'));
 
 		assert.ok(cave);
 		cave.name = '';
 
-		const archive = zipArchive([
-			await zipFile(UNIVERSE_EXPORT_MANIFEST, [JSON.stringify(manifest)]),
-			...await Promise.all([...cells].map(([areaId, areaCells]) => zipFile(`areas/${areaId}.json`, [JSON.stringify(areaCells)])))
-		], new Date());
-
 		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
 
-		const refused = await importArchive(ada, otherId, archive);
+		const refused = await importArchive(ada, otherId, await archiveOf(contents));
 
 		assert.strictEqual(refused.status, 400);
 		assert.strictEqual(refused.body.error.id, 'error.importNotAnExport');
-		assert.deepStrictEqual((await draftOf(ada, otherId)).manifest.areas?.map((area) => area.name), ['Lobby', 'Starting Area']);
+		assert.deepStrictEqual((await draftOf(ada, otherId)).areas.map((area) => area.name), ['Lobby', 'Starting Area']);
+	});
+
+	it('refuses a file whose rows don\'t cover exactly their area\'s bounds, or that is missing a file', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId, 'draft'));
+		const cave = contents.areas.find((area) => (area.name === 'Cave'));
+
+		assert.ok(cave);
+
+		const cell = cave.rows[3].pop();
+		const short = await importArchive(ada, kilnhavenId, await archiveOf(contents), { preview: true });
+
+		assert.strictEqual(short.status, 400);
+		assert.strictEqual(short.body.error.id, 'error.importNotAnExport');
+		assert.match(short.body.error.values?.problem as string, /row -5 has 30 cells, but its bounds have 31 columns/);
+		assert.ok(cell !== undefined);
+		cave.rows[3].push(cell);
+
+		// The races and classes are in files of their own, which a file with the settings must have
+		const missing = await importArchive(ada, kilnhavenId, await archiveOf({ ...contents, races: undefined }), { preview: true });
+
+		assert.strictEqual(missing.status, 400);
+		assert.match(missing.body.error.values?.problem as string, /races\.json is missing/);
+
+		// As are the live IDs, which a file of the draft must have
+		const noLiveIds = await importArchive(ada, kilnhavenId, await archiveOf({ ...contents, liveIds: undefined }), { preview: true });
+
+		assert.match(noLiveIds.body.error.values?.problem as string, /liveIds\.json is missing/);
+	});
+
+	it('resizes an area whose bounds and rows a file changes together', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId, 'draft'));
+		const cave = contents.areas.find((area) => (area.name === 'Cave'));
+
+		assert.ok(cave);
+
+		// One more row along the south edge, painted void
+		cave.bounds.maxRow++;
+		cave.rows.push(new Array<number>(cave.rows[0].length).fill(VOID_CELL));
+
+		assert.strictEqual((await importArchive(ada, kilnhavenId, await archiveOf(contents))).status, 204);
+
+		const resized = (await draftOf(ada, kilnhavenId)).areas.find((area) => (area.id === cave.id));
+
+		assert.ok(resized);
+		assert.deepStrictEqual(resized.bounds, cave.bounds);
+		assert.deepStrictEqual(resized.rows, cave.rows);
 	});
 });

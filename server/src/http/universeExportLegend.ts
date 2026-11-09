@@ -1,9 +1,14 @@
 /**
- * The legend an export of the world holds beside its areas' cells (UNIVERSE_EXPORT_AREA_LEGEND): how to
- * read an ExportedAreaCells file, which tile each number in its cells is, and which area each file is,
- * in Markdown, in the language of the player exporting it
+ * The legend an export of the world holds beside its areas' files (UNIVERSE_EXPORT_AREA_LEGEND): how to
+ * read the cells of an ExportedArea's file, which tile each number in them is, and which area each file
+ * is, in Markdown, in the language of the player exporting it
  */
-import { CHUNK_SIZE, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, defineMessages, VOID_CELL, type ExportedArea, type ExportedTile, type Ruleset, type Translator } from '@multiverse-kiln/shared';
+import { DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, defineMessages, VOID_CELL, type EditorArea, type ExportedTile, type Ruleset, type Translator } from '@multiverse-kiln/shared';
+
+/**
+ * An area the legend lists, and its file's path in the archive
+ */
+export type LegendArea = EditorArea & { file: string };
 
 /**
  * What the legend says (see shared/src/localization.ts)
@@ -16,7 +21,7 @@ const messages = defineMessages({
 	},
 	intro: {
 		id: 'export.legend.intro',
-		defaultMessage: 'Each JSON file in this folder holds one area\'s cells: which tile is on each square of its ground. The Areas table below says which area each file is.',
+		defaultMessage: 'Each JSON file in this folder holds one area: its settings, the links on its cells, and its cells, which say which tile is on each square of its ground. The Areas table below says which area each file is.',
 		description: 'First paragraph of the legend file in the areas folder of a universe\'s exported zip file'
 	},
 	readingHeading: {
@@ -24,35 +29,25 @@ const messages = defineMessages({
 		defaultMessage: 'Reading a file',
 		description: 'Heading of the part of the legend file in a universe\'s exported zip file that explains how an area\'s cells are laid out in its file'
 	},
-	chunkSize: {
-		id: 'export.legend.chunkSize',
-		defaultMessage: '"chunkSize" is how many cells run along each side of a chunk: {size, number}.',
-		description: 'Line of the legend file in a universe\'s exported zip file explaining a field of an area\'s file; keep "chunkSize" as it is, since it is the field\'s name in the file. {size} is the number'
+	start: {
+		id: 'export.legend.start',
+		defaultMessage: '"bounds" gives the columns and rows the area covers, both ends included: "minColumn" and "minRow" are its westmost column and northmost row, the column and row of its north-west corner, and "maxColumn" and "maxRow" its eastmost column and southmost row.',
+		description: 'Line of the legend file in a universe\'s exported zip file explaining a field of an area\'s file; keep "bounds", "minColumn", "minRow", "maxColumn" and "maxRow" as they are, since they are the fields\' names in the file'
 	},
-	chunks: {
-		id: 'export.legend.chunks',
-		defaultMessage: '"chunks" lists the area\'s chunks: squares of {size, number} by {size, number} cells. A chunk that isn\'t listed holds only the area\'s default tile.',
-		description: 'Line of the legend file in a universe\'s exported zip file explaining a field of an area\'s file; keep "chunks" as it is, since it is the field\'s name in the file. {size} is the cells along each side of a chunk'
+	rows: {
+		id: 'export.legend.rows',
+		defaultMessage: '"rows" holds the area\'s rows from north to south, each with its cells from west to east, so the first cell of the first row is the north-west corner. Columns grow to the east and rows to the south.',
+		description: 'Line of the legend file in a universe\'s exported zip file explaining a field of an area\'s file; keep "rows" as it is, since it is the field\'s name in the file'
 	},
-	position: {
-		id: 'export.legend.position',
-		defaultMessage: '"chunkColumn" and "chunkRow" say where a chunk is, counted in chunks. The chunk at column 0, row 0 starts at the area\'s cell at column 0, row 0 and runs east and south from it; columns grow to the east and rows to the south.',
-		description: 'Line of the legend file in a universe\'s exported zip file explaining two fields of an area\'s file; keep "chunkColumn" and "chunkRow" as they are, since they are the fields\' names in the file'
+	place: {
+		id: 'export.legend.place',
+		defaultMessage: 'The cell at place c of row r of the list, counting both from 0, is on column minColumn + c and row minRow + r of the area, taking minColumn and minRow from "bounds".',
+		description: 'Line of the legend file in a universe\'s exported zip file giving the arithmetic that finds a cell\'s column and row from its place in the rows; keep minColumn and minRow as they are, since they are the fields\' names in the file, and c and r as letters standing for numbers'
 	},
-	cells: {
-		id: 'export.legend.cells',
-		defaultMessage: '"cells" holds the chunk\'s {count, number} cells row by row, starting at its north-west corner: the first {size, number} are its top row, from west to east, then the next row down, and so on.',
-		description: 'Line of the legend file in a universe\'s exported zip file explaining a field of an area\'s file; keep "cells" as it is, since it is the field\'s name in the file. {count} is how many cells a chunk has, {size} how many along each side'
-	},
-	formula: {
-		id: 'export.legend.formula',
-		defaultMessage: 'The cell at place n in the list, counting from 0, is on column chunkColumn × {size, number} + (n mod {size, number}) and row chunkRow × {size, number} + floor(n ÷ {size, number}) of the area.',
-		description: 'Line of the legend file in a universe\'s exported zip file giving the arithmetic that finds a cell\'s square from its place in a chunk\'s list; keep chunkColumn and chunkRow as they are, since they are the fields\' names in the file. {size} is the cells along each side of a chunk'
-	},
-	outside: {
-		id: 'export.legend.outside',
-		defaultMessage: 'A chunk on the edge of an area can reach past it. Its cells outside the columns and rows the Areas table gives aren\'t part of the area.',
-		description: 'Line of the legend file in a universe\'s exported zip file explaining that chunks are whole squares even where an area\'s edge cuts through them'
+	exactly: {
+		id: 'export.legend.exactly',
+		defaultMessage: 'There is a row for every row of the area, and each row has a cell for every column of it, as "bounds" gives them. Importing a file whose rows don\'t match its bounds is refused, so to make the area larger or smaller, change both together.',
+		description: 'Line of the legend file in a universe\'s exported zip file telling someone editing an area\'s file that its rows must match its bounds; keep "bounds" as it is, since it is the field\'s name in the file'
 	},
 	values: {
 		id: 'export.legend.values',
@@ -61,8 +56,8 @@ const messages = defineMessages({
 	},
 	example: {
 		id: 'export.legend.example',
-		defaultMessage: 'For example, place {place, number} of the list in the chunk at column -1, row 0 is the second cell of the chunk\'s second row: column {column, number}, row 1 of the area.',
-		description: 'Line of the legend file in a universe\'s exported zip file working through finding one cell\'s square; {place} is the place in a chunk\'s list of cells, and {column} the column it works out to'
+		defaultMessage: 'For example, in a file whose bounds have a minColumn of {minColumn, number} and a minRow of {minRow, number}, the third cell of the second row is on column {column, number}, row {row, number}.',
+		description: 'Line of the legend file in a universe\'s exported zip file working through finding one cell\'s column and row; keep minColumn and minRow as they are, since they are the fields\' names in the file'
 	},
 	tilesHeading: {
 		id: 'export.legend.tilesHeading',
@@ -132,13 +127,12 @@ const messages = defineMessages({
  * @param universeName The universe's name
  * @param ruleset Its ruleset, whose default tiles' names the legend writes for those the universe kept
  * @param tiles The tiles the export lists
- * @param areas The areas the export lists
+ * @param areas The areas the export holds, with their files' paths
  * @param translator The language the player exporting reads
  * @return The legend, in Markdown
  */
-export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: readonly ExportedTile[], areas: readonly ExportedArea[], translator: Translator): string
+export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: readonly ExportedTile[], areas: readonly LegendArea[], translator: Translator): string
 {
-	const size = { size: CHUNK_SIZE };
 	const tileNames = new Map(tiles.map((tile) => [tile.id, tileName(tile, ruleset, translator)]));
 	const lines = [
 		`# ${escape(translator.format(messages.title, { universe: universeName }))}`,
@@ -147,14 +141,12 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 		'',
 		`## ${translator.format(messages.readingHeading)}`,
 		'',
-		`- ${translator.format(messages.chunkSize, size)}`,
-		`- ${translator.format(messages.chunks, size)}`,
-		`- ${translator.format(messages.position)}`,
-		`- ${translator.format(messages.cells, { count: CHUNK_SIZE * CHUNK_SIZE, ...size })}`,
-		`- ${translator.format(messages.formula, size)}`,
-		`- ${translator.format(messages.outside)}`,
+		`- ${translator.format(messages.start)}`,
+		`- ${translator.format(messages.rows)}`,
+		`- ${translator.format(messages.place)}`,
+		`- ${translator.format(messages.exactly)}`,
 		`- ${translator.format(messages.values, { defaultCell: DEFAULT_TILE_CELL, voidCell: VOID_CELL })}`,
-		`- ${translator.format(messages.example, { place: CHUNK_SIZE + 1, column: -CHUNK_SIZE + 1 })}`,
+		`- ${translator.format(messages.example, { minColumn: -4, minRow: -2, column: -2, row: -1 })}`,
 		'',
 		`## ${translator.format(messages.tilesHeading)}`,
 		'',

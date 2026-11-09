@@ -5,9 +5,19 @@
  * player's role may change (canExportUniverse(), universeExportContents()) in the version the request
  * names, as it is saved, holding:
  * - UNIVERSE_EXPORT_MANIFEST: a UniverseExport, as JSON
- * - universeExportAreaPath(): each area's cells, an ExportedAreaCells as JSON, when the export holds the world
- * - UNIVERSE_EXPORT_AREA_LEGEND: how to read those files, which tile each number in them is and which
- *   area each file is, in Markdown, in the language of the player exporting; an import doesn't read it
+ * - UNIVERSE_EXPORT_RACES and UNIVERSE_EXPORT_CLASSES: the races and classes, as JSON arrays, when the
+ *   export holds the settings
+ * - UNIVERSE_EXPORT_TILESETS: the uploaded tilesets and the tiles, an ExportedTilesets as JSON, when the
+ *   export holds the world
+ * - UNIVERSE_EXPORT_ITEMS: the items, as a JSON array, when the export holds the world
+ * - UNIVERSE_EXPORT_AREAS: the paths of the areas' files, as a JSON array, when the export holds the world
+ * - universeExportAreaPath(): each area, an ExportedArea as JSON, when the export holds the world
+ * - UNIVERSE_EXPORT_TRANSLATIONS: the notes for translators, the text needing no translation and the
+ *   translations, an ExportedTranslations as JSON, when the export holds any of them
+ * - UNIVERSE_EXPORT_LIVE_IDS: the live row each of the draft's rows was copied from, an ExportedLiveIds
+ *   as JSON, when the export is of the draft
+ * - UNIVERSE_EXPORT_AREA_LEGEND: how to read the areas' cells, which tile each number in them is and
+ *   which area each file is, in Markdown, in the language of the player exporting; an import doesn't read it
  * - universeExportTilesetPath(): each uploaded tileset's PNG, when the export holds the world
  *
  * Things are named by the IDs the version gives them, as the editor names them: a default tile, item,
@@ -20,8 +30,7 @@
  */
 import { SITE_NAME } from './constants.js';
 import type { DifficultyLevel } from './difficulty.js';
-import type { EditorArea, EditorAreaLink, EditorClass, EditorItem, EditorRace, EditorTheme, EditorTile, RulesetSettings, UniverseSettings, UniverseVersionName, UploadedTileGraphic } from './editor.js';
-import type { AreaChunk } from './messages.js';
+import type { EditorArea, EditorAreaLink, EditorTheme, EditorTile, RulesetSettings, UniverseSettings, UniverseVersionName, UploadedTileGraphic } from './editor.js';
 import type { UniverseTextRef } from './universeText.js';
 import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, universeSlug, type EditorAccess, type EditorRole, type Ruleset, type UniverseRole } from './universes.js';
 
@@ -47,12 +56,52 @@ export const UNIVERSE_EXPORT_FORMAT_VERSION = 1;
 export const UNIVERSE_EXPORT_MANIFEST = 'universe.json';
 
 /**
- * The path in the archive of the legend beside the areas' cells
+ * The path in the archive of the races, an EditorRace[]: every race the universe can use, the ruleset's
+ * defaults included, by ID
+ */
+export const UNIVERSE_EXPORT_RACES = 'races.json';
+
+/**
+ * The path in the archive of the classes, an EditorClass[]: every class the universe can use, the
+ * ruleset's defaults included, by ID
+ */
+export const UNIVERSE_EXPORT_CLASSES = 'classes.json';
+
+/**
+ * The path in the archive of the uploaded tilesets and the tiles, an ExportedTilesets
+ */
+export const UNIVERSE_EXPORT_TILESETS = 'tilesets.json';
+
+/**
+ * The path in the archive of the items, an EditorItem[]: every item the universe can use, the ruleset's
+ * defaults included, by ID
+ */
+export const UNIVERSE_EXPORT_ITEMS = 'items.json';
+
+/**
+ * The path in the archive of the notes for translators, the text needing no translation and the
+ * translations, an ExportedTranslations
+ */
+export const UNIVERSE_EXPORT_TRANSLATIONS = 'translations.json';
+
+/**
+ * The path in the archive of the list of the areas' files: each one's path (universeExportAreaPath()), by
+ * the area's name
+ */
+export const UNIVERSE_EXPORT_AREAS = 'areas.json';
+
+/**
+ * The path in the archive of an export of the draft's ExportedLiveIds
+ */
+export const UNIVERSE_EXPORT_LIVE_IDS = 'liveIds.json';
+
+/**
+ * The path in the archive of the legend beside the areas' files
  */
 export const UNIVERSE_EXPORT_AREA_LEGEND = 'areas/legend.md';
 
 /**
- * The path in the archive of an area's cells
+ * The path in the archive of an area's file
  *
  * @param areaId The area's ID
  * @return The path
@@ -97,7 +146,7 @@ export interface UniverseExportContents
 
 	/**
 	 * The languages whose translations it holds, by tag: the universe's that the role may translate
-	 * into. Undefined for a role that translates into none, whose export has no translations section
+	 * into. Undefined for a role that translates into none, whose export has no UNIVERSE_EXPORT_TRANSLATIONS
 	 */
 	translationLanguages: string[] | undefined;
 }
@@ -209,7 +258,23 @@ export interface ExportedTileGraphic extends UploadedTileGraphic
 export type ExportedTile = Omit<EditorTile, 'uploadedGraphic'>;
 
 /**
- * An area, its links, and where its cells are in the archive
+ * What the Tilesets tab shows: the archive's UNIVERSE_EXPORT_TILESETS
+ */
+export interface ExportedTilesets
+{
+	/**
+	 * The uploaded tilesets, by name
+	 */
+	tileGraphics: ExportedTileGraphic[];
+
+	/**
+	 * Every tile the universe can use, the ruleset's defaults included, by ID
+	 */
+	tiles: ExportedTile[];
+}
+
+/**
+ * An area's file in the archive (universeExportAreaPath()): its settings, its links and its cells
  */
 export interface ExportedArea extends EditorArea
 {
@@ -219,23 +284,12 @@ export interface ExportedArea extends EditorArea
 	links: EditorAreaLink[];
 
 	/**
-	 * Its cells' path in the archive (universeExportAreaPath())
+	 * Every cell of its ground, and nothing outside it: its rows from north to south (bounds.minRow to
+	 * bounds.maxRow), each its cells from west to east (bounds.minColumn to bounds.maxColumn), so
+	 * rows[r][c] is the cell at column bounds.minColumn + c, row bounds.minRow + r. Each cell holds a tile
+	 * the export lists, DEFAULT_TILE_CELL or VOID_CELL
 	 */
-	file: string;
-}
-
-/**
- * An area's cells: the stored chunks of its ground. A chunk that isn't listed is all the area's default
- * tile. Each cell holds a tile the export lists, DEFAULT_TILE_CELL or VOID_CELL
- */
-export interface ExportedAreaCells
-{
-	/**
-	 * Cells along each side of a chunk (CHUNK_SIZE)
-	 */
-	chunkSize: number;
-
-	chunks: AreaChunk[];
+	rows: number[][];
 }
 
 /**
@@ -266,22 +320,35 @@ export interface ExportedTranslation extends UniverseTextRef
 }
 
 /**
- * The translations an export holds
+ * What an export holds for translating the universe's text: its UNIVERSE_EXPORT_TRANSLATIONS, there when
+ * any of its sections is. Each section is there exactly when the role may change it, even when empty
  */
 export interface ExportedTranslations
 {
 	/**
-	 * The languages it holds every translation into, by tag (UniverseExportContents.translationLanguages)
+	 * The notes for translators, with the world, by what they describe
 	 */
-	languages: string[];
+	translatorNotes?: ExportedTranslatorNote[];
 
-	entries: ExportedTranslation[];
+	/**
+	 * The text marked as needing no translation, when the role may mark it (canMarkNoTranslation())
+	 */
+	noTranslation?: UniverseTextRef[];
+
+	/**
+	 * The languages it holds every translation into, by tag (UniverseExportContents.translationLanguages),
+	 * and the translations, by what they translate, then by language; both there, or neither
+	 */
+	languages?: string[];
+	translations?: ExportedTranslation[];
 }
 
 /**
  * The archive's UNIVERSE_EXPORT_MANIFEST. The optional sections are there exactly when the role may
- * change them (universeExportContents()): settings through editors with settings, tileGraphics through
- * translatorNotes with the world, noTranslation with it, and translations with translationLanguages
+ * change them (universeExportContents()): settings through editors with settings (and the archive's
+ * UNIVERSE_EXPORT_RACES and UNIVERSE_EXPORT_CLASSES with them). The world is in the archive's
+ * UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_ITEMS and UNIVERSE_EXPORT_AREAS, and its text's notes, marks
+ * and translations in its UNIVERSE_EXPORT_TRANSLATIONS
  */
 export interface UniverseExport
 {
@@ -318,53 +385,22 @@ export interface UniverseExport
 	difficultyLevels?: DifficultyLevel[];
 
 	/**
-	 * Every race, class and theme the universe can use, the ruleset's defaults included, by ID
+	 * Every theme the universe can use, the ruleset's defaults included, by ID
 	 */
-	races?: EditorRace[];
-	classes?: EditorClass[];
 	themes?: EditorTheme[];
 
 	/**
 	 * By username
 	 */
 	editors?: ExportedEditor[];
-
-	/**
-	 * By name
-	 */
-	tileGraphics?: ExportedTileGraphic[];
-
-	/**
-	 * Every tile and item the universe can use, the ruleset's defaults included, by ID
-	 */
-	tiles?: ExportedTile[];
-	items?: EditorItem[];
-
-	/**
-	 * By name
-	 */
-	areas?: ExportedArea[];
-
-	translatorNotes?: ExportedTranslatorNote[];
-
-	/**
-	 * The text marked as needing no translation
-	 */
-	noTranslation?: UniverseTextRef[];
-
-	translations?: ExportedTranslations;
-
-	/**
-	 * For an export of the draft, the live row each thing the draft copied was copied from, so an import
-	 * finds it once the draft is applied and the draft's IDs are gone. What the draft added isn't listed:
-	 * it keeps its ID when the draft is applied
-	 */
-	liveIds?: ExportedLiveIds;
 }
 
 /**
- * The live row each of a draft's rows was copied from, by kind, by the draft's ID. An edited copy of one
- * of the ruleset's defaults is listed too, though nothing names it: everything names the default's ID
+ * The live row each of a draft's rows was copied from, by kind, by the draft's ID: the archive's
+ * UNIVERSE_EXPORT_LIVE_IDS, for an export of the draft, so an import finds each thing once the draft is
+ * applied and the draft's IDs are gone. What the draft added isn't listed: it keeps its ID when the
+ * draft is applied. An edited copy of one of the ruleset's defaults is listed too, though nothing names
+ * it: everything names the default's ID
  */
 export interface ExportedLiveIds
 {

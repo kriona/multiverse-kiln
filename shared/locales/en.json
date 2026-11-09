@@ -3816,7 +3816,7 @@
 		"description": "Label of the field choosing the zip file to import into the universe's draft"
 	},
 	"editor.universeImport.imported": {
-		"defaultMessage": "Imported into the draft. Check it, then apply the draft when it's ready.",
+		"defaultMessage": "Imported into the draft.",
 		"description": "Toast once a zip file is imported into the universe's draft (a copy players don't see until it is applied); the editor then shows the draft again"
 	},
 	"editor.universeImport.importing": {
@@ -3872,8 +3872,12 @@
 		"description": "Button in the dialog Import Universe opens while the editor shows the universe's live version and the universe has a draft: opens the draft, then the dialog importing a file into it"
 	},
 	"editor.universeImport.otherUniverse": {
-		"defaultMessage": "The file is of another universe, so everything in it is added to the draft anew.",
-		"description": "In the dialog importing a zip file into the universe's draft, when the file was exported from another universe, perhaps on another site"
+		"defaultMessage": "This file is from another universe; everything in your universe will be replaced by the contents of this file.",
+		"description": "Warning in the dialog importing a zip file into the universe's draft, when the file was exported from another universe, perhaps on another site, and the universe keeps its own name"
+	},
+	"editor.universeImport.otherUniverseRenamed": {
+		"defaultMessage": "This file is from another universe; everything in your universe will be replaced by the contents of this file, and it will be named {name}.",
+		"description": "Warning in the dialog importing a zip file into the universe's draft, when the file was exported from another universe, perhaps on another site; {name} is the name the universe is given, such as \"Kilnhaven (copy)\""
 	},
 	"editor.universeImport.part.areas": {
 		"defaultMessage": "{count, plural, one {# area} other {# areas}}, with their cells and links",
@@ -3940,7 +3944,7 @@
 		"description": "In the dialog importing a zip file into the universe's draft, while the editor has unsaved changes: importing waits for them, since it replaces the draft they belong to"
 	},
 	"editor.universeImport.source": {
-		"defaultMessage": "{universe}, {version, select, draft {its draft} other {its live version}}, exported {date} by {name} (@{username}).",
+		"defaultMessage": "{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username}).",
 		"description": "In the dialog importing a zip file into the universe's draft, once a file is chosen: which universe and version it was exported from, when and by whom; {universe} is the universe's name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player's"
 	},
 	"editor.universeImport.startingDraft": {
@@ -4935,18 +4939,6 @@
 		"defaultMessage": "Areas",
 		"description": "Heading of the table in the legend file of a universe's exported zip file listing which area each file holds"
 	},
-	"export.legend.cells": {
-		"defaultMessage": "\"cells\" holds the chunk's {count, number} cells row by row, starting at its north-west corner: the first {size, number} are its top row, from west to east, then the next row down, and so on.",
-		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"cells\" as it is, since it is the field's name in the file. {count} is how many cells a chunk has, {size} how many along each side"
-	},
-	"export.legend.chunkSize": {
-		"defaultMessage": "\"chunkSize\" is how many cells run along each side of a chunk: {size, number}.",
-		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"chunkSize\" as it is, since it is the field's name in the file. {size} is the number"
-	},
-	"export.legend.chunks": {
-		"defaultMessage": "\"chunks\" lists the area's chunks: squares of {size, number} by {size, number} cells. A chunk that isn't listed holds only the area's default tile.",
-		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"chunks\" as it is, since it is the field's name in the file. {size} is the cells along each side of a chunk"
-	},
 	"export.legend.colorColumn": {
 		"defaultMessage": "Color",
 		"description": "Heading of the column of tile colors, as hex codes such as #7AFF3D, in the legend file's table of tiles in a universe's exported zip file"
@@ -4959,9 +4951,13 @@
 		"defaultMessage": "Default tile",
 		"description": "Heading of the column naming each area's default tile, which cells holding 0 are, in the legend file's table of areas in a universe's exported zip file"
 	},
+	"export.legend.exactly": {
+		"defaultMessage": "There is a row for every row of the area, and each row has a cell for every column of it, as \"bounds\" gives them. Importing a file whose rows don't match its bounds is refused, so to make the area larger or smaller, change both together.",
+		"description": "Line of the legend file in a universe's exported zip file telling someone editing an area's file that its rows must match its bounds; keep \"bounds\" as it is, since it is the field's name in the file"
+	},
 	"export.legend.example": {
-		"defaultMessage": "For example, place {place, number} of the list in the chunk at column -1, row 0 is the second cell of the chunk's second row: column {column, number}, row 1 of the area.",
-		"description": "Line of the legend file in a universe's exported zip file working through finding one cell's square; {place} is the place in a chunk's list of cells, and {column} the column it works out to"
+		"defaultMessage": "For example, in a file whose bounds have a minColumn of {minColumn, number} and a minRow of {minRow, number}, the third cell of the second row is on column {column, number}, row {row, number}.",
+		"description": "Line of the legend file in a universe's exported zip file working through finding one cell's column and row; keep minColumn and minRow as they are, since they are the fields' names in the file"
 	},
 	"export.legend.extent": {
 		"defaultMessage": "Columns {minColumn, number} to {maxColumn, number}, rows {minRow, number} to {maxRow, number}",
@@ -4971,33 +4967,33 @@
 		"defaultMessage": "File",
 		"description": "Heading of the column of file names in the legend file's table of areas in a universe's exported zip file"
 	},
-	"export.legend.formula": {
-		"defaultMessage": "The cell at place n in the list, counting from 0, is on column chunkColumn × {size, number} + (n mod {size, number}) and row chunkRow × {size, number} + floor(n ÷ {size, number}) of the area.",
-		"description": "Line of the legend file in a universe's exported zip file giving the arithmetic that finds a cell's square from its place in a chunk's list; keep chunkColumn and chunkRow as they are, since they are the fields' names in the file. {size} is the cells along each side of a chunk"
-	},
 	"export.legend.intro": {
-		"defaultMessage": "Each JSON file in this folder holds one area's cells: which tile is on each square of its ground. The Areas table below says which area each file is.",
+		"defaultMessage": "Each JSON file in this folder holds one area: its settings, the links on its cells, and its cells, which say which tile is on each square of its ground. The Areas table below says which area each file is.",
 		"description": "First paragraph of the legend file in the areas folder of a universe's exported zip file"
 	},
 	"export.legend.numberColumn": {
 		"defaultMessage": "Number",
 		"description": "Heading of the column of numbers, as the cells hold them, in the legend file's table of tiles in a universe's exported zip file"
 	},
-	"export.legend.outside": {
-		"defaultMessage": "A chunk on the edge of an area can reach past it. Its cells outside the columns and rows the Areas table gives aren't part of the area.",
-		"description": "Line of the legend file in a universe's exported zip file explaining that chunks are whole squares even where an area's edge cuts through them"
-	},
-	"export.legend.position": {
-		"defaultMessage": "\"chunkColumn\" and \"chunkRow\" say where a chunk is, counted in chunks. The chunk at column 0, row 0 starts at the area's cell at column 0, row 0 and runs east and south from it; columns grow to the east and rows to the south.",
-		"description": "Line of the legend file in a universe's exported zip file explaining two fields of an area's file; keep \"chunkColumn\" and \"chunkRow\" as they are, since they are the fields' names in the file"
+	"export.legend.place": {
+		"defaultMessage": "The cell at place c of row r of the list, counting both from 0, is on column minColumn + c and row minRow + r of the area, taking minColumn and minRow from \"bounds\".",
+		"description": "Line of the legend file in a universe's exported zip file giving the arithmetic that finds a cell's column and row from its place in the rows; keep minColumn and minRow as they are, since they are the fields' names in the file, and c and r as letters standing for numbers"
 	},
 	"export.legend.readingHeading": {
 		"defaultMessage": "Reading a file",
 		"description": "Heading of the part of the legend file in a universe's exported zip file that explains how an area's cells are laid out in its file"
 	},
+	"export.legend.rows": {
+		"defaultMessage": "\"rows\" holds the area's rows from north to south, each with its cells from west to east, so the first cell of the first row is the north-west corner. Columns grow to the east and rows to the south.",
+		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"rows\" as it is, since it is the field's name in the file"
+	},
 	"export.legend.sizeColumn": {
 		"defaultMessage": "Columns and rows",
 		"description": "Heading of the column giving each area's extent in the legend file's table of areas in a universe's exported zip file, such as \"-15 to 15, -8 to 8\""
+	},
+	"export.legend.start": {
+		"defaultMessage": "\"bounds\" gives the columns and rows the area covers, both ends included: \"minColumn\" and \"minRow\" are its westmost column and northmost row, the column and row of its north-west corner, and \"maxColumn\" and \"maxRow\" its eastmost column and southmost row.",
+		"description": "Line of the legend file in a universe's exported zip file explaining a field of an area's file; keep \"bounds\", \"minColumn\", \"minRow\", \"maxColumn\" and \"maxRow\" as they are, since they are the fields' names in the file"
 	},
 	"export.legend.tileColumn": {
 		"defaultMessage": "Tile",
@@ -7730,6 +7726,14 @@
 	"toast.close": {
 		"defaultMessage": "Got It",
 		"description": "Button in a toast that stays at the top of the page until it is closed, such as the editor's warning that another editor saved changes meeting the player's unsaved ones: closes the toast, as clicking it does"
+	},
+	"universe.copyName": {
+		"defaultMessage": "{name} (copy)",
+		"description": "Name importing a file into a universe's draft gives the universe when the file was exported from another universe, whose name is taken; {name} is that universe's name. The creator can rename it"
+	},
+	"universe.copyNameNumbered": {
+		"defaultMessage": "{name} (copy {number, number})",
+		"description": "Name importing a file into a universe's draft gives the universe when the file was exported from another universe and the name \"{name} (copy)\" is taken too; {number} counts up from 2 until a name is free"
 	},
 	"universe.deletionPrevented": {
 		"defaultMessage": "The site's admins disabled this universe and kept its creators from deleting it.",
