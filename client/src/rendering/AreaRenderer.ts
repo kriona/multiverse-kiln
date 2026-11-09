@@ -244,6 +244,11 @@ export class AreaRenderer
 	private readonly pieces = new Map<string, Piece>();
 
 	/**
+	 * The pieces showing chunks that have changed, by the same key as pieces, to draw again at the next update
+	 */
+	private readonly stalePieces = new Set<string>();
+
+	/**
 	 * The camera's view at the last update, for redrawing pieces between updates
 	 */
 	private lastView: Phaser.Geom.Rectangle | undefined;
@@ -284,13 +289,15 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws the pieces of the area the camera can see, or nearly, and drops the rest
+	 * Draws the pieces of the area the camera can see, or nearly, and drops the rest; pieces showing chunks
+	 * that have changed are drawn again
 	 *
 	 * @param view The camera's view of the world
 	 */
 	update(view: Phaser.Geom.Rectangle): void
 	{
 		this.lastView = view;
+		this.dropStalePieces();
 		this.drawPieces(view);
 
 		if (this.atlasFull)
@@ -302,7 +309,10 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Redraws the pieces showing chunks that have changed
+	 * Marks the pieces showing chunks that have changed, so the next update draws them again
+	 *
+	 * The scene calls update() on every frame, so changes made several times within a frame, such as each
+	 * cell of a brush stroke, draw each piece once. The pieces keep showing what they did until then
 	 *
 	 * @param chunkKeys The changed chunks, by chunkKey()
 	 */
@@ -312,16 +322,10 @@ export class AreaRenderer
 
 		for (const [key, piece] of this.pieces)
 		{
-			if ([...piece.chunks].some((chunk) => changed.has(chunk)))
+			if (!this.stalePieces.has(key) && [...piece.chunks].some((chunk) => changed.has(chunk)))
 			{
-				piece.map.destroy();
-				this.pieces.delete(key);
+				this.stalePieces.add(key);
 			}
-		}
-
-		if (this.lastView)
-		{
-			this.update(this.lastView);
 		}
 	}
 
@@ -417,6 +421,7 @@ export class AreaRenderer
 		}
 
 		this.pieces.clear();
+		this.stalePieces.clear();
 		this.scene.textures.remove(this.textureKey);
 	}
 
@@ -537,6 +542,20 @@ export class AreaRenderer
 	}
 
 	/**
+	 * Drops the pieces showing chunks that have changed, so drawPieces() draws them again
+	 */
+	private dropStalePieces(): void
+	{
+		for (const key of this.stalePieces)
+		{
+			this.pieces.get(key)?.map.destroy();
+			this.pieces.delete(key);
+		}
+
+		this.stalePieces.clear();
+	}
+
+	/**
 	 * Empties the atlas and drops every piece, so the pieces drawn next fill it with only the frames they need
 	 */
 	private clearAtlas(): void
@@ -547,6 +566,7 @@ export class AreaRenderer
 		}
 
 		this.pieces.clear();
+		this.stalePieces.clear();
 		this.frames.clear();
 		this.nextFrame = GRID_FRAME + 1;
 		this.atlasFull = false;
