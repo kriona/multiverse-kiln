@@ -569,6 +569,31 @@ export async function lockUniverse(universeId: string, executor: Executor): Prom
 }
 
 /**
+ * Locks a universe's row against lockUniverse() until the transaction ends, for a player's action that
+ * only has to wait out a world editor save or a server admin, such as creating a character while a race
+ * may be deleted. Any number of transactions can hold it at once
+ *
+ * The transaction must not take lockUniverse() on the same universe after it: two transactions upgrading
+ * their shared lock would deadlock
+ *
+ * @param universeId The universe's ID
+ * @param executor A transaction
+ * @return Whether the universe exists
+ */
+export async function lockUniverseShared(universeId: string, executor: Executor): Promise<boolean>
+{
+	const rows = await executor
+		.select({
+			id: universes.id
+		})
+		.from(universes)
+		.where(eq(universes.id, universeId))
+		.for('share');
+
+	return(rows.length > 0);
+}
+
+/**
  * Why a server admin disabled a universe
  *
  * @param universeId The universe's ID

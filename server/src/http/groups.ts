@@ -19,7 +19,7 @@ import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInv
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { lockUniverse } from '../db/universeRepo.js';
+import { lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
@@ -220,8 +220,9 @@ async function createRoute(request: Request, response: Response): Promise<void>
 	{
 		// One change at a time to the player's characters, so a character can't be put in two groups at once
 		await lockPlayer(playerId, transaction);
-		// Deleting a difficulty level waits for the universe's lock too, so the level can't go as the group takes it
-		await lockUniverse(universe.id, transaction);
+		// Deleting a difficulty level waits for the universe's lock too, so the level can't go as the group
+		// takes it. The lock is shared, so players making groups in the same universe don't wait for each other
+		await lockUniverseShared(universe.id, transaction);
 
 		// Read again under the lock, since a save or a server admin that held it may have disabled the
 		// universe, changed its stage or the player's role, or moved its starting area and deleted the old one
@@ -502,9 +503,10 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 	const result = await inTransaction(async (transaction): Promise<Refusal | { groupId: string; joined?: GroupCharacter }> =>
 	{
 		// The player, then the universe, then the group: the order making a group and saving the world
-		// editor (which changes groups) take them in
+		// editor (which changes groups) take them in. The universe's lock is shared, so players joining
+		// groups in the same universe wait only for the group they join
 		await lockPlayer(playerId, transaction);
-		await lockUniverse(universe.id, transaction);
+		await lockUniverseShared(universe.id, transaction);
 
 		// Read again under the lock, since a save or a server admin that held it may have disabled the
 		// universe, changed its stage, its group size or the player's role

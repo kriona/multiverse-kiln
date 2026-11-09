@@ -23,7 +23,7 @@ import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, lockUniverse } from '../db/universeRepo.js';
+import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
@@ -748,9 +748,10 @@ async function createRoute(request: Request, response: Response): Promise<void>
 	const result = await inTransaction(async (transaction): Promise<Refusal | string> =>
 	{
 		// Concurrent requests from the same player wait here, so they can't all slip under the limit.
-		// Deleting a race, class or item waits for the universe's lock, so none goes while it is given out
+		// Deleting a race, class or item waits for the universe's lock, so none goes while it is given out.
+		// The lock is shared, so players creating characters in the same universe don't wait for each other
 		await lockPlayer(playerId, transaction);
-		await lockUniverse(universeId, transaction);
+		await lockUniverseShared(universeId, transaction);
 
 		const universe = await findAllowedUniverse(universeId, playerId, canPlayUniverse, transaction);
 
