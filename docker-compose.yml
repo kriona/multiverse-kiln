@@ -33,7 +33,7 @@ services:
   storage:
     # Runs `weed mini` (master, volume, filer and S3 in one process); the S3 API refuses requests
     # without these keys
-    image: chrislusf/seaweedfs:4.50
+    image: chrislusf/seaweedfs:4.51
     restart: unless-stopped
     environment:
       AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID:?Set STORAGE_ACCESS_KEY_ID in .env}
