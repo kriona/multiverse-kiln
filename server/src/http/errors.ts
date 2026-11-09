@@ -2,7 +2,7 @@
  * Error answers: why the server refused a request, as a message the client shows in the player's
  * language (an ErrorPayload)
  */
-import type { Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import type { z } from 'zod';
 import { defineMessages, localize, type ErrorPayload, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
 
@@ -102,4 +102,34 @@ export function sendError(response: Response, status: number, message: MessageDe
 export function sendInvalidRequest(response: Response, error: z.ZodError): void
 {
 	sendError(response, 400, errorMessages.invalidRequest, { problem: describeInvalidPayload(error) });
+}
+
+/**
+ * Answers errors no router's own handler answered, such as a path whose percent-encoding can't be
+ * decoded: 4xx errors as unreadable, anything else as 500. Registered after every route, so Express's
+ * default handler, which puts the error's stack in its page unless NODE_ENV is production, never answers
+ *
+ * @param error What went wrong
+ * @param request The request
+ * @param response The response
+ * @param next The next error handler, for when the response has already started
+ */
+export function handleUnansweredError(error: unknown, request: Request, response: Response, next: NextFunction): void
+{
+	if (response.headersSent)
+	{
+		next(error);
+		return;
+	}
+
+	const status = (((typeof error === 'object') && (error !== null) && ('status' in error) && (typeof error.status === 'number')) ? error.status : 500);
+
+	if ((status >= 400) && (status < 500))
+	{
+		sendError(response, status, errorMessages.unreadableBody);
+		return;
+	}
+
+	console.error('Request %s %s failed:', request.method, request.originalUrl, error);
+	sendError(response, 500, errorMessages.somethingWentWrong);
 }
