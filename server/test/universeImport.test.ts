@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
+import http from 'http';
 import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
@@ -229,6 +230,57 @@ async function importArchive<T = ErrorPayload>(editor: Editor, universeId: strin
 		status: response.status,
 		body: ((text === '') ? undefined : JSON.parse(text)) as T
 	});
+}
+
+/**
+ * Starts previewing a file whose body never finishes arriving: it declares 8 MB and sends 64 KB of it
+ *
+ * @param editor The browser sending it
+ * @param universeId The universe's ID
+ * @return The open request, to destroy once the test is done with it
+ */
+async function startUnfinishedImport(editor: Editor, universeId: string): Promise<http.ClientRequest>
+{
+	const request = http.request(new URL(`${testServerUrl}${EDITOR_UNIVERSES_PATH}/${universeId}${UNIVERSE_IMPORT_PREVIEW_PATH}?version=draft`), {
+		method: 'POST',
+		agent: false,
+		headers: {
+			'Cookie': editor.cookie,
+			'Content-Type': 'application/zip',
+			'Content-Length': String(8 * 1024 * 1024)
+		}
+	});
+
+	request.on('error', () => undefined);
+
+	await new Promise<void>((resolve) =>
+	{
+		request.write(Buffer.alloc(64 * 1024), () => resolve());
+	});
+
+	return(request);
+}
+
+/**
+ * Previews a file that isn't a zip file again and again until the server answers with a status, since
+ * the server takes a moment to reach an unfinished import sent just before
+ *
+ * @param editor The browser sending it
+ * @param universeId The universe's ID
+ * @param status The status waited for
+ * @return The last status answered, the one waited for unless 2 seconds passed first
+ */
+async function previewUntil(editor: Editor, universeId: string, status: number): Promise<number>
+{
+	const end = Date.now() + 2000;
+	let answered = 0;
+
+	while ((answered !== status) && (Date.now() < end))
+	{
+		answered = (await importArchive(editor, universeId, Buffer.from('not a zip'), { preview: true })).status;
+	}
+
+	return(answered);
 }
 
 /**
@@ -524,6 +576,40 @@ describe('importing a universe', () =>
 		assert.strictEqual(rights.status, 400);
 		assert.strictEqual(rights.body.error.id, 'error.importRightsNeeded');
 		assert.strictEqual((await importArchive(ada, kilnhavenId, newer)).body.error.id, 'error.importNewerFormat');
+	});
+
+	it('refuses another import from a player, or past the server\'s limit, from before a file still arriving is read', async () =>
+	{
+		const bea = await logIn('Bea');
+		const cyd = await logIn('Cyd');
+		const beaUniverseId = await createUniverse(bea, 'Beahaven');
+		const cydUniverseId = await createUniverse(cyd, 'Cydhaven');
+		const open: http.ClientRequest[] = [];
+
+		for (const [editor, universeId] of [[ada, kilnhavenId], [bea, beaUniverseId], [cyd, cydUniverseId]] as const)
+		{
+			await saveAll(editor, universeId, [{ kind: 'startDraft' }]);
+		}
+
+		try
+		{
+			open.push(await startUnfinishedImport(ada, kilnhavenId));
+			assert.strictEqual(await previewUntil(ada, kilnhavenId, 429), 429);
+
+			open.push(await startUnfinishedImport(bea, beaUniverseId));
+			assert.strictEqual(await previewUntil(cyd, cydUniverseId, 503), 503);
+
+			// Once Ada's unfinished file is given up, Ada's place is free again
+			open.shift()?.destroy();
+			assert.strictEqual(await previewUntil(ada, kilnhavenId, 400), 400);
+		}
+		finally
+		{
+			for (const request of open)
+			{
+				request.destroy();
+			}
+		}
 	});
 
 	it('refuses a file whose content a save wouldn\'t take, saving none of it', async () =>

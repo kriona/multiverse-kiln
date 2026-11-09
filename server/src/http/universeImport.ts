@@ -7,13 +7,13 @@
  * starts, so the universe isn't locked while it is, and the save checks every change as one from the
  * editor would be, in one transaction: all of it is imported, or none of it
  */
-import express, { type Request, type Response, type Router } from 'express';
-import { canImportUniverse, defineMessages, localize, MAX_LOCALE_LENGTH, MAX_UNIVERSE_IMPORT_BYTES, SOURCE_LOCALE, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type ErrorPayload, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import express, { type NextFunction, type Request, type Response, type Router } from 'express';
+import { canImportUniverse, defineMessages, localize, MAX_LOCALE_LENGTH, MAX_UNIVERSE_IMPORT_BYTES, SOURCE_LOCALE, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type ErrorPayload, type MessageDescriptor, type UniverseImportPreview } from '@multiverse-kiln/shared';
 import { z } from 'zod';
 
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { emailTranslator } from '../email/emailLocales.js';
-import { requireRole, universeContextOf, type UniverseContext } from './editorAccess.js';
+import { requireRole, universeContextOf } from './editorAccess.js';
 import { saveChanges } from './editorChanges.js';
 import { errorMessages, sendError } from './errors.js';
 import { ImportProblem, readImportFile } from './universeImportFile.js';
@@ -63,7 +63,74 @@ const MAX_IMPORTS_AT_ONCE = 2;
 const importing = new Set<string>();
 
 /**
- * Reads the request's body as the export's zip archive, once the player has been let in
+ * A player's place among the imports being made. It is taken before the request's file is read and held
+ * until its response has closed and the work on the file has finished, so neither a file still arriving
+ * nor one still being saved lets the player, or more than MAX_IMPORTS_AT_ONCE players, send another
+ */
+class ImportPlace
+{
+	/**
+	 * What still holds the place: the response until it closes, and the work while it runs
+	 */
+	private holds = 1;
+
+	/**
+	 * Takes a place for a player
+	 *
+	 * @param playerId The player's ID
+	 */
+	constructor(private readonly playerId: string)
+	{
+		importing.add(playerId);
+	}
+
+	/**
+	 * Runs work on the import, holding the place until it has finished. Does nothing once the place has
+	 * been given up, since the response it would answer has closed
+	 *
+	 * @param work The work
+	 */
+	async whileHeld(work: () => Promise<void>): Promise<void>
+	{
+		if (this.holds === 0)
+		{
+			return;
+		}
+
+		this.holds++;
+
+		try
+		{
+			await work();
+		}
+		finally
+		{
+			this.release();
+		}
+	}
+
+	/**
+	 * Lets go of one hold on the place, giving it up once nothing holds it
+	 */
+	release(): void
+	{
+		this.holds--;
+
+		if (this.holds === 0)
+		{
+			importing.delete(this.playerId);
+		}
+	}
+}
+
+/**
+ * Each import request's place, taken by takeImportPlace
+ */
+const importPlaces = new WeakMap<Response, ImportPlace>();
+
+/**
+ * Reads the request's body as the export's zip archive, once the player has been let in and has taken an
+ * import's place
  */
 const readArchive = express.raw({
 	type: 'application/zip',
@@ -90,8 +157,80 @@ const importLocale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
  */
 export function addUniverseImportRoutes(router: Router): void
 {
-	router.post(UNIVERSE_IMPORT_PREVIEW_PATH, requireRole(canImportUniverse), readArchive, previewRoute);
-	router.post(UNIVERSE_IMPORT_PATH, requireRole(canImportUniverse), readArchive, importRoute);
+	router.post(UNIVERSE_IMPORT_PREVIEW_PATH, requireRole(canImportUniverse), takeImportPlace, readArchive, previewRoute);
+	router.post(UNIVERSE_IMPORT_PATH, requireRole(canImportUniverse), takeImportPlace, readArchive, importRoute);
+}
+
+/**
+ * Takes the player's place among the imports being made before their file is read, answering 429 while
+ * another of theirs is being read or made and 503 while the server has as many as it runs. The place is
+ * held until the response closes, and while the route works on the file
+ *
+ * @param request The request
+ * @param response The response, answered when the import can't run now
+ * @param next Reads the file
+ */
+function takeImportPlace(request: Request, response: Response, next: NextFunction): void
+{
+	const { playerId } = universeContextOf(request);
+
+	if (importing.has(playerId))
+	{
+		refuseImport(request, response, 429, messages.alreadyImporting);
+		return;
+	}
+
+	if (importing.size >= MAX_IMPORTS_AT_ONCE)
+	{
+		refuseImport(request, response, 503, messages.serverBusy);
+		return;
+	}
+
+	const place = new ImportPlace(playerId);
+
+	importPlaces.set(response, place);
+	response.once('close', () => place.release());
+	next();
+}
+
+/**
+ * Answers why an import can't run now once its file has arrived, reading the file without keeping any of
+ * it. Node resets a connection whose request is still arriving when its response ends, which the browser
+ * would show as a failed request rather than this answer. A file past MAX_UNIVERSE_IMPORT_BYTES is
+ * answered as soon as it passes it
+ *
+ * @param request The request
+ * @param response The response
+ * @param status The status to answer
+ * @param message Why the import can't run now
+ */
+function refuseImport(request: Request, response: Response, status: number, message: MessageDescriptor): void
+{
+	let read = 0;
+	let answered = false;
+
+	/**
+	 * Answers, once
+	 */
+	const answer = (): void =>
+	{
+		if (!answered)
+		{
+			answered = true;
+			sendError(response, status, message);
+		}
+	};
+
+	request.on('data', (chunk: Buffer) =>
+	{
+		read += chunk.length;
+
+		if (read > MAX_UNIVERSE_IMPORT_BYTES)
+		{
+			answer();
+		}
+	});
+	request.once('end', answer);
 }
 
 /**
@@ -102,7 +241,7 @@ export function addUniverseImportRoutes(router: Router): void
  */
 async function previewRoute(request: Request, response: Response): Promise<void>
 {
-	await whileImporting(universeContextOf(request), response, async () =>
+	await whileImporting(response, async () =>
 	{
 		const plan = await planRequest(request, response);
 
@@ -137,7 +276,7 @@ async function importRoute(request: Request, response: Response): Promise<void>
 	const context = universeContextOf(request);
 
 	// The plan holds the file's contents until it is saved, so the import holds its place until then
-	await whileImporting(context, response, async () =>
+	await whileImporting(response, async () =>
 	{
 		const plan = await planRequest(request, response);
 
@@ -222,35 +361,20 @@ async function planRequest(request: Request, response: Response): Promise<Import
 }
 
 /**
- * Runs work for a player's import, one at a time for each player and at most MAX_IMPORTS_AT_ONCE on the
- * server, answering 429 while another of theirs is running and 503 while the server has as many as it runs
+ * Runs work for a player's import, holding the place takeImportPlace took for it until the work has
+ * finished
  *
- * @param context The request's universe and player
- * @param response The response, answered when the import can't run now
+ * @param response The request's response
  * @param work The work
  */
-async function whileImporting(context: UniverseContext, response: Response, work: () => Promise<void>): Promise<void>
+async function whileImporting(response: Response, work: () => Promise<void>): Promise<void>
 {
-	if (importing.has(context.playerId))
+	const place = importPlaces.get(response);
+
+	if (!place)
 	{
-		sendError(response, 429, messages.alreadyImporting);
-		return;
+		throw new Error('An import route was reached without takeImportPlace');
 	}
 
-	if (importing.size >= MAX_IMPORTS_AT_ONCE)
-	{
-		sendError(response, 503, messages.serverBusy);
-		return;
-	}
-
-	importing.add(context.playerId);
-
-	try
-	{
-		await work();
-	}
-	finally
-	{
-		importing.delete(context.playerId);
-	}
+	await place.whileHeld(work);
 }
