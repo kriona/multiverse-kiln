@@ -313,9 +313,29 @@ export class AreaPlayers
 	 */
 	add(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell): void
 	{
+		if (this.place(playerId, appearance, area, near))
+		{
+			this.refreshViews();
+		}
+	}
+
+	/**
+	 * Puts a player new to the room on the free cell nearest a cell of an area, leaving the clients'
+	 * views for the caller to refresh. Does nothing for a player already here
+	 *
+	 * @param playerId The player's ID
+	 * @param appearance How they show
+	 * @param area Where they start, as prepareStart() returned it
+	 * @param near The cell to start nearest
+	 * @param occupancy The cells the area's players hold, when placing several players at once: the
+	 * player's cell is added to it. Without it, the area's occupancy is worked out from its players
+	 * @return Whether the player was placed
+	 */
+	private place(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell, occupancy?: CellOccupancy): boolean
+	{
 		if (this.players.has(playerId))
 		{
-			return;
+			return(false);
 		}
 
 		// Added before it has a cell, so the search below knows whether the player is a ghost
@@ -323,7 +343,7 @@ export class AreaPlayers
 
 		this.players.set(playerId, player);
 
-		const position = this.findArrivalCell(playerId, area, near);
+		const position = this.findArrivalCell(playerId, area, near, occupancy);
 
 		if (!position)
 		{
@@ -334,7 +354,23 @@ export class AreaPlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.areaIds.set(playerId, area.loaded.area.id);
-		this.refreshViews();
+
+		if (occupancy && !player.ghost)
+		{
+			occupancy.hold(
+				playerId,
+				occupiedCells(
+					{
+						x: player.x,
+						y: player.y,
+						step: undefined
+					},
+					area.grid
+				)
+			);
+		}
+
+		return(true);
 	}
 
 	/**
@@ -354,9 +390,10 @@ export class AreaPlayers
 	{
 		const isNewPlayer = !this.players.has(playerId);
 
+		// attach() refreshes the views, for the new player and the new client at once
 		if (isNewPlayer && startArea)
 		{
-			this.add(playerId, appearance, startArea, near);
+			this.place(playerId, appearance, startArea, near);
 		}
 
 		this.sessions.add(client.sessionId, playerId);
@@ -468,16 +505,22 @@ export class AreaPlayers
 
 		this.clearArea();
 
+		// The area holds only the players placed here, so one occupancy, added to as each is placed,
+		// serves every search, and the views are refreshed once they are all in
+		const occupancy = new CellOccupancy();
+
 		for (const playerId of playerIds)
 		{
-			this.add(playerId, appearanceOf(playerId), area, near);
+			this.place(playerId, appearanceOf(playerId), area, near, occupancy);
 		}
+
+		this.refreshViews();
 
 		for (const playerId of playerIds)
 		{
 			for (const client of this.getClients(playerId))
 			{
-				this.attach(client, playerId);
+				this.greet(client, playerId);
 			}
 		}
 	}
@@ -524,10 +567,19 @@ export class AreaPlayers
 	 */
 	private attach(client: Client, playerId: string): void
 	{
-		const area = this.areaOf(playerId);
-
 		this.refreshViews();
+		this.greet(client, playerId);
+	}
 
+	/**
+	 * Tells a client which player it controls and which area it is in
+	 *
+	 * @param client The client
+	 * @param playerId The player
+	 */
+	private greet(client: Client, playerId: string): void
+	{
+		const area = this.areaOf(playerId);
 		const welcome: WelcomePayload = { playerId };
 
 		client.send(ServerMessageType.Welcome, welcome);
@@ -1245,13 +1297,14 @@ export class AreaPlayers
 	 * @param playerId The player arriving, whose own cells count as free
 	 * @param area The area
 	 * @param near The cell to start from
+	 * @param occupancy The cells the area's players hold, worked out from them by default
 	 * @return The cell's center, or undefined when there is no free cell that near
 	 */
-	private findArrivalCell(playerId: string, area: ActiveArea, near: Cell): Position | undefined
+	private findArrivalCell(playerId: string, area: ActiveArea, near: Cell, occupancy?: CellOccupancy): Position | undefined
 	{
 		const { minColumn, minRow, maxColumn, maxRow } = area.grid.bounds;
 		const searchDistance = Math.min(Math.max(maxColumn - minColumn, maxRow - minRow) + 1, CHUNK_LOAD_RADIUS);
-		const isCellFree = (this.isGhost(playerId) ? anyCell : this.occupancyOf(area.loaded.area.id, playerId).isFreeFor(playerId));
+		const isCellFree = (this.isGhost(playerId) ? anyCell : (occupancy ?? this.occupancyOf(area.loaded.area.id, playerId)).isFreeFor(playerId));
 
 		return(findFreeCell(near, area.grid, isCellFree, searchDistance));
 	}
