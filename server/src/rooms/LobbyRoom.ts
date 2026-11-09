@@ -17,6 +17,7 @@ import { areaChanges } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
+import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { entryRefusalCode, findPlayRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
@@ -458,6 +459,20 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			}
 			: message));
 		this.broadcast(LobbyServerMessageType.ChatAuthorDeleted, deleted);
+	}
+
+	/**
+	 * Refuses a browser that isn't logged in before matchmaking makes a lobby for it
+	 * (isLoggedInToMatchmake())
+	 *
+	 * @param _token The client's auth token, unused: the session is in a cookie
+	 * @param _options Join options from the client
+	 * @param context The matchmaking request's headers, which carry the session cookie
+	 * @return Whether the browser is logged in
+	 */
+	static async onAuth(_token: string, _options: unknown, context: AuthContext): Promise<boolean>
+	{
+		return(isLoggedInToMatchmake(context));
 	}
 
 	/**

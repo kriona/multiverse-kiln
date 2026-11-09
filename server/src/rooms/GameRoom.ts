@@ -22,6 +22,7 @@ import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
+import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
@@ -509,6 +510,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				}
 			})
 		);
+	}
+
+	/**
+	 * Refuses a browser that isn't logged in before matchmaking makes a group's room for it
+	 * (isLoggedInToMatchmake())
+	 *
+	 * @param _token The client's auth token, unused: the session is in a cookie
+	 * @param _options Join options from the client
+	 * @param context The matchmaking request's headers, which carry the session cookie
+	 * @return Whether the browser is logged in
+	 */
+	static async onAuth(_token: string, _options: unknown, context: AuthContext): Promise<boolean>
+	{
+		return(isLoggedInToMatchmake(context));
 	}
 
 	/**

@@ -17,6 +17,7 @@ import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/edi
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
+import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { chatPayload, chatReadPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
@@ -371,6 +372,20 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		this.stopFollowingTwoFactor?.();
 		this.stopFollowingDeletions?.();
 		await this.saveChat();
+	}
+
+	/**
+	 * Refuses a browser that isn't logged in before matchmaking makes an editor room for it
+	 * (isLoggedInToMatchmake())
+	 *
+	 * @param _token The client's auth token, unused: the session is in a cookie
+	 * @param _options Join options from the client
+	 * @param context The matchmaking request's headers, which carry the session cookie
+	 * @return Whether the browser is logged in
+	 */
+	static async onAuth(_token: string, _options: unknown, context: AuthContext): Promise<boolean>
+	{
+		return(isLoggedInToMatchmake(context));
 	}
 
 	/**
