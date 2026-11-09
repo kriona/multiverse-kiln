@@ -21,7 +21,7 @@
 							<option value="draft" data-message="editor.version.draft" data-translation-context="Choice in the editor's toolbar for editing the universe's draft, a copy players don't see until it is applied">Draft</option>
 						</select>
 					</label>
-					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar and in the dialog explaining drafts"><!-- icon ph:copy -->Start Draft</button>
+					<button id="editor-start-draft" class="draft" type="button" hidden data-message="editor.draft.start" data-translation-context="Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor's toolbar, the dialog explaining drafts and the one Import Universe opens while the universe has none"><!-- icon ph:copy -->Start Draft</button>
 					<button id="editor-apply-draft" class="draft" type="button" hidden data-message="editor.draft.apply" data-translation-context="Button in the editor's toolbar that applies the universe's draft to the live version after asking, so players see everything changed in it"><!-- icon ph:rocket-launch -->Apply Draft</button>
 					<button id="editor-discard-draft" class="danger" type="button" hidden data-message="editor.draft.discard" data-translation-context="Button in the editor's toolbar that deletes the universe's draft after asking, leaving the live version as it is"><!-- icon ph:trash -->Discard Draft</button>
 					<span class="editor-chat-toggle">
@@ -34,7 +34,10 @@
 				</header>
 				<p id="editor-notice" class="notice" role="status" hidden></p>
 				<p id="editor-connection-notice" class="notice" hidden></p>
-				<p id="editor-version-notice" class="notice" role="status" hidden></p>
+				<div id="editor-version-notice" class="notice dismissable-notice" hidden>
+					<p id="editor-version-notice-text" role="status"></p>
+					<button id="editor-version-notice-dismiss" type="button" class="secondary notice-dismiss" aria-label="Dismiss" title="Dismiss" data-message-aria-label="editor.version.dismiss" data-translation-context-aria-label="Name of the X button at the right of the notice above the editor's tabs saying the universe's draft (a copy players don't see until it is applied) is open, or that the live version has one: hides the notice in every universe until the player shows dismissed notices again from their profile" data-message-title="editor.version.dismiss" data-translation-context-title="Name of the X button at the right of the notice above the editor's tabs saying the universe's draft (a copy players don't see until it is applied) is open, or that the live version has one: hides the notice in every universe until the player shows dismissed notices again from their profile"><!-- icon ph:x --></button>
+				</div>
 				<div class="tab-strip">
 					<div id="editor-tabs" class="tabs" role="tablist">
 						<button id="editor-tab-universe" type="button" role="tab" aria-controls="editor-panel-universe" data-message="editor.tab.universe" data-translation-context="Tab of the editor with the universe's own settings"><!-- icon game-icons:galaxy -->Universe</button>
@@ -43,8 +46,8 @@
 						<button id="editor-tab-lobby" type="button" role="tab" aria-controls="editor-panel-lobby" data-message="editor.tab.lobby" data-translation-context="Tab of the editor with the lobby's settings"><!-- icon game-icons:campfire -->Lobby</button>
 						<button id="editor-tab-characters" type="button" role="tab" aria-controls="editor-panel-characters" data-message="editor.tab.characters" data-translation-context="Tab of the editor with what characters start with and how many play together"><!-- icon game-icons:character -->Characters</button>
 						<button id="editor-tab-characterList" type="button" role="tab" aria-controls="editor-panel-characterList" data-message="editor.tab.characterList" data-translation-context="Tab of the editor listing every character players have made in the universe, with their race, class and player"><!-- icon game-icons:three-friends -->Character List</button>
-						<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles maps are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
-						<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own map)"><!-- icon game-icons:treasure-map -->Areas</button>
+						<button id="editor-tab-tilesets" type="button" role="tab" aria-controls="editor-panel-tilesets" data-message="editor.tab.tilesets" data-translation-context="Tab of the editor listing the tiles areas are painted with"><!-- icon game-icons:stone-block -->Tilesets</button>
+						<button id="editor-tab-areas" type="button" role="tab" aria-controls="editor-panel-areas" data-message="editor.tab.areas" data-translation-context="Tab of the editor listing the universe's areas (places with their own grid of cells)"><!-- icon game-icons:treasure-map -->Areas</button>
 						<button id="editor-tab-items" type="button" role="tab" aria-controls="editor-panel-items" data-message="editor.tab.items" data-translation-context="Tab of the editor listing the items characters can be given, such as weapons and gear"><!-- icon game-icons:swap-bag -->Items</button>
 						<button id="editor-tab-translations" type="button" role="tab" aria-controls="editor-panel-translations" data-message="editor.tab.translations" data-translation-context="Tab of the editor with the languages the universe can be played in: the one its text is written in, and those it is translated into"><!-- icon ph:translate -->Translations</button>
 						<button id="editor-tab-audit" type="button" role="tab" aria-controls="editor-panel-audit" data-message="editor.tab.audit" data-translation-context="Tab of the editor listing every save made in the universe's editor: who saved, with which role, when and what changed"><!-- icon ph:clock-counter-clockwise -->Audit</button>
@@ -53,8 +56,8 @@
 					<button id="editor-tabs-forward" type="button" class="tab-scroll tab-scroll-forward" tabindex="-1" aria-hidden="true" hidden><!-- icon ph:caret-right --></button>
 				</div>
 				<div class="editor-body">
-					<section id="editor-panel-universe" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-universe">
-						<form id="universe-form" class="form">
+					<section id="editor-panel-universe" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-universe">
+						<form id="universe-form" class="panel form">
 							<fieldset id="universe-fields" class="plain">
 								<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Name
@@ -96,7 +99,7 @@
 									Passage of time
 									<select id="universe-time"></select>
 								</label>
-								<label id="universe-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
+								<label id="universe-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of an area has morning, when the passage of time is faerie" hidden>
 									Where is morning?
 									<select id="universe-faerie"></select>
 								</label>
@@ -107,7 +110,7 @@
 								<p id="universe-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
-						<section id="universe-draft" class="universe-draft" aria-labelledby="universe-draft-heading" hidden>
+						<section id="universe-draft" class="panel" aria-labelledby="universe-draft-heading" hidden>
 							<h2 id="universe-draft-heading" data-message="editor.draft.heading" data-translation-context="Heading of the part of the editor's Universe tab shown when starting, applying or discarding the universe's draft (a copy of the universe editors change without players seeing it) couldn't be saved">Draft</h2>
 							<p id="universe-draft-status" role="status"></p>
 							<div class="form-buttons">
@@ -115,6 +118,13 @@
 							</div>
 							<p id="universe-draft-error" class="form-error" role="alert" hidden></p>
 						</section>
+						<div id="universe-actions" class="universe-actions" hidden>
+							<div class="universe-action-buttons">
+								<button id="universe-export" type="button" class="secondary" data-shortcut="Alt+X" data-message="editor.universeExport.button" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialog exporting what the player can edit in the universe as a zip file, for every role but beta tester"><!-- icon ph:download-simple -->Export Universe</button>
+								<button id="universe-import" type="button" class="secondary" data-shortcut="Alt+I" data-message="editor.universeImport.button" data-translation-context="Button under the settings on the editor's Universe tab, beside Export Universe, that opens the dialog importing a zip file Export Universe made into the universe's draft, for every role but beta tester"><!-- icon ph:upload-simple -->Import Universe</button>
+								<button id="universe-delete-open" type="button" class="danger" data-message="editor.universeDelete.open" data-translation-context="Button under the settings on the editor's Universe tab that opens the dialogs deleting the universe, for its creators and the site's admins" hidden><!-- icon ph:trash -->Delete Universe</button>
+							</div>
+						</div>
 					</section>
 
 					<section id="editor-panel-editors" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-editors" hidden>
@@ -237,10 +247,10 @@
 							<p data-message="editor.lobby.areaChoice" data-translation-context="Shows the area players walk around in the universe's lobby, on the editor's Lobby tab; {area} is the area's name and the square players start on, or that there is none">Lobby area: <strong id="lobby-area-name" data-argument="area"></strong></p>
 							<div class="form-group lobby-area-details">
 								<p class="hint" data-message="editor.lobby.areaHint" data-translation-context="Explains the lobby's area on the editor's Lobby tab, under the area's name">The area to use as the game's lobby for players between groups.</p>
-								<p id="lobby-no-map-hint" class="hint" hidden></p>
+								<p id="lobby-no-area-hint" class="hint" hidden></p>
 								<div class="area-buttons">
 									<button id="lobby-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.lobby.chooseArea" data-translation-context="Button on the editor's Lobby tab that opens the dialog for choosing the area players walk around in the lobby, and the square they start on"><!-- icon ph:map-pin -->Choose Area</button>
-									<button id="lobby-area-clear" type="button" class="secondary" data-shortcut="Alt+O" data-message="editor.lobby.clearArea" data-translation-context="Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no map to walk around"><!-- icon ph:x -->No Lobby Area</button>
+									<button id="lobby-area-clear" type="button" class="secondary" data-shortcut="Alt+O" data-message="editor.lobby.clearArea" data-translation-context="Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no area to walk around"><!-- icon ph:x -->No Lobby Area</button>
 									<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
 								</div>
 							</div>
@@ -255,7 +265,7 @@
 									<input id="lobby-day-hours" type="number" step="1" required />
 								</label>
 								<p id="lobby-day-hours-hint" class="hint"></p>
-								<label id="lobby-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
+								<label id="lobby-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of an area has morning, when the passage of time is faerie" hidden>
 									Where is morning?
 									<select id="lobby-faerie"></select>
 								</label>
@@ -493,7 +503,7 @@
 										<select id="area-light"></select>
 									</label>
 									<p id="area-light-hint" class="hint" data-message="editor.area.lightLevelHint" data-translation-context="Explains the light level field of an indoor area" hidden>A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.</p>
-									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area's map is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Default tile
 										<select id="area-default-tile"></select>
 									</label>
@@ -502,19 +512,19 @@
 										<select id="area-time"></select>
 									</label>
 									<p id="area-lobby-time-hint" class="hint" data-message="editor.area.lobbyTime" data-translation-context="Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets" hidden>The lobby's passage of time is set on the Lobby tab.</p>
-									<label id="area-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of the map has morning, when the passage of time is faerie" hidden>
+									<label id="area-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of an area has morning, when the passage of time is faerie" hidden>
 										Where is morning?
 										<select id="area-faerie"></select>
 									</label>
-									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-loops-east-west" type="checkbox" />
 										Loops east-west
 									</label>
-									<label class="checkbox" data-message="editor.area.loopsNorthSouth" data-translation-context="Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									<label class="checkbox" data-message="editor.area.loopsNorthSouth" data-translation-context="Checkbox for an area that wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-loops-north-south" type="checkbox" />
 										Loops north-south
 									</label>
-									<p id="area-loops-hint" class="hint" data-message="error.faerieCantLoop" data-translation-context="Why an area can't both have faerie time and a map that wraps around: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings" hidden>An area whose passage of time is faerie can't loop.</p>
+									<p id="area-loops-hint" class="hint" data-message="error.faerieCantLoop" data-translation-context="Why an area can't both have faerie time and wrap around at its edges: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings" hidden>An area whose passage of time is faerie can't loop.</p>
 									<p id="area-size"></p>
 									<p id="area-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
@@ -522,49 +532,49 @@
 									</div>
 								</fieldset>
 							</form>
-							<section id="map-editor" class="panel map-editor" aria-label="Map" data-message-aria-label="editor.map.heading" data-translation-context-aria-label="Name of the area's map editor (the card holding the map and its tools), for screen readers">
-								<p id="map-claim" class="area-claim" hidden></p>
-								<div class="map-tools">
-									<!-- Hidden for a map that can't be changed, leaving Full Page -->
-									<div id="map-tools" class="map-editing-tools">
+							<section id="area-cells-editor" class="panel area-cells-editor" aria-label="Cells" data-message-aria-label="editor.area.heading" data-translation-context-aria-label="Name of the area's cell editor (the card holding the area's cells and the tools that paint them), for screen readers">
+								<p id="area-cells-claim" class="area-claim" hidden></p>
+								<div class="area-tools">
+									<!-- Hidden for an area that can't be changed, leaving Full Page -->
+									<div id="area-tools" class="area-editing-tools">
 										<fieldset class="choice">
-											<legend data-message="editor.map.tool" data-translation-context="Heading of the choice of what clicking the map does">Tool</legend>
-											<label class="checkbox" data-message="editor.map.draw" data-translation-context="Map tool that paints tiles onto the map">
-												<input id="map-tool-draw" name="map-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
+											<legend data-message="editor.area.tool" data-translation-context="Heading of the choice of what clicking a cell of the area does">Tool</legend>
+											<label class="checkbox" data-message="editor.area.draw" data-translation-context="Area editor tool that paints tiles onto the area's cells">
+												<input id="area-tool-draw" name="area-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
 												Draw
 											</label>
-											<label class="checkbox" data-message="editor.map.links" data-translation-context="Map tool that adds and changes links to other areas">
-												<input id="map-tool-links" name="map-tool" type="radio" value="links" data-shortcut="Alt+L" />
+											<label class="checkbox" data-message="editor.area.links" data-translation-context="Area editor tool that adds and changes links to other areas">
+												<input id="area-tool-links" name="area-tool" type="radio" value="links" data-shortcut="Alt+L" />
 												Links
 											</label>
 										</fieldset>
-										<label data-message="editor.map.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
+										<label data-message="editor.area.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
 											Tile
-											<select id="map-tile" data-shortcut="Alt+T"></select>
+											<select id="area-tile" data-shortcut="Alt+T"></select>
 										</label>
-										<label data-message="editor.map.brushSize" data-translation-context="Label of the field for how many cells across the Draw tool paints">
+										<label data-message="editor.area.brushSize" data-translation-context="Label of the field for how many cells across the Draw tool paints">
 											Size
-											<input id="map-brush-size" type="number" min="1" step="1" value="1" />
+											<input id="area-brush-size" type="number" min="1" step="1" value="1" />
 										</label>
-										<label data-message="editor.map.brushShape" data-translation-context="Label of the field for the shape the Draw tool paints, a circle or a square">
+										<label data-message="editor.area.brushShape" data-translation-context="Label of the field for the shape the Draw tool paints, a circle or a square">
 											Shape
-											<select id="map-brush-shape"></select>
+											<select id="area-brush-shape"></select>
 										</label>
-										<button id="map-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.map.undo" data-translation-context="Button that takes back the last painting or change to the map's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
-										<button id="map-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.map.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
-										<button id="map-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.map.resize" data-translation-context="Button that opens the dialog for changing the map's size"><!-- icon ph:resize -->Edit Size</button>
+										<button id="area-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.area.undo" data-translation-context="Button that takes back the last painting or change to the area's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
+										<button id="area-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.area.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
+										<button id="area-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.area.resize" data-translation-context="Button that opens the dialog for changing the area's size"><!-- icon ph:resize -->Edit Size</button>
 									</div>
-									<button id="map-full-page" type="button" class="secondary map-full-page" data-shortcut="Alt+P"></button>
+									<button id="area-full-page" type="button" class="secondary area-full-page" data-shortcut="Alt+P"></button>
 								</div>
-								<div id="map-canvas" class="map-canvas" tabindex="0" role="application" aria-label="Map" aria-describedby="map-keyboard-help map-error" data-shortcut="Alt+M" data-message-aria-label="editor.map.label" data-translation-context-aria-label="Name of the area's map in the map editor, for screen readers">
-									<span id="map-cursor" class="map-cursor"></span>
+								<div id="area-canvas" class="area-canvas" tabindex="0" role="application" aria-label="Cells" aria-describedby="area-keyboard-help area-cells-error" data-shortcut="Alt+M" data-message-aria-label="editor.area.label" data-translation-context-aria-label="Name of the area's cells in the area editor, where they are painted, for screen readers">
+									<span id="area-cursor" class="area-cursor"></span>
 								</div>
-								<div class="map-status">
-									<span id="map-save-status" role="status"></span>
+								<div class="area-status">
+									<span id="area-save-status" role="status"></span>
 								</div>
-								<p class="hint" data-message="editor.map.help" data-translation-context="Explains how to use the map editor with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
-								<p id="map-keyboard-help" class="hint" data-message="editor.map.keyboardHelp" data-translation-context="Explains how to use the map editor with only the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
-								<p id="map-error" class="form-error" role="alert" hidden></p>
+								<p class="hint" data-message="editor.area.help" data-translation-context="Explains how to use the area editor's cells with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
+								<p id="area-keyboard-help" class="hint" data-message="editor.area.keyboardHelp" data-translation-context="Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language">With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
+								<p id="area-cells-error" class="form-error" role="alert" hidden></p>
 							</section>
 							<div id="area-children" class="panel" hidden>
 								<h3 data-message="editor.area.children" data-translation-context="Heading of the list of areas inside the area being edited">Areas inside this one</h3>
@@ -619,7 +629,7 @@
 					</section>
 
 					<section id="editor-panel-audit" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-audit" hidden>
-						<p class="hint" data-message="editor.audit.hint" data-translation-context="Explains on the editor's Audit tab how long the record of each save is kept">Each save is kept here for 90 days.</p>
+						<p id="audit-hint" class="hint"></p>
 						<table id="audit-table" class="item-table">
 							<thead>
 								<tr>
@@ -1075,7 +1085,7 @@
 									Indoors
 								</label>
 							</fieldset>
-							<p class="hint" data-message="editor.tile.usedInHint" data-translation-context="Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile">Areas can only paint with tiles for their kind. A tile for neither can't be painted, but maps that already use it keep it.</p>
+							<p class="hint" data-message="editor.tile.usedInHint" data-translation-context="Explains the checkboxes for whether indoor areas, outdoor areas, both or neither can paint with a tile">Areas can only paint with tiles for their kind. A tile for neither can't be painted, but areas that already use it keep it.</p>
 							<label data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Color
 								<span class="color-field">
@@ -1148,7 +1158,7 @@
 					<form id="start-draft-form" class="form">
 						<h2 id="start-draft-title" data-message="editor.startDraft.title" data-translation-context="Title of the dialog the editor's Start Draft button opens, explaining drafts before one is started">Start a Draft</h2>
 						<div id="start-draft-explanation" class="form-group">
-							<p data-message="editor.startDraft.copy" data-translation-context="In the dialog explaining drafts before one is started: what a draft is">A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their maps, and translations. Players keep playing the live version and won't see draft changes until they are applied.</p>
+							<p data-message="editor.startDraft.copy" data-translation-context="In the dialog explaining drafts before one is started: what a draft is">A draft is a copy of the whole universe: its settings, races, classes, items, tilesets, areas and their cells, and translations. Players keep playing the live version and won't see draft changes until they are applied.</p>
 							<p data-message="editor.startDraft.finishing" data-translation-context="In the dialog explaining drafts before one is started: how a draft ends">When the draft is ready, a creator applies it with Apply Draft at the top of the editor, and players see everything changed in it at once. Discard Draft deletes it instead, leaving the live version as it is.</p>
 						</div>
 						<p id="start-draft-overwrite" class="notice" data-message="editor.startDraft.overwrite" data-translation-context="Warning in the dialog explaining drafts before one is started, shown in a box that stands out">⚠️ Applying the draft overwrites the entire universe with it, including any changes saved to the live version while the draft is open. Applying can't be undone.</p>
@@ -1160,6 +1170,115 @@
 						</div>
 					</form>
 				</dialog>
+				<dialog id="universe-export-dialog" class="panel dialog" aria-labelledby="universe-export-title" aria-describedby="universe-export-explanation universe-export-draft">
+					<form id="universe-export-form" class="form">
+						<h2 id="universe-export-title"></h2>
+						<p id="universe-export-explanation" data-message="editor.universeExport.explanation" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab: what the zip file it downloads holds, which depends on the player's role (beta testers can't export)">Exports everything you can edit in the universe as a zip file, apart from players' characters and audit history.</p>
+						<p id="universe-export-draft" data-message="editor.universeExport.draft" data-translation-context="In the dialog Export Universe opens on the editor's Universe tab, while the universe's draft (a copy players don't see until it is applied) is open: the zip file holds the draft, not the version players play" hidden>You're exporting the draft copy of the universe, not its live version.</p>
+						<p id="universe-export-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<p id="universe-export-status" class="universe-dialog-status" role="status"></p>
+							<button id="universe-export-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-export-submit" type="submit" data-shortcut="Alt+S" aria-describedby="universe-export-error" data-message="editor.universeExport.submit" data-translation-context="Button in the dialog Export Universe opens on the editor's Universe tab that makes the universe's zip file and downloads it"><!-- icon ph:download-simple -->Export Universe</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-import-draft-dialog" class="panel dialog" aria-labelledby="universe-import-draft-title" aria-describedby="universe-import-draft-text">
+					<form id="universe-import-draft-form" class="form">
+						<h2 id="universe-import-draft-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
+						<p id="universe-import-draft-text"></p>
+						<p id="universe-import-draft-unsaved" data-message="editor.startDraft.unsaved" data-translation-context="In the dialog explaining drafts before one is started, when the editor has unsaved changes: they are saved first, so the draft starts with them" hidden>Your unsaved changes are saved to the live version first, so the draft starts with them.</p>
+						<p id="universe-import-draft-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<p id="universe-import-draft-status" class="universe-dialog-status" role="status"></p>
+							<button id="universe-import-draft-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-import-draft-start" type="submit" class="draft" data-shortcut="Alt+S" hidden></button>
+							<button id="universe-import-draft-open" type="submit" class="draft" data-shortcut="Alt+O" data-message="editor.universeImport.openDraftButton" data-translation-context="Button in the dialog Import Universe opens while the editor shows the universe's live version and the universe has a draft: opens the draft, then the dialog importing a file into it" hidden><!-- icon ph:copy -->Open Draft</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-import-dialog" class="panel dialog" aria-labelledby="universe-import-title" aria-describedby="universe-import-explanation">
+					<form id="universe-import-form" class="form" novalidate>
+						<h2 id="universe-import-title" data-message="editor.universeImport.title" data-translation-context="Title of the dialog Import Universe opens on the editor's Universe tab, which imports a zip file Export Universe made into the universe's draft">Import into the Draft</h2>
+						<p id="universe-import-explanation" data-message="editor.universeImport.explanation" data-translation-context="In the dialog importing a zip file Export Universe made into the universe's draft (a copy players don't see until it is applied), above the field choosing the file">Imports a zip file Export Universe made into the draft. The contents of the draft universe will be replaced with the contents of the import.</p>
+						<label data-message="editor.universeImport.file" data-translation-context="Label of the field choosing the zip file to import into the universe's draft">
+							File
+							<input id="universe-import-file" type="file" accept=".zip,application/zip" required aria-describedby="universe-import-error" />
+						</label>
+						<div id="universe-import-preview" class="universe-import-preview" hidden>
+							<p id="universe-import-source"></p>
+							<p id="universe-import-modified" class="notice" data-message="editor.universeImport.modified" data-translation-context="Warning in the dialog importing a zip file into the universe's draft, under which universe it was exported from, when and by whom (which the site confirmed from its signature): files inside the zip file were changed, added or removed since it was exported" hidden>It has been modified from its original export.</p>
+							<p id="universe-import-match" class="hint"></p>
+							<p data-message="editor.universeImport.replaces" data-translation-context="In the dialog importing a zip file into the universe's draft, once a file is chosen: heading of the list of what importing it replaces in the draft">It replaces the draft's:</p>
+							<ul id="universe-import-parts" class="universe-import-list"></ul>
+							<p id="universe-import-left-out-heading" data-message="editor.universeImport.leavesOut" data-translation-context="In the dialog importing a zip file into the universe's draft, once a file is chosen: heading of the list of what in the file isn't imported, and why" hidden>It leaves out:</p>
+							<ul id="universe-import-left-out" class="universe-import-list" hidden></ul>
+							<label id="universe-import-rights-field" class="checkbox" data-message="editor.universeImport.rights" data-translation-context="Checkbox in the dialog importing a zip file into the universe's draft, shown when the file uploads tilesets' pictures: the player confirms they made them, own them or have permission to use them" hidden>
+								<input id="universe-import-rights" type="checkbox" />
+								I have the rights to use the tilesets' images in this file
+							</label>
+						</div>
+						<p id="universe-import-unsaved" class="notice" data-message="editor.universeImport.saveFirst" data-translation-context="In the dialog importing a zip file into the universe's draft, while the editor has unsaved changes: importing waits for them, since it replaces the draft they belong to" hidden>Save or undo your changes first, since importing replaces the draft they belong to.</p>
+						<p id="universe-import-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<p id="universe-import-status" class="universe-dialog-status" role="status"></p>
+							<button id="universe-import-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-import-submit" type="submit" data-shortcut="Alt+I" aria-describedby="universe-import-error universe-import-unsaved" disabled data-message="editor.universeImport.submit" data-translation-context="Button in the dialog importing a zip file into the universe's draft that imports it, saving it to the draft at once"><!-- icon ph:upload-simple -->Import into Draft</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-delete-dialog" class="panel dialog" aria-labelledby="universe-delete-title" aria-describedby="universe-delete-intro">
+					<form id="universe-delete-form" class="form" novalidate>
+						<h2 id="universe-delete-title"></h2>
+						<p id="universe-delete-intro"></p>
+						<ul id="universe-delete-list" class="universe-delete-list" hidden></ul>
+						<p id="universe-delete-admin" class="notice" data-message="editor.universeDelete.asAdmin" data-translation-context="In the first dialog that deletes a universe, for one of the site's admins deleting it as an admin: the universe's editors aren't told which admin deleted it, but the site's admin records keep it" hidden>You're deleting it as one of the site's admins. Its editors are told the site's admins deleted it, and the site's admin records keep its name and who deleted it.</p>
+						<p id="universe-delete-unsaved" data-message="editor.universeDelete.unsaved" data-translation-context="In the first dialog that deletes a universe, when the editor has changes that haven't been saved" hidden>Your unsaved changes are thrown away with it.</p>
+						<p id="universe-delete-status" role="status"></p>
+						<p id="universe-delete-error" class="form-error" role="alert" hidden></p>
+						<div class="form-buttons universe-delete-buttons">
+							<button id="universe-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="universe-delete-submit" type="submit" class="danger" aria-describedby="universe-delete-error" disabled data-message="editor.universeDelete.next" data-translation-context="Button in the first dialog that deletes a universe: opens a second dialog that checks it's the player before deleting it"><!-- icon ph:trash -->Delete Universe</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="universe-delete-confirm-dialog" class="panel dialog" aria-labelledby="universe-delete-confirm-title" aria-describedby="universe-delete-confirm-question">
+					<form id="universe-delete-confirm-form" class="form" novalidate>
+						<h2 id="universe-delete-confirm-title"></h2>
+						<p id="universe-delete-confirm-question"></p>
+						<!-- Not shown: tells password managers which account the password is for -->
+						<input id="universe-delete-email" type="email" autocomplete="username" hidden />
+						<div id="universe-delete-password-field" class="password-field" hidden>
+							<label data-message="login.password" data-translation-context="Label of the password field when logging in, when turning two-factor authentication on or off, making new recovery codes, linking a Google or Discord login, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor">
+								Password
+								<input id="universe-delete-password" type="password" autocomplete="current-password" />
+							</label>
+							<button id="universe-delete-password-toggle" type="button" class="secondary password-toggle" aria-controls="universe-delete-password" aria-pressed="false" aria-label="Show password" title="Show password" data-message-aria-label="login.showPassword" data-translation-context-aria-label="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed" data-message-title="login.showPassword" data-translation-context-title="Name of the eye button beside a password field when logging in, creating an account or choosing a new password; pressed, it shows the password as it is typed"><span class="password-hidden-icon"><!-- icon ph:eye --></span><span class="password-shown-icon"><!-- icon ph:eye-slash --></span></button>
+						</div>
+						<p id="universe-delete-email-note" hidden></p>
+						<label id="universe-delete-email-code-label" data-message="login.code" data-translation-context="Label of the field for the code that was emailed to the player" hidden>
+							Code
+							<input id="universe-delete-email-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" data-code="email" />
+						</label>
+						<label id="universe-delete-username-field" hidden>
+							<span data-message="editor.universeDelete.typeUsername" data-translation-context="Label of the field in the second dialog deleting a universe, for an account without a password, where the player types their username to confirm">Type your username to confirm</span>
+							<input id="universe-delete-username" class="username-input" autocomplete="off" autocapitalize="none" spellcheck="false" />
+						</label>
+						<div id="universe-delete-code-field" hidden>
+							<label data-message="login.twoFactorCode" data-translation-context="Label of the field for the 6-digit code from the player's authenticator app, or one of their recovery codes, when logging in, resetting a password or linking a Google or Discord login to an account with two-factor authentication, when turning it off, making new recovery codes, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor">
+								Authenticator code
+								<input id="universe-delete-code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" aria-describedby="universe-delete-code-hint" data-code="twoFactor" />
+							</label>
+							<p id="universe-delete-code-hint" class="hint" data-message="login.twoFactorCodeHint" data-translation-context="Under the authenticator code field when logging in or linking a Google or Discord login to an account with two-factor authentication, when turning it off, making new recovery codes, changing the email address or deleting the account on the profile, and when deleting a universe in the world editor">The 6-digit code from your authenticator app, or one of your recovery codes.</p>
+						</div>
+						<p id="universe-delete-confirm-error" class="form-error" role="alert" hidden></p>
+						<div class="form-buttons">
+							<button id="universe-delete-send" type="submit" aria-describedby="universe-delete-confirm-error" data-shortcut="Alt+M" data-message="login.linkWithCode" data-translation-context="Button that emails a code to the account's address: on the login page, when linking a Google or Discord login to the account, to use instead of its password, and on the profile (and on Home, after creating a universe), for an account without a password, to check it's the player linking a login, changing the email address, deleting the account, or turning two-factor authentication on or off or making new recovery codes, and in the world editor, to check it's the player deleting a universe" hidden><!-- icon ph:paper-plane-right -->Email me a code</button>
+							<button id="universe-delete-confirm-submit" type="submit" class="danger" aria-describedby="universe-delete-confirm-error" data-message="editor.universeDelete.confirm" data-translation-context="Button in the second dialog that deletes a universe: checks what was typed and deletes the universe for good"><!-- icon ph:trash -->Delete Universe</button>
+							<button id="universe-delete-confirm-cancel" type="button" data-message="characterDelete.mistake" data-translation-context="Button that closes the last question before deleting a character, the player's account or a universe, keeping it. A playful way of saying Cancel">I've Made A Terrible Mistake</button>
+						</div>
+					</form>
+				</dialog>
 				<dialog id="tile-delete-dialog" class="panel dialog" aria-labelledby="tile-delete-title" aria-describedby="tile-delete-question">
 					<form id="tile-delete-form" class="form">
 						<h2 id="tile-delete-title" data-message="editor.tileDelete.title" data-translation-context="Title of the dialog that asks before deleting a tile">Delete Tile</h2>
@@ -1167,7 +1286,7 @@
 						<p id="tile-delete-status" class="hint" role="status"></p>
 						<div id="tile-delete-replacement-field" hidden>
 							<p id="tile-delete-usage"></p>
-							<label data-message="editor.tileDelete.replaceWith" data-translation-context="Label of the list of tiles to paint the maps with in place of a tile being deleted">
+							<label data-message="editor.tileDelete.replaceWith" data-translation-context="Label of the list of tiles to paint the areas with in place of a tile being deleted">
 								Replace it with
 								<select id="tile-delete-replacement" required></select>
 							</label>
@@ -1250,8 +1369,8 @@
 						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
-						<div id="area-select-preview" class="area-select-preview" tabindex="0" role="application" aria-label="Map of the chosen area" aria-describedby="area-select-preview-help" data-message-aria-label="editor.areaSelect.previewLabel" data-translation-context-aria-label="Name of the map in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"></div>
-						<p id="area-select-preview-help" class="hint" data-message="editor.areaSelect.previewHelp" data-translation-context="Explains how to choose the square characters start on, on the map in the dialog for choosing a starting area; the keys are the same in every language">Click the map to choose the square characters start on. With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.</p>
+						<div id="area-select-preview" class="area-select-preview" tabindex="0" role="application" aria-label="The chosen area" aria-describedby="area-select-preview-help" data-message-aria-label="editor.areaSelect.previewLabel" data-translation-context-aria-label="Name of the area preview in the dialog for choosing a starting area, for screen readers, where clicking chooses the square characters start on"></div>
+						<p id="area-select-preview-help" class="hint" data-message="editor.areaSelect.previewHelp" data-translation-context="Explains how to choose the square characters start on, on the area preview in the dialog for choosing a starting area; the keys are the same in every language">Click the area to choose the square characters start on. With the area focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the square.</p>
 						<p id="area-select-summary" role="status"></p>
 						<p id="area-select-cell" role="status"></p>
 						<p id="area-select-error" class="form-error" role="alert" hidden></p>
@@ -1263,45 +1382,45 @@
 				</dialog>
 				<dialog id="resize-dialog" class="panel dialog" aria-labelledby="resize-title">
 					<form id="resize-form" class="form">
-						<h2 id="resize-title" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing a map's size">Edit Size</h2>
-						<p class="hint" data-message="editor.resize.explanation" data-translation-context="Explains the four fields of the dialog for changing a map's size">How many cells the map reaches in each direction from its center cell (0, 0).</p>
+						<h2 id="resize-title" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing an area's size">Edit Size</h2>
+						<p class="hint" data-message="editor.resize.explanation" data-translation-context="Explains the four fields of the dialog for changing an area's size">How many cells the area reaches in each direction from its center cell (0, 0).</p>
 						<div class="resize-grid">
-							<label class="resize-north" data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the map reaches north of its center">
+							<label class="resize-north" data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the area reaches north of its center">
 								North
 								<input id="resize-north" type="number" min="0" step="1" required />
 							</label>
-							<label class="resize-west" data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the map reaches west of its center">
+							<label class="resize-west" data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the area reaches west of its center">
 								West
 								<input id="resize-west" type="number" min="0" step="1" required />
 							</label>
 							<span class="resize-center">0, 0</span>
-							<label class="resize-east" data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the map reaches east of its center">
+							<label class="resize-east" data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the area reaches east of its center">
 								East
 								<input id="resize-east" type="number" min="0" step="1" required />
 							</label>
-							<label class="resize-south" data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the map reaches south of its center">
+							<label class="resize-south" data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the area reaches south of its center">
 								South
 								<input id="resize-south" type="number" min="0" step="1" required />
 							</label>
 						</div>
 						<p id="resize-total"></p>
 						<section class="form-group" aria-labelledby="resize-extend-title">
-							<h3 id="resize-extend-title" data-message="editor.resize.extendTitle" data-translation-context="Heading of the part of the dialog for changing a map's size with buttons that make the map bigger on one side">Extend Size</h3>
+							<h3 id="resize-extend-title" data-message="editor.resize.extendTitle" data-translation-context="Heading of the part of the dialog for changing an area's size with buttons that make the area bigger on one side">Extend Size</h3>
 							<div class="resize-grid resize-extend">
-								<button id="resize-extend-north" type="button" class="secondary resize-north" data-message="editor.resize.extendNorth" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's north side">+ North</button>
-								<button id="resize-extend-west" type="button" class="secondary resize-west" data-message="editor.resize.extendWest" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's west side">+ West</button>
-								<label class="resize-center" data-message="editor.resize.extendBy" data-translation-context="Label of the field for how many cells the Extend Size buttons add to a side of the map">
+								<button id="resize-extend-north" type="button" class="secondary resize-north" data-message="editor.resize.extendNorth" data-translation-context="Button in the dialog for changing an area's size that adds the number of cells chosen to the area's north side">+ North</button>
+								<button id="resize-extend-west" type="button" class="secondary resize-west" data-message="editor.resize.extendWest" data-translation-context="Button in the dialog for changing an area's size that adds the number of cells chosen to the area's west side">+ West</button>
+								<label class="resize-center" data-message="editor.resize.extendBy" data-translation-context="Label of the field for how many cells the Extend Size buttons add to a side of the area">
 									Extend by
 									<input id="resize-extend-by" type="number" min="1" step="1" value="10" />
 								</label>
-								<button id="resize-extend-east" type="button" class="secondary resize-east" data-message="editor.resize.extendEast" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's east side">+ East</button>
-								<button id="resize-extend-south" type="button" class="secondary resize-south" data-message="editor.resize.extendSouth" data-translation-context="Button in the dialog for changing a map's size that adds the number of cells chosen to the map's south side">+ South</button>
+								<button id="resize-extend-east" type="button" class="secondary resize-east" data-message="editor.resize.extendEast" data-translation-context="Button in the dialog for changing an area's size that adds the number of cells chosen to the area's east side">+ East</button>
+								<button id="resize-extend-south" type="button" class="secondary resize-south" data-message="editor.resize.extendSouth" data-translation-context="Button in the dialog for changing an area's size that adds the number of cells chosen to the area's south side">+ South</button>
 							</div>
 						</section>
 						<p id="resize-warning" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="resize-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="resize-submit" type="submit" aria-describedby="resize-warning" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the map to the size given">Resize</button>
+							<button id="resize-submit" type="submit" aria-describedby="resize-warning" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the area to the size given">Resize</button>
 						</div>
 					</form>
 				</dialog>
@@ -1336,18 +1455,18 @@
 								Add a return link that leads back to this cell
 							</label>
 							<fieldset id="link-pick-choice" class="choice" hidden>
-								<legend data-message="editor.link.pick" data-translation-context="Heading of the choice of what clicking the map preview in the link dialog places">Clicking the map below chooses</legend>
-								<label class="checkbox" data-message="editor.link.pickDestination" data-translation-context="Choice that makes clicking the map preview choose where the link leads">
+								<legend data-message="editor.link.pick" data-translation-context="Heading of the choice of what clicking the area preview in the link dialog places">Clicking the area below chooses</legend>
+								<label class="checkbox" data-message="editor.link.pickDestination" data-translation-context="Choice that makes clicking the area preview choose where the link leads">
 									<input id="link-pick-destination" name="link-pick" type="radio" value="destination" checked />
 									The destination
 								</label>
-								<label class="checkbox" data-message="editor.link.pickReturn" data-translation-context="Choice that makes clicking the map preview place the return link">
+								<label class="checkbox" data-message="editor.link.pickReturn" data-translation-context="Choice that makes clicking the area preview place the return link">
 									<input id="link-pick-return" name="link-pick" type="radio" value="return" />
 									The return link's cell
 								</label>
 							</fieldset>
-							<div id="link-preview" class="link-preview" tabindex="0" role="application" aria-label="Map of the area the link goes to" aria-describedby="link-preview-help" data-message-aria-label="editor.link.previewLabel" data-translation-context-aria-label="Name of the map in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"></div>
-							<p id="link-preview-help" class="hint" data-message="editor.link.previewHelp" data-translation-context="Explains how to choose a cell on the link dialog's map with the keyboard; the keys are the same in every language">With the map focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.</p>
+							<div id="link-preview" class="link-preview" tabindex="0" role="application" aria-label="The area the link goes to" aria-describedby="link-preview-help" data-message-aria-label="editor.link.previewLabel" data-translation-context-aria-label="Name of the area preview in the link dialog, for screen readers, where clicking chooses the link's destination or return cell"></div>
+							<p id="link-preview-help" class="hint" data-message="editor.link.previewHelp" data-translation-context="Explains how to choose a cell on the link dialog's area preview with the keyboard; the keys are the same in every language">With the area focused, the arrow keys move the cursor, 10 cells at a time with Shift, and Space or Enter chooses the cell.</p>
 							<p id="link-destination" role="status"></p>
 							<p id="link-return-cell" role="status" hidden></p>
 							<p id="link-error" class="form-error" role="alert" hidden></p>

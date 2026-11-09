@@ -10,13 +10,13 @@ export interface SaveRefusal
 	error: EditorApiError;
 
 	/**
-	 * For a map refused because shrinking it would discard something: what it would discard
+	 * For an area refused because shrinking it would discard something: what it would discard
 	 */
 	resizeConflict?: ResizeConflict;
 
 	/**
 	 * Sends the save again, for a tab that has changed what it sends, such as after the player agreed
-	 * to discard what a smaller map cuts off
+	 * to discard what a smaller area cuts off
 	 */
 	retry(): void;
 }

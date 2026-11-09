@@ -1,5 +1,5 @@
 /**
- * Turns an area's map into the grid players move on
+ * Turns an area's layout into the grid players move on
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
@@ -26,9 +26,9 @@ export interface AreaLink
 }
 
 /**
- * Everything about an area's map that movement depends on
+ * Everything about an area's layout that movement depends on
  */
-export interface AreaMap
+export interface AreaLayout
 {
 	tiles: AreaTiles;
 
@@ -41,50 +41,50 @@ export interface AreaMap
 	loopsNorthSouth: boolean;
 
 	/**
-	 * Walk seconds of every tile the map can use, by tile ID
+	 * Walk seconds of every tile the area can use, by tile ID
 	 */
 	tileWalkSeconds: ReadonlyMap<number, number>;
 
 	links: readonly AreaLink[];
 
 	/**
-	 * The chunks loaded so far, by chunkKey(), when the map is loaded a piece at a time; undefined when
+	 * The chunks loaded so far, by chunkKey(), when the area is loaded a piece at a time; undefined when
 	 * all of it is. tiles.chunks holds the loaded chunks that aren't all the default tile
 	 */
 	loadedChunks?: ReadonlySet<string>;
 }
 
 /**
- * Builds the grid for an area's map
+ * Builds the grid for an area
  *
- * A void cell, a cell holding a tile the map doesn't know, and a cell whose chunk hasn't loaded can't
+ * A void cell, a cell holding a tile the area doesn't know, and a cell whose chunk hasn't loaded can't
  * be entered, so a player waits at the edge of a chunk until it arrives. Stepping onto an automatic
  * link ends the step there, so the room can take the player through it
  *
- * @param map The area's map
+ * @param layout The area's layout
  * @param cellSize Width and height of a cell in world units
  * @return The grid
  */
-export function createAreaGrid(map: AreaMap, cellSize: number): Grid
+export function createAreaGrid(layout: AreaLayout, cellSize: number): Grid
 {
-	const automaticLinks = new Set(map.links.filter((link) => (link.mode === 'automatic')).map((link) => linkKey(link)));
+	const automaticLinks = new Set(layout.links.filter((link) => (link.mode === 'automatic')).map((link) => linkKey(link)));
 
 	return({
 		cellSize,
-		bounds: map.tiles.bounds,
-		loopsEastWest: map.loopsEastWest,
-		loopsNorthSouth: map.loopsNorthSouth,
-		fullSpeedWalkSeconds: defaultWalkSeconds(map.indoors),
+		bounds: layout.tiles.bounds,
+		loopsEastWest: layout.loopsEastWest,
+		loopsNorthSouth: layout.loopsNorthSouth,
+		fullSpeedWalkSeconds: defaultWalkSeconds(layout.indoors),
 		walkSeconds: (cell) =>
 		{
-			if (map.loadedChunks && !map.loadedChunks.has(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row))))
+			if (layout.loadedChunks && !layout.loadedChunks.has(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row))))
 			{
 				return(IMPASSABLE_WALK_SECONDS);
 			}
 
-			const tileId = tileIdAt(map.tiles, cell.column, cell.row);
+			const tileId = tileIdAt(layout.tiles, cell.column, cell.row);
 
-			return(((tileId === undefined) ? IMPASSABLE_WALK_SECONDS : (map.tileWalkSeconds.get(tileId) ?? IMPASSABLE_WALK_SECONDS)));
+			return(((tileId === undefined) ? IMPASSABLE_WALK_SECONDS : (layout.tileWalkSeconds.get(tileId) ?? IMPASSABLE_WALK_SECONDS)));
 		},
 		endsMovement: (cell) => automaticLinks.has(linkKey(cell))
 	});
@@ -93,13 +93,13 @@ export function createAreaGrid(map: AreaMap, cellSize: number): Grid
 /**
  * The link on a cell
  *
- * @param map The area's map
+ * @param layout The area's layout
  * @param cell The cell
  * @return The link, or undefined when the cell has none
  */
-export function linkAt(map: AreaMap, cell: Cell): AreaLink | undefined
+export function linkAt(layout: AreaLayout, cell: Cell): AreaLink | undefined
 {
-	return(map.links.find((link) => ((link.column === cell.column) && (link.row === cell.row))));
+	return(layout.links.find((link) => ((link.column === cell.column) && (link.row === cell.row))));
 }
 
 /**

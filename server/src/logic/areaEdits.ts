@@ -1,9 +1,9 @@
 /**
- * Changes the world editor makes to area maps and the area tree
+ * Changes the world editor makes to areas' cells and the area tree
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { CHUNK_SIZE, DEFAULT_TILE_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, isInBounds, type CellChange, type MapBounds } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_TILE_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, isInBounds, type AreaBounds, type CellChange } from '@multiverse-kiln/shared';
 
 /**
  * The chunks a set of cell changes falls in
@@ -67,14 +67,14 @@ export function isDefaultChunk(cells: readonly number[]): boolean
 }
 
 /**
- * Whether a chunk lies entirely inside a map's bounds
+ * Whether a chunk lies entirely inside an area's bounds
  *
  * @param chunkColumn The chunk's column
  * @param chunkRow The chunk's row
- * @param bounds The map's bounds
- * @return True when every cell of the chunk is on the map
+ * @param bounds The area's bounds
+ * @return True when every cell of the chunk is inside the area
  */
-export function isChunkInside(chunkColumn: number, chunkRow: number, bounds: MapBounds): boolean
+export function isChunkInside(chunkColumn: number, chunkRow: number, bounds: AreaBounds): boolean
 {
 	const firstColumn = chunkColumn * CHUNK_SIZE;
 	const firstRow = chunkRow * CHUNK_SIZE;
@@ -83,16 +83,16 @@ export function isChunkInside(chunkColumn: number, chunkRow: number, bounds: Map
 }
 
 /**
- * Resets the cells of a chunk that fall outside a map's bounds to the default tile, so that growing
- * the map again later shows default cells there rather than what was painted before
+ * Resets the cells of a chunk that fall outside an area's bounds to the default tile, so that growing
+ * the area again later shows default cells there rather than what was painted before
  *
  * @param chunkColumn The chunk's column
  * @param chunkRow The chunk's row
  * @param cells The chunk's cells
- * @param bounds The map's new bounds
+ * @param bounds The area's new bounds
  * @return The chunk's new cells, and how many cells outside the bounds weren't the default tile
  */
-export function clipChunk(chunkColumn: number, chunkRow: number, cells: readonly number[], bounds: MapBounds): { cells: number[]; discarded: number }
+export function clipChunk(chunkColumn: number, chunkRow: number, cells: readonly number[], bounds: AreaBounds): { cells: number[]; discarded: number }
 {
 	const clipped = [...cells];
 	let discarded = 0;

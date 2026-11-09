@@ -11,7 +11,7 @@ export interface AreaPlace
 /**
  * A change the world editor has made to a universe's world, for the rooms playing in it
  *
- * - cells: cells of an area's map changed, in the chunks listed (by chunkKey())
+ * - cells: cells of an area changed, in the chunks listed (by chunkKey())
  * - area: an area's settings, bounds or links changed
  * - deleted: an area was deleted
  * - tiles: a universe's tiles changed (an edited, restored, added or deleted tile)
@@ -86,6 +86,6 @@ export class AreaChanges
 }
 
 /**
- * The server's world changes, published by the editor's routes and followed by every room with a map
+ * The server's world changes, published by the editor's routes and followed by every room with an area
  */
 export const areaChanges = new AreaChanges();

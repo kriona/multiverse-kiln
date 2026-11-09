@@ -113,16 +113,16 @@ const gameRooms = new OneRoomPerKey<GameRoom>('group');
  * the group's clock, seen cells and positions over the other's. A
  * client is admitted only to play one of its player's characters in the group who hasn't been given
  * their last rites and whose race and class don't bar them (characterBar(); a save barring them takes
- * them off the map). While a player has any window here, every such character of theirs is on the map,
+ * them out of play). While a player has any window here, every such character of theirs is in play,
  * where they were when their player last left (or beside the anchor being, for a character new to the
  * group); each window controls one of them and can switch to another (GameMessageType.Control). When a
- * player's last window leaves, their characters are taken off the map and where they were is saved.
+ * player's last window leaves, their characters are taken out of play and where they were is saved.
  * The room disposes once everyone has left. A window that joins while its session ends, or while who
  * may open the universe's groups changes, looks itself up again once it is listed (JoinChanges), so the
  * change reaches it too
  *
  * In a universe at the end of time the room is locked (state.locked): members can open it and look at
- * the map, and switch between their characters, but it ignores moves and links
+ * the area, and switch between their characters, but it ignores moves and links
  *
  * The group's chat is kept (server/src/db/chatRepo.ts), written as the character each window controls:
  * the room loads its messages as it starts, and writes new ones every CHAT_SAVE_INTERVAL_MS and as it
@@ -280,7 +280,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 			const member = this.members.get(result.data.characterId);
 
-			// A window can only switch to its own player's characters, who are on the map while it is here
+			// A window can only switch to its own player's characters, who are in play while it is here
 			if ((member?.playerId === identityOf(client).playerId) && this.areaPlayers.has(member.characterId))
 			{
 				this.areaPlayers.control(client, member.characterId);
@@ -301,7 +301,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			const characterId = this.areaPlayers.getPlayerId(client.sessionId);
 			const member = ((characterId === undefined) ? undefined : this.members.get(characterId));
 
-			// A window whose character has just been taken off the map has no one to write as
+			// A window whose character has just been taken out of play has no one to write as
 			if (!member)
 			{
 				return;
@@ -549,7 +549,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Puts every playable character of the joining client's player on the map, if they aren't already,
+	 * Puts every playable character of the joining client's player into play, if they aren't already,
 	 * gives the client the character it asked for, and sends it the group's chat. A window that may have
 	 * missed a change while it joined looks itself up again first (recheckJoining())
 	 *
@@ -573,7 +573,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		const startingArea = this.areas.get(this.startingAreaId);
 
-		// The character may have left the group, or been given their last rites, while the map loaded
+		// The character may have left the group, or been given their last rites, while the area loaded
 		if (!this.areaPlayers.has(characterId) || !startingArea)
 		{
 			clients.delete(client);
@@ -590,8 +590,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Stops the client's character. Once the client was its player's last, takes their characters off
-	 * the map, saves where they were, and records that the player last played the character the client
+	 * Stops the client's character. Once the client was its player's last, takes their characters out
+	 * of play, saves where they were, and records that the player last played the character the client
 	 * controlled
 	 *
 	 * @param client The leaving client
@@ -686,7 +686,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * The area a character is in
 	 *
 	 * @param characterId The character's ID
-	 * @return The area's ID, or undefined when the character isn't on the map
+	 * @return The area's ID, or undefined when the character isn't in play
 	 */
 	getAreaId(characterId: string): string | undefined
 	{
@@ -694,7 +694,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Puts a player's playable characters who aren't on the map on it, each where they were last, or
+	 * Puts a player's playable characters who aren't in play into it, each where they were last, or
 	 * beside the anchor being when they have never been played in the group
 	 *
 	 * @param playerId The player's ID
@@ -724,7 +724,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Where a member starts on the map (startOf()), with the chunks around it loaded. Looks again when
+	 * Where a member starts (startOf()), with the chunks around it loaded. Looks again when
 	 * where they were last, or the area, changes while the chunks load, as when the area is disabled and
 	 * the members in it are sent elsewhere
 	 *
@@ -762,7 +762,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Whether a member is still one to put on the map
+	 * Whether a member is still one to put into play
 	 *
 	 * @param member The member, as bringIn() found them
 	 * @return True while they are in the group, may play, and their player has a window here
@@ -773,9 +773,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Where a member starts on the map: where they were last, then beside the anchor being (where they
+	 * Where a member starts: where they were last, then beside the anchor being (where they
 	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone or
-	 * disabled is passed over, and a cell a map no longer holds since it was made smaller moves inside it
+	 * disabled is passed over, and a cell an area no longer holds since it was made smaller moves inside it
 	 *
 	 * @param member The member
 	 * @return The area and cell
@@ -816,7 +816,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Takes a player's characters off the map, remembering where they were for when they come back
+	 * Takes a player's characters out of play, remembering where they were for when they come back
 	 *
 	 * @param playerId The player's ID
 	 * @return Where each one was
@@ -850,7 +850,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Marks what each member on the map sees as seen by the group, working it out again only for those
+	 * Marks what each member in play sees as seen by the group, working it out again only for those
 	 * who have moved to another cell or whose sight has changed since the last tick
 	 */
 	private explore(): void
@@ -952,7 +952,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * How a member shows on the map
+	 * How a member shows in their area
 	 *
 	 * @param member The member, or undefined when they have left the group
 	 * @return Their name, darkvision and light sensitivity
@@ -967,7 +967,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Adds a member of the group, not yet on the map
+	 * Adds a member of the group, not yet in play
 	 *
 	 * @param member The member
 	 */
@@ -982,7 +982,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Takes a character off the map, disconnecting the windows controlling them
+	 * Takes a character out of play, disconnecting the windows controlling them
 	 *
 	 * @param characterId The character's ID
 	 * @param code Why, for the windows
@@ -1030,9 +1030,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Follows a change to the races and classes barring their characters: members it bars are taken off
-	 * the map, where they were saved for when they can play again, and their windows are told why; members
-	 * it lets play again are put back on it if their player is here
+	 * Follows a change to the races and classes barring their characters: members it bars are taken out
+	 * of play, where they were saved for when they can play again, and their windows are told why; members
+	 * it lets play again are put back into it if their player is here
 	 *
 	 * @param change What is barred now
 	 */
@@ -1081,8 +1081,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Sends the members in an area that has been disabled elsewhere: those on the map travel there, and
-	 * those off it are put there for when they are next played
+	 * Sends the members in an area that has been disabled elsewhere: those in play travel there, and
+	 * those out of it are put there for when they are next played
 	 *
 	 * @param areaId The disabled area
 	 * @param destination Where they go, or null for the group's starting area
@@ -1114,8 +1114,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Follows a change to who is in a group, if it is this one: a character who joins is put on the map
-	 * if their player is here, one who leaves is taken off it, and when the group is disbanded everyone
+	 * Follows a change to who is in a group, if it is this one: a character who joins is put into play
+	 * if their player is here, one who leaves is taken out of it, and when the group is disbanded everyone
 	 * is disconnected
 	 *
 	 * @param change The change
@@ -1169,8 +1169,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Follows a change to a member: one given their last rites can't be played, so they are taken off
-	 * the map, and one restored is put back on it if their player is here
+	 * Follows a change to a member: one given their last rites can't be played, so they are taken out
+	 * of play, and one restored is put back into it if their player is here
 	 *
 	 * @param change The change
 	 */

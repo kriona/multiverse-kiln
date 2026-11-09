@@ -1,28 +1,28 @@
-import { chunkKey, createVisionMap, GRID_CELL_SIZE, IMPASSABLE_WALK_SECONDS, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaLinkCell, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
+import { chunkKey, createVisionArea, GRID_CELL_SIZE, IMPASSABLE_WALK_SECONDS, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaLinkCell, type AreaPayload, type VisionArea } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../db/areaRepo.js';
 import type { Grid } from '../logic/movement.js';
-import { createAreaGrid, type AreaLink, type AreaMap } from '../logic/areaGrid.js';
+import { createAreaGrid, type AreaLayout, type AreaLink } from '../logic/areaGrid.js';
 
 /**
- * An area a room has loaded, ready to play in: its settings, links and tiles, and the chunks of its
- * map loaded so far
+ * An area a room has loaded, ready to play in: its settings, links and tiles, and the chunks of it
+ * loaded so far
  */
 export interface ActiveArea
 {
 	loaded: LoadedArea;
 
 	/**
-	 * The map as movement sees it; a cell whose chunk hasn't loaded can't be entered
+	 * The area as movement sees it; a cell whose chunk hasn't loaded can't be entered
 	 */
-	map: AreaMap;
+	layout: AreaLayout;
 
 	grid: Grid;
 
 	/**
-	 * The map as vision sees it; a cell whose chunk hasn't loaded is seen as the default tile
+	 * The area as vision sees it; a cell whose chunk hasn't loaded is seen as the default tile
 	 */
-	vision: VisionMap;
+	vision: VisionArea;
 
 	/**
 	 * The loaded chunks that aren't all the default tile, by chunkKey()
@@ -47,11 +47,11 @@ export type ChunkReader = (areaId: string, chunks: { chunkColumn: number; chunkR
 
 /**
  * The areas a room has loaded, so each is read from the database once however many players use it,
- * and the chunks of their maps near the players
+ * and the chunks of them near the players
  *
  * Loading happens outside the simulation tick: the tick only reads what is already here (get), a
  * player waits while the area they are heading for loads (load), and chunks arrive while players
- * move toward them (loadChunks). An area's map can be up to MAX_MAP_SIDE across, so only the chunks
+ * move toward them (loadChunks). An area can be up to MAX_AREA_SIDE across, so only the chunks
  * near players are kept
  */
 export class AreaCache
@@ -125,7 +125,7 @@ export class AreaCache
 	}
 
 	/**
-	 * Loads chunks of a loaded area's map, and waits for any of them already on their way
+	 * Loads chunks of a loaded area, and waits for any of them already on their way
 	 *
 	 * @param areaId The area's ID
 	 * @param chunkKeys The chunks wanted, by chunkKey()
@@ -216,7 +216,7 @@ export class AreaCache
 	}
 
 	/**
-	 * Reads chunks of a loaded area's map again, after an editor has changed them. Chunks that aren't
+	 * Reads chunks of a loaded area again, after an editor has changed them. Chunks that aren't
 	 * loaded are left for when players come near them
 	 *
 	 * @param areaId The area's ID
@@ -359,7 +359,7 @@ export class AreaCache
  */
 function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunks: Set<string>): ActiveArea
 {
-	const map: AreaMap = {
+	const layout: AreaLayout = {
 		tiles: {
 			bounds: loaded.bounds,
 			defaultTileId: loaded.defaultTileId,
@@ -375,9 +375,9 @@ function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunk
 
 	return({
 		loaded,
-		map,
-		grid: createAreaGrid(map, GRID_CELL_SIZE),
-		vision: createVisionMap(map.tiles, loaded.loopsEastWest, loaded.loopsNorthSouth, new Map(loaded.tiles.map((tile) => [tile.id, tile.visionCost]))),
+		layout,
+		grid: createAreaGrid(layout, GRID_CELL_SIZE),
+		vision: createVisionArea(layout.tiles, loaded.loopsEastWest, loaded.loopsNorthSouth, new Map(loaded.tiles.map((tile) => [tile.id, tile.visionCost]))),
 		chunks,
 		loadedChunks
 	});
@@ -411,8 +411,8 @@ export interface AreaMemory
 }
 
 /**
- * What a client is told about an area: its settings, tiles and some chunks of its map, and where its
- * links are but not where they lead. In a group's room, only what the group has seen of the map
+ * What a client is told about an area: its settings, tiles and some of its chunks, and where its
+ * links are but not where they lead. In a group's room, only what the group has seen of the area
  *
  * @param area The area
  * @param chunkKeys The loaded chunks to include, by chunkKey(); chunks that are all the default tile

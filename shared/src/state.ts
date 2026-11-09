@@ -8,7 +8,7 @@
 import { schema, t, type SchemaType } from '@colyseus/schema';
 
 /**
- * A player on a room's map, keyed by player ID in the room's players
+ * A player in a room's areas, keyed by player ID in the room's players
  *
  * Every window of the same browser controls the same player. The player ID is public and is not
  * the browser's ID, which stays on the server. In a lobby, name is the character's being played, and a
@@ -77,7 +77,7 @@ export const GameState = schema({
 	clock: t.number(),
 
 	/**
-	 * Whether the universe has reached the end of time: the group can look at its map, but nothing in
+	 * Whether the universe has reached the end of time: the group can look at its area, but nothing in
 	 * the game changes, so the room refuses moving and links
 	 */
 	locked: t.boolean()
@@ -98,17 +98,17 @@ export type LobbyMember = SchemaType<typeof LobbyMember>;
  *
  * players works as in GameState: a client sees only the players in its own player's area, and never
  * another player's ghost. members lists everyone in the lobby playing a character, whichever area they
- * are in, and whether or not the lobby has a map
+ * are in, and whether or not the lobby has an area
  */
 export const LobbyState = schema({
 	players: t.map(Player).view(),
 	members: t.map(LobbyMember),
 
 	/**
-	 * Whether the lobby has a map to walk around: its universe has a lobby area, and it is enabled.
+	 * Whether the lobby has an area to walk around: its universe has a lobby area, and it is enabled.
 	 * Without one, players is empty, and players only chat and choose their characters
 	 */
-	hasMap: t.boolean()
+	hasArea: t.boolean()
 }, 'LobbyState');
 export type LobbyState = SchemaType<typeof LobbyState>;
 

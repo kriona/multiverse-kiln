@@ -13,7 +13,7 @@ import { groupSeenChunks } from './schema.js';
 const SAVE_BATCH_SIZE = 1000;
 
 /**
- * The cells a group has seen in one chunk of an area's map
+ * The cells a group has seen in one chunk of an area
  */
 export interface SeenChunk
 {

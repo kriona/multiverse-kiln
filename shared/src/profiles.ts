@@ -98,6 +98,32 @@ export function profileCharacterPath(characterId: string): string
 export const PROFILE_LOCALE_PATH = `${PROFILE_PATH}/locale`;
 
 /**
+ * The notices a player can dismiss for good, which their account remembers until they show them again
+ * from their profile: the editor's notices that the draft is open, and that the live version of a
+ * universe with a draft is
+ */
+export const DISMISSIBLE_NOTICES = ['editorDraft', 'editorLiveWithDraft'] as const;
+
+export type DismissibleNotice = (typeof DISMISSIBLE_NOTICES)[number];
+
+/**
+ * DELETE: shows every notice the logged-in player dismissed again
+ */
+export const PROFILE_NOTICES_PATH = `${PROFILE_PATH}/notices`;
+
+/**
+ * PUT profileNoticePath(notice): dismisses a notice for the logged-in player, so it doesn't show again;
+ * DELETE: shows it again
+ *
+ * @param notice The notice
+ * @return The path
+ */
+export function profileNoticePath(notice: DismissibleNotice): string
+{
+	return(`${PROFILE_NOTICES_PATH}/${encodeURIComponent(notice)}`);
+}
+
+/**
  * GET: everything the site keeps about the logged-in player, to download as one JSON file
  * (AccountExport), with ?locale= naming the language of the default races', classes' and items' names
  */
@@ -246,6 +272,11 @@ export interface OwnProfilePayload extends ProfileFields
 	 * Whether the profile lists all of the player's characters
 	 */
 	showCharacters: boolean;
+
+	/**
+	 * The notices the player dismissed, which don't show again until they show them again
+	 */
+	dismissedNotices: DismissibleNotice[];
 
 	/**
 	 * Every character the player has, in any universe, by universe name and then character name
@@ -491,6 +522,7 @@ export interface AccountExport
 		hasPassword: boolean;
 		locale: string | null;
 		showCharacters: boolean;
+		dismissedNotices: DismissibleNotice[];
 		createdAt: string;
 
 		/**
@@ -625,7 +657,7 @@ export interface AccountExport
 	 */
 	adminEvents: {
 		/**
-		 * What was done: adminAdded, adminRemoved, universeDisabled or universeEnabled
+		 * What was done: adminAdded, adminRemoved, universeDisabled, universeEnabled or universeDeleted
 		 */
 		kind: string;
 
@@ -641,10 +673,11 @@ export interface AccountExport
 		playerId: string | null;
 
 		/**
-		 * The universe disabled or enabled, or null for other kinds and once it is deleted
+		 * The universe disabled, enabled or deleted, or null for other kinds. Once it is deleted, only a
+		 * record of deleting it keeps its name, with a null ID; the others are null
 		 */
 		universe: {
-			id: string;
+			id: string | null;
 			name: string;
 		} | null;
 

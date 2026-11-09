@@ -45,7 +45,7 @@ export interface SeenPlayer
 }
 
 /**
- * Where the player is on the map
+ * Where the player is in the area
  */
 export interface PlayerPosition
 {
@@ -75,11 +75,11 @@ export interface PlayerPosition
 }
 
 /**
- * Reads out what a screen reader user can't see on the game's map: the area they enter, players
+ * Reads out what a screen reader user can't see in the game's area: the area they enter, players
  * coming into and going out of view, a way to another area underfoot, and being unable to move. The
- * map scene tells it what happens; it decides what is worth reading out and words it
+ * area scene tells it what happens; it decides what is worth reading out and words it
  */
-export class MapAnnouncer
+export class AreaAnnouncer
 {
 	private readonly appeared: string[] = [];
 	private readonly disappeared: string[] = [];
@@ -114,7 +114,7 @@ export class MapAnnouncer
 		this.partOfDay = undefined;
 
 		announce(t({
-			id: 'map.announce.area',
+			id: 'area.announce.area',
 			defaultMessage: 'You are in {area}.',
 			description: 'Read out by screen readers when the player comes into an area; {area} is its name'
 		}, {
@@ -153,7 +153,7 @@ export class MapAnnouncer
 	 * Tells the player when they step onto a way to another area that they take with a key
 	 *
 	 * @param onLink Whether the player is standing on one
-	 * @param prompt What the map shows them, e.g. "Press E to go through"
+	 * @param prompt What the area shows them, e.g. "Press E to go through"
 	 */
 	linkChanged(onLink: boolean, prompt: string): void
 	{
@@ -188,7 +188,7 @@ export class MapAnnouncer
 		{
 			this.blockedSaid = true;
 			announce(t({
-				id: 'map.announce.blocked',
+				id: 'area.announce.blocked',
 				defaultMessage: 'Something is in the way.',
 				description: 'Read out by screen readers when the player tries to move but can\'t, e.g. into a wall or another player'
 			}));
@@ -213,7 +213,7 @@ export class MapAnnouncer
 		}
 
 		announce(t({
-			id: 'map.announce.partOfDay',
+			id: 'area.announce.partOfDay',
 			defaultMessage: '{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}',
 			description: 'Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes'
 		}, {
@@ -235,7 +235,7 @@ export class MapAnnouncer
 			.map((other) => describePlayer(other));
 		const time = describeTime(position);
 		const sight = t({
-			id: 'map.announce.sight',
+			id: 'area.announce.sight',
 			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
 			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains'
 		}, {
@@ -243,7 +243,7 @@ export class MapAnnouncer
 		});
 
 		const place = t({
-			id: 'map.announce.position',
+			id: 'area.announce.position',
 			defaultMessage: '{area}, column {column}, row {row}{onTile, select, yes {, on {tile}} other {}}. {count, plural, =0 {You can\'t see anyone else.} other {You can see {players}.}}',
 			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are: the area\'s name, their cell, the tile they stand on (e.g. Grass) when it is known, and the other players they can see; {players} is a list of descriptions such as "Bo, 3 cells northeast"'
 		}, {
@@ -263,7 +263,7 @@ export class MapAnnouncer
 	}
 
 	/**
-	 * Stops reading anything out that is still waiting, for when the map stops
+	 * Stops reading anything out that is still waiting, for when the area stops
 	 */
 	stop(): void
 	{
@@ -301,9 +301,9 @@ export class MapAnnouncer
 		if (this.appeared.length > 0)
 		{
 			lines.push(t({
-				id: 'map.announce.appeared',
+				id: 'area.announce.appeared',
 				defaultMessage: '{count, plural, one {{players} comes into view.} other {{players} come into view.}}',
-				description: 'Read out by screen readers when other players come into view on the map; {players} is a list of their names'
+				description: 'Read out by screen readers when other players come into view in the area; {players} is a list of their names'
 			}, {
 				count: this.appeared.length,
 				players: formatList(this.appeared, 'conjunction')
@@ -313,9 +313,9 @@ export class MapAnnouncer
 		if (this.disappeared.length > 0)
 		{
 			lines.push(t({
-				id: 'map.announce.disappeared',
+				id: 'area.announce.disappeared',
 				defaultMessage: '{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}',
-				description: 'Read out by screen readers when other players go out of view on the map or leave; {players} is a list of their names'
+				description: 'Read out by screen readers when other players go out of view in the area or leave; {players} is a list of their names'
 			}, {
 				count: this.disappeared.length,
 				players: formatList(this.disappeared, 'conjunction')
@@ -351,7 +351,7 @@ function describeTime(position: PlayerPosition): string | undefined
 	if (position.displayTime === 'rough')
 	{
 		return(t({
-			id: 'map.announce.timeOfDayRough',
+			id: 'area.announce.timeOfDayRough',
 			defaultMessage: 'It is {time}.',
 			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position, in a universe that shows the time roughly: a word for the time of day in the game, e.g. "late morning"'
 		}, {
@@ -360,7 +360,7 @@ function describeTime(position: PlayerPosition): string | undefined
 	}
 
 	return(t({
-		id: 'map.announce.timeOfDay',
+		id: 'area.announce.timeOfDay',
 		defaultMessage: 'It is {time}, {part, select, dawn {dawn} day {day} dusk {dusk} other {night}}.',
 		description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after their position: the time of day in the game, e.g. "6:30:00 PM", and the part of the day it falls in'
 	}, {
@@ -391,7 +391,7 @@ function describePlayer(other: SeenPlayer): string
 	if (distance(other) === 0)
 	{
 		return(t({
-			id: 'map.announce.playerHere',
+			id: 'area.announce.playerHere',
 			defaultMessage: '{name}, right where you are',
 			description: 'Read out by screen readers in the list of players the player can see, for one in the same cell; {name} is their name'
 		}, {
@@ -400,7 +400,7 @@ function describePlayer(other: SeenPlayer): string
 	}
 
 	return(t({
-		id: 'map.announce.player',
+		id: 'area.announce.player',
 		defaultMessage: '{name}, {cells, plural, one {# cell} other {# cells}} {direction, select, north {north} northeast {northeast} east {east} southeast {southeast} south {south} southwest {southwest} west {west} other {northwest}}',
 		description: 'Read out by screen readers in the list of players the player can see: their name, how many cells away and in which direction, e.g. "Bo, 3 cells northeast"'
 	}, {
@@ -411,7 +411,7 @@ function describePlayer(other: SeenPlayer): string
 }
 
 /**
- * The nearest of the eight compass directions to an offset on the map
+ * The nearest of the eight compass directions to an offset in the area
  *
  * @param columns Cells east; negative is west
  * @param rows Cells south; negative is north

@@ -1,6 +1,7 @@
 /**
  * Player profiles (see Profile edit and Profile view in STRUCTURE-OVERVIEW.md): the logged-in player's
- * own profile, which they can change (PROFILE_PATH), and anyone's profile by username (PLAYERS_PATH).
+ * own profile, which they can change (PROFILE_PATH), with the notices they dismissed
+ * (PROFILE_NOTICES_PATH), and anyone's profile by username (PLAYERS_PATH).
  * The own profile's data export and what deleting the account asks are in accountData.ts
  *
  * Any logged-in player can read a profile. It shows only what the player filled in, and only the
@@ -8,11 +9,11 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
+import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, DISMISSIBLE_NOTICES, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type DismissibleNotice, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
 import { listProfileCharacters, setCharacterVisibility, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
-import { AccountTakenError, findOwnProfile, findProfileByUsername, replaceProfileLocale, saveProfile } from '../db/playerRepo.js';
+import { AccountTakenError, dismissNotice, findOwnProfile, findProfileByUsername, forgetDismissedNotice, forgetDismissedNotices, replaceProfileLocale, saveProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
@@ -40,6 +41,11 @@ const profileMessages = defineMessages({
 		id: 'error.profile.noSuchCharacter',
 		defaultMessage: 'You have no such character.',
 		description: 'Why showing or hiding a character on the player\'s profile was refused: the character isn\'t theirs, or was deleted'
+	},
+	noSuchNotice: {
+		id: 'error.profile.noSuchNotice',
+		defaultMessage: 'There is no such notice.',
+		description: 'Why dismissing a notice (such as the editor\'s notice that the draft is open), or showing one again, was refused: the page named a notice the server doesn\'t know, such as from an out-of-date page'
 	},
 	timeZone: {
 		id: 'error.profile.timeZone',
@@ -180,6 +186,9 @@ export function addProfileRoutes(app: Application, allowedOrigins: Set<string>):
 	own.put('/', updateProfileRoute);
 	own.put('/locale', profileLocaleRoute);
 	own.put('/characters/:characterId', characterVisibilityRoute);
+	own.put('/notices/:notice', dismissNoticeRoute);
+	own.delete('/notices/:notice', forgetDismissedNoticeRoute);
+	own.delete('/notices', forgetDismissedNoticesRoute);
 	own.get('/export', exportRoute);
 	own.get('/deletion', deletionRoute);
 	own.use(handleProfileError);
@@ -328,6 +337,7 @@ async function ownProfileRoute(request: Request, response: Response): Promise<vo
 		serverAdmin,
 		twoFactorUniverses,
 		showCharacters: profile.showCharacters,
+		dismissedNotices: profile.dismissedNotices,
 		characters: await nameCharacters(request, records)
 	};
 
@@ -472,6 +482,72 @@ async function characterVisibilityRoute(request: Request, response: Response): P
 		return;
 	}
 
+	response.sendStatus(204);
+}
+
+/**
+ * The notice a request's path names, answering 404 when it names none the server knows
+ *
+ * @param request The request, with a notice in its path
+ * @param response The response, answered when the notice isn't known
+ * @return The notice, or undefined when the response has been answered
+ */
+function noticeOf(request: Request, response: Response): DismissibleNotice | undefined
+{
+	const notice = z.enum(DISMISSIBLE_NOTICES).safeParse(request.params.notice);
+
+	if (!notice.success)
+	{
+		sendError(response, 404, profileMessages.noSuchNotice);
+		return(undefined);
+	}
+
+	return(notice.data);
+}
+
+/**
+ * PUT profileNoticePath(notice): dismisses a notice for the logged-in player, so it doesn't show again
+ *
+ * @param request The request
+ * @param response The response: 204, whether or not it was dismissed already
+ */
+async function dismissNoticeRoute(request: Request, response: Response): Promise<void>
+{
+	const notice = noticeOf(request, response);
+
+	if (notice !== undefined)
+	{
+		await dismissNotice(playerIdOf(request), notice);
+		response.sendStatus(204);
+	}
+}
+
+/**
+ * DELETE profileNoticePath(notice): shows a notice the logged-in player dismissed again
+ *
+ * @param request The request
+ * @param response The response: 204, whether or not it was dismissed
+ */
+async function forgetDismissedNoticeRoute(request: Request, response: Response): Promise<void>
+{
+	const notice = noticeOf(request, response);
+
+	if (notice !== undefined)
+	{
+		await forgetDismissedNotice(playerIdOf(request), notice);
+		response.sendStatus(204);
+	}
+}
+
+/**
+ * DELETE PROFILE_NOTICES_PATH: shows every notice the logged-in player dismissed again
+ *
+ * @param request The request
+ * @param response The response: 204
+ */
+async function forgetDismissedNoticesRoute(request: Request, response: Response): Promise<void>
+{
+	await forgetDismissedNotices(playerIdOf(request));
 	response.sendStatus(204);
 }
 

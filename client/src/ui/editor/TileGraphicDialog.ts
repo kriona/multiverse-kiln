@@ -44,7 +44,7 @@ export interface StagedUpload
  * rights to use it
  *
  * A blob sheet sorted by mask (SORTED_BLOB_SHEET, told apart by its size) is rearranged into the game's
- * order (BLOB_SHEET_MASKS) before it is staged, so the maps and the server only ever see the game's order
+ * order (BLOB_SHEET_MASKS) before it is staged, so the areas drawn and the server only ever see the game's order
  *
  * Like every change in the editor, the upload waits for the Tilesets tab to be saved; the dialog checks
  * what it can in the browser first, and the server checks the image again when it arrives

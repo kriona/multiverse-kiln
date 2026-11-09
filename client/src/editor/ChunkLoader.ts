@@ -1,9 +1,9 @@
-import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type AreaChunk, type ChunkCoordinates, type ChunkListPayload, type ChunkRange, type MapBounds } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, MAX_CHUNKS_PER_REQUEST, type AreaChunk, type ChunkCoordinates, type ChunkListPayload, type ChunkRange, type AreaBounds } from '@multiverse-kiln/shared';
 
-import type { EditorMap } from './EditorMap';
+import type { AreaCells } from './AreaCells';
 
 /**
- * Loads the stored chunks in a range of an area's map, such as from the editor's API
+ * Loads the stored chunks in a range of an area, such as from the editor's API
  */
 export type ChunkSource = (range: ChunkRange) => Promise<ChunkListPayload>;
 
@@ -30,10 +30,10 @@ interface PendingLoad
 }
 
 /**
- * Loads an area's chunks into an EditorMap as the editor's view reaches them
+ * Loads an area's chunks into an AreaCells as the editor's view reaches them
  *
- * The map is split into square blocks of chunks, and each block is asked for once, the first time
- * the view touches it. Loaded chunks are kept: maps are only loaded where someone looks, and the
+ * The area is split into square blocks of chunks, and each block is asked for once, the first time
+ * the view touches it. Loaded chunks are kept: areas are only loaded where someone looks, and the
  * editor needs every chunk it has painted
  */
 export class ChunkLoader
@@ -44,7 +44,7 @@ export class ChunkLoader
 	private readonly requested = new Set<string>();
 
 	/**
-	 * The requests for chunks to load into the map that haven't been answered yet
+	 * The requests for chunks to load into the area that haven't been answered yet
 	 */
 	private readonly pending = new Set<PendingLoad>();
 
@@ -52,13 +52,13 @@ export class ChunkLoader
 
 	/**
 	 * @param source Loads the area's stored chunks
-	 * @param map Where the chunks go
+	 * @param cells Where the chunks go
 	 * @param onLoaded Called with the keys of the chunks each block newly loaded
 	 * @param onError Called when a block couldn't be loaded; it will be asked for again next time the view reaches it
 	 */
 	constructor(
 		private readonly source: ChunkSource,
-		private readonly map: EditorMap,
+		private readonly cells: AreaCells,
 		private readonly onLoaded: (chunkKeys: string[]) => void,
 		private readonly onError: (error: unknown) => void
 	)
@@ -72,7 +72,7 @@ export class ChunkLoader
 	 */
 	request(view: ChunkRange): void
 	{
-		const area = this.map.chunkRange;
+		const area = this.cells.chunkRange;
 		const minChunkColumn = Math.max(view.minChunkColumn, area.minChunkColumn);
 		const maxChunkColumn = Math.min(view.maxChunkColumn, area.maxChunkColumn);
 		const minChunkRow = Math.max(view.minChunkRow, area.minChunkRow);
@@ -99,15 +99,15 @@ export class ChunkLoader
 	}
 
 	/**
-	 * Loads every chunk of the map that isn't wholly inside some bounds, such as the chunks a smaller map
+	 * Loads every chunk of the area that isn't wholly inside some bounds, such as the chunks a smaller area
 	 * would cut off, a block at a time
 	 *
 	 * @param bounds The bounds
 	 * @return Resolves once they have all loaded, or the loader has stopped; rejects when a block couldn't be loaded
 	 */
-	async loadOutside(bounds: MapBounds): Promise<void>
+	async loadOutside(bounds: AreaBounds): Promise<void>
 	{
-		const area = this.map.chunkRange;
+		const area = this.cells.chunkRange;
 		const inner = {
 			minChunkColumn: chunkCoordinate(bounds.minColumn - 1) + 1,
 			minChunkRow: chunkCoordinate(bounds.minRow - 1) + 1,
@@ -141,15 +141,15 @@ export class ChunkLoader
 
 				if (!this.stopped)
 				{
-					this.onLoaded(this.map.load(range, chunks));
+					this.onLoaded(this.cells.load(range, chunks));
 				}
 			}
 		}
 	}
 
 	/**
-	 * Loads some of the map's chunks again as they are stored now, such as the chunks another editor
-	 * painted, without changing the map. Only chunks on the map that have loaded are asked for, the
+	 * Loads some of the area's chunks again as they are stored now, such as the chunks another editor
+	 * painted, without changing the cells held. Only chunks in the area that have loaded are asked for, the
 	 * chunks in one block in one request. A chunk still loading is asked for again once its answer
 	 * comes, since the server may have read it before the painting was saved
 	 *
@@ -159,20 +159,20 @@ export class ChunkLoader
 	 */
 	async reload(chunks: readonly ChunkCoordinates[]): Promise<Map<string, number[] | undefined>>
 	{
-		const area = this.map.chunkRange;
+		const area = this.cells.chunkRange;
 		const blocks = new Map<string, ChunkRange>();
 		const reloaded = new Map<string, number[] | undefined>();
 
 		for (const { chunkColumn, chunkRow } of chunks)
 		{
-			const onMap = ((chunkColumn >= area.minChunkColumn) && (chunkColumn <= area.maxChunkColumn) && (chunkRow >= area.minChunkRow) && (chunkRow <= area.maxChunkRow));
+			const inArea = ((chunkColumn >= area.minChunkColumn) && (chunkColumn <= area.maxChunkColumn) && (chunkRow >= area.minChunkRow) && (chunkRow <= area.maxChunkRow));
 
-			if (!onMap)
+			if (!inArea)
 			{
 				continue;
 			}
 
-			if (!this.map.isLoaded(chunkColumn, chunkRow))
+			if (!this.cells.isLoaded(chunkColumn, chunkRow))
 			{
 				this.markStale(chunkColumn, chunkRow);
 				continue;
@@ -229,7 +229,7 @@ export class ChunkLoader
 		{
 			for (let chunkColumn = range.minChunkColumn; chunkColumn <= range.maxChunkColumn; chunkColumn++)
 			{
-				if (!this.map.isLoaded(chunkColumn, chunkRow))
+				if (!this.cells.isLoaded(chunkColumn, chunkRow))
 				{
 					return(false);
 				}
@@ -260,7 +260,7 @@ export class ChunkLoader
 	}
 
 	/**
-	 * Asks for the stored chunks in a range to load into the map, asking again while another editor saves
+	 * Asks for the stored chunks in a range to load into the area, asking again while another editor saves
 	 * painting in the range before the answer comes
 	 *
 	 * @param range The chunks
@@ -294,7 +294,7 @@ export class ChunkLoader
 	}
 
 	/**
-	 * Stops taking in chunks, for when the editor moves on to another area or map
+	 * Stops taking in chunks, for when the editor moves on to another area
 	 */
 	stop(): void
 	{
@@ -305,7 +305,7 @@ export class ChunkLoader
 	 * Loads one block of chunks
 	 *
 	 * @param key The block's key
-	 * @param range The chunks in the block that are on the map
+	 * @param range The chunks in the block that are in the area
 	 */
 	private async loadBlock(key: string, range: ChunkRange): Promise<void>
 	{
@@ -315,7 +315,7 @@ export class ChunkLoader
 
 			if (!this.stopped)
 			{
-				this.onLoaded(this.map.load(range, chunks));
+				this.onLoaded(this.cells.load(range, chunks));
 			}
 		}
 		catch (error)

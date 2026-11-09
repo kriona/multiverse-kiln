@@ -90,7 +90,7 @@ export const CHAT_HISTORY_LENGTH = 50;
 const lobbyRooms = new OneRoomPerKey<LobbyRoom>('universe');
 
 /**
- * A universe's lobby: its map, its chat and who's here
+ * A universe's lobby: its area, its chat and who's here
  *
  * Clients join with the universe's ID (LobbyJoinOptions), and every client asking for the same universe
  * joins the same room (filterBy in app.config.ts). A second lobby for a universe that has one is
@@ -143,8 +143,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private universeId!: string;
 
 	/**
-	 * The area players walk around in, while the lobby has one; the lobby has a map only while it is
-	 * also enabled (state.hasMap)
+	 * The area players walk around in, while the lobby has one; the lobby has an area to walk around
+	 * only while it is also enabled (state.hasArea)
 	 */
 	private lobbyAreaId: string | undefined;
 
@@ -201,8 +201,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			// Without a map, nobody has anywhere to walk
-			if (this.state.hasMap)
+			// Without an area, nobody has anywhere to walk
+			if (this.state.hasArea)
 			{
 				this.areaPlayers.queueMove(client.sessionId, result.data);
 			}
@@ -210,7 +210,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		[MessageType.TakeLink]: (client: LobbyClient) =>
 		{
-			if (this.state.hasMap)
+			if (this.state.hasArea)
 			{
 				this.areaPlayers.takeLink(client.sessionId);
 			}
@@ -302,7 +302,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			column: universe.lobbyColumn,
 			row: universe.lobbyRow
 		};
-		this.state.hasMap = ((await this.lobbyArea()) !== undefined);
+		this.state.hasArea = ((await this.lobbyArea()) !== undefined);
 		this.raceSight = await loadRaceSight(universeId, universe.ruleset);
 		this.barred = await loadBarredOptions(universeId);
 		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
@@ -341,7 +341,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 				return;
 			}
 
-			// Players in the lobby start in its area, at its starting cell. Without a map, nobody is in an area
+			// Players in the lobby start in its area, at its starting cell. Without a lobby area, nobody is in an area
 			if (change.kind === 'evacuated')
 			{
 				const destination = (change.destination ?? ((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell }));
@@ -355,7 +355,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			}
 
 			this.areaPlayers.applyChange(change)
-				.then(() => (((change.kind === 'area') && (change.areaId === this.lobbyAreaId)) ? this.updateMap(false) : undefined))
+				.then(() => (((change.kind === 'area') && (change.areaId === this.lobbyAreaId)) ? this.loadLobbyArea(false) : undefined))
 				.catch((error: unknown) =>
 				{
 					console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
@@ -490,7 +490,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	/**
 	 * Reads the joining client's player's characters, and puts a player new to the room in the lobby
-	 * area, while the lobby has a map, as the character they played or made most recently (a ghost when
+	 * area, while the lobby has an area, as the character they played or made most recently (a ghost when
 	 * they have none). A player
 	 * already here keeps their character, unless they were a ghost and have since made one. Then sends
 	 * the client who it is playing and the recent chat. A window that may have missed a change while it
@@ -504,7 +504,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		const { playerId } = identityOf(client);
 		const characters = await listPlayableCharacters(playerId, this.universeId);
-		const lobbyStart = (this.state.hasMap ? await this.lobbyStart() : undefined);
+		const lobbyStart = (this.state.hasArea ? await this.lobbyStart() : undefined);
 
 		this.characters.set(playerId, characters);
 
@@ -512,8 +512,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const choosable = characters.find((each) => this.isChoosable(each));
 		const character = (isNewPlayer ? choosable : undefined);
 
-		// The map may have been taken away while its area loaded
-		const startArea = (this.state.hasMap ? lobbyStart : undefined);
+		// The lobby's area may have been taken away while it loaded
+		const startArea = (this.state.hasArea ? lobbyStart : undefined);
 
 		this.areaPlayers.join(client, playerId, this.appearanceOf(character), startArea, this.lobbyCell);
 
@@ -814,7 +814,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * How a player shows on the lobby's map
+	 * How a player shows in the lobby's area
 	 *
 	 * @param character The character they are playing, or undefined for a ghost
 	 * @return The character's name, darkvision and light sensitivity, or a ghost with no name
@@ -831,7 +831,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	/**
 	 * The lobby's area, while the universe has one and it is enabled
 	 *
-	 * @return The area, loaded, or undefined when the lobby has no map
+	 * @return The area, loaded, or undefined when the lobby has no area
 	 */
 	private async lobbyArea(): Promise<ActiveArea | undefined>
 	{
@@ -845,7 +845,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 * when the lobby moves to another area or cell, or its area is changed, while the chunks load, so
 	 * nobody is placed on an area the lobby has left or that has been disabled
 	 *
-	 * @return The area, or undefined when the lobby has no map
+	 * @return The area, or undefined when the lobby has no area
 	 */
 	private async lobbyStart(): Promise<ActiveArea | undefined>
 	{
@@ -870,7 +870,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	/**
 	 * Reads the universe's lobby area and starting cell again, after an editor changed them, and puts
-	 * the lobby's players in its new area, or takes the map away
+	 * the lobby's players in its new area, or takes the area away
 	 */
 	private async refreshLobby(): Promise<void>
 	{
@@ -888,21 +888,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			column: universe.lobbyColumn,
 			row: universe.lobbyRow
 		};
-		await this.updateMap(moved);
+		await this.loadLobbyArea(moved);
 	}
 
 	/**
-	 * Gives the lobby its map or takes it away, as its area is set and enabled or not. Every player is put
-	 * on the lobby's starting cell when the map appears, or moves to another area; a starting cell
+	 * Gives the lobby its area or takes it away, as its area is set and enabled or not. Every player is
+	 * put on the lobby's starting cell when the area appears, or moves to another area; a starting cell
 	 * changed within the same area is only for players who join later
 	 *
 	 * @param moved Whether the lobby has just moved to another area
 	 */
-	private async updateMap(moved: boolean): Promise<void>
+	private async loadLobbyArea(moved: boolean): Promise<void>
 	{
 		const area = await this.lobbyArea();
 
-		if (area && this.state.hasMap && !moved)
+		if (area && this.state.hasArea && !moved)
 		{
 			return;
 		}
@@ -911,17 +911,17 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		if (!start)
 		{
-			if (this.state.hasMap)
+			if (this.state.hasArea)
 			{
-				this.areaPlayers.clearMap();
-				this.state.hasMap = false;
+				this.areaPlayers.clearArea();
+				this.state.hasArea = false;
 			}
 
 			return;
 		}
 
 		this.areaPlayers.placeAll(start, this.lobbyCell, (playerId) => this.appearanceOf(this.playing.get(playerId)));
-		this.state.hasMap = true;
+		this.state.hasArea = true;
 	}
 
 	/**

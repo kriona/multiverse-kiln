@@ -88,6 +88,28 @@ export async function listTileGraphics(version: UniverseVersion, executor: Execu
 }
 
 /**
+ * The tile graphics a version of a universe holds, with where each one's image is stored
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The graphics, by name
+ */
+export async function listTileGraphicFiles(version: UniverseVersion, executor: Executor = db): Promise<(UploadedTileGraphic & { storageKey: string })[]>
+{
+	return(executor
+		.select({
+			id: tileGraphics.id,
+			name: tileGraphics.name,
+			format: tileGraphics.format,
+			drawOrder: tileGraphics.drawOrder,
+			storageKey: tileGraphics.storageKey
+		})
+		.from(tileGraphics)
+		.where(inVersion(tileGraphics, version))
+		.orderBy(asc(tileGraphics.name), asc(tileGraphics.createdAt)));
+}
+
+/**
  * How many tile graphics a version of a universe holds
  *
  * @param version The universe's live version or draft

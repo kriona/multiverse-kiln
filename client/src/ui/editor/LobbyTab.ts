@@ -20,7 +20,7 @@ export class LobbyTab implements SavableTab
 {
 	private readonly form = getElement('lobby-form', HTMLFormElement);
 	private readonly area: AreaChoice;
-	private readonly noMapHint = getElement('lobby-no-map-hint', HTMLElement);
+	private readonly noAreaHint = getElement('lobby-no-area-hint', HTMLElement);
 	private readonly fields = getElement('lobby-fields', HTMLFieldSetElement);
 	private readonly time = getElement('lobby-time', HTMLSelectElement);
 	private readonly dayHoursField = getElement('lobby-day-hours-field', HTMLElement);
@@ -70,7 +70,7 @@ export class LobbyTab implements SavableTab
 		}, () => t({
 			id: 'editor.lobby.noArea',
 			defaultMessage: 'None',
-			description: 'Shown on the editor\'s Lobby tab as the lobby\'s area when it has none, so the lobby has no map'
+			description: 'Shown on the editor\'s Lobby tab as the lobby\'s area when it has none, so the lobby has no area to walk around'
 		}), (area) =>
 		{
 			if (area)
@@ -89,7 +89,7 @@ export class LobbyTab implements SavableTab
 				this.disabledAreaIds = disabled;
 			}
 
-			this.showNoMapHint();
+			this.showNoAreaHint();
 			this.changes.check();
 		}, 'lobby');
 		this.changes = new ChangeTracker({
@@ -137,7 +137,7 @@ export class LobbyTab implements SavableTab
 			column: universe.lobbyColumn,
 			row: universe.lobbyRow
 		}, this.canSave());
-		this.showNoMapHint();
+		this.showNoAreaHint();
 		void this.loadAreas(universe);
 		this.time.value = universe.lobbyPassageOfTime;
 		this.dayHours.value = String(universe.lobbyDayHours);
@@ -186,7 +186,7 @@ export class LobbyTab implements SavableTab
 					.filter((area) => !area.enabled)
 					.map((area) => area.id));
 				this.area.setAreaNames(new Map(areas.map((area) => [area.id, area.name])));
-				this.showNoMapHint();
+				this.showNoAreaHint();
 			}
 		}
 		catch (error)
@@ -209,22 +209,22 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
-	 * Explains that the lobby has no map, while it has no area or its area is disabled
+	 * Explains that the lobby has no area to walk around, while it has no area or its area is disabled
 	 */
-	private showNoMapHint(): void
+	private showNoAreaHint(): void
 	{
 		const areaId = this.area.value;
 
 		if ((areaId !== null) && !this.disabledAreaIds.has(areaId))
 		{
-			showMessage(this.noMapHint, undefined);
+			showMessage(this.noAreaHint, undefined);
 			return;
 		}
 
-		showMessage(this.noMapHint, t({
-			id: 'editor.lobby.noMapHint',
+		showMessage(this.noAreaHint, t({
+			id: 'editor.lobby.noAreaHint',
 			defaultMessage: '{reason, select, disabled {The lobby\'s area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}',
-			description: 'Shown on the editor\'s Lobby tab when the lobby has no map to walk around: {reason} is "disabled" when its area is disabled, and otherwise it has no area'
+			description: 'Shown on the editor\'s Lobby tab when the lobby has no area to walk around: {reason} is "disabled" when its area is disabled, and otherwise it has no area'
 		}, {
 			reason: ((areaId === null) ? 'none' : 'disabled')
 		}));

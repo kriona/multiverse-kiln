@@ -93,7 +93,7 @@
 {
 	color: $text-faint;
 }
-// The map, with the side panels beside it, or under it when the window is too narrow for both; then
+// The area, with the side panels beside it, or under it when the window is too narrow for both; then
 // they scroll together between the toolbar and the footer
 .lobby-body
 {
@@ -338,7 +338,7 @@
 	color: $text-faint;
 }
 
-.map
+.area-view
 {
 	display: flex;
 	align-items: flex-start;

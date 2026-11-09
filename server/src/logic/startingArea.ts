@@ -7,7 +7,7 @@
  * member of it starts there whatever their race. Each choice names a cell of its area as well, which
  * goes with it
  */
-import type { ClassRaceArea, MapBounds, StartingCell } from '@multiverse-kiln/shared';
+import type { AreaBounds, ClassRaceArea, StartingCell } from '@multiverse-kiln/shared';
 
 /**
  * An area and the cell of it a character starts nearest
@@ -100,14 +100,14 @@ export function chooseStartingArea(universePlace: StartingPlace | null, race: St
 }
 
 /**
- * The cell of a map nearest a starting cell: the cell itself when it is on the map, which may have been
- * made smaller since the cell was chosen
+ * The cell of an area nearest a starting cell: the cell itself when it is inside the area, which may
+ * have been made smaller since the cell was chosen
  *
- * @param bounds The map's bounds
+ * @param bounds The area's bounds
  * @param cell The starting cell
  * @return The cell
  */
-export function startingCellOn(bounds: MapBounds, cell: StartingCell): StartingCell
+export function startingCellOn(bounds: AreaBounds, cell: StartingCell): StartingCell
 {
 	return({
 		column: Math.min(Math.max(cell.column, bounds.minColumn), bounds.maxColumn),

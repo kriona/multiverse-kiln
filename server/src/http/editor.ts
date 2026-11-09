@@ -9,7 +9,7 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
+import { findDismissedNotices, findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
@@ -19,7 +19,7 @@ import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInMaps } from '../db/areaRepo.js';
+import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInAreas } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { isSameVersion, type UniverseVersion } from '../db/universeVersions.js';
@@ -40,6 +40,9 @@ import { addEditorListRoutes } from './editorEditors.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { addUniverseDeletionRoutes } from './universeDeletion.js';
+import { addUniverseExportRoutes } from './universeExport.js';
+import { addUniverseImportRoutes } from './universeImport.js';
 
 /**
  * Reasons the tile routes give in more than one place (see shared/src/localization.ts)
@@ -68,7 +71,7 @@ const messages = defineMessages({
 	noSuchReplacementTile: {
 		id: 'error.noSuchReplacementTile',
 		defaultMessage: 'The tile chosen to replace it doesn\'t exist.',
-		description: 'Why a tile couldn\'t be deleted: the tile chosen to paint the maps with in its place isn\'t one of the universe\'s tiles, perhaps because it was deleted'
+		description: 'Why a tile couldn\'t be deleted: the tile chosen to paint the areas with in its place isn\'t one of the universe\'s tiles, perhaps because it was deleted'
 	}
 });
 
@@ -138,6 +141,9 @@ function createEditorRouter(allowedOrigins: Set<string>): express.Router
 	addAreaRoutes(universeRouter);
 	addTileGraphicRoutes(universeRouter);
 	addTranslationRoutes(universeRouter);
+	addUniverseDeletionRoutes(universeRouter);
+	addUniverseExportRoutes(universeRouter);
+	addUniverseImportRoutes(universeRouter);
 
 	router.use(handleEditorError);
 
@@ -297,8 +303,8 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 }
 
 /**
- * GET /:universeId: the universe's settings, the player's role in it, whether they have 2FA on, and how
- * many translations it has in each language
+ * GET /:universeId: the universe's settings, the player's role in it, whether they have 2FA on, how
+ * many translations it has in each language, and the notices the player dismissed
  *
  * @param request The request
  * @param response The response
@@ -306,6 +312,10 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 async function getUniverse(request: Request, response: Response): Promise<void>
 {
 	const { playerId, universe, version, role, languages, serverAdmin, twoFactor } = universeContextOf(request);
+	const [translationCounts, dismissedNotices] = await Promise.all([
+		countTranslations(version),
+		findDismissedNotices(playerId)
+	]);
 	const payload: EditableUniverse = {
 		...universe,
 		role,
@@ -313,7 +323,8 @@ async function getUniverse(request: Request, response: Response): Promise<void>
 		playerId,
 		serverAdmin,
 		twoFactor,
-		translationCounts: Object.fromEntries(await countTranslations(version))
+		translationCounts: Object.fromEntries(translationCounts),
+		dismissedNotices
 	};
 
 	response.json(payload);
@@ -662,7 +673,7 @@ async function withUniverseGraphic(context: ChangeContext, settings: TileChangeS
 }
 
 /**
- * GET /:universeId/tiles/:tileId/usage: the areas whose maps use a tile
+ * GET /:universeId/tiles/:tileId/usage: the areas that use a tile
  *
  * @param request The request
  * @param response The response
@@ -686,13 +697,13 @@ async function tileUsage(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Deletes one of the universe's own tiles, or restores a default tile the universe has edited. A tile a
- * map uses is refused, unless replaceWith names another of the universe's tiles: then the maps are
+ * Deletes one of the universe's own tiles, or restores a default tile the universe has edited. A tile an
+ * area uses is refused, unless replaceWith names another of the universe's tiles: then the areas are
  * painted with that tile in its place first
  *
  * @param context The save
  * @param id The tile
- * @param replaceWith The tile to paint the maps with in its place, or null
+ * @param replaceWith The tile to paint the areas with in its place, or null
  */
 export async function removeTileChange(context: ChangeContext, id: NumberRef, replaceWith: NumberRef | null): Promise<void>
 {
@@ -721,14 +732,14 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	}
 
 	// Painting waits for the universe's lock too, so the tile can't come into use before it is deleted
-	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInMaps(version, tileId, replacementId, transaction));
+	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInAreas(version, tileId, replacementId, transaction));
 
 	if (await isTileInUse(version, tileId, transaction))
 	{
 		refuse(409, {
 			id: 'error.tileInUse',
-			defaultMessage: 'A map uses this tile, so it can\'t be deleted.',
-			description: 'Why a tile couldn\'t be deleted: some area\'s map is painted with it'
+			defaultMessage: 'An area uses this tile, so it can\'t be deleted.',
+			description: 'Why a tile couldn\'t be deleted: some area is painted with it'
 		});
 	}
 

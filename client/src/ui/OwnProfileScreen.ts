@@ -1,4 +1,6 @@
-import { accountExportFileName, languageName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
+import { accountExportFileName, defineMessages, languageName, LOGIN_PROVIDER_NAMES, LOGIN_PROVIDERS, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, PROFILE_LANGUAGES, SOCIAL_SITES, type DismissibleNotice, type MessageDescriptor, type OwnProfileCharacter, type OwnProfilePayload, type ProfileField, type ProfileLanguage, type ProfileUpdateRequest, type SocialSite, type TwoFactorState, type LoginProvider } from '@multiverse-kiln/shared';
+
+import restoreIcon from 'virtual:icon/ph:arrow-counter-clockwise';
 
 import { availableLocales, chooseLocale, currentLocale, formatList, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
@@ -10,7 +12,8 @@ import { showAccountName } from './accountMenu';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { ChipCombobox } from './ChipCombobox';
-import { getElement, setPageTitle, showMessage, showScreen } from './dom';
+import { DISMISSIBLE_NOTICE_TEXT } from './dismissibleNotices';
+import { getElement, setButtonLabel, setPageTitle, showMessage, showScreen } from './dom';
 import { EmailChangeDialog } from './EmailChangeDialog';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
@@ -27,9 +30,21 @@ import { canHaveTwoFactor, type TwoFactorAccount } from './TwoFactorEmailCode';
 import { TwoFactorSetupDialog } from './TwoFactorSetupDialog';
 
 /**
+ * Why the notices the player dismissed, one or all of them, couldn't be shown again
+ */
+const SHOW_NOTICES_FAILED: MessageDescriptor = defineMessages({
+	failed: {
+		id: 'profile.showNoticesFailed',
+		defaultMessage: 'Could not show your dismissed notices again.',
+		description: 'Shown on the player\'s own profile page when showing the notices they dismissed again, one or all of them, failed'
+	}
+}).failed;
+
+/**
  * The player's own profile (the profile screen of profile.html): what others see about them, which they
- * change and save, how they log in (with their 2FA), and all of their characters, each of which they can
- * show or hide when the profile doesn't show them all
+ * change and save, how they log in (with their 2FA), all of their characters, each of which they can
+ * show or hide when the profile doesn't show them all, and the notices they dismissed, which they can
+ * show again
  */
 export class OwnProfileScreen
 {
@@ -119,6 +134,10 @@ export class OwnProfileScreen
 	private readonly twoFactorConfirmDialog: TwoFactorConfirmDialog;
 	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
 	private readonly linkDialog: ProviderLinkDialog;
+	private readonly noticeList = getElement('profile-notice-list', HTMLUListElement);
+	private readonly noNotices = getElement('profile-notice-none', HTMLElement);
+	private readonly showNoticesButton = getElement('profile-show-notices', HTMLButtonElement);
+	private readonly noticesError = getElement('profile-notices-error', HTMLElement);
 	private readonly exportButton = getElement('profile-export', HTMLButtonElement);
 	private readonly dataError = getElement('profile-data-error', HTMLElement);
 	private readonly deleteDialog: AccountDeleteDialog;
@@ -305,6 +324,11 @@ export class OwnProfileScreen
 		this.forgetBrowsersButton.addEventListener('click', () =>
 		{
 			void this.forgetTrustedBrowsers();
+		});
+
+		this.showNoticesButton.addEventListener('click', () =>
+		{
+			void this.showNoticesAgain();
 		});
 
 		for (const [provider, button] of Object.entries(this.linkButtons) as [LoginProvider, HTMLButtonElement][])
@@ -534,6 +558,114 @@ export class OwnProfileScreen
 	}
 
 	/**
+	 * Shows every notice the player dismissed again
+	 */
+	private async showNoticesAgain(): Promise<void>
+	{
+		this.showNoticesButton.disabled = true;
+		showMessage(this.noticesError, undefined);
+
+		try
+		{
+			await this.api.forgetDismissedNotices();
+			this.showDismissedNotices([]);
+			showToast(t({
+				id: 'profile.noticesShown',
+				defaultMessage: 'The notices you dismissed will show again.',
+				description: 'Shown once the player has chosen to show every notice they dismissed again, from their own profile page'
+			}), {
+				kind: 'success'
+			});
+		}
+		catch (error)
+		{
+			showMessage(this.noticesError, describeEditorError(error, SHOW_NOTICES_FAILED));
+		}
+		finally
+		{
+			this.showNoticesButton.disabled = false;
+		}
+	}
+
+	/**
+	 * Shows one notice the player dismissed again, taking it off the list and moving focus to the next
+	 * notice's button, or to Show all notices again after the last
+	 *
+	 * @param notice The notice
+	 * @param button Its button in the list
+	 */
+	private async showNoticeAgain(notice: DismissibleNotice, button: HTMLButtonElement): Promise<void>
+	{
+		button.disabled = true;
+		showMessage(this.noticesError, undefined);
+
+		try
+		{
+			await this.api.forgetDismissedNotice(notice);
+
+			const remaining = (this.profile?.dismissedNotices ?? []).filter((each) => (each !== notice));
+			const index = (this.profile?.dismissedNotices ?? []).indexOf(notice);
+
+			this.showDismissedNotices(remaining);
+			(this.noticeList.querySelectorAll('button')[Math.min(index, remaining.length - 1)] ?? this.showNoticesButton).focus();
+			showToast(t({
+				id: 'profile.noticeShown',
+				defaultMessage: 'The notice will show again.',
+				description: 'Shown once the player has chosen to show one notice they dismissed again, from the list on their own profile page'
+			}), {
+				kind: 'success'
+			});
+		}
+		catch (error)
+		{
+			button.disabled = false;
+			showMessage(this.noticesError, describeEditorError(error, SHOW_NOTICES_FAILED));
+		}
+	}
+
+	/**
+	 * Lists the notices the player dismissed, each with a button showing it again
+	 *
+	 * @param notices The notices, in the order they dismissed them
+	 */
+	private showDismissedNotices(notices: readonly DismissibleNotice[]): void
+	{
+		if (this.profile)
+		{
+			this.profile = {
+				...this.profile,
+				dismissedNotices: [...notices]
+			};
+		}
+
+		this.noticeList.replaceChildren(...notices.map((notice) =>
+		{
+			const item = document.createElement('li');
+			const text = document.createElement('p');
+			const button = document.createElement('button');
+
+			text.id = `profile-notice-${notice}`;
+			text.textContent = t(DISMISSIBLE_NOTICE_TEXT[notice]);
+			button.type = 'button';
+			button.className = 'secondary';
+			button.setAttribute('aria-describedby', text.id);
+			setButtonLabel(button, restoreIcon, t({
+				id: 'profile.showNotice',
+				defaultMessage: 'Show again',
+				description: 'Button beside one of the notices the player dismissed, listed on their own profile page, that shows that notice again'
+			}));
+			button.addEventListener('click', () =>
+			{
+				void this.showNoticeAgain(notice, button);
+			});
+			item.append(text, button);
+
+			return(item);
+		}));
+		this.noNotices.hidden = (notices.length > 0);
+	}
+
+	/**
 	 * Loads the player's profile and shows it
 	 */
 	async load(): Promise<void>
@@ -548,6 +680,7 @@ export class OwnProfileScreen
 		this.fillForm(profile);
 		this.showAccount(profile);
 		this.showCharacterList(profile.characters);
+		this.showDismissedNotices(profile.dismissedNotices);
 		setPageTitle(document.title);
 		showScreen('profile');
 		this.openRequestedSetup();

@@ -3,7 +3,7 @@
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import { EDITOR_VERSION_PARAM, UNIVERSE_VERSIONS, editorAccessOf, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorRole } from '@multiverse-kiln/shared';
+import { defineMessages, EDITOR_VERSION_PARAM, UNIVERSE_VERSIONS, editorAccessOf, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorRole, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
@@ -63,6 +63,18 @@ export interface AreaContext extends UniverseContext
 {
 	area: EditorArea;
 }
+
+/**
+ * Why a universe that requires its editors to have 2FA on refuses an editor without it
+ * (EDITOR_TWO_FACTOR_ERROR_ID), taking the universe's name as {universe}
+ */
+export const EDITOR_TWO_FACTOR_REFUSAL: MessageDescriptor = defineMessages({
+	editorNeedsTwoFactor: {
+		id: 'error.editorNeedsTwoFactor',
+		defaultMessage: '{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.',
+		description: 'Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn\'t; {universe} is the universe\'s name. Buttons to turn it on, leave the universe and go back to Home follow'
+	}
+}).editorNeedsTwoFactor;
 
 /**
  * Methods that don't change anything
@@ -213,11 +225,7 @@ export function refuseWithoutRequiredTwoFactor(request: Request, response: Respo
 
 	if (universe.requireTwoFactor && !twoFactor)
 	{
-		sendError(response, 403, {
-			id: 'error.editorNeedsTwoFactor',
-			defaultMessage: '{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.',
-			description: 'Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn\'t; {universe} is the universe\'s name. Buttons to turn it on, leave the universe and go back to Home follow'
-		}, {
+		sendError(response, 403, EDITOR_TWO_FACTOR_REFUSAL, {
 			universe: universe.name
 		});
 		return;

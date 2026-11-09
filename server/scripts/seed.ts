@@ -15,7 +15,7 @@
  * so pass --creator every time
  */
 import { parseArgs } from 'node:util';
-import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, type MapBounds } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, type AreaBounds } from '@multiverse-kiln/shared';
 
 import { db, pool, type Executor } from '../src/db/client.js';
 import { findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
@@ -27,7 +27,7 @@ import { createArea, createAreaLink, saveGroundChunk } from '../src/db/areaRepo.
 import { SAMPLE_UNIVERSE_ID, sampleLinks, sampleTiles, sampleUniverse, sampleAreas, type SampleArea } from './sampleUniverse.js';
 
 /**
- * Which tile each map character stands for, besides `.`, space and an area's digits
+ * Which tile each character of a drawing stands for, besides `.`, space and an area's digits
  */
 const TILE_CHARACTERS: Record<string, string> = {
 	'g': 'grass',
@@ -40,11 +40,11 @@ const TILE_CHARACTERS: Record<string, string> = {
 };
 
 /**
- * An area's map, read from its drawing
+ * An area's cells, read from its drawing
  */
-interface ParsedMap
+interface ParsedArea
 {
-	bounds: MapBounds;
+	bounds: AreaBounds;
 
 	/**
 	 * The chunks that hold anything but the default tile, by chunkKey()
@@ -62,22 +62,22 @@ interface ParsedMap
  *
  * @param area The area
  * @param tileIds Every tile's ID, by key
- * @return The map
+ * @return The area's cells
  */
-function parseMap(area: SampleArea, tileIds: Map<string, number>): ParsedMap
+function parseArea(area: SampleArea, tileIds: Map<string, number>): ParsedArea
 {
-	const width = area.map[0].length;
-	const height = area.map.length;
+	const width = area.cells[0].length;
+	const height = area.cells.length;
 	const bounds = {
 		minColumn: -Math.floor(width / 2),
 		minRow: -Math.floor(height / 2),
 		maxColumn: (width - 1) - Math.floor(width / 2),
 		maxRow: (height - 1) - Math.floor(height / 2)
 	};
-	const chunks: ParsedMap['chunks'] = new Map();
-	const markers: ParsedMap['markers'] = new Map();
+	const chunks: ParsedArea['chunks'] = new Map();
+	const markers: ParsedArea['markers'] = new Map();
 
-	area.map.forEach((line, rowIndex) =>
+	area.cells.forEach((line, rowIndex) =>
 	{
 		if (line.length !== width)
 		{
@@ -174,14 +174,14 @@ function requireTile(tileIds: Map<string, number>, key: string): number
 /**
  * Looks up the cell a digit marks in an area
  *
- * @param maps Every area's map, by area key
+ * @param parsedAreas Every area's cells, by area key
  * @param area The area's key
  * @param marker The digit
  * @return The cell
  */
-function requireMarker(maps: Map<string, ParsedMap>, area: string, marker: string): { column: number; row: number }
+function requireMarker(parsedAreas: Map<string, ParsedArea>, area: string, marker: string): { column: number; row: number }
 {
-	const cell = maps.get(area)?.markers.get(marker);
+	const cell = parsedAreas.get(area)?.markers.get(marker);
 
 	if (!cell)
 	{
@@ -265,11 +265,11 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 	}
 
 	const areaIds = new Map<string, string>();
-	const maps = new Map<string, ParsedMap>();
+	const parsedAreas = new Map<string, ParsedArea>();
 
 	for (const area of sampleAreas)
 	{
-		const map = parseMap(area, tileIds);
+		const parsed = parseArea(area, tileIds);
 		const areaId = await createArea({
 			universeId,
 			parentAreaId: ((area.parent !== undefined) ? requireArea(areaIds, area.parent) : null),
@@ -281,22 +281,22 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 			loopsEastWest: (area.loopsEastWest ?? false),
 			loopsNorthSouth: false,
 			passageOfTime: 'inherit',
-			bounds: map.bounds
+			bounds: parsed.bounds
 		}, executor);
 
-		for (const chunk of map.chunks.values())
+		for (const chunk of parsed.chunks.values())
 		{
 			await saveGroundChunk(areaId, chunk.chunkColumn, chunk.chunkRow, chunk.cells, executor);
 		}
 
 		areaIds.set(area.key, areaId);
-		maps.set(area.key, map);
+		parsedAreas.set(area.key, parsed);
 	}
 
 	for (const link of sampleLinks)
 	{
-		const from = requireMarker(maps, ...link.from);
-		const to = requireMarker(maps, ...link.to);
+		const from = requireMarker(parsedAreas, ...link.from);
+		const to = requireMarker(parsedAreas, ...link.to);
 
 		await createAreaLink({
 			areaId: requireArea(areaIds, link.from[0]),

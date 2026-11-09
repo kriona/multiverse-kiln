@@ -1,17 +1,17 @@
 import Phaser from 'phaser';
 import { VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
 
-import type { MapConnection, MapRoom } from '../network/serverConnection';
-import { MAP_SCENE_KEY, MapScene, type MapSceneData } from '../scenes/MapScene';
+import type { AreaConnection, AreaRoom } from '../network/serverConnection';
+import { AREA_SCENE_KEY, AreaScene, type AreaSceneData } from '../scenes/AreaScene';
 import type { UniverseText } from './universeText';
 
 /**
- * The map the lobby and group screens show: one Phaser game, whose canvas moves to whichever screen is
- * showing a map, running a fresh start of the map scene for each room
+ * The area the lobby and group screens show: one Phaser game, whose canvas moves to whichever screen is
+ * showing an area, running a fresh start of the area scene for each room
  *
- * The game is created the first time a map is shown and kept afterward
+ * The game is created the first time an area is shown and kept afterward
  */
-export class MapView
+export class AreaView
 {
 	private game?: Phaser.Game;
 
@@ -21,7 +21,7 @@ export class MapView
 	private text: UniverseText | undefined;
 
 	/**
-	 * Names the maps shown from now on with a universe's text
+	 * Names the areas shown from now on with a universe's text
 	 *
 	 * @param text The universe's text
 	 */
@@ -31,14 +31,14 @@ export class MapView
 	}
 
 	/**
-	 * Shows a joined room's map in an element
+	 * Shows a joined room's area in an element
 	 *
-	 * @param parent The element to show the map in
+	 * @param parent The element to show the area in
 	 * @param connection The joined room
 	 */
-	show(parent: HTMLElement, connection: MapConnection<MapRoom>): void
+	show(parent: HTMLElement, connection: AreaConnection<AreaRoom>): void
 	{
-		const data: MapSceneData = {
+		const data: AreaSceneData = {
 			connection,
 			text: this.text
 		};
@@ -55,7 +55,7 @@ export class MapView
 				scene: []
 			});
 
-			this.game.scene.add(MAP_SCENE_KEY, MapScene, true, data);
+			this.game.scene.add(AREA_SCENE_KEY, AreaScene, true, data);
 			return;
 		}
 
@@ -64,14 +64,14 @@ export class MapView
 			parent.append(this.game.canvas);
 		}
 
-		this.game.scene.start(MAP_SCENE_KEY, data);
+		this.game.scene.start(AREA_SCENE_KEY, data);
 	}
 
 	/**
-	 * Stops drawing a map; whoever joined the room leaves it
+	 * Stops drawing an area; whoever joined the room leaves it
 	 */
 	hide(): void
 	{
-		this.game?.scene.stop(MAP_SCENE_KEY);
+		this.game?.scene.stop(AREA_SCENE_KEY);
 	}
 }

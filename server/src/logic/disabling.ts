@@ -169,10 +169,10 @@ export interface CharacterInArea
 
 /**
  * How many characters are in each of some areas: playing there, or saved there by their group. Where a
- * room has a character on its map counts over where they were saved
+ * room has a character in its area counts over where they were saved
  *
  * @param saved Where group members were saved
- * @param playing Where the characters on rooms' maps are
+ * @param playing Where the characters in rooms' areas are
  * @param areaIds The areas to count
  * @return How many characters are in each area, by area ID; an area with none is left out
  */

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { sql } from 'drizzle-orm';
 
-import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type MapBounds } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type AreaBounds } from '@multiverse-kiln/shared';
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
 import type { Executor } from '../../src/db/client.js';
@@ -15,7 +15,7 @@ import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseAreas } from '../../src/db/universeRepo.js';
 import { createArea, createAreaLink, loadChunks, loadArea, saveGroundChunk } from '../../src/db/areaRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
-import type { AreaMap } from '../../src/logic/areaGrid.js';
+import type { AreaLayout } from '../../src/logic/areaGrid.js';
 
 /**
  * A universe with a lobby to walk around and a starting area for groups, from addPlayableUniverse()
@@ -232,7 +232,7 @@ export async function addUniverse(name?: string): Promise<string>
  * @param options The area's bounds, default tile and whether it is indoors
  * @return The area's ID
  */
-export async function addArea(universeId: string, name: string = 'Test Area', options: { bounds?: MapBounds; tile?: string; indoors?: boolean } = {}): Promise<string>
+export async function addArea(universeId: string, name: string = 'Test Area', options: { bounds?: AreaBounds; tile?: string; indoors?: boolean } = {}): Promise<string>
 {
 	return(createArea({
 		universeId,
@@ -244,12 +244,12 @@ export async function addArea(universeId: string, name: string = 'Test Area', op
 }
 
 /**
- * An area's whole map: the area with every one of its stored chunks, for checking cells in tests
+ * An area's whole layout: the area with every one of its stored chunks, for checking cells in tests
  *
  * @param areaId The area's ID
- * @return The map, or undefined when there is no such area
+ * @return The layout, or undefined when there is no such area
  */
-export async function loadWholeMap(areaId: string): Promise<AreaMap | undefined>
+export async function loadWholeArea(areaId: string): Promise<AreaLayout | undefined>
 {
 	const loaded = await loadArea(areaId);
 

@@ -310,7 +310,7 @@ export class SaveAudit
 	private readonly areas = new Map<string, Record<string, unknown> & { name: string }>();
 
 	/**
-	 * The chunks of each area's map the save painted, by chunkKey(), by the area's ID
+	 * The chunks of each area the save painted, by chunkKey(), by the area's ID
 	 */
 	private readonly paintedChunks = new Map<string, Set<string>>();
 
@@ -645,7 +645,7 @@ export class SaveAudit
 	 * The ID of what a change changes, for the editor windows told of the save to find it by
 	 *
 	 * @param change The change
-	 * @return The ID of the tile, item, race, class, theme, difficulty level, area (the one whose map or
+	 * @return The ID of the tile, item, race, class, theme, difficulty level, area (the one whose cells or
 	 * links it changes, for cells and links), uploaded tileset or editor (their player ID); null for
 	 * a change adding something, and one to the settings, the ruleset, translations or the draft
 	 */
@@ -744,7 +744,7 @@ export class SaveAudit
 	}
 
 	/**
-	 * Records a change to an area or its map. Cells painted and links changed in the same area are
+	 * Records a change to an area or its cells. Cells painted and links changed in the same area are
 	 * counted together
 	 *
 	 * @param ref The area

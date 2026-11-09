@@ -296,17 +296,17 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	defaultTile: {
 		id: 'editor.area.defaultTile',
 		defaultMessage: 'Default tile',
-		description: 'Label of the field for the tile an area\'s map is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	loopsEastWest: {
 		id: 'editor.area.loopsEastWest',
 		defaultMessage: 'Loops east-west',
-		description: 'Checkbox for an area whose map wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	loopsNorthSouth: {
 		id: 'editor.area.loopsNorthSouth',
 		defaultMessage: 'Loops north-south',
-		description: 'Checkbox for an area whose map wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Checkbox for an area that wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	}
 });
 
@@ -338,7 +338,7 @@ const AUDIT_DETAILS: Readonly<Record<AuditSubject, MessageDescriptor>> = defineM
 	tile: {
 		id: 'editor.audit.detail.tile',
 		defaultMessage: '{action, select, added {Added tile {name}} changed {Changed tile {name}} restored {Restored tile {name} to its default} other {Deleted tile {name}}}',
-		description: 'In the editor\'s Audit tab\'s list of what a save changed: a tile (what maps are painted with, such as grass) added, changed, given back the ruleset\'s settings for it, or deleted. {name} is its name. A change is followed by a line for each setting it changed'
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: a tile (what areas are painted with, such as grass) added, changed, given back the ruleset\'s settings for it, or deleted. {name} is its name. A change is followed by a line for each setting it changed'
 	},
 	item: {
 		id: 'editor.audit.detail.item',
@@ -367,18 +367,18 @@ const AUDIT_DETAILS: Readonly<Record<AuditSubject, MessageDescriptor>> = defineM
 	},
 	area: {
 		id: 'editor.audit.detail.area',
-		defaultMessage: '{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized the map of {name}} other {Deleted area {name}}}',
-		description: 'In the editor\'s Audit tab\'s list of what a save changed: an area (a place with its own map) added, changed, its map made bigger or smaller, or deleted. {name} is its name. A change is followed by a line for each setting it changed'
+		defaultMessage: '{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized area {name}} other {Deleted area {name}}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: an area (a place with its own grid of cells) added, changed, made bigger or smaller, or deleted. {name} is its name. A change is followed by a line for each setting it changed'
 	},
 	cells: {
 		id: 'editor.audit.detail.cells',
 		defaultMessage: '{count, plural, one {Painted # cell in {name}} other {Painted # cells in {name}}}',
-		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many cells of an area\'s map it painted. {name} is the area\'s name'
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many cells of an area it painted. {name} is the area\'s name'
 	},
 	links: {
 		id: 'editor.audit.detail.links',
 		defaultMessage: '{action, select, deleted {{count, plural, one {Deleted # link in {name}} other {Deleted # links in {name}}}} other {{count, plural, one {Added or changed # link in {name}} other {Added or changed # links in {name}}}}}',
-		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many links (cells on a map that take characters to another area) it added or changed, or deleted, in one area. {name} is the area\'s name'
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: how many links (cells of an area that take characters to another area) it added or changed, or deleted, in one area. {name} is the area\'s name'
 	},
 	translations: {
 		id: 'editor.audit.detail.translations',
@@ -434,12 +434,12 @@ const VALUE_MESSAGES = defineMessages({
 	faerieTime: {
 		id: 'editor.audit.value.faerieTime',
 		defaultMessage: '{time}, morning: {morning}',
-		description: 'The value of a passage of time setting in the editor\'s Audit tab\'s list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the map that has morning, such as north'
+		description: 'The value of a passage of time setting in the editor\'s Audit tab\'s list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north'
 	},
 	place: {
 		id: 'editor.audit.value.place',
 		defaultMessage: '{area} at {column}, {row}',
-		description: 'The value of a starting area setting in the editor\'s Audit tab\'s list of what a save changed: where characters start, as the area\'s name and the column and row of the square on its map, e.g. "Meadow at 3, 4"'
+		description: 'The value of a starting area setting in the editor\'s Audit tab\'s list of what a save changed: where characters start, as the area\'s name and the column and row of the square in it, e.g. "Meadow at 3, 4"'
 	},
 	itemQuantity: {
 		id: 'editor.audit.value.itemQuantity',

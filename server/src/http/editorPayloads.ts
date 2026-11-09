@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_MAP_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type MapBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type AreaBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -28,14 +28,14 @@ const loadedSettings = z.record(z.string(), z.unknown()).optional();
 const loadedText = z.string().max(MAX_LONG_DESCRIPTION_LENGTH).nullable().optional();
 
 /**
- * A cell's column or row: generous enough for any map, and small enough for the database
+ * A cell's column or row: generous enough for any area, and small enough for the database
  */
-const cellCoordinate = z.number().int().min(-MAX_MAP_SIDE).max(MAX_MAP_SIDE);
+const cellCoordinate = z.number().int().min(-MAX_AREA_SIDE).max(MAX_AREA_SIDE);
 
 /**
  * A cell's column or row in a path or query string
  */
-const cellCoordinateText = z.coerce.number().int().min(-MAX_MAP_SIDE).max(MAX_MAP_SIDE);
+const cellCoordinateText = z.coerce.number().int().min(-MAX_AREA_SIDE).max(MAX_AREA_SIDE);
 
 /**
  * A true or false query parameter
@@ -539,16 +539,16 @@ const themeSettings = z.object({
 }) satisfies z.ZodType<ThemeSettings>;
 
 /**
- * MapBounds a map may have: each side at most MAX_MAP_SIDE cells, holding column 0, row 0
+ * AreaBounds an area may have: each side at most MAX_AREA_SIDE cells, holding column 0, row 0
  */
-const mapBounds = z.object({
+const areaBounds = z.object({
 	minColumn: cellCoordinate.max(0),
 	minRow: cellCoordinate.max(0),
 	maxColumn: cellCoordinate.min(0),
 	maxRow: cellCoordinate.min(0)
 })
-	.refine((bounds) => ((bounds.maxColumn - bounds.minColumn) < MAX_MAP_SIDE), `The map can be at most ${MAX_MAP_SIDE} cells wide`)
-	.refine((bounds) => ((bounds.maxRow - bounds.minRow) < MAX_MAP_SIDE), `The map can be at most ${MAX_MAP_SIDE} cells tall`) satisfies z.ZodType<MapBounds>;
+	.refine((bounds) => ((bounds.maxColumn - bounds.minColumn) < MAX_AREA_SIDE), `The area can be at most ${MAX_AREA_SIDE} cells wide`)
+	.refine((bounds) => ((bounds.maxRow - bounds.minRow) < MAX_AREA_SIDE), `The area can be at most ${MAX_AREA_SIDE} cells tall`) satisfies z.ZodType<AreaBounds>;
 
 /**
  * ChunkRange, from query parameters
@@ -674,169 +674,174 @@ export const universeEditListQuery = z.object({
 const numericIdKey = z.string().regex(/^[1-9][0-9]{0,9}$/);
 
 /**
- * SaveChangesRequest, by the universe's ruleset. Whether what each change names exists in the universe
- * is checked as the change is saved
+ * One EditorChange, by the universe's ruleset: what a save sends, and what importing a universe makes
+ * from its file. Whether what each change names exists in the universe is checked as the change is saved
+ */
+export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', [
+	z.object({
+		kind: z.literal('addEditor'),
+		username: z.string().trim().min(1).max(MAX_USERNAME_LENGTH),
+		settings: editorRoleSettings
+	}),
+	z.object({
+		kind: z.literal('saveEditor'),
+		playerId: z.uuid(),
+		settings: editorRoleSettings,
+		loaded: loadedSettings
+	}),
+	z.object({
+		kind: z.literal('removeEditor'),
+		playerId: z.uuid()
+	}),
+	z.object({
+		kind: z.literal('universe'),
+		update: universeSettingsUpdate[ruleset],
+		loaded: loadedSettings,
+		largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+	}),
+	z.object({
+		kind: z.literal('ruleset'),
+		settings: rulesetSettings,
+		loaded: loadedSettings
+	}),
+	z.object({
+		kind: z.literal('uploadTileGraphic'),
+		ref: newRef,
+		upload: tileGraphicUploadRequest
+	}),
+	z.object({
+		kind: z.literal('deleteTileGraphic'),
+		graphicId: z.uuid()
+	}),
+	z.object({
+		kind: z.literal('createTile'),
+		ref: newRef,
+		settings: tileChangeSettings
+	}),
+	z.object({
+		kind: z.literal('saveTile'),
+		id: numberRef,
+		settings: tileChangeSettings,
+		loaded: loadedSettings
+	}),
+	z.object({
+		kind: z.literal('removeTile'),
+		id: numberRef,
+		replaceWith: numberRef.nullable()
+	}),
+	...listChanges('Item', itemSettings, {
+		whenDisabled: z.enum(ITEM_DISABLINGS).optional()
+	}),
+	...listChanges('Race', raceSettings[ruleset]),
+	...listChanges('Class', classSettings[ruleset]),
+	...listChanges('Theme', themeSettings),
+	...listChanges('DifficultyLevel', difficultyLevelSettings),
+	z.object({
+		kind: z.literal('createArea'),
+		ref: newRef,
+		area: z.object({
+			...areaChangeFields,
+			name: displayText(MAX_AREA_NAME_LENGTH)
+		})
+	}),
+	z.object({
+		kind: z.literal('updateArea'),
+		areaId: stringRef,
+		update: z.object(areaChangeFields),
+		loaded: loadedSettings,
+		moveTo: z.enum(AREA_EVACUATIONS).optional()
+	}),
+	z.object({
+		kind: z.literal('deleteArea'),
+		areaId: stringRef
+	}),
+	z.object({
+		kind: z.literal('resizeArea'),
+		areaId: stringRef,
+		bounds: areaBounds,
+		discard: z.boolean()
+	}),
+	z.object({
+		kind: z.literal('editCells'),
+		areaId: stringRef,
+		changes: z.array(z.tuple([cellCoordinate, cellCoordinate, z.union([z.number().int().min(VOID_CELL).max(2147483647), newRef])])).min(1).max(MAX_CELL_CHANGES)
+	}),
+	z.object({
+		kind: z.literal('saveLink'),
+		areaId: stringRef,
+		column: cellCoordinate,
+		row: cellCoordinate,
+		target: areaLinkTarget.extend({ targetAreaId: stringRef })
+	}),
+	z.object({
+		kind: z.literal('deleteLink'),
+		areaId: stringRef,
+		column: cellCoordinate,
+		row: cellCoordinate
+	}),
+	z.object({
+		kind: z.literal('saveTranslation'),
+		text: universeTextRef,
+		language: languageTag,
+		translation: z.string().nullable(),
+		sourceHash: z.string().regex(/^[0-9a-f]{64}$/),
+		loaded: loadedText
+	})
+		.transform((change, context) =>
+		{
+			const translation = universeTextTranslation(change.text, change.translation);
+
+			if (translation === undefined)
+			{
+				context.addIssue({
+					code: 'custom',
+					path: ['translation'],
+					message: `Too long for ${change.text.field}, contains disallowed characters, or isn't a coin abbreviation a money field can read`
+				});
+
+				return(z.NEVER);
+			}
+
+			return({ ...change, translation });
+		}),
+	z.object({
+		kind: z.literal('saveTranslatorNote'),
+		text: universeTextRef,
+		note: z.string()
+			.trim()
+			.max(MAX_TRANSLATOR_NOTE_LENGTH)
+			.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replace(/[\t\n\r]/g, '')), 'Contains disallowed characters')
+			.transform((note) => ((note === '') ? null : note))
+			.nullable(),
+		loaded: loadedText
+	}),
+	z.object({
+		kind: z.literal('saveNoTranslation'),
+		text: universeTextRef,
+		noTranslation: z.boolean()
+	}),
+	z.object({
+		kind: z.literal('startDraft')
+	}),
+	z.object({
+		kind: z.literal('applyDraft'),
+		choices: z.object({
+			races: z.record(numericIdKey, z.boolean()),
+			classes: z.record(numericIdKey, z.boolean()),
+			items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
+			areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
+			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+		})
+	}),
+	z.object({
+		kind: z.literal('discardDraft')
+	})
+]));
+
+/**
+ * SaveChangesRequest, by the universe's ruleset
  */
 export const saveChangesRequest = byRuleset((ruleset) => z.object({
-	changes: z.array(z.discriminatedUnion('kind', [
-		z.object({
-			kind: z.literal('addEditor'),
-			username: z.string().trim().min(1).max(MAX_USERNAME_LENGTH),
-			settings: editorRoleSettings
-		}),
-		z.object({
-			kind: z.literal('saveEditor'),
-			playerId: z.uuid(),
-			settings: editorRoleSettings,
-			loaded: loadedSettings
-		}),
-		z.object({
-			kind: z.literal('removeEditor'),
-			playerId: z.uuid()
-		}),
-		z.object({
-			kind: z.literal('universe'),
-			update: universeSettingsUpdate[ruleset],
-			loaded: loadedSettings,
-			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
-		}),
-		z.object({
-			kind: z.literal('ruleset'),
-			settings: rulesetSettings,
-			loaded: loadedSettings
-		}),
-		z.object({
-			kind: z.literal('uploadTileGraphic'),
-			ref: newRef,
-			upload: tileGraphicUploadRequest
-		}),
-		z.object({
-			kind: z.literal('deleteTileGraphic'),
-			graphicId: z.uuid()
-		}),
-		z.object({
-			kind: z.literal('createTile'),
-			ref: newRef,
-			settings: tileChangeSettings
-		}),
-		z.object({
-			kind: z.literal('saveTile'),
-			id: numberRef,
-			settings: tileChangeSettings,
-			loaded: loadedSettings
-		}),
-		z.object({
-			kind: z.literal('removeTile'),
-			id: numberRef,
-			replaceWith: numberRef.nullable()
-		}),
-		...listChanges('Item', itemSettings, {
-			whenDisabled: z.enum(ITEM_DISABLINGS).optional()
-		}),
-		...listChanges('Race', raceSettings[ruleset]),
-		...listChanges('Class', classSettings[ruleset]),
-		...listChanges('Theme', themeSettings),
-		...listChanges('DifficultyLevel', difficultyLevelSettings),
-		z.object({
-			kind: z.literal('createArea'),
-			ref: newRef,
-			area: z.object({
-				...areaChangeFields,
-				name: displayText(MAX_AREA_NAME_LENGTH)
-			})
-		}),
-		z.object({
-			kind: z.literal('updateArea'),
-			areaId: stringRef,
-			update: z.object(areaChangeFields),
-			loaded: loadedSettings,
-			moveTo: z.enum(AREA_EVACUATIONS).optional()
-		}),
-		z.object({
-			kind: z.literal('deleteArea'),
-			areaId: stringRef
-		}),
-		z.object({
-			kind: z.literal('resizeArea'),
-			areaId: stringRef,
-			bounds: mapBounds,
-			discard: z.boolean()
-		}),
-		z.object({
-			kind: z.literal('editCells'),
-			areaId: stringRef,
-			changes: z.array(z.tuple([cellCoordinate, cellCoordinate, z.union([z.number().int().min(VOID_CELL).max(2147483647), newRef])])).min(1).max(MAX_CELL_CHANGES)
-		}),
-		z.object({
-			kind: z.literal('saveLink'),
-			areaId: stringRef,
-			column: cellCoordinate,
-			row: cellCoordinate,
-			target: areaLinkTarget.extend({ targetAreaId: stringRef })
-		}),
-		z.object({
-			kind: z.literal('deleteLink'),
-			areaId: stringRef,
-			column: cellCoordinate,
-			row: cellCoordinate
-		}),
-		z.object({
-			kind: z.literal('saveTranslation'),
-			text: universeTextRef,
-			language: languageTag,
-			translation: z.string().nullable(),
-			sourceHash: z.string().regex(/^[0-9a-f]{64}$/),
-			loaded: loadedText
-		})
-			.transform((change, context) =>
-			{
-				const translation = universeTextTranslation(change.text, change.translation);
-
-				if (translation === undefined)
-				{
-					context.addIssue({
-						code: 'custom',
-						path: ['translation'],
-						message: `Too long for ${change.text.field}, contains disallowed characters, or isn't a coin abbreviation a money field can read`
-					});
-
-					return(z.NEVER);
-				}
-
-				return({ ...change, translation });
-			}),
-		z.object({
-			kind: z.literal('saveTranslatorNote'),
-			text: universeTextRef,
-			note: z.string()
-				.trim()
-				.max(MAX_TRANSLATOR_NOTE_LENGTH)
-				.refine((text) => !DISALLOWED_TEXT_CHARACTERS.test(text.replace(/[\t\n\r]/g, '')), 'Contains disallowed characters')
-				.transform((note) => ((note === '') ? null : note))
-				.nullable(),
-			loaded: loadedText
-		}),
-		z.object({
-			kind: z.literal('saveNoTranslation'),
-			text: universeTextRef,
-			noTranslation: z.boolean()
-		}),
-		z.object({
-			kind: z.literal('startDraft')
-		}),
-		z.object({
-			kind: z.literal('applyDraft'),
-			choices: z.object({
-				races: z.record(numericIdKey, z.boolean()),
-				classes: z.record(numericIdKey, z.boolean()),
-				items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
-				areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
-				largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
-			})
-		}),
-		z.object({
-			kind: z.literal('discardDraft')
-		})
-	])).max(MAX_CHANGES_PER_SAVE),
+	changes: z.array(editorChange[ruleset]).max(MAX_CHANGES_PER_SAVE),
 	windowId: z.string().min(1).max(MAX_WINDOW_ID_LENGTH).optional()
 }) satisfies z.ZodType<SaveChangesRequest>);

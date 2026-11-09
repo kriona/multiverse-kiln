@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, nearestCopy, parseChunkKey, positiveModulo, tileIdAt, VOID_CELL, type AreaTiles } from '@multiverse-kiln/shared';
 
-describe('map layout (shared)', () =>
+describe('area cell layout (shared)', () =>
 {
 	describe('chunkCoordinate and cellIndexInChunk', () =>
 	{
@@ -53,7 +53,7 @@ describe('map layout (shared)', () =>
 			assert.strictEqual(tileIdAt(tiles, -1, -1), 3);
 		});
 
-		it('gives undefined for a void cell or one off the map', () =>
+		it('gives undefined for a void cell or one outside the area', () =>
 		{
 			assert.strictEqual(tileIdAt(tiles, 2, 0), undefined);
 			assert.strictEqual(tileIdAt(tiles, 3, 0), undefined);

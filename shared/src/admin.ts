@@ -21,6 +21,9 @@ import type { Ruleset, UniverseStage } from './universes.js';
  *   answering 204, 404 when there is no such universe and 409 when it is disabled already
  * - DELETE ADMIN_UNIVERSES_PATH/:universeId/disabled enables the universe again, answering 204, 404 when
  *   there is no such universe and 409 when it isn't disabled
+ * - POST ADMIN_UNIVERSES_PATH/:universeId/deletion takes UniverseDeleteRequest (shared/src/universeDeletion.ts)
+ *   and deletes the universe, answering 204 and 404 when there is no such universe; the editor's
+ *   Universe tab sends it
  *
  * Every route under ADMIN_PATH answers 401 to a browser that isn't logged in, and 403 to a player who
  * isn't a server admin, each with an ErrorPayload. A server admin always has 2FA on while logged in,

@@ -118,7 +118,45 @@
 	color: $text-faint;
 }
 
-// Downloading the player's data and deleting their account
+// The notices the player dismissed: each one's text, then its button showing it again
+.profile-notice-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+
+	&:empty
+	{
+		display: none;
+	}
+
+	li
+	{
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+		padding: 8px 12px;
+		border: 1px solid $border;
+		border-radius: 4px;
+	}
+
+	p
+	{
+		flex: 1 1 16em;
+		margin: 0;
+	}
+
+	button
+	{
+		flex-shrink: 0;
+	}
+}
+
+// Downloading the player's data and deleting their account, and showing every dismissed notice again
 .profile-data-buttons
 {
 	display: flex;

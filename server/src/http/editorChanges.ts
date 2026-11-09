@@ -9,7 +9,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, MAX_UPLOADED_TILE_GRAPHICS, mayMakeChange, maySaveInStage, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
@@ -39,7 +39,7 @@ import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRace
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
 import { isUniverseTextChange, saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange, settleUniverseText, writeSavedTranslations } from './editorTranslations.js';
 import { applyDraftChange, discardDraftChange, startDraftChange } from './editorDrafts.js';
-import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
+import { deleteTileGraphicChange, prepareUpload, refuseTileGraphicLimit, uploadTileGraphicChange } from './editorTileGraphics.js';
 import { errorMessages, type Refusal } from './errors.js';
 
 /**
@@ -49,6 +49,13 @@ import { errorMessages, type Refusal } from './errors.js';
 export type SaveOutcome =
 	| { saved: true; ids: Map<NewRef, number | string> }
 	| { saved: false; changeIndex: number | null; refusal: ChangeRefusal };
+
+/**
+ * A change to save, or a function that makes it from the IDs the changes before it gave the things they
+ * made, for a change that names them where a save from the editor can only name saved things (such as a
+ * race's starting area). Only the server makes the functions, as importing a universe does
+ */
+export type PendingChange = EditorChange | ((ids: ReadonlyMap<NewRef, number | string>) => EditorChange);
 
 /**
  * Adds the route that saves the editor's changes to a universe's router
@@ -120,6 +127,34 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
 }
 
 /**
+ * Finds the first upload in a save past the most tilesets a universe may have
+ *
+ * @param changes The save's changes
+ * @return The upload's index, or -1 when the save holds no more uploads than that
+ */
+function uploadPastLimit(changes: readonly PendingChange[]): number
+{
+	let uploads = 0;
+
+	for (const [index, change] of changes.entries())
+	{
+		if ((typeof change === 'function') || (change.kind !== 'uploadTileGraphic'))
+		{
+			continue;
+		}
+
+		uploads++;
+
+		if (uploads > MAX_UPLOADED_TILE_GRAPHICS)
+		{
+			return(index);
+		}
+	}
+
+	return(-1);
+}
+
+/**
  * Finds a change to the universe's draft that is out of place. Starting the draft copies what the rest
  * of the save changes, so it comes last; applying or discarding it is the only change in its save, since
  * a change saved after it would be saved to a version that is gone
@@ -127,10 +162,16 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
  * @param changes The save's changes
  * @return The index of the first change out of place, or -1 when there is none
  */
-function misplacedDraftChange(changes: readonly EditorChange[]): number
+function misplacedDraftChange(changes: readonly PendingChange[]): number
 {
-	return(changes.findIndex((change, index) => (((change.kind === 'startDraft') && (index !== (changes.length - 1))) || (((change.kind === 'applyDraft') || (change.kind === 'discardDraft')) && (changes.length > 1)))));
+	return(changes.findIndex((change, index) => ((typeof change !== 'function') && (((change.kind === 'startDraft') && (index !== (changes.length - 1))) || (((change.kind === 'applyDraft') || (change.kind === 'discardDraft')) && (changes.length > 1))))));
 }
+
+/**
+ * The kinds of change only a save's own changes may be, never one a PendingChange function makes, since
+ * misplacedDraftChange() checks where they are before the save starts
+ */
+const DRAFT_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['startDraft', 'applyDraft', 'discardDraft']);
 
 /**
  * Saves changes to a universe in one transaction, in the order given, stopping at the first one refused
@@ -140,11 +181,11 @@ function misplacedDraftChange(changes: readonly EditorChange[]): number
  * while images are re-encoded, and deleted again if the save doesn't commit
  *
  * @param base The universe, and the player and their role
- * @param changes The changes
+ * @param changes The changes, or functions making them once the changes before them are saved
  * @param windowId The editor room session ID of the window saving, which isn't told of the save
  * @return The IDs the things made were saved with, or the change refused
  */
-export async function saveChanges(base: UniverseContext, changes: readonly EditorChange[], windowId?: string): Promise<SaveOutcome>
+export async function saveChanges(base: UniverseContext, changes: readonly PendingChange[], windowId?: string): Promise<SaveOutcome>
 {
 	const roleIndex = refusedIndex(base, base.playerId, changes);
 
@@ -161,9 +202,16 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 	}
 
 	const draftIndex = misplacedDraftChange(changes);
+	const given = changes.filter((change) => (typeof change !== 'function'));
+
+	// A save holding changes a function makes never only leaves the universe
+	const onlyLeaving = ((given.length === changes.length) && onlyLeaves(given, base.playerId));
 
 	if (draftIndex >= 0)
 	{
+		const misplaced = changes[draftIndex];
+		const misplacedKind = ((typeof misplaced === 'function') ? 'A change' : misplaced.kind);
+
 		return({
 			saved: false,
 			changeIndex: draftIndex,
@@ -171,14 +219,17 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				status: 400,
 				message: errorMessages.invalidRequest,
 				values: {
-					problem: `${changes[draftIndex].kind} must be ${((changes[draftIndex].kind === 'startDraft') ? 'the last change' : 'the only change')} in a save`
+					problem: `${misplacedKind} must be ${((misplacedKind === 'startDraft') ? 'the last change' : 'the only change')} in a save`
 				}
 			})
 		});
 	}
 
-	const lastEditorChange = changes.findLastIndex((change) => (EDITOR_CHANGE_CHECKS[change.kind] === 'manageEditors'));
+	const lastEditorChange = changes.findLastIndex((change) => ((typeof change !== 'function') && (EDITOR_CHANGE_CHECKS[change.kind] === 'manageEditors')));
 	const uploads = new Map<NewRef, PreparedUpload>();
+
+	// The changes as they were saved, once each is made
+	const applied: EditorChange[] = [];
 	let current = 0;
 
 	// Set when the save is refused as a whole, rather than one of its changes
@@ -193,11 +244,20 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 	try
 	{
+		const pastLimit = uploadPastLimit(changes);
+
+		// No save can commit more uploads than a universe may have, so none are prepared
+		if (pastLimit >= 0)
+		{
+			current = pastLimit;
+			refuseTileGraphicLimit();
+		}
+
 		for (; current < changes.length; current++)
 		{
 			const change = changes[current];
 
-			if (change.kind !== 'uploadTileGraphic')
+			if ((typeof change === 'function') || (change.kind !== 'uploadTileGraphic'))
 			{
 				continue;
 			}
@@ -229,7 +289,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 			// Disabling the universe takes its lock too, so no save commits after it, except a server
 			// admin's, who may fix what it was disabled for, and one that only leaves the universe
-			if (!serverAdmin && (locked?.disabled ?? false) && !onlyLeaves(changes, base.playerId))
+			if (!serverAdmin && (locked?.disabled ?? false) && !onlyLeaving)
 			{
 				refusedWhole = true;
 				refuse(403, {
@@ -249,7 +309,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				});
 			}
 
-			if (!maySaveInStage(changes, stageBefore, access, base.playerId))
+			if (!maySaveInStage(onlyLeaving, stageBefore, access))
 			{
 				refusedWhole = true;
 				refuse(403, {
@@ -259,7 +319,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 				});
 			}
 
-			if ((locked?.requireTwoFactor ?? false) && !onlyLeaves(changes, base.playerId) && !await hasTwoFactor(base.playerId, transaction))
+			if ((locked?.requireTwoFactor ?? false) && !onlyLeaving && !await hasTwoFactor(base.playerId, transaction))
 			{
 				refusedWhole = true;
 				refuse(403, {
@@ -303,12 +363,21 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 			const audit = new SaveAudit(saving);
 			const merge = new SaveMerge(saving, audit);
-			const changesOptions = (!base.version.draft && changes.some((change) => BARRING_KINDS.has(change.kind)));
+			const changesOptions = (!base.version.draft && changes.some((change) => ((typeof change === 'function') || BARRING_KINDS.has(change.kind))));
 			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, transaction) : undefined);
 
 			for (; current < changes.length; current++)
 			{
-				const change = await merge.merge(current, changes[current]);
+				const pending = changes[current];
+				const made = ((typeof pending === 'function') ? pending(saving.ids) : pending);
+
+				// The role was checked for the save's own changes before it started
+				if ((typeof pending === 'function') && (DRAFT_KINDS.has(made.kind) || !mayMakeChange(made, access, base.playerId)))
+				{
+					refuse(403, errorMessages.roleNotAllowed);
+				}
+
+				const change = await merge.merge(current, made);
 
 				if (change === null)
 				{
@@ -322,6 +391,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 
 				await audit.describe(change);
 				await applyChange(saving, change);
+				applied.push(change);
 			}
 
 			await writeSavedTranslations(saving);
@@ -421,7 +491,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Edito
 		context.published.length = 0;
 	}
 	// Told after the areas' own changes, so a room has sent their new settings before its clients fetch the text
-	else if (changes.some(changesRoomText))
+	else if (applied.some(changesRoomText))
 	{
 		context.published.push({ kind: 'text', universeId: base.universe.id });
 	}
@@ -467,16 +537,17 @@ function changesRoomText(change: EditorChange): boolean
 const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass']);
 
 /**
- * The first change a player's role doesn't let them make
+ * The first change a player's role doesn't let them make, of those given as changes; one a function
+ * makes is checked as it is made
  *
  * @param access The player's role in the editor, and their languages
  * @param playerId The player's ID
  * @param changes The changes
  * @return The change's place in the list, or -1 when the role allows every one
  */
-function refusedIndex(access: EditorAccess, playerId: string, changes: readonly EditorChange[]): number
+function refusedIndex(access: EditorAccess, playerId: string, changes: readonly PendingChange[]): number
 {
-	return(changes.findIndex((change) => !mayMakeChange(change, access, playerId)));
+	return(changes.findIndex((change) => ((typeof change !== 'function') && !mayMakeChange(change, access, playerId))));
 }
 
 /**

@@ -6,8 +6,10 @@
  * - Expired sessions are deleted, and their windows turned away
  * - Email codes that can no longer be used are deleted, provider logins and logins waiting on an
  *   authenticator code left waiting too long, and browsers whose trust has ended
- * - Rate limit records are deleted once no limit counts them, and auth events after 90 days
+ * - Rate limit records are deleted once no limit counts them, and auth events after AUTH_EVENT_DAYS
  */
+import { AUTH_EVENT_DAYS } from '@multiverse-kiln/shared';
+
 import { deleteAuthEventsBefore } from './db/authEventRepo.js';
 import { deleteStaleEmailCodes } from './db/emailCodeRepo.js';
 import { deleteExpiredPendingProviderLogins } from './db/providerLoginRepo.js';
@@ -23,12 +25,6 @@ import { connectedSessions } from './players/connectedSessions.js';
  * left unrecorded longer than that
  */
 const SWEEP_INTERVAL_MS = SESSION_TOUCH_INTERVAL_MS;
-
-/**
- * How long auth events are kept. The database's delete_auth_events_before() never deletes one sooner
- * (server/drizzle/0101_append_only_audit_tables.sql), so keeping them a shorter time needs a migration too
- */
-const AUTH_EVENT_DAYS = 90;
 
 /**
  * Records the connected sessions' use, then deletes what is no longer needed, logging what fails

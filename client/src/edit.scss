@@ -1,4 +1,4 @@
-// The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the area editor and its map
+// The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the area editor and its cells
 
 @use 'shared' as *;
 
@@ -180,6 +180,26 @@ $editor-chat-inset: 16px;
 	}
 }
 
+// While the draft is open, the tabs' borders, the line under them and the save bar's border are the
+// draft's purple, as its buttons are, so the version being edited shows on every tab
+.editing-draft
+{
+	.tabs
+	{
+		background: linear-gradient(to top, $draft-background 1px, transparent 1px);
+
+		button
+		{
+			border-color: $draft-background;
+		}
+	}
+
+	.editor-save-bar
+	{
+		border-top-color: $draft-background;
+	}
+}
+
 // An arrow over an end of the tabs with tabs hidden past it, fading the tabs out under it. It stops short
 // of the line under the tabs, which stays drawn across the whole strip
 .tab-scroll
@@ -284,7 +304,7 @@ $editor-chat-inset: 16px;
 	pointer-events: none;
 }
 
-// The editors' chat: over the right of the tabs, and over a map editor filling the window, until it is closed
+// The editors' chat: over the right of the tabs, and over a cell editor filling the window, until it is closed
 .editor-chat
 {
 	position: fixed;
@@ -353,7 +373,7 @@ $editor-chat-inset: 16px;
 	padding: 16px;
 }
 
-// How tall the save bar is, so the full page map editor can leave room for it
+// How tall the save bar is, so the full page cell editor can leave room for it
 $save-bar-height: 56px;
 
 // Saves the tab showing; below the scrolling editor body, so it stays at the bottom of the window
@@ -419,8 +439,8 @@ $save-bar-height: 56px;
 	}
 }
 
-// The full page map editor covers the window but the save bar, which stays below it
-html:has(.map-editor.full-page) .editor-save-bar
+// The full page cell editor covers the window but the save bar, which stays below it
+html:has(.area-cells-editor.full-page) .editor-save-bar
 {
 	position: fixed;
 	right: 0;
@@ -429,7 +449,7 @@ html:has(.map-editor.full-page) .editor-save-bar
 	z-index: 11;
 }
 
-html:has(.editor-save-bar:not([hidden])) .map-editor.full-page
+html:has(.editor-save-bar:not([hidden])) .area-cells-editor.full-page
 {
 	bottom: $save-bar-height;
 }
@@ -564,7 +584,7 @@ $editor-panel-width: 960px;
 #resize-west,
 #resize-extend-by
 {
-	// Up to MAX_MAP_SIDE - 1
+	// Up to MAX_AREA_SIDE - 1
 	max-width: 9ch;
 }
 
@@ -616,7 +636,7 @@ tr.staged-deleted
 }
 
 // What another editor saved to something with unsaved changes here (otherSaves.ts): under its name in a
-// list, or at the top of its form; and who else is editing the area open, above its map (areaClaims.ts).
+// list, or at the top of its form; and who else is editing the area open, above its cells (areaClaims.ts).
 // Its words say so, so it isn't told by color alone
 .changed-since,
 .area-claim
@@ -632,13 +652,13 @@ tr.staged-deleted
 }
 
 form > .changed-since,
-.map-editor > .area-claim
+.area-cells-editor > .area-claim
 {
 	margin: 0 0 12px;
 }
 
-// The map editor's column stretches what it holds, so the line keeps to its text
-.map-editor > .area-claim
+// The cell editor's column stretches what it holds, so the line keeps to its text
+.area-cells-editor > .area-claim
 {
 	align-self: flex-start;
 }
@@ -806,7 +826,7 @@ form > .changed-since,
 	list-style: none;
 }
 
-// The Areas tab uses the page's width, so the map editor's card can fill it; its other cards are as
+// The Areas tab uses the page's width, so the cell editor's card can fill it; its other cards are as
 // wide as the other tabs
 #editor-panel-areas
 {
@@ -825,7 +845,7 @@ form > .changed-since,
 	margin-top: 0;
 }
 
-.map-editor
+.area-cells-editor
 {
 	display: flex;
 	flex-direction: column;
@@ -839,7 +859,7 @@ form > .changed-since,
 	}
 }
 
-.map-tools
+.area-tools
 {
 	display: flex;
 	flex-wrap: wrap;
@@ -868,7 +888,7 @@ form > .changed-since,
 	}
 
 	// The editing tools take the row but Full Page, wrapping onto more lines when they don't fit
-	.map-editing-tools
+	.area-editing-tools
 	{
 		display: flex;
 		flex: 1;
@@ -877,14 +897,14 @@ form > .changed-since,
 		gap: 12px;
 	}
 
-	.map-full-page
+	.area-full-page
 	{
 		margin-left: auto;
 	}
 }
 
-// The map's view, as wide as the map editor; MapEditor sizes the canvas to fill it
-.map-canvas
+// The area's view, as wide as the cell editor; AreaEditor sizes the canvas to fill it
+.area-canvas
 {
 	position: relative;
 	overflow: hidden;
@@ -897,8 +917,8 @@ form > .changed-since,
 	}
 }
 
-// The hovered cell, over the map's corner so it never changes the map's size
-.map-cursor
+// The hovered cell, over the view's corner so it never changes the view's size
+.area-cursor
 {
 	position: absolute;
 	left: 4px;
@@ -916,7 +936,7 @@ form > .changed-since,
 	}
 }
 
-.map-status
+.area-status
 {
 	display: flex;
 	flex-wrap: wrap;
@@ -925,14 +945,14 @@ form > .changed-since,
 	color: $text-muted;
 }
 
-// Full page: the map editor covers the window, and MapEditor sizes the canvas to fill the space left
-html:has(.map-editor.full-page),
-html:has(.map-editor.full-page) body
+// Full page: the cell editor covers the window, and AreaEditor sizes the canvas to fill the space left
+html:has(.area-cells-editor.full-page),
+html:has(.area-cells-editor.full-page) body
 {
 	overflow: hidden;
 }
 
-.map-editor.full-page
+.area-cells-editor.full-page
 {
 	position: fixed;
 	inset: 0;
@@ -948,7 +968,7 @@ html:has(.map-editor.full-page) body
 		display: none;
 	}
 
-	.map-canvas
+	.area-canvas
 	{
 		flex: 1;
 		min-height: 0;
@@ -1257,6 +1277,18 @@ div.ability-modifiers
 	}
 }
 
+// After the time of a save made to the draft, in the draft's colors, as its buttons are
+.audit-draft
+{
+	display: inline-block;
+	padding: 0 6px;
+	border: 1px solid $draft;
+	border-radius: 4px;
+	background: $draft-background;
+	font-size: 0.85em;
+	white-space: nowrap;
+}
+
 // The Translations tab's table of the universe's text, below its languages
 .translations-text
 {
@@ -1305,10 +1337,89 @@ div.ability-modifiers
 	gap: 6px;
 }
 
-// Starting, applying and discarding the draft, under the Universe tab's settings
-.universe-draft
+// The notice above the tabs saying the draft is open, or that the live version has one, with its X at the right
+.dismissable-notice
 {
-	margin-top: 24px;
-	padding-top: 16px;
-	border-top: 1px solid $border;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+
+	p
+	{
+		flex: 1 1 auto;
+		margin: 0;
+	}
+
+	&[hidden]
+	{
+		display: none;
+	}
+}
+
+button.notice-dismiss
+{
+	flex: 0 0 auto;
+	padding: 2px 6px;
+
+	.icon
+	{
+		margin-inline-end: 0;
+	}
+}
+
+// Export Universe, Import Universe and Delete Universe, under the Universe tab's cards
+.universe-actions
+{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.universe-action-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+// "Exporting..." and "Importing..." at the far left of the export and import dialogs' buttons, which
+// it pushes to the right
+.dialog-buttons .universe-dialog-status
+{
+	margin: 0 auto 0 0;
+}
+
+// What a file chosen in the import dialog holds
+.universe-import-preview
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+// What importing it replaces, and what it leaves out
+.universe-import-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding-left: 24px;
+}
+
+// What deleting the universe deletes, in the first dialog that deletes it
+.universe-delete-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0;
+	padding-left: 24px;
+}
+
+// The first dialog's Delete Universe only goes on to the second dialog, so it sits beside Cancel
+.form-buttons.universe-delete-buttons .danger
+{
+	margin-right: 0;
 }

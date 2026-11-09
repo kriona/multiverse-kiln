@@ -1,20 +1,20 @@
 /**
- * Areas, their maps and their links: the only module that reads or writes the areas, map_chunks and
+ * Areas, their cells and their links: the only module that reads or writes the areas, area_chunks and
  * area_links tables
  */
 import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type MapBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
-import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/mapEdits.js';
+import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/areaEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
 import { db, type Executor } from './client.js';
-import { mapChunks, universes, universeDrafts, areaLinks, areas, races, classes, classRaceAreas } from './schema.js';
+import { areaChunks, universes, universeDrafts, areaLinks, areas, races, classes, classRaceAreas } from './schema.js';
 import { loadUniverseTiles, type TileRecord } from './tileRepo.js';
 import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
- * Map layer holding the ground
+ * Layer of an area's cells holding the ground
  */
 export const GROUND_LAYER = 0;
 
@@ -66,7 +66,7 @@ export interface LoadedArea
 	 */
 	fullVision: boolean;
 
-	bounds: MapBounds;
+	bounds: AreaBounds;
 
 	/**
 	 * Tile of every cell holding DEFAULT_TILE_CELL, including every cell of a chunk that isn't stored
@@ -84,7 +84,7 @@ export interface LoadedArea
 	disabledTargetIds: ReadonlySet<string>;
 
 	/**
-	 * Every tile the map can use, for drawing it and for its walk seconds
+	 * Every tile the area can use, for drawing it and for its walk seconds
 	 */
 	tiles: TileRecord[];
 }
@@ -92,7 +92,7 @@ export interface LoadedArea
 /**
  * What a new area needs
  */
-export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'draft' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'lightLevel' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: MapBounds };
+export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'draft' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'lightLevel' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: AreaBounds };
 
 /**
  * What a new area link needs
@@ -129,7 +129,7 @@ export async function createArea(area: NewArea, executor: Executor = db): Promis
 export async function saveGroundChunk(areaId: string, chunkColumn: number, chunkRow: number, cells: number[], executor: Executor = db): Promise<void>
 {
 	await executor
-		.insert(mapChunks)
+		.insert(areaChunks)
 		.values({
 			areaId,
 			layer: GROUND_LAYER,
@@ -139,10 +139,10 @@ export async function saveGroundChunk(areaId: string, chunkColumn: number, chunk
 		})
 		.onConflictDoUpdate({
 			target: [
-				mapChunks.areaId,
-				mapChunks.layer,
-				mapChunks.chunkColumn,
-				mapChunks.chunkRow
+				areaChunks.areaId,
+				areaChunks.layer,
+				areaChunks.chunkColumn,
+				areaChunks.chunkRow
 			],
 			set: { cells }
 		});
@@ -160,8 +160,8 @@ export async function createAreaLink(link: NewAreaLink, executor: Executor = db)
 }
 
 /**
- * Loads one of a universe's live areas with everything needed to play in it except its map's cells, which
- * a map up to MAX_MAP_SIDE across has too many of to load at once: load them a piece at a time with
+ * Loads one of a universe's live areas with everything needed to play in it except its cells, which
+ * an area up to MAX_AREA_SIDE across has too many of to load at once: load them a piece at a time with
  * loadChunks. A lobby has full vision and its tiles no vision cost when its universe's lobbyNoVisionCost
  * is set
  *
@@ -314,20 +314,49 @@ export async function findEditorArea(areaId: string, executor: Executor = db): P
 			universeId: row.universeId,
 			draft: row.draft
 		},
-		area: {
-			id: row.id,
-			name: row.name,
-			parentAreaId: row.parentAreaId,
-			enabled: row.enabled,
-			indoors: row.indoors,
-			lightLevel: row.lightLevel,
-			defaultTileId: row.defaultTileId,
-			passageOfTime: row.passageOfTime,
-			faerieMorning: row.faerieMorning,
-			loopsEastWest: row.loopsEastWest,
-			loopsNorthSouth: row.loopsNorthSouth,
-			bounds: boundsOf(row)
-		}
+		area: editorAreaOf(row)
+	});
+}
+
+/**
+ * Every area of a universe with every setting the editor shows, by name
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The areas
+ */
+export async function listEditorAreas(version: UniverseVersion, executor: Executor = db): Promise<EditorArea[]>
+{
+	const rows = await executor
+		.select()
+		.from(areas)
+		.where(inVersion(areas, version))
+		.orderBy(areas.name, areas.id);
+
+	return(rows.map(editorAreaOf));
+}
+
+/**
+ * An area's row as the editor shows it
+ *
+ * @param row The row
+ * @return The area
+ */
+function editorAreaOf(row: typeof areas.$inferSelect): EditorArea
+{
+	return({
+		id: row.id,
+		name: row.name,
+		parentAreaId: row.parentAreaId,
+		enabled: row.enabled,
+		indoors: row.indoors,
+		lightLevel: row.lightLevel,
+		defaultTileId: row.defaultTileId,
+		passageOfTime: row.passageOfTime,
+		faerieMorning: row.faerieMorning,
+		loopsEastWest: row.loopsEastWest,
+		loopsNorthSouth: row.loopsNorthSouth,
+		bounds: boundsOf(row)
 	});
 }
 
@@ -396,7 +425,7 @@ export async function updateAreaSettings(areaId: string, update: AreaSettingsUpd
 }
 
 /**
- * Deletes an area with its map and its links, and the links into it from other areas. Its child areas
+ * Deletes an area with its cells and its links, and the links into it from other areas. Its child areas
  * become top-level areas
  *
  * @param areaId The area's ID
@@ -410,14 +439,14 @@ export async function deleteArea(areaId: string, executor: Executor = db): Promi
 }
 
 /**
- * Locks areas' rows until the transaction ends, so changes to their maps and links happen one
+ * Locks areas' rows until the transaction ends, so changes to their cells and links happen one
  * transaction at a time, even for chunks that aren't stored yet
  *
  * @param areaIds The areas' IDs
  * @param executor A transaction
  * @return Each area that exists, with the version of the universe it belongs to and its bounds, by ID
  */
-export async function lockAreas(areaIds: readonly string[], executor: Executor): Promise<Map<string, { version: UniverseVersion; bounds: MapBounds }>>
+export async function lockAreas(areaIds: readonly string[], executor: Executor): Promise<Map<string, { version: UniverseVersion; bounds: AreaBounds }>>
 {
 	// Locking in ID order keeps two transactions that lock the same areas from waiting on each other.
 	// FOR NO KEY UPDATE doesn't block foreign key checks, so rows that refer to the areas (such as
@@ -450,18 +479,46 @@ export async function loadChunks(areaId: string, range: ChunkRange, executor: Ex
 {
 	return(executor
 		.select({
-			chunkColumn: mapChunks.chunkColumn,
-			chunkRow: mapChunks.chunkRow,
-			cells: mapChunks.cells
+			chunkColumn: areaChunks.chunkColumn,
+			chunkRow: areaChunks.chunkRow,
+			cells: areaChunks.cells
 		})
-		.from(mapChunks)
+		.from(areaChunks)
 		.where(and(
-			eq(mapChunks.areaId, areaId),
-			eq(mapChunks.layer, GROUND_LAYER),
-			between(mapChunks.chunkColumn, range.minChunkColumn, range.maxChunkColumn),
-			between(mapChunks.chunkRow, range.minChunkRow, range.maxChunkRow)
+			eq(areaChunks.areaId, areaId),
+			eq(areaChunks.layer, GROUND_LAYER),
+			between(areaChunks.chunkColumn, range.minChunkColumn, range.maxChunkColumn),
+			between(areaChunks.chunkRow, range.minChunkRow, range.maxChunkRow)
 		))
-		.orderBy(mapChunks.chunkRow, mapChunks.chunkColumn));
+		.orderBy(areaChunks.chunkRow, areaChunks.chunkColumn));
+}
+
+/**
+ * A page of the stored chunks of an area's ground, by column then row (the order of the table's key),
+ * for going through all of them a page at a time
+ *
+ * @param areaId The area's ID
+ * @param after The last chunk of the page before, or undefined for the first page
+ * @param limit The most chunks the page holds
+ * @param executor The database, or a transaction
+ * @return The chunks; fewer than limit on the last page
+ */
+export async function loadChunkPage(areaId: string, after: { chunkColumn: number; chunkRow: number } | undefined, limit: number, executor: Executor = db): Promise<AreaChunk[]>
+{
+	return(executor
+		.select({
+			chunkColumn: areaChunks.chunkColumn,
+			chunkRow: areaChunks.chunkRow,
+			cells: areaChunks.cells
+		})
+		.from(areaChunks)
+		.where(and(
+			eq(areaChunks.areaId, areaId),
+			eq(areaChunks.layer, GROUND_LAYER),
+			((after === undefined) ? undefined : sql`(${areaChunks.chunkColumn}, ${areaChunks.chunkRow}) > (${after.chunkColumn}, ${after.chunkRow})`)
+		))
+		.orderBy(areaChunks.chunkColumn, areaChunks.chunkRow)
+		.limit(limit));
 }
 
 /**
@@ -481,15 +538,15 @@ export async function loadChunksAt(areaId: string, chunks: readonly { chunkColum
 
 	return(executor
 		.select({
-			chunkColumn: mapChunks.chunkColumn,
-			chunkRow: mapChunks.chunkRow,
-			cells: mapChunks.cells
+			chunkColumn: areaChunks.chunkColumn,
+			chunkRow: areaChunks.chunkRow,
+			cells: areaChunks.cells
 		})
-		.from(mapChunks)
+		.from(areaChunks)
 		.where(and(
-			eq(mapChunks.areaId, areaId),
-			eq(mapChunks.layer, GROUND_LAYER),
-			sql`(${mapChunks.chunkColumn}, ${mapChunks.chunkRow}) IN (${sql.join(chunks.map((chunk) => sql`(${chunk.chunkColumn}, ${chunk.chunkRow})`), sql`, `)})`
+			eq(areaChunks.areaId, areaId),
+			eq(areaChunks.layer, GROUND_LAYER),
+			sql`(${areaChunks.chunkColumn}, ${areaChunks.chunkRow}) IN (${sql.join(chunks.map((chunk) => sql`(${chunk.chunkColumn}, ${chunk.chunkRow})`), sql`, `)})`
 		)));
 }
 
@@ -525,15 +582,15 @@ export async function editCells(areaId: string, changes: readonly CellChange[], 
 
 	const storedRows = await executor
 		.select({
-			chunkColumn: mapChunks.chunkColumn,
-			chunkRow: mapChunks.chunkRow,
-			cells: mapChunks.cells
+			chunkColumn: areaChunks.chunkColumn,
+			chunkRow: areaChunks.chunkRow,
+			cells: areaChunks.cells
 		})
-		.from(mapChunks)
+		.from(areaChunks)
 		.where(and(
-			eq(mapChunks.areaId, areaId),
-			eq(mapChunks.layer, GROUND_LAYER),
-			sql`(${mapChunks.chunkColumn}, ${mapChunks.chunkRow}) IN (${sql.join(touched.map((chunk) => sql`(${chunk.chunkColumn}, ${chunk.chunkRow})`), sql`, `)})`
+			eq(areaChunks.areaId, areaId),
+			eq(areaChunks.layer, GROUND_LAYER),
+			sql`(${areaChunks.chunkColumn}, ${areaChunks.chunkRow}) IN (${sql.join(touched.map((chunk) => sql`(${chunk.chunkColumn}, ${chunk.chunkRow})`), sql`, `)})`
 		));
 	const stored = new Map(storedRows.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 	const changed = applyCellChanges(stored, changes);
@@ -573,7 +630,7 @@ export interface ResizeResult
 }
 
 /**
- * Gives an area's map new bounds. Cells outside them are reset to the default tile, and links on or
+ * Gives an area new bounds. Cells outside them are reset to the default tile, and links on or
  * into those cells are deleted
  *
  * @param areaId The area's ID
@@ -582,7 +639,7 @@ export interface ResizeResult
  * @param executor A transaction
  * @return What was or would be discarded, or undefined when there is no such area
  */
-export async function resizeArea(areaId: string, bounds: MapBounds, discard: boolean, executor: Executor): Promise<ResizeResult | undefined>
+export async function resizeArea(areaId: string, bounds: AreaBounds, discard: boolean, executor: Executor): Promise<ResizeResult | undefined>
 {
 	if (!(await lockAreas([areaId], executor)).has(areaId))
 	{
@@ -592,19 +649,19 @@ export async function resizeArea(areaId: string, bounds: MapBounds, discard: boo
 	// Chunks touching an edge of the new bounds, or beyond it; every other chunk lies inside
 	const edgeChunks = await executor
 		.select({
-			chunkColumn: mapChunks.chunkColumn,
-			chunkRow: mapChunks.chunkRow,
-			cells: mapChunks.cells
+			chunkColumn: areaChunks.chunkColumn,
+			chunkRow: areaChunks.chunkRow,
+			cells: areaChunks.cells
 		})
-		.from(mapChunks)
+		.from(areaChunks)
 		.where(and(
-			eq(mapChunks.areaId, areaId),
-			eq(mapChunks.layer, GROUND_LAYER),
+			eq(areaChunks.areaId, areaId),
+			eq(areaChunks.layer, GROUND_LAYER),
 			or(
-				lte(mapChunks.chunkColumn, chunkCoordinate(bounds.minColumn)),
-				gte(mapChunks.chunkColumn, chunkCoordinate(bounds.maxColumn)),
-				lte(mapChunks.chunkRow, chunkCoordinate(bounds.minRow)),
-				gte(mapChunks.chunkRow, chunkCoordinate(bounds.maxRow))
+				lte(areaChunks.chunkColumn, chunkCoordinate(bounds.minColumn)),
+				gte(areaChunks.chunkColumn, chunkCoordinate(bounds.maxColumn)),
+				lte(areaChunks.chunkRow, chunkCoordinate(bounds.minRow)),
+				gte(areaChunks.chunkRow, chunkCoordinate(bounds.maxRow))
 			)
 		));
 	const clipped = edgeChunks
@@ -679,6 +736,32 @@ export async function listAreaLinks(areaId: string, executor: Executor = db): Pr
 }
 
 /**
+ * The links on the cells of every area of a universe
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The links with their areas, by area, then row, then column
+ */
+export async function listVersionAreaLinks(version: UniverseVersion, executor: Executor = db): Promise<(EditorAreaLink & { areaId: string })[]>
+{
+	return(executor
+		.select({
+			areaId: areaLinks.areaId,
+			column: areaLinks.column,
+			row: areaLinks.row,
+			targetAreaId: areaLinks.targetAreaId,
+			targetColumn: areaLinks.targetColumn,
+			targetRow: areaLinks.targetRow,
+			mode: areaLinks.mode,
+			requiresWholeGroup: areaLinks.requiresWholeGroup
+		})
+		.from(areaLinks)
+		.innerJoin(areas, eq(areas.id, areaLinks.areaId))
+		.where(inVersion(areas, version))
+		.orderBy(areaLinks.areaId, areaLinks.row, areaLinks.column));
+}
+
+/**
  * Every area of a universe that is a starting area: the universe's, its races' and classes', and its
  * classes' for each race. None of them may be the lobby's area
  *
@@ -744,6 +827,27 @@ export async function listAreasLinkingTo(areaId: string, executor: Executor = db
 		.where(and(eq(areaLinks.targetAreaId, areaId), ne(areaLinks.areaId, areaId)));
 
 	return(rows.map((row) => row.areaId));
+}
+
+/**
+ * How many links an area has on its cells other than one
+ *
+ * @param areaId The area's ID
+ * @param column The cell's column
+ * @param row The cell's row
+ * @param executor The database, or a transaction
+ * @return The number of links on its other cells
+ */
+export async function countAreaLinksBesides(areaId: string, column: number, row: number, executor: Executor = db): Promise<number>
+{
+	const [result] = await executor
+		.select({
+			total: count()
+		})
+		.from(areaLinks)
+		.where(and(eq(areaLinks.areaId, areaId), or(ne(areaLinks.column, column), ne(areaLinks.row, row))));
+
+	return(result.total);
 }
 
 /**
@@ -814,14 +918,14 @@ export async function findAreasUsingTile(version: UniverseVersion, tileId: numbe
 			inVersion(areas, version),
 			or(
 				eq(areas.defaultTileId, tileId),
-				sql`EXISTS (SELECT 1 FROM ${mapChunks} WHERE ${mapChunks.areaId} = ${areas.id} AND ${tileId} = ANY(${mapChunks.cells}))`
+				sql`EXISTS (SELECT 1 FROM ${areaChunks} WHERE ${areaChunks.areaId} = ${areas.id} AND ${tileId} = ANY(${areaChunks.cells}))`
 			)
 		))
 		.orderBy(asc(areas.name)));
 }
 
 /**
- * Paints every use of a tile in a universe's maps with another tile: the cells holding it, and the areas
+ * Paints every use of a tile in a universe's areas with another tile: the cells holding it, and the areas
  * whose default tile it is. Lock the universe first, so painting can't use the tile meanwhile
  *
  * @param version The universe's live version or draft
@@ -830,7 +934,7 @@ export async function findAreasUsingTile(version: UniverseVersion, tileId: numbe
  * @param executor The database, or a transaction
  * @return The IDs of the areas that changed
  */
-export async function replaceTileInMaps(version: UniverseVersion, tileId: number, replacementId: number, executor: Executor = db): Promise<string[]>
+export async function replaceTileInAreas(version: UniverseVersion, tileId: number, replacementId: number, executor: Executor = db): Promise<string[]>
 {
 	const universeAreas = executor
 		.select({
@@ -839,16 +943,16 @@ export async function replaceTileInMaps(version: UniverseVersion, tileId: number
 		.from(areas)
 		.where(inVersion(areas, version));
 	const repainted = await executor
-		.update(mapChunks)
+		.update(areaChunks)
 		.set({
-			cells: sql`array_replace(${mapChunks.cells}, ${tileId}, ${replacementId})`
+			cells: sql`array_replace(${areaChunks.cells}, ${tileId}, ${replacementId})`
 		})
 		.where(and(
-			inArray(mapChunks.areaId, universeAreas),
-			sql`${tileId} = ANY(${mapChunks.cells})`
+			inArray(areaChunks.areaId, universeAreas),
+			sql`${tileId} = ANY(${areaChunks.cells})`
 		))
 		.returning({
-			areaId: mapChunks.areaId
+			areaId: areaChunks.areaId
 		});
 	const redefaulted = await executor
 		.update(areas)
@@ -894,13 +998,13 @@ export async function isTileInUse(version: UniverseVersion, tileId: number, exec
 
 	const [painted] = await executor
 		.select({
-			areaId: mapChunks.areaId
+			areaId: areaChunks.areaId
 		})
-		.from(mapChunks)
-		.innerJoin(areas, eq(areas.id, mapChunks.areaId))
+		.from(areaChunks)
+		.innerJoin(areas, eq(areas.id, areaChunks.areaId))
 		.where(and(
 			inVersion(areas, version),
-			sql`${tileId} = ANY(${mapChunks.cells})`
+			sql`${tileId} = ANY(${areaChunks.cells})`
 		))
 		.limit(1);
 
@@ -925,24 +1029,24 @@ async function storeGroundChunk(areaId: string, chunkColumn: number, chunkRow: n
 	}
 
 	await executor
-		.delete(mapChunks)
+		.delete(areaChunks)
 		.where(and(
-			eq(mapChunks.areaId, areaId),
-			eq(mapChunks.layer, GROUND_LAYER),
-			eq(mapChunks.chunkColumn, chunkColumn),
-			eq(mapChunks.chunkRow, chunkRow)
+			eq(areaChunks.areaId, areaId),
+			eq(areaChunks.layer, GROUND_LAYER),
+			eq(areaChunks.chunkColumn, chunkColumn),
+			eq(areaChunks.chunkRow, chunkRow)
 		));
 }
 
 /**
- * A condition matching rows whose cell is outside a map's bounds
+ * A condition matching rows whose cell is outside an area's bounds
  *
  * @param column The column holding the cell's column
  * @param row The column holding the cell's row
- * @param bounds The map's bounds
+ * @param bounds The area's bounds
  * @return The condition
  */
-function outsideBounds(column: PgColumn, row: PgColumn, bounds: MapBounds): SQL | undefined
+function outsideBounds(column: PgColumn, row: PgColumn, bounds: AreaBounds): SQL | undefined
 {
 	return(or(
 		lt(column, bounds.minColumn),
@@ -953,12 +1057,12 @@ function outsideBounds(column: PgColumn, row: PgColumn, bounds: MapBounds): SQL 
 }
 
 /**
- * An area row's map bounds
+ * An area row's bounds
  *
  * @param row The area's row
  * @return The bounds
  */
-function boundsOf(row: Pick<typeof areas.$inferSelect, 'minColumn' | 'minRow' | 'maxColumn' | 'maxRow'>): MapBounds
+function boundsOf(row: Pick<typeof areas.$inferSelect, 'minColumn' | 'minRow' | 'maxColumn' | 'maxRow'>): AreaBounds
 {
 	return({
 		minColumn: row.minColumn,

@@ -9,7 +9,7 @@ import { CellMaskShader } from './CellMaskShader';
 const PAPER_TEXTURE_KEY = 'unexplored-paper';
 
 /**
- * How wide and tall the paper's image is, in pixels; it repeats across the map
+ * How wide and tall the paper's image is, in pixels; it repeats across the area
  */
 const PAPER_SIZE = 256;
 
@@ -80,7 +80,7 @@ export function preloadUnexploredPaper(scene: Phaser.Scene): void
 }
 
 /**
- * Sets up hand-drawn paper over the cells a group hasn't explored, in place of the map under them; draw
+ * Sets up hand-drawn paper over the cells a group hasn't explored, in place of the tiles under them; draw
  * it with the cells that are unexplored covered
  *
  * @param scene The scene, once preloadUnexploredPaper() has loaded the paper's image

@@ -1,9 +1,9 @@
 /**
- * How area maps are laid out: cells, chunks and what a cell holds
+ * How an area's cells are laid out: cells, chunks and what a cell holds
  *
- * A map is a grid of cells centered on column 0, row 0, reaching out in every direction. Its cells are
+ * An area is a grid of cells centered on column 0, row 0, reaching out in every direction. Its cells are
  * stored in square chunks of CHUNK_SIZE x CHUNK_SIZE, and only chunks that differ from the area's
- * default tile are stored at all, so a large, mostly empty map takes little space
+ * default tile are stored at all, so a large, mostly empty area takes little space
  */
 
 /**
@@ -12,9 +12,11 @@
 export const CHUNK_SIZE = 32;
 
 /**
- * Most cells along each side of a map (width and height)
+ * Most cells along each side of an area (width and height). An area's file in an export, which writes
+ * each cell as its tile's ID, up to 11 characters with its comma, then fits well within the most an import
+ * reads of one file (MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES), whatever its tiles' IDs and links
  */
-export const MAX_MAP_SIDE = 50000;
+export const MAX_AREA_SIDE = 512;
 
 /**
  * Cell value meaning the area's default tile
@@ -69,9 +71,9 @@ export function defaultWalkSeconds(indoors: boolean): number
 export const MAX_WALK_SECONDS = 36000;
 
 /**
- * The cells a map covers, inclusive at both ends
+ * The cells an area covers, inclusive at both ends
  */
-export interface MapBounds
+export interface AreaBounds
 {
 	minColumn: number;
 	minRow: number;
@@ -80,11 +82,11 @@ export interface MapBounds
 }
 
 /**
- * The tiles of an area's map: one layer of cells
+ * The tiles of an area: one layer of cells
  */
 export interface AreaTiles
 {
-	bounds: MapBounds;
+	bounds: AreaBounds;
 
 	/**
 	 * Tile ID of every cell holding DEFAULT_TILE_CELL, including every cell of a chunk that isn't stored
@@ -147,14 +149,14 @@ export function cellIndexInChunk(column: number, row: number): number
 }
 
 /**
- * Whether a cell is inside a map's bounds
+ * Whether a cell is inside an area's bounds
  *
- * @param bounds The map's bounds
+ * @param bounds The area's bounds
  * @param column The cell's column
  * @param row The cell's row
- * @return True when the cell is on the map
+ * @return True when the cell is inside the area
  */
-export function isInBounds(bounds: MapBounds, column: number, row: number): boolean
+export function isInBounds(bounds: AreaBounds, column: number, row: number): boolean
 {
 	return((column >= bounds.minColumn) && (column <= bounds.maxColumn) && (row >= bounds.minRow) && (row <= bounds.maxRow));
 }
@@ -165,7 +167,7 @@ export function isInBounds(bounds: MapBounds, column: number, row: number): bool
  * @param tiles The area's tiles
  * @param column The cell's column
  * @param row The cell's row
- * @return The tile's ID, or undefined for a void or unseen cell or one outside the map
+ * @return The tile's ID, or undefined for a void or unseen cell or one outside the area
  */
 export function tileIdAt(tiles: AreaTiles, column: number, row: number): number | undefined
 {
@@ -186,15 +188,15 @@ export function tileIdAt(tiles: AreaTiles, column: number, row: number): number 
 }
 
 /**
- * The copy of a coordinate on a looping map that is nearest another: on a map that repeats every
+ * The copy of a coordinate in a looping area that is nearest another: in an area that repeats every
  * `period` world units, value + k * period for whichever whole k lands closest to reference
  *
  * Used to keep positions continuous as players cross a looping edge, and to draw a player on the far
- * side of the edge next to the camera rather than a whole map away
+ * side of the edge next to the camera rather than a whole area away
  *
  * @param value The coordinate
  * @param reference The coordinate to be near
- * @param period How far apart the copies are: the map's width or height in world units
+ * @param period How far apart the copies are: the area's width or height in world units
  * @return The nearest copy of value
  */
 export function nearestCopy(value: number, reference: number, period: number): number

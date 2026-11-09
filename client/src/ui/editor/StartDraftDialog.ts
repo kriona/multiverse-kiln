@@ -1,7 +1,35 @@
+import { defineMessages } from '@multiverse-kiln/shared';
 import copyIcon from 'virtual:icon/ph:copy';
 
 import { t } from '../../localization';
 import { getElement, setButtonLabel } from '../dom';
+
+/**
+ * The buttons that start a draft, in the dialog explaining drafts and the one Import Universe opens
+ */
+const startDraftMessages = defineMessages({
+	saveAndStart: {
+		id: 'editor.startDraft.saveAndStart',
+		defaultMessage: 'Save Changes And Start Draft',
+		description: 'Button in the dialog explaining drafts, and in the one Import Universe opens while the universe has none, when the editor has unsaved changes: saves them to the live version, then starts a draft (a copy of the universe editors change without players seeing it) with them'
+	},
+	start: {
+		id: 'editor.draft.start',
+		defaultMessage: 'Start Draft',
+		description: 'Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor\'s toolbar, the dialog explaining drafts and the one Import Universe opens while the universe has none'
+	}
+});
+
+/**
+ * What a button starting a draft says
+ *
+ * @param hasUnsavedChanges Whether the editor has unsaved changes, which starting the draft saves first
+ * @return The button's text
+ */
+export function startDraftLabel(hasUnsavedChanges: boolean): string
+{
+	return(t(hasUnsavedChanges ? startDraftMessages.saveAndStart : startDraftMessages.start));
+}
 
 /**
  * The dialog the toolbar's Start Draft button opens: explains what a draft is and that applying one
@@ -43,17 +71,7 @@ export class StartDraftDialog
 	open(hasUnsavedChanges: boolean): void
 	{
 		this.unsaved.hidden = !hasUnsavedChanges;
-		setButtonLabel(this.submitButton, copyIcon, (hasUnsavedChanges
-			? t({
-				id: 'editor.startDraft.saveAndStart',
-				defaultMessage: 'Save Changes And Start Draft',
-				description: 'Button in the dialog explaining drafts, when the editor has unsaved changes: saves them to the live version, then starts a draft (a copy of the universe editors change without players seeing it) with them'
-			})
-			: t({
-				id: 'editor.draft.start',
-				defaultMessage: 'Start Draft',
-				description: 'Button that starts a draft of the universe when the editor is saved: a copy editors change without players seeing it, in the editor\'s toolbar and in the dialog explaining drafts'
-			})));
+		setButtonLabel(this.submitButton, copyIcon, startDraftLabel(hasUnsavedChanges));
 		this.dialog.showModal();
 
 		// Cancel takes focus, so pressing Enter by habit doesn't start a draft without reading what it means

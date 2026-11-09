@@ -1,10 +1,10 @@
-import type { MapBounds } from './maps.js';
+import type { AreaBounds } from './areaCells.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
 import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode, UniverseStage } from './universes.js';
 
 /**
- * Message types clients send to the rooms with a map: a universe's lobby and a group's game room
+ * Message types clients send to the rooms with areas: a universe's lobby and a group's game room
  *
  * Clients send inputs, never state (positions, health, scores): the server decides the outcome
  */
@@ -22,7 +22,7 @@ export enum MessageType
 }
 
 /**
- * Message types the rooms with a map send to clients, for one-off events rather than state
+ * Message types the rooms with areas send to clients, for one-off events rather than state
  */
 export enum ServerMessageType
 {
@@ -39,7 +39,7 @@ export enum ServerMessageType
 	Area = 'area',
 
 	/**
-	 * Chunks of the area's map that the player has come near, or that an editor has changed (payload: ChunksPayload)
+	 * Chunks of the area that the player has come near, or that an editor has changed (payload: ChunksPayload)
 	 */
 	Chunks = 'chunks',
 
@@ -101,7 +101,7 @@ export enum GameServerMessageType
 }
 
 /**
- * A cell of an area's map and what it holds
+ * A cell of an area and what it holds
  */
 export interface CellValue
 {
@@ -186,7 +186,7 @@ export interface WelcomePayload
 }
 
 /**
- * A tile an area's map can use, as the client draws it
+ * A tile an area can use, as the client draws it
  */
 export interface AreaTile
 {
@@ -227,13 +227,13 @@ export interface AreaTile
 	impassable: boolean;
 
 	/**
-	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionMap)
+	 * How hard the tile is to see past, in percent, which the client's fog follows (see VisionArea)
 	 */
 	visionCost: number;
 }
 
 /**
- * One stored chunk of an area's map
+ * One stored chunk of an area
  */
 export interface AreaChunk
 {
@@ -247,7 +247,7 @@ export interface AreaChunk
 }
 
 /**
- * A chunk of an area's map, as sent when the player comes near it or an editor changes it
+ * A chunk of an area, as sent when the player comes near it or an editor changes it
  */
 export interface AreaChunkUpdate
 {
@@ -284,7 +284,7 @@ export interface AreaLinkCell
 }
 
 /**
- * Payload of ServerMessageType.Area: everything needed to draw an area's map, with the stored chunks
+ * Payload of ServerMessageType.Area: everything needed to draw an area, with the stored chunks
  * near the player. Chunks further away arrive in ChunksPayloads as the player comes near them
  */
 export interface AreaPayload
@@ -326,7 +326,7 @@ export interface AreaPayload
 	 */
 	fullVision: boolean;
 
-	bounds: MapBounds;
+	bounds: AreaBounds;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 

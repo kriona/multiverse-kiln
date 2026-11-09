@@ -1,11 +1,16 @@
 /**
- * The record of what server admins do on the admin pages: the only module that reads or writes the
- * admin_events table
+ * The record of what server admins do as admins: the only module that reads or writes the admin_events
+ * table
  */
-import { asc, eq, or } from 'drizzle-orm';
+import { asc, eq, or, sql } from 'drizzle-orm';
 
 import { db, type Executor } from './client.js';
 import { adminEvents, universes, type ADMIN_EVENT_KINDS } from './schema.js';
+
+/**
+ * An event's universe's name: the one the record keeps of a universe deleted, or the universe's own
+ */
+const universeNameColumn = sql<string | null>`coalesce(${adminEvents.universeName}, ${universes.name})`;
 
 /**
  * What a server admin did
@@ -18,7 +23,8 @@ export type AdminEventKind = (typeof ADMIN_EVENT_KINDS)[number];
 export type AdminEvent =
 	| { kind: 'adminAdded' | 'adminRemoved'; adminId: string | null; playerId: string | null; occurredAt: Date }
 	| { kind: 'universeDisabled'; adminId: string | null; universeId: string | null; reason: string; preventsDeletion: boolean; occurredAt: Date }
-	| { kind: 'universeEnabled'; adminId: string | null; universeId: string | null; occurredAt: Date };
+	| { kind: 'universeEnabled'; adminId: string | null; universeId: string | null; occurredAt: Date }
+	| { kind: 'universeDeleted'; adminId: string | null; universeId: string | null; universeName: string; occurredAt: Date };
 
 /**
  * Records what a server admin did
@@ -45,7 +51,8 @@ export interface AdminEventRecord
 	universeId: string | null;
 
 	/**
-	 * The universe's name, or null when the event names none
+	 * The universe's name, or null when the event names none: an event about a universe since deleted
+	 * names it only when it is the record of deleting it
 	 */
 	universeName: string | null;
 
@@ -74,7 +81,7 @@ export async function findPlayerAdminEvents(playerId: string, executor: Executor
 			kind: adminEvents.kind,
 			playerId: adminEvents.playerId,
 			universeId: adminEvents.universeId,
-			universeName: universes.name,
+			universeName: universeNameColumn,
 			reason: adminEvents.reason,
 			preventsDeletion: adminEvents.preventsDeletion,
 			occurredAt: adminEvents.occurredAt
@@ -103,7 +110,7 @@ export async function findUniverseAdminEvents(universeId: string, executor: Exec
 			kind: adminEvents.kind,
 			playerId: adminEvents.playerId,
 			universeId: adminEvents.universeId,
-			universeName: universes.name,
+			universeName: universeNameColumn,
 			reason: adminEvents.reason,
 			preventsDeletion: adminEvents.preventsDeletion,
 			occurredAt: adminEvents.occurredAt

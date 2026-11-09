@@ -1,16 +1,17 @@
 /**
- * The world editor's routes for a universe's areas, their maps and their links (listed in
+ * The world editor's routes for a universe's areas, their cells and their links (listed in
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { type AreaEvacuation, canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREAS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type MapBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { type AreaEvacuation, canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREA_LINKS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
+import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
-import { chunksOfChanges, wouldCreateCycle } from '../logic/mapEdits.js';
+import { chunksOfChanges, wouldCreateCycle } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import { loadAreaContext, requireRole, universeContextOf, areaContextOf } from './editorAccess.js';
@@ -59,7 +60,7 @@ export function timeSettingsProblem(settings: { passageOfTime: string; faerieMor
 		return({
 			id: 'error.faerieCantLoop',
 			defaultMessage: 'An area whose passage of time is faerie can\'t loop.',
-			description: 'Why an area can\'t both have faerie time and a map that wraps around: shown by the area editor\'s loop checkboxes, and as the reason the server refused an area\'s settings'
+			description: 'Why an area can\'t both have faerie time and wrap around at its edges: shown by the area editor\'s loop checkboxes, and as the reason the server refused an area\'s settings'
 		});
 	}
 
@@ -89,8 +90,8 @@ export function lobbyTimeProblem(lobby: Pick<UniverseSettings, 'lobbyPassageOfTi
 	{
 		return({
 			id: 'error.faerieLobbyCantLoop',
-			defaultMessage: 'The lobby\'s passage of time can\'t be faerie while its map loops.',
-			description: 'Why the lobby\'s settings, or its area\'s, were refused: faerie time and a map that wraps around can\'t be combined'
+			defaultMessage: 'The lobby\'s passage of time can\'t be faerie while its area loops.',
+			description: 'Why the lobby\'s settings, or its area\'s, were refused: faerie time and an area that wraps around at its edges can\'t be combined'
 		});
 	}
 
@@ -130,7 +131,7 @@ function getArea(request: Request, response: Response): void
 }
 
 /**
- * GET /:universeId/areas/:areaId/chunks: the stored chunks of the area's map in a range
+ * GET /:universeId/areas/:areaId/chunks: the stored chunks of the area in a range
  *
  * @param request The request
  * @param response The response
@@ -231,14 +232,12 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 
 	await checkAreaSettings(context, undefined, settings);
 
-	if (await countAreas(version, transaction) >= MAX_AREAS)
+	const { areasPerUniverse } = await findSiteSettings(transaction);
+
+	if (await countAreas(version, transaction) >= areasPerUniverse)
 	{
-		refuse(409, {
-			id: 'error.areaLimit',
-			defaultMessage: 'A universe can have at most {max, plural, one {# area} other {# areas}}.',
-			description: 'Why a new area wasn\'t made: the universe has as many areas as allowed'
-		}, {
-			max: MAX_AREAS
+		refuse(409, errorMessages.areaLimit, {
+			max: areasPerUniverse
 		});
 	}
 
@@ -340,14 +339,14 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 }
 
 /**
- * Gives an area's map new bounds
+ * Gives an area new bounds
  *
  * @param context The save
  * @param areaId The area
  * @param bounds The new bounds
  * @param discard Whether to go ahead when shrinking would discard painted cells or links
  */
-export async function resizeAreaChange(context: ChangeContext, areaId: StringRef, bounds: MapBounds, discard: boolean): Promise<void>
+export async function resizeAreaChange(context: ChangeContext, areaId: StringRef, bounds: AreaBounds, discard: boolean): Promise<void>
 {
 	const area = await areaOf(context, areaId);
 	const result = await resizeArea(area.id, bounds, discard, context.transaction);
@@ -364,7 +363,7 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 			message: {
 				id: 'error.resizeDiscards',
 				defaultMessage: 'Resizing would discard painted cells or links.',
-				description: 'Why a map wasn\'t made smaller without asking: the part it would lose has painting or links'
+				description: 'Why an area wasn\'t made smaller without asking: the part it would lose has painting or links'
 			}
 		}, {
 			discardedCells: result.discardedCells,
@@ -376,7 +375,7 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 }
 
 /**
- * Changes cells of an area's map
+ * Changes cells of an area
  *
  * @param context The save
  * @param areaId The area
@@ -411,8 +410,8 @@ export async function editCellsChange(context: ChangeContext, areaId: StringRef,
 	{
 		refuse(400, {
 			id: 'error.cellOutOfBounds',
-			defaultMessage: 'Every cell must be inside the area\'s map.',
-			description: 'Why painting was refused: some cells are outside the map, perhaps because another editor made it smaller'
+			defaultMessage: 'Every cell must be inside the area.',
+			description: 'Why painting was refused: some cells are outside the area, perhaps because another editor made it smaller'
 		});
 	}
 
@@ -466,8 +465,8 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 	{
 		refuse(400, {
 			id: 'error.linkOutOfBounds',
-			defaultMessage: 'The link\'s cell must be inside the area\'s map.',
-			description: 'Why an area link was refused: its cell is outside the map, perhaps because another editor made it smaller'
+			defaultMessage: 'The link\'s cell must be inside the area.',
+			description: 'Why an area link was refused: its cell is outside the area, perhaps because another editor made it smaller'
 		});
 	}
 
@@ -475,8 +474,19 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 	{
 		refuse(400, {
 			id: 'error.linkTargetOutOfBounds',
-			defaultMessage: 'Where the link goes must be inside the other area\'s map.',
-			description: 'Why an area link was refused: the cell it leads to is outside the other area\'s map'
+			defaultMessage: 'Where the link goes must be inside the other area.',
+			description: 'Why an area link was refused: the cell it leads to is outside the other area'
+		});
+	}
+
+	if (await countAreaLinksBesides(area.id, column, row, transaction) >= MAX_AREA_LINKS)
+	{
+		refuse(409, {
+			id: 'error.areaLinkLimit',
+			defaultMessage: 'An area can have at most {max, plural, one {# link} other {# links}}.',
+			description: 'Why an area link wasn\'t added: the area has as many links on its cells as allowed. A link takes characters who step on its cell to another area'
+		}, {
+			max: MAX_AREA_LINKS
 		});
 	}
 

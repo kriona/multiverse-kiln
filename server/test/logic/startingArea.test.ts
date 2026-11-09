@@ -102,12 +102,12 @@ describe('startingCellOn', () =>
 		maxRow: 5
 	};
 
-	it('keeps a cell on the map', () =>
+	it('keeps a cell inside the area', () =>
 	{
 		assert.deepStrictEqual(startingCellOn(bounds, { column: 3, row: -4 }), { column: 3, row: -4 });
 	});
 
-	it('moves a cell the map no longer holds to the nearest edge', () =>
+	it('moves a cell the area no longer holds to the nearest edge', () =>
 	{
 		assert.deepStrictEqual(startingCellOn(bounds, { column: 25, row: -9 }), { column: 10, row: -5 });
 		assert.deepStrictEqual(startingCellOn(bounds, { column: -40, row: 2 }), { column: -10, row: 2 });

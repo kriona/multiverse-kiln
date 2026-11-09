@@ -7,16 +7,18 @@
  * server keeps nothing, only it can make one, and the cookie doesn't name the account: a login checks
  * it against the account the address belongs to
  */
+import { KNOWN_BROWSER_DAYS } from '@multiverse-kiln/shared';
 import type { Request, Response } from 'express';
 
 import { KNOWN_BROWSER_COOKIE, readCookie, setCookie } from '../http/cookies.js';
+import { DAY_MS } from '../logic/emailCodes.js';
 import { hashesMatch, keyedHash } from './keyedHashes.js';
 import { createToken, isTokenForm } from './tokens.js';
 
 /**
- * How long a browser stays known after it last logged in
+ * How long a browser stays known after it last logged in, in milliseconds
  */
-export const KNOWN_BROWSER_LIFETIME_MS = 180 * 24 * 60 * 60 * 1000;
+export const KNOWN_BROWSER_LIFETIME_MS = (KNOWN_BROWSER_DAYS * DAY_MS);
 
 /**
  * The keyed hash that shows the server made a known browser cookie for an account

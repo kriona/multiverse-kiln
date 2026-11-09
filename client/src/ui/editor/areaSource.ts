@@ -1,7 +1,7 @@
 import type { AreaLinkTarget, ChunkListPayload, ChunkRange, EditorArea, EditorAreaLink } from '@multiverse-kiln/shared';
 
 /**
- * Where the map editor and the link dialog get an area, its links and its map's chunks: the server for
+ * Where the cell editor and the link dialog get an area, its links and its chunks: the server for
  * a saved area, and the page for one added since the Areas tab was last saved
  */
 export interface AreaSource
@@ -23,7 +23,7 @@ export interface AreaSource
 	listLinks(areaId: string): Promise<EditorAreaLink[]>;
 
 	/**
-	 * The stored chunks in a range of an area's map
+	 * The stored chunks in a range of an area
 	 *
 	 * @param areaId The area's ID
 	 * @param range The chunks

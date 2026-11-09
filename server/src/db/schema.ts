@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { bigint, boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_MAP_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -138,6 +138,13 @@ export const players = pgTable('players', {
 	 */
 	showCharacters: boolean('show_characters').notNull().default(true),
 
+	/**
+	 * The notices the player dismissed (DISMISSIBLE_NOTICES), each once, in the order they dismissed them.
+	 * Not checked against the list, so adding a notice needs no migration; reading them leaves out any
+	 * the code no longer has
+	 */
+	dismissedNotices: text('dismissed_notices').array().$type<DismissibleNotice[]>().notNull().default(sql`'{}'`),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 
 	/**
@@ -267,12 +274,12 @@ function universeVersionColumns()
 		displayTime: displayTime('display_time').notNull().default('precise'),
 
 		/**
-		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no map
+		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no area to walk around
 		 */
 		lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 		/**
-		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area's map
+		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area
 		 */
 		lobbyColumn: integer('lobby_column').notNull().default(0),
 		lobbyRow: integer('lobby_row').notNull().default(0),
@@ -303,7 +310,7 @@ function universeVersionColumns()
 		startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 		/**
-		 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area's map
+		 * The cell of the starting area characters start nearest; column 0, row 0 is the middle of a new area
 		 */
 		startingColumn: integer('starting_column').notNull().default(0),
 		startingRow: integer('starting_row').notNull().default(0),
@@ -439,7 +446,7 @@ export const universeEditors = pgTable('universe_editors', {
 
 /**
  * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, what
- * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (src/universeEditSweep.ts), and deleted sooner
+ * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (shared/src/editor.ts), and deleted sooner
  * with the universe; kept after the account that saved is deleted, which empties playerId
  */
 export const universeEdits = pgTable('universe_edits', {
@@ -605,13 +612,13 @@ export const tileGraphics = pgTable('tile_graphics', {
 ]);
 
 /**
- * One row per tile a map can be painted with
+ * One row per tile an area can be painted with
  *
  * A tile with no universe is one of a ruleset's default tiles, available to every universe with that
  * ruleset; a tile with a universe belongs to that universe only. Default tiles have a key, so code and
  * seed data can find them in any database
  *
- * A universe's tile that overrides a default tile is that universe's edited copy of it. Maps keep using
+ * A universe's tile that overrides a default tile is that universe's edited copy of it. Areas keep using
  * the default tile's ID, and the universe sees the copy's settings under that ID
  */
 export const tiles = pgTable('tiles', {
@@ -667,7 +674,7 @@ export const tiles = pgTable('tiles', {
 	walkSeconds: smallint('walk_seconds').notNull().default(DEFAULT_INDOOR_WALK_SECONDS),
 
 	/**
-	 * Whether areas can paint with the tile; maps that already use a disabled tile keep it
+	 * Whether areas can paint with the tile; areas that already use a disabled tile keep it
 	 */
 	enabled: boolean('enabled').notNull().default(true),
 
@@ -1103,9 +1110,9 @@ export const classRaceAreas = pgTable('class_race_areas', {
 ]);
 
 /**
- * One row per area: a map, and where it sits among the universe's areas
+ * One row per area: its size and settings, and where it sits among the universe's areas
  *
- * The map covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0
+ * The area covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0
  */
 export const areas = pgTable('areas', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -1142,30 +1149,29 @@ export const areas = pgTable('areas', {
 	index('areas_parent_area_id_index').on(table.parentAreaId),
 	index('areas_default_tile_id_index').on(table.defaultTileId),
 	...originConstraints('areas', table),
-	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
-	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_MAP_SIDE - 1))}`),
-	check('areas_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
+	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
+	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),	check('areas_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
 	check('areas_faerie_does_not_loop', sql`${table.passageOfTime} <> 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
 ]);
 
 /**
- * The stored chunks of each area's map. A chunk that isn't stored is all the area's default tile
+ * The stored chunks of each area's cells. A chunk that isn't stored is all the area's default tile
  *
  * Layer 0 is the ground; later layers go on top of it
  */
-export const mapChunks = pgTable('map_chunks', {
+export const areaChunks = pgTable('area_chunks', {
 	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
 	layer: smallint('layer').notNull().default(0),
 	chunkColumn: integer('chunk_column').notNull(),
 	chunkRow: integer('chunk_row').notNull(),
 
 	/**
-	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row: a tile ID, DEFAULT_TILE_CELL or VOID_CELL (see shared/src/maps.ts)
+	 * CHUNK_SIZE * CHUNK_SIZE cell values, row by row: a tile ID, DEFAULT_TILE_CELL or VOID_CELL (see shared/src/areaCells.ts)
 	 */
 	cells: integer('cells').array().notNull()
 }, (table) => [
 	primaryKey({ columns: [table.areaId, table.layer, table.chunkColumn, table.chunkRow] }),
-	check('map_chunks_cell_count', sql`cardinality(${table.cells}) = ${sql.raw(String(CHUNK_SIZE * CHUNK_SIZE))}`)
+	check('area_chunks_cell_count', sql`cardinality(${table.cells}) = ${sql.raw(String(CHUNK_SIZE * CHUNK_SIZE))}`)
 ]);
 
 /**
@@ -1448,7 +1454,7 @@ const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
 });
 
 /**
- * The cells each group has seen, part of its world state: one row per chunk of an area's map that the
+ * The cells each group has seen, part of its world state: one row per chunk of an area that the
  * group has seen any cell of. Deleted with the group, so disbanding it forgets what it explored
  */
 export const groupSeenChunks = pgTable('group_seen_chunks', {
@@ -1596,6 +1602,7 @@ export const siteSettings = pgTable('site_settings', {
 
 	universeCreationEnabled: boolean('universe_creation_enabled').notNull().default(DEFAULT_SITE_SETTINGS.universeCreationEnabled),
 	universesPerCreator: integer('universes_per_creator').notNull().default(DEFAULT_SITE_SETTINGS.universesPerCreator),
+	areasPerUniverse: integer('areas_per_universe').notNull().default(DEFAULT_SITE_SETTINGS.areasPerUniverse),
 	characterDeletionDays: integer('character_deletion_days').notNull().default(DEFAULT_SITE_SETTINGS.characterDeletionDays),
 
 	/**
@@ -1616,6 +1623,7 @@ export const siteSettings = pgTable('site_settings', {
 }, (table) => [
 	check('site_settings_one_row', sql`${table.id}`),
 	check('site_settings_universes_per_creator_range', sql`${table.universesPerCreator} BETWEEN ${sql.raw(String(MIN_UNIVERSES_PER_CREATOR))} AND ${sql.raw(String(MAX_UNIVERSES_PER_CREATOR))}`),
+	check('site_settings_areas_per_universe_range', sql`${table.areasPerUniverse} BETWEEN ${sql.raw(String(MIN_AREAS_PER_UNIVERSE))} AND ${sql.raw(String(MAX_AREAS_PER_UNIVERSE))}`),
 	check('site_settings_character_deletion_days_range', sql`${table.characterDeletionDays} BETWEEN 0 AND ${sql.raw(String(MAX_CHARACTER_DELETION_DAYS))}`),
 	check('site_settings_social_urls_length', sql.join([table.discordUrl, table.facebookUrl, table.instagramUrl, table.tiktokUrl, table.xUrl, table.youtubeUrl].map((column) => sql`char_length(${column}) <= ${sql.raw(String(MAX_SITE_SOCIAL_URL_LENGTH))}`), sql` AND `)),
 	check('site_settings_privacy_contact_length', sql`char_length(${table.privacyContact}) <= ${sql.raw(String(MAX_EMAIL_LENGTH))}`)
@@ -1943,7 +1951,7 @@ export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
 
 /**
  * A record of logins, failures, logouts and changes to how an account logs in. Never holds passwords,
- * codes or session tokens. Kept 90 days, and deleted with the account
+ * codes or session tokens. Kept AUTH_EVENT_DAYS (shared/src/accounts.ts), and deleted with the account
  */
 export const authEvents = pgTable('auth_events', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -1970,13 +1978,14 @@ export const authEvents = pgTable('auth_events', {
 /**
  * What a server admin did in an admin event
  */
-export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled'] as const;
+export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled', 'universeDeleted'] as const;
 export const adminEventKind = pgEnum('admin_event_kind', ADMIN_EVENT_KINDS);
 
 /**
- * A record of what server admins do on the admin pages: adding and removing admins, and disabling and
- * enabling universes. Their saves in the world editor are in universe_edits, with every other save. Kept
- * after the accounts and universes it names are deleted, which empties their columns
+ * A record of what server admins do as admins: adding and removing admins, disabling and enabling
+ * universes, and deleting universes as admins (deletesUniverseAsAdmin()). Their saves in the world editor
+ * are in universe_edits, with every other save. Kept after the accounts and universes it names are
+ * deleted, which empties their columns
  */
 export const adminEvents = pgTable('admin_events', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -1994,9 +2003,14 @@ export const adminEvents = pgTable('admin_events', {
 	playerId: uuid('player_id').references(() => players.id, { onDelete: 'set null' }),
 
 	/**
-	 * The universe disabled or enabled, or null for other kinds and once it is deleted
+	 * The universe disabled, enabled or deleted, or null for other kinds and once it is deleted
 	 */
 	universeId: uuid('universe_id').references(() => universes.id, { onDelete: 'set null' }),
+
+	/**
+	 * The name of the universe deleted, which outlives it, or null for other kinds
+	 */
+	universeName: text('universe_name'),
 
 	/**
 	 * The reason given for disabling a universe, or null for other kinds

@@ -7,11 +7,11 @@ import { tileName } from '../tileNames';
 import { isNewId } from './stagedChanges';
 
 /**
- * The dialog that asks before a tile is deleted. When maps use the tile, it lists their areas and asks
+ * The dialog that asks before a tile is deleted. When areas use the tile, it lists them and asks
  * which tile to paint them with instead
  *
  * Like every change in the editor, the deletion waits for the Tilesets tab to be saved; saving paints
- * the maps with the replacement, then deletes the tile
+ * the areas with the replacement, then deletes the tile
  */
 export class TileDeleteDialog
 {
@@ -27,7 +27,7 @@ export class TileDeleteDialog
 	private readonly submitButton = getElement('tile-delete-submit', HTMLButtonElement);
 
 	/**
-	 * Called with the tile to paint the maps with, or undefined when no map uses the tile, once the
+	 * Called with the tile to paint the areas with, or undefined when no area uses the tile, once the
 	 * player confirms
 	 */
 	private onConfirm: (replacementId: number | undefined) => void = () => undefined;
@@ -55,13 +55,13 @@ export class TileDeleteDialog
 	}
 
 	/**
-	 * Asks before deleting a tile: loads the areas whose maps use it, and when there are any, the tiles
+	 * Asks before deleting a tile: loads the areas that use it, and when there are any, the tiles
 	 * that can replace it
 	 *
 	 * @param universe The universe the tile belongs to
 	 * @param tile The tile
 	 * @param isRemoved Whether a tile is marked to delete already, so it can't replace this one
-	 * @param onConfirm Called with the tile to paint the maps with, or undefined when no map uses the tile
+	 * @param onConfirm Called with the tile to paint the areas with, or undefined when no area uses the tile
 	 */
 	open(universe: EditableUniverse, tile: EditorTile, isRemoved: (tileId: number) => boolean, onConfirm: (replacementId: number | undefined) => void): void
 	{
@@ -82,7 +82,7 @@ export class TileDeleteDialog
 		this.dialog.showModal();
 		this.cancelButton.focus();
 
-		// A tile that isn't saved yet can't be on any map
+		// A tile that isn't saved yet can't be in any area
 		if (isNewId(tile.id))
 		{
 			this.status.textContent = '';
@@ -92,8 +92,8 @@ export class TileDeleteDialog
 
 		this.status.textContent = t({
 			id: 'editor.tileDelete.checking',
-			defaultMessage: 'Checking which maps use it...',
-			description: 'Shown in the dialog before deleting a tile while it finds out which areas\' maps use the tile'
+			defaultMessage: 'Checking which areas use it...',
+			description: 'Shown in the dialog before deleting a tile while it finds out which areas use the tile'
 		});
 		this.submitButton.disabled = true;
 		void this.loadUsage(universe, tile, isRemoved, version);
@@ -126,7 +126,7 @@ export class TileDeleteDialog
 				this.status.textContent = '';
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.tileDelete.checkFailed',
-					defaultMessage: 'Could not find out which maps use the tile.',
+					defaultMessage: 'Could not find out which areas use the tile.',
 					description: 'Shown in the dialog before deleting a tile when the areas using it couldn\'t be loaded'
 				}));
 			}
@@ -157,8 +157,8 @@ export class TileDeleteDialog
 
 		this.usage.textContent = t({
 			id: 'editor.tileDelete.usage',
-			defaultMessage: '{count, plural, one {The map of {areas} uses it.} other {The maps of {areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.',
-			description: 'Shown in the dialog before deleting a tile that maps use; {areas} lists the areas\' names, and {count} is how many there are'
+			defaultMessage: '{count, plural, one {{areas} uses it.} other {{areas} use it.}} Choose a tile to paint {count, plural, one {it} other {them}} with in its place.',
+			description: 'Shown in the dialog before deleting a tile that areas use; {areas} lists the areas\' names, and {count} is how many there are'
 		}, {
 			count: areas.length,
 			areas: formatList(areas.map((area) => area.name))
@@ -180,7 +180,7 @@ export class TileDeleteDialog
 	}
 
 	/**
-	 * Marks the tile to delete, with the tile chosen to replace it if maps use it
+	 * Marks the tile to delete, with the tile chosen to replace it if areas use it
 	 */
 	private confirm(): void
 	{

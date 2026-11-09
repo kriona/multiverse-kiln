@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
 import { adminDb } from '../src/db/adminClient.js';
@@ -134,7 +134,7 @@ function saveIn(editor: Editor, universeId: string, list: ListName, id: unknown,
  * @param universeId The universe's ID
  * @param list Which list
  * @param id The thing's ID, which may not exist
- * @param replaceWith For a tile, the tile to paint the maps with in its place
+ * @param replaceWith For a tile, the tile to paint the areas with in its place
  * @return The answer
  */
 function removeFrom(editor: Editor, universeId: string, list: ListName, id: unknown, replaceWith: unknown = null): Promise<SaveAnswer>
@@ -143,7 +143,7 @@ function removeFrom(editor: Editor, universeId: string, list: ListName, id: unkn
 }
 
 /**
- * Saves painting on an area's map
+ * Saves painting on an area's cells
  *
  * @param editor The browser saving it
  * @param universeId The universe's ID
@@ -334,6 +334,7 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.name, 'Kilnhaven');
 			assert.strictEqual(universe.stage, 'in_the_beginning');
 			assert.strictEqual(universe.role, 'creator');
+			assert.deepStrictEqual(universe.dismissedNotices, []);
 			assert.deepStrictEqual(areas.areas.map((area) => area.name), ['Lobby', 'Starting Area']);
 			assert.strictEqual(areas.lobbyAreaId, universe.lobbyAreaId);
 			assert.strictEqual(areas.startingAreaId, universe.startingAreaId);
@@ -492,7 +493,7 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.faerieMorning, null);
 		});
 
-		it('changes the lobby\'s time, keeping faerie time off a lobby whose map loops', async () =>
+		it('changes the lobby\'s time, keeping faerie time off a lobby whose area loops', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const path = `/${universeId}`;
@@ -852,7 +853,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await saveIn(ada, universeId, 'Tile', tileId, darker)).status, 400);
 		});
 
-		it('refuses to delete a tile a map uses, and deletes it once nothing does', async () =>
+		it('refuses to delete a tile an area uses, and deletes it once nothing does', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
@@ -866,7 +867,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId)).status, 404);
 		});
 
-		it('lists the areas using a tile, and deletes it after painting its maps with a replacement', async () =>
+		it('lists the areas using a tile, and deletes it after painting its areas with a replacement', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
@@ -1558,7 +1559,7 @@ describe('World editor API', () =>
 		});
 	});
 
-	describe('maps', () =>
+	describe('cells', () =>
 	{
 		it('paints cells and reads them back by chunk', async () =>
 		{
@@ -1575,7 +1576,7 @@ describe('World editor API', () =>
 			assert.strictEqual(chunks[1].cells[0], forest);
 		});
 
-		it('refuses cells outside the map, tiles the universe cannot use, and ranges that are too large', async () =>
+		it('refuses cells outside the area, tiles the universe cannot use, and ranges that are too large', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
@@ -1590,7 +1591,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await send(ada, 'GET', `${path}/chunks?minChunkColumn=1&minChunkRow=0&maxChunkColumn=0&maxChunkRow=0`)).status, 400);
 		});
 
-		it('resizes a map, asking before it discards painted cells', async () =>
+		it('resizes an area, asking before it discards painted cells', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const areaId = await createArea(ada, universeId);
@@ -1608,15 +1609,20 @@ describe('World editor API', () =>
 			assert.deepStrictEqual((await send<EditorArea>(ada, 'GET', path)).body.bounds, small);
 		});
 
-		it('refuses bounds that leave out the center or are too large', async () =>
+		it('refuses bounds that leave out the center or are too large, and takes the largest allowed', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const areaId = await createArea(ada, universeId);
 
-			for (const bounds of [{ minColumn: 1, minRow: 0, maxColumn: 5, maxRow: 5 }, { minColumn: -25000, minRow: 0, maxColumn: 25000, maxRow: 0 }])
+			// One cell more than MAX_AREA_SIDE across, and down
+			const half = (MAX_AREA_SIDE / 2);
+
+			for (const bounds of [{ minColumn: 1, minRow: 0, maxColumn: 5, maxRow: 5 }, { minColumn: -half, minRow: 0, maxColumn: half, maxRow: 0 }, { minColumn: 0, minRow: -half, maxColumn: 0, maxRow: half }])
 			{
 				assert.strictEqual((await saveChange(ada, universeId, { kind: 'resizeArea', areaId, bounds, discard: true })).status, 400, JSON.stringify(bounds));
 			}
+
+			assert.strictEqual((await saveChange(ada, universeId, { kind: 'resizeArea', areaId, bounds: { minColumn: -half, minRow: -half, maxColumn: (half - 1), maxRow: (half - 1) }, discard: true })).status, 200);
 		});
 	});
 
@@ -1636,7 +1642,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await saveChange(ada, universeId, { kind: 'deleteLink', areaId: outsideId, column: 3, row: -4 })).status, 404);
 		});
 
-		it('refuses links to the same area, another universe, or a cell off either map', async () =>
+		it('refuses links to the same area, another universe, or a cell outside either area', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');

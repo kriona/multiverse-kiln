@@ -19,7 +19,7 @@ import { InviteDialog } from './ui/InviteDialog';
 import { InviteScreen } from './ui/InviteScreen';
 import { takeOutOfGroup } from './ui/leavingGroup';
 import { LobbyScreen } from './ui/LobbyScreen';
-import { MapView } from './ui/MapView';
+import { AreaView } from './ui/AreaView';
 import { UniverseText } from './ui/universeText';
 import { pageMessages } from './ui/pageMessages';
 
@@ -94,9 +94,9 @@ export class GamePage
 	private universe: UniverseSummary | undefined;
 
 	/**
-	 * The map the lobby and group screens show
+	 * The area the lobby and group screens show
 	 */
-	private readonly mapView = new MapView();
+	private readonly areaView = new AreaView();
 
 	/**
 	 * Whether the universe has reached the end of time, so its lobby can't be entered and its groups
@@ -170,7 +170,7 @@ export class GamePage
 
 		this.inviteDialog = new InviteDialog(this.groupApi);
 
-		this.lobbyScreen = new LobbyScreen(this.mapView, {
+		this.lobbyScreen = new LobbyScreen(this.areaView, {
 			sendChat: (text) =>
 			{
 				const chat: ChatPayload = { text };
@@ -202,7 +202,7 @@ export class GamePage
 			}
 		});
 
-		this.groupScreen = new GroupScreen(this.mapView, {
+		this.groupScreen = new GroupScreen(this.areaView, {
 			chooseCharacter: (character) =>
 			{
 				this.chooseCharacter(character);
@@ -332,11 +332,11 @@ export class GamePage
 			this.universe = { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages };
 			this.universeLocked = (stage === 'end_of_time');
 
-			// The rooms name areas and tiles by ID, so the map looks their names up in this
+			// The rooms name areas and tiles by ID, so the area view looks their names up in this
 			const text = new UniverseText(this.server.client, id);
 
 			await text.load();
-			this.mapView.useText(text);
+			this.areaView.useText(text);
 		}
 		catch (error)
 		{
@@ -571,7 +571,7 @@ export class GamePage
 		this.showOutside(t({
 			id: 'game.universeDeleted',
 			defaultMessage: '{universe} was deleted, with everything in it.',
-			description: 'Shown on the game\'s page when the universe being played was deleted, along with its creator\'s account; {universe} is its name'
+			description: 'Shown on the game\'s page when the universe being played was deleted, by one of its creators or the site\'s admins, or along with its creator\'s account; {universe} is its name'
 		}, {
 			universe
 		}));
@@ -1240,7 +1240,7 @@ export class GamePage
 			notice = t({
 				id: 'group.characterBarred',
 				defaultMessage: 'The universe\'s creators disabled the race or class of {name}, so they can\'t play until it is enabled again. They are still in the group.',
-				description: 'Shown in the lobby when the character a window played in a group was taken off its map because the universe\'s creators disabled their race or class for characters already of it; {name} is the character\'s name'
+				description: 'Shown in the lobby when the character a window played in a group was taken out of its area because the universe\'s creators disabled their race or class for characters already of it; {name} is the character\'s name'
 			}, {
 				name
 			});

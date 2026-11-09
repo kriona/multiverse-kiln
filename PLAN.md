@@ -80,44 +80,44 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 **Done when:** a player's identity survives a server restart, and the test suite runs against its own database.
 
-## Phase 7: Universes, areas and maps
+## Phase 7: Universes and areas
 
 The game runs on real universe data. Content comes from a seed script until the editor exists (Phase 8).
 
 Built in three steps: data and logic, then rooms, then the client.
 
-- [✅] Tables: `universes` (name, descriptions, stage, ruleset, passage of time, lobby and starting areas), `areas` (universe, parent, name, enabled, indoors, default tile, bounds, loops, passage of time), `tiles` (ruleset defaults plus each universe's own tiles), `map_chunks` and `area_links`. Edited copies of default tiles come with the tile editor (Phase 8)
-- [✅] Store map cells in chunks of 32 x 32, saving only chunks that differ from the area's default tile: a map can be 50,000 tiles in each direction
+- [✅] Tables: `universes` (name, descriptions, stage, ruleset, passage of time, lobby and starting areas), `areas` (universe, parent, name, enabled, indoors, default tile, bounds, loops, passage of time), `tiles` (ruleset defaults plus each universe's own tiles), `area_chunks` and `area_links`. Edited copies of default tiles come with the tile editor (Phase 8)
+- [✅] Store area cells in chunks of 32 x 32, saving only chunks that differ from the area's default tile: an area can be 50,000 tiles in each direction
 - [✅] PF1E default tiles (Grass, Forest, Desert, Mountains, Water, Wood Floor), added by a migration
 - [✅] Seed script for a sample universe (`npm run db:seed -w server`): a town square lobby with a cottage and a cellar, and a crossroads for groups that loops east-west. Run by hand like migrations, never on startup
-- [✅] Pure logic with tests: walk time per tile (twice the default = half speed, 0 = impassable), map bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
-- [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the map, chat, who's here and Create game. Groups belong to a universe and start in its starting area
+- [✅] Pure logic with tests: walk time per tile (twice the default = half speed, 0 = impassable), area bounds around 0,0, no cutting past impassable corners, wrapping in areas that loop, stopping on automatic links, finding a free cell to arrive in
+- [✅] Rename today's global `LobbyRoom` to `SessionRoom` (login, account, group membership), and add a `LobbyRoom` per universe (`filterBy` the universe ID) with the area, chat, who's here and Create game. Groups belong to a universe and start in its starting area
 - [✅] A room holds every area its players are in; each player has an area, and each client only sees the players in its own area (`StateView`, one per client for now)
-- [✅] Rooms load area maps at lifecycle boundaries, and load the next area before a player moves into it, never inside the tick
+- [✅] Rooms load areas at lifecycle boundaries, and load the next area before a player moves into it, never inside the tick
 - [✅] `GET /universes` lists the universes Home shows, a page at a time
 - [✅] Client draws tiles by color from the area data (graphics come in Phase 13), drawing only the chunks near the camera. The server still sends the whole area (see Phase 8)
 - [✅] Looping areas wrap seamlessly: near an edge the client draws the far side's chunks beyond it, players on the far side appear across the edge, and stepping over the edge doesn't jump the camera or the player
 - [✅] Area links: automatic links move you, manual links offer a prompt (press E)
-- [✅] The lobby screen shows the lobby's map next to chat and who's here, so players can walk around it
+- [✅] The lobby screen shows the lobby's area next to chat and who's here, so players can walk around it
 - [✅] Home page: universes in `let there be light` (paginated from the start), the universe overview, and Enter Universe -> that universe's lobby. Leaving the lobby goes back to Home; the long description is shown as plain text until Markdown rendering (Phase 8)
 
-**Done when:** a player picks a universe on Home, walks its lobby's map (blocked by mountains and water, slowed by forest) and walks through a door into a house.
+**Done when:** a player picks a universe on Home, walks around its lobby (blocked by mountains and water, slowed by forest) and walks through a door into a house.
 
 ## Phase 8: World editor
 
-Built in four steps: the server API, the editor pages, the map editor, then loading chunks as players approach them.
+Built in four steps: the server API, the editor pages, the area editor's cells, then loading chunks as players approach them.
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
 - [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 19). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
-- [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its map is the next item
-- [✅] Map editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller map clears the undo history
+- [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its cells are the next item
+- [✅] Area cells editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller area clears the undo history
 - [✅] Area link layer: automatic or manual, "requires the whole group", select destination coordinates with an optional return link (placed in the target area, leading back to the link's cell)
-- [✅] Edits apply immediately (universe versions come in Phase 15): the editor routes tell open rooms in this process about changed cells, areas, links and tiles (`areaChanges`), and the rooms update the areas they have loaded and their clients. Players a smaller map leaves out move to the nearest free cell inside it; players in a deleted area go to the lobby area (lobby) or starting area (group)
-- [✅] Rooms load an area's chunks as players come near them and drop chunks nobody is near, instead of loading the whole map (`loadArea` reads only the area's settings, links and tiles), since the editor can make maps up to 50,000 cells per side. Loading stays outside the tick, on a 250 ms interval: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player (`AreaPayload`, then `ChunksPayload` as they move)
+- [✅] Edits apply immediately (universe versions come in Phase 15): the editor routes tell open rooms in this process about changed cells, areas, links and tiles (`areaChanges`), and the rooms update the areas they have loaded and their clients. Players a smaller area leaves out move to the nearest free cell inside it; players in a deleted area go to the lobby area (lobby) or starting area (group)
+- [✅] Rooms load an area's chunks as players come near them and drop chunks nobody is near, instead of loading the whole area (`loadArea` reads only the area's settings, links and tiles), since the editor can make areas up to 50,000 cells per side. Loading stays outside the tick, on a 250 ms interval: a player waits at the edge of a chunk that hasn't arrived yet. Clients are likewise sent only the chunks near their player (`AreaPayload`, then `ChunksPayload` as they move)
 
-**Done when:** a universe can be built from scratch in the browser (tiles, areas, maps and links) and played in its lobby.
+**Done when:** a universe can be built from scratch in the browser (tiles, painted areas and links) and played in its lobby.
 
 ## Phase 9: Localization groundwork
 
@@ -190,7 +190,7 @@ Decided: walking a square takes the tile's walk time in game time (10 seconds by
 Built in three steps: time, vision, then world state.
 
 1. Time
-	- [✅] Time of day as pure functions in `/shared` with tests: fixed times, flowing time from a clock, real time from the Unix epoch, faerie time from map position, daylight, and each area's passage of time resolved through `inherit`
+	- [✅] Time of day as pure functions in `/shared` with tests: fixed times, flowing time from a clock, real time from the Unix epoch, faerie time from the position in the area, daylight, and each area's passage of time resolved through `inherit`
 	- [✅] Game clock per group, saved with the group: standing still passes no time, walking a square takes the tile's walk time, a combat round is 6 seconds
 	- [✅] Tiles are for indoors, outdoors, both or neither, and an area's draw tool and default tile offer only the tiles for its kind. Outdoor tiles default to 10 minutes. The Tilesets tab shows where each tile is used and filters by it
 	- [✅] Lobby tab: lobby time (fixed, real-time from the Unix epoch with a day of 1-240 hours, or faerie)
@@ -226,16 +226,16 @@ Decided:
 - [✅] A piece is redrawn when a chunk next to it changes, since its edge cells depend on it; painting a cell redraws the 4 frames touching it
 - [✅] Grid lines drawn as an overlay, not baked into each tile
 - [✅] A tile's graphic chosen from sheets that ship with the engine or the universe's uploaded tilesets, shown in the tile editor with its day and night preview
-- [✅] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing maps with them once they load (tiles show their colors until then)
+- [✅] Uploading tilesets from the tile editor, staged until the Tilesets tab is saved: object storage, checking and re-encoding, the rights confirmation, and drawing areas with them once they load (tiles show their colors until then)
 - [✅] Deleting an uploaded tileset from the tile editor, after asking, staged until the tab is saved; tiles drawn with it go back to their colors
 - [✅] Removing a universe's uploads from storage when the universe is deleted (deleting an account deletes the universes it chose to, `server/src/http/accountDeletion.ts`)
 - [✅] The editor's Save saves every tab's changes together, all or nothing, as `STRUCTURE-OVERVIEW.md` describes: one request (POST `/:universeId/changes`, `server/src/http/editorChanges.ts`) saves them in one transaction, in place of a route for each change, and a change can name what an earlier one in the same save makes
-- [✅] The Areas tab's maps draw the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices offer new tiles and stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
+- [✅] The areas the Areas tab draws show the Tilesets tab's staged changes: changed colors and graphics, new tiles, staged uploads (from the page's own copy), and tiles staged for deletion drawn as their chosen replacements, including as an area's default tile. The draw tool and the default tile choices offer new tiles and stop offering tiles staged for deletion, and painting staged on the Areas tab with such a tile is saved as its replacement
 - [✅] The area previews in the link and starting area dialogs draw the Tilesets tab's staged changes too
 - [✅] Graphics for the ruleset's default tiles (grass, and PF1E's forest and mountains, so far)
 - [✅] Check the new screens in the pseudo-language, update Pirate, and add screen reader text
 
-**Done when:** an outdoor area painted with grass, dirt and forest shows smooth edges where they meet, the forest's treetops rise over the cells north of it, and painting in the map editor updates the edges as it paints.
+**Done when:** an outdoor area painted with grass, dirt and forest shows smooth edges where they meet, the forest's treetops rise over the cells north of it, and painting in the area editor updates the edges as it paints.
 
 ## Phase 14: Authentication and accounts
 
@@ -354,9 +354,9 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [✅] Coin names and abbreviations of the universe's own, in the Ruleset tab's Coins table (`coinNames` and `coinAbbreviations`, staged until Save), shown in money fields and on the character sheet, and translated on the Translations tab as universe text (`coin`); a coin given back the engine's name or abbreviation loses its translations
 8. Universe versions
 	- [✅] Write the design into `STRUCTURE-OVERVIEW.md` (Universe versions), and close its open question: a live version and at most one draft, applied once and for good
-	- [✅] Schema: a `draft` flag and the live row it was copied from (`origin`) on every content table (tiles and tile graphics, items, races, classes, themes, difficulty levels, areas, and the ruleset settings, starting items, translations and translator notes), in the unique keys that name the universe; tables hanging off a row (ruleset rows, starting items of a race or class, class race areas, map chunks, links) follow their row. `universe_drafts` holds the draft's own copy of the settings `universes` holds for the live version
+	- [✅] Schema: a `draft` flag and the live row it was copied from (`origin`) on every content table (tiles and tile graphics, items, races, classes, themes, difficulty levels, areas, and the ruleset settings, starting items, translations and translator notes), in the unique keys that name the universe; tables hanging off a row (ruleset rows, starting items of a race or class, class race areas, area chunks, links) follow their row. `universe_drafts` holds the draft's own copy of the settings `universes` holds for the live version
 	- [✅] Every repository reads and writes either the live version or the draft (`UniverseVersion`, `server/src/db/universeVersions.ts`): the rooms, Home, the universe page, Create Character and the other player-facing routes the live one, the editor's routes the one it sends
-	- [✅] Starting a draft copies the live content (`server/src/db/universeDraftRepo.ts`, in the save's transaction), mapping every reference inside it, map cells included, to the copies; discarding deletes it and the files of tilesets only it used
+	- [✅] Starting a draft copies the live content (`server/src/db/universeDraftRepo.ts`, in the save's transaction), mapping every reference inside it, area cells included, to the copies; discarding deletes it and the files of tilesets only it used
 	- [✅] The editor's choice of live or draft beside the role in its toolbar, asking first over unsaved changes, and `?version=draft` in its address; every request names the version (`EDITOR_VERSION_PARAM`), saves to the draft tell no room anything, a notice says which is open and warns while the live version is open with a draft, and the Audit tab marks draft saves and lists starting, applying and discarding
 	- [✅] Start Draft, Apply Draft and Discard Draft in the toolbar, each asking first and saving at once: Start Draft's dialog explains drafts and saves any unsaved changes with it (`client/src/ui/editor/StartDraftDialog.ts`), while applying and discarding wait until nothing else is unsaved; all for creators (`canManageVersions()`), as `EditorChange` kinds saved after every other change (`client/src/ui/editor/DraftSection.ts`)
 	- [✅] Applying asks the step 4 warnings, comparing the draft with the live version (`draftImpacts()` in `server/src/http/editorImpact.ts`), with what the draft deletes while in use kept disabled. It writes the draft back under the live IDs in the save's transaction (`server/src/http/editorDrafts.ts`); once committed, open rooms load the new world and clients fetch the text
@@ -368,31 +368,51 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [✅] The editors' chat, in a panel of the editor opened with the toolbar's Chat button (Alt+H, `client/src/ui/editor/EditorChat.ts`): out of character, as the player (display name and @username), rate-limited like the lobby's, with a list above it naming who has the editor open
 	- [✅] Group chat on the group screen, kept the same way (`server/src/rooms/keptChat.ts`, shared with the editor room): as the character the window plays, working while the universe is locked, with a line naming the members who are here (`client/src/ui/ChatLog.ts`, shared by every chat)
 	- [✅] Save notices: once a save commits, the change route publishes the audit's details (`editorUpdates`, kind `saved`) to the universe's editor room, which tells every other editor window (`EditorServerMessageType.Saved`; the saving window names itself with `windowId`): everything to windows on the same version, and only the editors, stage and draft to windows on the other (`server/src/logic/saveNotices.ts`), with no details when the save changed nothing else, so their Audit tab still lists it again. A toast says who saved what ("Bea saved: Changed race Dwarf, Painted 40 cells in Cave"), read out by screen readers (`client/src/ui/editor/saveNotices.ts`). Each thing's changed fields, by ID, for keeping views current, come with the next item
-	- [✅] Keeping views current: the editor fetches what a save changed, and updates whatever it has no unsaved changes to (lists, an open dialog, the area editor's map). Something it does have unsaved changes to gets a note inline ("Bea changed Name and Speed since you opened this"), and the toast stays until dismissed, naming the tab
+	- [✅] Keeping views current: the editor fetches what a save changed, and updates whatever it has no unsaved changes to (lists, an open dialog, the area editor's cells). Something it does have unsaved changes to gets a note inline ("Bea changed Name and Speed since you opened this"), and the toast stays until dismissed, naming the tab
 		- [✅] Each detail a save notice carries names the ID of what it changed (`SavedEditDetail`), and each tab follows the save (`FollowsOtherSaves`, `client/src/ui/editor/otherSaves.ts`): the lists of races, classes, themes, difficulty levels, items, tiles and editors load again keeping their staged changes, marking each row both changed (`ChangedSinceNotes`); the settings forms (Universe, Lobby, Characters, Coins, Translations and Ruleset) load again when they have no unsaved changes, and otherwise say at their top who changed which settings (`FormFollower`); the Areas tab loads its list, and the area open when it has no unsaved changes, or says what changed above its settings; the translation table loads again keeping its changes. Starting, applying or discarding the draft loads the universe again, or says to reload. The toast names the tabs with unsaved changes the save touched and stays until clicked away
 		- [✅] An open dialog (race, class, theme, difficulty level, item, tile, editor) showing something a save changed shows it afresh, keeping the focus, while neither it nor its tab has unsaved changes to it, and closes when the save deleted it; otherwise it says under its title what changed (`FollowedDialog` and `DialogFollower`). An item or tile on another page than the list shows gets the note. A link dialog with changes not yet applied keeps the area open from loading again under it; one without them closes as the area loads
 	- [✅] Saving only what changed: changes to the universe's and the ruleset's settings, items, races, classes, themes, difficulty levels, tiles, areas, editors and translations carry only the fields changed, each with the value the editor loaded. A list (starting equipment, a class's races) is one field. The server compares each with what is saved, and when another editor changed the same field since, refuses with 409 and a `SaveRefusedPayload` naming the thing, the field, its saved value and who saved it. The editor then asks, for each: keep mine, or take theirs. Painting: each cell takes the latest save, and the area editor marks cells another editor painted while it was open
 		- [✅] Settings: each change to settings (`MERGED_CHANGE_KINDS`) carries `loaded`, the settings as the editor loaded them (as the change before it left them, for a second change to the same thing in one save), beside the settings it sends. The server merges them a setting at a time, as the Audit tab groups them (`mergeSettings()` in `shared/src/fieldMerge.ts`, `server/src/http/editorSaveMerge.ts`): what the change changed is saved, the rest keeps what is saved, and a setting another editor changed since to something else is refused with 409 and `SaveRefusedPayload.conflicts`, naming the thing, the setting, both values as the Audit tab shows them and who saved it last (`findLastSaver()`, from the IDs `universe_edits` records with each detail). The save bar asks Keep Mine or Take Theirs for each (`ConflictDialog`), settles the changes (`settleConflict()`) and sends the save again. After a save, the forms with no unsaved changes load again, showing what the merge kept
 		- [✅] Translations: `saveTranslation` and `saveTranslatorNote` carry `loaded`, the translation or note as the Translations tab listed it, and conflict as a whole when another editor saved a different one since (`SaveMerge.mergeText()`), naming the text, both versions and who saved it (`universe_translations.saved_by`, `universe_translator_notes.note_saved_by`). One that saves what is saved is skipped, so taking theirs (`settleTextConflict()`) saves nothing
-		- [✅] Painting: the save notice's cells details name the chunks each area's painting touched (`SavedEditDetail.chunks`, left out of `universe_edits`). The area editor loads those it has loaded again (`ChunkLoader.reload()`) and takes in each changed cell, keeping cells painted here and not yet saved, with the undo history following the saved values (`EditHistory.rebase()`), and outlines them with the cell text naming who painted them (`MapEditor.followPainting()`), unsaved changes or not. Cells painted here since the area opened, saved or not, are outlined in orange, and the save notice waits for the painting to say how many, as a warning kept until clicked away (`AreasTab.followPainting()`); clicking the toast away takes that save's marks off (`FollowedPainting.unmark()`). A save changing the open area's settings with no unsaved changes here shows them again keeping the map, rather than loading the area afresh
-	- [✅] Soft claims on areas: opening an area in the area editor claims it for that window, in the room's state, until the window closes it or disconnects. Another editor opening it sees "Bea is editing this area" above the map, without being locked out, and the Areas tab tags the area with who is editing it. The claim is each window's `EditorWindow.areaId`, kept while the window shows another tab; the editor reads other players' claims on its version from the room's state (`areaClaims()`, `client/src/ui/editor/areaClaims.ts`), says above the map who else is editing the area open, read out when that changes, and tags the areas in the lists (`AreasTab.setClaims()`)
+		- [✅] Painting: the save notice's cells details name the chunks each area's painting touched (`SavedEditDetail.chunks`, left out of `universe_edits`). The area editor loads those it has loaded again (`ChunkLoader.reload()`) and takes in each changed cell, keeping cells painted here and not yet saved, with the undo history following the saved values (`EditHistory.rebase()`), and outlines them with the cell text naming who painted them (`AreaEditor.followPainting()`), unsaved changes or not. Cells painted here since the area opened, saved or not, are outlined in orange, and the save notice waits for the painting to say how many, as a warning kept until clicked away (`AreasTab.followPainting()`); clicking the toast away takes that save's marks off (`FollowedPainting.unmark()`). A save changing the open area's settings with no unsaved changes here shows them again keeping the cells, rather than loading the area afresh
+	- [✅] Soft claims on areas: opening an area in the area editor claims it for that window, in the room's state, until the window closes it or disconnects. Another editor opening it sees "Bea is editing this area" above the area's cells, without being locked out, and the Areas tab tags the area with who is editing it. The claim is each window's `EditorWindow.areaId`, kept while the window shows another tab; the editor reads other players' claims on its version from the room's state (`areaClaims()`, `client/src/ui/editor/areaClaims.ts`), says above the area's cells who else is editing the area open, read out when that changes, and tags the areas in the lists (`AreasTab.setClaims()`)
 	- [✅] Tests: the room refuses players without a role and turns out one who loses theirs; a chat keeps its newest 200 messages, through the room closing; saves to different fields of one race both land; a save to a field changed since is refused naming who changed it; edits to a race in the draft and in the live version don't conflict; a claim ends when its window leaves (`server/test/EditorRoom.test.ts`, `server/test/db/chatRepo.test.ts`, `server/test/editorMerge.test.ts`, `server/test/shared/fieldMerge.test.ts`)
-10. Finishing
+10. Deleting a universe
+	- [✅] Delete Universe under the Universe tab's settings, for creators and the site admin role, in two dialogs like deleting an account: what it deletes (`GET /:universeId/deletion`), then the password and 2FA code, or the username and an emailed code (purpose `deleteUniverse`). Done at once, the exception to staging, then goes to Home (`client/src/ui/editor/UniverseDeleteSection.ts`)
+	- [✅] The deletion shared with deleting an account (`server/src/http/universeDeletion.ts`): the role checked again once the universe is locked, its uploads deleted from storage, its rooms told, and its other editors emailed. A creator is refused while the admins keep its creators from deleting it; a server admin deleting it as an admin goes through `POST /admin/universes/:universeId/deletion`, recorded as an admin event that keeps the universe's name
+	- [✅] Tests (`server/test/universeDeletion.test.ts`)
+11. Exporting a universe
+	- [✅] Export Universe left of Delete Universe, for every role but beta tester, opening a dialog that says what the export holds and whose Export Universe downloads a zip file of what the role can change in the version open (`client/src/ui/editor/UniverseExportSection.ts`)
+	- [✅] The format (`shared/src/universeExport.ts`): `universe.json` with a section for each kind of thing the role can change, the races and classes in `races.json` and `classes.json`, the uploaded tilesets and tiles in `tilesets.json`, the items in `items.json`, the notes for translators, needs-no-translation marks and translations in `translations.json`, each area with its settings, links and cells in a file of its own in `areas/` (which `areas.json` lists), the live rows a draft's things were copied from in `liveIds.json`, and uploaded tilesets' images in `tilesets/`, named by the version's IDs, with the ruleset's defaults listed by key
+	- [✅] `GET /:universeId/export` (`server/src/http/universeExport.ts`), read in one read-only snapshot, one export at a time per player; zip archives written and read with Node's zlib (`server/src/archives/zip.ts`)
+	- [✅] Tests (`server/test/universeExport.test.ts`, `server/test/archives/zip.test.ts`)
+12. Importing a universe
+	- [✅] Import Universe beside Export Universe, for every role but beta tester, into the draft only: while the live version is open, a dialog that opens the draft or starts one (creators), then the import dialog, which previews the file (`POST /:universeId/import/preview`), asks for the rights to tilesets it uploads, and imports it at once, as Apply Draft saves, waiting until nothing else is unsaved (`client/src/ui/editor/UniverseImportSection.ts`)
+	- [✅] Reading and checking the file (`server/src/http/universeImportFile.ts`) and planning it as editor changes (`server/src/http/universeImportPlan.ts`): each part the role can change replaces the draft's, defaults matched by key, and the same universe's things matched by their live rows (`liveIds` in a draft's export) so they keep their place once applied
+	- [✅] Saved as one save through `saveChanges()`, which takes changes made once the changes before them are saved (`PendingChange`), for settings naming things the same save makes (`server/src/http/universeImport.ts`)
+	- [✅] Tests (`server/test/universeImport.test.ts`)
+13. Finishing
 	- [✅] Check the new screens in the pseudo-language, update Pirate, and add keyboard shortcuts and screen reader text for the new tabs and dialogs
 	- [✅] Update `STRUCTURE-OVERVIEW.md` where the decisions above changed it (stages, admins, versions)
 	- [✅] Review the new routes against `SECURITY-PRACTICES.md`, and cover them in `server/test/http.test.ts`
 
 **Done when:** a team of editors and beta testers takes a universe from `in the beginning` to `let there be light`, and a creator can disable a race without breaking its existing characters. A translator adds French to the universe, and a French player sees it in French.
 
-## Phase 16: Regions and map editing
+## Phase 16: Regions and area editing
 
 1. Regions
-	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without a map of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
+	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without cells of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
 	- [ ] Build it, with tests
-2. Map editor
-	- [ ] Edit Size: a field whose value differs from the map's size now shows in a changed color
+	- [ ] Areas can be in multiple regions. One region can group areas a builder works in, while another like "The Planet" could define the rules for all outdoor areas.
+2. Area editor
+	- [ ] Edit Size: a field whose value differs from the area's size now shows in a changed color
 	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
 	- [ ] Middle click on a cell picks its tile as the tile to paint with
+	- [ ] Ability to chain overworld areas together
+		- [ ] You can specify a neighbor area to the north, east, south, and west. You can click to add a neighbor, which creates an area where the touching sides are the same dimension (e.g., if you click to add an area to the west, the north/south dimensions of the new area will be the same as the current area.
+		- [ ] Approaching the western edge of an area seamlessly loads from the neighbor. You can walk to seamlessly enter the neighbor.
+		- [ ] The area editor will draw 16 closest blocks from the neighboring areas (including northwest, northeast, etc). This lets editors preview the neighboring area.
+		- [ ] There should be an easy way to jump to the area editor for the neighboring area.
 3. Site fonts and text sizes
 	Decided, and already done in the static placeholder site (`C:\dev\multiverse-kiln-html`: `css/fonts.css`, `css/shared.css`), which can be copied from:
 	- Nunito for body text and every control; Alegreya (calligraphic serif) for headings (`h1` to `h6`) and the site's name. If Alegreya looks too jagged at small heading sizes, Alegreya Sans is the fallback, then Texturina. Both are under the SIL Open Font License
@@ -404,12 +424,12 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [ ] Replace every `px` and `pt` font size in the client's styles with the scale or a `rem` value
 	- [ ] Nunito's regular weight is light on the dark background: check small text, and use weight 500 where it looks faint
 	- [ ] 2FA code fields and other monospace text keep their current font (Consolas, Menlo, monospace)
-	- [ ] Phaser draws canvas text with the font it has when the text is made, and doesn't redraw it when the font arrives: wait for the fonts (`document.fonts.load()`) before the map's scenes create text, and change `MapScene`'s `fontFamily: 'sans-serif'` to the body font
+	- [ ] Phaser draws canvas text with the font it has when the text is made, and doesn't redraw it when the font arrives: wait for the fonts (`document.fonts.load()`) before the area scenes create text, and change `AreaScene`'s `fontFamily: 'sans-serif'` to the body font
 	- [ ] Credit Nunito (copyright 2014 The Nunito Project Authors) and Alegreya (copyright 2011 The Alegreya Project Authors) in a Fonts section of `client/license.html`, linking to each font's `OFL.txt`
 	- [ ] Check the pages in the pseudo-language (`?locale=en-XA`), whose accented letters use the Latin Extended files, and with the browser's base text size raised
 	- [ ] Consider a second monospace font for usernames, one that tells 0 from O and 1 from l
 
-**Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the map with the middle button. Every page shows Nunito and Alegreya from the site's own server, and its text grows with the browser's base text size.
+**Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the area with the middle button. Every page shows Nunito and Alegreya from the site's own server, and its text grows with the browser's base text size.
 
 ## Phase 17: Cloud deployment
 
@@ -477,7 +497,7 @@ Needed before universes are open to the public.
 - The overworld map and its scale
 - Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"
 - Character sprites and avatars, and art for each item
-- Placed objects for distinctive buildings and lone trees: made once and placed in any number of areas, each with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players, and door cells for area links. Placements are a list per area, not cells in its chunks. An Objects tab and a place tool in the map editor. Building interiors are indoor areas, as now
+- Placed objects for distinctive buildings and lone trees: made once and placed in any number of areas, each with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players, and door cells for area links. Placements are a list per area, not cells in its chunks. An Objects tab and a place tool in the area editor. Building interiors are indoor areas, as now
 - Walls as a layer of their own, so a cell holds a ground tile and a wall over it, rather than walls drawn over the area's default tile
 - Tall walls with a front face: blob frames 32x64 drawn over the row south of the wall, and over players standing there
 - Exporting and importing a universe's translations (JSON or XLIFF), and a translation service such as Weblate for the engine's catalogs
@@ -495,7 +515,7 @@ Needed before universes are open to the public.
 - Which S3-compatible service stores uploads in production, and its bucket (Phase 17)
 - Telling users with the same name apart (Phase 20)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for map text in scripts the default font doesn't cover (Phase 18)
+- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 18)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
 - Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 17). The host's proxies decide which forwarding header the server trusts for clients' addresses

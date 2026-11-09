@@ -60,6 +60,30 @@ function isSlugTaken(error: unknown): boolean
 }
 
 /**
+ * Whether another universe has a name, or one too much like it, as setting the name would find
+ * (settingName()), such as before importing a name from another universe's export
+ *
+ * @param name The name
+ * @param universeId The universe that would have it
+ * @param executor The database, or a transaction
+ * @return True when another universe has it
+ */
+export async function isUniverseNameTaken(name: string, universeId: string, executor: Executor = db): Promise<boolean>
+{
+	const key = nameKey(name);
+	const slug = universeSlug(name);
+	const others = await executor
+		.select({
+			id: universes.id,
+			name: universes.name,
+			slug: universes.slug
+		})
+		.from(universes);
+
+	return(others.some((other) => ((other.id !== universeId) && ((nameKey(other.name) === key) || (other.slug === slug)))));
+}
+
+/**
  * Runs a query that sets a universe's name, if no other universe has a name with the same key
  *
  * The keys are compared here rather than kept in the database, so a change to how names are reduced
@@ -417,7 +441,8 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
 			stage: universes.stage,
 			requireTwoFactor: universes.requireTwoFactor,
 			ruleset: universes.ruleset,
-			disabledReason: universes.disabledReason
+			disabledReason: universes.disabledReason,
+			deletionPrevented: universes.deletionPrevented
 		})
 		.from(universes)
 		.where(eq(universes.id, version.universeId))
@@ -709,7 +734,7 @@ export async function setUniverseDisabled(universeId: string, disabling: Univers
 }
 
 /**
- * Deletes a universe and everything in it: its areas, maps, links and tiles
+ * Deletes a universe and everything in it: its areas and their cells, links and tiles
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction

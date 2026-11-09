@@ -722,6 +722,41 @@
       "when": 1794156807576,
       "tag": "0102_admin_role_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1794166475073,
+      "tag": "0103_universe_deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1794171945017,
+      "tag": "0104_rename_map_chunks_to_area_chunks",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1794187540990,
+      "tag": "0105_site_areas_per_universe",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1794189058238,
+      "tag": "0106_area_size_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1794192013163,
+      "tag": "0107_player_dismissed_notices",
+      "breakpoints": true
     }
   ]
 }

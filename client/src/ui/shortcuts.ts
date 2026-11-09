@@ -3,7 +3,7 @@
  *
  * A control marks its shortcut in the page with data-shortcut, written the way aria-keyshortcuts writes
  * keys, e.g. <button data-shortcut="Alt+S">. Pressing it clicks the control (a button, checkbox or
- * radio button) or moves focus to it (anything else, such as a text field or the map). Code adds
+ * radio button) or moves focus to it (anything else, such as a text field or the area). Code adds
  * shortcuts that aren't a control with addShortcut(), and describes keys it handles itself, such as
  * the movement keys, with addKeyHelp(), so the list has them
  *

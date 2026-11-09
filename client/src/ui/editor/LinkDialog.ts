@@ -1,20 +1,20 @@
 import { ancestorAreas, isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
+import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
+import { AreaCells } from '../../editor/AreaCells';
 import { ChunkLoader } from '../../editor/ChunkLoader';
-import { EditorMap } from '../../editor/EditorMap';
-import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import type { BrushCell } from '../../editor/brush';
-import type { MapEditorHost } from '../../scenes/MapEditorScene';
+import type { AreaEditorHost } from '../../scenes/AreaEditorScene';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
 import { reportFieldError, setFieldError } from '../fieldErrors';
 import { SearchSelect } from '../SearchSelect';
 import { addKeyHelp } from '../shortcuts';
+import { areaEditorMessages } from './areaEditorMessages';
 import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
-import { mapMessages } from './mapMessages';
 import { FollowedDialog } from './otherSaves';
 
 /**
@@ -83,13 +83,13 @@ interface PreviewArea
 {
 	area: EditorArea;
 	links: EditorAreaLink[];
-	map: EditorMap;
+	cells: AreaCells;
 	loader: ChunkLoader;
 }
 
 /**
  * Adds, changes or deletes a cell's area link: how it is taken, whether it needs the whole group, and
- * where it goes, chosen by clicking a preview of the target area's map. It can also place a return
+ * where it goes, chosen by clicking a preview of the target area. It can also place a return
  * link in the target area that leads back to the cell. The changes wait on the page until the Areas
  * tab is saved
  */
@@ -126,7 +126,7 @@ export class LinkDialog
 	private readonly returnText = getElement('link-return-cell', HTMLElement);
 	private readonly error = getElement('link-error', HTMLElement);
 	private readonly deleteButton = getElement('link-delete', HTMLButtonElement);
-	private readonly canvas = new MapCanvas(getElement('link-preview', HTMLElement), PREVIEW_WIDTH, PREVIEW_HEIGHT);
+	private readonly canvas = new AreaCanvas(getElement('link-preview', HTMLElement), PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
 	private target: LinkDialogTarget | undefined;
 	private preview: PreviewArea | undefined;
@@ -158,17 +158,17 @@ export class LinkDialog
 
 		addKeyHelp({
 			scope: previewElement,
-			keys: () => t(mapMessages.arrowKeys),
-			description: () => t(mapMessages.cursorDescription)
+			keys: () => t(areaEditorMessages.arrowKeys),
+			description: () => t(areaEditorMessages.cursorDescription)
 		});
 
 		addKeyHelp({
 			scope: previewElement,
-			keys: () => t(mapMessages.spaceOrEnter),
+			keys: () => t(areaEditorMessages.spaceOrEnter),
 			description: () => t({
 				id: 'editor.link.keys.pickDescription',
 				defaultMessage: 'Choose the cursor\'s cell',
-				description: 'In the list of keyboard shortcuts, what Space and Enter do on the link dialog\'s map: choose the destination or the return link\'s cell'
+				description: 'In the list of keyboard shortcuts, what Space and Enter do on the link dialog\'s area preview: choose the destination or the return link\'s cell'
 			})
 		});
 
@@ -272,7 +272,7 @@ export class LinkDialog
 	}
 
 	/**
-	 * Shows an area's map in the preview, centered on the destination if it has one
+	 * Shows an area in the preview, centered on the destination if it has one
 	 *
 	 * @param areaId The area's ID
 	 */
@@ -306,7 +306,7 @@ export class LinkDialog
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.link.showAreaFailed',
 					defaultMessage: 'Could not show that area.',
-					description: 'Shown in the link dialog when the map of the area the link goes to couldn\'t be loaded'
+					description: 'Shown in the link dialog when the area the link goes to couldn\'t be loaded for its preview'
 				}));
 			}
 
@@ -318,18 +318,18 @@ export class LinkDialog
 			return;
 		}
 
-		const map = new EditorMap(area.bounds);
-		const loader = new ChunkLoader((range) => target.source.loadChunks(area.id, range), map, (chunkKeys) =>
+		const cells = new AreaCells(area.bounds);
+		const loader = new ChunkLoader((range) => target.source.loadChunks(area.id, range), cells, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
 		{
-			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
+			showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
 		});
 
-		this.preview = { area, links, map, loader };
+		this.preview = { area, links, cells, loader };
 
-		const scene = await this.canvas.show(editorAreaPayload(area, target.tiles, target.ruleset), map.chunks, this.previewHost(loader));
+		const scene = await this.canvas.show(editorAreaPayload(area, target.tiles, target.ruleset), cells.chunks, this.previewHost(loader));
 
 		scene.setLinks(links);
 		this.updateCells();
@@ -346,7 +346,7 @@ export class LinkDialog
 	 * @param loader Loads the preview area's chunks
 	 * @return The host
 	 */
-	private previewHost(loader: ChunkLoader): MapEditorHost
+	private previewHost(loader: ChunkLoader): AreaEditorHost
 	{
 		return({
 			pointerMode: () => 'pick',
@@ -366,7 +366,7 @@ export class LinkDialog
 				}
 
 				return(describeCell({
-					map: preview.map,
+					cells: preview.cells,
 					defaultTileId: preview.area.defaultTileId,
 					tiles: target.tiles,
 					links: preview.links,
@@ -416,7 +416,7 @@ export class LinkDialog
 			})
 			: t({
 				id: 'editor.link.chooseDestination',
-				defaultMessage: 'Click the map to choose the destination.',
+				defaultMessage: 'Click the area to choose the destination.',
 				description: 'Shown in the link dialog until the cell the link leads to is chosen'
 			}));
 
@@ -424,7 +424,7 @@ export class LinkDialog
 		{
 			this.returnText.textContent = t({
 				id: 'editor.link.placeReturn',
-				defaultMessage: 'Choose the return link\'s cell above, then click the map to place it.',
+				defaultMessage: 'Choose the return link\'s cell above, then click the area to place it.',
 				description: 'Shown in the link dialog until the cell for the link leading back is chosen'
 			});
 		}
@@ -486,7 +486,7 @@ export class LinkDialog
 		{
 			showMessage(this.error, t({
 				id: 'editor.link.needDestination',
-				defaultMessage: 'Click the map to choose where the link goes.',
+				defaultMessage: 'Click the area to choose where the link goes.',
 				description: 'Shown when Apply is pressed before the cell the link leads to is chosen'
 			}));
 			return;
@@ -496,7 +496,7 @@ export class LinkDialog
 		{
 			showMessage(this.error, t({
 				id: 'editor.link.needReturn',
-				defaultMessage: 'Click the map to place the return link, or don\'t add one.',
+				defaultMessage: 'Click the area to place the return link, or don\'t add one.',
 				description: 'Shown when Apply is pressed with a return link asked for but not placed'
 			}));
 			return;
@@ -576,7 +576,7 @@ export class LinkDialog
 	}
 
 	/**
-	 * Hands the dialog's changes to the map editor and closes it
+	 * Hands the dialog's changes to the cell editor and closes it
 	 *
 	 * @param changes The changes
 	 */

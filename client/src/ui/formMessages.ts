@@ -27,7 +27,7 @@ export const formMessages = defineMessages({
 	saving: {
 		id: 'form.saving',
 		defaultMessage: 'Saving...',
-		description: 'Shown while work is being stored, such as painting under the map editor\'s map, or the player\'s progress in the toolbar of Create Character'
+		description: 'Shown while work is being stored, such as painting the area editor\'s cells, or the player\'s progress in the toolbar of Create Character'
 	},
 	saved: {
 		id: 'form.saved',

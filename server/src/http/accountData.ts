@@ -223,6 +223,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 			locale: profile.locale,
 			socials: profile.socials,
 			showCharacters: profile.showCharacters,
+			dismissedNotices: profile.dismissedNotices,
 			createdAt: profile.createdAt.toISOString(),
 			lastLoginAt: (profile.lastLoginAt?.toISOString() ?? null)
 		},
@@ -262,7 +263,7 @@ export async function exportRoute(request: Request, response: Response): Promise
 			kind: event.kind,
 			byPlayer: (event.adminId === playerId),
 			playerId: event.playerId,
-			universe: (((event.universeId === null) || (event.universeName === null))
+			universe: ((event.universeName === null)
 				? null
 				: {
 					id: event.universeId,

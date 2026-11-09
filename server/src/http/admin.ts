@@ -2,15 +2,15 @@
  * The admin pages' REST API (see shared/src/admin.ts and shared/src/siteSettings.ts): settings for the
  * whole site, the login sessions still going, the player accounts, the server admins and the
  * universes. Only server admins with 2FA on may use the routes under ADMIN_PATH; anyone may read the
- * public settings. Adding and removing admins, and disabling and enabling universes, are recorded as
- * admin events in the same transaction
+ * public settings. Adding and removing admins, and disabling, enabling and deleting universes, are
+ * recorded as admin events in the same transaction
  *
  * Changes are made as the admin role (adminClient.ts), the only one that can write server admins, site
  * settings and admin events
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_AREAS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { adminDb, inAdminTransaction } from '../db/adminClient.js';
@@ -29,6 +29,7 @@ import { editorUpdates } from '../world/editorUpdates.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { playerSearchQuery } from './editorPayloads.js';
 import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { deleteUniverseRoute } from './universeDeletion.js';
 
 /**
  * A link to the site's page on a social site, or null for none
@@ -47,6 +48,7 @@ function socialUrl(site: SiteSocialSite): z.ZodType<string | null>
 const siteSettingsBody: z.ZodType<SiteSettings> = z.strictObject({
 	universeCreationEnabled: z.boolean(),
 	universesPerCreator: z.number().int().min(MIN_UNIVERSES_PER_CREATOR).max(MAX_UNIVERSES_PER_CREATOR),
+	areasPerUniverse: z.number().int().min(MIN_AREAS_PER_UNIVERSE).max(MAX_AREAS_PER_UNIVERSE),
 	characterDeletionDays: z.number().int().min(0).max(MAX_CHARACTER_DELETION_DAYS),
 	socials: z.strictObject({
 		discord: socialUrl('discord'),
@@ -169,6 +171,7 @@ export function addAdminRoutes(app: Application, allowedOrigins: Set<string>): v
 	router.get(underAdminPath(ADMIN_UNIVERSES_PATH), listUniverses);
 	router.put(`${underAdminPath(ADMIN_UNIVERSES_PATH)}/:universeId/disabled`, disableUniverse);
 	router.delete(`${underAdminPath(ADMIN_UNIVERSES_PATH)}/:universeId/disabled`, enableUniverse);
+	router.post(`${underAdminPath(ADMIN_UNIVERSES_PATH)}/:universeId${UNIVERSE_DELETION_PATH}`, deleteUniverseAsAdminRoute);
 
 	router.use(handleAdminError);
 
@@ -764,6 +767,43 @@ async function enableUniverse(request: Request, response: Response): Promise<voi
 		universeId: universeId.data
 	});
 	response.sendStatus(204);
+}
+
+/**
+ * POST ADMIN_UNIVERSES_PATH/:universeId/deletion: deletes a universe as a server admin, once the admin
+ * confirms it as its creators do (universeDeletion.ts), recording it as an admin event. The editor's
+ * Universe tab sends it when the admin deletes it as an admin (deletesUniverseAsAdmin())
+ *
+ * @param request The request, with a UniverseDeleteRequest
+ * @param response The response: 204, or the refusal
+ */
+async function deleteUniverseAsAdminRoute(request: Request, response: Response): Promise<void>
+{
+	const universeId = z.uuid().safeParse(request.params.universeId);
+
+	if (!universeId.success)
+	{
+		sendError(response, 404, errorMessages.noSuchUniverse);
+		return;
+	}
+
+	const adminId = adminOf(request).playerId;
+
+	await deleteUniverseRoute(request, response, universeId.data, {
+		inTransaction: inAdminTransaction,
+		check: () => Promise.resolve(undefined),
+		asAdmin: true,
+		record: async (universeName, transaction) =>
+		{
+			await recordAdminEvent({
+				kind: 'universeDeleted',
+				adminId,
+				universeId: universeId.data,
+				universeName,
+				occurredAt: new Date()
+			}, transaction);
+		}
+	});
 }
 
 /**

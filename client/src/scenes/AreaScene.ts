@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionMap, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionMap } from '@multiverse-kiln/shared';
+import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionArea, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionArea } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
-import type { GameRoom, MapConnection, MapRoom } from '../network/serverConnection';
+import type { AreaConnection, AreaRoom, GameRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
@@ -12,7 +12,7 @@ import type { CellMaskShader } from '../rendering/CellMaskShader';
 import { createRoundedFog } from '../rendering/RoundedFog';
 import { createUnexploredPaper, preloadUnexploredPaper } from '../rendering/UnexploredPaper';
 import { isTextEntry } from '../ui/dom';
-import { MapAnnouncer, type SeenPlayer } from '../ui/MapAnnouncer';
+import { AreaAnnouncer, type SeenPlayer } from '../ui/AreaAnnouncer';
 import { addKeyHelp, addShortcut } from '../ui/shortcuts';
 import { tileName } from '../ui/tileNames';
 import type { UniverseText } from '../ui/universeText';
@@ -20,7 +20,7 @@ import type { UniverseText } from '../ui/universeText';
 /**
  * Key the scene is registered under
  */
-export const MAP_SCENE_KEY = 'MapScene';
+export const AREA_SCENE_KEY = 'AreaScene';
 
 /**
  * How far in the past players are drawn: two patches, so there is normally a snapshot either side
@@ -62,12 +62,12 @@ const NAME_OFFSET = 4;
 const PROMPT_OFFSET = 6;
 
 /**
- * The color laid over the map at night
+ * The color laid over the area at night
  */
 const NIGHT_COLOR = 0x0a1030;
 
 /**
- * How opaque the night color is at full dark; the map fades toward it as the light goes
+ * How opaque the night color is at full dark; the area fades toward it as the light goes
  */
 const NIGHT_ALPHA = 0.65;
 
@@ -78,23 +78,23 @@ const NIGHT_ALPHA = 0.65;
 const DARK_ADAPTED_NIGHT_ALPHA = 0.1;
 
 /**
- * The color laid over the map in daylight outdoors for a character with darkvision and light
+ * The color laid over the area in daylight outdoors for a character with darkvision and light
  * sensitivity, whom bright light dazzles: the night color's opposite
  */
 const GLARE_COLOR = 0xf5efcf;
 
 /**
- * How opaque the glare is in full daylight; the map fades toward it as the light comes up
+ * How opaque the glare is in full daylight; the area fades toward it as the light comes up
  */
 const GLARE_ALPHA = NIGHT_ALPHA;
 
 /**
- * Depth of the night color: over the map and players, under their names and the link prompt
+ * Depth of the night color: over the area and players, under their names and the link prompt
  */
 const NIGHT_DEPTH = 0.5;
 
 /**
- * Depth of the glare, drawn over the cells in sight: over the map, the players and what overhangs them,
+ * Depth of the glare, drawn over the cells in sight: over the area, the players and what overhangs them,
  * under the paper, which is drawn rather than seen and so isn't dazzling
  */
 const GLARE_DEPTH = 0.35;
@@ -110,7 +110,7 @@ const FOG_COLOR = 0x000000;
 const FOG_ALPHA = 0.55;
 
 /**
- * Depth of the fog: over the map, the players and what overhangs them, such as mountains' peaks, which
+ * Depth of the fog: over the area, the players and what overhangs them, such as mountains' peaks, which
  * would otherwise show undimmed over cells out of sight; under the night. The players the room shows are
  * in sight, so the fog doesn't cover them
  */
@@ -130,7 +130,7 @@ const FOG_COLUMNS = ((Math.ceil(VIEW_COLUMNS / 2) + FOG_MARGIN) * 2) + 1;
 const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
 
 /**
- * Depth of the paper drawn over cells the group has never seen and past the map's edges: over the fog
+ * Depth of the paper drawn over cells the group has never seen and past the area's edges: over the fog
  * and the glare, under the night
  */
 const PAPER_DEPTH = 0.4;
@@ -161,12 +161,12 @@ function needsMovementKeys(element: Element | null): boolean
 /**
  * Data the scene is started with
  */
-export interface MapSceneData
+export interface AreaSceneData
 {
 	/**
 	 * The joined room; whoever starts the scene owns the room and leaves it
 	 */
-	connection: MapConnection<MapRoom>;
+	connection: AreaConnection<AreaRoom>;
 
 	/**
 	 * The universe's names in the player's language, which the scene loads again when the room says they
@@ -197,7 +197,7 @@ interface RenderedPlayer
 }
 
 /**
- * Draws a room with a map (a universe's lobby or a group's game room): the area the player is in, the
+ * Draws a room with an area (a universe's lobby or a group's game room): the area the player is in, the
  * players the server shows in it, and sends keyboard input. The camera follows the player
  *
  * The server decides where players are. This scene only sends the direction held and draws the
@@ -205,7 +205,7 @@ interface RenderedPlayer
  * player along each looping axis, and a player crossing the edge carries on smoothly rather than
  * jumping to the far side
  */
-export class MapScene extends Phaser.Scene
+export class AreaScene extends Phaser.Scene
 {
 	private room!: GameRoom;
 	private ownPlayerId!: string;
@@ -233,7 +233,7 @@ export class MapScene extends Phaser.Scene
 	private takeLinkKey?: Phaser.Input.Keyboard.Key;
 	private linkPrompt?: Phaser.GameObjects.Text;
 	private lastSentMove?: MovePayload;
-	private announcer!: MapAnnouncer;
+	private announcer!: AreaAnnouncer;
 
 	/**
 	 * Darkens the view as the light goes
@@ -246,9 +246,9 @@ export class MapScene extends Phaser.Scene
 	private glare?: CellMaskShader;
 
 	/**
-	 * The area's map as vision sees it, from the chunks received so far
+	 * The area's cells as vision sees them, from the chunks received so far
 	 */
-	private visionMap!: VisionMap;
+	private visionArea!: VisionArea;
 
 	/**
 	 * Darkens the cells out of sight
@@ -256,7 +256,7 @@ export class MapScene extends Phaser.Scene
 	private fog?: CellMaskShader;
 
 	/**
-	 * Hides the cells the group has never seen, and past the map's edges, under paper
+	 * Hides the cells the group has never seen, and past the area's edges, under paper
 	 */
 	private paper?: CellMaskShader;
 
@@ -266,13 +266,13 @@ export class MapScene extends Phaser.Scene
 	private fogKey = '';
 
 	/**
-	 * Counts the chunks received, so the fog is drawn again when the map under it changes
+	 * Counts the chunks received, so the fog is drawn again when the cells under it change
 	 */
 	private chunkRevision = 0;
 
 	constructor()
 	{
-		super(MAP_SCENE_KEY);
+		super(AREA_SCENE_KEY);
 	}
 
 	/**
@@ -280,7 +280,7 @@ export class MapScene extends Phaser.Scene
 	 *
 	 * @param data The room to draw
 	 */
-	init(data: MapSceneData): void
+	init(data: AreaSceneData): void
 	{
 		// A lobby's state holds its players the same way a game room's does; the scene reads nothing else
 		this.room = data.connection.room as unknown as GameRoom;
@@ -294,7 +294,7 @@ export class MapScene extends Phaser.Scene
 		this.takeLinkKey = undefined;
 		this.linkPrompt = undefined;
 		this.lastSentMove = undefined;
-		this.announcer = new MapAnnouncer();
+		this.announcer = new AreaAnnouncer();
 		this.night = undefined;
 		this.glare = undefined;
 		this.fog = undefined;
@@ -303,7 +303,7 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Loads the tile graphics the map is drawn with, and the paper over cells never seen
+	 * Loads the tile graphics the area is drawn with, and the paper over cells never seen
 	 */
 	preload(): void
 	{
@@ -316,7 +316,7 @@ export class MapScene extends Phaser.Scene
 	 */
 	create(): void
 	{
-		const mapElement = this.game.canvas.parentElement;
+		const areaElement = this.game.canvas.parentElement;
 
 		this.enterArea(this.area);
 		this.announcer.enteredArea(this.areaName(this.area));
@@ -359,7 +359,7 @@ export class MapScene extends Phaser.Scene
 		}
 
 		const prompt = t({
-			id: 'map.takeLink',
+			id: 'area.takeLink',
 			defaultMessage: 'Press E to go through',
 			description: 'Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language'
 		});
@@ -374,15 +374,15 @@ export class MapScene extends Phaser.Scene
 		this.fog = createRoundedFog(this, 'rounded-fog', FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
 		this.paper = createUnexploredPaper(this, FOG_COLUMNS, FOG_ROWS, PAPER_DEPTH);
 
-		// Clicking the map takes the keyboard back from a text field, such as the lobby's chat
+		// Clicking the area takes the keyboard back from a text field, such as the lobby's chat
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, () =>
 		{
-			mapElement?.focus();
+			areaElement?.focus();
 		});
 
-		if (mapElement)
+		if (areaElement)
 		{
-			this.addKeys(mapElement);
+			this.addKeys(areaElement);
 		}
 
 		this.game.events.on(Phaser.Core.Events.BLUR, this.stopMoving);
@@ -431,7 +431,7 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Sends input when it changes, moves every player to its interpolated position, draws the map around
+	 * Sends input when it changes, moves every player to its interpolated position, draws the area around
 	 * the camera, and offers the manual link the player is standing on
 	 */
 	update(): void
@@ -470,8 +470,8 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Draws fog over the cells around the player that nobody they see with can see: the player alone in
 	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Looks
-	 * from where each is drawn (drawnCellOf), and draws again only when that, how far they see or the map
-	 * changes
+	 * from where each is drawn (drawnCellOf), and draws again only when that, how far they see or the
+	 * area's cells change
 	 */
 	private updateFog(): void
 	{
@@ -497,8 +497,8 @@ export class MapScene extends Phaser.Scene
 			}
 		});
 
-		// The camera follows where the player is drawn: past a looping edge, a whole map away from their
-		// position on the map
+		// The camera follows where the player is drawn: past a looping edge, a whole area away from their
+		// position in the area
 		const center = this.drawnCellOf(this.ownPlayerId, own);
 		const key = [
 			this.area.areaId,
@@ -520,7 +520,7 @@ export class MapScene extends Phaser.Scene
 
 		for (const sight of sights)
 		{
-			for (const cellKey of visibleCells(sight.cell, sight.budget, this.visionMap))
+			for (const cellKey of visibleCells(sight.cell, sight.budget, this.visionArea))
 			{
 				visible.add(cellKey);
 			}
@@ -532,10 +532,10 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Draws fog over the cells around the view's center that aren't visible, the glare over those that
 	 * are, and paper over those the group has never seen. A cell that has just come into sight keeps its
-	 * paper until its tile arrives. Past an edge of the map that doesn't loop is drawn as never seen, in a
+	 * paper until its tile arrives. Past an edge of the area that doesn't loop is drawn as never seen, in a
 	 * lobby too
 	 *
-	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, off the map
+	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, outside the area
 	 * @param visible The cells in sight, by visionKey()
 	 */
 	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
@@ -544,7 +544,7 @@ export class MapScene extends Phaser.Scene
 		const top = center.row - Math.floor(FOG_ROWS / 2);
 		const isFogged = (column: number, row: number): boolean =>
 		{
-			const cell = this.mapCellAt(left + column, top + row);
+			const cell = this.areaCellAt(left + column, top + row);
 
 			return((cell === undefined) || !visible.has(visionKey(cell.column, cell.row)));
 		};
@@ -554,29 +554,29 @@ export class MapScene extends Phaser.Scene
 
 		this.paper?.draw(left, top, (column, row) =>
 		{
-			const cell = this.mapCellAt(left + column, top + row);
+			const cell = this.areaCellAt(left + column, top + row);
 
 			return((cell === undefined) || this.isUnseen(cell.column, cell.row));
 		});
 	}
 
 	/**
-	 * The cell of the area drawn at a place in the world: past a looping edge the map carries on from the
+	 * The cell of the area drawn at a place in the world: past a looping edge the area carries on from the
 	 * far side, drawn next to the player
 	 *
 	 * @param column The column in the world
 	 * @param row The row in the world
-	 * @return The cell on the map, or undefined past an edge that doesn't loop
+	 * @return The cell in the area, or undefined past an edge that doesn't loop
 	 */
-	private mapCellAt(column: number, row: number): { column: number; row: number } | undefined
+	private areaCellAt(column: number, row: number): { column: number; row: number } | undefined
 	{
 		const { bounds } = this.area;
 		const width = (bounds.maxColumn - bounds.minColumn) + 1;
 		const height = (bounds.maxRow - bounds.minRow) + 1;
-		const mapColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
-		const mapRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
+		const areaColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
+		const areaRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
 
-		return((isInBounds(bounds, mapColumn, mapRow) ? { column: mapColumn, row: mapRow } : undefined));
+		return((isInBounds(bounds, areaColumn, areaRow) ? { column: areaColumn, row: areaRow } : undefined));
 	}
 
 	/**
@@ -597,7 +597,7 @@ export class MapScene extends Phaser.Scene
 	 *
 	 * @param playerId The player's ID
 	 * @param player The player's synced state, for a player not drawn yet
-	 * @return The cell; past a looping edge, off the map, next to the player this window controls
+	 * @return The cell; past a looping edge, outside the area, next to the player this window controls
 	 */
 	private drawnCellOf(playerId: string, player: Player): { column: number; row: number }
 	{
@@ -612,8 +612,8 @@ export class MapScene extends Phaser.Scene
 	/**
 	 * Whether a cell's tile hasn't been sent because the group hasn't seen it, in a group's room
 	 *
-	 * @param column The cell's column, on the map
-	 * @param row The cell's row, on the map
+	 * @param column The cell's column, in the area
+	 * @param row The cell's row, in the area
 	 * @return True when it holds UNSEEN_CELL
 	 */
 	private isUnseen(column: number, row: number): boolean
@@ -636,7 +636,7 @@ export class MapScene extends Phaser.Scene
 	}
 
 	/**
-	 * Darkens the map for the light where the player is: the time of day outdoors, or an indoor area's
+	 * Darkens the area for the light where the player is: the time of day outdoors, or an indoor area's
 	 * light level. A character with darkvision and light sensitivity sees the dark only faintly, and
 	 * outdoors the daylight glares for them. Outdoors, tells screen reader users as the part of the day
 	 * changes; indoors the light doesn't change with it
@@ -688,7 +688,7 @@ export class MapScene extends Phaser.Scene
 		this.area = area;
 		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 		this.manualLinks =new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
-		this.visionMap = createVisionMap(
+		this.visionArea = createVisionArea(
 			{
 				bounds: area.bounds,
 				defaultTileId: area.defaultTileId,
@@ -881,9 +881,9 @@ export class MapScene extends Phaser.Scene
 		rendered.shape.setAlpha((player.ghost ? GHOST_ALPHA : 1));
 		rendered.label.setText((player.ghost
 			? t({
-				id: 'map.ghost',
+				id: 'area.ghost',
 				defaultMessage: 'Ghost',
-				description: 'Shown above the player on the lobby\'s map while they play no character: they are a ghost, whom other players can\'t see'
+				description: 'Shown above the player in the lobby\'s area while they play no character: they are a ghost, whom other players can\'t see'
 			})
 			: player.name));
 	}
@@ -1027,17 +1027,17 @@ export class MapScene extends Phaser.Scene
 	};
 
 	/**
-	 * Adds the shortcut that reads out where the player is, and lists the keys that play, while the map shows
+	 * Adds the shortcut that reads out where the player is, and lists the keys that play, while the area shows
 	 *
-	 * @param mapElement The element the map is in
+	 * @param areaElement The element the area is in
 	 */
-	private addKeys(mapElement: HTMLElement): void
+	private addKeys(areaElement: HTMLElement): void
 	{
 		this.unbinds.push(addShortcut({
 			keys: 'Alt+P',
-			scope: mapElement,
+			scope: areaElement,
 			description: () => t({
-				id: 'map.keys.position',
+				id: 'area.keys.position',
 				defaultMessage: 'Say where you are and who you can see',
 				description: 'In the list of keyboard shortcuts, what the shortcut that reads out the player\'s position does'
 			}),
@@ -1048,24 +1048,24 @@ export class MapScene extends Phaser.Scene
 		}));
 
 		this.unbinds.push(addKeyHelp({
-			scope: mapElement,
+			scope: areaElement,
 			keys: () => t({
-				id: 'map.keys.move',
+				id: 'area.keys.move',
 				defaultMessage: 'Arrow keys, W A S D or number pad',
 				description: 'In the list of keyboard shortcuts, the keys that move the player; the keys are the same in every language'
 			}),
 			description: () => t({
-				id: 'map.keys.moveDescription',
+				id: 'area.keys.moveDescription',
 				defaultMessage: 'Move',
 				description: 'In the list of keyboard shortcuts, what the movement keys do'
 			})
 		}));
 
 		this.unbinds.push(addKeyHelp({
-			scope: mapElement,
+			scope: areaElement,
 			keys: () => 'E',
 			description: () => t({
-				id: 'map.keys.takeLink',
+				id: 'area.keys.takeLink',
 				defaultMessage: 'Go through a door or path you stand on',
 				description: 'In the list of keyboard shortcuts, what the E key does: takes the player to another area through the link they stand on'
 			})

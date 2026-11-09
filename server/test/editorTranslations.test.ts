@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type DifficultyLevelListPayload, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -325,6 +325,50 @@ describe('Translations tab', () =>
 
 		assert.deepStrictEqual(live.map(universeTextFileKey), draft.map(universeTextFileKey));
 		assert.ok(live.every((row) => (row.thingId === row.liveThingId)));
+	});
+
+	it('names a default difficulty level the universe renames by its own live level, in the live version and the draft', async () =>
+	{
+		const { universeId, ada } = await translatableUniverse();
+		const other = await createUniverse(ada, 'Other');
+
+		/**
+		 * Renames a universe's hard level
+		 *
+		 * @param id The universe's ID
+		 * @param name The name to give it
+		 * @return The level's ID, as text rows name it
+		 */
+		const renameHard = async (id: string, name: string): Promise<string> =>
+		{
+			const levels = (await send<DifficultyLevelListPayload>(ada, 'GET', `/${id}/difficulty-levels`)).body.difficultyLevels;
+			const hard = levels.find((level) => (level.key === 'hard'))!;
+			const saved = await saveChanges(ada, id, [{ kind: 'saveDifficultyLevel', id: hard.id, settings: { ...hard, name } }]);
+
+			assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+
+			return(String(hard.id));
+		};
+
+		const hardId = await renameHard(universeId, 'Brutal');
+
+		// Another universe's level with the same key isn't the one this universe's level is written into
+		await renameHard(other, 'Grim');
+
+		const page = await listText(ada, universeId, 'language=fr');
+
+		assert.strictEqual(page.status, 200, JSON.stringify(page.body));
+
+		const live = page.body.rows.find((row) => (row.thingName === 'Brutal'))!;
+
+		assert.deepStrictEqual([live.kind, live.thingId, live.liveThingId], ['difficultyLevel', hardId, hardId]);
+
+		await saveAll(ada, universeId, [{ kind: 'startDraft' }]);
+
+		const draft = await send<UniverseTextListPayload>(ada, 'GET', `/${universeId}/translations/all?language=fr&version=draft`);
+
+		assert.strictEqual(draft.status, 200, JSON.stringify(draft.body));
+		assert.strictEqual(draft.body.rows.find((row) => (row.thingName === 'Brutal'))?.liveThingId, hardId);
 	});
 
 	it('lets translators see and translate only their languages, and builders only write notes', async () =>

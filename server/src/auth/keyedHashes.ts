@@ -2,12 +2,14 @@
  * Keyed hashes (HMAC-SHA256) of what the server must recognize again but not keep: email addresses
  * waiting on a code, the codes themselves, recovery codes, and networks and accounts that rate limits
  * count (see Email codes in STRUCTURE-OVERVIEW.md). They also sign what the server keeps in a cookie
- * and must read back unchanged, such as a provider login's start
+ * and must read back unchanged, such as a provider login's start, and the universe exports it makes, so
+ * an import can tell one made here, unchanged, from one edited or made elsewhere
  *
  * The key is AUTH_HMAC_KEY, so someone with a copy of the database but not the key can't test guesses
  * against the hashes. Changing the key makes every code waiting to be entered stop working and resets
  * the rate limits, which is harmless since both last a day at most, but it also makes every recovery
- * code stop working, so players with 2FA would need new ones
+ * code stop working, so players with 2FA would need new ones, and the import dialog can no longer
+ * confirm where an export made before it is from
  */
 import { createHmac, timingSafeEqual } from 'crypto';
 
@@ -20,7 +22,7 @@ const MIN_KEY_BYTES = 32;
  * What a keyed hash is of. Each kind is hashed with its own label, so the same text hashed as two kinds
  * gives two unrelated hashes
  */
-export type KeyedHashKind = 'address' | 'emailCode' | 'network' | 'recoveryCode' | 'account' | 'providerStart' | 'knownBrowser' | 'universeAccount';
+export type KeyedHashKind = 'address' | 'emailCode' | 'network' | 'recoveryCode' | 'account' | 'providerStart' | 'knownBrowser' | 'universeAccount' | 'exportOrigin' | 'exportContents';
 
 let key: Buffer | undefined;
 

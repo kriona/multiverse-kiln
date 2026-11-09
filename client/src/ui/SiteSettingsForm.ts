@@ -1,4 +1,4 @@
-import { isPrivacyContact, isSiteSocialUrl, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
+import { isPrivacyContact, isSiteSocialUrl, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
 
 import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
@@ -13,7 +13,7 @@ import { showToast } from './toast';
 
 /**
  * The admin settings page's form: settings for the whole site, such as whether players can create universes,
- * how long last rites wait before deleting a character, the social sites the footer links to and the
+ * how many areas each universe can have, how long last rites wait before deleting a character, the social sites the footer links to and the
  * privacy policy's contact
  */
 export class SiteSettingsForm
@@ -23,6 +23,7 @@ export class SiteSettingsForm
 	private readonly form = getElement('site-settings-form', HTMLFormElement);
 	private readonly universeCreation = getElement('site-universe-creation', HTMLInputElement);
 	private readonly universesPerCreator = getElement('site-universes-per-creator', HTMLInputElement);
+	private readonly areasPerUniverse = getElement('site-areas-per-universe', HTMLInputElement);
 	private readonly characterDeletionDays = getElement('site-character-deletion-days', HTMLInputElement);
 	private readonly socials: Readonly<Record<SiteSocialSite, HTMLInputElement>> = {
 		discord: getElement('site-social-discord', HTMLInputElement),
@@ -52,6 +53,8 @@ export class SiteSettingsForm
 	{
 		this.universesPerCreator.min = String(MIN_UNIVERSES_PER_CREATOR);
 		this.universesPerCreator.max = String(MAX_UNIVERSES_PER_CREATOR);
+		this.areasPerUniverse.min = String(MIN_AREAS_PER_UNIVERSE);
+		this.areasPerUniverse.max = String(MAX_AREAS_PER_UNIVERSE);
 		this.characterDeletionDays.min = '0';
 		this.characterDeletionDays.max = String(MAX_CHARACTER_DELETION_DAYS);
 
@@ -62,7 +65,7 @@ export class SiteSettingsForm
 
 		this.privacyContact.maxLength = MAX_EMAIL_LENGTH;
 
-		for (const field of [this.universesPerCreator, this.characterDeletionDays, ...Object.values(this.socials), this.privacyContact])
+		for (const field of [this.universesPerCreator, this.areasPerUniverse, this.characterDeletionDays, ...Object.values(this.socials), this.privacyContact])
 		{
 			field.addEventListener('input', () =>
 			{
@@ -113,6 +116,7 @@ export class SiteSettingsForm
 
 		this.universeCreation.checked = settings.universeCreationEnabled;
 		this.universesPerCreator.value = String(settings.universesPerCreator);
+		this.areasPerUniverse.value = String(settings.areasPerUniverse);
 		this.characterDeletionDays.value = String(settings.characterDeletionDays);
 
 		for (const site of SITE_SOCIAL_SITES)
@@ -135,6 +139,13 @@ export class SiteSettingsForm
 		const universesPerCreator = readWholeNumber(this.universesPerCreator, MIN_UNIVERSES_PER_CREATOR, MAX_UNIVERSES_PER_CREATOR);
 
 		if (universesPerCreator === undefined)
+		{
+			return;
+		}
+
+		const areasPerUniverse = readWholeNumber(this.areasPerUniverse, MIN_AREAS_PER_UNIVERSE, MAX_AREAS_PER_UNIVERSE);
+
+		if (areasPerUniverse === undefined)
 		{
 			return;
 		}
@@ -168,6 +179,7 @@ export class SiteSettingsForm
 		const settings: SiteSettings = {
 			universeCreationEnabled: this.universeCreation.checked,
 			universesPerCreator,
+			areasPerUniverse,
 			characterDeletionDays,
 			socials,
 			privacyContact: ((privacyContact === '') ? null : privacyContact)

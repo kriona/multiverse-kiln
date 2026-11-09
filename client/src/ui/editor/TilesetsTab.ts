@@ -58,7 +58,7 @@ function uploadRef(stagedId: string): NewRef
  * before paging) and a page at a time, opening the
  * tile editor. Changes wait on the page until the tab is saved: changed tiles show their changes on the
  * page they are on, and tiles added since show at the top of the first page, whatever the filters. The
- * Areas tab's maps draw and paint with the tiles as they will be once saved (withChanges)
+ * Areas tab draws and paints areas with the tiles as they will be once saved (withChanges)
  *
  * Tilesets uploaded and deleted from the tile editor wait too. Saving uploads the new ones first, so the
  * tiles staged to use them can name them, then saves the tiles, then deletes the tilesets marked to delete
@@ -82,7 +82,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	private readonly sorter: TableSorter<TileSortColumn>;
 
 	/**
-	 * The changes made to the tiles since they were last saved. Maps can be painted with a tile added
+	 * The changes made to the tiles since they were last saved. Areas can be painted with a tile added
 	 * since, so its ID stays clear of the values cells hold for void and unseen cells
 	 */
 	private readonly staged = new StagedChanges<TileSettings>(FIRST_NEW_TILE_ID);
@@ -111,7 +111,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	readonly changes = combineChanges(this.staged, this.uploadsToAdd, this.uploadsToDelete);
 
 	/**
-	 * Whether the tiles maps are drawn with have changed since they were last saved; for the Areas tab
+	 * Whether the tiles areas are drawn with have changed since they were last saved; for the Areas tab
 	 */
 	readonly tileChanges = combineChanges(this.staged, this.uploadsToAdd);
 
@@ -127,7 +127,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	private collected: { uploads: string[]; tiles: readonly StagedChange<TileSettings>[]; deletions: string[] } = { uploads: [], tiles: [], deletions: [] };
 
 	/**
-	 * The tile to paint the maps with in place of each tile marked to delete that maps use, by the
+	 * The tile to paint the areas with in place of each tile marked to delete that areas use, by the
 	 * deleted tile's ID
 	 */
 	private readonly replacements = new Map<number, number>();
@@ -602,7 +602,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Every tile as it will be once the tab is saved, for the maps: the saved tiles with their changes,
+	 * Every tile as it will be once the tab is saved, for the areas: the saved tiles with their changes,
 	 * then the tiles added since. A tile staged for deletion is drawn as the tile chosen to replace it
 	 *
 	 * @param saved Every tile the universe can use, as saved

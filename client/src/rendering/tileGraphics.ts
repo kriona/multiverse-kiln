@@ -34,7 +34,7 @@ export const DUAL_GRID_COLUMNS = 4;
 const stagedTileGraphicUrls = new Map<string, string>();
 
 /**
- * Lets maps draw a tileset staged to upload with the page's own copy of its image. Staged IDs are never
+ * Lets areas draw a tileset staged to upload with the page's own copy of its image. Staged IDs are never
  * reused, so the image can stay known after the tileset is uploaded or discarded
  *
  * @param graphicId The tileset's ID on the page

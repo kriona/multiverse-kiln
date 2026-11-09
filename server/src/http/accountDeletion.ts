@@ -5,8 +5,8 @@
  * has 2FA, or with their username when the account has no password. Each universe they are the only
  * creator of is handed to another of its editors or deleted first, as they chose (GET
  * PROFILE_DELETION_PATH lists them); one a server admin disabled and kept from being deleted can only be
- * handed on. Groups whose anchor being was one of their characters disband, and
- * every window of theirs is turned away
+ * handed on. The other editors of a universe deleted are emailed. Groups whose anchor being was one of
+ * their characters disband, and every window of theirs is turned away
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
@@ -16,25 +16,24 @@ import { forgetChatAuthor } from '../db/chatRepo.js';
 import type { Executor } from '../db/client.js';
 import { lockContinuation } from '../db/emailCodeRepo.js';
 import { listMembersOfGroups, listPlayerMemberships } from '../db/groupRepo.js';
-import { deletePlayer, findEmailRecipient, findPasswordHash, findPlayerEmail, lockPlayer, type EmailRecipient } from '../db/playerRepo.js';
+import { deletePlayer, findDisplayName, findEmailRecipient, findPasswordHash, findPlayerEmail, lockPlayer, type EmailRecipient } from '../db/playerRepo.js';
 import { isLastServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
-import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { listOtherUniverseEditors, listSoleCreatedUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
-import { deleteUniverse, findUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
+import { findUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
 import { accountDeletedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { accountDeletionChanges, groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { deleteObject } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { authMessages, cookieTokenHash, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { clearCookie, CONTINUATION_COOKIE, SESSION_COOKIE } from './cookies.js';
 import { sendInvalidRequest } from './errors.js';
 import { checkAccountPassword, checkSecondFactor, requireSession } from './twoFactorAuth.js';
+import { deleteStoredUploads, deleteUniverseWithUploads, emailUniverseDeleted } from './universeDeletion.js';
 
 /**
  * Reasons the account deletion route gives (see shared/src/localization.ts)
@@ -85,7 +84,17 @@ interface Deletion
 
 	sessionIds: string[];
 	changes: GroupChange[];
-	deletedUniverseIds: string[];
+
+	/**
+	 * The universes deleted with the account, with everyone else who had a role in each, to email
+	 */
+	deletedUniverses: { id: string; name: string; editorIds: string[] }[];
+
+	/**
+	 * The name the account had, which the emails to the deleted universes' editors give
+	 */
+	displayName: string | null;
+
 	storageKeys: string[];
 }
 
@@ -198,11 +207,11 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 	connectedSessions.end(outcome.sessionIds);
 	accountDeletions.publish(playerId);
 
-	for (const universeId of outcome.deletedUniverseIds)
+	for (const universe of outcome.deletedUniverses)
 	{
 		areaChanges.publish({
 			kind: 'universeDeleted',
-			universeId
+			universeId: universe.id
 		});
 	}
 
@@ -211,17 +220,12 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 		groupChanges.publish(change);
 	}
 
-	for (const storageKey of outcome.storageKeys)
+	for (const universe of outcome.deletedUniverses)
 	{
-		try
-		{
-			await deleteObject(storageKey);
-		}
-		catch (error)
-		{
-			console.error(`Could not delete the image ${storageKey}:`, error);
-		}
+		await emailUniverseDeleted(universe.name, universe.editorIds, outcome.displayName);
 	}
+
+	await deleteStoredUploads(outcome.storageKeys);
 
 	if (outcome.recipient)
 	{
@@ -244,9 +248,9 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
  */
 async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, string | null>, executor: Executor): Promise<AuthRefusal | Deletion>
 {
-	const deletedUniverseIds: string[] = [];
+	const deletedUniverses: Deletion['deletedUniverses'] = [];
 	const storageKeys: string[] = [];
-	const universes: { id: string; newCreatorId: string | null }[] = [];
+	const universes: { id: string; name: string; newCreatorId: string | null; editorIds: string[] }[] = [];
 
 	// Every check comes before anything changes: the transaction is committed even when refused. Deleting
 	// the player deletes their server admin row with them, so the site's only admin can't go
@@ -302,7 +306,9 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 
 		universes.push({
 			id: universe.id,
-			newCreatorId
+			name: universe.name,
+			newCreatorId,
+			editorIds: editors.map((editor) => editor.playerId)
 		});
 	}
 
@@ -314,9 +320,12 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 		}
 		else
 		{
-			storageKeys.push(...await listTileGraphicStorageKeys(universe.id, executor));
-			await deleteUniverse(universe.id, executor);
-			deletedUniverseIds.push(universe.id);
+			storageKeys.push(...await deleteUniverseWithUploads(universe.id, executor));
+			deletedUniverses.push({
+				id: universe.id,
+				name: universe.name,
+				editorIds: universe.editorIds
+			});
 		}
 	}
 
@@ -324,6 +333,7 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 	const memberships = await listPlayerMemberships(playerId, executor);
 	const members = await listMembersOfGroups(memberships.map(({ groupId }) => groupId), executor);
 	const recipient = await findEmailRecipient(playerId, executor);
+	const displayName = await findDisplayName(playerId, executor);
 	const sessionIds = await deletePlayerSessions(playerId, executor);
 
 	await forgetChatAuthor(playerId, executor);
@@ -333,7 +343,8 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 		recipient,
 		sessionIds,
 		changes: accountDeletionChanges(memberships, members),
-		deletedUniverseIds,
+		deletedUniverses,
+		displayName,
 		storageKeys
 	});
 }

@@ -6,10 +6,11 @@ import { EditorApi } from './network/editorApi';
 import { listUniverses, type ServerConnection } from './network/serverConnection';
 import { onLoginElsewhere } from './network/sessionBroadcast';
 import { isLeavingPage } from './pageLifecycle';
-import { editPageUrl } from './pages';
+import { editPageUrl, takeHomeNotice } from './pages';
 import { showScreen, showStatus } from './ui/dom';
 import { HomeScreen } from './ui/HomeScreen';
 import { pageMessages } from './ui/pageMessages';
+import { showToast } from './ui/toast';
 
 /**
  * Runs Home (index.html): lists the universes to play, and once the browser is logged in, the player's
@@ -84,8 +85,20 @@ export class HomePage
 			return;
 		}
 
+		const firstShown = (this.playerId === undefined);
+
 		this.playerId = playerId;
 		this.homeScreen.show(account.player !== null);
 		showScreen('home');
+
+		// What the page that came here kept to say, such as that the player deleted a universe
+		const notice = (firstShown ? takeHomeNotice() : undefined);
+
+		if (notice !== undefined)
+		{
+			showToast(notice, {
+				kind: 'success'
+			});
+		}
 	}
 }

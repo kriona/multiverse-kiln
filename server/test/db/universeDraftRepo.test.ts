@@ -13,7 +13,7 @@ import { findEditableUniverse, hasDraft, updateUniverseSettings } from '../../sr
 import { listTranslations, saveTranslation } from '../../src/db/universeTextRepo.js';
 import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { db } from '../../src/db/client.js';
-import { areaLinks, areas, mapChunks, tiles, universeTranslations } from '../../src/db/schema.js';
+import { areaChunks, areaLinks, areas, tiles, universeTranslations } from '../../src/db/schema.js';
 import { addArea, addPlayableUniverse, dwarfFighter, type PlayableUniverse } from './fixtures.js';
 import { addPlayer } from '../players.js';
 
@@ -212,7 +212,7 @@ describe('universeDraftRepo', () =>
 			assert.deepStrictEqual(character?.items.map((item) => item.itemId), [torchId]);
 			assert.ok((await loadEditorItems(liveVersion(universeId), 'pf1e')).some((item) => ((item.id === torchId) && (item.name === 'Lantern'))));
 
-			// The map paints the live lava again, and the translations name the live area and tile
+			// The field paints the live lava again, and the translations name the live area and tile
 			const [chunk] = await loadChunks(fieldAreaId, { minChunkColumn: 0, minChunkRow: 0, maxChunkColumn: 0, maxChunkRow: 0 });
 
 			assert.strictEqual(chunk.cells[cellIndexInChunk(1, 1)], lavaId);
@@ -232,7 +232,7 @@ describe('universeDraftRepo', () =>
 			await inTransaction((transaction) => startDraft(universeId, transaction));
 
 			const unchanged = [
-				sql`${mapChunks} WHERE area_id = ${fieldAreaId}`,
+				sql`${areaChunks} WHERE area_id = ${fieldAreaId}`,
 				sql`${areaLinks} WHERE area_id = ${squareAreaId}`,
 				sql`${tiles} WHERE id = ${lavaId}`,
 				sql`${areas} WHERE id = ${fieldAreaId}`,
@@ -241,7 +241,7 @@ describe('universeDraftRepo', () =>
 			];
 			const before = await Promise.all(unchanged.map((from) => rowVersion(from)));
 
-			// The draft paints its lava into the square, and clears the house's map
+			// The draft paints its lava into the square, and clears the house's cells
 			const draftLava = (await loadEditorTiles(draftVersion(universeId), 'pf1e')).find((tile) => (tile.name === 'Lava'));
 			const draftSquareId = await draftAreaOf(universeId, squareAreaId);
 			const draftHouseId = await draftAreaOf(universeId, houseAreaId);
@@ -253,8 +253,8 @@ describe('universeDraftRepo', () =>
 			await inTransaction(async (transaction) =>
 			{
 				await transaction
-					.delete(mapChunks)
-					.where(eq(mapChunks.areaId, draftHouseId));
+					.delete(areaChunks)
+					.where(eq(areaChunks.areaId, draftHouseId));
 			});
 
 			await inTransaction((transaction) => applyDraft(universeId, transaction));

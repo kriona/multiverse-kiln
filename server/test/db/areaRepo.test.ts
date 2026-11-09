@@ -10,7 +10,7 @@ import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
-import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeMap } from './fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea } from './fixtures.js';
 
 /**
  * A chunk of default cells with its first cell set
@@ -132,10 +132,10 @@ describe('areaRepo', () =>
 			await saveGroundChunk(areaId, 0, 0, chunkStartingWith(tileIds.get('forest') as number));
 			await saveGroundChunk(areaId, 0, 0, chunkStartingWith(tileIds.get('water') as number));
 
-			const map = await loadWholeMap(areaId);
+			const layout = await loadWholeArea(areaId);
 
-			assert.strictEqual(map?.tiles.chunks.size, 1);
-			assert.strictEqual(tileIdAt(map.tiles, 0, 0), tileIds.get('water'));
+			assert.strictEqual(layout?.tiles.chunks.size, 1);
+			assert.strictEqual(tileIdAt(layout.tiles, 0, 0), tileIds.get('water'));
 		});
 
 		it('refuses a chunk with the wrong number of cells', async () =>
@@ -188,17 +188,17 @@ describe('areaRepo', () =>
 
 			assert.strictEqual(await inTransaction((transaction) => editCells(areaId, [[0, 0, forest], [-1, 5, VOID_CELL]], transaction)), 'edited');
 
-			let map = await loadWholeMap(areaId);
+			let layout = await loadWholeArea(areaId);
 
-			assert.strictEqual(map?.tiles.chunks.size, 2);
-			assert.strictEqual(tileIdAt(map.tiles, 0, 0), forest);
-			assert.strictEqual(tileIdAt(map.tiles, -1, 5), undefined);
+			assert.strictEqual(layout?.tiles.chunks.size, 2);
+			assert.strictEqual(tileIdAt(layout.tiles, 0, 0), forest);
+			assert.strictEqual(tileIdAt(layout.tiles, -1, 5), undefined);
 
 			await inTransaction((transaction) => editCells(areaId, [[0, 0, DEFAULT_TILE_CELL]], transaction));
 
-			map = await loadWholeMap(areaId);
+			layout = await loadWholeArea(areaId);
 
-			assert.deepStrictEqual([...(map?.tiles.chunks.keys() ?? [])], [chunkKey(-1, 0)]);
+			assert.deepStrictEqual([...(layout?.tiles.chunks.keys() ?? [])], [chunkKey(-1, 0)]);
 		});
 
 		it('changes nothing when a cell is outside the bounds', async () =>
@@ -207,7 +207,7 @@ describe('areaRepo', () =>
 			const forest = await defaultTileId('forest');
 
 			assert.strictEqual(await inTransaction((transaction) => editCells(areaId, [[0, 0, forest], [3, 0, forest]], transaction)), 'out_of_bounds');
-			assert.strictEqual((await loadWholeMap(areaId))?.tiles.chunks.size, 0);
+			assert.strictEqual((await loadWholeArea(areaId))?.tiles.chunks.size, 0);
 		});
 
 		it('reports an area that does not exist', async () =>
@@ -250,7 +250,7 @@ describe('areaRepo', () =>
 
 	describe('resizeArea', () =>
 	{
-		it('grows a map without discarding anything', async () =>
+		it('grows an area without discarding anything', async () =>
 		{
 			const areaId = await addArea(await addUniverse());
 			const bounds = { minColumn: -10, minRow: -10, maxColumn: 10, maxRow: 10 };
@@ -285,11 +285,11 @@ describe('areaRepo', () =>
 			// Growing back shows the default tile where the discarded cells were
 			await inTransaction((transaction) => resizeArea(areaId, wide, false, transaction));
 
-			const map = await loadWholeMap(areaId);
+			const layout = await loadWholeArea(areaId);
 
-			assert.ok(map);
-			assert.strictEqual(tileIdAt(map.tiles, 40, 0), map.tiles.defaultTileId);
-			assert.strictEqual(tileIdAt(map.tiles, 0, 0), forest);
+			assert.ok(layout);
+			assert.strictEqual(tileIdAt(layout.tiles, 40, 0), layout.tiles.defaultTileId);
+			assert.strictEqual(tileIdAt(layout.tiles, 0, 0), forest);
 		});
 	});
 

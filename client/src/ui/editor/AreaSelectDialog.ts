@@ -1,16 +1,16 @@
 import { ancestorAreas, isInBounds, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
 
+import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
+import { AreaCells } from '../../editor/AreaCells';
 import { ChunkLoader } from '../../editor/ChunkLoader';
-import { EditorMap } from '../../editor/EditorMap';
-import { editorAreaPayload, MapCanvas } from '../../editor/MapCanvas';
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import type { MapEditorHost } from '../../scenes/MapEditorScene';
+import type { AreaEditorHost } from '../../scenes/AreaEditorScene';
 import { getElement, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
+import { areaEditorMessages } from './areaEditorMessages';
 import { describeCell } from './cellDescription';
 import { editorMessages } from './editorMessages';
-import { mapMessages } from './mapMessages';
 import type { StagedTiles } from './stagedChanges';
 
 /**
@@ -34,7 +34,7 @@ const MAX_RESULTS = 20;
 const STARTING_CELL_COLOR = 0x4caf50;
 
 /**
- * The square a newly chosen area starts out with: the middle of a new area's map
+ * The square a newly chosen area starts out with: the middle of a new area
  */
 const MIDDLE_CELL: StartingCell = { column: 0, row: 0 };
 
@@ -56,7 +56,7 @@ export type AreaSelectPurpose = 'starting' | 'lobby';
 /**
  * Selection: Area (see STRUCTURE-OVERVIEW.md): a dialog for choosing where characters start: one of the
  * universe's areas, found by typing part of its name, and the square of it they start on, chosen on a
- * preview of its map
+ * preview of the area
  *
  * Choosing a starting area leaves out the lobby's area, and choosing the lobby's area leaves out the
  * starting areas
@@ -74,7 +74,7 @@ export class AreaSelectDialog
 	private readonly error = getElement('area-select-error', HTMLElement);
 	private readonly submit = getElement('area-select-submit', HTMLButtonElement);
 	private readonly previewElement = getElement('area-select-preview', HTMLElement);
-	private readonly canvas = new MapCanvas(this.previewElement, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+	private readonly canvas = new AreaCanvas(this.previewElement, PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
 	private universe: EditableUniverse | undefined;
 
@@ -96,9 +96,9 @@ export class AreaSelectDialog
 	private chosenCell: StartingCell = MIDDLE_CELL;
 
 	/**
-	 * The area the preview shows, and its map, once they have loaded
+	 * The area the preview shows, and its cells, once they have loaded
 	 */
-	private preview: { area: EditorArea; map: EditorMap } | undefined;
+	private preview: { area: EditorArea; cells: AreaCells } | undefined;
 
 	/**
 	 * Loads the chunks of the area the preview shows
@@ -123,17 +123,17 @@ export class AreaSelectDialog
 	{
 		addKeyHelp({
 			scope: this.previewElement,
-			keys: () => t(mapMessages.arrowKeys),
-			description: () => t(mapMessages.cursorDescription)
+			keys: () => t(areaEditorMessages.arrowKeys),
+			description: () => t(areaEditorMessages.cursorDescription)
 		});
 
 		addKeyHelp({
 			scope: this.previewElement,
-			keys: () => t(mapMessages.spaceOrEnter),
+			keys: () => t(areaEditorMessages.spaceOrEnter),
 			description: () => t({
 				id: 'editor.areaSelect.keys.pickDescription',
 				defaultMessage: 'Choose the cursor\'s square for characters to start on',
-				description: 'In the list of keyboard shortcuts, what Space and Enter do on the map in the dialog for choosing a starting area'
+				description: 'In the list of keyboard shortcuts, what Space and Enter do on the area preview in the dialog for choosing a starting area'
 			})
 		});
 
@@ -319,7 +319,7 @@ export class AreaSelectDialog
 	}
 
 	/**
-	 * Shows the chosen area's map in the preview, centered on the starting square, with its size and
+	 * Shows the chosen area in the preview, centered on the starting square, with its size and
 	 * whether it is indoors in words
 	 */
 	private async showPreview(): Promise<void>
@@ -347,7 +347,7 @@ export class AreaSelectDialog
 		{
 			if (version === this.version)
 			{
-				showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
+				showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
 			}
 
 			return;
@@ -363,26 +363,26 @@ export class AreaSelectDialog
 		this.summary.textContent = t({
 			id: 'editor.areaSelect.summary',
 			defaultMessage: '{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide',
-			description: 'In the dialog for choosing an area, describes the chosen area under its map preview; {height} and {width} are its size in cells'
+			description: 'In the dialog for choosing an area, describes the chosen area under its preview; {height} and {width} are its size in cells'
 		}, {
 			indoors: String(area.indoors),
 			height: ((bounds.maxRow - bounds.minRow) + 1),
 			width: ((bounds.maxColumn - bounds.minColumn) + 1)
 		});
 
-		const map = new EditorMap(bounds);
-		const loader = new ChunkLoader((range) => this.api.loadChunks(universe.id, area.id, range), map, (chunkKeys) =>
+		const cells = new AreaCells(bounds);
+		const loader = new ChunkLoader((range) => this.api.loadChunks(universe.id, area.id, range), cells, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
 		{
-			showMessage(this.error, describeEditorError(error, mapMessages.loadFailed));
+			showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
 		});
 
 		this.previewLoader = loader;
-		this.preview = { area, map };
+		this.preview = { area, cells };
 
-		const scene = await this.canvas.show(editorAreaPayload(area, this.tiles, universe.ruleset), map.chunks, this.previewHost(loader));
+		const scene = await this.canvas.show(editorAreaPayload(area, this.tiles, universe.ruleset), cells.chunks, this.previewHost(loader));
 
 		if (this.preview?.area === area)
 		{
@@ -398,7 +398,7 @@ export class AreaSelectDialog
 	 * @param loader Loads the preview area's chunks
 	 * @return The host
 	 */
-	private previewHost(loader: ChunkLoader): MapEditorHost
+	private previewHost(loader: ChunkLoader): AreaEditorHost
 	{
 		return({
 			pointerMode: () => 'pick',
@@ -426,7 +426,7 @@ export class AreaSelectDialog
 				}
 
 				return(describeCell({
-					map: preview.map,
+					cells: preview.cells,
 					defaultTileId: preview.area.defaultTileId,
 					tiles: this.tiles,
 					links: [],
@@ -448,7 +448,7 @@ export class AreaSelectDialog
 		this.cellText.textContent = t({
 			id: 'editor.areaSelect.cell',
 			defaultMessage: 'Characters start on {column}, {row}, or the free square nearest it.',
-			description: 'In the dialog for choosing a starting area, under the map: the square characters start on; {column} and {row} are its coordinates'
+			description: 'In the dialog for choosing a starting area, under the area preview: the square characters start on; {column} and {row} are its coordinates'
 		}, {
 			column: this.chosenCell.column,
 			row: this.chosenCell.row
@@ -457,7 +457,7 @@ export class AreaSelectDialog
 	}
 
 	/**
-	 * Stops showing the preview's map
+	 * Stops showing the preview's area
 	 */
 	private closePreview(): void
 	{

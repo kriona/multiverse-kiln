@@ -2,7 +2,7 @@
  * The sample universe `npm run db:seed -w server` creates: a small town lobby with a cottage and a
  * cellar to walk into, and a crossroads for groups to start in
  *
- * Maps are drawn one character per cell, row by row, and centered on column 0, row 0:
+ * Areas are drawn one character per cell, row by row, and centered on column 0, row 0:
  *
  *   .  the area's default tile        g  grass        f  forest     d  desert
  *   ^  mountains                      ~  water        =  wood floor
@@ -49,7 +49,7 @@ export interface SampleArea
 	 */
 	markers: Record<string, string>;
 
-	map: string[];
+	cells: string[];
 }
 
 /**
@@ -78,7 +78,7 @@ export const sampleUniverse = {
 };
 
 /**
- * The universe's own tiles, by the character that stands for each on the maps: stone walls (`#`), wood
+ * The universe's own tiles, by the character that stands for each in the areas: stone walls (`#`), wood
  * walls (`w`) and hedges (`h`)
  */
 export const sampleTiles = {
@@ -121,7 +121,7 @@ export const sampleAreas: SampleArea[] = [
 		indoors: false,
 		defaultTile: 'grass',
 		markers: { 1: 'wood_floor', 2: 'grass' },
-		map: [
+		cells: [
 			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
 			'^^ff.....................fff..^^',
 			'^f.......#########........ff...^',
@@ -149,7 +149,7 @@ export const sampleAreas: SampleArea[] = [
 		indoors: true,
 		defaultTile: 'wood_floor',
 		markers: { 3: 'wood_floor', 4: 'wood_floor', 5: 'wood_floor' },
-		map: [
+		cells: [
 			'wwwwwwwwwww',
 			'w.........w',
 			'w...3.....w',
@@ -167,7 +167,7 @@ export const sampleAreas: SampleArea[] = [
 		lightLevel: 'dark',
 		defaultTile: 'wood_floor',
 		markers: { 6: 'wood_floor' },
-		map: [
+		cells: [
 			'wwwwwwwww',
 			'w.......w',
 			'w.6.....w',
@@ -182,7 +182,7 @@ export const sampleAreas: SampleArea[] = [
 		defaultTile: 'grass',
 		loopsEastWest: true,
 		markers: {},
-		map: [
+		cells: [
 			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
 			'^^^^......fff..........^^^^.........^^^^',
 			'..........ffff...........^^.............',

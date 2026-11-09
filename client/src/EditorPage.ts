@@ -2,7 +2,10 @@ import { CloseCode, ErrorCode, ServerError } from '@colyseus/sdk';
 import { EditorMessageType, EditorServerMessageType, NoticeReason, ServerCloseCode, SessionServerMessageType, type AccountPayload, type ChatAuthorDeletedPayload, type ChatPayload, type ChatReadPayload, type EditorPlacePayload, type EditorSavedPayload, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from './localization';
+import { AdminApi } from './network/adminApi';
+import { AuthApi } from './network/authApi';
 import { EditorApi } from './network/editorApi';
+import { ProfileApi } from './network/profileApi';
 import { joinEditorRoom, type EditorRoom, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
 import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
@@ -150,6 +153,10 @@ export class EditorPage
 			{
 				this.twoFactorScreen.show(message, universeName);
 			}
+		}, {
+			auth: new AuthApi(client),
+			admin: new AdminApi(client),
+			profile: new ProfileApi(client)
 		});
 
 		window.addEventListener('popstate', (event) =>

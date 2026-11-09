@@ -155,7 +155,7 @@ export const PASSAGE_OF_TIME_NAMES: Record<AreaPassageOfTime, MessageDescriptor>
 	faerie: {
 		id: 'universe.time.faerie',
 		defaultMessage: 'faerie',
-		description: 'Passage of time where the time of day depends on where you are on the map, as in the realm of Faerie'
+		description: 'Passage of time where the time of day depends on where you are in the area, as in the realm of Faerie'
 	}
 });
 
@@ -233,7 +233,7 @@ export const DISPLAY_TIME_NAMES: Record<DisplayTime, MessageDescriptor> = define
 });
 
 /**
- * Where morning is in faerie time: the time of day runs from sunrise on this side of the map to midnight
+ * Where morning is in faerie time: the time of day runs from sunrise on this side of the area to midnight
  * on the opposite side. horizon puts morning at every edge and night in the center
  */
 export const FAERIE_MORNINGS = [
@@ -258,52 +258,52 @@ export const FAERIE_MORNING_NAMES: Record<FaerieMorning, MessageDescriptor> = de
 	north: {
 		id: 'universe.faerie.north',
 		defaultMessage: 'north',
-		description: 'Where morning is in faerie time: the north edge of the map'
+		description: 'Where morning is in faerie time: the north edge of the area'
 	},
 	northeast: {
 		id: 'universe.faerie.northeast',
 		defaultMessage: 'northeast',
-		description: 'Where morning is in faerie time: the northeast corner of the map'
+		description: 'Where morning is in faerie time: the northeast corner of the area'
 	},
 	east: {
 		id: 'universe.faerie.east',
 		defaultMessage: 'east',
-		description: 'Where morning is in faerie time: the east edge of the map'
+		description: 'Where morning is in faerie time: the east edge of the area'
 	},
 	southeast: {
 		id: 'universe.faerie.southeast',
 		defaultMessage: 'southeast',
-		description: 'Where morning is in faerie time: the southeast corner of the map'
+		description: 'Where morning is in faerie time: the southeast corner of the area'
 	},
 	south: {
 		id: 'universe.faerie.south',
 		defaultMessage: 'south',
-		description: 'Where morning is in faerie time: the south edge of the map'
+		description: 'Where morning is in faerie time: the south edge of the area'
 	},
 	southwest: {
 		id: 'universe.faerie.southwest',
 		defaultMessage: 'southwest',
-		description: 'Where morning is in faerie time: the southwest corner of the map'
+		description: 'Where morning is in faerie time: the southwest corner of the area'
 	},
 	west: {
 		id: 'universe.faerie.west',
 		defaultMessage: 'west',
-		description: 'Where morning is in faerie time: the west edge of the map'
+		description: 'Where morning is in faerie time: the west edge of the area'
 	},
 	northwest: {
 		id: 'universe.faerie.northwest',
 		defaultMessage: 'northwest',
-		description: 'Where morning is in faerie time: the northwest corner of the map'
+		description: 'Where morning is in faerie time: the northwest corner of the area'
 	},
 	center: {
 		id: 'universe.faerie.center',
 		defaultMessage: 'center',
-		description: 'Where morning is in faerie time: the center of the map, with midnight at the edges'
+		description: 'Where morning is in faerie time: the center of the area, with midnight at the edges'
 	},
 	horizon: {
 		id: 'universe.faerie.horizon',
 		defaultMessage: 'horizon',
-		description: 'Where morning is in faerie time: every edge of the map, with night in the center'
+		description: 'Where morning is in faerie time: every edge of the area, with night in the center'
 	}
 });
 
@@ -343,7 +343,7 @@ export type AreaLinkMode = typeof AREA_LINK_MODES[number];
  * What a user may do with a universe (see STRUCTURE-OVERVIEW.md, Tab: Editors)
  *
  * - creator: change everything
- * - builder: change the world: tiles, items, areas, maps and links
+ * - builder: change the world: tiles, items, areas and links
  * - beta_tester: play while the universe is in prologue
  * - translator: translate the universe's text into the languages they are given
  */
@@ -368,7 +368,7 @@ export const UNIVERSE_ROLE_NAMES: Record<UniverseRole, MessageDescriptor> = defi
 	builder: {
 		id: 'universe.role.builder',
 		defaultMessage: 'builder',
-		description: 'Role of someone who can change a universe\'s world: its tiles, items, areas, maps and links'
+		description: 'Role of someone who can change a universe\'s world: its tiles, items, areas and links'
 	},
 	beta_tester: {
 		id: 'universe.role.beta_tester',
@@ -394,7 +394,7 @@ export const UNIVERSE_ROLE_DESCRIPTIONS: Record<UniverseRole, MessageDescriptor>
 	},
 	builder: {
 		id: 'universe.roleDescription.builder',
-		defaultMessage: 'Can change the universe\'s world (its tiles, items, areas, maps and links) and play it while it\'s still being built. Can read its other settings without changing them.',
+		defaultMessage: 'Can change the universe\'s world (its tiles, items, areas and links) and play it while it\'s still being built. Can read its other settings without changing them.',
 		description: 'What the builder role lets an editor do, under its name in the dialog on the editor\'s Editors tab, and when the pointer is over the role in the tab\'s list of editors'
 	},
 	beta_tester: {
@@ -531,7 +531,35 @@ export function canManageVersions(role: EditorRole): boolean
 }
 
 /**
- * Whether a role may change a universe's world: its tiles, items, areas, maps and links
+ * Whether a role may delete a universe, with its world and every character in it (see Deleting a
+ * universe in STRUCTURE-OVERVIEW.md)
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canDeleteUniverse(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether deleting a universe is a server admin's act, recorded as an admin event: one deleting it with
+ * ADMIN_ROLE, or one deleting a universe the site's admins disabled and kept its creators from deleting,
+ * which only a server admin may. A server admin deleting a universe they create, which nothing keeps
+ * from being deleted, deletes it as its creator
+ *
+ * @param role The user's role in the editor
+ * @param serverAdmin Whether they are a server admin with 2FA on
+ * @param deletionPrevented Whether the site's admins disabled the universe and kept its creators from deleting it
+ * @return True when it is
+ */
+export function deletesUniverseAsAdmin(role: EditorRole, serverAdmin: boolean, deletionPrevented: boolean): boolean
+{
+	return((serverAdmin && ((role === ADMIN_ROLE) || deletionPrevented)));
+}
+
+/**
+ * Whether a role may change a universe's world: its tiles, items, areas and links
  *
  * @param role The user's role in the editor
  * @return True when the role may
@@ -539,6 +567,31 @@ export function canManageVersions(role: EditorRole): boolean
 export function canEditWorld(role: EditorRole): boolean
 {
 	return((role === 'creator') || (role === 'builder') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether a role may export a universe (see Exporting a universe in STRUCTURE-OVERVIEW.md): every role
+ * that may change something in it, which is every role but beta tester. The export holds what the role
+ * may change (universeExportContents())
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canExportUniverse(role: EditorRole): boolean
+{
+	return(canEditWorld(role) || (role === 'translator'));
+}
+
+/**
+ * Whether a role may import an export into a universe's draft (see Importing a universe in
+ * STRUCTURE-OVERVIEW.md): every role that may export it. The import changes only what the role may change
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canImportUniverse(role: EditorRole): boolean
+{
+	return(canExportUniverse(role));
 }
 
 /**

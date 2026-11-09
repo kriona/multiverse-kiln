@@ -1,13 +1,13 @@
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, parseChunkKey, type CellChange, type ChunkRange, type MapBounds, type AreaChunk } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, parseChunkKey, type CellChange, type ChunkRange, type AreaBounds, type AreaChunk } from '@multiverse-kiln/shared';
 
 /**
- * The cells of an area's map as the editor holds them: the chunks loaded so far, which the editor
+ * The cells of an area as the editor holds them: the chunks loaded so far, which the editor
  * changes as the player paints
  *
  * A chunk the server doesn't store is all the default tile, but the editor only knows that once it
  * has asked for it, so a cell whose chunk hasn't loaded has no value yet and can't be painted
  */
-export class EditorMap
+export class AreaCells
 {
 	/**
 	 * The loaded chunks that hold anything but the default tile, by chunkKey(); shared with the
@@ -21,42 +21,42 @@ export class EditorMap
 	private readonly loaded = new Set<string>();
 
 	/**
-	 * The map's bounds when it was opened. Every cell outside them is the default tile
+	 * The area's bounds when it was opened. Every cell outside them is the default tile
 	 */
-	private readonly openedBounds: MapBounds;
+	private readonly openedBounds: AreaBounds;
 
 	/**
-	 * @param bounds The map's bounds
+	 * @param bounds The area's bounds
 	 */
-	constructor(private currentBounds: MapBounds)
+	constructor(private currentBounds: AreaBounds)
 	{
 		this.openedBounds = currentBounds;
 	}
 
 	/**
-	 * The map's bounds
+	 * The area's bounds
 	 *
 	 * @return The bounds
 	 */
-	get bounds(): MapBounds
+	get bounds(): AreaBounds
 	{
 		return(this.currentBounds);
 	}
 
 	/**
-	 * Gives the map new bounds. Chunks wholly outside the bounds the map was opened with count as loaded,
-	 * since cells outside them were always the default tile; cells a smaller map cuts off keep their values,
+	 * Gives the area new bounds. Chunks wholly outside the bounds the area was opened with count as loaded,
+	 * since cells outside them were always the default tile; cells a smaller area cuts off keep their values,
 	 * so set them to the default tile first (see paintedCellsOutside)
 	 *
 	 * @param bounds The new bounds
 	 */
-	setBounds(bounds: MapBounds): void
+	setBounds(bounds: AreaBounds): void
 	{
 		this.currentBounds = bounds;
 	}
 
 	/**
-	 * Every chunk the map covers, inclusive at both ends
+	 * Every chunk the area covers, inclusive at both ends
 	 *
 	 * @return The range
 	 */
@@ -133,7 +133,7 @@ export class EditorMap
 	 *
 	 * @param column The cell's column
 	 * @param row The cell's row
-	 * @return A tile ID, DEFAULT_TILE_CELL or VOID_CELL; undefined for a cell off the map or whose chunk hasn't loaded
+	 * @return A tile ID, DEFAULT_TILE_CELL or VOID_CELL; undefined for a cell outside the area or whose chunk hasn't loaded
 	 */
 	valueAt(column: number, row: number): number | undefined
 	{
@@ -148,7 +148,7 @@ export class EditorMap
 	}
 
 	/**
-	 * The cells on the map that hold anything but the default tile. Only loaded chunks are looked at
+	 * The cells in the area that hold anything but the default tile. Only loaded chunks are looked at
 	 *
 	 * @return The cells and their values
 	 */
@@ -176,19 +176,19 @@ export class EditorMap
 	}
 
 	/**
-	 * The cells on the map, outside some bounds, that hold anything but the default tile, such as the
-	 * cells a smaller map would cut off. Only loaded chunks are looked at
+	 * The cells in the area, outside some bounds, that hold anything but the default tile, such as the
+	 * cells a smaller area would cut off. Only loaded chunks are looked at
 	 *
 	 * @param bounds The bounds
 	 * @return The cells and their values
 	 */
-	paintedCellsOutside(bounds: MapBounds): CellChange[]
+	paintedCellsOutside(bounds: AreaBounds): CellChange[]
 	{
 		return(this.paintedCells().filter(([column, row]) => !isInBounds(bounds, column, row)));
 	}
 
 	/**
-	 * Changes cells. Every cell must be on the map and in a loaded chunk
+	 * Changes cells. Every cell must be in the area and in a loaded chunk
 	 *
 	 * @param changes The cells and their new values
 	 * @return The keys of the chunks that changed

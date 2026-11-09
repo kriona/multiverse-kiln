@@ -416,7 +416,7 @@ describe('stepOnGrid', () =>
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(-15, -15), right, 0.05, centered, allFree, 100, repeatDelay)), { x: -10, y: -15, step: step([-2, -2], [-1, -2]) });
 		});
 
-		it('stops at the map\'s west and north edges', () =>
+		it('stops at the area\'s west and north edges', () =>
 		{
 			assert.deepStrictEqual(placeOf(stepOnGrid(standingAt(-15, -15), { x: -1, y: -1 }, 1, centered, allFree, 100, repeatDelay)), at(-15, -15));
 		});
@@ -457,7 +457,7 @@ describe('findFreeCell', () =>
 		assert.deepStrictEqual(findFreeCell({ column: 2, row: 1 }, grid, freeExcept([2, 1]), 3), { x: 15, y: 5 });
 	});
 
-	it('skips cells that are off the map or impassable', () =>
+	it('skips cells that are outside the area or impassable', () =>
 	{
 		const walls = gridWith({ walkSeconds: walkSeconds([0, 0, IMPASSABLE_WALK_SECONDS], [1, 0, IMPASSABLE_WALK_SECONDS]) });
 
@@ -480,7 +480,7 @@ describe('findFreeCell', () =>
 
 describe('wrapCell', () =>
 {
-	it('brings a cell past a looping edge back onto the map', () =>
+	it('brings a cell past a looping edge back into the area', () =>
 	{
 		const loops = gridWith({ loopsEastWest: true, loopsNorthSouth: true });
 

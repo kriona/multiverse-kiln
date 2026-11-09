@@ -1,4 +1,4 @@
-import type { CellChange, MapBounds } from '@multiverse-kiln/shared';
+import type { CellChange, AreaBounds } from '@multiverse-kiln/shared';
 
 /**
  * Most steps the editor can undo
@@ -6,8 +6,8 @@ import type { CellChange, MapBounds } from '@multiverse-kiln/shared';
 const MAX_STEPS = 200;
 
 /**
- * One undoable change to a map: everything a single click or drag painted, or one change of the map's
- * size, with the cells a smaller map cut off set to the default tile
+ * One undoable change to an area's cells: everything a single click or drag painted, or one change of
+ * the area's size, with the cells a smaller area cut off set to the default tile
  */
 export interface EditStep
 {
@@ -22,11 +22,11 @@ export interface EditStep
 	inverse: CellChange[];
 
 	/**
-	 * For a change of the map's size, its bounds before and after
+	 * For a change of the area's size, its bounds before and after
 	 */
 	bounds?: {
-		before: MapBounds;
-		after: MapBounds;
+		before: AreaBounds;
+		after: AreaBounds;
 	};
 }
 
@@ -46,7 +46,7 @@ export interface SavedCell
  *
  * @return The bounds, with minimums above maximums
  */
-function emptyBounds(): MapBounds
+function emptyBounds(): AreaBounds
 {
 	return({
 		minColumn: Infinity,
@@ -63,7 +63,7 @@ function emptyBounds(): MapBounds
  * @param column The cell's column
  * @param row The cell's row
  */
-function extendBounds(bounds: MapBounds, column: number, row: number): void
+function extendBounds(bounds: AreaBounds, column: number, row: number): void
 {
 	bounds.minColumn = Math.min(bounds.minColumn, column);
 	bounds.minRow = Math.min(bounds.minRow, row);
@@ -78,13 +78,13 @@ function extendBounds(bounds: MapBounds, column: number, row: number): void
  * @param b The other
  * @return True when they do, false when they don't or either holds no cells
  */
-function boundsOverlap(a: MapBounds, b: MapBounds): boolean
+function boundsOverlap(a: AreaBounds, b: AreaBounds): boolean
 {
 	return((a.minColumn <= b.maxColumn) && (b.minColumn <= a.maxColumn) && (a.minRow <= b.maxRow) && (b.minRow <= a.maxRow));
 }
 
 /**
- * Undo and redo for the map editor
+ * Undo and redo for the area editor's cells
  */
 export class EditHistory
 {
@@ -94,7 +94,7 @@ export class EditHistory
 	/**
 	 * Each step's cells' bounds, for rebasing to skip the steps that changed none of the cells saved
 	 */
-	private readonly cellBounds = new WeakMap<EditStep, MapBounds>();
+	private readonly cellBounds = new WeakMap<EditStep, AreaBounds>();
 
 	/**
 	 * Whether there is a step to undo
@@ -168,7 +168,7 @@ export class EditHistory
 
 	/**
 	 * Follows cells another editor saved: wherever a step holds a cell's value as it was saved before, it
-	 * holds the value saved now, so undoing back to the saved map gives the cells as they are saved
+	 * holds the value saved now, so undoing back to the saved area gives the cells as they are saved
 	 *
 	 * @param cells Each cell's value as saved before and now
 	 */
@@ -226,7 +226,7 @@ export class EditHistory
 	 * @param step The step
 	 * @return Its cells' bounds, with minimums above maximums when it changes no cells
 	 */
-	private cellBoundsOf(step: EditStep): MapBounds
+	private cellBoundsOf(step: EditStep): AreaBounds
 	{
 		let bounds = this.cellBounds.get(step);
 
@@ -249,7 +249,7 @@ export class EditHistory
 	}
 
 	/**
-	 * Forgets every step, for when another map opens
+	 * Forgets every step, for when another area opens
 	 */
 	clear(): void
 	{

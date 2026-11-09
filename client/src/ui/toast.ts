@@ -188,7 +188,7 @@ export function showToast(content: string | readonly (string | Node)[], options:
 	toast.addEventListener('pointerleave', resume);
 
 	// One that shows until it is closed is closed for the player, as clicking it would, so what it held
-	// up, such as a save's marks on the map, doesn't outlast it. One that shows for a while has only gone
+	// up, such as a save's marks on the area's cells, doesn't outlast it. One that shows for a while has only gone
 	// early, as when its time runs out
 	closers.set(toast, (lasts ? close : dismiss));
 	container.append(toast);

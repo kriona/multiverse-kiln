@@ -1,12 +1,17 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type DismissibleNotice, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
+import type { AdminApi } from '../../network/adminApi';
+import type { AuthApi } from '../../network/authApi';
 import { describeEditorError, EditorApiError, errorId, errorValue, type EditorApi } from '../../network/editorApi';
 import { changeMessages, hasUnsavedWork } from '../changeTracker';
 import { DraftSection } from './DraftSection';
 import { StartDraftDialog } from './StartDraftDialog';
 import { editPageUrl, HOME_PAGE_URL, universePageUrl } from '../../pages';
+import type { ProfileApi } from '../../network/profileApi';
+import { DISMISSIBLE_NOTICE_TEXT } from '../dismissibleNotices';
+import { showToast } from '../toast';
 import { AuditTab } from './AuditTab';
 import { EditorsSettingsSection } from './EditorsSettingsSection';
 import { EditorsTab } from './EditorsTab';
@@ -30,13 +35,16 @@ import { ThemesSection } from './ThemesSection';
 import { TilesetsTab } from './TilesetsTab';
 import { TranslationsTab } from './TranslationsTab';
 import { TranslationTable } from './TranslationTable';
+import { UniverseDeleteSection } from './UniverseDeleteSection';
+import { UniverseExportSection } from './UniverseExportSection';
+import { UniverseImportSection } from './UniverseImportSection';
 import { UniverseTab } from './UniverseTab';
 import type { AreaClaims } from './areaClaims';
 import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
 
 /**
- * The order the tabs' changes are saved in: the Areas tab's maps can be painted with tiles the
+ * The order the tabs' changes are saved in: the Areas tab's areas can be painted with tiles the
  * Tilesets tab adds, so the Tilesets tab goes first and the Areas tab after it. The server checks every
  * change against the role the player had when the save began, so the Editors tab's changes to roles
  * can go anywhere. The Translations tab goes last, so the server checks translations and notes against
@@ -192,11 +200,29 @@ export class EditorScreen
 	private readonly connectionNotice = getElement('editor-connection-notice', HTMLElement);
 	private readonly versionField = getElement('editor-version-field', HTMLElement);
 	private readonly versionChoice = getElement('editor-version', HTMLSelectElement);
+	private readonly screen = getElement('editor-screen', HTMLElement);
 	private readonly versionNotice = getElement('editor-version-notice', HTMLElement);
+	private readonly versionNoticeText = getElement('editor-version-notice-text', HTMLElement);
+	private readonly versionNoticeDismiss = getElement('editor-version-notice-dismiss', HTMLButtonElement);
+
+	/**
+	 * Which notice about the version open shows above the tabs, if any, for its X to dismiss
+	 */
+	private versionNoticeKind: DismissibleNotice | undefined;
+
+	/**
+	 * The notices the player dismissed: those the universe said when it last loaded, and those dismissed
+	 * here since, which a load that crossed with saving the dismissal may not include
+	 */
+	private readonly dismissedNotices = new Set<DismissibleNotice>();
+	private readonly profileApi: ProfileApi;
 	private readonly startDraftButton = getElement('editor-start-draft', HTMLButtonElement);
 	private readonly tabList = getElement('editor-tabs', HTMLElement);
 	private readonly tabStrip = new ScrollingTabs(this.tabList, getElement('editor-tabs-back', HTMLButtonElement), getElement('editor-tabs-forward', HTMLButtonElement));
 	private readonly universeTab: UniverseTab;
+	private readonly universeDeleteSection: UniverseDeleteSection;
+	private readonly universeExportSection: UniverseExportSection;
+	private readonly universeImportSection: UniverseImportSection;
 	private readonly draftSection: DraftSection;
 	private readonly startDraftDialog: StartDraftDialog;
 	private readonly rulesetTab: RulesetTab;
@@ -273,12 +299,29 @@ export class EditorScreen
 	/**
 	 * @param api The editor's API
 	 * @param actions What the screen's controls do
+	 * @param accountApis The auth routes and the admin routes, which deleting the universe uses, and the
+	 * profile routes, which remember the notices the player dismisses
 	 */
-	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions)
+	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions, accountApis: { auth: AuthApi; admin: AdminApi; profile: ProfileApi })
 	{
+		this.profileApi = accountApis.profile;
 		this.universeTab = new UniverseTab((update) =>
 		{
 			this.updateUniverse(update);
+		});
+		this.universeDeleteSection = new UniverseDeleteSection(api, accountApis.auth, accountApis.admin, hasUnsavedWork);
+		this.universeExportSection = new UniverseExportSection(api);
+		this.universeImportSection = new UniverseImportSection(api, {
+			canStart: () => ((this.universe !== undefined) && canManageVersions(this.universe.role) && !this.saveBar.isLocked()),
+			hasUnsavedChanges: () => this.hasTabChanges(),
+			// The save says the changes were saved only when there were some besides starting the draft
+			start: () => this.draftSection.stageAndSave('start', this.hasTabChanges()),
+			open: () => this.chooseVersion('draft'),
+			imported: () =>
+			{
+				// The import may have made and deleted anything in the draft, the area open included
+				this.switchVersion('draft');
+			}
 		});
 		this.draftSection = new DraftSection(() => this.hasTabChanges(), (announce) => this.saveBar.save(announce), (action) =>
 		{
@@ -289,6 +332,10 @@ export class EditorScreen
 		{
 			// The save says the changes were saved only when there were some besides starting the draft
 			void this.draftSection.stageAndSave('start', this.hasTabChanges());
+		});
+		this.versionNoticeDismiss.addEventListener('click', () =>
+		{
+			this.dismissVersionNotice();
 		});
 		this.startDraftButton.addEventListener('click', () =>
 		{
@@ -620,6 +667,9 @@ export class EditorScreen
 		this.startDraftButton.hidden = (universe.hasDraft || !canManageVersions(universe.role) || this.saveBar.isLocked());
 
 		this.universeTab.open(universe);
+		this.universeDeleteSection.open(universe);
+		this.universeExportSection.open(universe);
+		this.universeImportSection.open(universe);
 		this.draftSection.open(universe, this.saveBar.isLocked());
 		void this.rulesetTab.open(universe);
 		// Before the Characters tab, which writes its money in the abbreviations this shows
@@ -808,7 +858,7 @@ export class EditorScreen
 	 * Follows a save made in another window, once the universe has loaded (a save heard of while it
 	 * loads waits for it): lists the saves on the Audit tab again (once the tab shows), updates what the
 	 * save changed that this window has no unsaved changes to, marks what it has them to, and says who
-	 * saved what, once the painting it made to the area open is taken into its map. Of a save to the
+	 * saved what, once the painting it made to the area open is taken into its cells. Of a save to the
 	 * other version, it follows only what the universe holds once (detailsForVersionOpen()). Starting,
 	 * applying or discarding the draft changes the whole universe, which loads again, or says to reload
 	 * while anything is unsaved
@@ -968,6 +1018,9 @@ export class EditorScreen
 	lockOut(message: string): void
 	{
 		this.saveBar.setLocked(true);
+		this.universeDeleteSection.lock();
+		this.universeExportSection.lock();
+		this.universeImportSection.lock();
 		this.showNotice(message);
 	}
 
@@ -1040,35 +1093,70 @@ export class EditorScreen
 
 	/**
 	 * Shows which version of the universe is open, with the choice of the other while it has a draft, and
-	 * says what saving it does: the draft reaches no player until it is applied, and changes saved to the
-	 * live version while there is a draft are replaced when it is applied
+	 * says what saving it does, unless the player dismissed the notice saying it: the draft reaches no
+	 * player until it is applied, and changes saved to the live version while there is a draft are
+	 * replaced when it is applied
 	 *
 	 * @param universe The universe
 	 */
 	private showVersion(universe: EditableUniverse): void
 	{
+		const kind = ((universe.version === 'draft') ? 'editorDraft' : (universe.hasDraft ? 'editorLiveWithDraft' : undefined));
+
 		this.versionField.hidden = !universe.hasDraft;
 		this.versionChoice.value = universe.version;
+		this.versionNoticeKind = kind;
 
-		if (universe.version === 'draft')
+		// The tabs and the save bar are drawn in the draft's purple while it is open (edit.scss)
+		this.screen.classList.toggle('editing-draft', (universe.version === 'draft'));
+
+		for (const notice of universe.dismissedNotices)
 		{
-			showMessage(this.versionNotice, t({
-				id: 'editor.version.draftNotice',
-				defaultMessage: 'You are editing the draft version of this universe. Players will not see changes until they are applied.',
-				description: 'Shown above the editor\'s tabs while the universe\'s draft (a copy players don\'t see) is open'
-			}));
+			this.dismissedNotices.add(notice);
 		}
-		else if (universe.hasDraft)
+
+		this.versionNoticeText.textContent = ((kind === undefined) ? '' : t(DISMISSIBLE_NOTICE_TEXT[kind]));
+		this.versionNotice.hidden = ((kind === undefined) || this.dismissedNotices.has(kind));
+	}
+
+	/**
+	 * Hides the notice about the version open, in every universe until the player shows dismissed notices
+	 * again from their profile, and moves focus to the tab showing, since the notice's X goes with it
+	 */
+	private dismissVersionNotice(): void
+	{
+		const notice = this.versionNoticeKind;
+
+		this.versionNotice.hidden = true;
+		this.tabList.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
+
+		if ((notice !== undefined) && !this.dismissedNotices.has(notice))
 		{
-			showMessage(this.versionNotice, t({
-				id: 'editor.version.liveWithDraftNotice',
-				defaultMessage: 'You are editing the live version of this universe. The universe has a draft: changes saved here are replaced when the draft is applied unless they are also made in the draft.',
-				description: 'Shown above the editor\'s tabs while the live version of a universe with a draft is open'
-			}));
+			this.dismissedNotices.add(notice);
+			void this.saveDismissedNotice(notice);
 		}
-		else
+	}
+
+	/**
+	 * Has the player's account remember a notice they dismissed, saying so when it couldn't
+	 *
+	 * @param notice The notice
+	 */
+	private async saveDismissedNotice(notice: DismissibleNotice): Promise<void>
+	{
+		try
 		{
-			showMessage(this.versionNotice, undefined);
+			await this.profileApi.dismissNotice(notice);
+		}
+		catch (error)
+		{
+			showToast(describeEditorError(error, {
+				id: 'editor.version.dismissFailed',
+				defaultMessage: 'Could not remember that you dismissed the notice, so it will show again the next time you open the editor.',
+				description: 'Shown when the player dismissed the notice above the editor\'s tabs about the version of the universe open (its draft or live version), but saving that they dismissed it failed'
+			}), {
+				kind: 'warning'
+			});
 		}
 	}
 
@@ -1087,21 +1175,23 @@ export class EditorScreen
 	 * changes, which belong to the version open
 	 *
 	 * @param version The version
+	 * @return Whether the version opens: false when it is open already, or the player keeps their changes
 	 */
-	private chooseVersion(version: UniverseVersionName): void
+	private chooseVersion(version: UniverseVersionName): boolean
 	{
 		if ((version === this.api.version) || !this.universe)
 		{
-			return;
+			return(false);
 		}
 
 		if (hasUnsavedWork() && !window.confirm(t(changeMessages.discardChanges)))
 		{
 			this.versionChoice.value = this.api.version;
-			return;
+			return(false);
 		}
 
 		this.switchVersion(version);
+		return(true);
 	}
 
 	/**

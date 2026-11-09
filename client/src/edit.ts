@@ -2,9 +2,11 @@ import { EditorPage } from './EditorPage';
 import { t } from './localization';
 import { startPage } from './pageStart';
 import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
+import { startCodeInputs } from './ui/codeInputs';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { setPageTitle, showStatus } from './ui/dom';
 import { pageMessages } from './ui/pageMessages';
+import { startPasswordToggles } from './ui/passwordToggles';
 
 /**
  * Starts the world editor's page in the player's language for the universe its address names, or goes
@@ -23,6 +25,9 @@ async function start(): Promise<void>
 
 	const { server } = await startPage();
 
+	// For the dialogs that delete the universe
+	startPasswordToggles();
+	startCodeInputs();
 	setPageTitle(document.title);
 	showStatus(t(pageMessages.connecting));
 

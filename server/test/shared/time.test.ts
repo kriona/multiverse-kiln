@@ -1,12 +1,12 @@
 import assert from 'assert';
-import { DAWN_SECONDS, DAY_SECONDS, daylight, DUSK_SECONDS, faerieDistance, lobbyAreaTime, MIDNIGHT_SECONDS, NOON_SECONDS, partOfDay, periodOfDay, resolveAreaTime, secondOfDay, type MapBounds } from '@multiverse-kiln/shared';
+import { DAWN_SECONDS, DAY_SECONDS, daylight, DUSK_SECONDS, faerieDistance, lobbyAreaTime, MIDNIGHT_SECONDS, NOON_SECONDS, partOfDay, periodOfDay, resolveAreaTime, secondOfDay, type AreaBounds } from '@multiverse-kiln/shared';
 
 const HOUR = 60 * 60;
 
 /**
- * A map 101 cells across and 51 down, centered on 0, 0
+ * An area 101 cells across and 51 down, centered on 0, 0
  */
-const bounds: MapBounds = {
+const bounds: AreaBounds = {
 	minColumn: -50,
 	minRow: -25,
 	maxColumn: 50,
@@ -134,7 +134,7 @@ describe('time (shared)', () =>
 			assert.strictEqual(faerieDistance('horizon', { column: 0, row: 25 }, bounds), 0);
 		});
 
-		it('treats a map one cell across as its middle', () =>
+		it('treats an area one cell across as its middle', () =>
 		{
 			assert.strictEqual(faerieDistance('west', { column: 0, row: 0 }, { minColumn: 0, minRow: 0, maxColumn: 0, maxRow: 0 }), 0.5);
 		});

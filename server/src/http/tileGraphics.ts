@@ -1,5 +1,5 @@
 /**
- * GET TILE_GRAPHICS_PATH/<ID>.png: an uploaded tile graphic, for anyone drawing a map with it
+ * GET TILE_GRAPHICS_PATH/<ID>.png: an uploaded tile graphic, for anyone drawing an area with it
  *
  * An uploaded graphic never changes (a new upload gets a new ID), so browsers may keep it for good.
  * Colyseus's CORS hook (responseHeaders.ts) lets the allowed origins read it, which the client needs to

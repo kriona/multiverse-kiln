@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES } from '@multiverse-kiln/shared';
+import { defineMessages, EMAIL_CODE_LIFETIME_MINUTES, type EmailCodePurpose, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
@@ -7,8 +7,8 @@ import { resetCodeInput } from './codeInputs';
 import { setFieldError } from './fieldErrors';
 
 /**
- * What changing an account's 2FA checks it's the player with: its password, or for an account without
- * one, a code emailed to its address
+ * What changing an account's 2FA, or deleting a universe, checks it's the player with: its password, or
+ * for an account without one, a code emailed to its address
  */
 export interface TwoFactorAccount
 {
@@ -56,10 +56,48 @@ export interface TwoFactorEmailCodeElements
 }
 
 /**
- * The part of the dialogs that turn 2FA on or off and make new recovery codes that checks it's the
- * player with a code emailed to the account's address (purpose 'changeTwoFactor'), for an account
- * without a password: Email me a code, then the code's field. A right code works once, so it is checked
- * only once while the dialog is open, and isn't checked again when something else is wrong
+ * What a dialog emails a code for, and what it says about the code
+ */
+export interface EmailCodeUse
+{
+	purpose: EmailCodePurpose;
+
+	/**
+	 * Says the code will be emailed, taking the address as {email}
+	 */
+	intro: MessageDescriptor;
+
+	/**
+	 * Says it was, taking the address as {email} and how many minutes it works for as {minutes}
+	 */
+	sent: MessageDescriptor;
+}
+
+/**
+ * The code that turning 2FA on or off and making new recovery codes email
+ */
+const CHANGE_TWO_FACTOR: EmailCodeUse = {
+	purpose: 'changeTwoFactor',
+	...defineMessages({
+		intro: {
+			id: 'profile.twoFactorEmailCodeIntro',
+			defaultMessage: 'To check it\'s you, we\'ll email a code to {email}.',
+			description: 'In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, which logs in only with Google or Discord; {email} is the account\'s address'
+		},
+		sent: {
+			id: 'profile.twoFactorEmailCodeSent',
+			defaultMessage: 'We\'ve emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}.',
+			description: 'In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, once a code was sent to the account\'s address; {email} is that address'
+		}
+	})
+};
+
+/**
+ * The part of a dialog that checks it's the player with a code emailed to the account's address, for an
+ * account without a password: Email me a code, then the code's field. The dialogs that turn 2FA on or
+ * off and make new recovery codes use it (purpose 'changeTwoFactor'), and so does deleting a universe. A
+ * right code works once, so it is checked only once while the dialog is open, and isn't checked again
+ * when something else is wrong
  */
 export class TwoFactorEmailCode
 {
@@ -74,8 +112,9 @@ export class TwoFactorEmailCode
 	/**
 	 * @param api The auth routes
 	 * @param elements The dialog's elements for the code
+	 * @param use What the code is for, and what the dialog says about it: changing 2FA when left out
 	 */
-	constructor(private readonly api: AuthApi, private readonly elements: TwoFactorEmailCodeElements)
+	constructor(private readonly api: AuthApi, private readonly elements: TwoFactorEmailCodeElements, private readonly use: EmailCodeUse = CHANGE_TWO_FACTOR)
 	{
 		elements.input.addEventListener('input', () =>
 		{
@@ -119,11 +158,7 @@ export class TwoFactorEmailCode
 		input.disabled = false;
 		note.hidden = !this.asked;
 		note.textContent = (this.asked
-			? t({
-				id: 'profile.twoFactorEmailCodeIntro',
-				defaultMessage: 'To check it\'s you, we\'ll email a code to {email}.',
-				description: 'In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, which logs in only with Google or Discord; {email} is the account\'s address'
-			}, {
+			? t(this.use.intro, {
 				email: (this.email ?? '')
 			})
 			: '');
@@ -139,16 +174,12 @@ export class TwoFactorEmailCode
 		const email = (this.email ?? '');
 
 		await this.api.sendCode({
-			purpose: 'changeTwoFactor',
+			purpose: this.use.purpose,
 			email,
 			locale: currentLocale()
 		});
 		this.sent = true;
-		note.textContent = t({
-			id: 'profile.twoFactorEmailCodeSent',
-			defaultMessage: 'We\'ve emailed a code to {email}. Enter it to go on. It works once, for {minutes, plural, one {# minute} other {# minutes}}.',
-			description: 'In the dialogs that turn two-factor authentication on or off or make new recovery codes, for an account without a password, once a code was sent to the account\'s address; {email} is that address'
-		}, {
+		note.textContent = t(this.use.sent, {
 			email,
 			minutes: EMAIL_CODE_LIFETIME_MINUTES
 		});
@@ -169,7 +200,7 @@ export class TwoFactorEmailCode
 		}
 
 		await this.api.checkCode({
-			purpose: 'changeTwoFactor',
+			purpose: this.use.purpose,
 			email: (this.email ?? ''),
 			code: this.elements.input.value
 		});
