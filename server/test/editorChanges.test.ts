@@ -1,8 +1,9 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { DEFAULT_SITE_SETTINGS, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, MAX_AREA_LINKS, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../src/db/adminClient.js';
+import { createAreaLink } from '../src/db/areaRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
@@ -169,6 +170,36 @@ describe('Saving editor changes', () =>
 		assert.strictEqual(refused.status, 409);
 		assert.strictEqual(refused.body.error.id, 'error.areaLimit');
 		assert.strictEqual(refused.body.error.values?.max, 3);
+	});
+
+	it('refuses a link past the most an area can have', async () =>
+	{
+		const universeId = await createUniverse(ada);
+		const caveId = await createArea(ada, universeId, { name: 'Cave' });
+		const lobbyId = await createArea(ada, universeId, { name: 'Hall' });
+
+		// Room for a link on each of the most links an area can have, and one more
+		await saveAll(ada, universeId, [{ kind: 'resizeArea', areaId: caveId, bounds: { minColumn: -49, minRow: -49, maxColumn: 0, maxRow: 0 }, discard: false }]);
+		await Promise.all(Array.from({ length: MAX_AREA_LINKS }, (unused, index) => createAreaLink({
+			areaId: caveId,
+			column: -(index % 50),
+			row: -Math.floor(index / 50),
+			targetAreaId: lobbyId,
+			targetColumn: 0,
+			targetRow: 0,
+			mode: 'manual',
+			requiresWholeGroup: false
+		})));
+
+		const target = { targetAreaId: lobbyId, targetColumn: 0, targetRow: 0, mode: 'automatic', requiresWholeGroup: true } as const;
+		const extra = await saveChanges(ada, universeId, [{ kind: 'saveLink', areaId: caveId, column: -49, row: -49, target }]);
+
+		assert.strictEqual(extra.status, 409);
+		assert.strictEqual(extra.body.error.id, 'error.areaLinkLimit');
+		assert.strictEqual(extra.body.error.values?.max, MAX_AREA_LINKS);
+
+		// Changing a link the area has adds none
+		await saveAll(ada, universeId, [{ kind: 'saveLink', areaId: caveId, column: 0, row: 0, target }]);
 	});
 
 	it('deletes a tileset\'s image only once the save is saved', async () =>

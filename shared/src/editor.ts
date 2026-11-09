@@ -172,6 +172,11 @@ export const MAX_CUSTOM_THEMES = 100;
 export const MAX_AREA_NAME_LENGTH = 60;
 
 /**
+ * Most links on one area's cells, which its file in an export holds beside its cells (MAX_AREA_SIDE)
+ */
+export const MAX_AREA_LINKS = 1000;
+
+/**
  * The bounds a new area starts with: one screen's worth of cells around column 0, row 0
  */
 export const NEW_AREA_BOUNDS: Readonly<AreaBounds> = {

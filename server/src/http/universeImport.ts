@@ -42,8 +42,19 @@ const messages = defineMessages({
 		id: 'error.alreadyImporting',
 		defaultMessage: 'You\'re already importing a file. Try again once it has finished.',
 		description: 'Why a file wasn\'t imported into a universe\'s draft: the player is already importing one, in this window or another, and each player imports one at a time'
+	},
+	serverBusy: {
+		id: 'error.importServerBusy',
+		defaultMessage: 'The server is busy importing other files. Try again in a minute.',
+		description: 'Why a file wasn\'t imported into a universe\'s draft, or previewed: other players are importing as many files as the server reads at once'
 	}
 });
+
+/**
+ * Most imports the server reads, plans and saves at once. Each holds its file's contents in memory, many
+ * times their size once read, so this bounds the memory imports take across players
+ */
+const MAX_IMPORTS_AT_ONCE = 2;
 
 /**
  * The players an import is being made for, each of whom makes one at a time, so one player can't have
@@ -91,14 +102,17 @@ export function addUniverseImportRoutes(router: Router): void
  */
 async function previewRoute(request: Request, response: Response): Promise<void>
 {
-	const plan = await planRequest(request, response);
-
-	if (plan)
+	await whileImporting(universeContextOf(request), response, async () =>
 	{
-		const payload: UniverseImportPreview = plan.preview;
+		const plan = await planRequest(request, response);
 
-		response.json(payload);
-	}
+		if (plan)
+		{
+			const payload: UniverseImportPreview = plan.preview;
+
+			response.json(payload);
+		}
+	});
 }
 
 /**
@@ -121,36 +135,36 @@ async function importRoute(request: Request, response: Response): Promise<void>
 	}
 
 	const context = universeContextOf(request);
-	const plan = await planRequest(request, response);
 
-	if (!plan)
+	// The plan holds the file's contents until it is saved, so the import holds its place until then
+	await whileImporting(context, response, async () =>
 	{
-		return;
-	}
+		const plan = await planRequest(request, response);
 
-	if ((plan.preview.tilesetUploads > 0) && (query.data[UNIVERSE_IMPORT_RIGHTS_PARAM] !== 'true'))
-	{
-		sendError(response, 400, messages.rightsNeeded);
-		return;
-	}
+		if (!plan)
+		{
+			return;
+		}
 
-	const outcome = await whileImporting(context, response, () => saveChanges(context, plan.changes, query.data.windowId));
+		if ((plan.preview.tilesetUploads > 0) && (query.data[UNIVERSE_IMPORT_RIGHTS_PARAM] !== 'true'))
+		{
+			sendError(response, 400, messages.rightsNeeded);
+			return;
+		}
 
-	if (!outcome)
-	{
-		return;
-	}
+		const outcome = await saveChanges(context, plan.changes, query.data.windowId);
 
-	if (!outcome.saved)
-	{
-		const { status, message, values } = outcome.refusal.refusal;
-		const payload: ErrorPayload = { error: localize(message, values) };
+		if (!outcome.saved)
+		{
+			const { status, message, values } = outcome.refusal.refusal;
+			const payload: ErrorPayload = { error: localize(message, values) };
 
-		response.status(status).json(payload);
-		return;
-	}
+			response.status(status).json(payload);
+			return;
+		}
 
-	response.status(204).end();
+		response.status(204).end();
+	});
 }
 
 /**
@@ -176,63 +190,64 @@ async function planRequest(request: Request, response: Response): Promise<Import
 		return(undefined);
 	}
 
-	const archive = request.body;
-
-	return(whileImporting(context, response, async () =>
+	try
 	{
-		try
+		const { areasPerUniverse } = await findSiteSettings();
+		const file = await readImportFile(request.body, context.universe.ruleset, areasPerUniverse);
+		const access = {
+			role: context.role,
+			languages: context.languages
+		};
+		const locale = importLocale.safeParse(request.query.locale);
+		const target = await loadImportTarget(context.version, file, mayKeepAreas(file, access), emailTranslator((locale.success ? locale.data : SOURCE_LOCALE)));
+
+		if (!target)
 		{
-			const { areasPerUniverse } = await findSiteSettings();
-			const file = await readImportFile(archive, context.universe.ruleset, areasPerUniverse);
-			const access = {
-				role: context.role,
-				languages: context.languages
-			};
-			const locale = importLocale.safeParse(request.query.locale);
-			const target = await loadImportTarget(context.version, file, mayKeepAreas(file, access), emailTranslator((locale.success ? locale.data : SOURCE_LOCALE)));
-
-			if (!target)
-			{
-				sendError(response, 404, errorMessages.noSuchDraft);
-				return(undefined);
-			}
-
-			return(planImport(file, target, access));
+			sendError(response, 404, errorMessages.noSuchDraft);
+			return(undefined);
 		}
-		catch (error)
+
+		return(planImport(file, target, access));
+	}
+	catch (error)
+	{
+		if (error instanceof ImportProblem)
 		{
-			if (error instanceof ImportProblem)
-			{
-				sendError(response, 400, error.reason, error.values);
-				return(undefined);
-			}
-
-			throw error;
+			sendError(response, 400, error.reason, error.values);
+			return(undefined);
 		}
-	}));
+
+		throw error;
+	}
 }
 
 /**
- * Runs work for a player's import, one at a time, answering 429 while another of theirs is running
+ * Runs work for a player's import, one at a time for each player and at most MAX_IMPORTS_AT_ONCE on the
+ * server, answering 429 while another of theirs is running and 503 while the server has as many as it runs
  *
  * @param context The request's universe and player
- * @param response The response, answered when another import is running
+ * @param response The response, answered when the import can't run now
  * @param work The work
- * @return What the work resolves with, or undefined once the response is answered
  */
-async function whileImporting<T>(context: UniverseContext, response: Response, work: () => Promise<T>): Promise<T | undefined>
+async function whileImporting(context: UniverseContext, response: Response, work: () => Promise<void>): Promise<void>
 {
 	if (importing.has(context.playerId))
 	{
 		sendError(response, 429, messages.alreadyImporting);
-		return(undefined);
+		return;
+	}
+
+	if (importing.size >= MAX_IMPORTS_AT_ONCE)
+	{
+		sendError(response, 503, messages.serverBusy);
+		return;
 	}
 
 	importing.add(context.playerId);
 
 	try
 	{
-		return(await work());
+		await work();
 	}
 	finally
 	{

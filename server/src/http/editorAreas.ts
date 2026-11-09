@@ -3,13 +3,13 @@
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { type AreaEvacuation, canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, defineMessages, isInBounds, isNewRef, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { type AreaEvacuation, canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREA_LINKS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
@@ -18,17 +18,6 @@ import { loadAreaContext, requireRole, universeContextOf, areaContextOf } from '
 import { ChangeRefusal, recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { chunkRange } from './editorPayloads.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
-
-/**
- * Why areas weren't made (see shared/src/localization.ts)
- */
-export const areaMessages = defineMessages({
-	limit: {
-		id: 'error.areaLimit',
-		defaultMessage: 'A universe can have at most {max, plural, one {# area} other {# areas}}.',
-		description: 'Why a new area wasn\'t made, or a file couldn\'t be imported into a universe\'s draft: the universe would have more areas than the site allows; {max} is the most it can have'
-	}
-});
 
 /**
  * Adds the area routes to a universe's router
@@ -247,7 +236,7 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 
 	if (await countAreas(version, transaction) >= areasPerUniverse)
 	{
-		refuse(409, areaMessages.limit, {
+		refuse(409, errorMessages.areaLimit, {
 			max: areasPerUniverse
 		});
 	}
@@ -487,6 +476,17 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 			id: 'error.linkTargetOutOfBounds',
 			defaultMessage: 'Where the link goes must be inside the other area.',
 			description: 'Why an area link was refused: the cell it leads to is outside the other area'
+		});
+	}
+
+	if (await countAreaLinksBesides(area.id, column, row, transaction) >= MAX_AREA_LINKS)
+	{
+		refuse(409, {
+			id: 'error.areaLinkLimit',
+			defaultMessage: 'An area can have at most {max, plural, one {# link} other {# links}}.',
+			description: 'Why an area link wasn\'t added: the area has as many links on its cells as allowed. A link takes characters who step on its cell to another area'
+		}, {
+			max: MAX_AREA_LINKS
 		});
 	}
 

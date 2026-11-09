@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREAS_PER_UNIVERSE, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
 import { adminDb } from '../src/db/adminClient.js';
@@ -157,6 +157,25 @@ async function archiveOf(contents: ExportContents, folder = '', others: Record<s
 	const extra = await Promise.all(Object.entries(others).map(([path, text]) => zipFile(path, [text])));
 
 	return(zipArchive([...zipped, ...extra], new Date()));
+}
+
+/**
+ * An archive with some of its files replaced or added, as they are written
+ *
+ * @param archive The archive
+ * @param replaced The files to replace or add, by their paths in it
+ * @return The new archive
+ */
+async function archiveWith(archive: Buffer, replaced: Record<string, string>): Promise<Buffer>
+{
+	const files = await readZip(archive, 1000000000);
+
+	for (const [path, text] of Object.entries(replaced))
+	{
+		files.set(path, Buffer.from(text));
+	}
+
+	return(zipArchive(await Promise.all([...files].map(([path, data]) => zipFile(path, [data]))), new Date()));
 }
 
 /**
@@ -648,6 +667,69 @@ describe('importing a universe', () =>
 		assert.strictEqual(pastThisSite.status, 400);
 		assert.strictEqual(pastThisSite.body.error.id, 'error.areaLimit');
 		assert.strictEqual(pastThisSite.body.error.values?.max, 2);
+	});
+
+	it('refuses an area file larger than an import reads, or wider or with more links than an area can have', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const archive = await exportArchive(ada, kilnhavenId, 'draft');
+		const contents = await contentsOf(archive);
+		const caveIndex = contents.areas.findIndex((area) => (area.name === 'Cave'));
+		const cave = contents.areas[caveIndex];
+		const cavePath = contents.areaPaths?.[caveIndex];
+
+		assert.ok(cave && cavePath);
+
+		// Refused by its size, before it is parsed
+		const padded = await importArchive(ada, kilnhavenId, await archiveWith(archive, {
+			[cavePath]: `${JSON.stringify(cave)}${' '.repeat(MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES)}`
+		}), { preview: true });
+		const tooWide = await importArchive(ada, kilnhavenId, await archiveWith(archive, {
+			[cavePath]: JSON.stringify({ ...cave, bounds: { ...cave.bounds, minColumn: (cave.bounds.maxColumn - MAX_AREA_SIDE) } })
+		}), { preview: true });
+		const tooManyLinks = await importArchive(ada, kilnhavenId, await archiveWith(archive, {
+			[cavePath]: JSON.stringify({ ...cave, links: new Array(MAX_AREA_LINKS + 1).fill({ column: 0, row: 0, targetAreaId: cave.id, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false }) })
+		}), { preview: true });
+
+		assert.strictEqual(padded.status, 400);
+		assert.strictEqual(padded.body.error.id, 'error.importFileTooLarge');
+		assert.deepStrictEqual(padded.body.error.values, { path: cavePath, max: (MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES / (1024 * 1024)) });
+		assert.strictEqual(tooWide.status, 400);
+		assert.match(tooWide.body.error.values?.problem as string, new RegExp(`at most ${MAX_AREA_SIDE} cells wide`));
+		assert.strictEqual(tooManyLinks.status, 400);
+		assert.match(tooManyLinks.body.error.values?.problem as string, new RegExp(`links: .*${MAX_AREA_LINKS}`));
+	});
+
+	it('refuses a file whose JSON files hold more than an import reads in all', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const archive = await exportArchive(ada, kilnhavenId, 'draft');
+		const contents = await contentsOf(archive);
+		const [area] = contents.areas;
+
+		assert.ok(area && contents.areaPaths);
+
+		// Copies of an area, each padded to nearly as much as one file may hold, until they pass the total
+		const copies = Math.ceil(MAX_UNIVERSE_IMPORT_JSON_BYTES / MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES) + 1;
+		const added: Record<string, string> = {};
+
+		for (let index = 0; index < copies; index++)
+		{
+			const copy = JSON.stringify({ ...area, id: randomUUID() });
+
+			added[`areas/copy${index}.json`] = `${copy}${' '.repeat(MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES - Buffer.byteLength(copy))}`;
+		}
+
+		const refused = await importArchive(ada, kilnhavenId, await archiveWith(archive, {
+			...added,
+			[UNIVERSE_EXPORT_AREAS]: JSON.stringify([...contents.areaPaths, ...Object.keys(added)])
+		}), { preview: true });
+
+		assert.strictEqual(refused.status, 400);
+		assert.strictEqual(refused.body.error.id, 'error.importDataTooLarge');
+		assert.strictEqual(refused.body.error.values?.max, (MAX_UNIVERSE_IMPORT_JSON_BYTES / (1024 * 1024)));
 	});
 
 	it('resizes an area whose bounds and rows a file changes together', async () =>

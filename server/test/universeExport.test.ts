@@ -1,13 +1,20 @@
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
+import { randomUUID } from 'crypto';
+import { AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, CHUNK_SIZE, EDITOR_UNIVERSES_PATH, FAERIE_MORNINGS, MAX_AREA_LINKS, MAX_AREA_NAME_LENGTH, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorArea, type EditorAreaLink, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
 
 import { readZip } from '../src/archives/zip.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { findPlayer } from '../src/db/playerRepo.js';
 import { findDefaultTileIds } from '../src/db/tileRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { AREA_FILE_END, areaFileStart, areaRowsText } from '../src/http/universeExport.js';
 import { createArea, createUniverse, logIn, saveAll, send, solidPng, type Editor } from './editorRequests.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+
+/**
+ * The largest ID a tile can have, the largest value the database's integer columns hold
+ */
+const LARGEST_TILE_ID = 2147483647;
 
 const moss: TileSettings = {
 	name: 'Moss',
@@ -317,5 +324,64 @@ describe('exporting a universe', () =>
 		assert.strictEqual(liveIds?.areas[draftCave.id], caveId);
 		assert.strictEqual(liveIds.tiles[String(draftMoss.id)], mossId);
 		assert.deepStrictEqual(jsonOf<ExportedTranslations>(files, UNIVERSE_EXPORT_TRANSLATIONS)?.translations?.map((entry) => entry.thingId), [draftCave.id, draftCave.id]);
+	});
+});
+
+/**
+ * The longest of some words
+ *
+ * @param words The words
+ * @return The longest
+ */
+function longest<T extends string>(words: readonly T[]): T
+{
+	return(words.reduce((found, word) => ((word.length > found.length) ? word : found)));
+}
+
+describe('an exported area\'s file', () =>
+{
+	it('fits what an import reads of one file for the largest area the editor allows', () =>
+	{
+		// The largest area, with every cell written as the largest tile ID and the most links, so no area the
+		// editor allows writes a larger file
+		const width = MAX_AREA_SIDE;
+		const height = MAX_AREA_SIDE;
+		const area: EditorArea = {
+			id: randomUUID(),
+			name: '龍'.repeat(MAX_AREA_NAME_LENGTH),
+			parentAreaId: randomUUID(),
+			enabled: false,
+			indoors: false,
+			lightLevel: longest(AREA_LIGHT_LEVELS),
+			defaultTileId: LARGEST_TILE_ID,
+			passageOfTime: longest(AREA_PASSAGES_OF_TIME),
+			faerieMorning: longest(FAERIE_MORNINGS),
+			loopsEastWest: false,
+			loopsNorthSouth: false,
+			bounds: {
+				minColumn: -(width - 1),
+				minRow: -(height - 1),
+				maxColumn: 0,
+				maxRow: 0
+			}
+		};
+		const links: EditorAreaLink[] = Array.from({ length: MAX_AREA_LINKS }, () => ({
+			column: -(width - 1),
+			row: -(height - 1),
+			targetAreaId: randomUUID(),
+			targetColumn: -(MAX_AREA_SIDE - 1),
+			targetRow: -(MAX_AREA_SIDE - 1),
+			mode: longest(AREA_LINK_MODES),
+			requiresWholeGroup: false
+		}));
+		const band = new Array<number[]>(CHUNK_SIZE).fill(new Array<number>(width).fill(LARGEST_TILE_ID));
+		let bytes = Buffer.byteLength(areaFileStart(area, links)) + Buffer.byteLength(AREA_FILE_END);
+
+		for (let row = 0; row < height; row += CHUNK_SIZE)
+		{
+			bytes += Buffer.byteLength(areaRowsText(band.slice(0, Math.min(CHUNK_SIZE, (height - row))), (row === 0)));
+		}
+
+		assert.ok(bytes <= MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, `The file holds ${bytes} bytes`);
 	});
 });

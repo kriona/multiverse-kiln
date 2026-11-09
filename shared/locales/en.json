@@ -4299,6 +4299,10 @@
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made, or a file couldn't be imported into a universe's draft: the universe would have more areas than the site allows; {max} is the most it can have"
 	},
+	"error.areaLinkLimit": {
+		"defaultMessage": "An area can have at most {max, plural, one {# link} other {# links}}.",
+		"description": "Why an area link wasn't added: the area has as many links on its cells as allowed. A link takes characters who step on its cell to another area"
+	},
 	"error.auth.adminKeepsTwoFactor": {
 		"defaultMessage": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first.",
 		"description": "Why turning off two-factor authentication was refused: the player is one of the site's admins, who can't log in without it"
@@ -4535,9 +4539,17 @@
 		"defaultMessage": "The group is full: it already has {max, plural, one {# character} other {# characters}}.",
 		"description": "Why a character couldn't join a group with an invite link; {max} is the most characters the universe allows in a group"
 	},
+	"error.importDataTooLarge": {
+		"defaultMessage": "This file can't be imported: its areas and settings hold more than {max, number} MB in all.",
+		"description": "Why a file couldn't be imported into a universe's draft: the files inside the zip file describing the universe (its areas, settings and so on, apart from its tilesets' images) are too big in all; {max} is the most they can hold, in megabytes"
+	},
 	"error.importDraftOnly": {
 		"defaultMessage": "A file can only be imported into the universe's draft. Open the draft to import into it.",
 		"description": "Why a file wasn't imported into a universe: the editor has its live version open, and imports go into its draft (a copy players don't see until it is applied)"
+	},
+	"error.importFileTooLarge": {
+		"defaultMessage": "This file can't be imported: {path} in it holds more than {max, number} MB, the most one of its files can.",
+		"description": "Why a file couldn't be imported into a universe's draft: one of the files inside the zip file, such as a very large area's, is too big; {path} is that file's path inside the zip file, such as areas/1234.json, and {max} is the most it can hold, in megabytes"
 	},
 	"error.importNewerFormat": {
 		"defaultMessage": "This file was exported by a newer version of the editor, so it can't be imported here.",
@@ -4558,6 +4570,10 @@
 	"error.importRightsNeeded": {
 		"defaultMessage": "Confirm you have the rights to use the tilesets' images in the file.",
 		"description": "Why a file wasn't imported into a universe's draft: it uploads tilesets' images, and the player didn't check that they have the rights to use them"
+	},
+	"error.importServerBusy": {
+		"defaultMessage": "The server is busy importing other files. Try again in a minute.",
+		"description": "Why a file wasn't imported into a universe's draft, or previewed: other players are importing as many files as the server reads at once"
 	},
 	"error.invalidRequest": {
 		"defaultMessage": "The request isn't valid ({problem}).",

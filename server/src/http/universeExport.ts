@@ -427,11 +427,9 @@ function jsonText(value: unknown): string
 async function* areaPieces(area: EditorArea, links: EditorAreaLink[], executor: Executor): AsyncGenerator<string>
 {
 	const { minColumn, minRow, maxColumn, maxRow } = area.bounds;
-	const settings = JSON.stringify({ ...area, links }, null, '\t');
-	let separator = '';
+	let first = true;
 
-	// The settings' closing brace makes way for the rows
-	yield `${settings.slice(0, settings.lastIndexOf('\n}'))},\n\t"rows": [`;
+	yield areaFileStart(area, links);
 
 	for (let chunkRow = chunkCoordinate(minRow); chunkRow <= chunkCoordinate(maxRow); chunkRow++)
 	{
@@ -441,7 +439,7 @@ async function* areaPieces(area: EditorArea, links: EditorAreaLink[], executor: 
 			maxChunkColumn: chunkCoordinate(maxColumn),
 			maxChunkRow: chunkRow
 		}, executor)).map((chunk) => [chunk.chunkColumn, chunk.cells]));
-		const rows: string[] = [];
+		const rows: number[][] = [];
 
 		for (let row = Math.max(minRow, (chunkRow * CHUNK_SIZE)); row <= Math.min(maxRow, ((chunkRow * CHUNK_SIZE) + CHUNK_SIZE - 1)); row++)
 		{
@@ -452,14 +450,48 @@ async function* areaPieces(area: EditorArea, links: EditorAreaLink[], executor: 
 				cells.push(chunks.get(chunkCoordinate(column))?.[cellIndexInChunk(column, row)] ?? DEFAULT_TILE_CELL);
 			}
 
-			rows.push(`[${cells.join(',')}]`);
+			rows.push(cells);
 		}
 
-		yield `${separator}\n\t\t${rows.join(',\n\t\t')}`;
-		separator = ',';
+		yield areaRowsText(rows, first);
+		first = false;
 	}
 
-	yield '\n\t]\n}\n';
+	yield AREA_FILE_END;
+}
+
+/**
+ * The end of an area's file, after its rows
+ */
+export const AREA_FILE_END = '\n\t]\n}\n';
+
+/**
+ * The start of an area's file, up to where its rows begin: its settings and links
+ *
+ * @param area The area
+ * @param links The links on its cells
+ * @return The JSON
+ */
+export function areaFileStart(area: EditorArea, links: EditorAreaLink[]): string
+{
+	const settings = JSON.stringify({ ...area, links }, null, '\t');
+
+	// The settings' closing brace makes way for the rows
+	return(`${settings.slice(0, settings.lastIndexOf('\n}'))},\n\t"rows": [`);
+}
+
+/**
+ * Rows of an area's cells as its file writes them, each on a line of its own
+ *
+ * @param rows The rows, each its cells from west to east
+ * @param first Whether they are the area's first rows, which nothing comes before
+ * @return The JSON
+ */
+export function areaRowsText(rows: readonly (readonly number[])[], first: boolean): string
+{
+	const lines = rows.map((cells) => `[${cells.join(',')}]`);
+
+	return(`${(first ? '' : ',')}\n\t\t${lines.join(',\n\t\t')}`);
 }
 
 /**

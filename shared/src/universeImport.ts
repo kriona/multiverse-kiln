@@ -12,6 +12,7 @@
  * and the file doesn't is deleted. Parts the role may not change, and what belongs to the universe
  * rather than to its draft (its editors, stage and two-factor setting), are left out
  */
+import { MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS } from './editor.js';
 import type { ExportedBy, ExportedUniverse } from './universeExport.js';
 
 /**
@@ -36,9 +37,22 @@ export const UNIVERSE_IMPORT_RIGHTS_PARAM = 'rightsConfirmed';
 export const MAX_UNIVERSE_IMPORT_BYTES = 80 * 1024 * 1024;
 
 /**
- * The most the file's contents may hold once inflated
+ * The most one of the file's JSON files, such as an area's, may hold once inflated. The server reads each
+ * in one go, which holds up everything else on it for about 20 ms a megabyte
  */
-export const MAX_UNIVERSE_IMPORT_CONTENT_BYTES = 256 * 1024 * 1024;
+export const MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * The most the file's JSON files may hold in all once inflated. What they hold takes many times their
+ * size in memory once read
+ */
+export const MAX_UNIVERSE_IMPORT_JSON_BYTES = 64 * 1024 * 1024;
+
+/**
+ * The most the file's contents may hold once inflated: its JSON files, its tilesets' images, and room for
+ * the legend it has for people reading it
+ */
+export const MAX_UNIVERSE_IMPORT_CONTENT_BYTES = (MAX_UNIVERSE_IMPORT_JSON_BYTES + (MAX_UPLOADED_TILE_GRAPHICS * MAX_TILE_GRAPHIC_BYTES) + MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES);
 
 /**
  * The parts of an export an import can replace (UniverseExportContents)

@@ -403,10 +403,16 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 1. Regions
 	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without cells of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
 	- [ ] Build it, with tests
+	- [ ] Areas can be in multiple regions. One region can group areas a builder works in, while another like "The Planet" could define the rules for all outdoor areas.
 2. Area editor
 	- [ ] Edit Size: a field whose value differs from the area's size now shows in a changed color
 	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
 	- [ ] Middle click on a cell picks its tile as the tile to paint with
+	- [ ] Ability to chain overworld areas together
+		- [ ] You can specify a neighbor area to the north, east, south, and west. You can click to add a neighbor, which creates an area where the touching sides are the same dimension (e.g., if you click to add an area to the west, the north/south dimensions of the new area will be the same as the current area.
+		- [ ] Approaching the western edge of an area seamlessly loads from the neighbor. You can walk to seamlessly enter the neighbor.
+		- [ ] The area editor will draw 16 closest blocks from the neighboring areas (including northwest, northeast, etc). This lets editors preview the neighboring area.
+		- [ ] There should be an easy way to jump to the area editor for the neighboring area.
 3. Site fonts and text sizes
 	Decided, and already done in the static placeholder site (`C:\dev\multiverse-kiln-html`: `css/fonts.css`, `css/shared.css`), which can be copied from:
 	- Nunito for body text and every control; Alegreya (calligraphic serif) for headings (`h1` to `h6`) and the site's name. If Alegreya looks too jagged at small heading sizes, Alegreya Sans is the fallback, then Texturina. Both are under the SIL Open Font License

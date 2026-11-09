@@ -47,6 +47,11 @@ export const errorMessages = defineMessages({
 		defaultMessage: 'The area doesn\'t exist.',
 		description: 'Why a request about an area failed: it was deleted, perhaps by another editor'
 	},
+	areaLimit: {
+		id: 'error.areaLimit',
+		defaultMessage: 'A universe can have at most {max, plural, one {# area} other {# areas}}.',
+		description: 'Why a new area wasn\'t made, or a file couldn\'t be imported into a universe\'s draft: the universe would have more areas than the site allows; {max} is the most it can have'
+	},
 	roleNotAllowed: {
 		id: 'error.roleNotAllowed',
 		defaultMessage: 'Your role in this universe doesn\'t allow that.',

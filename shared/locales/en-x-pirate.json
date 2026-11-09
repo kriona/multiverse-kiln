@@ -4299,6 +4299,10 @@
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"source": "A universe can have at most {max, plural, one {# area} other {# areas}}."
 	},
+	"error.areaLinkLimit": {
+		"message": "An area can hold at most {max, plural, one {# passage} other {# passages}}.",
+		"source": "An area can have at most {max, plural, one {# link} other {# links}}."
+	},
 	"error.auth.adminKeepsTwoFactor": {
 		"message": "The ship's officers must keep two-factor authentication raised. To lower it, have another officer strip ye of yer rank first.",
 		"source": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first."
@@ -4535,9 +4539,17 @@
 		"message": "The crew be full: it already has {max, plural, one {# hand} other {# hands}} aboard.",
 		"source": "The group is full: it already has {max, plural, one {# character} other {# characters}}."
 	},
+	"error.importDataTooLarge": {
+		"message": "This chest can't be hauled in: its areas and settin's weigh more than {max, number} MB all told.",
+		"source": "This file can't be imported: its areas and settings hold more than {max, number} MB in all."
+	},
 	"error.importDraftOnly": {
 		"message": "A chest can only be hauled into the universe's draft. Open the draft to haul into it.",
 		"source": "A file can only be imported into the universe's draft. Open the draft to import into it."
+	},
+	"error.importFileTooLarge": {
+		"message": "This chest can't be hauled in: {path} in it weighs more than {max, number} MB, the most any scroll in it can.",
+		"source": "This file can't be imported: {path} in it holds more than {max, number} MB, the most one of its files can."
 	},
 	"error.importNewerFormat": {
 		"message": "This chest was boxed up by a newer ship's editor, so it can't be hauled in here.",
@@ -4558,6 +4570,10 @@
 	"error.importRightsNeeded": {
 		"message": "Swear ye have the rights to use the tilesets' pictures in the chest.",
 		"source": "Confirm you have the rights to use the tilesets' images in the file."
+	},
+	"error.importServerBusy": {
+		"message": "The ship's hold be full of other chests bein' hauled in. Try again in a minute.",
+		"source": "The server is busy importing other files. Try again in a minute."
 	},
 	"error.invalidRequest": {
 		"message": "That request be no good ({problem}).",

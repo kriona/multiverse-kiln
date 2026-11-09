@@ -830,6 +830,27 @@ export async function listAreasLinkingTo(areaId: string, executor: Executor = db
 }
 
 /**
+ * How many links an area has on its cells other than one
+ *
+ * @param areaId The area's ID
+ * @param column The cell's column
+ * @param row The cell's row
+ * @param executor The database, or a transaction
+ * @return The number of links on its other cells
+ */
+export async function countAreaLinksBesides(areaId: string, column: number, row: number, executor: Executor = db): Promise<number>
+{
+	const [result] = await executor
+		.select({
+			total: count()
+		})
+		.from(areaLinks)
+		.where(and(eq(areaLinks.areaId, areaId), or(ne(areaLinks.column, column), ne(areaLinks.row, row))));
+
+	return(result.total);
+}
+
+/**
  * Adds a link to an area's cell, replacing the link the cell had
  *
  * @param areaId The area's ID

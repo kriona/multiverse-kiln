@@ -5,12 +5,13 @@
  * validators a save's changes go through (editorChange in editorPayloads.ts), as the import makes its
  * changes from them
  */
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { setImmediate as yieldToEventLoop } from 'timers/promises';
 import { z } from 'zod';
 
 import { readZip, ZipError } from '../archives/zip.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
-import { areaMessages } from './editorAreas.js';
+import { errorMessages } from './errors.js';
 
 /**
  * Why a file can't be imported (see shared/src/localization.ts)
@@ -30,8 +31,26 @@ export const importMessages = defineMessages({
 		id: 'error.importOtherRuleset',
 		defaultMessage: 'This file is of a universe with a different ruleset, so it can\'t be imported into this one.',
 		description: 'Why a file couldn\'t be imported into a universe\'s draft: the universe it was exported from plays Pathfinder and this one Starfinder, or the other way round'
+	},
+	fileTooLarge: {
+		id: 'error.importFileTooLarge',
+		defaultMessage: 'This file can\'t be imported: {path} in it holds more than {max, number} MB, the most one of its files can.',
+		description: 'Why a file couldn\'t be imported into a universe\'s draft: one of the files inside the zip file, such as a very large area\'s, is too big; {path} is that file\'s path inside the zip file, such as areas/1234.json, and {max} is the most it can hold, in megabytes'
+	},
+	dataTooLarge: {
+		id: 'error.importDataTooLarge',
+		defaultMessage: 'This file can\'t be imported: its areas and settings hold more than {max, number} MB in all.',
+		description: 'Why a file couldn\'t be imported into a universe\'s draft: the files inside the zip file describing the universe (its areas, settings and so on, apart from its tilesets\' images) are too big in all; {max} is the most they can hold, in megabytes'
 	}
 });
+
+/**
+ * How much more JSON the archive's files may hold, from MAX_UNIVERSE_IMPORT_JSON_BYTES
+ */
+interface JsonBudget
+{
+	remaining: number;
+}
 
 /**
  * Why a file can't be imported: the message, and its values
@@ -186,7 +205,9 @@ const importArea = z.looseObject({
 		minRow: cellCoordinate,
 		maxColumn: cellCoordinate,
 		maxRow: cellCoordinate
-	}),
+	})
+		.refine((bounds) => ((bounds.maxColumn - bounds.minColumn) < MAX_AREA_SIDE), `An area can be at most ${MAX_AREA_SIDE} cells wide`)
+		.refine((bounds) => ((bounds.maxRow - bounds.minRow) < MAX_AREA_SIDE), `An area can be at most ${MAX_AREA_SIDE} cells tall`),
 	links: z.array(z.object({
 		column: cellCoordinate,
 		row: cellCoordinate,
@@ -195,14 +216,15 @@ const importArea = z.looseObject({
 		targetRow: cellCoordinate,
 		mode: z.enum(AREA_LINK_MODES),
 		requiresWholeGroup: z.boolean()
-	}))
+	})).max(MAX_AREA_LINKS)
 });
 
 /**
- * An area's file, an ExportedArea
+ * An area's file, an ExportedArea. Its rows' cells are checked by chunksOfRows(), which reads them where
+ * they are, since a schema checking them would copy every row
  */
 const exportedArea = importArea.extend({
-	rows: z.array(z.array(z.number().int()))
+	rows: z.array(z.unknown())
 });
 
 /**
@@ -285,7 +307,8 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 		throw error;
 	}
 
-	const raw = parseJson(files, UNIVERSE_EXPORT_MANIFEST);
+	const budget: JsonBudget = { remaining: MAX_UNIVERSE_IMPORT_JSON_BYTES };
+	const raw = parseJson(files, budget, UNIVERSE_EXPORT_MANIFEST);
 	const format = z.object({ formatVersion: z.number() }).safeParse(raw);
 
 	// Checked first, so a newer file isn't refused for a part this version doesn't know
@@ -307,14 +330,14 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 	// The races and classes are there exactly when the settings are
 	if (manifest.settings !== undefined)
 	{
-		manifest.races = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_RACES), UNIVERSE_EXPORT_RACES);
-		manifest.classes = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_CLASSES), UNIVERSE_EXPORT_CLASSES);
+		manifest.races = checked(exportedOptions, parseJson(files, budget, UNIVERSE_EXPORT_RACES), UNIVERSE_EXPORT_RACES);
+		manifest.classes = checked(exportedOptions, parseJson(files, budget, UNIVERSE_EXPORT_CLASSES), UNIVERSE_EXPORT_CLASSES);
 	}
 
 	// An export made with a role that may change none of the universe's text has none
 	if (files.has(UNIVERSE_EXPORT_TRANSLATIONS))
 	{
-		const { translatorNotes, noTranslation, languages, translations } = checked(exportedTranslations, parseJson(files, UNIVERSE_EXPORT_TRANSLATIONS), UNIVERSE_EXPORT_TRANSLATIONS);
+		const { translatorNotes, noTranslation, languages, translations } = checked(exportedTranslations, parseJson(files, budget, UNIVERSE_EXPORT_TRANSLATIONS), UNIVERSE_EXPORT_TRANSLATIONS);
 
 		if ((languages === undefined) !== (translations === undefined))
 		{
@@ -332,19 +355,19 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 	// world, whose notes for translators the planner checks are there too
 	if (files.has(UNIVERSE_EXPORT_AREAS))
 	{
-		const tilesets = checked(exportedTilesets, parseJson(files, UNIVERSE_EXPORT_TILESETS), UNIVERSE_EXPORT_TILESETS);
+		const tilesets = checked(exportedTilesets, parseJson(files, budget, UNIVERSE_EXPORT_TILESETS), UNIVERSE_EXPORT_TILESETS);
 
 		manifest.tileGraphics = tilesets.tileGraphics;
 		manifest.tiles = tilesets.tiles;
-		manifest.items = checked(exportedOptions, parseJson(files, UNIVERSE_EXPORT_ITEMS), UNIVERSE_EXPORT_ITEMS);
+		manifest.items = checked(exportedOptions, parseJson(files, budget, UNIVERSE_EXPORT_ITEMS), UNIVERSE_EXPORT_ITEMS);
 
 		const areas: ImportArea[] = [];
 		const paths = new Set<string>();
-		const listed = checked(areaPaths, parseJson(files, UNIVERSE_EXPORT_AREAS), UNIVERSE_EXPORT_AREAS);
+		const listed = checked(areaPaths, parseJson(files, budget, UNIVERSE_EXPORT_AREAS), UNIVERSE_EXPORT_AREAS);
 
 		if (listed.length > areasPerUniverse)
 		{
-			throw new ImportProblem(areaMessages.limit, {
+			throw new ImportProblem(errorMessages.areaLimit, {
 				max: areasPerUniverse
 			});
 		}
@@ -361,7 +384,10 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 
 			paths.add(path);
 
-			const { rows, ...area } = checked(exportedArea, parseJson(files, path), path);
+			// Each area file is parsed in one go, so other requests and the rooms' ticks run between them
+			await yieldToEventLoop();
+
+			const { rows, ...area } = checked(exportedArea, parseJson(files, budget, path), path);
 
 			if (cells.has(area.id))
 			{
@@ -379,7 +405,7 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 
 	if (manifest.universe.version === 'draft')
 	{
-		manifest.liveIds = checked(exportedLiveIds, parseJson(files, UNIVERSE_EXPORT_LIVE_IDS), UNIVERSE_EXPORT_LIVE_IDS);
+		manifest.liveIds = checked(exportedLiveIds, parseJson(files, budget, UNIVERSE_EXPORT_LIVE_IDS), UNIVERSE_EXPORT_LIVE_IDS);
 	}
 
 	// Each tileset has an image file of its own, so one image can't be uploaded as many tilesets
@@ -449,15 +475,15 @@ function filesAtRoot(files: Map<string, Buffer>): Map<string, Buffer>
 
 /**
  * An area's rows of cells as the chunks of its ground that hold anything but its default tile, refusing
- * rows that don't cover exactly the area's columns and rows
+ * rows that don't cover exactly the area's columns and rows, or cells that aren't whole numbers
  *
  * @param rows The rows, as the area's file has them
  * @param bounds The area's bounds, as its file gives them
  * @param path The file's path, for the problem
  * @return The chunks
- * @throws ImportProblem when the rows don't match the area's bounds
+ * @throws ImportProblem when the rows don't match the area's bounds, or a cell isn't a whole number
  */
-function chunksOfRows(rows: number[][], bounds: AreaBounds, path: string): ImportAreaCells
+function chunksOfRows(rows: unknown[], bounds: AreaBounds, path: string): ImportAreaCells
 {
 	const width = (bounds.maxColumn - bounds.minColumn + 1);
 	const height = (bounds.maxRow - bounds.minRow + 1);
@@ -474,6 +500,13 @@ function chunksOfRows(rows: number[][], bounds: AreaBounds, path: string): Impor
 	{
 		const row = (bounds.minRow + index);
 
+		if (!Array.isArray(cellRow))
+		{
+			throw new ImportProblem(importMessages.notAnExport, {
+				problem: `${path}'s row ${row} isn't a list of cells`
+			});
+		}
+
 		if (cellRow.length !== width)
 		{
 			throw new ImportProblem(importMessages.notAnExport, {
@@ -481,9 +514,19 @@ function chunksOfRows(rows: number[][], bounds: AreaBounds, path: string): Impor
 			});
 		}
 
-		for (const [offset, value] of cellRow.entries())
+		const cells: unknown[] = cellRow;
+
+		for (let offset = 0; offset < width; offset++)
 		{
 			const column = (bounds.minColumn + offset);
+			const value = cells[offset];
+
+			if ((typeof value !== 'number') || !Number.isInteger(value))
+			{
+				throw new ImportProblem(importMessages.notAnExport, {
+					problem: `${path}'s cell at column ${column}, row ${row} isn't a whole number`
+				});
+			}
 
 			if (value === DEFAULT_TILE_CELL)
 			{
@@ -507,14 +550,16 @@ function chunksOfRows(rows: number[][], bounds: AreaBounds, path: string): Impor
 }
 
 /**
- * A JSON file of the archive
+ * A JSON file of the archive, refused before it is parsed when it holds more than one file or the rest of
+ * the budget may
  *
  * @param files The archive's files, by path
+ * @param budget How much more JSON the archive may hold, which the file is taken from
  * @param path The file's path
  * @return What it holds
- * @throws ImportProblem when the archive doesn't have it, or it isn't JSON
+ * @throws ImportProblem when the archive doesn't have it, it is too large, or it isn't JSON
  */
-function parseJson(files: Map<string, Buffer>, path: string): unknown
+function parseJson(files: Map<string, Buffer>, budget: JsonBudget, path: string): unknown
 {
 	const file = files.get(path);
 
@@ -524,6 +569,23 @@ function parseJson(files: Map<string, Buffer>, path: string): unknown
 			problem: `${path} is missing`
 		});
 	}
+
+	if (file.length > MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES)
+	{
+		throw new ImportProblem(importMessages.fileTooLarge, {
+			path,
+			max: MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES / (1024 * 1024)
+		});
+	}
+
+	if (file.length > budget.remaining)
+	{
+		throw new ImportProblem(importMessages.dataTooLarge, {
+			max: MAX_UNIVERSE_IMPORT_JSON_BYTES / (1024 * 1024)
+		});
+	}
+
+	budget.remaining -= file.length;
 
 	try
 	{

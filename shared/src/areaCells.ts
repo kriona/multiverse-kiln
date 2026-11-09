@@ -12,9 +12,11 @@
 export const CHUNK_SIZE = 32;
 
 /**
- * Most cells along each side of an area (width and height)
+ * Most cells along each side of an area (width and height). An area's file in an export, which writes
+ * each cell as its tile's ID, up to 11 characters with its comma, then fits well within the most an import
+ * reads of one file (MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES), whatever its tiles' IDs and links
  */
-export const MAX_AREA_SIDE = 50000;
+export const MAX_AREA_SIDE = 512;
 
 /**
  * Cell value meaning the area's default tile

@@ -1158,7 +1158,7 @@ describe('LobbyRoom', () =>
 		{
 			// A long lobby, forest near the center and far to the east
 			const universeId = await createUniverse({ name: 'Long Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
-			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -500, minRow: -10, maxColumn: 500, maxRow: 10 } });
+			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -10, minRow: -10, maxColumn: 500, maxRow: 10 } });
 			const forest = await defaultTileId('forest');
 
 			await inTransaction((transaction) => editCells(areaId, [[1, 1, forest], [400, 1, forest]], transaction));
