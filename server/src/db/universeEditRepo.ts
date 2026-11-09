@@ -6,7 +6,7 @@ import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
 import type { AuditField, AuditSubject, EditorRole, UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { players, universeEdits, universes } from './schema.js';
+import { editorIdsIn, players, universeEdits, universes } from './schema.js';
 
 /**
  * A save to record
@@ -203,10 +203,7 @@ export async function listPlayerUniverseEdits(playerId: string, executor: Execut
  */
 export async function listEditorChanges(playerId: string, executor: Executor = db): Promise<EditorChangeRecord[]>
 {
-	const pattern = JSON.stringify([{
-		subject: 'editor',
-		id: playerId
-	}]);
+	const pattern = JSON.stringify([playerId]);
 	const rows = await executor
 		.select({
 			universeId: universeEdits.universeId,
@@ -218,7 +215,7 @@ export async function listEditorChanges(playerId: string, executor: Executor = d
 		.innerJoin(universes, eq(universes.id, universeEdits.universeId))
 		.where(and(
 			sql`${universeEdits.playerId} IS DISTINCT FROM ${playerId}`,
-			sql`${universeEdits.changeDetails} @> ${pattern}::jsonb`
+			sql`${editorIdsIn(universeEdits.changeDetails)} @> ${pattern}::jsonb`
 		))
 		.orderBy(asc(universeEdits.savedAt), asc(universeEdits.id));
 

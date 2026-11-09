@@ -445,6 +445,19 @@ export const universeEditors = pgTable('universe_editors', {
 ]);
 
 /**
+ * The player IDs of the editors a save added, changed or removed, as a JSON array of strings, from its
+ * change details. universe_edits indexes it, so a query finds a player's saves by it only when it uses
+ * this same expression
+ *
+ * @param changeDetails The change_details column
+ * @return The expression
+ */
+export function editorIdsIn(changeDetails: AnyPgColumn): SQL
+{
+	return(sql`jsonb_path_query_array(${changeDetails}, '$[*] ? (@.subject == "editor").id')`);
+}
+
+/**
  * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, what
  * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (shared/src/editor.ts), and deleted sooner
  * with the universe; kept after the account that saved is deleted, which empties playerId
@@ -479,6 +492,10 @@ export const universeEdits = pgTable('universe_edits', {
 }, (table) => [
 	index('universe_edits_universe_id_saved_at_index').on(table.universeId, table.savedAt),
 	index('universe_edits_player_id_index').on(table.playerId),
+
+	// Finds the saves that changed a player's editor role (listEditorChanges) without reading every
+	// universe's saves. Only the editor IDs are indexed, not every value in a save's details
+	index('universe_edits_editor_ids_index').using('gin', editorIdsIn(table.changeDetails)),
 
 	// Finds the saves old enough to delete across every universe, without reading the rest
 	index('universe_edits_saved_at_index').on(table.savedAt)
