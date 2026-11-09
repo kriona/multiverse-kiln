@@ -188,6 +188,12 @@ export const MAX_PASSWORD_LENGTH = 256;
 export const EMAIL_CODE_LIFETIME_MINUTES = 15;
 
 /**
+ * How long the browser that entered an email code, or the password of an account with 2FA, has to take
+ * the next step, such as choosing a password or entering the authenticator code
+ */
+export const CONTINUATION_LIFETIME_MINUTES = 10;
+
+/**
  * The longest email address (RFC 5321's limit on a path)
  */
 export const MAX_EMAIL_LENGTH = 254;
@@ -240,6 +246,31 @@ export const RECOVERY_CODE_COUNT = 10;
  * How long a browser the player chose to trust skips the authenticator code at login
  */
 export const TRUSTED_BROWSER_DAYS = 30;
+
+/**
+ * How long a browser stays known to an account after it last logged in to it, so other people's wrong
+ * passwords for the account can't stop it logging in
+ */
+export const KNOWN_BROWSER_DAYS = 180;
+
+/**
+ * How long a login session lasts without use, and in all, without "Remember me"
+ */
+export const SESSION_IDLE_HOURS = 1;
+export const SESSION_TOTAL_HOURS = 24;
+
+/**
+ * How long a login session lasts without use, and in all, with "Remember me"
+ */
+export const REMEMBERED_SESSION_IDLE_DAYS = 30;
+export const REMEMBERED_SESSION_TOTAL_DAYS = 90;
+
+/**
+ * How long the log of logins and changes to how an account logs in keeps each record. The database's
+ * delete_auth_events_before() never deletes one sooner (server/drizzle/0101_append_only_audit_tables.sql),
+ * so keeping them a shorter time needs a migration too
+ */
+export const AUTH_EVENT_DAYS = 90;
 
 /**
  * The longest authenticator or recovery code read from a request, before spaces and dashes are removed
@@ -321,7 +352,8 @@ export interface LoginRequest
 	password: string;
 
 	/**
-	 * Whether the session lasts 30 days without use (90 in all) rather than an hour (24 in all)
+	 * Whether the session lasts REMEMBERED_SESSION_IDLE_DAYS without use (REMEMBERED_SESSION_TOTAL_DAYS in
+	 * all) rather than SESSION_IDLE_HOURS (SESSION_TOTAL_HOURS in all)
 	 */
 	rememberMe: boolean;
 }

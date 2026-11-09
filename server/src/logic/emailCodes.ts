@@ -5,7 +5,7 @@
  * The callers keep the counts these functions decide from, updating them atomically, and supply the
  * random bytes and the time, so these stay pure
  */
-import { EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH, EMAIL_CODE_LIFETIME_MINUTES } from '@multiverse-kiln/shared';
+import { CONTINUATION_LIFETIME_MINUTES, EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH, EMAIL_CODE_LIFETIME_MINUTES } from '@multiverse-kiln/shared';
 
 export { EMAIL_CODE_ALPHABET, EMAIL_CODE_LENGTH };
 
@@ -17,7 +17,7 @@ export const EMAIL_CODE_LIFETIME_MS = (EMAIL_CODE_LIFETIME_MINUTES * 60 * 1000);
 /**
  * How long the browser that entered a code has to take the next step, such as choosing a password, in milliseconds
  */
-export const CONTINUATION_LIFETIME_MS = (10 * 60 * 1000);
+export const CONTINUATION_LIFETIME_MS = (CONTINUATION_LIFETIME_MINUTES * 60 * 1000);
 
 /**
  * How long after sending a code another may be sent to the same address, in milliseconds

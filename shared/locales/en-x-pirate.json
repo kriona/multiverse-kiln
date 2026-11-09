@@ -1676,8 +1676,8 @@
 		"source": "{field}: {value}"
 	},
 	"editor.audit.hint": {
-		"message": "Each time ye stow changes, it stays in the ship's log fer 90 days.",
-		"source": "Each save is kept here for 90 days."
+		"message": "The ship's log be kept fer {days, plural, one {# day} other {# days}}.",
+		"source": "Audit trail data is kept for {days, plural, one {# day} other {# days}}."
 	},
 	"editor.audit.listFailed": {
 		"message": "Couldn't read the ship's log.",
@@ -6596,16 +6596,16 @@
 		"source": "The character each tab last played, so reloading the tab plays them again, until the tab closes, you log out or your login ends."
 	},
 	"privacy.cookiesCode": {
-		"message": "After ye enter a code we sent ye, a cookie that lets that browser take the next step, such as choosin' a password, for 10 minutes.",
-		"source": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes."
+		"message": "After ye enter a code we sent ye, a cookie that lets that browser take the next step, such as choosin' a password, fer {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for {minutes, plural, one {# minute} other {# minutes}}."
 	},
 	"privacy.cookiesIntro": {
 		"message": "We stow only what the ship needs to sail, so we don't ask afore stowin' it. There be no cookies from other ships.",
 		"source": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites."
 	},
 	"privacy.cookiesKnownBrowser": {
-		"message": "A cookie that shows a browser has come aboard yer account afore, so other scallywags' wrong password guesses can't keep it from boardin'. It don't say which account it be, an' lasts 180 days after ye last come aboard.",
-		"source": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts 180 days after you last log in."
+		"message": "A cookie that shows a browser has come aboard yer account afore, so other scallywags' wrong password guesses can't keep it from boardin'. It don't say which account it be, an' lasts {days, plural, one {# day} other {# days}} after ye last come aboard.",
+		"source": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts {days, plural, one {# day} other {# days}} after you last log in."
 	},
 	"privacy.cookiesLanguage": {
 		"message": "The tongue ye choose at the bottom o' the page.",
@@ -6616,12 +6616,12 @@
 		"source": "Your display name, so each page shows it at once, until you log out or your login ends."
 	},
 	"privacy.cookiesSession": {
-		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after an hour without use, or when ye close yer browser; with \"Remember me\" checked, after 30 days without use.",
-		"source": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use."
+		"message": "A cookie that keeps ye aboard. It ends when ye go ashore, after {hours, plural, one {an hour} other {# hours}} without use, or when ye close yer browser; with \"Remember me\" checked, after {days, plural, one {# day} other {# days}} without use.",
+		"source": "A cookie that keeps you logged in. It ends when you log out, after {hours, plural, one {an hour} other {# hours}} without use, or when you close your browser; with \"Remember me\" checked, after {days, plural, one {# day} other {# days}} without use."
 	},
 	"privacy.cookiesTwoFactor": {
-		"message": "With two-factor authentication on, a cookie that lets the browser where ye gave yer password, or came aboard with Google or Discord, enter yer authenticator code, for 10 minutes. If ye choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, till ye stop trustin' it on yer profile.",
-		"source": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile."
+		"message": "With two-factor authentication on, a cookie that lets the browser where ye gave yer password, or came aboard with Google or Discord, enter yer authenticator code, fer {minutes, plural, one {# minute} other {# minutes}}. If ye choose not to be asked again on a browser, a cookie that lets it skip the code fer {days, plural, one {# day} other {# days}}, till ye stop trustin' it on yer profile.",
+		"source": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for {minutes, plural, one {# minute} other {# minutes}}. If you choose not to be asked again on a browser, a cookie that lets it skip the code for {days, plural, one {# day} other {# days}}, until you stop trusting it on your profile."
 	},
 	"privacy.deleting": {
 		"message": "Deletin' yer account deletes yer profile, yer hands an' yer security records. Crews led by one o' yer hands are scuttled. For each universe ye be the only creator of, ye choose whether to hand it to another o' its editors or delete it; what ye built in universes others edit stays part o' them.",
@@ -6652,12 +6652,12 @@
 		"source": "A character you delete, for {days, plural, one {# day} other {# days}}, while you can still bring them back."
 	},
 	"privacy.howLongEditRecord": {
-		"message": "The record o' changes stowed in universe editors fer 90 days, or until the universe be deleted, even after ye delete yer account.",
-		"source": "The record of saves made in universe editors for 90 days, or until the universe is deleted, even after you delete your account."
+		"message": "The record o' changes stowed in universe editors fer {days, plural, one {# day} other {# days}}, or until the universe be deleted, even after ye delete yer account.",
+		"source": "The record of saves made in universe editors for {days, plural, one {# day} other {# days}}, or until the universe is deleted, even after you delete your account."
 	},
 	"privacy.howLongSecurity": {
-		"message": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs 'em, an' the officers' log with yer name in it till ye delete yer account.",
-		"source": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account."
+		"message": "Security records as long as the list above says: the log fer {days, plural, one {# day} other {# days}}, codes fer {minutes, plural, one {# minute} other {# minutes}}, counts only while a limit needs 'em, an' the officers' log with yer name in it till ye delete yer account.",
+		"source": "Security records as long as the list above says: the log for {days, plural, one {# day} other {# days}}, codes for {minutes, plural, one {# minute} other {# minutes}}, counts only while a limit needs them, and the admins' record with your name in it until you delete your account."
 	},
 	"privacy.intro": {
 		"message": "These articles tell what this {siteName} ship keeps about ye when ye sail or build universes here, why it keeps it, who can see it, how long it be kept, an' how ye can haul it down or delete it. We keep as little data as we can.",
@@ -6688,12 +6688,12 @@
 		"source": "Lobby chat isn't saved. The game server keeps a lobby's most recent messages in memory, so players who arrive can read them, until the lobby closes or the server restarts."
 	},
 	"privacy.playEditRecord": {
-		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. Each one be kept fer 90 days, or until the universe be deleted if that comes sooner, even after ye delete yer account. Deletin' yer account strikes yer name off the changes ye stowed yerself, but yer username stays in the ones that gave ye a role in a universe, changed it or took it away.",
-		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for 90 days, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away."
+		"message": "A record o' each time ye stow changes in a universe's editor: when, with which role, an' what it changed, by name, with the value it gave each settin' it changed (a long description only by how many characters it has). The universe's creators an' the site's admins can see it. Each one be kept fer {days, plural, one {# day} other {# days}}, or until the universe be deleted if that comes sooner, even after ye delete yer account. Deletin' yer account strikes yer name off the changes ye stowed yerself, but yer username stays in the ones that gave ye a role in a universe, changed it or took it away.",
+		"source": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for {days, plural, one {# day} other {# days}}, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away."
 	},
 	"privacy.playKeptChat": {
-		"message": "Each crew's chatter and the chatter o' a universe's editors be saved, so hands who arrive can read them: each keeps its newest 200 messages, until the crew disbands or the universe be deleted. When ye delete yer account, yer messages stay in them without yer name.",
-		"source": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps its newest 200 messages, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name."
+		"message": "Each crew's chatter and the chatter o' a universe's editors be saved, so hands who arrive can read them: each keeps {count, plural, one {its newest message} other {its newest # messages}}, until the crew disbands or the universe be deleted. When ye delete yer account, yer messages stay in them without yer name.",
+		"source": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps {count, plural, one {its newest message} other {its newest # messages}}, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name."
 	},
 	"privacy.playUniverses": {
 		"message": "The universes ye create or help edit, an' what ye upload to 'em, such as tile pictures.",
@@ -6732,16 +6732,16 @@
 		"source": "A record of what the site's admins do on the admin pages, such as making a player an admin or disabling a universe. It names the admin and any player made or removed as an admin, until their accounts are deleted."
 	},
 	"privacy.securityCodes": {
-		"message": "The codes we send ye, to sign on, reset yer password or change yer email address, kept only scrambled, an' only till they be used or expire 15 minutes later.",
-		"source": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later."
+		"message": "The codes we send ye, to sign on, reset yer password or change yer email address, kept only scrambled, an' only till they be used or expire {minutes, plural, one {# minute} other {# minutes}} later.",
+		"source": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire {minutes, plural, one {# minute} other {# minutes}} later."
 	},
 	"privacy.securityLimits": {
 		"message": "To stop scallywags guessin' codes an' passwords, counts o' the tries made for each email address an' from each network, with the addresses kept only scrambled, an' only while a limit still needs 'em.",
 		"source": "To stop people guessing codes and passwords, counts of the attempts made for each email address and from each network, with the addresses kept only in a scrambled form, and only while a limit still needs them."
 	},
 	"privacy.securityLog": {
-		"message": "A log o' boardings, failed boardings an' changes to yer account's security, such as a new password, with yer network scrambled. It never holds passwords or codes, an' be kept for 90 days.",
-		"source": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for 90 days."
+		"message": "A log o' boardings, failed boardings an' changes to yer account's security, such as a new password, with yer network scrambled. It never holds passwords or codes, an' be kept fer {days, plural, one {# day} other {# days}}.",
+		"source": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for {days, plural, one {# day} other {# days}}."
 	},
 	"privacy.securityRecords": {
 		"message": "Security records",

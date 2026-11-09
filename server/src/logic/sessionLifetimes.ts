@@ -1,6 +1,7 @@
 /**
  * How long a login session lasts (see Login in STRUCTURE-OVERVIEW.md)
  */
+import { REMEMBERED_SESSION_IDLE_DAYS, REMEMBERED_SESSION_TOTAL_DAYS, SESSION_IDLE_HOURS, SESSION_TOTAL_HOURS } from '@multiverse-kiln/shared';
 
 const HOUR_MS = (60 * 60 * 1000);
 const DAY_MS = (24 * HOUR_MS);
@@ -10,12 +11,12 @@ const DAY_MS = (24 * HOUR_MS);
  */
 export const SESSION_LIFETIMES = {
 	short: {
-		idleMs: HOUR_MS,
-		totalMs: DAY_MS
+		idleMs: (SESSION_IDLE_HOURS * HOUR_MS),
+		totalMs: (SESSION_TOTAL_HOURS * HOUR_MS)
 	},
 	remembered: {
-		idleMs: (30 * DAY_MS),
-		totalMs: (90 * DAY_MS)
+		idleMs: (REMEMBERED_SESSION_IDLE_DAYS * DAY_MS),
+		totalMs: (REMEMBERED_SESSION_TOTAL_DAYS * DAY_MS)
 	}
 } as const;
 

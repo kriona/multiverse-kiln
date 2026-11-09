@@ -1676,8 +1676,8 @@
 		"description": "In the editor's Audit tab's list of what a save changed: one setting it changed and the value it changed it to, on its own line under the thing changed, e.g. \"Characters get tired and need sleep: yes\" or \"Group size: 4\". {field} is the setting's name and {value} its new value"
 	},
 	"editor.audit.hint": {
-		"defaultMessage": "Each save is kept here for 90 days.",
-		"description": "Explains on the editor's Audit tab how long the record of each save is kept"
+		"defaultMessage": "Audit trail data is kept for {days, plural, one {# day} other {# days}}.",
+		"description": "Explains on the editor's Audit tab how long the record of each save is kept; {days} is a number of days"
 	},
 	"editor.audit.listFailed": {
 		"defaultMessage": "Could not list the saves.",
@@ -6596,16 +6596,16 @@
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the character each browser tab last played, so reloading the tab plays them again, forgotten when the tab closes, the player logs out or their login session ends"
 	},
 	"privacy.cookiesCode": {
-		"defaultMessage": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for 10 minutes.",
-		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that lasts 10 minutes after a player enters a correct email code, for the next step such as choosing a password"
+		"defaultMessage": "After you enter a code we emailed you, a cookie that lets that browser take the next step, such as choosing a password, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that lasts {minutes} minutes after a player enters a correct email code, for the next step such as choosing a password"
 	},
 	"privacy.cookiesIntro": {
 		"defaultMessage": "We store only what the site needs to work, so we don't ask before storing it. There are no cookies from other sites.",
 		"description": "In the privacy policy, before the list of what the site stores in a player's browser; there are no tracking cookies, so it asks no permission for them"
 	},
 	"privacy.cookiesKnownBrowser": {
-		"defaultMessage": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts 180 days after you last log in.",
-		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that marks a browser as one that has logged in to the account, so other people's wrong password guesses for the account can't stop that browser logging in"
+		"defaultMessage": "A cookie that shows a browser has logged in to your account, so other people's wrong password guesses can't stop it from logging in. It doesn't say which account it is, and lasts {days, plural, one {# day} other {# days}} after you last log in.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: a cookie that marks a browser as one that has logged in to the account, so other people's wrong password guesses for the account can't stop that browser logging in; {days} is how many days it lasts"
 	},
 	"privacy.cookiesLanguage": {
 		"defaultMessage": "The language you choose at the bottom of the page.",
@@ -6616,12 +6616,12 @@
 		"description": "In the privacy policy's list of what the site stores in a player's browser: the player's display name, so each page shows it in the toolbar at once, forgotten when they log out or their login session ends"
 	},
 	"privacy.cookiesSession": {
-		"defaultMessage": "A cookie that keeps you logged in. It ends when you log out, after an hour without use, or when you close your browser; with \"Remember me\" checked, after 30 days without use.",
-		"description": "In the privacy policy's list of what the site stores in a player's browser: the login cookie, and how long it lasts"
+		"defaultMessage": "A cookie that keeps you logged in. It ends when you log out, after {hours, plural, one {an hour} other {# hours}} without use, or when you close your browser; with \"Remember me\" checked, after {days, plural, one {# day} other {# days}} without use.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the login cookie, and how long it lasts; {hours} is how many hours it lasts without use, and {days} how many days with \"Remember me\" checked"
 	},
 	"privacy.cookiesTwoFactor": {
-		"defaultMessage": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for 10 minutes. If you choose not to be asked again on a browser, a cookie that lets it skip the code for 30 days, until you stop trusting it on your profile.",
-		"description": "In the privacy policy's list of what the site stores in a player's browser: the cookies two-factor authentication uses, one while the login waits for the authenticator code, and one for a browser the player chose to trust"
+		"defaultMessage": "With two-factor authentication on, a cookie that lets the browser where you typed your password, or logged in with Google or Discord, enter your authenticator code, for {minutes, plural, one {# minute} other {# minutes}}. If you choose not to be asked again on a browser, a cookie that lets it skip the code for {days, plural, one {# day} other {# days}}, until you stop trusting it on your profile.",
+		"description": "In the privacy policy's list of what the site stores in a player's browser: the cookies two-factor authentication uses, one while the login waits for the authenticator code, for {minutes} minutes, and one for a browser the player chose to trust, for {days} days"
 	},
 	"privacy.deleting": {
 		"defaultMessage": "Deleting your account deletes your profile, your characters and your security records. Groups led by one of your characters disband. For each universe you are the only creator of, you choose whether to hand it to another of its editors or delete it; what you built in universes others edit stays part of them.",
@@ -6652,12 +6652,12 @@
 		"description": "In the privacy policy, how long a deleted character is kept before it is removed for good, during which the player can restore them; {days} is the number of days the site sets"
 	},
 	"privacy.howLongEditRecord": {
-		"defaultMessage": "The record of saves made in universe editors for 90 days, or until the universe is deleted, even after you delete your account.",
-		"description": "In the privacy policy, how long the record of saves made in universes' editors is kept: 90 days, or until the universe is deleted, even after the player deletes their account"
+		"defaultMessage": "The record of saves made in universe editors for {days, plural, one {# day} other {# days}}, or until the universe is deleted, even after you delete your account.",
+		"description": "In the privacy policy, how long the record of saves made in universes' editors is kept: {days} days, or until the universe is deleted, even after the player deletes their account"
 	},
 	"privacy.howLongSecurity": {
-		"defaultMessage": "Security records as long as the list above says: the log for 90 days, codes for 15 minutes, counts only while a limit needs them, and the admins' record with your name in it until you delete your account.",
-		"description": "In the privacy policy, how long security records are kept"
+		"defaultMessage": "Security records as long as the list above says: the log for {days, plural, one {# day} other {# days}}, codes for {minutes, plural, one {# minute} other {# minutes}}, counts only while a limit needs them, and the admins' record with your name in it until you delete your account.",
+		"description": "In the privacy policy, how long security records are kept; {days} is how many days the log of logins keeps each record, and {minutes} how many minutes an emailed code works"
 	},
 	"privacy.intro": {
 		"defaultMessage": "This policy explains what this {siteName} site keeps about you when you play or build universes here, why it keeps it, who can see it, how long it is kept, and how you can download or delete it. We keep as little data as we can.",
@@ -6688,12 +6688,12 @@
 		"description": "In the privacy policy, how long chat is kept: a lobby's only in the game server's memory, and only the most recent messages"
 	},
 	"privacy.playEditRecord": {
-		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for 90 days, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away.",
-		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab. Each save is kept for 90 days, or until the universe is deleted, even after the player deletes their account: deleting it takes their name off their own saves, but their username stays in the saves that gave them a role in a universe, changed it or took it away"
+		"defaultMessage": "A record of each save you make in a universe's editor: when, with which role, and what it changed, by name, with the value it gave each setting it changed (a long description only by how many characters it has). The universe's creators and the site's admins can see it. Each save is kept for {days, plural, one {# day} other {# days}}, or until the universe is deleted if that is sooner, even after you delete your account. Deleting your account takes your name off your own saves, but your username stays in the saves that gave you a role in a universe, changed it or took it away.",
+		"description": "In the privacy policy, the record of saves made in a universe's editor, shown to the universe's creators and the site's admins on the editor's Audit tab. Each save is kept for {days} days, or until the universe is deleted, even after the player deletes their account: deleting it takes their name off their own saves, but their username stays in the saves that gave them a role in a universe, changed it or took it away"
 	},
 	"privacy.playKeptChat": {
-		"defaultMessage": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps its newest 200 messages, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name.",
-		"description": "In the privacy policy, how long the chats of groups and of a universe's editors are kept: each its newest 200 messages, until the group disbands or the universe is deleted, and what happens to a player's messages when they delete their account"
+		"defaultMessage": "Each group's chat and the chat of a universe's editors are saved, so players who arrive can read them: each keeps {count, plural, one {its newest message} other {its newest # messages}}, until the group disbands or the universe is deleted. When you delete your account, your messages stay in them without your name.",
+		"description": "In the privacy policy, how long the chats of groups and of a universe's editors are kept: each its newest {count} messages, until the group disbands or the universe is deleted, and what happens to a player's messages when they delete their account"
 	},
 	"privacy.playUniverses": {
 		"defaultMessage": "The universes you create or help edit, and what you upload to them, such as tile images.",
@@ -6732,16 +6732,16 @@
 		"description": "In the privacy policy's list of security records: the record of what the site's admins do on the admin pages, which names the admin and the player made or removed as one, kept until their accounts are deleted"
 	},
 	"privacy.securityCodes": {
-		"defaultMessage": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire 15 minutes later.",
-		"description": "In the privacy policy's list of security records: the codes the site emails to register, reset a password or change an email address, kept only as a keyed hash"
+		"defaultMessage": "The codes we email you, to register, reset your password or change your email address, kept only in a scrambled form, and only until they are used or expire {minutes, plural, one {# minute} other {# minutes}} later.",
+		"description": "In the privacy policy's list of security records: the codes the site emails to register, reset a password or change an email address, kept only as a keyed hash; {minutes} is how many minutes a code works"
 	},
 	"privacy.securityLimits": {
 		"defaultMessage": "To stop people guessing codes and passwords, counts of the attempts made for each email address and from each network, with the addresses kept only in a scrambled form, and only while a limit still needs them.",
 		"description": "In the privacy policy's list of security records: counts kept to stop someone guessing codes or passwords, which store email addresses and internet addresses only as a keyed hash"
 	},
 	"privacy.securityLog": {
-		"defaultMessage": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for 90 days.",
-		"description": "In the privacy policy's list of security records: the log of logins and account changes, kept 90 days, which stores a player's network only as a keyed hash"
+		"defaultMessage": "A log of logins, failed logins and changes to your account's security, such as a new password, with your network in a scrambled form. It never holds passwords or codes, and is kept for {days, plural, one {# day} other {# days}}.",
+		"description": "In the privacy policy's list of security records: the log of logins and account changes, kept {days} days, which stores a player's network only as a keyed hash"
 	},
 	"privacy.securityRecords": {
 		"defaultMessage": "Security records",

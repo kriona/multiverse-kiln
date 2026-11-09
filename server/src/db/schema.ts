@@ -439,7 +439,7 @@ export const universeEditors = pgTable('universe_editors', {
 
 /**
  * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, what
- * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (src/universeEditSweep.ts), and deleted sooner
+ * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (shared/src/editor.ts), and deleted sooner
  * with the universe; kept after the account that saved is deleted, which empties playerId
  */
 export const universeEdits = pgTable('universe_edits', {
@@ -1943,7 +1943,7 @@ export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
 
 /**
  * A record of logins, failures, logouts and changes to how an account logs in. Never holds passwords,
- * codes or session tokens. Kept 90 days, and deleted with the account
+ * codes or session tokens. Kept AUTH_EVENT_DAYS (shared/src/accounts.ts), and deleted with the account
  */
 export const authEvents = pgTable('auth_events', {
 	id: uuid('id').primaryKey().defaultRandom(),

@@ -1,7 +1,8 @@
+import { UNIVERSE_EDIT_DAYS } from '@multiverse-kiln/shared';
 import assert from 'assert';
 
 import { listUniverseEdits, recordUniverseEdit } from '../src/db/universeEditRepo.js';
-import { sweepUniverseEdits, UNIVERSE_EDIT_DAYS } from '../src/universeEditSweep.js';
+import { sweepUniverseEdits } from '../src/universeEditSweep.js';
 import { addUniverse } from './db/fixtures.js';
 import { addPlayer } from './players.js';
 

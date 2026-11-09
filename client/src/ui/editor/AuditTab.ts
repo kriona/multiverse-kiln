@@ -1,4 +1,4 @@
-import { canManageEditors, EDITOR_ROLE_NAMES, MAX_UNIVERSE_EDITS_PER_PAGE, type EditableUniverse, type Ruleset, type UniverseEdit, type UniverseEditListPayload } from '@multiverse-kiln/shared';
+import { canManageEditors, EDITOR_ROLE_NAMES, MAX_UNIVERSE_EDITS_PER_PAGE, type EditableUniverse, type Ruleset, UNIVERSE_EDIT_DAYS, type UniverseEdit, type UniverseEditListPayload } from '@multiverse-kiln/shared';
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -46,6 +46,12 @@ export class AuditTab
 	 */
 	constructor(private readonly api: EditorApi)
 	{
+		getElement('audit-hint', HTMLElement).textContent = t({
+			id: 'editor.audit.hint',
+			defaultMessage: 'Audit trail data is kept for {days, plural, one {# day} other {# days}}.',
+			description: 'Explains on the editor\'s Audit tab how long the record of each save is kept; {days} is a number of days'
+		}, { days: UNIVERSE_EDIT_DAYS });
+
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_UNIVERSE_EDITS_PER_PAGE);

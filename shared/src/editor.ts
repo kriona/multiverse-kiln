@@ -770,6 +770,14 @@ export interface EditorCharacterListPayload
 export const MAX_UNIVERSE_EDITS_PER_PAGE = 100;
 
 /**
+ * How long a save is kept for the Audit tab, in days. The Audit tab's hint and the privacy policy show
+ * it. The database's delete_universe_edits_before() never deletes one
+ * sooner (server/drizzle/0101_append_only_audit_tables.sql), so keeping them a shorter time needs a
+ * migration too
+ */
+export const UNIVERSE_EDIT_DAYS = 90;
+
+/**
  * Query parameters of GET EDITOR_UNIVERSES_PATH/:universeId/audit
  */
 export interface UniverseEditListQuery
