@@ -1,19 +1,20 @@
 import assert from 'assert';
 
 import { createToken, hashToken } from '../../src/auth/tokens.js';
-import { addProviderLogin, deleteExpiredPendingProviderLogins, deletePendingProviderLogin, findProviderLoginPlayer, lockPendingProviderLogin, ProviderLoginTakenError, savePendingProviderLogin } from '../../src/db/providerLoginRepo.js';
+import { addProviderLogin, deleteExpiredPendingProviderLogins, deletePendingProviderLogin, deletePlayerPendingProviderLogins, findProviderLoginPlayer, lockPendingProviderLogin, ProviderLoginTakenError, savePendingProviderLogin } from '../../src/db/providerLoginRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { addPlayer } from '../players.js';
 
 const NOW = new Date('2026-10-29T12:00:00Z');
 
 /**
- * Keeps a pending Google login for a new account
+ * Keeps a pending Google login
  *
  * @param token The token in the browser's cookie
  * @param expiresAt When its time is up
+ * @param playerId The account it waits to link to, or null for a new account
  */
-async function savePending(token: string, expiresAt: Date): Promise<void>
+async function savePending(token: string, expiresAt: Date, playerId: string | null = null): Promise<void>
 {
 	await savePendingProviderLogin({
 		continuationHash: hashToken(token),
@@ -21,7 +22,7 @@ async function savePending(token: string, expiresAt: Date): Promise<void>
 		providerUserId: 'google-ada',
 		email: 'ada@example.com',
 		displayName: 'Ada',
-		playerId: null,
+		playerId,
 		rememberMe: true,
 		expiresAt
 	});
@@ -88,5 +89,24 @@ describe('providerLoginRepo', () =>
 
 		assert.strictEqual(await deleteExpiredPendingProviderLogins(NOW), 1);
 		assert.ok(await inTransaction((executor) => lockPendingProviderLogin(hashToken(waiting), NOW, executor)));
+	});
+
+	it('deletes the pending logins waiting to link to one account, and only those', async () =>
+	{
+		const ada = await addPlayer('Ada');
+		const grace = await addPlayer('Grace');
+		const adaToken = createToken();
+		const graceToken = createToken();
+		const newAccountToken = createToken();
+		const later = new Date(NOW.getTime() + 60000);
+
+		await savePending(adaToken, later, ada.id);
+		await savePending(graceToken, later, grace.id);
+		await savePending(newAccountToken, later);
+		await deletePlayerPendingProviderLogins(ada.id);
+
+		assert.strictEqual(await inTransaction((executor) => lockPendingProviderLogin(hashToken(adaToken), NOW, executor)), undefined);
+		assert.ok(await inTransaction((executor) => lockPendingProviderLogin(hashToken(graceToken), NOW, executor)));
+		assert.ok(await inTransaction((executor) => lockPendingProviderLogin(hashToken(newAccountToken), NOW, executor)));
 	});
 });

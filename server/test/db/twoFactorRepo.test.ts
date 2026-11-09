@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes } from 'crypto';
 
 import { inTransaction } from '../../src/db/transactions.js';
-import { countRecoveryCodes, deleteExpiredPendingTwoFactorLogins, deleteExpiredTrustedBrowsers, deleteTwoFactor, enableAuthenticator, findTwoFactorState, hasTwoFactor, isBrowserTrusted, lockAuthenticator, lockPendingTwoFactorLogin, recordWrongTwoFactorGuess, replaceRecoveryCodes, saveAuthenticatorSetup, savePendingTwoFactorLogin, trustBrowser, useRecoveryCode } from '../../src/db/twoFactorRepo.js';
+import { countRecoveryCodes, deleteExpiredPendingTwoFactorLogins, deleteExpiredTrustedBrowsers, deletePlayerPendingTwoFactorLogins, deleteTwoFactor, enableAuthenticator, findTwoFactorState, hasTwoFactor, isBrowserTrusted, lockAuthenticator, lockPendingTwoFactorLogin, recordWrongTwoFactorGuess, replaceRecoveryCodes, saveAuthenticatorSetup, savePendingTwoFactorLogin, trustBrowser, useRecoveryCode } from '../../src/db/twoFactorRepo.js';
 import { addPlayer } from '../players.js';
 
 const NOW = new Date('2026-10-29T12:00:00Z');
@@ -84,6 +84,33 @@ describe('twoFactorRepo', () =>
 		assert.strictEqual(await inTransaction((executor) => lockPendingTwoFactorLogin(randomBytes(32), NOW, executor)), undefined);
 		assert.strictEqual(await inTransaction((executor) => lockPendingTwoFactorLogin(continuationHash, minutesLater(10), executor)), undefined);
 		assert.strictEqual(await deleteExpiredPendingTwoFactorLogins(minutesLater(10)), 1);
+	});
+
+	it('deletes one account\'s waiting logins, and only that account\'s', async () =>
+	{
+		const ada = await addPlayer('Ada');
+		const grace = await addPlayer('Grace');
+		const adaHashes = [randomBytes(32), randomBytes(32)];
+		const graceHash = randomBytes(32);
+
+		for (const [continuationHash, playerId] of [[adaHashes[0], ada.id], [adaHashes[1], ada.id], [graceHash, grace.id]] as const)
+		{
+			await savePendingTwoFactorLogin({
+				continuationHash,
+				playerId,
+				rememberMe: false,
+				expiresAt: minutesLater(10)
+			});
+		}
+
+		await deletePlayerPendingTwoFactorLogins(ada.id);
+
+		for (const continuationHash of adaHashes)
+		{
+			assert.strictEqual(await inTransaction((executor) => lockPendingTwoFactorLogin(continuationHash, NOW, executor)), undefined);
+		}
+
+		assert.ok(await inTransaction((executor) => lockPendingTwoFactorLogin(graceHash, NOW, executor)));
 	});
 
 	it('trusts a browser for one account until its time is up', async () =>

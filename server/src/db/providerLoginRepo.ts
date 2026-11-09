@@ -198,6 +198,20 @@ export async function deletePendingProviderLogin(id: string, executor: Executor 
 }
 
 /**
+ * Deletes the pending provider logins waiting to link to an account, such as once its password or
+ * email address changes
+ *
+ * @param playerId The account
+ * @param executor The database, or a transaction
+ */
+export async function deletePlayerPendingProviderLogins(playerId: string, executor: Executor = db): Promise<void>
+{
+	await executor
+		.delete(pendingProviderLogins)
+		.where(eq(pendingProviderLogins.playerId, playerId));
+}
+
+/**
  * Deletes every pending provider login whose time is up
  *
  * @param now The time now
