@@ -3,9 +3,11 @@ import assert from 'assert';
 import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findRaceKind, isRaceStartingItem, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findRaceKind, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { liveVersion } from '../../src/db/universeVersions.js';
+import { startDraft } from '../../src/db/universeDraftRepo.js';
+import { createUniverse } from '../../src/db/universeRepo.js';
+import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse, addArea } from './fixtures.js';
 
 const lizardfolk: CustomRaceSettings = {
@@ -165,5 +167,41 @@ describe('raceRepo', () =>
 		await restoreDefaultRace(liveVersion(universeId), dwarfId);
 		assert.deepStrictEqual(await findRace(universeId, dwarfId), original);
 		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), false);
+	});
+
+	it('names the races of several universes\' live versions at once, as it names one', async () =>
+	{
+		const editedId = await addUniverse('Edited');
+		const plainId = await addUniverse('Plain');
+		const starfinderId = await createUniverse({
+			name: 'Starfinder',
+			ruleset: 'sf1e'
+		});
+		const dwarfId = await defaultRaceId('dwarf');
+		const dwarf = await findRace(editedId, dwarfId) as EditorRace;
+		const lizardfolkId = await inTransaction((transaction) => createCustomRace(liveVersion(editedId), 'pf1e', lizardfolk, transaction));
+
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(editedId), 'pf1e', dwarfId, { ...dwarf, name: 'Mountain Folk' }, transaction));
+		await inTransaction((transaction) => startDraft(editedId, transaction));
+		await inTransaction((transaction) => saveEditedDefaultRace(draftVersion(editedId), 'pf1e', dwarfId, { ...dwarf, name: 'Draft Folk' }, transaction));
+
+		const universes = [
+			{ id: editedId, ruleset: 'pf1e' as const },
+			{ id: plainId, ruleset: 'pf1e' as const },
+			{ id: starfinderId, ruleset: 'sf1e' as const }
+		];
+		const names = await loadLiveRaceNames(universes);
+
+		for (const { id, ruleset } of universes)
+		{
+			assert.deepStrictEqual(names.get(id), await loadRaceNames(liveVersion(id), ruleset));
+		}
+
+		assert.deepStrictEqual(names.get(editedId)?.get(dwarfId), { key: 'dwarf', name: 'Mountain Folk' });
+		assert.deepStrictEqual(names.get(editedId)?.get(lizardfolkId), { key: null, name: 'Lizardfolk' });
+		assert.deepStrictEqual(names.get(plainId)?.get(dwarfId), { key: 'dwarf', name: null });
+		assert.strictEqual(names.get(plainId)?.has(lizardfolkId), false);
+		assert.strictEqual(names.get(starfinderId)?.has(dwarfId), false);
+		assert.deepStrictEqual(await loadLiveRaceNames([]), new Map());
 	});
 });

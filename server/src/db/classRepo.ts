@@ -2,7 +2,7 @@
  * Classes: the only module that reads or writes the classes, pf1e_classes, sf1e_classes,
  * class_starting_items and class_race_areas tables
  */
-import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -47,6 +47,17 @@ export async function findDefaultClassIds(ruleset: Ruleset, executor: Executor =
 }
 
 /**
+ * The columns the class names are made from
+ */
+const classNameColumns = {
+	id: classes.id,
+	universeId: classes.universeId,
+	overridesClassId: classes.overridesClassId,
+	key: classes.key,
+	name: classes.name
+};
+
+/**
  * What each class a universe can use is called, without its settings: a default class's key, and the
  * name the universe gives it, if any
  *
@@ -58,15 +69,61 @@ export async function findDefaultClassIds(ruleset: Ruleset, executor: Executor =
 export async function loadClassNames(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, OptionName>>
 {
 	const rows = await executor
-		.select({
-			id: classes.id,
-			universeId: classes.universeId,
-			overridesClassId: classes.overridesClassId,
-			key: classes.key,
-			name: classes.name
-		})
+		.select(classNameColumns)
 		.from(classes)
 		.where(usableClasses(version, ruleset));
+
+	return(nameClasses(rows));
+}
+
+/**
+ * What each class the live versions of several universes can use is called, as loadClassNames() gives
+ * it for one, in one query
+ *
+ * @param universes The universes, with their rulesets
+ * @param executor The database, or a transaction
+ * @return Each universe's classes' keys and names, by class ID, by the universe's ID
+ */
+export async function loadLiveClassNames(universes: readonly { id: string; ruleset: Ruleset }[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if (universes.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			...classNameColumns,
+			ruleset: classes.ruleset
+		})
+		.from(classes)
+		.where(or(
+			and(
+				isNull(classes.universeId),
+				inArray(classes.ruleset, [...new Set(universes.map((universe) => universe.ruleset))])
+			),
+			and(
+				inArray(classes.universeId, universes.map((universe) => universe.id)),
+				eq(classes.draft, false)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) => [universe.id, nameClasses([
+		...(defaults.get(universe.ruleset) ?? []),
+		...(owned.get(universe.id) ?? [])
+	])])));
+}
+
+/**
+ * Names the classes of one version of a universe from their rows
+ *
+ * @param rows The rows of the classes the version can use: the default classes, and the version's own classes and edited copies
+ * @return Each class's key and name, by its ID
+ */
+function nameClasses(rows: readonly { id: number; universeId: string | null; overridesClassId: number | null; key: string | null; name: string | null }[]): Map<number, OptionName>
+{
 	const copies = new Map(rows
 		.filter((row) => (row.overridesClassId !== null))
 		.map((row) => [row.overridesClassId, row]));

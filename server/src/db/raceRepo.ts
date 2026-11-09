@@ -1,7 +1,7 @@
 /**
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
-import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -46,6 +46,17 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
 }
 
 /**
+ * The columns the race names are made from
+ */
+const raceNameColumns = {
+	id: races.id,
+	universeId: races.universeId,
+	overridesRaceId: races.overridesRaceId,
+	key: races.key,
+	name: races.name
+};
+
+/**
  * What each race a universe can use is called, without its settings: a default race's key, and the
  * name the universe gives it, if any
  *
@@ -57,15 +68,61 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
 export async function loadRaceNames(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, OptionName>>
 {
 	const rows = await executor
-		.select({
-			id: races.id,
-			universeId: races.universeId,
-			overridesRaceId: races.overridesRaceId,
-			key: races.key,
-			name: races.name
-		})
+		.select(raceNameColumns)
 		.from(races)
 		.where(usableRaces(version, ruleset));
+
+	return(nameRaces(rows));
+}
+
+/**
+ * What each race the live versions of several universes can use is called, as loadRaceNames() gives it
+ * for one, in one query
+ *
+ * @param universes The universes, with their rulesets
+ * @param executor The database, or a transaction
+ * @return Each universe's races' keys and names, by race ID, by the universe's ID
+ */
+export async function loadLiveRaceNames(universes: readonly { id: string; ruleset: Ruleset }[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if (universes.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			...raceNameColumns,
+			ruleset: races.ruleset
+		})
+		.from(races)
+		.where(or(
+			and(
+				isNull(races.universeId),
+				inArray(races.ruleset, [...new Set(universes.map((universe) => universe.ruleset))])
+			),
+			and(
+				inArray(races.universeId, universes.map((universe) => universe.id)),
+				eq(races.draft, false)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) => [universe.id, nameRaces([
+		...(defaults.get(universe.ruleset) ?? []),
+		...(owned.get(universe.id) ?? [])
+	])])));
+}
+
+/**
+ * Names the races of one version of a universe from their rows
+ *
+ * @param rows The rows of the races the version can use: the default races, and the version's own races and edited copies
+ * @return Each race's key and name, by its ID
+ */
+function nameRaces(rows: readonly { id: number; universeId: string | null; overridesRaceId: number | null; key: string | null; name: string | null }[]): Map<number, OptionName>
+{
 	const copies = new Map(rows
 		.filter((row) => (row.overridesRaceId !== null))
 		.map((row) => [row.overridesRaceId, row]));

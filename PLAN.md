@@ -405,6 +405,7 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 	- [ ] Build it, with tests
 	- [ ] Areas can be in multiple regions. One region can group areas a builder works in, while another like "The Planet" could define the rules for all outdoor areas.
 2. Area editor
+	- [ ] Checkbox for "Disable fog of war / vision checks", set by default for the sample game lobby
 	- [ ] Edit Size: a field whose value differs from the area's size now shows in a changed color
 	- [ ] A fill tool (with a warning if a large number of tiles will be updated)
 	- [ ] Middle click on a cell picks its tile as the tile to paint with
