@@ -141,6 +141,7 @@ export class UniverseImportSection
 	private readonly fileInput = getElement('universe-import-file', HTMLInputElement);
 	private readonly preview = getElement('universe-import-preview', HTMLElement);
 	private readonly source = getElement('universe-import-source', HTMLElement);
+	private readonly modified = getElement('universe-import-modified', HTMLElement);
 	private readonly match = getElement('universe-import-match', HTMLElement);
 	private readonly parts = getElement('universe-import-parts', HTMLElement);
 	private readonly leftOutHeading = getElement('universe-import-left-out-heading', HTMLElement);
@@ -514,17 +515,11 @@ export class UniverseImportSection
 		const { universe, counts } = preview;
 		const items: string[] = [];
 
-		this.source.textContent = t({
-			id: 'editor.universeImport.source',
-			defaultMessage: '{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username}).',
-			description: 'In the dialog importing a zip file into the universe\'s draft, once a file is chosen: which universe and version it was exported from, when and by whom; {universe} is the universe\'s name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player\'s'
-		}, {
-			universe: universe.name,
-			version: universe.version,
-			date: formatDateTime(preview.exportedAt),
-			name: preview.exportedBy.displayName,
-			username: preview.exportedBy.username
-		});
+		this.source.textContent = describeSource(preview);
+
+		// Only a file the site signed is from where it says it is
+		this.source.className = ((preview.signature === 'unconfirmed') ? 'notice' : '');
+		this.modified.hidden = (preview.signature !== 'changed');
 		this.match.textContent = describeMatch(preview);
 
 		// Importing another universe's file replaces everything with things made anew, so it stands out
@@ -691,6 +686,40 @@ export class UniverseImportSection
 		});
 		this.drafts.imported();
 	}
+}
+
+/**
+ * What the import dialog says a file is: which universe and version it was exported from, when and by
+ * whom, as far as the site's signature of it confirms it
+ *
+ * @param preview What the server read
+ * @return The text
+ */
+function describeSource(preview: UniverseImportPreview): string
+{
+	const { universe, exportedAt, exportedBy } = preview;
+	const values = {
+		universe: universe.name,
+		version: universe.version,
+		date: formatDateTime(exportedAt),
+		name: exportedBy.displayName,
+		username: exportedBy.username
+	};
+
+	if (preview.signature !== 'unconfirmed')
+	{
+		return(t({
+			id: 'editor.universeImport.source',
+			defaultMessage: '{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username}).',
+			description: 'In the dialog importing a zip file into the universe\'s draft, once a file is chosen: which universe and version it was exported from, when and by whom, which the site confirmed from its signature; {universe} is the universe\'s name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player\'s'
+		}, values));
+	}
+
+	return(t({
+		id: 'editor.universeImport.sourceUnconfirmed',
+		defaultMessage: 'The file says it is {universe} ({version, select, draft {draft version} other {live version}}), exported {date} by {name} (@{username}), but its authenticity could not be confirmed. Import at your own risk.',
+		description: 'Warning in the dialog importing a zip file into the universe\'s draft, once a file is chosen: which universe and version the file claims to be from, when and by whom, which the site couldn\'t confirm, since the file has no signature of this site\'s or it doesn\'t match; {universe} is the universe\'s name, {version} is draft or live, {date} the date and time, {name} and {username} the player the file names'
+	}, values));
 }
 
 /**

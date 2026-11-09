@@ -3863,6 +3863,10 @@
 		"defaultMessage": "Its tilesets, tiles, items, areas and notes for translators, which your role can't change",
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out, for a translator: what only creators and builders change"
 	},
+	"editor.universeImport.modified": {
+		"defaultMessage": "It has been modified from its original export.",
+		"description": "Warning in the dialog importing a zip file into the universe's draft, under which universe it was exported from, when and by whom (which the site confirmed from its signature): files inside the zip file were changed, added or removed since it was exported"
+	},
 	"editor.universeImport.needsDraft.creatorsStart": {
 		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one.",
 		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a builder or translator, while the universe has no draft, which only its creators can start"
@@ -3953,7 +3957,11 @@
 	},
 	"editor.universeImport.source": {
 		"defaultMessage": "{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username}).",
-		"description": "In the dialog importing a zip file into the universe's draft, once a file is chosen: which universe and version it was exported from, when and by whom; {universe} is the universe's name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player's"
+		"description": "In the dialog importing a zip file into the universe's draft, once a file is chosen: which universe and version it was exported from, when and by whom, which the site confirmed from its signature; {universe} is the universe's name, {version} is draft or live, {date} the date and time, {name} and {username} the exporting player's"
+	},
+	"editor.universeImport.sourceUnconfirmed": {
+		"defaultMessage": "The file says it is {universe} ({version, select, draft {draft version} other {live version}}), exported {date} by {name} (@{username}), but its authenticity could not be confirmed. Import at your own risk.",
+		"description": "Warning in the dialog importing a zip file into the universe's draft, once a file is chosen: which universe and version the file claims to be from, when and by whom, which the site couldn't confirm, since the file has no signature of this site's or it doesn't match; {universe} is the universe's name, {version} is draft or live, {date} the date and time, {name} and {username} the player the file names"
 	},
 	"editor.universeImport.startingDraft": {
 		"defaultMessage": "Starting the draft...",

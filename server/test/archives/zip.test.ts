@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 import { readZip, zipArchive, zipFile, ZipError } from '../../src/archives/zip.js';
 
@@ -98,7 +98,7 @@ describe('zip archives', () =>
 			blocks.set([((start === (blocks.length - 5)) ? 0x01 : 0x00), 0x00, 0x00, 0xFF, 0xFF], start);
 		}
 
-		const empty = zipArchive([{ name: 'empty.json', method: DEFLATED, crc: 0, size: 0, data: blocks }], MODIFIED);
+		const empty = zipArchive([{ name: 'empty.json', method: DEFLATED, crc: 0, size: 0, sha256: createHash('sha256').digest(), data: blocks }], MODIFIED);
 		const random = randomBytes(100000);
 		const incompressible = zipArchive([await zipFile('noise.bin', [random])], MODIFIED);
 

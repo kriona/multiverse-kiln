@@ -2049,6 +2049,7 @@ export function planImport(file: ImportFile, target: ImportTarget, access: Edito
 			universe: manifest.universe,
 			exportedAt: manifest.exportedAt,
 			exportedBy: manifest.exportedBy,
+			signature: file.signature,
 			sameUniverse: (manifest.universe.id === target.universe.id),
 			parts: planner.parts,
 			counts: planner.counts,

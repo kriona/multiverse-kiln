@@ -3863,6 +3863,10 @@
 		"message": "Its tilesets, tiles, booty, areas an' notes for translators, which yer post can't change",
 		"source": "Its tilesets, tiles, items, areas and notes for translators, which your role can't change"
 	},
+	"editor.universeImport.modified": {
+		"message": "Someone's been rummagin' in this chest since it were first boxed up.",
+		"source": "It has been modified from its original export."
+	},
 	"editor.universeImport.needsDraft.creatorsStart": {
 		"message": "Chests must be hauled into the universe's draft. The universe has no draft yet, an' only her captains can lay one down.",
 		"source": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one."
@@ -3954,6 +3958,10 @@
 	"editor.universeImport.source": {
 		"message": "{universe} ({version, select, draft {draft version} other {live version}}) first boxed up {date} by {name} (@{username}).",
 		"source": "{universe} ({version, select, draft {draft version} other {live version}}) originally exported {date} by {name} (@{username})."
+	},
+	"editor.universeImport.sourceUnconfirmed": {
+		"message": "The chest claims to be {universe} ({version, select, draft {draft version} other {live version}}), boxed up {date} by {name} (@{username}), but no one can vouch it be genuine. Haul it in at yer own peril.",
+		"source": "The file says it is {universe} ({version, select, draft {draft version} other {live version}}), exported {date} by {name} (@{username}), but its authenticity could not be confirmed. Import at your own risk."
 	},
 	"editor.universeImport.startingDraft": {
 		"message": "Layin' down the draft...",

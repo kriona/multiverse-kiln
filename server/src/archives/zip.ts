@@ -3,6 +3,7 @@
  * them back. Files are deflated and inflated by Node's zlib on its thread pool, so a large file doesn't
  * hold up the event loop the rooms run on
  */
+import { createHash } from 'crypto';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { promisify } from 'util';
@@ -69,6 +70,11 @@ export interface ZipFile
 	size: number;
 
 	/**
+	 * The SHA-256 of its content, which, unlike the CRC-32, can't be matched by other content made for it
+	 */
+	sha256: Buffer;
+
+	/**
 	 * Its content, as method leaves it
 	 */
 	data: Buffer;
@@ -104,6 +110,7 @@ export async function zipFile(name: string, pieces: Iterable<string | Buffer> | 
 {
 	let crc = 0;
 	let size = 0;
+	const sha256 = createHash('sha256');
 	const output: Buffer[] = [];
 
 	/**
@@ -118,6 +125,7 @@ export async function zipFile(name: string, pieces: Iterable<string | Buffer> | 
 			const buffer = ((typeof piece === 'string') ? Buffer.from(piece, 'utf8') : piece);
 
 			crc = zlib.crc32(buffer, crc);
+			sha256.update(buffer);
 			size += buffer.length;
 			yield buffer;
 		}
@@ -157,6 +165,7 @@ export async function zipFile(name: string, pieces: Iterable<string | Buffer> | 
 		method: (compress ? DEFLATED : STORED),
 		crc,
 		size,
+		sha256: sha256.digest(),
 		data
 	});
 }

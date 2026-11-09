@@ -81,6 +81,18 @@ export const UNIVERSE_IMPORT_LEFT_OUT = ['universeOnly', 'settingsRole', 'worldR
 export type UniverseImportLeftOut = typeof UNIVERSE_IMPORT_LEFT_OUT[number];
 
 /**
+ * What the site's signature (UNIVERSE_EXPORT_SIGNATURE) says of a file
+ *
+ * - intact: this site exported it, from the universe, when and by whom it says, and nothing in it was
+ *   changed since
+ * - changed: this site exported it, from the universe, when and by whom it says, but files in it were
+ *   changed, added or removed since
+ * - unconfirmed: nothing says where it is from: it has no signature of this site's, because it was
+ *   exported elsewhere or by an older version, or where it says it is from was changed
+ */
+export type UniverseImportSignature = 'intact' | 'changed' | 'unconfirmed';
+
+/**
  * How many of each kind of thing an import brings in, for the parts it replaces
  */
 export interface UniverseImportCounts
@@ -118,6 +130,12 @@ export interface UniverseImportPreview
 	 */
 	exportedAt: string;
 	exportedBy: ExportedBy;
+
+	/**
+	 * What the site's signature of the file says of universe, exportedAt and exportedBy, and of the rest
+	 * of the file
+	 */
+	signature: UniverseImportSignature;
 
 	/**
 	 * Whether it is of this universe, so the draft's things are matched with the file's and keep their

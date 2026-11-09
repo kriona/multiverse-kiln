@@ -19,6 +19,9 @@
  * - UNIVERSE_EXPORT_AREA_LEGEND: how to read the areas' cells, which tile each number in them is and
  *   which area each file is, in Markdown, in the language of the player exporting; an import doesn't read it
  * - universeExportTilesetPath(): each uploaded tileset's PNG, when the export holds the world
+ * - UNIVERSE_EXPORT_SIGNATURE: the server's signatures of where the export is from and of every other
+ *   file, an ExportSignature as JSON, so an import can tell an export made on its site, unchanged, from
+ *   one changed since or made elsewhere
  *
  * Things are named by the IDs the version gives them, as the editor names them: a default tile, item,
  * race, class or theme by the ruleset's ID for it, which the lists give with its key, so an import into
@@ -99,6 +102,11 @@ export const UNIVERSE_EXPORT_LIVE_IDS = 'liveIds.json';
  * The path in the archive of the legend beside the areas' files
  */
 export const UNIVERSE_EXPORT_AREA_LEGEND = 'areas/legend.md';
+
+/**
+ * The path in the archive of the ExportSignature
+ */
+export const UNIVERSE_EXPORT_SIGNATURE = 'signature.json';
 
 /**
  * The path in the archive of an area's file
@@ -393,6 +401,30 @@ export interface UniverseExport
 	 * By username
 	 */
 	editors?: ExportedEditor[];
+}
+
+/**
+ * The archive's UNIVERSE_EXPORT_SIGNATURE: keyed hashes only the server that made the export can make,
+ * since they take its secret key
+ */
+export interface ExportSignature
+{
+	/**
+	 * The keyed hash (base64) of where the export is from: its universe's ID, version and name, when it
+	 * was made and who made it, as its UniverseExport says. It holds even when other files are changed
+	 */
+	origin: string;
+
+	/**
+	 * The SHA-256 (hex) of each of the archive's other files, by its path
+	 */
+	files: Record<string, string>;
+
+	/**
+	 * The keyed hash (base64) of files, so the files hold what the export made when each one's SHA-256
+	 * matches
+	 */
+	contents: string;
 }
 
 /**

@@ -34,6 +34,7 @@ import { getObject } from '../storage/objectStorage.js';
 import { findEditorAccess, requireRole, universeContextOf } from './editorAccess.js';
 import { errorMessages, sendError } from './errors.js';
 import { areaCellsLegend, type LegendArea } from './universeExportLegend.js';
+import { signExport } from './universeExportSignature.js';
 
 /**
  * How many tilesets' images are read from storage at once
@@ -143,9 +144,10 @@ async function exportRoute(request: Request, response: Response): Promise<void>
 		const tilesetsFile = ((snapshot.tilesets === undefined) ? [] : [await zipFile(UNIVERSE_EXPORT_TILESETS, [jsonText(snapshot.tilesets)])]);
 		const locale = exportLocale.safeParse(request.query.locale);
 		const legend = await legendFiles(snapshot, (locale.success ? locale.data : SOURCE_LOCALE));
+		const files = [manifestFile, ...tilesetsFile, ...snapshot.files, ...legend, ...images];
 
 		response.attachment(universeExportFileName(universe.name, universe.version, exportedAt));
-		response.send(zipArchive([manifestFile, ...tilesetsFile, ...snapshot.files, ...legend, ...images], exportedAt));
+		response.send(zipArchive([...files, await signExport(manifest, files)], exportedAt));
 	}
 	finally
 	{

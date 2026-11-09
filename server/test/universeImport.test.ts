@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import http from 'http';
-import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
 import { adminDb } from '../src/db/adminClient.js';
@@ -80,6 +80,12 @@ interface ExportContents
 	 * Undefined when the archive has no liveIds.json
 	 */
 	liveIds: ExportedLiveIds | undefined;
+
+	/**
+	 * The text of signature.json, kept as it is so the file's origin stays signed while its other files
+	 * are changed, or undefined when the archive has none
+	 */
+	signature: string | undefined;
 }
 
 /**
@@ -106,13 +112,14 @@ async function contentsOf(archive: Buffer): Promise<ExportContents>
 		areaPaths,
 		areas: (areaPaths ?? []).map((path) => jsonOf<ExportedArea>(path) ?? assert.fail(`No ${path}`)),
 		translations: jsonOf<ExportedTranslations>(UNIVERSE_EXPORT_TRANSLATIONS),
-		liveIds: jsonOf<ExportedLiveIds>(UNIVERSE_EXPORT_LIVE_IDS)
+		liveIds: jsonOf<ExportedLiveIds>(UNIVERSE_EXPORT_LIVE_IDS),
+		signature: files.get(UNIVERSE_EXPORT_SIGNATURE)?.toString('utf8')
 	});
 }
 
 /**
  * An archive of an export's JSON files, as contentsOf() read them and a test changed them, without its
- * tilesets' images
+ * tilesets' images, and with its signature as it was, as editing an export by hand leaves it
  *
  * @param contents What the files hold
  * @param folder The folder to put them in, such as "Kilnhaven/", or '' for the archive's root
@@ -156,9 +163,10 @@ async function archiveOf(contents: ExportContents, folder = '', others: Record<s
 	}
 
 	const zipped = await Promise.all([...files].map(([path, value]) => zipFile(`${folder}${path}`, [JSON.stringify(value)])));
+	const signature = ((contents.signature === undefined) ? [] : [await zipFile(`${folder}${UNIVERSE_EXPORT_SIGNATURE}`, [contents.signature])]);
 	const extra = await Promise.all(Object.entries(others).map(([path, text]) => zipFile(path, [text])));
 
-	return(zipArchive([...zipped, ...extra], new Date()));
+	return(zipArchive([...zipped, ...signature, ...extra], new Date()));
 }
 
 /**
@@ -875,6 +883,72 @@ describe('importing a universe', () =>
 		{
 			assert.strictEqual(refused.status, 400);
 			assert.match(refused.body.error.values?.problem as string, /universe\.json is missing/);
+		}
+	});
+
+	it('says whether the site signed a file, and whether it was changed since', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const archive = await exportArchive(ada, kilnhavenId);
+		const files = await readZip(archive, 100000000);
+		const manifest = JSON.parse(files.get(UNIVERSE_EXPORT_MANIFEST)?.toString('utf8') ?? '') as UniverseExport;
+		const folder = 'MultiverseKiln.kilnhaven.2026-11-08/';
+
+		/**
+		 * Previews a file
+		 *
+		 * @param file The file
+		 * @return What the preview says
+		 */
+		const preview = async (file: Buffer): Promise<UniverseImportPreview> =>
+		{
+			const answer = await importArchive<UniverseImportPreview>(ada, kilnhavenId, file, { preview: true });
+
+			assert.strictEqual(answer.status, 200, JSON.stringify(answer.body));
+
+			return(answer.body);
+		};
+
+		// Extracted and zipped again, with the files operating systems add, it is still as it was exported
+		const rezipped = zipArchive([
+			...await Promise.all([...files].map(([path, data]) => zipFile(`${folder}${path}`, [data]))),
+			await zipFile(`${folder}.DS_Store`, ['metadata']),
+			await zipFile(`__MACOSX/${folder}._universe.json`, ['metadata'])
+		], new Date());
+
+		for (const file of [archive, rezipped])
+		{
+			const intact = await preview(file);
+
+			assert.strictEqual(intact.signature, 'intact');
+			assert.strictEqual(intact.sameUniverse, true);
+		}
+
+		// A file changed or added since keeps its signed origin
+		for (const replaced of [{ [UNIVERSE_EXPORT_AREA_LEGEND]: '# Edited' }, { 'notes.txt': 'Added' }])
+		{
+			const changed = await preview(await archiveWith(archive, replaced));
+
+			assert.strictEqual(changed.signature, 'changed');
+			assert.strictEqual(changed.sameUniverse, true);
+		}
+
+		// Another exporter, or no signature at all, leaves where it is from unconfirmed, which the dialog
+		// says, leaving the player to decide: it is still imported as the universe it says it is of
+		const forged = await archiveWith(archive, {
+			[UNIVERSE_EXPORT_MANIFEST]: JSON.stringify({ ...manifest, exportedBy: { username: 'mallory', displayName: 'Mallory' } })
+		});
+		const unsigned = zipArchive(await Promise.all([...files]
+			.filter(([path]) => (path !== UNIVERSE_EXPORT_SIGNATURE))
+			.map(([path, data]) => zipFile(path, [data]))), new Date());
+
+		for (const file of [forged, unsigned])
+		{
+			const unconfirmed = await preview(file);
+
+			assert.strictEqual(unconfirmed.signature, 'unconfirmed');
+			assert.strictEqual(unconfirmed.sameUniverse, true);
 		}
 	});
 });

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, CHUNK_SIZE, EDITOR_UNIVERSES_PATH, FAERIE_MORNINGS, MAX_AREA_LINKS, MAX_AREA_NAME_LENGTH, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorArea, type EditorAreaLink, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
+import { AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, CHUNK_SIZE, EDITOR_UNIVERSES_PATH, FAERIE_MORNINGS, MAX_AREA_LINKS, MAX_AREA_NAME_LENGTH, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorArea, type EditorAreaLink, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
 
 import { readZip } from '../src/archives/zip.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
@@ -277,7 +277,7 @@ describe('exporting a universe', () =>
 		const { files } = await exportUniverse(cy, universeId);
 		const manifest = manifestOf(files);
 
-		assert.deepStrictEqual([...files.keys()], [UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_TRANSLATIONS]);
+		assert.deepStrictEqual([...files.keys()], [UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_EXPORT_SIGNATURE]);
 		assert.strictEqual(manifest.role, 'translator');
 		assert.strictEqual(files.has(UNIVERSE_EXPORT_AREAS), false);
 

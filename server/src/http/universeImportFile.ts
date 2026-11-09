@@ -1,17 +1,19 @@
 /**
  * Reading a universe's export for importing it (see Importing a universe in STRUCTURE-OVERVIEW.md): the
  * zip archive, its UniverseExport, races, classes, tilesets, items, areas, translations and live IDs, checked for the shape
- * shared/src/universeExport.ts gives them. What the things' settings hold is checked later, by the
+ * shared/src/universeExport.ts gives them, with what the site's signature says of it
+ * (universeExportSignature.ts). What the things' settings hold is checked later, by the
  * validators a save's changes go through (editorChange in editorPayloads.ts), as the import makes its
  * changes from them
  */
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues, type UniverseImportSignature } from '@multiverse-kiln/shared';
 import { setImmediate as yieldToEventLoop } from 'timers/promises';
 import { z } from 'zod';
 
 import { readZip, ZipError } from '../archives/zip.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { errorMessages } from './errors.js';
+import { checkExportSignature, MACOS_METADATA_FOLDER } from './universeExportSignature.js';
 
 /**
  * Why a file can't be imported (see shared/src/localization.ts)
@@ -275,6 +277,11 @@ export interface ImportFile
 	 * Each uploaded tileset's image, by the tileset's ID in the file, for those the file holds
 	 */
 	images: Map<string, Buffer>;
+
+	/**
+	 * What the site's signature says of where it is from and of its files
+	 */
+	signature: UniverseImportSignature;
 }
 
 /**
@@ -436,14 +443,10 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 	return({
 		manifest,
 		cells,
-		images
+		images,
+		signature: await checkExportSignature(manifest, files)
 	});
 }
-
-/**
- * The folder macOS's Finder adds to every zip archive it makes, holding the files' metadata
- */
-const MACOS_METADATA_FOLDER = '__MACOSX/';
 
 /**
  * An archive's files by their paths in the export: as they are when UNIVERSE_EXPORT_MANIFEST is at the
