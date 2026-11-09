@@ -87,6 +87,12 @@ export interface VisionArea
 	loopsNorthSouth: boolean;
 
 	/**
+	 * Whether every cell's vision cost is 0, as in a lobby with no vision cost, so a cell is seen
+	 * whenever it is near enough and no line to it needs walking
+	 */
+	clear: boolean;
+
+	/**
 	 * How much harder a cell of the area is to see past, in percent: 0 is clear, 50 spends twice as much
 	 * of the budget, and OPAQUE_VISION_COST can't be seen past
 	 *
@@ -122,6 +128,7 @@ export function createVisionArea(tiles: AreaTiles, loopsEastWest: boolean, loops
 		bounds: tiles.bounds,
 		loopsEastWest,
 		loopsNorthSouth,
+		clear: [...tileVisionCosts.values()].every((cost) => (cost === 0)),
 		visionCost: (column, row) =>
 		{
 			const tileId = tileIdAt(tiles, column, row);
@@ -282,6 +289,12 @@ export function visionKey(column: number, row: number): string
  */
 function isSeen(from: VisionCell, columns: number, rows: number, budget: number, area: VisionArea): boolean
 {
+	// Every line spends its length, and a line between two cells of the area stays inside it
+	if (area.clear)
+	{
+		return(shortestDistance(columns, rows) <= budget);
+	}
+
 	if (isInSight(from, columns, rows, budget, area))
 	{
 		return(true);

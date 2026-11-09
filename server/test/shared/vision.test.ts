@@ -23,6 +23,7 @@ function areaWith(costs: Record<string, number> = {}, loops: boolean = false): V
 		bounds,
 		loopsEastWest: loops,
 		loopsNorthSouth: loops,
+		clear: false,
 		visionCost: (column, row) => (costs[visionKey(column, row)] ?? 0)
 	});
 }
@@ -257,6 +258,31 @@ describe('vision (shared)', () =>
 			assert.strictEqual(area.visionCost(1, 0), 50);
 			assert.strictEqual(area.visionCost(2, 0), 0);
 			assert.strictEqual(area.visionCost(3, 0), 0);
+		});
+
+		it('is clear only when none of its tiles has a vision cost', () =>
+		{
+			const tiles = { bounds, defaultTileId: 1, chunks: new Map() };
+
+			assert.strictEqual(createVisionArea(tiles, false, false, new Map([[1, 0], [2, 0]])).clear, true);
+			assert.strictEqual(createVisionArea(tiles, false, false, new Map([[1, 0], [2, 50]])).clear, false);
+		});
+
+		it('sees in a clear area just what walking every line sees', () =>
+		{
+			for (const loops of [false, true])
+			{
+				const walked = areaWith({}, loops);
+				const clear = { ...walked, clear: true };
+
+				for (const from of [origin, { column: 48, row: -23 }])
+				{
+					for (const budget of [NIGHT_VISION_SQUARES, DARKVISION_SQUARES + 0.5, DAY_VISION_SQUARES])
+					{
+						assert.deepStrictEqual(visibleCells(from, budget, clear), visibleCells(from, budget, walked));
+					}
+				}
+			}
 		});
 	});
 });

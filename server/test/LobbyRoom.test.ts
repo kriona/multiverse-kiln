@@ -849,6 +849,9 @@ describe('LobbyRoom', () =>
 			await waitUntil(() => room.state.hasArea);
 			assert.ok(playerOf(ada));
 			assert.ok(playerOf(grace));
+
+			// Both windows see both players placed again, Ada's own included, though Ada's window saw her before
+			await waitUntil(() => (ada.room.state.players?.size === 2) && (grace.room.state.players?.size === 2));
 		});
 	});
 

@@ -185,6 +185,16 @@ export class AreaPlayers
 	 */
 	private readonly areaIds = new Map<string, string>();
 
+	/**
+	 * The players in each area, by the area's ID, kept with areaIds by putInArea() and takeOutOfArea()
+	 */
+	private readonly playerIdsByArea = new Map<string, Set<string>>();
+
+	/**
+	 * The players each client's view holds, by the view (see showOnly); a view missing here holds none
+	 */
+	private shownIn = new WeakMap<StateView, ReadonlySet<string>>();
+
 	private readonly moveInputs = new InputQueue<MovePayload>(MAX_QUEUED_MOVES);
 
 	/**
@@ -353,7 +363,7 @@ export class AreaPlayers
 
 		player.x = position.x;
 		player.y = position.y;
-		this.areaIds.set(playerId, area.loaded.area.id);
+		this.putInArea(playerId, area.loaded.area.id);
 
 		if (occupancy && !player.ghost)
 		{
@@ -466,7 +476,7 @@ export class AreaPlayers
 		this.stop(playerId);
 
 		// Out of every area first, so the views that hold the player let go of them before they are deleted
-		this.areaIds.delete(playerId);
+		this.takeOutOfArea(playerId);
 		this.refreshViews();
 		this.players.delete(playerId);
 		this.steps.delete(playerId);
@@ -483,7 +493,11 @@ export class AreaPlayers
 	{
 		this.stopAll();
 		this.areaIds.clear();
+		this.playerIdsByArea.clear();
 		this.refreshViews();
+
+		// Players placed again are new objects, which the views don't hold even where their IDs are the same
+		this.shownIn = new WeakMap();
 		this.players.clear();
 		this.steps.clear();
 		this.presses.clear();
@@ -1166,7 +1180,7 @@ export class AreaPlayers
 			return;
 		}
 
-		this.areaIds.set(playerId, target.loaded.area.id);
+		this.putInArea(playerId, target.loaded.area.id);
 		player.x = position.x;
 		player.y = position.y;
 		this.refreshViews();
@@ -1387,10 +1401,12 @@ export class AreaPlayers
 	 * Makes a client's view hold some players and no others
 	 *
 	 * Players who stay in view aren't removed and added again, which would make the client redraw them,
-	 * and a player the view doesn't hold isn't removed, which would still send the client a removal
+	 * and a player the view doesn't hold isn't removed, which would still send the client a removal. Only
+	 * the players the view held and those it is to hold are looked at, not every player in the room
 	 *
 	 * @param client The client
-	 * @param playerIds The players it sees
+	 * @param playerIds The players it sees, which nothing changes afterward, so the view can keep them as
+	 * the players it holds
 	 */
 	private showOnly(client: Client, playerIds: ReadonlySet<string>): void
 	{
@@ -1399,19 +1415,30 @@ export class AreaPlayers
 			client.view = new StateView();
 		}
 
-		for (const [playerId, player] of this.players)
-		{
-			const isShown = client.view.has(player);
+		const view = client.view;
+		const shown = this.shownIn.get(view);
 
-			if (playerIds.has(playerId) && !isShown)
+		for (const playerId of (shown ?? []))
+		{
+			const player = this.players.get(playerId);
+
+			if (player && !playerIds.has(playerId))
 			{
-				client.view.add(player);
-			}
-			else if (!playerIds.has(playerId) && isShown)
-			{
-				client.view.remove(player);
+				view.remove(player);
 			}
 		}
+
+		for (const playerId of playerIds)
+		{
+			const player = this.players.get(playerId);
+
+			if (player && !(shown?.has(playerId) ?? false))
+			{
+				view.add(player);
+			}
+		}
+
+		this.shownIn.set(view, playerIds);
 	}
 
 	/**
@@ -1496,9 +1523,55 @@ export class AreaPlayers
 	 */
 	private playersIn(areaId: string | undefined): string[]
 	{
-		return([...this.areaIds]
-			.filter(([, playerAreaId]) => (playerAreaId === areaId))
-			.map(([playerId]) => playerId));
+		return([...(((areaId !== undefined) ? this.playerIdsByArea.get(areaId) : undefined) ?? [])]);
+	}
+
+	/**
+	 * Records a player as in an area, and out of any area they were in
+	 *
+	 * @param playerId The player's ID
+	 * @param areaId The area's ID
+	 */
+	private putInArea(playerId: string, areaId: string): void
+	{
+		this.takeOutOfArea(playerId);
+		this.areaIds.set(playerId, areaId);
+
+		const playerIds = this.playerIdsByArea.get(areaId);
+
+		if (playerIds)
+		{
+			playerIds.add(playerId);
+		}
+		else
+		{
+			this.playerIdsByArea.set(areaId, new Set([playerId]));
+		}
+	}
+
+	/**
+	 * Records a player as in no area
+	 *
+	 * @param playerId The player's ID
+	 */
+	private takeOutOfArea(playerId: string): void
+	{
+		const areaId = this.areaIds.get(playerId);
+
+		if (areaId === undefined)
+		{
+			return;
+		}
+
+		const playerIds = this.playerIdsByArea.get(areaId);
+
+		this.areaIds.delete(playerId);
+		playerIds?.delete(playerId);
+
+		if (playerIds?.size === 0)
+		{
+			this.playerIdsByArea.delete(areaId);
+		}
 	}
 
 	/**
