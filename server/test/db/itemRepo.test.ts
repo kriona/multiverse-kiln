@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
-import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItemKind, listEditorItems, loadEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse } from './fixtures.js';
 
@@ -153,7 +153,7 @@ describe('itemRepo', () =>
 		});
 	});
 
-	describe('findItemKind', () =>
+	describe('findItem', () =>
 	{
 		it('tells default items from the universe\'s own, and knows nothing of other items', async () =>
 		{
@@ -162,10 +162,25 @@ describe('itemRepo', () =>
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
 			const theirsId = await createCustomItem(liveVersion(otherId), 'pf1e', torch);
 
-			assert.strictEqual(await findItemKind(liveVersion(universeId), 'pf1e', await daggerId()), 'default');
-			assert.strictEqual(await findItemKind(liveVersion(universeId), 'pf1e', torchId), 'custom');
-			assert.strictEqual(await findItemKind(liveVersion(universeId), 'pf1e', theirsId), undefined);
-			assert.strictEqual(await findItemKind(liveVersion(universeId), 'pf1e', 2147483647), undefined);
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true });
+			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', theirsId), undefined);
+			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', 2147483647), undefined);
+		});
+
+		it('finds whether the universe has an item enabled, from its own edited copy of a default item', async () =>
+		{
+			const universeId = await addUniverse('Mine');
+			const otherId = await addUniverse('Theirs');
+			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', type: 'longsword', enabled: false });
+			const dagger = await daggerId();
+
+			await saveEditedDefaultItem(liveVersion(otherId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true });
+
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false });
 		});
 	});
 

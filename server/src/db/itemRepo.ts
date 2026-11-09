@@ -2,6 +2,7 @@
  * Items: the only module that reads or writes the items table
  */
 import { and, count, eq, isNull, or } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -22,6 +23,19 @@ export type CustomItemSettings = ItemSettings & { name: string };
  * Whether an item ID names one of a ruleset's default items or one a universe added
  */
 export type ItemKind = 'default' | 'custom';
+
+/**
+ * An item a universe can use, as findItem() finds it
+ */
+export interface FoundItem
+{
+	kind: ItemKind;
+
+	/**
+	 * Whether the universe has it enabled
+	 */
+	enabled: boolean;
+}
 
 /**
  * The IDs of a ruleset's default items
@@ -189,22 +203,31 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 }
 
 /**
- * Whether an item ID is one of a ruleset's default items or one of a universe's own items
+ * Whether an item ID is one of a ruleset's default items or one of a universe's own items, and whether
+ * the universe has it enabled
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param itemId The item's ID
  * @param executor The database, or a transaction
- * @return The kind of item, or undefined when the universe can't use an item with that ID (an edited
- * copy's own ID included)
+ * @return The kind of item and whether it is enabled (a default item's from the universe's edited copy,
+ * when it has one), or undefined when the universe can't use an item with that ID (an edited copy's own
+ * ID included)
  */
-export async function findItemKind(version: UniverseVersion, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<ItemKind | undefined>
+export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<FoundItem | undefined>
 {
+	const copies = alias(items, 'copies');
 	const [row] = await executor
 		.select({
-			universeId: items.universeId
+			universeId: items.universeId,
+			enabled: items.enabled,
+			copyEnabled: copies.enabled
 		})
 		.from(items)
+		.leftJoin(copies, and(
+			eq(copies.overridesItemId, items.id),
+			inVersion(copies, version)
+		))
 		.where(and(
 			eq(items.id, itemId),
 			eq(items.ruleset, ruleset),
@@ -221,7 +244,10 @@ export async function findItemKind(version: UniverseVersion, ruleset: Ruleset, i
 		return(undefined);
 	}
 
-	return(((row.universeId === null) ? 'default' : 'custom'));
+	return({
+		kind: ((row.universeId === null) ? 'default' : 'custom'),
+		enabled: (row.copyEnabled ?? row.enabled)
+	});
 }
 
 /**
@@ -270,7 +296,7 @@ export async function createCustomItem(version: UniverseVersion, ruleset: Rulese
  * Changes one of a universe's own items
  *
  * @param version The universe's live version or draft
- * @param itemId The item's ID, from findItemKind() as custom
+ * @param itemId The item's ID, from findItem() as custom
  * @param settings The item's new settings
  * @param executor The database, or a transaction
  */
@@ -290,7 +316,7 @@ export async function updateCustomItem(version: UniverseVersion, itemId: number,
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
- * @param defaultItemId The default item's ID, from findItemKind() as default
+ * @param defaultItemId The default item's ID, from findItem() as default
  * @param settings The copy's settings; a null name keeps the default item's
  * @param executor The database, or a transaction
  */
@@ -332,7 +358,7 @@ export async function restoreDefaultItem(version: UniverseVersion, defaultItemId
  * Deletes one of a universe's own items
  *
  * @param version The universe's live version or draft
- * @param itemId The item's ID, from findItemKind() as custom
+ * @param itemId The item's ID, from findItem() as custom
  * @param executor The database, or a transaction
  */
 export async function deleteCustomItem(version: UniverseVersion, itemId: number, executor: Executor = db): Promise<void>
