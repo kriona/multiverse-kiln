@@ -43,6 +43,11 @@ const LEFT_OUT_MESSAGES: Record<UniverseImportLeftOut, MessageDescriptor> = defi
 		defaultMessage: 'Its name, which another universe has, so the draft keeps its own',
 		description: 'In the list of what a file chosen in the dialog importing it into the universe\'s draft leaves out: the file\'s universe name, since names are unique among universes'
 	},
+	nameLinkLike: {
+		id: 'editor.universeImport.leftOut.nameLinkLike',
+		defaultMessage: 'Its name, which looks like a web or email address or holds angle brackets, so the draft keeps its own',
+		description: 'In the list of what a file chosen in the dialog importing it into the universe\'s draft leaves out: the file\'s universe name, which universe names can\'t be since emails name the universe and mail clients would make it a link; a period between letters with no space after it, as in a web address, counts'
+	},
 	keptForSettings: {
 		id: 'editor.universeImport.leftOut.keptForSettings',
 		defaultMessage: 'Deleting the draft\'s lobby, starting areas and starting equipment that the file doesn\'t have, since your role can\'t change the settings naming them',

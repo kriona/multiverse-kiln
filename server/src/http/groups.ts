@@ -25,7 +25,7 @@ import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js
 import { groupChanges } from '../players/groupChanges.js';
 import { findAllowedUniverse, loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
-import { errorMessages, sendError, sendInvalidRequest, type Refusal } from './errors.js';
+import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 
 /**
  * Bytes of randomness in an invite link's token: far too many to guess
@@ -678,6 +678,6 @@ function handleGroupError(error: unknown, request: Request, response: Response, 
 		return;
 	}
 
-	console.error('Group request %s %s failed:', request.method, request.originalUrl, error);
+	console.error('Group request %s %s failed:', request.method, requestRoute(request), error);
 	sendError(response, 500, errorMessages.somethingWentWrong);
 }

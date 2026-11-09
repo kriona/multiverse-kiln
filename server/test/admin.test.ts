@@ -784,7 +784,7 @@ describe('Admin universe list', () =>
 		await setUniverseDisabled(zed, {
 			reason: 'Spam',
 			preventDeletion: true
-		});
+		}, adminDb);
 
 		const page = await listUniverses();
 
@@ -873,7 +873,7 @@ describe('Admin universe list', () =>
 		await setUniverseDisabled(universeId, {
 			reason: 'Spam',
 			preventDeletion: false
-		});
+		}, adminDb);
 
 		assert.strictEqual((await send('DELETE', `${ADMIN_UNIVERSES_PATH}/${universeId}/disabled`, { browser: admin })).status, 204);
 		assert.strictEqual(await findDisabledReason(universeId), null);
@@ -1048,7 +1048,7 @@ describe('Editing universes as a server admin', () =>
 		await setUniverseDisabled(universeId, {
 			reason: 'Spam',
 			preventDeletion: false
-		});
+		}, adminDb);
 
 		assert.strictEqual((await saveChanges(admin, universeId, [{ kind: 'universe', update: { shortDescription: 'Fixed' } }])).status, 200);
 		assert.strictEqual((await saveChanges(creator, universeId, [{ kind: 'universe', update: { shortDescription: 'Mine' } }])).status, 403);

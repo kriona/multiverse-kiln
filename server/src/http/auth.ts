@@ -24,12 +24,12 @@ import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
 import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient } from '../db/playerRepo.js';
-import { lockPendingProviderLogin } from '../db/providerLoginRepo.js';
+import { deletePlayerPendingProviderLogins, lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { deleteTrustedBrowsers } from '../db/twoFactorRepo.js';
+import { deletePlayerPendingTwoFactorLogins, deleteTrustedBrowsers } from '../db/twoFactorRepo.js';
 import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
@@ -40,7 +40,7 @@ import { accountPasswordLimits, authMessages, checkDisplayName, checkUsername, c
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
-import { errorMessages, sendInvalidRequest } from './errors.js';
+import { errorMessages, requestRoute, sendInvalidRequest } from './errors.js';
 import { addProviderRoutes } from './providerAuth.js';
 import { addTwoFactorRoutes, checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, startLogin, waitForSecondFactor, type SecondFactorOutcome } from './twoFactorAuth.js';
 
@@ -956,8 +956,11 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 
 		const ended = await deletePlayerSessions(playerId, executor);
 
-		// A reset is how a player takes back an account, so no browser keeps skipping its 2FA
+		// A reset is how a player takes back an account, so no browser keeps skipping its 2FA, and no
+		// browser that gave the old password can finish logging in
 		await deleteTrustedBrowsers(playerId, executor);
+		await deletePlayerPendingTwoFactorLogins(playerId, executor);
+		await deletePlayerPendingProviderLogins(playerId, executor);
 		await deletePlayerEmailCodes(playerId, executor);
 		await recordEvent(request, playerId, 'passwordReset', now, executor);
 
@@ -1116,8 +1119,11 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 			});
 		}
 
-		// Codes sent to the old address, such as for a password reset, no longer act for the account
+		// Codes sent to the old address, such as for a password reset, no longer act for the account, and
+		// logins started before the change, such as a provider's for the old address, start again
 		await deletePlayerEmailCodes(session.playerId, executor);
+		await deletePlayerPendingTwoFactorLogins(session.playerId, executor);
+		await deletePlayerPendingProviderLogins(session.playerId, executor);
 
 		const ended = await deletePlayerSessions(session.playerId, executor, session.sessionId);
 
@@ -1243,8 +1249,11 @@ async function passwordChangeRoute(request: Request, response: Response): Promis
 
 		const ended = await deletePlayerSessions(session.playerId, executor, session.sessionId);
 
-		// A password reset asked for before the change can't undo it
+		// A password reset asked for before the change can't undo it, and a browser that gave the old
+		// password can't finish logging in
 		await deletePlayerEmailCodes(session.playerId, executor);
+		await deletePlayerPendingTwoFactorLogins(session.playerId, executor);
+		await deletePlayerPendingProviderLogins(session.playerId, executor);
 		await recordEvent(request, session.playerId, 'passwordChanged', now, executor);
 
 		return(ended);
@@ -1291,7 +1300,7 @@ function handleAuthError(error: unknown, request: Request, response: Response, n
 		return;
 	}
 
-	console.error('Auth request %s %s failed:', request.method, request.originalUrl, error);
+	console.error('Auth request %s %s failed:', request.method, requestRoute(request), error);
 	sendRefusal(response, {
 		status: 500,
 		message: errorMessages.somethingWentWrong

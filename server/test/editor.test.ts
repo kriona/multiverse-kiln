@@ -431,7 +431,7 @@ describe('World editor API', () =>
 
 		it('refuses a universe without a valid name or ruleset', async () =>
 		{
-			for (const body of [{ name: '', shortDescription: '', ruleset: 'pf1e' }, { name: `A${rightToLeftOverride}b`, shortDescription: '', ruleset: 'pf1e' }, { name: '!?', shortDescription: '', ruleset: 'pf1e' }, { name: 'Kilnhaven', shortDescription: '', ruleset: 'dnd' }])
+			for (const body of [{ name: '', shortDescription: '', ruleset: 'pf1e' }, { name: `A${rightToLeftOverride}b`, shortDescription: '', ruleset: 'pf1e' }, { name: 'A b', shortDescription: '', ruleset: 'pf1e' }, { name: 'A b', shortDescription: '', ruleset: 'pf1e' }, { name: '!?', shortDescription: '', ruleset: 'pf1e' }, { name: 'Kilnhaven', shortDescription: '', ruleset: 'dnd' }])
 			{
 				assert.strictEqual((await send(ada, 'POST', '', { body })).status, 400, JSON.stringify(body));
 			}
@@ -467,6 +467,19 @@ describe('World editor API', () =>
 			}
 
 			assert.strictEqual((await updateUniverse(ada, universeId, { name: `${universeId} Station` })).status, 200);
+		});
+
+		it('refuses a name a mail client could make into a link, when creating or renaming', async () =>
+		{
+			const universeId = await createUniverse(ada, 'Kilnhaven');
+
+			for (const name of ['Reset your password at evil.example', 'https://evil', 'mailto:ada', '<b>Kilnhaven</b>'])
+			{
+				assert.strictEqual((await send(ada, 'POST', '', { body: { name, shortDescription: '', ruleset: 'pf1e' } })).status, 400, name);
+				assert.strictEqual((await updateUniverse(ada, universeId, { name })).status, 400, name);
+			}
+
+			assert.strictEqual((await updateUniverse(ada, universeId, { name: 'St. Kilnhaven: The Return' })).status, 200);
 		});
 
 		it('changes the settings, keeping faerie time and its morning together', async () =>

@@ -1,8 +1,9 @@
 import assert from 'assert';
-import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_LOGIN_SETUP_PATH, AUTH_TWO_FACTOR_SETUP_PATH, PROFILE_PATH, RECOVERY_CODE_COUNT, type AuthErrorPayload, type EmailCodeCheckPayload, type LoginPayload, type OwnProfilePayload, type RecoveryCodesPayload, type TwoFactorLoginSetupPayload, type TwoFactorSetupPayload } from '@multiverse-kiln/shared';
+import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_EMAIL_CHANGE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH, AUTH_PASSWORD_CHANGE_PATH, AUTH_PASSWORD_RESET_PATH, AUTH_RECOVERY_CODES_PATH, AUTH_TRUSTED_BROWSERS_FORGET_PATH, AUTH_TWO_FACTOR_DISABLE_PATH, AUTH_TWO_FACTOR_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_ENABLE_PATH, AUTH_TWO_FACTOR_LOGIN_PATH, AUTH_TWO_FACTOR_LOGIN_SETUP_PATH, AUTH_TWO_FACTOR_SETUP_PATH, PROFILE_PATH, RECOVERY_CODE_COUNT, type AuthErrorPayload, type EmailCodeCheckPayload, type LoginPayload, type OwnProfilePayload, type RecoveryCodesPayload, type TwoFactorLoginSetupPayload, type TwoFactorSetupPayload } from '@multiverse-kiln/shared';
 
 import { keyedHash } from '../src/auth/keyedHashes.js';
 import { hashPassword } from '../src/auth/passwords.js';
+import { setPwnedRangeFetch } from '../src/auth/pwnedPasswords.js';
 import { decryptTotpSecret } from '../src/auth/totpSecrets.js';
 import { adminDb } from '../src/db/adminClient.js';
 import { pool } from '../src/db/client.js';
@@ -67,6 +68,17 @@ describe('2FA routes', () =>
 	function sendCode(browser: Browser, code: string, trustBrowser: boolean = false): Promise<{ status: number; body: AuthErrorPayload }>
 	{
 		return(browser.send('POST', AUTH_TWO_FACTOR_LOGIN_PATH, { code, trustBrowser, locale: 'en' }));
+	}
+
+	/**
+	 * Checks that a login waiting on a code was ended, so the browser has to log in again
+	 *
+	 * @param answer What giving the login its code answered
+	 */
+	function assertLoginEnded(answer: { status: number; body: AuthErrorPayload }): void
+	{
+		assert.strictEqual(answer.status, 403, JSON.stringify(answer.body));
+		assert.strictEqual(answer.body.error.id, 'error.auth.twoFactorLoginAgain');
 	}
 
 	/**
@@ -515,10 +527,70 @@ describe('2FA routes', () =>
 			assert.deepStrictEqual((await trusted.send('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: 'a new passphrase', rememberMe: false })).body, { outcome: 'twoFactor' });
 		});
 
+		it('ends the logins waiting on a code that gave the old password', async () =>
+		{
+			const authenticator = await turnOnTwoFactor(await addAda());
+			const waiting = new Browser();
+
+			assert.deepStrictEqual(await logIn(waiting), { outcome: 'twoFactor' });
+
+			const browser = new Browser();
+
+			await enterResetCode(browser);
+			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: authenticator.recoveryCodes[0] })).status, 200);
+			assertLoginEnded(await sendCode(waiting, authenticatorCode(authenticator.secret)));
+			assert.strictEqual(await waiting.username(), null);
+		});
+
 		it('needs no authenticator code for an account without 2FA', async () =>
 		{
 			await addAda();
 			assert.deepStrictEqual(await enterResetCode(new Browser()), { twoFactor: false });
+		});
+	});
+
+	describe('changing the password or email address', () =>
+	{
+		before(() =>
+		{
+			setPwnedRangeFetch(() => Promise.resolve(new Response('')));
+		});
+
+		after(() =>
+		{
+			setPwnedRangeFetch(undefined);
+		});
+
+		it('ends the logins waiting on a code that gave the old password', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const waiting = new Browser();
+
+			assert.deepStrictEqual(await logIn(waiting), { outcome: 'twoFactor' });
+			assert.strictEqual((await (await logInAs(playerId)).send('POST', AUTH_PASSWORD_CHANGE_PATH, { currentPassword: PASSWORD, newPassword: 'a new passphrase', locale: 'en' })).status, 204);
+			assertLoginEnded(await sendCode(waiting, authenticatorCode(authenticator.secret)));
+			assert.strictEqual(await waiting.username(), null);
+		});
+
+		it('ends the logins waiting on a code once the email address changes', async () =>
+		{
+			const playerId = await addAda();
+			const authenticator = await turnOnTwoFactor(playerId);
+			const waiting = new Browser();
+			const owner = await logInAs(playerId);
+			const newEmail = 'lovelace@example.com';
+
+			assert.deepStrictEqual(await logIn(waiting), { outcome: 'twoFactor' });
+			assert.strictEqual((await owner.send('POST', AUTH_CODE_PATH, { purpose: 'changeEmail', email: newEmail, locale: 'en' })).status, 204);
+			await waitUntil(() => (emails.length > 0));
+
+			const code = /\r\n\r\n([0-9A-Z]{6})\r\n\r\n/.exec(emails[emails.length - 1].text)?.[1];
+
+			assert.strictEqual((await owner.send('POST', AUTH_CODE_CHECK_PATH, { purpose: 'changeEmail', email: newEmail, code })).status, 200);
+			assert.strictEqual((await owner.send('POST', AUTH_EMAIL_CHANGE_PATH, { email: newEmail, locale: 'en', currentPassword: PASSWORD, twoFactorCode: authenticator.recoveryCodes[0] })).status, 204);
+			assertLoginEnded(await sendCode(waiting, authenticatorCode(authenticator.secret)));
+			assert.strictEqual(await waiting.username(), null);
 		});
 	});
 

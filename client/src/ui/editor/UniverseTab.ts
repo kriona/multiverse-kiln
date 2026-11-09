@@ -1,5 +1,5 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, loadedFor, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, hasIdShapedSlug,MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, loadedFor, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, hasIdShapedSlug, hasLinkLikeText,MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { formatToNodes, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -294,8 +294,8 @@ export class UniverseTab implements SavableTab
 	}
 
 	/**
-	 * Checks the text fields for characters the server refuses, and the name for a letter or number,
-	 * pointing the player at the first field with a problem
+	 * Checks the text fields for characters the server refuses, and the name for a letter or number and
+	 * for text that could be made into a link, pointing the player at the first field with a problem
 	 *
 	 * @return True when every field may be saved
 	 */
@@ -324,6 +324,12 @@ export class UniverseTab implements SavableTab
 			if ((input === this.name) && hasIdShapedSlug(text))
 			{
 				reportFieldError(input, t(formMessages.universeNameLikeId));
+				return(false);
+			}
+
+			if ((input === this.name) && hasLinkLikeText(text))
+			{
+				reportFieldError(input, t(formMessages.universeNameLinkLike));
 				return(false);
 			}
 		}

@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { MAX_DISABLED_REASON_LENGTH } from '@multiverse-kiln/shared';
 
+import { adminDb } from '../../src/db/adminClient.js';
 import { createUniverse, deleteUniverse, findDisabledReason, findEditableUniverse, findUniverse, findUniverseDetails, isUniverseDeletionPrevented, listUniverses, lockUniverse, setUniverseAreas, setUniverseDisabled, UniverseNameTakenError, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { loadArea } from '../../src/db/areaRepo.js';
 import { createCharacter } from '../../src/db/characterRepo.js';
@@ -42,11 +43,11 @@ describe('universeRepo', () =>
 		assert.strictEqual(await setUniverseDisabled(universeId, {
 			reason: 'Spam',
 			preventDeletion: true
-		}), true);
+		}, adminDb), true);
 		assert.strictEqual(await setUniverseDisabled(universeId, {
 			reason: 'Spam again',
 			preventDeletion: false
-		}), false);
+		}, adminDb), false);
 		assert.strictEqual((await findUniverse(universeId))?.disabled, true);
 		assert.strictEqual(await findDisabledReason(universeId), 'Spam');
 		assert.strictEqual(await isUniverseDeletionPrevented(universeId), true);
@@ -54,8 +55,8 @@ describe('universeRepo', () =>
 		assert.deepStrictEqual(await listUniverses('let_there_be_light', 0, 10), []);
 		assert.strictEqual(await findUniverseDetails(universeId), undefined);
 
-		assert.strictEqual(await setUniverseDisabled(universeId, null), true);
-		assert.strictEqual(await setUniverseDisabled(universeId, null), false);
+		assert.strictEqual(await setUniverseDisabled(universeId, null, adminDb), true);
+		assert.strictEqual(await setUniverseDisabled(universeId, null, adminDb), false);
 		assert.strictEqual(await findDisabledReason(universeId), null);
 		assert.strictEqual(await isUniverseDeletionPrevented(universeId), false);
 		assert.deepStrictEqual((await listUniverses('let_there_be_light', 0, 10)).map((universe) => universe.id), [universeId]);
@@ -82,11 +83,11 @@ describe('universeRepo', () =>
 		await assert.rejects(setUniverseDisabled(universeId, {
 			reason: '',
 			preventDeletion: false
-		}));
+		}, adminDb));
 		await assert.rejects(setUniverseDisabled(universeId, {
 			reason: 'x'.repeat(MAX_DISABLED_REASON_LENGTH + 1),
 			preventDeletion: false
-		}));
+		}, adminDb));
 		assert.strictEqual(await findDisabledReason(universeId), null);
 	});
 

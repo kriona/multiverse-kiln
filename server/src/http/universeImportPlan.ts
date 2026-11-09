@@ -15,7 +15,7 @@
  * can only name saved things in a save from the editor, so the import makes those changes once the
  * changes before them are saved (PendingChange)
  */
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -98,7 +98,8 @@ export interface ImportTarget
 
 	/**
 	 * The name the import gives the draft (importedName()), or undefined to keep the draft's, when the
-	 * file has no name or every name the import would give it is taken
+	 * file has no name, its name holds text that could be made into a link, or every name the import
+	 * would give it is taken
 	 */
 	name: string | undefined;
 
@@ -219,13 +220,14 @@ const copyNames = defineMessages({
  * @param universe The universe it is imported into, in its draft
  * @param translator The player's language
  * @param executor The snapshot
- * @return The name, or undefined to keep the draft's: the file has none, or every name tried is taken
+ * @return The name, or undefined to keep the draft's: the file has none, its name holds text that could
+ * be made into a link (hasLinkLikeText()), or every name tried is taken
  */
 async function importedName(file: ImportFile, universe: EditableUniverseDetails, translator: Translator, executor: Executor): Promise<string | undefined>
 {
 	const name = file.manifest.settings?.name;
 
-	if (typeof name !== 'string')
+	if ((typeof name !== 'string') || hasLinkLikeText(name))
 	{
 		return(undefined);
 	}
@@ -1253,7 +1255,7 @@ class ImportPlanner
 
 		if ((name === undefined) && (typeof settings.name === 'string'))
 		{
-			this.leftOut.add('nameTaken');
+			this.leftOut.add((hasLinkLikeText(settings.name) ? 'nameLinkLike' : 'nameTaken'));
 		}
 
 		this.newName = name;

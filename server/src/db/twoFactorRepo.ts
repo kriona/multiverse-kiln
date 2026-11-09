@@ -186,9 +186,7 @@ export async function deleteTwoFactor(playerId: string, executor: Executor = db)
 		.delete(recoveryCodes)
 		.where(eq(recoveryCodes.playerId, playerId));
 	await deleteTrustedBrowsers(playerId, executor);
-	await executor
-		.delete(pendingTwoFactorLogins)
-		.where(eq(pendingTwoFactorLogins.playerId, playerId));
+	await deletePlayerPendingTwoFactorLogins(playerId, executor);
 }
 
 /**
@@ -320,6 +318,20 @@ export async function deletePendingTwoFactorLogin(id: string, executor: Executor
 	await executor
 		.delete(pendingTwoFactorLogins)
 		.where(eq(pendingTwoFactorLogins.id, id));
+}
+
+/**
+ * Deletes an account's logins waiting on a code, such as once its password or email address changes,
+ * so a browser that gave the old password can't finish its login
+ *
+ * @param playerId The account
+ * @param executor The database, or a transaction
+ */
+export async function deletePlayerPendingTwoFactorLogins(playerId: string, executor: Executor = db): Promise<void>
+{
+	await executor
+		.delete(pendingTwoFactorLogins)
+		.where(eq(pendingTwoFactorLogins.playerId, playerId));
 }
 
 /**

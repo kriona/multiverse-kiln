@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { characterPath, charactersPath, difficultyLevelsPath, groupPath, groupsPath, invitePath, type CharacterListPayload, type CharacterSheet, type DifficultyLevelListPayload, type ErrorPayload, type GroupCreatedPayload, type GroupJoinedPayload, type InviteCreatedPayload, type InviteDetails, type NewGroupRequest } from '@multiverse-kiln/shared';
 
+import { inAdminTransaction } from '../src/db/adminClient.js';
 import { listPlayableCharacters, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { listChatMessages, type KeptChat } from '../src/db/chatRepo.js';
 import { findDefaultDifficultyLevel, listDifficultyLevels } from '../src/db/difficultyRepo.js';
@@ -484,7 +485,7 @@ describe('group routes', () =>
 				reason: 'Spam',
 				preventDeletion: false
 			}, transaction);
-		});
+		}, inAdminTransaction);
 
 		assert.strictEqual(answer.status, 404);
 		assert.strictEqual(await findMembership(grace.characterId), undefined);

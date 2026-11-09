@@ -5,6 +5,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
 import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { adminDb } from '../src/db/adminClient.js';
 import { listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
@@ -24,6 +25,7 @@ import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
+import { loggedErrors } from './loggedErrors.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { waitUntil } from './waitUntil.js';
@@ -198,7 +200,9 @@ describe('LobbyRoom', () =>
 		{
 			const room = await colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId });
 
-			await assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId }), /already has a room/);
+			const logged = await loggedErrors(() => assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId }), /The room could not be opened/));
+
+			assert.match(logged.join('\n'), /already has a room/);
 			await assert.rejects(colyseus.createRoom(LOBBY_ROOM_NAME, { universeId: universe.universeId.toUpperCase() }));
 
 			await room.disconnect();
@@ -269,7 +273,7 @@ describe('LobbyRoom', () =>
 			await setUniverseDisabled(universe.universeId, {
 				reason: 'Breaks the rules',
 				preventDeletion: false
-			});
+			}, adminDb);
 			await assert.rejects(connect(cookie, { universeId: universe.universeId }));
 
 			areaChanges.publish({
@@ -280,7 +284,7 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(await left, ServerCloseCode.UniverseDisabled);
 			assert.strictEqual(lobbyOf(alan).clients.length, 1);
 
-			await setUniverseDisabled(universe.universeId, null);
+			await setUniverseDisabled(universe.universeId, null, adminDb);
 			await openWindow(cookie, universe.universeId);
 		});
 

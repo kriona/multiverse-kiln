@@ -23,6 +23,7 @@ import { addCharacterRoutes } from './http/characters.js';
 import { addDevBotLoginRoute } from './http/devLogin.js';
 import { clientAddressSource } from './http/clientNetwork.js';
 import { addEditorRoutes } from './http/editor.js';
+import { handleUnansweredError } from './http/errors.js';
 import { addGroupRoutes } from './http/groups.js';
 import { addHealthRoute } from './http/health.js';
 import { addProfileRoutes } from './http/profiles.js';
@@ -122,6 +123,9 @@ const server = defineServer({
 				response.sendStatus(404);
 			});
 		}
+
+		// After every route, so it answers the errors their routers' handlers don't
+		app.use(handleUnansweredError);
 	}
 });
 

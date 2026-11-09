@@ -206,11 +206,11 @@ async function draftOf(editor: Editor, universeId: string): Promise<ExportConten
  * @param editor The browser sending it
  * @param universeId The universe's ID
  * @param archive The file
- * @param options Whether to only preview it, whether to send it to the live version, and whether the
- * player confirms their rights to its tilesets
+ * @param options Whether to only preview it, whether to send it to the live version, whether the
+ * player confirms their rights to its tilesets, and the type to send it as, application/zip by default
  * @return The status and the answer
  */
-async function importArchive<T = ErrorPayload>(editor: Editor, universeId: string, archive: Buffer, options: { preview?: boolean; live?: boolean; rights?: boolean } = {}): Promise<{ status: number; body: T }>
+async function importArchive<T = ErrorPayload>(editor: Editor, universeId: string, archive: Buffer, options: { preview?: boolean; live?: boolean; rights?: boolean; contentType?: string } = {}): Promise<{ status: number; body: T }>
 {
 	const path = (options.preview ? UNIVERSE_IMPORT_PREVIEW_PATH : UNIVERSE_IMPORT_PATH);
 	const query = new URLSearchParams();
@@ -229,7 +229,7 @@ async function importArchive<T = ErrorPayload>(editor: Editor, universeId: strin
 		method: 'POST',
 		headers: {
 			'Cookie': editor.cookie,
-			'Content-Type': 'application/zip'
+			'Content-Type': (options.contentType ?? 'application/zip')
 		},
 		body: new Uint8Array(archive)
 	});
@@ -596,6 +596,25 @@ describe('importing a universe', () =>
 		assert.strictEqual((await importArchive(ada, kilnhavenId, newer)).body.error.id, 'error.importNewerFormat');
 	});
 
+	it('refuses a body sent as JSON, which the editor\'s routes parse into an array or object before the import route sees it', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		for (const body of ['[80, 75, 5, 6]', '{"length": 1000000}'])
+		{
+			for (const preview of [true, false])
+			{
+				const response = await importArchive(ada, kilnhavenId, Buffer.from(body), {
+					preview,
+					contentType: 'application/json'
+				});
+
+				assert.strictEqual(response.status, 400, body);
+				assert.strictEqual(response.body.error.id, 'error.importNotZip', body);
+			}
+		}
+	});
+
 	it('refuses another import from a player, or past the server\'s limit, from before a file still arriving is read', async () =>
 	{
 		const bea = await logIn('Bea');
@@ -649,6 +668,28 @@ describe('importing a universe', () =>
 		assert.strictEqual(refused.status, 400);
 		assert.strictEqual(refused.body.error.id, 'error.importNotAnExport');
 		assert.deepStrictEqual((await draftOf(ada, otherId)).areas.map((area) => area.name), ['Lobby', 'Starting Area']);
+	});
+
+	it('keeps the draft\'s name when the file\'s could be made into a link, importing the rest', async () =>
+	{
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId, 'draft'));
+
+		assert.ok(contents.manifest.settings);
+		contents.manifest.settings.name = 'Visit evil.example';
+
+		const archive = await archiveOf(contents);
+		const preview = await importArchive<UniverseImportPreview>(ada, kilnhavenId, archive, { preview: true });
+
+		assert.strictEqual(preview.status, 200, JSON.stringify(preview.body));
+		assert.deepStrictEqual(preview.body.leftOut, ['universeOnly', 'nameLinkLike']);
+		assert.strictEqual(preview.body.name, null);
+
+		const imported = await importArchive(ada, kilnhavenId, archive);
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+		assert.strictEqual((await draftOf(ada, kilnhavenId)).manifest.settings?.name, 'Kilnhaven');
 	});
 
 	it('refuses a file with more tilesets than a universe may have, or naming one image for two, before uploading any', async () =>
@@ -926,7 +967,9 @@ describe('importing a universe', () =>
 		}
 
 		// A file changed or added since keeps its signed origin
-		for (const replaced of [{ [UNIVERSE_EXPORT_AREA_LEGEND]: '# Edited' }, { 'notes.txt': 'Added' }])
+		const replacements: Record<string, string>[] = [{ [UNIVERSE_EXPORT_AREA_LEGEND]: '# Edited' }, { 'notes.txt': 'Added' }];
+
+		for (const replaced of replacements)
 		{
 			const changed = await preview(await archiveWith(archive, replaced));
 

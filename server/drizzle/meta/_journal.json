@@ -757,6 +757,13 @@
       "when": 1794192013163,
       "tag": "0107_player_dismissed_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1794194095102,
+      "tag": "0108_universe_disabling_admin_only",
+      "breakpoints": true
     }
   ]
 }

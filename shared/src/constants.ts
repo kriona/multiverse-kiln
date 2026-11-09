@@ -66,10 +66,11 @@ export const MAX_PLAYER_NAME_LENGTH = 20;
 export const MAX_CHAT_MESSAGE_LENGTH = 500;
 
 /**
- * Characters not allowed in names and chat: control characters, and the bidirectional marks, overrides
- * and isolates that can make text display out of order
+ * Characters not allowed in names and chat: control characters, the line and paragraph separators
+ * (U+2028 and U+2029), which break lines as a line feed does, and the bidirectional marks, overrides and
+ * isolates that can make text display out of order
  */
-export const DISALLOWED_TEXT_CHARACTERS = /[\p{Cc}\p{Bidi_Control}]/u;
+export const DISALLOWED_TEXT_CHARACTERS = /[\p{Cc}\p{Zl}\p{Zp}\p{Bidi_Control}]/u;
 
 /**
  * Default port the Colyseus server listens on

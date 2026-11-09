@@ -1,4 +1,4 @@
-import { Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { ErrorCode, Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { canPlayUniverse, characterBar, LobbyMember, LobbyMessageType, LobbyServerMessageType, LobbyState, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, type BarredOptions, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type NoticePayload, type PlayingAsPayload, type Sight } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
@@ -17,7 +17,9 @@ import { areaChanges } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
+import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
+import { unexplainedRoomError, withoutErrorDetails } from './roomErrors.js';
 import { entryRefusalCode, findPlayRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, chooseCharacterPayload, describeInvalidPayload, movePayload, roomOptions } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
@@ -277,15 +279,34 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	};
 
 	/**
-	 * Loads the universe's lobby area, when it has an enabled one, starts the simulation loop and the
-	 * loading of chunks near players, and starts following changes to the world. Fails for a universe
-	 * that doesn't exist, which turns away the client asking for it
+	 * Makes the universe's lobby (create()), telling the client nothing of why it couldn't be made
+	 * (withoutErrorDetails())
 	 *
 	 * @param options The universe, from the first client's LobbyJoinOptions
 	 */
 	async onCreate(options: unknown): Promise<void>
 	{
-		const { universeId } = roomOptions.parse(options);
+		await withoutErrorDetails('Creating a lobby room', ErrorCode.MATCHMAKE_UNHANDLED, () => this.create(options));
+	}
+
+	/**
+	 * Loads the universe's lobby area, when it has an enabled one, starts the simulation loop and the
+	 * loading of chunks near players, and starts following changes to the world. Fails for options that
+	 * aren't LobbyJoinOptions or a universe that doesn't exist, which turns away the client asking for it,
+	 * with the same error (unexplainedRoomError()) for each, which isn't logged
+	 *
+	 * @param options The universe, from the first client's LobbyJoinOptions
+	 */
+	private async create(options: unknown): Promise<void>
+	{
+		const parsed = roomOptions.safeParse(options);
+
+		if (!parsed.success)
+		{
+			throw unexplainedRoomError();
+		}
+
+		const { universeId } = parsed.data;
 
 		lobbyRooms.claim(universeId, this);
 
@@ -293,7 +314,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		if (!universe)
 		{
-			throw new Error(`Universe ${universeId} has no lobby to join`);
+			throw unexplainedRoomError();
 		}
 
 		this.universeId = universeId;
@@ -461,7 +482,21 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * Admits only clients whose browser is logged in as a player who may play the universe
+	 * Refuses a browser that isn't logged in before matchmaking makes a lobby for it
+	 * (isLoggedInToMatchmake())
+	 *
+	 * @param _token The client's auth token, unused: the session is in a cookie
+	 * @param _options Join options from the client
+	 * @param context The matchmaking request's headers, which carry the session cookie
+	 * @return Whether the browser is logged in
+	 */
+	static async onAuth(_token: string, _options: unknown, context: AuthContext): Promise<boolean>
+	{
+		return(isLoggedInToMatchmake(context));
+	}
+
+	/**
+	 * Admits a client (admit()), telling it nothing of why that failed (withoutErrorDetails())
 	 *
 	 * @param client The joining client
 	 * @param _options Join options from the client (already used to pick this room)
@@ -469,6 +504,18 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
 	async onAuth(client: Client, _options: unknown, context: AuthContext): Promise<LobbyIdentity | false>
+	{
+		return(withoutErrorDetails('Admitting a window to a lobby room', ErrorCode.APPLICATION_ERROR, () => this.admit(client, context)));
+	}
+
+	/**
+	 * Admits only clients whose browser is logged in as a player who may play the universe
+	 *
+	 * @param client The joining client
+	 * @param context The connection's request headers, which carry the session cookie
+	 * @return The client's identity, stored as client.auth; false to turn the client away
+	 */
+	private async admit(client: Client, context: AuthContext): Promise<LobbyIdentity | false>
 	{
 		const cookieHeader = context.headers.get('cookie');
 
@@ -489,6 +536,16 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
+	 * Lets a client in (join()), telling it nothing of why that failed (withoutErrorDetails())
+	 *
+	 * @param client The joining client
+	 */
+	async onJoin(client: LobbyClient): Promise<void>
+	{
+		await withoutErrorDetails('Joining a lobby room', ErrorCode.APPLICATION_ERROR, () => this.join(client));
+	}
+
+	/**
 	 * Reads the joining client's player's characters, and puts a player new to the room in the lobby
 	 * area, while the lobby has an area, as the character they played or made most recently (a ghost when
 	 * they have none). A player
@@ -498,7 +555,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 *
 	 * @param client The joining client
 	 */
-	async onJoin(client: LobbyClient): Promise<void>
+	private async join(client: LobbyClient): Promise<void>
 	{
 		await this.recheckJoining(client);
 

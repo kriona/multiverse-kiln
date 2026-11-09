@@ -1,4 +1,4 @@
-import { Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { ErrorCode, Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
@@ -22,7 +22,9 @@ import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
+import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
+import { unexplainedRoomError, withoutErrorDetails } from './roomErrors.js';
 import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universePlay.js';
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
@@ -324,16 +326,35 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	};
 
 	/**
-	 * Loads the group, its members, its chat and its starting area, starts the simulation loop, the
-	 * loading of chunks near players and the writing of new chat messages, and starts following changes to
-	 * the group, its characters and the world. Fails for a group that doesn't exist, or whose universe has
-	 * no starting area
+	 * Makes the group's room (create()), telling the client nothing of why it couldn't be made
+	 * (withoutErrorDetails())
 	 *
 	 * @param options The group, from the first client's GameJoinOptions
 	 */
 	async onCreate(options: unknown): Promise<void>
 	{
-		const { groupId } = gameJoinOptions.parse(options);
+		await withoutErrorDetails('Creating a game room', ErrorCode.MATCHMAKE_UNHANDLED, () => this.create(options));
+	}
+
+	/**
+	 * Loads the group, its members, its chat and its starting area, starts the simulation loop, the
+	 * loading of chunks near players and the writing of new chat messages, and starts following changes to
+	 * the group, its characters and the world. Fails for options that aren't GameJoinOptions, a group that
+	 * doesn't exist, or one whose universe has no starting area, with the same error (unexplainedRoomError())
+	 * for each, which isn't logged
+	 *
+	 * @param options The group, from the first client's GameJoinOptions
+	 */
+	private async create(options: unknown): Promise<void>
+	{
+		const parsed = gameJoinOptions.safeParse(options);
+
+		if (!parsed.success)
+		{
+			throw unexplainedRoomError();
+		}
+
+		const { groupId } = parsed.data;
 
 		gameRooms.claim(groupId, this);
 
@@ -342,7 +363,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		if (!group || !universe)
 		{
-			throw new Error(`Group ${groupId} doesn't exist`);
+			throw unexplainedRoomError();
 		}
 
 		const groupArea = ((group.startingAreaId !== null) ? await this.areas.load(group.startingAreaId) : undefined);
@@ -350,7 +371,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		if (!startingArea)
 		{
-			throw new Error(`Group ${groupId} has no starting area to play in`);
+			throw unexplainedRoomError();
 		}
 
 		this.groupId = group.id;
@@ -512,6 +533,33 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
+	 * Refuses a browser that isn't logged in before matchmaking makes a group's room for it
+	 * (isLoggedInToMatchmake())
+	 *
+	 * @param _token The client's auth token, unused: the session is in a cookie
+	 * @param _options Join options from the client
+	 * @param context The matchmaking request's headers, which carry the session cookie
+	 * @return Whether the browser is logged in
+	 */
+	static async onAuth(_token: string, _options: unknown, context: AuthContext): Promise<boolean>
+	{
+		return(isLoggedInToMatchmake(context));
+	}
+
+	/**
+	 * Admits a client (admit()), telling it nothing of why that failed (withoutErrorDetails())
+	 *
+	 * @param client The joining client
+	 * @param options The client's GameJoinOptions
+	 * @param context The connection's request headers, which carry the session cookie
+	 * @return The client's identity, stored as client.auth; false to turn the client away
+	 */
+	async onAuth(client: Client, options: unknown, context: AuthContext): Promise<GameIdentity | false>
+	{
+		return(withoutErrorDetails('Admitting a window to a game room', ErrorCode.APPLICATION_ERROR, () => this.admit(client, options, context)));
+	}
+
+	/**
 	 * Admits a client only when its browser is logged in and asks to play one of its player's characters
 	 * in this group who can be played
 	 *
@@ -520,7 +568,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
-	async onAuth(client: Client, options: unknown, context: AuthContext): Promise<GameIdentity | false>
+	private async admit(client: Client, options: unknown, context: AuthContext): Promise<GameIdentity | false>
 	{
 		const joinOptions = gameJoinOptions.safeParse(options);
 
@@ -549,13 +597,23 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
+	 * Lets a client in (join()), telling it nothing of why that failed (withoutErrorDetails())
+	 *
+	 * @param client The joining client
+	 */
+	async onJoin(client: GameClient): Promise<void>
+	{
+		await withoutErrorDetails('Joining a game room', ErrorCode.APPLICATION_ERROR, () => this.join(client));
+	}
+
+	/**
 	 * Puts every playable character of the joining client's player into play, if they aren't already,
 	 * gives the client the character it asked for, and sends it the group's chat. A window that may have
 	 * missed a change while it joined looks itself up again first (recheckJoining())
 	 *
 	 * @param client The joining client
 	 */
-	async onJoin(client: GameClient): Promise<void>
+	private async join(client: GameClient): Promise<void>
 	{
 		await this.recheckJoining(client);
 

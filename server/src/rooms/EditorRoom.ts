@@ -1,4 +1,4 @@
-import { Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
+import { ErrorCode, Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
 import { editorAccessOf, EditorMessageType, EditorPresence, EditorServerMessageType, EditorState, EditorWindow, NoticeReason, ServerCloseCode, stageChangesEditorAccess, type ChatAuthorDeletedPayload, type ChatReadPayload, type EditorRole, type EditorSavedPayload, type NoticePayload, type UniverseAccess, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
@@ -17,7 +17,9 @@ import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/edi
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
+import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
+import { unexplainedRoomError, withoutErrorDetails } from './roomErrors.js';
 import { chatPayload, chatReadPayload, describeInvalidPayload, editorPlacePayload, roomOptions } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
 
@@ -277,21 +279,40 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	};
 
 	/**
-	 * Loads the editors' chat and starts writing its new messages, and starts following changes to
-	 * sessions, roles and the universe, and deleted accounts, whose names the chat drops. Fails for a universe that doesn't exist, which turns away the
-	 * client asking for it
+	 * Makes the universe's editor room (create()), telling the client nothing of why it couldn't be made
+	 * (withoutErrorDetails())
 	 *
 	 * @param options The universe, from the first client's EditorJoinOptions
 	 */
 	async onCreate(options: unknown): Promise<void>
 	{
-		const { universeId } = roomOptions.parse(options);
+		await withoutErrorDetails('Creating an editor room', ErrorCode.MATCHMAKE_UNHANDLED, () => this.create(options));
+	}
+
+	/**
+	 * Loads the editors' chat and starts writing its new messages, and starts following changes to
+	 * sessions, roles and the universe, and deleted accounts, whose names the chat drops. Fails for
+	 * options that aren't EditorJoinOptions or a universe that doesn't exist, which turns away the client
+	 * asking for it, with the same error (unexplainedRoomError()) for each, which isn't logged
+	 *
+	 * @param options The universe, from the first client's EditorJoinOptions
+	 */
+	private async create(options: unknown): Promise<void>
+	{
+		const parsed = roomOptions.safeParse(options);
+
+		if (!parsed.success)
+		{
+			throw unexplainedRoomError();
+		}
+
+		const { universeId } = parsed.data;
 
 		editorRooms.claim(universeId, this);
 
 		if (!await findUniverse(universeId))
 		{
-			throw new Error(`Universe ${universeId} has no editor to join`);
+			throw unexplainedRoomError();
 		}
 
 		this.universeId = universeId;
@@ -374,8 +395,21 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	}
 
 	/**
-	 * Admits only clients whose browser is logged in as a player who may open the universe's editor, and
-	 * loads how far that player has read the chat
+	 * Refuses a browser that isn't logged in before matchmaking makes an editor room for it
+	 * (isLoggedInToMatchmake())
+	 *
+	 * @param _token The client's auth token, unused: the session is in a cookie
+	 * @param _options Join options from the client
+	 * @param context The matchmaking request's headers, which carry the session cookie
+	 * @return Whether the browser is logged in
+	 */
+	static async onAuth(_token: string, _options: unknown, context: AuthContext): Promise<boolean>
+	{
+		return(isLoggedInToMatchmake(context));
+	}
+
+	/**
+	 * Admits a client (admit()), telling it nothing of why that failed (withoutErrorDetails())
 	 *
 	 * @param client The joining client
 	 * @param _options Join options from the client (already used to pick this room)
@@ -383,6 +417,19 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 * @return The client's identity, stored as client.auth; false to turn the client away
 	 */
 	async onAuth(client: Client, _options: unknown, context: AuthContext): Promise<EditorIdentity | false>
+	{
+		return(withoutErrorDetails('Admitting a window to an editor room', ErrorCode.APPLICATION_ERROR, () => this.admit(client, context)));
+	}
+
+	/**
+	 * Admits only clients whose browser is logged in as a player who may open the universe's editor, and
+	 * loads how far that player has read the chat
+	 *
+	 * @param client The joining client
+	 * @param context The connection's request headers, which carry the session cookie
+	 * @return The client's identity, stored as client.auth; false to turn the client away
+	 */
+	private async admit(client: Client, context: AuthContext): Promise<EditorIdentity | false>
 	{
 		const cookieHeader = context.headers.get('cookie');
 
@@ -434,13 +481,23 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	}
 
 	/**
+	 * Lets a client in (join()), telling it nothing of why that failed (withoutErrorDetails())
+	 *
+	 * @param client The joining client
+	 */
+	async onJoin(client: EditorClient): Promise<void>
+	{
+		await withoutErrorDetails('Joining an editor room', ErrorCode.APPLICATION_ERROR, () => this.join(client));
+	}
+
+	/**
 	 * Lists the window, and its player with the role just found when they have no other window here,
 	 * then sends it the chat, with how far its player has read it. A window that may have missed a
 	 * change while it joined looks itself up again first (recheckJoining())
 	 *
 	 * @param client The joining client
 	 */
-	async onJoin(client: EditorClient): Promise<void>
+	private async join(client: EditorClient): Promise<void>
 	{
 		await this.recheckJoining(client);
 

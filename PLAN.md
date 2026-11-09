@@ -501,6 +501,15 @@ Needed before universes are open to the public.
 - Walls as a layer of their own, so a cell holds a ground tile and a wall over it, rather than walls drawn over the area's default tile
 - Tall walls with a front face: blob frames 32x64 drawn over the row south of the wall, and over players standing there
 - Exporting and importing a universe's translations (JSON or XLIFF), and a translation service such as Weblate for the engine's catalogs
+- Right-to-left languages (Arabic, Hebrew, Persian, Urdu), before the first such translation ships. Text in them already displays and saves; the pages' layout doesn't follow them yet:
+	- `startLocalization()` (`client/src/localization.ts`) sets `<html lang>` but not `dir`: set `dir="rtl"` from the locale's direction (`Intl.Locale`'s text info, with a list of right-to-left scripts where browsers lack it), and in `public/remembered-language.js` too, so a page hidden while it's translated doesn't flip once shown
+	- About 50 rules in the SCSS use physical left and right (`margin-left`, `padding-right`, `left:`, `text-align: left`, `border-left`, four-value `margin` and `padding`, `background-position`, `to right` gradients): change them to logical properties (`margin-inline-start`, `inset-inline-start`, `text-align: start` and so on). The editor's chat, save bar and tab fades in `edit.scss` are the largest part
+	- `client/src/ui/scrollingTabs.ts` works out its arrows from `scrollLeft`, which is 0 at the start and negative toward the end in a right-to-left page
+	- The editor's tab list (`EditorScreen.ts`) moves to the next tab with the Right arrow; in a right-to-left page it is the Left arrow. The area editor's arrow keys move over the map, which doesn't mirror, so they stay
+	- Icons that point the way text reads (`ph:arrow-left`, `ph:arrow-right`, `ph:caret-left`, `ph:caret-right`, `ph:paper-plane-right`, `ph:arrow-u-up-left`) mirror in a right-to-left page, perhaps by a class the icons plugin in `client/vite.config.ts` adds to them
+	- Text players write (names, chat) shown in a page of the other direction, with `dir="auto"` or `unicode-bidi: plaintext`, so punctuation and numbers at its ends sit on the right side
+	- A right-to-left pseudo-language (`ar-XB`, as browsers have, beside `en-XA`) to check every page with
+	- Whether to allow the left-to-right, right-to-left and Arabic letter marks (U+200E, U+200F, U+061C) in `DISALLOWED_TEXT_CHARACTERS`, which writers use to place punctuation in mixed text; only the overrides and isolates can make text read in a misleading order
 - Playing a universe's draft, so creators, builders and beta testers can test it before it is applied: choosing it, and which characters play it without changing their progress in the live version
 
 ---
