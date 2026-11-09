@@ -15,7 +15,7 @@
  * can only name saved things in a save from the editor, so the import makes those changes once the
  * changes before them are saved (PendingChange)
  */
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
@@ -35,6 +35,7 @@ import { describeInvalidPayload } from '../rooms/payloads.js';
 import { ChangeRefusal } from './editorChangeContext.js';
 import type { PendingChange } from './editorChanges.js';
 import { editorChange } from './editorPayloads.js';
+import { tileGraphicMessages } from './editorTileGraphics.js';
 import { ImportProblem, importMessages, type ImportFile, type ImportManifest } from './universeImportFile.js';
 
 /**
@@ -785,10 +786,13 @@ class ImportPlanner
 	}
 
 	/**
-	 * Uploads the file's tilesets the draft doesn't have
+	 * Uploads the file's tilesets the draft doesn't have, refusing the file when the draft has no room for
+	 * them
 	 */
 	private planGraphics(): void
 	{
+		const uploads: { graphic: NonNullable<ImportManifest['tileGraphics']>[number]; image: Buffer }[] = [];
+
 		for (const graphic of (this.manifest.tileGraphics ?? []))
 		{
 			const matched = this.matchers.tileGraphics.take(graphic.id);
@@ -807,6 +811,20 @@ class ImportPlanner
 				continue;
 			}
 
+			uploads.push({ graphic, image });
+		}
+
+		// The save uploads before it deletes the draft's tilesets the file doesn't have, so every one the
+		// draft has counts towards the limit, as the save's transaction counts them
+		if ((this.target.tileGraphics.length + uploads.length) > MAX_UPLOADED_TILE_GRAPHICS)
+		{
+			throw new ImportProblem(tileGraphicMessages.limit, {
+				max: MAX_UPLOADED_TILE_GRAPHICS
+			});
+		}
+
+		for (const { graphic, image } of uploads)
+		{
 			const ref = this.newRef('graphic');
 
 			this.add({

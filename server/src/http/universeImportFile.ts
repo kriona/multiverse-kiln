@@ -5,7 +5,7 @@
  * validators a save's changes go through (editorChange in editorPayloads.ts), as the import makes its
  * changes from them
  */
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues } from '@multiverse-kiln/shared';
 import { z } from 'zod';
 
 import { readZip, ZipError } from '../archives/zip.js';
@@ -143,7 +143,8 @@ const exportedLiveIds = z.object({
 const exportedOptions = z.array(exportedOption);
 
 /**
- * The archive's uploaded tilesets and tiles, an ExportedTilesets
+ * The archive's uploaded tilesets and tiles, an ExportedTilesets. An export is of one version, which holds
+ * at most MAX_UPLOADED_TILE_GRAPHICS tilesets
  */
 const exportedTilesets = z.object({
 	tileGraphics: z.array(z.object({
@@ -152,7 +153,7 @@ const exportedTilesets = z.object({
 		format: z.enum(TILE_GRAPHIC_FORMATS),
 		drawOrder: z.number().int().nullable(),
 		file: z.string().max(200).nullable()
-	})),
+	})).max(MAX_UPLOADED_TILE_GRAPHICS),
 	tiles: exportedOptions
 });
 
@@ -348,8 +349,23 @@ export async function readImportFile(archive: Buffer, ruleset: string): Promise<
 		manifest.liveIds = checked(exportedLiveIds, parseJson(files, UNIVERSE_EXPORT_LIVE_IDS), UNIVERSE_EXPORT_LIVE_IDS);
 	}
 
+	// Each tileset has an image file of its own, so one image can't be uploaded as many tilesets
+	const graphicFiles = new Set<string>();
+
 	for (const graphic of (manifest.tileGraphics ?? []))
 	{
+		if (graphic.file !== null)
+		{
+			if (graphicFiles.has(graphic.file))
+			{
+				throw new ImportProblem(importMessages.notAnExport, {
+					problem: `${UNIVERSE_EXPORT_TILESETS} names ${graphic.file} for more than one tileset`
+				});
+			}
+
+			graphicFiles.add(graphic.file);
+		}
+
 		const image = ((graphic.file === null) ? undefined : files.get(graphic.file));
 
 		if (image)

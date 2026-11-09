@@ -7,13 +7,34 @@
 import { randomUUID } from 'crypto';
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS, TILE_GRAPHIC_SIZES, type NewRef, type TileGraphicListPayload, type TileGraphicUploadRequest } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, MAX_TILE_GRAPHIC_BYTES, MAX_UPLOADED_TILE_GRAPHICS, TILE_GRAPHIC_SIZES, type NewRef, type TileGraphicListPayload, type TileGraphicUploadRequest } from '@multiverse-kiln/shared';
 
 import { countTileGraphics, createTileGraphic, deleteTileGraphic, listTileGraphics, tileGraphicStorageKey } from '../db/tileGraphicRepo.js';
 import { prepareTileSheet } from '../images/tileSheets.js';
 import { putObject } from '../storage/objectStorage.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { ChangeRefusal, recordRef, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
+
+/**
+ * Why tilesets weren't uploaded (see shared/src/localization.ts)
+ */
+export const tileGraphicMessages = defineMessages({
+	limit: {
+		id: 'error.tileGraphicLimit',
+		defaultMessage: 'A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}.',
+		description: 'Why a tileset wasn\'t uploaded, or a file couldn\'t be imported into a universe\'s draft: the universe would have more uploaded tilesets than allowed; {max} is the most it can have'
+	}
+});
+
+/**
+ * Refuses a save holding an upload the universe has no room for
+ */
+export function refuseTileGraphicLimit(): never
+{
+	refuse(409, tileGraphicMessages.limit, {
+		max: MAX_UPLOADED_TILE_GRAPHICS
+	});
+}
 
 /**
  * Adds the tile graphic route to a universe's router
@@ -124,13 +145,7 @@ export async function uploadTileGraphicChange(context: ChangeContext, ref: NewRe
 
 	if (await countTileGraphics(version, transaction) >= MAX_UPLOADED_TILE_GRAPHICS)
 	{
-		refuse(409, {
-			id: 'error.tileGraphicLimit',
-			defaultMessage: 'A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}.',
-			description: 'Why a tileset wasn\'t uploaded: the universe has as many uploaded tilesets as allowed'
-		}, {
-			max: MAX_UPLOADED_TILE_GRAPHICS
-		});
+		refuseTileGraphicLimit();
 	}
 
 	await createTileGraphic(prepared.graphicId, {

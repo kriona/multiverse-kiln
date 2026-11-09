@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
+import { MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
 
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
@@ -134,6 +134,24 @@ describe('Saving editor changes', () =>
 		assert.strictEqual(refused.status, 404);
 		assert.deepStrictEqual(graphics.map((graphic) => graphic.name), ['Moss']);
 		assert.strictEqual(refused.body.ids, undefined);
+	});
+
+	it('refuses a save uploading more tilesets than a universe may have, before preparing any', async () =>
+	{
+		const universeId = await createUniverse(ada);
+
+		// Not PNGs, so preparing any of them would refuse the save at its first upload instead
+		const notPng = Buffer.from('not a png').toString('base64');
+		const uploads = Array.from({ length: (MAX_UPLOADED_TILE_GRAPHICS + 1) }, (unused, index) => ({
+			kind: 'uploadTileGraphic',
+			ref: `new:graphic${index}`,
+			upload: { name: `Graphic ${index}`, format: 'dualGrid', drawOrder: 35, image: notPng, rightsConfirmed: true }
+		}));
+		const refused = await saveChanges(ada, universeId, uploads);
+
+		assert.strictEqual(refused.status, 409);
+		assert.strictEqual(refused.body.error.id, 'error.tileGraphicLimit');
+		assert.strictEqual(refused.body.changeIndex, MAX_UPLOADED_TILE_GRAPHICS);
 	});
 
 	it('deletes a tileset\'s image only once the save is saved', async () =>

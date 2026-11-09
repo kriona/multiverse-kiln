@@ -9,7 +9,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, mayMakeChange, maySaveInStage, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, MAX_UPLOADED_TILE_GRAPHICS, mayMakeChange, maySaveInStage, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
@@ -39,7 +39,7 @@ import { createRaceChange, removeRaceChange, saveRaceChange } from './editorRace
 import { createThemeChange, removeThemeChange, saveThemeChange } from './editorThemes.js';
 import { isUniverseTextChange, saveNoTranslationChange, saveTranslationChange, saveTranslatorNoteChange, settleUniverseText, writeSavedTranslations } from './editorTranslations.js';
 import { applyDraftChange, discardDraftChange, startDraftChange } from './editorDrafts.js';
-import { deleteTileGraphicChange, prepareUpload, uploadTileGraphicChange } from './editorTileGraphics.js';
+import { deleteTileGraphicChange, prepareUpload, refuseTileGraphicLimit, uploadTileGraphicChange } from './editorTileGraphics.js';
 import { errorMessages, type Refusal } from './errors.js';
 
 /**
@@ -124,6 +124,34 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
 	};
 
 	response.status(status).json(payload);
+}
+
+/**
+ * Finds the first upload in a save past the most tilesets a universe may have
+ *
+ * @param changes The save's changes
+ * @return The upload's index, or -1 when the save holds no more uploads than that
+ */
+function uploadPastLimit(changes: readonly PendingChange[]): number
+{
+	let uploads = 0;
+
+	for (const [index, change] of changes.entries())
+	{
+		if ((typeof change === 'function') || (change.kind !== 'uploadTileGraphic'))
+		{
+			continue;
+		}
+
+		uploads++;
+
+		if (uploads > MAX_UPLOADED_TILE_GRAPHICS)
+		{
+			return(index);
+		}
+	}
+
+	return(-1);
 }
 
 /**
@@ -216,6 +244,15 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 
 	try
 	{
+		const pastLimit = uploadPastLimit(changes);
+
+		// No save can commit more uploads than a universe may have, so none are prepared
+		if (pastLimit >= 0)
+		{
+			current = pastLimit;
+			refuseTileGraphicLimit();
+		}
+
 		for (; current < changes.length; current++)
 		{
 			const change = changes[current];

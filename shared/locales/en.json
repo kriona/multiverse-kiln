@@ -4829,7 +4829,7 @@
 	},
 	"error.tileGraphicLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# uploaded tileset} other {# uploaded tilesets}}.",
-		"description": "Why a tileset wasn't uploaded: the universe has as many uploaded tilesets as allowed"
+		"description": "Why a tileset wasn't uploaded, or a file couldn't be imported into a universe's draft: the universe would have more uploaded tilesets than allowed; {max} is the most it can have"
 	},
 	"error.tileGraphicNotPng": {
 		"defaultMessage": "The file isn't a PNG image.",

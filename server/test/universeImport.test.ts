@@ -1,7 +1,9 @@
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { randomUUID } from 'crypto';
+import { EDITOR_UNIVERSES_PATH, emptyMoney, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
+import { createTileGraphic, tileGraphicStorageKey } from '../src/db/tileGraphicRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createArea, createUniverse, logIn, saveAll, send, solidPng, type Editor } from './editorRequests.js';
@@ -519,6 +521,59 @@ describe('importing a universe', () =>
 		assert.strictEqual(refused.status, 400);
 		assert.strictEqual(refused.body.error.id, 'error.importNotAnExport');
 		assert.deepStrictEqual((await draftOf(ada, otherId)).areas.map((area) => area.name), ['Lobby', 'Starting Area']);
+	});
+
+	it('refuses a file with more tilesets than a universe may have, or naming one image for two, before uploading any', async () =>
+	{
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const otherId = await createUniverse(ada, 'Otherhaven');
+		const [graphic] = contents.tilesets?.tileGraphics ?? [];
+
+		assert.ok(contents.tilesets && graphic);
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const tilesets = contents.tilesets;
+		const tooMany = await importArchive(ada, otherId, await archiveOf({
+			...contents,
+			tilesets: {
+				...tilesets,
+				tileGraphics: Array.from({ length: (MAX_UPLOADED_TILE_GRAPHICS + 1) }, (unused, index) => ({ ...graphic, id: randomUUID(), file: `tilesets/${index}.png` }))
+			}
+		}), { preview: true });
+		const shared = await importArchive(ada, otherId, await archiveOf({
+			...contents,
+			tilesets: {
+				...tilesets,
+				tileGraphics: [graphic, { ...graphic, id: randomUUID() }]
+			}
+		}), { preview: true });
+
+		assert.strictEqual(tooMany.status, 400);
+		assert.strictEqual(tooMany.body.error.id, 'error.importNotAnExport');
+		assert.match(tooMany.body.error.values?.problem as string, /tilesets\.json/);
+		assert.strictEqual(shared.status, 400);
+		assert.match(shared.body.error.values?.problem as string, /names tilesets\/.+\.png for more than one tileset/);
+
+		// A draft with as many tilesets as it may have has no room for the file's
+		for (let index = 0; index < MAX_UPLOADED_TILE_GRAPHICS; index++)
+		{
+			const graphicId = randomUUID();
+
+			await createTileGraphic(graphicId, {
+				universeId: otherId,
+				draft: true,
+				name: `Graphic ${index}`,
+				format: 'dualGrid',
+				drawOrder: 35,
+				storageKey: tileGraphicStorageKey(otherId, graphicId),
+				uploadedBy: ada.playerId
+			});
+		}
+
+		const full = await importArchive(ada, otherId, await exportArchive(ada, kilnhavenId), { preview: true });
+
+		assert.strictEqual(full.status, 400);
+		assert.strictEqual(full.body.error.id, 'error.tileGraphicLimit');
 	});
 
 	it('refuses a file whose rows don\'t cover exactly their area\'s bounds, or that is missing a file', async () =>
