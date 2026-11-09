@@ -19,6 +19,12 @@ import { inVersion, liveVersion, type UniverseVersion } from './universeVersions
 export const GROUND_LAYER = 0;
 
 /**
+ * Most chunks stored or deleted in one statement, keeping each upsert's thousand-cell arrays to under a
+ * megabyte; the largest area (MAX_AREA_SIDE square) takes two
+ */
+const CHUNK_BATCH_SIZE = 128;
+
+/**
  * An area as the rest of the server sees it
  */
 export interface AreaRecord
@@ -594,6 +600,7 @@ export async function editCells(areaId: string, changes: readonly CellChange[], 
 		));
 	const stored = new Map(storedRows.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 	const changed = applyCellChanges(stored, changes);
+	const toStore: AreaChunk[] = [];
 
 	for (const chunk of touched)
 	{
@@ -601,9 +608,15 @@ export async function editCells(areaId: string, changes: readonly CellChange[], 
 
 		if (cells)
 		{
-			await storeGroundChunk(areaId, chunk.chunkColumn, chunk.chunkRow, cells, executor);
+			toStore.push({
+				chunkColumn: chunk.chunkColumn,
+				chunkRow: chunk.chunkRow,
+				cells
+			});
 		}
 	}
+
+	await storeGroundChunks(areaId, toStore, executor);
 
 	return('edited');
 }
@@ -694,10 +707,7 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 		return({ resized: false, discardedCells, discardedLinks });
 	}
 
-	for (const chunk of clipped)
-	{
-		await storeGroundChunk(areaId, chunk.chunkColumn, chunk.chunkRow, chunk.cells, executor);
-	}
+	await storeGroundChunks(areaId, clipped, executor);
 
 	await executor
 		.delete(areaLinks)
@@ -1012,30 +1022,54 @@ export async function isTileInUse(version: UniverseVersion, tileId: number, exec
 }
 
 /**
- * Stores a chunk of an area's ground, or deletes it when every cell is the default tile
+ * Stores chunks of an area's ground, deleting those whose every cell is the default tile, a batch of
+ * chunks to a statement
  *
  * @param areaId The area's ID
- * @param chunkColumn The chunk's column
- * @param chunkRow The chunk's row
- * @param cells The chunk's cells
+ * @param chunks The chunks, each at most once
  * @param executor The database, or a transaction
  */
-async function storeGroundChunk(areaId: string, chunkColumn: number, chunkRow: number, cells: number[], executor: Executor): Promise<void>
+async function storeGroundChunks(areaId: string, chunks: readonly AreaChunk[], executor: Executor): Promise<void>
 {
-	if (!isDefaultChunk(cells))
+	const toSave = chunks.filter((chunk) => !isDefaultChunk(chunk.cells));
+	const toDelete = chunks.filter((chunk) => isDefaultChunk(chunk.cells));
+
+	for (let start = 0; start < toSave.length; start += CHUNK_BATCH_SIZE)
 	{
-		await saveGroundChunk(areaId, chunkColumn, chunkRow, cells, executor);
-		return;
+		const batch = toSave.slice(start, start + CHUNK_BATCH_SIZE);
+
+		await executor
+			.insert(areaChunks)
+			.values(batch.map((chunk) => ({
+				areaId,
+				layer: GROUND_LAYER,
+				chunkColumn: chunk.chunkColumn,
+				chunkRow: chunk.chunkRow,
+				cells: chunk.cells
+			})))
+			.onConflictDoUpdate({
+				target: [
+					areaChunks.areaId,
+					areaChunks.layer,
+					areaChunks.chunkColumn,
+					areaChunks.chunkRow
+				],
+				set: { cells: sql`excluded.cells` }
+			});
 	}
 
-	await executor
-		.delete(areaChunks)
-		.where(and(
-			eq(areaChunks.areaId, areaId),
-			eq(areaChunks.layer, GROUND_LAYER),
-			eq(areaChunks.chunkColumn, chunkColumn),
-			eq(areaChunks.chunkRow, chunkRow)
-		));
+	for (let start = 0; start < toDelete.length; start += CHUNK_BATCH_SIZE)
+	{
+		const batch = toDelete.slice(start, start + CHUNK_BATCH_SIZE);
+
+		await executor
+			.delete(areaChunks)
+			.where(and(
+				eq(areaChunks.areaId, areaId),
+				eq(areaChunks.layer, GROUND_LAYER),
+				sql`(${areaChunks.chunkColumn}, ${areaChunks.chunkRow}) IN (${sql.join(batch.map((chunk) => sql`(${chunk.chunkColumn}, ${chunk.chunkRow})`), sql`, `)})`
+			));
+	}
 }
 
 /**

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
@@ -199,6 +199,33 @@ describe('areaRepo', () =>
 			layout = await loadWholeArea(areaId);
 
 			assert.deepStrictEqual([...(layout?.tiles.chunks.keys() ?? [])], [chunkKey(-1, 0)]);
+		});
+
+		it('stores and stops storing more chunks than one statement holds', async () =>
+		{
+			// The largest area, 16 by 16 chunks, painting the first cell of each
+			const side = (MAX_AREA_SIDE / CHUNK_SIZE);
+			const areaId = await addArea(await addUniverse(), 'Field', { bounds: { minColumn: 0, minRow: 0, maxColumn: ((side * CHUNK_SIZE) - 1), maxRow: ((side * CHUNK_SIZE) - 1) } });
+			const forest = await defaultTileId('forest');
+			const water = await defaultTileId('water');
+			const range = {
+				minChunkColumn: 0,
+				minChunkRow: 0,
+				maxChunkColumn: (side - 1),
+				maxChunkRow: (side - 1)
+			};
+			const firstCells = Array.from({ length: (side * side) }, (_, index) => [((index % side) * CHUNK_SIZE), (Math.floor(index / side) * CHUNK_SIZE)]);
+
+			await inTransaction((transaction) => editCells(areaId, firstCells.map(([column, row]) => [column, row, forest]), transaction));
+			assert.strictEqual((await loadChunks(areaId, range)).length, (side * side));
+
+			// The first 14 rows of chunks go back to the default tile, and the last 2 turn to water
+			await inTransaction((transaction) => editCells(areaId, firstCells.map(([column, row]) => [column, row, ((row < (14 * CHUNK_SIZE)) ? DEFAULT_TILE_CELL : water)]), transaction));
+
+			const chunks = await loadChunks(areaId, range);
+
+			assert.strictEqual(chunks.length, (2 * side));
+			assert.ok(chunks.every((chunk) => ((chunk.chunkRow >= 14) && (chunk.cells[cellIndexInChunk(0, 0)] === water))));
 		});
 
 		it('changes nothing when a cell is outside the bounds', async () =>
