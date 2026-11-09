@@ -133,9 +133,9 @@ const messages = defineMessages({
  */
 export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: readonly ExportedTile[], areas: readonly LegendArea[], translator: Translator): string
 {
-	const tileNames = new Map(tiles.map((tile) => [tile.id, tileName(tile, ruleset, translator)]));
+	const tileNames = new Map(tiles.map((tile) => [tile.id, markdownText(tileName(tile, ruleset, translator))]));
 	const lines = [
-		`# ${escape(translator.format(messages.title, { universe: universeName }))}`,
+		`# ${escape(translator.format(messages.title, { universe: markdownText(universeName) }))}`,
 		'',
 		translator.format(messages.intro),
 		'',
@@ -164,7 +164,7 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 		row(['---', '---', '---', '---']),
 		...areas.map((area) => row([
 			`\`${fileName(area.file)}\``,
-			area.name,
+			markdownText(area.name),
 			(tileNames.get(area.defaultTileId) ?? String(area.defaultTileId)),
 			translator.format(messages.extent, { ...area.bounds })
 		]))
@@ -224,4 +224,28 @@ function row(cells: readonly string[]): string
 function escape(text: string): string
 {
 	return(text.replace(/\|/g, '\\|'));
+}
+
+/**
+ * The entities that stand for the characters that would start HTML or an entity
+ */
+const HTML_ENTITIES: Readonly<Record<string, string>> = {
+	'&': '&amp;',
+	'<': '&lt;',
+	'>': '&gt;'
+};
+
+/**
+ * Text a player wrote, such as an area's name, that Markdown shows as it is rather than as markup: HTML
+ * tags and entities, links, images, emphasis, code spans and math. A viewer that renders the legend would
+ * otherwise show another editor's markup as the engine's own text, or load the images it names. The
+ * vertical bar is left to escape(), which every row and the title go through, and backslashes are
+ * escaped here first so a name can't escape the bar escape() puts after it
+ *
+ * @param text The text
+ * @return The text, escaped
+ */
+function markdownText(text: string): string
+{
+	return(text.replace(/[\\`*_[\]~#$&<>]/g, (character) => (HTML_ENTITIES[character] ?? `\\${character}`)));
 }
