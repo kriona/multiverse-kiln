@@ -2,9 +2,9 @@
  * Areas, their cells and their links: the only module that reads or writes the areas, area_chunks and
  * area_links tables
  */
-import { and, asc, between, count, eq, gt, gte, inArray, lt, lte, ne, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, between, count, eq, gt, inArray, lt, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { ancestorAreas, chunkCoordinate, chunkKey, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { ancestorAreas, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/areaEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
@@ -659,7 +659,23 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 		return(undefined);
 	}
 
-	// Chunks touching an edge of the new bounds, or beyond it; every other chunk lies inside
+	const firstChunkColumn = chunkCoordinate(bounds.minColumn);
+	const lastChunkColumn = chunkCoordinate(bounds.maxColumn);
+	const firstChunkRow = chunkCoordinate(bounds.minRow);
+	const lastChunkRow = chunkCoordinate(bounds.maxRow);
+	const outsideChunkCondition = and(
+		eq(areaChunks.areaId, areaId),
+		eq(areaChunks.layer, GROUND_LAYER),
+		or(
+			lt(areaChunks.chunkColumn, firstChunkColumn),
+			gt(areaChunks.chunkColumn, lastChunkColumn),
+			lt(areaChunks.chunkRow, firstChunkRow),
+			gt(areaChunks.chunkRow, lastChunkRow)
+		)
+	);
+
+	// Chunks on an edge of the new bounds are clipped here; those wholly outside are counted and deleted
+	// in the database without loading their cells
 	const edgeChunks = await executor
 		.select({
 			chunkColumn: areaChunks.chunkColumn,
@@ -670,11 +686,13 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 		.where(and(
 			eq(areaChunks.areaId, areaId),
 			eq(areaChunks.layer, GROUND_LAYER),
+			between(areaChunks.chunkColumn, firstChunkColumn, lastChunkColumn),
+			between(areaChunks.chunkRow, firstChunkRow, lastChunkRow),
 			or(
-				lte(areaChunks.chunkColumn, chunkCoordinate(bounds.minColumn)),
-				gte(areaChunks.chunkColumn, chunkCoordinate(bounds.maxColumn)),
-				lte(areaChunks.chunkRow, chunkCoordinate(bounds.minRow)),
-				gte(areaChunks.chunkRow, chunkCoordinate(bounds.maxRow))
+				eq(areaChunks.chunkColumn, firstChunkColumn),
+				eq(areaChunks.chunkColumn, lastChunkColumn),
+				eq(areaChunks.chunkRow, firstChunkRow),
+				eq(areaChunks.chunkRow, lastChunkRow)
 			)
 		));
 	const clipped = edgeChunks
@@ -684,7 +702,13 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 			...clipChunk(chunk.chunkColumn, chunk.chunkRow, chunk.cells, bounds)
 		}))
 		.filter((chunk) => (chunk.discarded > 0));
-	const discardedCells = clipped.reduce((total, chunk) => (total + chunk.discarded), 0);
+	const [{ total: outsideCells }] = await executor
+		.select({
+			total: sql<number>`coalesce(sum(cardinality(array_remove(${areaChunks.cells}, ${DEFAULT_TILE_CELL}::integer))), 0)`.mapWith(Number)
+		})
+		.from(areaChunks)
+		.where(outsideChunkCondition);
+	const discardedCells = clipped.reduce((total, chunk) => (total + chunk.discarded), outsideCells);
 	const discardedLinkCondition = or(
 		and(
 			eq(areaLinks.areaId, areaId),
@@ -708,6 +732,10 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 	}
 
 	await storeGroundChunks(areaId, clipped, executor);
+
+	await executor
+		.delete(areaChunks)
+		.where(outsideChunkCondition);
 
 	await executor
 		.delete(areaLinks)

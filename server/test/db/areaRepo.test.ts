@@ -318,6 +318,24 @@ describe('areaRepo', () =>
 			assert.strictEqual(tileIdAt(layout.tiles, 40, 0), layout.tiles.defaultTileId);
 			assert.strictEqual(tileIdAt(layout.tiles, 0, 0), forest);
 		});
+
+		it('clips the chunks on the new edge and deletes the chunks wholly outside it', async () =>
+		{
+			const areaId = await addArea(await addUniverse(), 'Field', { bounds: { minColumn: -64, minRow: -64, maxColumn: 127, maxRow: 127 } });
+			const forest = await defaultTileId('forest');
+			const shrunk = { minColumn: 0, minRow: 0, maxColumn: 39, maxRow: 39 };
+
+			await inTransaction((transaction) => editCells(areaId, [[10, 10, forest], [35, 5, forest], [45, 5, forest], [100, 100, forest], [-10, 0, VOID_CELL]], transaction));
+
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, shrunk, true, transaction)), { resized: true, discardedCells: 3, discardedLinks: 0 });
+
+			const chunks = await loadChunks(areaId, { minChunkColumn: -2, minChunkRow: -2, maxChunkColumn: 3, maxChunkRow: 3 });
+			const edge = chunks.find((chunk) => ((chunk.chunkColumn === 1) && (chunk.chunkRow === 0)));
+
+			assert.deepStrictEqual(chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)).sort(), [chunkKey(0, 0), chunkKey(1, 0)].sort());
+			assert.strictEqual(edge?.cells[cellIndexInChunk(35, 5)], forest);
+			assert.strictEqual(edge?.cells[cellIndexInChunk(45, 5)], DEFAULT_TILE_CELL);
+		});
 	});
 
 	describe('area links', () =>
