@@ -477,20 +477,45 @@ export async function leaveGroup(groupId: string, characterId: string, executor:
  */
 export async function saveMemberPositions(groupId: string, positions: readonly MemberPosition[], executor: Executor = db): Promise<void>
 {
-	for (const { characterId, areaId, column, row } of positions)
+	await updateMemberPositions(positions, eq(groupMembers.groupId, groupId), executor);
+}
+
+/**
+ * Writes group members' places in one statement, whatever their number. A character given more than
+ * one place gets the last
+ *
+ * @param positions Where each one is now
+ * @param condition Which members may be changed, on top of matching a character, or undefined for any
+ * @param executor The database, or a transaction
+ */
+async function updateMemberPositions(positions: readonly MemberPosition[], condition: SQL | undefined, executor: Executor): Promise<void>
+{
+	const latest = [...new Map(positions.map((position) => [position.characterId, position])).values()];
+
+	if (latest.length === 0)
 	{
-		await executor
-			.update(groupMembers)
-			.set({
-				areaId,
-				column,
-				row
-			})
-			.where(and(
-				eq(groupMembers.groupId, groupId),
-				eq(groupMembers.characterId, characterId)
-			));
+		return;
 	}
+
+	const moved = sql`unnest(
+		${sql.param(latest.map((position) => position.characterId))}::uuid[],
+		${sql.param(latest.map((position) => position.areaId))}::uuid[],
+		${sql.param(latest.map((position) => position.column))}::integer[],
+		${sql.param(latest.map((position) => position.row))}::integer[]
+	) AS moved (character_id, area_id, area_column, area_row)`;
+
+	await executor
+		.update(groupMembers)
+		.set({
+			areaId: sql`moved.area_id`,
+			column: sql`moved.area_column`,
+			row: sql`moved.area_row`
+		})
+		.from(moved)
+		.where(and(
+			eq(groupMembers.characterId, sql`moved.character_id`),
+			condition
+		));
 }
 
 /**
@@ -712,17 +737,7 @@ export async function listMembersInAreas(areaIds: readonly string[], executor: E
  */
 export async function moveMembers(positions: readonly MemberPosition[], executor: Executor = db): Promise<void>
 {
-	for (const { characterId, areaId, column, row } of positions)
-	{
-		await executor
-			.update(groupMembers)
-			.set({
-				areaId,
-				column,
-				row
-			})
-			.where(eq(groupMembers.characterId, characterId));
-	}
+	await updateMemberPositions(positions, undefined, executor);
 }
 
 /**

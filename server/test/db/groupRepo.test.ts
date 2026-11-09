@@ -6,7 +6,7 @@ import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, ma
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { db } from '../../src/db/client.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
-import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
+import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, moveMembers, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
 import { addPlayer } from '../players.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -68,6 +68,43 @@ describe('groupRepo', () =>
 			{ characterId: memberId, name: 'Member', playable: true, position: { areaId: universe.houseAreaId, column: 3, row: 4 } }
 		]);
 		assert.deepStrictEqual((await listMembersOfGroups([groupId])).get(groupId)?.map(({ characterId }) => characterId).sort(), [anchorId, memberId].sort());
+	});
+
+	it('saves only its own members\' places, the last given for each', async () =>
+	{
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, universe.fieldAreaId, 'The Others');
+
+		await saveMemberPositions(groupId, [
+			{ characterId: anchorId, areaId: universe.fieldAreaId, column: 1, row: 2 },
+			{ characterId: memberId, areaId: universe.fieldAreaId, column: 5, row: 6 },
+			{ characterId: memberId, areaId: universe.houseAreaId, column: 3, row: 4 },
+			{ characterId: otherAnchorId, areaId: universe.houseAreaId, column: 7, row: 8 }
+		]);
+
+		assert.deepStrictEqual((await listGroupMembers(groupId)).map(({ characterId, position }) => ({ characterId, position })), [
+			{ characterId: anchorId, position: { areaId: universe.fieldAreaId, column: 1, row: 2 } },
+			{ characterId: memberId, position: { areaId: universe.houseAreaId, column: 3, row: 4 } }
+		]);
+		assert.strictEqual((await listGroupMembers(otherGroupId))[0]?.position, null);
+	});
+
+	it('moves members of every group at once', async () =>
+	{
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, universe.fieldAreaId, 'The Others');
+
+		await moveMembers([
+			{ characterId: memberId, areaId: universe.houseAreaId, column: 3, row: 4 },
+			{ characterId: otherAnchorId, areaId: universe.houseAreaId, column: 7, row: 8 }
+		]);
+		await moveMembers([]);
+
+		assert.deepStrictEqual((await listGroupMembers(groupId)).map(({ characterId, position }) => ({ characterId, position })), [
+			{ characterId: anchorId, position: null },
+			{ characterId: memberId, position: { areaId: universe.houseAreaId, column: 3, row: 4 } }
+		]);
+		assert.deepStrictEqual((await listGroupMembers(otherGroupId))[0]?.position, { areaId: universe.houseAreaId, column: 7, row: 8 });
 	});
 
 	it('marks a member given their last rites as not playable', async () =>
