@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
 
 import type { AreaConnection, AreaRoom } from '../network/serverConnection';
+import { sleepGameLoop, wakeGameLoop } from '../rendering/gameLoop';
 import { AREA_SCENE_KEY, AreaScene, type AreaSceneData } from '../scenes/AreaScene';
 import type { UniverseText } from './universeText';
 
@@ -64,14 +65,19 @@ export class AreaView
 			parent.append(this.game.canvas);
 		}
 
+		wakeGameLoop(this.game);
 		this.game.scene.start(AREA_SCENE_KEY, data);
 	}
 
 	/**
-	 * Stops drawing an area; whoever joined the room leaves it
+	 * Stops drawing an area, and the game's loop with it; whoever joined the room leaves it
 	 */
 	hide(): void
 	{
-		this.game?.scene.stop(AREA_SCENE_KEY);
+		if (this.game)
+		{
+			this.game.scene.stop(AREA_SCENE_KEY);
+			sleepGameLoop(this.game);
+		}
 	}
 }
