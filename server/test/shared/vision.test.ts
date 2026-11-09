@@ -240,6 +240,46 @@ describe('vision (shared)', () =>
 			assert.ok(visible.has(visionKey(-50, 0)));
 			assert.ok(!visible.has(visionKey(51, 0)));
 		});
+
+		it('leaves out the cells it is told to skip, and sees the rest as it would without them', () =>
+		{
+			const costs: Record<string, number> = {};
+
+			// A wall along column 2 with a doorway in row 0
+			for (let row = -10; row <= 10; row++)
+			{
+				if (row !== 0)
+				{
+					costs[visionKey(2, row)] = 100;
+				}
+			}
+
+			for (const [from, loops] of [[origin, false], [{ column: 48, row: 0 }, true]] as const)
+			{
+				const area = areaWith(costs, loops);
+				const skipped = new Set<string>();
+
+				// Skip every other cell, given as the cells inside the area
+				const skip = (column: number, row: number): boolean =>
+				{
+					assert.ok((column >= bounds.minColumn) && (column <= bounds.maxColumn), visionKey(column, row));
+
+					if (((column + row) % 2) === 0)
+					{
+						skipped.add(visionKey(column, row));
+
+						return(true);
+					}
+
+					return(false);
+				};
+				const all = visibleCells(from, 8, area);
+				const rest = visibleCells(from, 8, area, skip);
+
+				assert.ok(skipped.size > 0);
+				assert.deepStrictEqual(rest, new Set([...all].filter((key) => !skipped.has(key))));
+			}
+		});
 	});
 
 	describe('createVisionArea', () =>

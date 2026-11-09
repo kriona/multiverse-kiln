@@ -235,9 +235,11 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, area: V
  * @param from The character's cell
  * @param budget The character's vision budget (visionBudget)
  * @param area The area
+ * @param skip Which cells to leave out without looking at them, such as those a group has already seen,
+ * given the cell inside the area; none when undefined
  * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area
  */
-export function visibleCells(from: VisionCell, budget: number, area: VisionArea): Set<string>
+export function visibleCells(from: VisionCell, budget: number, area: VisionArea, skip?: (column: number, row: number) => boolean): Set<string>
 {
 	const visible = new Set<string>();
 	const reach = Math.floor(budget);
@@ -248,7 +250,8 @@ export function visibleCells(from: VisionCell, budget: number, area: VisionArea)
 		{
 			const cell = wrap({ column: from.column + columns, row: from.row + rows }, area);
 
-			if (isInBounds(area.bounds, cell.column, cell.row) && isSeen(from, columns, rows, budget, area))
+			// Looking is what costs, so a skipped cell is left out before it
+			if (isInBounds(area.bounds, cell.column, cell.row) && !(skip?.(cell.column, cell.row) ?? false) && isSeen(from, columns, rows, budget, area))
 			{
 				visible.add(visionKey(cell.column, cell.row));
 			}
