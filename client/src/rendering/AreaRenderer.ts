@@ -295,9 +295,7 @@ export class AreaRenderer
 
 		if (this.atlasFull)
 		{
-			// Starting over leaves room for the frames the view needs, whatever was drawn for views before
-			this.clearAtlas();
-			this.drawPieces(view);
+			this.startAtlasOver(view);
 		}
 
 		this.sendAtlas();
@@ -402,12 +400,7 @@ export class AreaRenderer
 
 		if (this.atlasFull)
 		{
-			this.clearAtlas();
-
-			if (this.lastView)
-			{
-				this.drawPieces(this.lastView);
-			}
+			this.startAtlasOver(this.lastView);
 		}
 
 		this.sendAtlas();
@@ -519,6 +512,28 @@ export class AreaRenderer
 				this.pieces.delete(key);
 			}
 		}
+	}
+
+	/**
+	 * Empties the atlas and draws the pieces of a view again, leaving room for the frames the view needs,
+	 * whatever was drawn for views before
+	 *
+	 * A view can need more frames than the atlas holds by itself. Those frames are left empty, and atlasFull
+	 * is cleared so the atlas starts over only once a piece drawn later wants a frame, rather than on every
+	 * update of the same view
+	 *
+	 * @param view The camera's view of the world, or undefined to only empty the atlas
+	 */
+	private startAtlasOver(view: Phaser.Geom.Rectangle | undefined): void
+	{
+		this.clearAtlas();
+
+		if (view)
+		{
+			this.drawPieces(view);
+		}
+
+		this.atlasFull = false;
 	}
 
 	/**
