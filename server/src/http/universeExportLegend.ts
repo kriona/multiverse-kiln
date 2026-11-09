@@ -135,7 +135,7 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 {
 	const tileNames = new Map(tiles.map((tile) => [tile.id, markdownText(tileName(tile, ruleset, translator))]));
 	const lines = [
-		`# ${escape(translator.format(messages.title, { universe: markdownText(universeName) }))}`,
+		`# ${translator.format(messages.title, { universe: markdownText(universeName) })}`,
 		'',
 		translator.format(messages.intro),
 		'',
@@ -150,23 +150,23 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 		'',
 		`## ${translator.format(messages.tilesHeading)}`,
 		'',
-		row([translator.format(messages.numberColumn), translator.format(messages.tileColumn), translator.format(messages.colorColumn)]),
+		row([cellText(translator.format(messages.numberColumn)), cellText(translator.format(messages.tileColumn)), cellText(translator.format(messages.colorColumn))]),
 		row(['---:', '---', '---']),
-		row([String(DEFAULT_TILE_CELL), translator.format(messages.defaultTile), '']),
-		row([String(VOID_CELL), translator.format(messages.voidCell), '']),
+		row([String(DEFAULT_TILE_CELL), cellText(translator.format(messages.defaultTile)), '']),
+		row([String(VOID_CELL), cellText(translator.format(messages.voidCell)), '']),
 		...[...tiles]
 			.sort((a, b) => (a.id - b.id))
 			.map((tile) => row([String(tile.id), (tileNames.get(tile.id) ?? ''), `#${tile.color.toString(16).toUpperCase().padStart(6, '0')}`])),
 		'',
 		`## ${translator.format(messages.areasHeading)}`,
 		'',
-		row([translator.format(messages.fileColumn), translator.format(messages.areaColumn), translator.format(messages.defaultTileColumn), translator.format(messages.sizeColumn)]),
+		row([cellText(translator.format(messages.fileColumn)), cellText(translator.format(messages.areaColumn)), cellText(translator.format(messages.defaultTileColumn)), cellText(translator.format(messages.sizeColumn))]),
 		row(['---', '---', '---', '---']),
 		...areas.map((area) => row([
 			`\`${fileName(area.file)}\``,
 			markdownText(area.name),
 			(tileNames.get(area.defaultTileId) ?? String(area.defaultTileId)),
-			translator.format(messages.extent, { ...area.bounds })
+			cellText(translator.format(messages.extent, { ...area.bounds }))
 		]))
 	];
 
@@ -207,23 +207,24 @@ function fileName(path: string): string
 /**
  * A row of a Markdown table
  *
- * @param cells The cells' text
+ * @param cells The cells, each already Markdown: text goes through cellText() or markdownText() first
  * @return The row
  */
 function row(cells: readonly string[]): string
 {
-	return(`| ${cells.map(escape).join(' | ')} |`);
+	return(`| ${cells.join(' | ')} |`);
 }
 
 /**
- * Text that Markdown shows as it is in a table: a vertical bar would end its cell
+ * The engine's own text, such as a message, as a table cell: a vertical bar would end the cell, and a
+ * backslash before one would undo its escape
  *
  * @param text The text
  * @return The text, escaped
  */
-function escape(text: string): string
+function cellText(text: string): string
 {
-	return(text.replace(/\|/g, '\\|'));
+	return(text.replace(/[\\|]/g, '\\$&'));
 }
 
 /**
@@ -238,14 +239,14 @@ const HTML_ENTITIES: Readonly<Record<string, string>> = {
 /**
  * Text a player wrote, such as an area's name, that Markdown shows as it is rather than as markup: HTML
  * tags and entities, links, images, emphasis, code spans and math. A viewer that renders the legend would
- * otherwise show another editor's markup as the engine's own text, or load the images it names. The
- * vertical bar is left to escape(), which every row and the title go through, and backslashes are
- * escaped here first so a name can't escape the bar escape() puts after it
+ * otherwise show another editor's markup as the engine's own text, or load the images it names. Vertical
+ * bars are escaped too, so the text can go in a table cell, and backslashes in the same pass, so a
+ * backslash in the text can't undo the escape of the character after it
  *
  * @param text The text
  * @return The text, escaped
  */
 function markdownText(text: string): string
 {
-	return(text.replace(/[\\`*_[\]~#$&<>]/g, (character) => (HTML_ENTITIES[character] ?? `\\${character}`)));
+	return(text.replace(/[\\`*_[\]~#$&<>|]/g, (character) => (HTML_ENTITIES[character] ?? `\\${character}`)));
 }

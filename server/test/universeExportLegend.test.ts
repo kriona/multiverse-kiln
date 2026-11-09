@@ -49,6 +49,7 @@ describe('The export\'s area legend', () =>
 	{
 		const lines = legendLines('a\\|b|c\\');
 
+		assert.strictEqual(lines[0], '# a\\\\\\|b\\|c\\\\: area cells');
 		assert.ok(lines.includes('| 7 | a\\\\\\|b\\|c\\\\ | #2A7A30 |'), lines.join('\n'));
 	});
 });
