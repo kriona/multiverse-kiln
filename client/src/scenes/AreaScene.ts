@@ -266,6 +266,12 @@ export class AreaScene extends Phaser.Scene
 	private fogKey = '';
 
 	/**
+	 * The cells each sight the fog was last drawn from sees, by the sight's key (see updateFog), so a sight
+	 * that hasn't changed isn't worked out again when another has
+	 */
+	private sightCells = new Map<string, Set<string>>();
+
+	/**
 	 * Counts the chunks received, so the fog is drawn again when the cells under it change
 	 */
 	private chunkRevision = 0;
@@ -300,6 +306,7 @@ export class AreaScene extends Phaser.Scene
 		this.fog = undefined;
 		this.paper = undefined;
 		this.fogKey = '';
+		this.sightCells = new Map();
 	}
 
 	/**
@@ -517,15 +524,23 @@ export class AreaScene extends Phaser.Scene
 		this.fogKey = key;
 
 		const visible = new Set<string>();
+		const sightCells = new Map<string, Set<string>>();
 
 		for (const sight of sights)
 		{
-			for (const cellKey of visibleCells(sight.cell, sight.budget, this.visionArea))
+			// What the fog key holds of the sight, and of the area it looks over
+			const sightKey = `${this.area.areaId};${this.chunkRevision};${sight.cell.column},${sight.cell.row},${Math.floor(sight.budget * 10)}`;
+			const cells = (sightCells.get(sightKey) ?? this.sightCells.get(sightKey) ?? visibleCells(sight.cell, sight.budget, this.visionArea));
+
+			sightCells.set(sightKey, cells);
+
+			for (const cellKey of cells)
 			{
 				visible.add(cellKey);
 			}
 		}
 
+		this.sightCells = sightCells;
 		this.drawFog(center, visible);
 	}
 
