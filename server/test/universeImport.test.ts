@@ -967,7 +967,9 @@ describe('importing a universe', () =>
 		}
 
 		// A file changed or added since keeps its signed origin
-		for (const replaced of [{ [UNIVERSE_EXPORT_AREA_LEGEND]: '# Edited' }, { 'notes.txt': 'Added' }])
+		const replacements: Record<string, string>[] = [{ [UNIVERSE_EXPORT_AREA_LEGEND]: '# Edited' }, { 'notes.txt': 'Added' }];
+
+		for (const replaced of replacements)
 		{
 			const changed = await preview(await archiveWith(archive, replaced));
 

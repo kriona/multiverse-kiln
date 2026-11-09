@@ -431,7 +431,7 @@ describe('World editor API', () =>
 
 		it('refuses a universe without a valid name or ruleset', async () =>
 		{
-			for (const body of [{ name: '', shortDescription: '', ruleset: 'pf1e' }, { name: `A${rightToLeftOverride}b`, shortDescription: '', ruleset: 'pf1e' }, { name: '!?', shortDescription: '', ruleset: 'pf1e' }, { name: 'Kilnhaven', shortDescription: '', ruleset: 'dnd' }])
+			for (const body of [{ name: '', shortDescription: '', ruleset: 'pf1e' }, { name: `A${rightToLeftOverride}b`, shortDescription: '', ruleset: 'pf1e' }, { name: 'A b', shortDescription: '', ruleset: 'pf1e' }, { name: 'A b', shortDescription: '', ruleset: 'pf1e' }, { name: '!?', shortDescription: '', ruleset: 'pf1e' }, { name: 'Kilnhaven', shortDescription: '', ruleset: 'dnd' }])
 			{
 				assert.strictEqual((await send(ada, 'POST', '', { body })).status, 400, JSON.stringify(body));
 			}
