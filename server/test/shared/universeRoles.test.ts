@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, onlyLeaves, stageChangesEditorAccess, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canPlayUniverse, canTranslate, canViewUniverse, EDITOR_CHANGE_CHECKS, EDITOR_ROLES, editorAccessOf, mayMakeChange, maySaveInStage, maySaveToVersion, mustEditInDraft, onlyLeaves, stageChangesEditorAccess, UNIVERSE_ROLES, UNIVERSE_STAGES, type EditorAccess, type EditorChange, type UniverseAccess, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 /**
  * Someone's access with a role and no languages
@@ -120,21 +120,48 @@ describe('Universe roles (shared)', () =>
 
 	it('names a check for every kind of change', () =>
 	{
-		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'translate', 'markNoTranslation', 'manageVersions'].includes(check)));
+		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'translate', 'markNoTranslation', 'startDraft', 'manageVersions'].includes(check)));
 	});
 
-	it('lets only creators and the site admin role start, apply and discard the draft', () =>
+	it('lets creators, builders and the site admin role start the draft, and only creators and the site admin role apply and discard it', () =>
 	{
 		const managers = EDITOR_ROLES.map((role) => [role, ...(['startDraft', 'discardDraft'] as const).map((kind) => mayMakeChange({ kind }, { role, languages: [] }, playerId))]);
 
 		assert.deepStrictEqual(managers, [
 			['creator', true, true],
-			['builder', false, false],
+			['builder', true, false],
 			['beta_tester', false, false],
 			['translator', false, false],
 			[ADMIN_ROLE, true, true]
 		]);
 		assert.strictEqual(canManageVersions('builder'), false);
+	});
+
+	it('makes only builders use the draft, while the universe is let there be light and requires it', () =>
+	{
+		assert.deepStrictEqual(EDITOR_ROLES.map((role) => [role, mustEditInDraft(role, 'let_there_be_light', true)]), [
+			['creator', false],
+			['builder', true],
+			['beta_tester', false],
+			['translator', false],
+			[ADMIN_ROLE, false]
+		]);
+		assert.deepStrictEqual(UNIVERSE_STAGES.map((stage) => [stage, mustEditInDraft('builder', stage, true)]), [
+			['in_the_beginning', false],
+			['prologue', false],
+			['let_there_be_light', true],
+			['end_of_time', false]
+		]);
+		assert.strictEqual(mustEditInDraft('builder', 'let_there_be_light', false), false);
+	});
+
+	it('lets a builder who must use the draft save to the live version only starting a draft and leaving', () =>
+	{
+		const startDraft: EditorChange = { kind: 'startDraft' };
+
+		assert.deepStrictEqual([[paint], [startDraft], [leave], [leave, startDraft], [paint, startDraft], [removeOther]].map((changes) => maySaveToVersion(changes, playerId, false, true)), [false, true, true, true, false, false]);
+		assert.strictEqual(maySaveToVersion([paint], playerId, true, true), true);
+		assert.strictEqual(maySaveToVersion([paint], playerId, false, false), true);
 	});
 
 	it('lets creators and translators of the language translate, and creators and builders write notes', () =>

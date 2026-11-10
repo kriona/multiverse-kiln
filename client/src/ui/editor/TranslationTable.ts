@@ -1,4 +1,4 @@
-import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditVersionOpen, canEditWorld, canEditWorldOpen, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -384,7 +384,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	{
 		const universe = this.universe;
 
-		return((universe !== undefined) && (canEditWorld(universe.role) || canMarkNoTranslation(universe) || universe.translationLanguages.some((language) => canTranslate(universe, language))));
+		return((universe !== undefined) && canEditVersionOpen(universe) && (canEditWorld(universe.role) || canMarkNoTranslation(universe) || universe.translationLanguages.some((language) => canTranslate(universe, language))));
 	}
 
 	/**
@@ -998,9 +998,9 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			note: shown.note,
 			noTranslation: shown.noTranslation,
 			outOfDate: shown.outOfDate,
-			mayTranslate: canTranslate(universe, language),
-			mayWriteNote: canEditWorld(universe.role),
-			mayMarkNoTranslation: canMarkNoTranslation(universe),
+			mayTranslate: (canTranslate(universe, language) && canEditVersionOpen(universe)),
+			mayWriteNote: canEditWorldOpen(universe),
+			mayMarkNoTranslation: (canMarkNoTranslation(universe) && canEditVersionOpen(universe)),
 			apply: (translation, note, noTranslation) =>
 			{
 				if (noTranslation === row.noTranslation)

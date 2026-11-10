@@ -1236,8 +1236,8 @@
 		"source": "Story"
 	},
 	"editor.accessChanged": {
-		"message": "What ye can do in this universe has changed: yer rank, her stage, whether the ship's officers have laid her up, or whether ye have two-factor authentication raised. Stow or undo yer changes, then reload the page to see what ye can do now.",
-		"source": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now."
+		"message": "What ye can do in this universe has changed: yer rank, her stage, whether shipwrights work only in a draft, whether the ship's officers have laid her up, or whether ye have two-factor authentication raised. Stow or undo yer changes, then reload the page to see what ye can do now.",
+		"source": "What you can do in this universe has changed: your role, its stage, whether builders make their changes in a draft, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now."
 	},
 	"editor.accessLost": {
 		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
@@ -1774,6 +1774,14 @@
 	"editor.audit.value.yes": {
 		"message": "aye",
 		"source": "yes"
+	},
+	"editor.builderDraftRequired.open": {
+		"message": "While this universe be open to every soul, ye must make changes in a draft. Ye can look over the live version but not change her.",
+		"source": "While this universe is ready for everyone, you must make changes in a draft. You can view the live version but not change it."
+	},
+	"editor.builderDraftRequired.start": {
+		"message": "While this universe be open to every soul, shipwrights make their changes in her draft, so ye can look over the live version but not change her. Lay down a draft to make changes.",
+		"source": "While this universe is ready for everyone, builders make their changes in its draft, so you can look at the live version but not change it. Start a draft to make changes."
 	},
 	"editor.changedSince": {
 		"message": "{action, select, deleted {{names} scuttled this since ye opened it.} restored {{names} restored this to its default since ye opened it.} other {{fieldCount, plural, =0 {{names} changed this since ye opened it.} other {{names} changed {fields} since ye opened this.}}}}",
@@ -3703,6 +3711,14 @@
 		"message": "Peek",
 		"source": "Preview"
 	},
+	"editor.universe.requireBuilderDraft": {
+		"message": "Shipwrights make their changes in a draft",
+		"source": "Builders make their changes in a draft"
+	},
+	"editor.universe.requireBuilderDraftHint": {
+		"message": "While the crew can come aboard, shipwrights can lay down a draft an' sail between it an' the live version, but can only stow changes to the draft. The crew sees their work once a captain launches the draft.",
+		"source": "While players can join, builders can start a draft and switch between it and the live version, but can only save changes to the draft. Players see their work once a creator applies the draft."
+	},
 	"editor.universe.saveFailed": {
 		"message": "Couldn't stow the universe.",
 		"source": "Could not save the universe."
@@ -3900,8 +3916,8 @@
 		"source": "Its translations into languages the universe isn't translated into, or that you can't translate into"
 	},
 	"editor.universeImport.leftOut.universeOnly": {
-		"message": "Its officers, stage an' two-factor settin', which belong to the universe rather than her draft",
-		"source": "Its editors, stage and two-factor setting, which belong to the universe rather than its draft"
+		"message": "Its officers, her stage, an' whether shipwrights work in a draft an' officers need two-factor authentication, which belong to the universe rather than her draft",
+		"source": "Its editors, its stage, and whether builders make their changes in a draft and editors need two-factor authentication, which belong to the universe rather than its draft"
 	},
 	"editor.universeImport.leftOut.worldRole": {
 		"message": "Its tilesets, tiles, booty, areas an' notes for translators, which yer post can't change",
@@ -3911,13 +3927,13 @@
 		"message": "Someone's been rummagin' in this chest since it were first boxed up.",
 		"source": "It has been modified from its original export."
 	},
-	"editor.universeImport.needsDraft.creatorsStart": {
-		"message": "Chests must be hauled into the universe's draft. The universe has no draft yet, an' only her captains can lay one down.",
-		"source": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one."
-	},
 	"editor.universeImport.needsDraft.open": {
 		"message": "Chests must be hauled into the universe's draft. Open the draft to haul into it.",
 		"source": "Files must be imported into the universe's draft. Open the draft to import into it."
+	},
+	"editor.universeImport.needsDraft.othersStart": {
+		"message": "Chests must be hauled into the universe's draft. The universe has no draft yet, an' only her captains an' shipwrights can lay one down.",
+		"source": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators and builders can start one."
 	},
 	"editor.universeImport.needsDraft.start": {
 		"message": "Chests must be hauled into the universe's draft. The universe has no draft yet; ye must lay one down to haul in changes.",
@@ -4522,6 +4538,10 @@
 	"error.auth.wrongTwoFactorCode": {
 		"message": "That code ain't right, or was already spent. Check yer device's clock keeps true time, an' enter the newest code, or use a recovery code.",
 		"source": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code."
+	},
+	"error.builderDraftRequiredSave": {
+		"message": "Shipwrights make their changes to this universe in her draft while she be open to every soul, so changes to the live version can't be stowed. Open the draft, or lay one down, an' make yer changes there.",
+		"source": "Builders make their changes to this universe in its draft while it's ready for everyone, so changes to the live version can't be saved. Open the draft, or start one, and make your changes there."
 	},
 	"error.cantDeleteArea": {
 		"message": "The tavern and home port can't be scuttled.",

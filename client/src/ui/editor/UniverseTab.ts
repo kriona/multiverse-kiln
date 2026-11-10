@@ -20,7 +20,8 @@ const FORMAT_SHORTCUTS: Partial<Record<string, string>> = {
 };
 
 /**
- * The Universe tab: the universe's name, descriptions, stage, passage of time and how the time is shown
+ * The Universe tab: the universe's name, descriptions, stage (with whether builders make their changes
+ * in a draft while it is let there be light), passage of time and how the time is shown
  */
 export class UniverseTab implements SavableTab
 {
@@ -33,6 +34,9 @@ export class UniverseTab implements SavableTab
 	private readonly preview = getElement('universe-long-preview', HTMLElement);
 	private readonly stage = getElement('universe-stage', HTMLFieldSetElement);
 	private readonly stageWarning = getElement('universe-stage-warning', HTMLElement);
+	private readonly builderDraftField = getElement('universe-builder-draft-field', HTMLElement);
+	private readonly builderDraft = getElement('universe-require-builder-draft', HTMLInputElement);
+	private readonly builderDraftHint = getElement('universe-require-builder-draft-hint', HTMLElement);
 	private readonly time = getElement('universe-time', HTMLSelectElement);
 	private readonly faerieField = getElement('universe-faerie-field', HTMLElement);
 	private readonly faerie = getElement('universe-faerie', HTMLSelectElement);
@@ -90,6 +94,7 @@ export class UniverseTab implements SavableTab
 		this.stage.addEventListener('change', () =>
 		{
 			this.showStageWarning();
+			this.showBuilderDraft();
 		});
 
 		for (const input of [this.name, this.shortDescription, this.longDescription])
@@ -118,6 +123,8 @@ export class UniverseTab implements SavableTab
 		}
 
 		this.showStageWarning();
+		this.builderDraft.checked = universe.requireBuilderDraft;
+		this.showBuilderDraft();
 		this.time.value = universe.passageOfTime;
 		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
 		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
@@ -200,6 +207,18 @@ export class UniverseTab implements SavableTab
 	}
 
 	/**
+	 * Shows the setting requiring builders to make their changes in a draft while the stage chosen is let
+	 * there be light, the only stage it applies in
+	 */
+	private showBuilderDraft(): void
+	{
+		const shown = (this.chosenStage() === 'let_there_be_light');
+
+		this.builderDraftField.hidden = !shown;
+		this.builderDraftHint.hidden = !shown;
+	}
+
+	/**
 	 * Formats the long description's selection when a key press is one of the formatting shortcuts
 	 *
 	 * @param event The key press in the long description
@@ -247,11 +266,12 @@ export class UniverseTab implements SavableTab
 		}
 
 		const passageOfTime = this.time.value as PassageOfTime;
-		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'passageOfTime' | 'faerieMorning' | 'displayTime'>> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'requireBuilderDraft' | 'passageOfTime' | 'faerieMorning' | 'displayTime'>> = {
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,
 			stage: (this.chosenStage() ?? universe.stage),
+			requireBuilderDraft: this.builderDraft.checked,
 			passageOfTime,
 			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
 			displayTime: this.displayTime.value as DisplayTime

@@ -1,4 +1,4 @@
-import { canManageVersions, defineMessages, type EditableUniverse, type EditorChange, type EditorPresence } from '@multiverse-kiln/shared';
+import { canManageVersions, canStartDraft, defineMessages, type EditableUniverse, type EditorChange, type EditorPresence } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 import rocketIcon from 'virtual:icon/ph:rocket-launch';
 
@@ -41,8 +41,8 @@ export function unsavedDraftEditors(editors: Iterable<[string, EditorPresence]>,
 }
 
 /**
- * Starting, applying and discarding the universe's draft (see Universe versions in STRUCTURE-OVERVIEW.md),
- * for creators. Apply Draft and Discard Draft in the editor's toolbar ask first, then save at once, as
+ * Starting, applying and discarding the universe's draft (see Universe versions in STRUCTURE-OVERVIEW.md):
+ * starting it for creators and builders, applying and discarding it for creators. Apply Draft and Discard Draft in the editor's toolbar ask first, then save at once, as
  * the toolbar's Start Draft does (StartDraftDialog); each waits until no other change is unsaved. The
  * action is saved after every other tab's changes. A save that is refused leaves it waiting in a
  * section of the Universe tab, which says why and can undo it
@@ -148,13 +148,14 @@ export class DraftSection implements SavableTab
 	}
 
 	/**
-	 * Whether the player may start, apply and discard the draft
+	 * Whether the player may change the draft: start it, and for roles that may manage versions, apply
+	 * and discard it, which only they are shown
 	 *
-	 * @return True for a creator
+	 * @return True for a creator or builder
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canManageVersions(this.universe.role));
+		return((this.universe !== undefined) && canStartDraft(this.universe.role));
 	}
 
 	/**

@@ -813,6 +813,13 @@
       "when": 1794351832546,
       "tag": "0115_site_characters_per_universe_range",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1794352287006,
+      "tag": "0116_universe_require_builder_draft",
+      "breakpoints": true
     }
   ]
 }

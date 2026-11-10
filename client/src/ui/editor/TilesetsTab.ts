@@ -1,4 +1,4 @@
-import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -310,7 +310,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();
-		this.addButton.hidden = !canEditWorld(universe.role);
+		this.addButton.hidden = !canEditWorldOpen(universe);
 		this.savedUploads = [];
 		void this.refresh();
 		void this.loadUploads(universe);
@@ -416,11 +416,11 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Whether the player may change the tiles
 	 *
-	 * @return True for a creator or builder
+	 * @return True for a creator or builder, in a version they may change
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+		return((this.universe !== undefined) && canEditWorldOpen(this.universe));
 	}
 
 	/**

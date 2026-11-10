@@ -1,0 +1,1 @@
+ALTER TABLE "universes" ADD COLUMN "require_builder_draft" boolean DEFAULT true NOT NULL;

@@ -43,6 +43,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Stage',
 		description: 'Heading of the choice of how far along a universe is, from being built to being retired; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	requireBuilderDraft: {
+		id: 'editor.universe.requireBuilderDraft',
+		defaultMessage: 'Builders make their changes in a draft',
+		description: 'Checkbox on the editor\'s Universe tab, under the stage while "let there be light" (open to everyone) is chosen, for whether builders must make their changes in the universe\'s draft, a copy players don\'t see until a creator applies it, rather than in the live version; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	requireTwoFactor: {
 		id: 'editor.editors.requireTwoFactor',
 		defaultMessage: 'Editors need two-factor authentication',
@@ -622,6 +627,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'staminaPointsPerLevel':
 		case 'mobScale':
 			return(new Intl.NumberFormat(currentLocale()).format(change.value));
+		case 'requireBuilderDraft':
 		case 'requireTwoFactor':
 		case 'lobbyNoVisionCost':
 		case 'needsSleep':

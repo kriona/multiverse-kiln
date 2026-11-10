@@ -746,6 +746,22 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			return;
 		}
 
+		if (update.kind === 'builderDraftRequirement')
+		{
+			// Noted as access, so a builder's window joining meanwhile loads the universe again too
+			this.joinChanges.note('access');
+
+			for (const client of this.clients)
+			{
+				if (identityOf(client).role === 'builder')
+				{
+					client.send(EditorServerMessageType.AccessChanged);
+				}
+			}
+
+			return;
+		}
+
 		if (update.kind === 'saved')
 		{
 			this.tellSaved(update);

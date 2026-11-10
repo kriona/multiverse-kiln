@@ -519,7 +519,7 @@ export function canEditUniverseSettings(role: EditorRole): boolean
 }
 
 /**
- * Whether a role may start, apply and discard a universe's draft (see Universe versions in
+ * Whether a role may apply and discard a universe's draft (see Universe versions in
  * STRUCTURE-OVERVIEW.md). Every role that edits the universe may edit the draft
  *
  * @param role The user's role in the editor
@@ -528,6 +528,33 @@ export function canEditUniverseSettings(role: EditorRole): boolean
 export function canManageVersions(role: EditorRole): boolean
 {
 	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
+ * Whether a role may start a universe's draft: every role that may change its world, so builders can
+ * start one to make their changes in, though only roles that may manage versions apply or discard it
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canStartDraft(role: EditorRole): boolean
+{
+	return(canEditWorld(role));
+}
+
+/**
+ * Whether a role must make its changes in the universe's draft, saving nothing to its live version but
+ * starting a draft and leaving the universe: builders, while the universe is let there be light and
+ * requires it (requireBuilderDraft)
+ *
+ * @param role The user's role in the editor
+ * @param stage The universe's stage
+ * @param requireBuilderDraft Whether the universe requires builders to make their changes in a draft
+ * @return True when the role must
+ */
+export function mustEditInDraft(role: EditorRole, stage: UniverseStage, requireBuilderDraft: boolean): boolean
+{
+	return((role === 'builder') && (stage === 'let_there_be_light') && requireBuilderDraft);
 }
 
 /**

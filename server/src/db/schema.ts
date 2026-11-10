@@ -192,6 +192,13 @@ export const universes = pgTable('universes', {
 	 */
 	requireTwoFactor: boolean('require_two_factor').notNull().default(false),
 
+	/**
+	 * Whether builders make their changes in its draft while it is let there be light, saving nothing to
+	 * the live version then but starting a draft and leaving it. Held once for the live version and the
+	 * draft, like the stage
+	 */
+	requireBuilderDraft: boolean('require_builder_draft').notNull().default(true),
+
 	ruleset: ruleset('ruleset').notNull(),
 	...universeVersionColumns(),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

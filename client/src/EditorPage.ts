@@ -17,6 +17,7 @@ import { EditorChat } from './ui/editor/EditorChat';
 import { EditorPresenceBar } from './ui/editor/EditorPresenceBar';
 import { EditorScreen, isEditorTab, type EditorPlace } from './ui/editor/EditorScreen';
 import { EditorTwoFactorScreen } from './ui/editor/EditorTwoFactorScreen';
+import { rememberedVersion } from './ui/editor/versionMemory';
 import { pageMessages } from './ui/pageMessages';
 
 /**
@@ -120,12 +121,23 @@ export class EditorPage
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
 	 * @param startingPlace The tab and area to open it at
-	 * @param version The version of the universe to open
+	 * @param addressVersion The version of the universe the address names, or undefined when it names none:
+	 * then the version the player last chose in this browser opens, or the live version
 	 */
-	constructor(private readonly server: ServerConnection, private readonly universeId: string, private readonly startingPlace: Partial<EditorPlace>, version: UniverseVersionName)
+	constructor(private readonly server: ServerConnection, private readonly universeId: string, private readonly startingPlace: Partial<EditorPlace>, addressVersion: UniverseVersionName | undefined)
 	{
 		const { client, session } = server;
 		const api = new EditorApi(client);
+		const chosen = (addressVersion ?? rememberedVersion(universeId));
+		const version = (chosen ?? 'live');
+
+		// The address says which version is open, as it does once the player chooses one
+		if ((addressVersion === undefined) && (version === 'draft'))
+		{
+			replacePageParameters({
+				[VERSION_PARAMETER]: version
+			});
+		}
 
 		api.version = version;
 		this.api = api;
@@ -157,7 +169,7 @@ export class EditorPage
 			auth: new AuthApi(client),
 			admin: new AdminApi(client),
 			profile: new ProfileApi(client)
-		});
+		}, (chosen !== undefined));
 
 		window.addEventListener('popstate', (event) =>
 		{

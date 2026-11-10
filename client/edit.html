@@ -95,6 +95,11 @@
 									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired; also names the setting in the list of what a save changed, on the editor's Audit tab">Stage</legend>
 								</fieldset>
 								<p id="universe-stage-warning" class="hint" role="status" hidden></p>
+								<label id="universe-builder-draft-field" class="checkbox" data-message="editor.universe.requireBuilderDraft" data-translation-context="Checkbox on the editor's Universe tab, under the stage while &quot;let there be light&quot; (open to everyone) is chosen, for whether builders must make their changes in the universe's draft, a copy players don't see until a creator applies it, rather than in the live version; also names the setting in the list of what a save changed, on the editor's Audit tab" hidden>
+									<input id="universe-require-builder-draft" type="checkbox" aria-describedby="universe-require-builder-draft-hint" />
+									Builders make their changes in a draft
+								</label>
+								<p id="universe-require-builder-draft-hint" class="hint" data-message="editor.universe.requireBuilderDraftHint" data-translation-context="Explains the checkbox on the editor's Universe tab, shown while the stage &quot;let there be light&quot; (open to everyone) is chosen, that requires builders to make their changes in the universe's draft, a copy players don't see until a creator applies it" hidden>While players can join, builders can start a draft and switch between it and the live version, but can only save changes to the draft. Players see their work once a creator applies the draft.</p>
 								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Passage of time
 									<select id="universe-time"></select>

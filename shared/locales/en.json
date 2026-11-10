@@ -1236,8 +1236,8 @@
 		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
 	"editor.accessChanged": {
-		"defaultMessage": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.",
-		"description": "Shown above the editor's tabs when the player's role in the universe, its stage or whether the site's admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away"
+		"defaultMessage": "What you can do in this universe has changed: your role, its stage, whether builders make their changes in a draft, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.",
+		"description": "Shown above the editor's tabs when the player's role in the universe, its stage, whether its creators require builders to make their changes in its draft or whether the site's admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away"
 	},
 	"editor.accessLost": {
 		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
@@ -1774,6 +1774,14 @@
 	"editor.audit.value.yes": {
 		"defaultMessage": "yes",
 		"description": "The value of a checkbox setting a save turned on, in the editor's Audit tab's list of what a save changed, e.g. \"Track ammunition (yes)\""
+	},
+	"editor.builderDraftRequired.open": {
+		"defaultMessage": "While this universe is ready for everyone, you must make changes in a draft. You can view the live version but not change it.",
+		"description": "Shown above the editor's tabs to a builder with the live version open, while the universe is in the stage \"let there be light\" (open to everyone), its creators require builders to make their changes in its draft (a copy players don't see until a creator applies it), and it has one"
+	},
+	"editor.builderDraftRequired.start": {
+		"defaultMessage": "While this universe is ready for everyone, builders make their changes in its draft, so you can look at the live version but not change it. Start a draft to make changes.",
+		"description": "Shown above the editor's tabs to a builder with the live version open, while the universe is in the stage \"let there be light\" (open to everyone), its creators require builders to make their changes in its draft (a copy players don't see until a creator applies it), and it has none yet; Start Draft is in the toolbar"
 	},
 	"editor.changedSince": {
 		"defaultMessage": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}",
@@ -3703,6 +3711,14 @@
 		"defaultMessage": "Preview",
 		"description": "Heading above the long description as players will see it"
 	},
+	"editor.universe.requireBuilderDraft": {
+		"defaultMessage": "Builders make their changes in a draft",
+		"description": "Checkbox on the editor's Universe tab, under the stage while \"let there be light\" (open to everyone) is chosen, for whether builders must make their changes in the universe's draft, a copy players don't see until a creator applies it, rather than in the live version; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.universe.requireBuilderDraftHint": {
+		"defaultMessage": "While players can join, builders can start a draft and switch between it and the live version, but can only save changes to the draft. Players see their work once a creator applies the draft.",
+		"description": "Explains the checkbox on the editor's Universe tab, shown while the stage \"let there be light\" (open to everyone) is chosen, that requires builders to make their changes in the universe's draft, a copy players don't see until a creator applies it"
+	},
 	"editor.universe.saveFailed": {
 		"defaultMessage": "Could not save the universe.",
 		"description": "Shown on the Universe tab when the server refused its settings, followed by why; nothing was saved"
@@ -3900,7 +3916,7 @@
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: translations the player's role, or the universe's languages, don't take"
 	},
 	"editor.universeImport.leftOut.universeOnly": {
-		"defaultMessage": "Its editors, stage and two-factor setting, which belong to the universe rather than its draft",
+		"defaultMessage": "Its editors, its stage, and whether builders make their changes in a draft and editors need two-factor authentication, which belong to the universe rather than its draft",
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: the parts of the universe a draft has no copy of"
 	},
 	"editor.universeImport.leftOut.worldRole": {
@@ -3911,17 +3927,17 @@
 		"defaultMessage": "It has been modified from its original export.",
 		"description": "Warning in the dialog importing a zip file into the universe's draft, under which universe it was exported from, when and by whom (which the site confirmed from its signature): files inside the zip file were changed, added or removed since it was exported"
 	},
-	"editor.universeImport.needsDraft.creatorsStart": {
-		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one.",
-		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a builder or translator, while the universe has no draft, which only its creators can start"
-	},
 	"editor.universeImport.needsDraft.open": {
 		"defaultMessage": "Files must be imported into the universe's draft. Open the draft to import into it.",
 		"description": "In the dialog Import Universe opens on the editor's Universe tab while the editor shows the live version and the universe has a draft; Open Draft follows"
 	},
+	"editor.universeImport.needsDraft.othersStart": {
+		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators and builders can start one.",
+		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a translator, while the universe has no draft, which only its creators and builders can start"
+	},
 	"editor.universeImport.needsDraft.start": {
 		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet; you must start one to import changes.",
-		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a creator, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file"
+		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a creator or builder, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file"
 	},
 	"editor.universeImport.openDraftButton": {
 		"defaultMessage": "Open Draft",
@@ -4522,6 +4538,10 @@
 	"error.auth.wrongTwoFactorCode": {
 		"defaultMessage": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code.",
 		"description": "Shown under the two-factor code field when the authenticator or recovery code is wrong, or was already used"
+	},
+	"error.builderDraftRequiredSave": {
+		"defaultMessage": "Builders make their changes to this universe in its draft while it's ready for everyone, so changes to the live version can't be saved. Open the draft, or start one, and make your changes there.",
+		"description": "Why the world editor couldn't save: the player is a builder, the universe is in the stage \"let there be light\" (open to everyone), and its creators require builders to make their changes in its draft, a copy players don't see until a creator applies it. Starting a draft and leaving the universe can still be saved"
 	},
 	"error.cantDeleteArea": {
 		"defaultMessage": "The lobby and starting areas can't be deleted.",
