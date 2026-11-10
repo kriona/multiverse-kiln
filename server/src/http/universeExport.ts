@@ -311,6 +311,7 @@ function universeSettingsOf(universe: EditableUniverseDetails): UniverseSettings
 		translationLanguages: universe.translationLanguages,
 		stage: universe.stage,
 		requireTwoFactor: universe.requireTwoFactor,
+		requireBuilderDraft: universe.requireBuilderDraft,
 		passageOfTime: universe.passageOfTime,
 		faerieMorning: universe.faerieMorning,
 		displayTime: universe.displayTime,

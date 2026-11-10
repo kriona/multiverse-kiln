@@ -3,6 +3,7 @@ import { VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
 
 import type { AreaConnection, AreaRoom } from '../network/serverConnection';
 import { sleepGameLoop, wakeGameLoop } from '../rendering/gameLoop';
+import { startScene } from '../rendering/sceneStart';
 import { AREA_SCENE_KEY, AreaScene, type AreaSceneData } from '../scenes/AreaScene';
 import type { UniverseText } from './universeText';
 
@@ -66,7 +67,7 @@ export class AreaView
 		}
 
 		wakeGameLoop(this.game);
-		this.game.scene.start(AREA_SCENE_KEY, data);
+		startScene(this.game, AREA_SCENE_KEY, data);
 	}
 
 	/**

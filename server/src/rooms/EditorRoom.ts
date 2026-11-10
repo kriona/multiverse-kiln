@@ -720,7 +720,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 * Follows an update for the universe's editors: players whose role a save changed are listed with
 	 * the new one, and their windows load the universe again, or are turned away when they may no longer
 	 * open the editor; a server admin disabling or enabling the universe has every window load it again,
-	 * and the universe starting to require 2FA turns away the windows of players without it on
+	 * the universe starting to require 2FA turns away the windows of players without it on, and a change
+	 * to whether builders must make their changes in the draft has builders' windows load it again
 	 *
 	 * @param update The update
 	 */
