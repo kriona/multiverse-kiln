@@ -4,6 +4,7 @@
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
+import type { StartingAreaRace } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { pf1eRaces, races, raceStartingItems, sf1eRaces } from './schema.js';
@@ -167,6 +168,48 @@ export async function loadEditorRaces(version: UniverseVersion, ruleset: Ruleset
 export async function findEditorRace(version: UniverseVersion, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<EditorRace | undefined>
 {
 	return((await loadRaces(version, ruleset, raceId, executor))[0]);
+}
+
+/**
+ * Where one race a universe can use says its characters start, as findEditorRace() finds it, without
+ * the rest of its settings
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param raceId The race's ID
+ * @param executor The database, or a transaction
+ * @return The race's ID with its starting area and cell, or undefined when the universe can't use a race
+ * with that ID (an edited copy's own ID included)
+ */
+export async function findRaceStart(version: UniverseVersion, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<StartingAreaRace | undefined>
+{
+	const rows = await executor
+		.select({
+			id: races.id,
+			universeId: races.universeId,
+			overridesRaceId: races.overridesRaceId,
+			startingAreaId: races.startingAreaId,
+			startingColumn: races.startingColumn,
+			startingRow: races.startingRow
+		})
+		.from(races)
+		.where(usableRaces(version, ruleset, raceId));
+	const race = rows.find((row) => (row.overridesRaceId === null));
+
+	if (!race)
+	{
+		return(undefined);
+	}
+
+	const copy = ((race.universeId === null) ? rows.find((row) => (row.overridesRaceId === race.id)) : undefined);
+	const settings = (copy ?? race);
+
+	return({
+		id: race.id,
+		startingAreaId: settings.startingAreaId,
+		startingColumn: settings.startingColumn,
+		startingRow: settings.startingRow
+	});
 }
 
 /**

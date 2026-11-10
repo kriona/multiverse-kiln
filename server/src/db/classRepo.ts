@@ -5,6 +5,7 @@
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
+import type { StartingAreaClass } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { classes, classRaceAreas, classStartingItems, pf1eClasses, sf1eClasses } from './schema.js';
@@ -168,6 +169,63 @@ export async function loadEditorClasses(version: UniverseVersion, ruleset: Rules
 export async function findEditorClass(version: UniverseVersion, ruleset: Ruleset, classId: number, executor: Executor = db): Promise<EditorClass | undefined>
 {
 	return((await loadClasses(version, ruleset, classId, executor))[0]);
+}
+
+/**
+ * Where one class a universe can use says its characters of one race start, as findEditorClass() finds
+ * it, without the rest of its settings
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param classId The class's ID
+ * @param raceId The race whose entry in the class's per-race areas is wanted
+ * @param executor The database, or a transaction
+ * @return The class's starting area and cell, with its entry for the race when it has one, or undefined
+ * when the universe can't use a class with that ID (an edited copy's own ID included)
+ */
+export async function findClassStart(version: UniverseVersion, ruleset: Ruleset, classId: number, raceId: number, executor: Executor = db): Promise<StartingAreaClass | undefined>
+{
+	const rows = await executor
+		.select({
+			id: classes.id,
+			universeId: classes.universeId,
+			overridesClassId: classes.overridesClassId,
+			startingAreaId: classes.startingAreaId,
+			startingColumn: classes.startingColumn,
+			startingRow: classes.startingRow
+		})
+		.from(classes)
+		.where(usableClasses(version, ruleset, classId));
+	const characterClass = rows.find((row) => (row.overridesClassId === null));
+
+	if (!characterClass)
+	{
+		return(undefined);
+	}
+
+	const copy = ((characterClass.universeId === null) ? rows.find((row) => (row.overridesClassId === characterClass.id)) : undefined);
+	const settings = (copy ?? characterClass);
+	const raceAreas = await executor
+		.select({
+			raceId: classRaceAreas.raceId,
+			areaId: classRaceAreas.areaId,
+			column: classRaceAreas.startingColumn,
+			row: classRaceAreas.startingRow
+		})
+		.from(classRaceAreas)
+		.innerJoin(classes, eq(classes.id, classRaceAreas.classId))
+		.where(and(
+			inVersion(classes, version),
+			eq(classRaceAreas.classId, settings.id),
+			eq(classRaceAreas.raceId, raceId)
+		));
+
+	return({
+		startingAreaId: settings.startingAreaId,
+		startingColumn: settings.startingColumn,
+		startingRow: settings.startingRow,
+		raceAreas
+	});
 }
 
 /**

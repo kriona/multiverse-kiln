@@ -3,7 +3,7 @@ import assert from 'assert';
 import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findEditorRace, findRaceKind, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findEditorRace, findRaceKind, findRaceStart, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
@@ -173,13 +173,14 @@ describe('raceRepo', () =>
 	{
 		const universeId = await addUniverse();
 		const otherId = await addUniverse('Other');
+		const areaId = await addArea(universeId);
 		const dwarfId = await defaultRaceId('dwarf');
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
 		const dwarf = await findRace(universeId, dwarfId) as EditorRace;
 		const lizardfolkId = await inTransaction((transaction) => createCustomRace(liveVersion(universeId), 'pf1e', { ...lizardfolk, startingItems: [{ itemId: daggerId, quantity: 2 }] }, transaction));
 		const otherLizardfolkId = await inTransaction((transaction) => createCustomRace(liveVersion(otherId), 'pf1e', lizardfolk, transaction));
 
-		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, { ...dwarf, enabled: false, startingItems: [{ itemId: daggerId, quantity: 1 }] }, transaction));
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, { ...dwarf, enabled: false, startingItems: [{ itemId: daggerId, quantity: 1 }], startingAreaId: areaId, startingColumn: 3, startingRow: -2 }, transaction));
 		await inTransaction((transaction) => startDraft(universeId, transaction));
 		await inTransaction((transaction) => saveEditedDefaultRace(draftVersion(universeId), 'pf1e', dwarfId, { ...dwarf, name: 'Draft Folk' }, transaction));
 
@@ -188,8 +189,18 @@ describe('raceRepo', () =>
 			for (const race of await loadEditorRaces(version, 'pf1e'))
 			{
 				assert.deepStrictEqual(await findEditorRace(version, 'pf1e', race.id), race);
+				assert.deepStrictEqual(await findRaceStart(version, 'pf1e', race.id), {
+					id: race.id,
+					startingAreaId: race.startingAreaId,
+					startingColumn: race.startingColumn,
+					startingRow: race.startingRow
+				});
 			}
 		}
+
+		assert.deepStrictEqual(await findRaceStart(liveVersion(universeId), 'pf1e', dwarfId), { id: dwarfId, startingAreaId: areaId, startingColumn: 3, startingRow: -2 });
+		assert.strictEqual(await findRaceStart(liveVersion(universeId), 'pf1e', otherLizardfolkId), undefined);
+		assert.strictEqual(await findRaceStart(liveVersion(universeId), 'sf1e', dwarfId), undefined);
 
 		assert.strictEqual((await findEditorRace(liveVersion(universeId), 'pf1e', dwarfId))?.enabled, false);
 		assert.strictEqual((await findEditorRace(draftVersion(universeId), 'pf1e', dwarfId))?.name, 'Draft Folk');

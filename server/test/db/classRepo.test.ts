@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_CLASS_NAMES, emptyMoney, NEW_PF1E_CLASS_RULES, PF1E_CLASSES, type ClassSettings, type EditorClass } from '@multiverse-kiln/shared';
 
-import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, findDefaultClassIds, findEditorClass, isClassStartingItem, loadClassNames, loadEditorClasses, loadLiveClassNames, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass, type CustomClassSettings } from '../../src/db/classRepo.js';
+import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, findClassStart, findDefaultClassIds, findEditorClass, isClassStartingItem, loadClassNames, loadEditorClasses, loadLiveClassNames, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass, type CustomClassSettings } from '../../src/db/classRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -171,6 +171,7 @@ describe('classRepo', () =>
 		const otherId = await addUniverse('Other');
 		const areaId = await addArea(universeId);
 		const elfId = (await findDefaultRaceIds('pf1e')).get('elf') as number;
+		const dwarfId = (await findDefaultRaceIds('pf1e')).get('dwarf') as number;
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
 		const wizardId = await defaultClassId('wizard');
 		const wizard = await findClass(universeId, wizardId) as EditorClass;
@@ -187,8 +188,23 @@ describe('classRepo', () =>
 			for (const characterClass of await loadEditorClasses(version, 'pf1e'))
 			{
 				assert.deepStrictEqual(await findEditorClass(version, 'pf1e', characterClass.id), characterClass);
+
+				for (const raceId of [elfId, dwarfId])
+				{
+					assert.deepStrictEqual(await findClassStart(version, 'pf1e', characterClass.id, raceId), {
+						startingAreaId: characterClass.startingAreaId,
+						startingColumn: characterClass.startingColumn,
+						startingRow: characterClass.startingRow,
+						raceAreas: characterClass.raceAreas.filter((entry) => (entry.raceId === raceId))
+					});
+				}
 			}
 		}
+
+		assert.deepStrictEqual((await findClassStart(liveVersion(universeId), 'pf1e', wizardId, elfId))?.raceAreas, raceAreas);
+		assert.deepStrictEqual((await findClassStart(liveVersion(universeId), 'pf1e', wizardId, dwarfId))?.raceAreas, []);
+		assert.strictEqual(await findClassStart(liveVersion(universeId), 'pf1e', otherGunslingerId, elfId), undefined);
+		assert.strictEqual(await findClassStart(liveVersion(universeId), 'sf1e', wizardId, elfId), undefined);
 
 		assert.strictEqual((await findEditorClass(liveVersion(universeId), 'pf1e', wizardId))?.enabled, false);
 		assert.deepStrictEqual((await findEditorClass(liveVersion(universeId), 'pf1e', wizardId))?.raceAreas, raceAreas);
