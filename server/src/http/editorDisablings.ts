@@ -269,12 +269,12 @@ async function shrinkGroups(context: ChangeContext, size: number, largerGroups: 
 		return;
 	}
 
+	const leaving = new Set(larger.flatMap((group) => membersOverSize(group.members, group.anchorCharacterId, size)));
+
+	await removeGroupMembers([...leaving], transaction);
+
 	for (const group of larger)
 	{
-		const leaving = new Set(membersOverSize(group.members, group.anchorCharacterId, size));
-
-		await removeGroupMembers(group.groupId, [...leaving], transaction);
-
 		for (const member of group.members.filter((each) => leaving.has(each.characterId)))
 		{
 			context.onCommit.push(() =>

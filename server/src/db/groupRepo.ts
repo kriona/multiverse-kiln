@@ -650,23 +650,20 @@ export async function deleteGroups(groupIds: readonly string[], executor: Execut
 }
 
 /**
- * Takes characters out of a group. Call it only for members other than the anchor being, whose leaving
- * disbands the group (see leaveGroup())
+ * Takes characters out of their groups in one statement, whichever groups they are in. Call it only for
+ * members other than the anchor being, whose leaving disbands the group (see leaveGroup()). The IDs go
+ * in one array parameter, since lowering the group size can take members out of thousands of groups
  *
- * @param groupId The group's ID
  * @param characterIds The characters' IDs
  * @param executor The database, or a transaction
  */
-export async function removeGroupMembers(groupId: string, characterIds: readonly string[], executor: Executor = db): Promise<void>
+export async function removeGroupMembers(characterIds: readonly string[], executor: Executor = db): Promise<void>
 {
 	if (characterIds.length > 0)
 	{
 		await executor
 			.delete(groupMembers)
-			.where(and(
-				eq(groupMembers.groupId, groupId),
-				inArray(groupMembers.characterId, [...characterIds])
-			));
+			.where(sql`${groupMembers.characterId} = ANY(${sql.param([...new Set(characterIds)])}::uuid[])`);
 	}
 }
 

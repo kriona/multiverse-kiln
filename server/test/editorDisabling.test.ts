@@ -279,14 +279,20 @@ describe('Disabling things players are using', () =>
 		const groupId = await addGroup(universe.universeId, brokkId, null);
 		const firstId = await addCharacter(playerId, universe.universeId, 'First');
 		const secondId = await addCharacter(playerId, universe.universeId, 'Second');
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other anchor');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, null);
+		const thirdId = await addCharacter(playerId, universe.universeId, 'Third');
+		const fourthId = await addCharacter(playerId, universe.universeId, 'Fourth');
 		const left: GroupChange[] = [];
 
 		await inTransaction((transaction) => addGroupMember(groupId, firstId, transaction));
 		await inTransaction((transaction) => addGroupMember(groupId, secondId, transaction));
+		await inTransaction((transaction) => addGroupMember(otherGroupId, thirdId, transaction));
+		await inTransaction((transaction) => addGroupMember(otherGroupId, fourthId, transaction));
 
 		const lower: EditorChange = { kind: 'universe', update: { groupSize: 2 }, largerGroups: 'removeMembers' };
 
-		assert.deepStrictEqual(await impactsOf([lower]), [{ changeIndex: 0, kind: 'groupSize', groupSize: 2, groups: 1 }]);
+		assert.deepStrictEqual(await impactsOf([lower]), [{ changeIndex: 0, kind: 'groupSize', groupSize: 2, groups: 2 }]);
 
 		const stop = groupChanges.onChange((change) =>
 		{
@@ -303,7 +309,8 @@ describe('Disabling things players are using', () =>
 		}
 
 		assert.deepStrictEqual((await listGroupMembers(groupId)).map((member) => member.characterId), [brokkId, firstId]);
-		assert.deepStrictEqual(left.map((change) => ((change.kind === 'left') ? [change.character.characterId, change.groupSizeLowered] : change.kind)), [[secondId, true]]);
+		assert.deepStrictEqual((await listGroupMembers(otherGroupId)).map((member) => member.characterId), [otherAnchorId, thirdId]);
+		assert.deepStrictEqual(left.map((change) => ((change.kind === 'left') ? [change.groupId, change.character.characterId, change.groupSizeLowered] : change.kind)).sort(), [[groupId, secondId, true], [otherGroupId, fourthId, true]].sort());
 	});
 
 	it('disbands groups larger than a lowered group size when told to, and keeps them when told to', async () =>
