@@ -1,9 +1,10 @@
 import assert from 'assert';
+import { randomUUID } from 'node:crypto';
 
 import { createToken, hashToken } from '../../src/auth/tokens.js';
 import { adminDb } from '../../src/db/adminClient.js';
 import { addServerAdmin } from '../../src/db/serverAdminRepo.js';
-import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findSessionByTokenHash, findSessionWithPlayer, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
+import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findPlayersWithSessions, findSessionByTokenHash, findSessionWithPlayer, listActiveSessions, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
 import { addPlayer } from '../players.js';
 import { turnOnTwoFactor } from '../twoFactorAccounts.js';
 
@@ -65,6 +66,25 @@ describe('sessionRepo', () =>
 
 		assert.deepStrictEqual((await findSessionByTokenHash(first))?.lastUsedAt, later);
 		assert.deepStrictEqual((await findSessionByTokenHash(second))?.lastUsedAt, later);
+	});
+
+	it('takes more session IDs than Postgres takes query parameters', async () =>
+	{
+		const player = await addPlayer('Ada');
+		const tokenHash = hashToken(createToken());
+		const session = await createSession(player.id, tokenHash, false);
+		const other = await createSession(player.id, hashToken(createToken()), false);
+		const ids = [...Array.from({ length: 70000 }, () => randomUUID()), session.id];
+		const later = new Date(session.lastUsedAt.getTime() + 60000);
+		const page = { offset: 0, limit: 20 };
+
+		await touchSessions(ids, later);
+
+		assert.deepStrictEqual((await findSessionByTokenHash(tokenHash))?.lastUsedAt, later);
+		assert.deepStrictEqual([...await findPlayersWithSessions([player.id], ids)], [player.id]);
+		assert.deepStrictEqual((await listActiveSessions({ connected: { ids, connected: true } }, page, later)).sessions.map((found) => found.id), [session.id]);
+		assert.deepStrictEqual((await listActiveSessions({ connected: { ids, connected: false } }, page, later)).sessions.map((found) => found.id), [other.id]);
+		assert.deepStrictEqual((await listActiveSessions({ connected: { ids: [], connected: false } }, page, later)).total, 2);
 	});
 
 	it('finds nothing for an unknown token', async () =>

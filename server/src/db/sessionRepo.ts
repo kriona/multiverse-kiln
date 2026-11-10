@@ -1,7 +1,7 @@
 /**
  * Login sessions: the only module that reads or writes the sessions table
  */
-import { and, count, desc, eq, inArray, lte, ne, not, notInArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, lte, ne, not, or, sql, type SQL } from 'drizzle-orm';
 
 import { SESSION_LIFETIMES, type SessionTimes } from '../logic/sessionLifetimes.js';
 import { db, type Executor } from './client.js';
@@ -152,7 +152,20 @@ export async function touchSessions(sessionIds: readonly string[], now: Date, ex
 		.set({
 			lastUsedAt: now
 		})
-		.where(inArray(sessions.id, [...sessionIds]));
+		.where(sessionIdIn(sessionIds));
+}
+
+/**
+ * A condition that a session is one of some sessions. The IDs go in one array parameter rather than one
+ * parameter each (inArray()), since a list of every connected session can pass Postgres's limit of
+ * 65,535 parameters
+ *
+ * @param sessionIds The sessions' IDs
+ * @return The condition
+ */
+function sessionIdIn(sessionIds: readonly string[]): SQL
+{
+	return(sql`${sessions.id} = ANY(${sql.param([...sessionIds])}::uuid[])`);
 }
 
 /**
@@ -252,7 +265,7 @@ export async function findPlayersWithSessions(playerIds: readonly string[], sess
 		.from(sessions)
 		.where(and(
 			inArray(sessions.playerId, [...playerIds]),
-			inArray(sessions.id, [...sessionIds])
+			sessionIdIn(sessionIds)
 		));
 
 	return(new Set(rows.map((row) => row.playerId)));
@@ -326,7 +339,7 @@ export async function listActiveSessions(filter: ActiveSessionFilter, page: { of
 		((filter.search === undefined) ? undefined : anyColumnContains([players.username, players.displayName], filter.search)),
 		((filter.connected === undefined)
 			? undefined
-			: (filter.connected.connected ? inArray(sessions.id, [...filter.connected.ids]) : notInArray(sessions.id, [...filter.connected.ids])))
+			: (filter.connected.connected ? sessionIdIn(filter.connected.ids) : not(sessionIdIn(filter.connected.ids))))
 	);
 	const [rows, [counted]] = await Promise.all([
 		executor

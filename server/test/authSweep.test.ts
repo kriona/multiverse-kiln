@@ -8,6 +8,7 @@ import { pool } from '../src/db/client.js';
 import { savePendingProviderLogin } from '../src/db/providerLoginRepo.js';
 import { recordRateLimitEvent } from '../src/db/rateLimitRepo.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
+import { loggedErrors } from './loggedErrors.js';
 import { addPlayer, logInBrowser } from './players.js';
 
 const HOUR_MS = (60 * 60 * 1000);
@@ -71,6 +72,30 @@ describe('sweepAuth', () =>
 		}
 
 		assert.deepStrictEqual(heard, [browser.sessionId]);
+	});
+
+	it('deletes expired sessions when recording the connected sessions\' use fails', async () =>
+	{
+		const browser = await logInBrowser((await addPlayer('Ada')).id);
+		const window = {};
+
+		connectedSessions.connect(window, 'not-a-session-id');
+
+		try
+		{
+			const logged = await loggedErrors(() => sweepAuth(new Date(Date.now() + DAY_MS)));
+
+			assert.strictEqual(logged.length, 1);
+			assert.match(logged[0], /^Could not record the use of the connected login sessions:/);
+		}
+		finally
+		{
+			connectedSessions.disconnect(window);
+		}
+
+		const remaining = (await pool.query<{ id: string }>('SELECT id FROM sessions WHERE id = $1', [browser.sessionId])).rows;
+
+		assert.deepStrictEqual(remaining, []);
 	});
 
 	it('deletes rate limit records once no limit counts them, and auth events after 90 days', async () =>
