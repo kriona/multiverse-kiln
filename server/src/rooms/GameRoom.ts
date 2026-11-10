@@ -526,7 +526,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	/**
 	 * Follows a change the world editor made: the universe being deleted or disabled turns every window
 	 * away, its text changing tells them to read it again, an area disabled elsewhere sends its members
-	 * away, and any other change goes to the members it affects
+	 * away, the group's starting area being deleted makes the universe's its starting area, and any
+	 * other change goes to the members it affects
 	 *
 	 * @param change The change
 	 */
@@ -557,6 +558,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		if (change.kind === 'deleted')
 		{
 			this.seen.forget(change.areaId);
+
+			// The group's own starting area, a race's or class's, can be deleted (the universe's can't), so
+			// the members in it go to the universe's instead
+			if (change.areaId === this.startingAreaId)
+			{
+				this.useUniverseStartingArea()
+					.then(() => this.areaPlayers.applyChange(change))
+					.catch((error: unknown) =>
+					{
+						console.error('Could not move the characters of group', this.groupId, 'out of its deleted starting area', change.areaId, error);
+					});
+
+				return;
+			}
 		}
 
 		if (change.kind === 'evacuated')
@@ -910,7 +925,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}
 		}
 
-		const startingArea = await this.areas.load(this.startingAreaId);
+		const startingArea = await this.loadStartingArea();
 
 		if (!startingArea)
 		{
@@ -921,6 +936,44 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			area: startingArea,
 			...startingCellOn(startingArea.loaded.bounds, this.startingCell)
 		});
+	}
+
+	/**
+	 * Loads the group's starting area, switching to the universe's when the group's own is gone
+	 * (useUniverseStartingArea())
+	 *
+	 * @return The area; undefined when neither exists
+	 */
+	private async loadStartingArea(): Promise<ActiveArea | undefined>
+	{
+		const startingArea = await this.areas.load(this.startingAreaId);
+
+		if (startingArea)
+		{
+			return(startingArea);
+		}
+
+		await this.useUniverseStartingArea();
+
+		return(this.areas.load(this.startingAreaId));
+	}
+
+	/**
+	 * Makes the universe's starting area and cell the group's, as they are for a room whose group has no
+	 * starting area of its own, for when the group's own has been deleted
+	 */
+	private async useUniverseStartingArea(): Promise<void>
+	{
+		const universe = await findUniverse(this.universeId);
+
+		if (universe?.startingAreaId !== undefined)
+		{
+			this.startingAreaId = universe.startingAreaId;
+			this.startingCell = {
+				column: universe.startingColumn,
+				row: universe.startingRow
+			};
+		}
 	}
 
 	/**
@@ -1198,7 +1251,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	private async evacuate(areaId: string, destination: AreaPlace | null): Promise<void>
 	{
-		const startingArea = (destination ? undefined : await this.areas.load(this.startingAreaId));
+		const startingArea = (destination ? undefined : await this.loadStartingArea());
 		const target = (destination ?? (startingArea
 			? {
 				areaId: startingArea.loaded.area.id,

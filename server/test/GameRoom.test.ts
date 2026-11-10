@@ -11,7 +11,7 @@ import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
-import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
+import { createAreaLink, deleteArea, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
@@ -1496,6 +1496,26 @@ describe('GameRoom', () =>
 
 			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
 			await waitUntil(() => (room.getAreaId(characterId) === universe.fieldAreaId));
+		});
+
+		it('sends the members in the group\'s own starting area to the universe\'s when it is deleted, and still lets windows in', async () =>
+		{
+			// The house is neither the universe's lobby nor its starting area, so an editor may delete it
+			anchor = await addPlayerWithCharacter('Homebody');
+			groupId = await addGroup(universe.universeId, anchor.characterId, universe.houseAreaId, 'The Homebodies');
+
+			const room = await createGameRoom();
+
+			await joinAs(room, browserIdA, anchor);
+			assert.strictEqual(room.getAreaId(anchor.characterId), universe.houseAreaId);
+
+			await deleteArea(universe.houseAreaId);
+			areaChanges.publish({ kind: 'deleted', areaId: universe.houseAreaId });
+			await waitUntil(() => (room.getAreaId(anchor.characterId) === universe.fieldAreaId));
+
+			const { client } = await joinAs(room, browserIdA, anchor);
+
+			assert.strictEqual(playerIdOf(room, client), anchor.characterId);
 		});
 
 		it('sends a member who comes back while their area is disabled where its members are sent', async () =>
