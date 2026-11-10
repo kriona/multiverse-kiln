@@ -2,11 +2,14 @@ import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../../src/db/adminClient.js';
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacterDetails, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
+import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
+import { loadEditorThemes } from '../../src/db/themeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseDisabled } from '../../src/db/universeRepo.js';
+import { liveVersion } from '../../src/db/universeVersions.js';
 import { addGroup, addUniverse, defaultRaceId, dwarfFighter } from './fixtures.js';
 
 describe('characterRepo', () =>
@@ -198,6 +201,39 @@ describe('characterRepo', () =>
 		});
 		assert.strictEqual(await findCharacterDetails(otherPlayerId, universeId, 'pf1e', characterId), undefined);
 		assert.strictEqual(await findCharacterDetails(playerId, otherUniverseId, 'pf1e', characterId), undefined);
+	});
+
+	it('lists every one of a player\'s characters in every universe, as it finds each', async () =>
+	{
+		const otherPlayerId = (await addPlayer('Grace')).id;
+		const starfinderId = await createUniverse({
+			name: 'Starfinder',
+			ruleset: 'sf1e'
+		});
+		const veskId = (await findDefaultRaceIds('sf1e')).get('vesk');
+		const soldierId = (await findDefaultClassIds('sf1e')).get('soldier');
+		const mercenary = (await loadEditorThemes(liveVersion(starfinderId), 'sf1e')).find((theme) => (theme.key === 'mercenary'));
+
+		assert.ok((veskId !== undefined) && (soldierId !== undefined) && mercenary);
+
+		const brokk = await dwarfFighter(playerId, universeId);
+		const brokkId = await inTransaction((transaction) => createCharacter(brokk, transaction));
+		const dainId = await inTransaction((transaction) => createCharacter({ ...brokk, name: 'Dain', items: [] }, transaction));
+		const grennId = await inTransaction((transaction) => createCharacter({ ...brokk, universeId: starfinderId, ruleset: 'sf1e', name: 'Grenn', raceId: veskId, classId: soldierId, themeId: mercenary.id, items: [] }, transaction));
+		const goneId = await inTransaction((transaction) => createCharacter({ ...brokk, name: 'Gone' }, transaction));
+
+		await inTransaction((transaction) => createCharacter({ ...brokk, playerId: otherPlayerId }, transaction));
+		await scheduleCharacterDeletion(playerId, universeId, goneId, new Date(Date.now() - 1000));
+
+		const details = await listCharacterDetails(playerId);
+
+		assert.deepStrictEqual([...details.keys()].sort(), [brokkId, dainId, grennId].sort());
+		assert.deepStrictEqual(details.get(brokkId), await findCharacterDetails(playerId, universeId, 'pf1e', brokkId));
+		assert.deepStrictEqual(details.get(dainId), await findCharacterDetails(playerId, universeId, 'pf1e', dainId));
+		assert.deepStrictEqual(details.get(grennId), await findCharacterDetails(playerId, starfinderId, 'sf1e', grennId));
+		assert.strictEqual(details.get(grennId)?.themeId, mercenary.id);
+		assert.deepStrictEqual(details.get(dainId)?.items, []);
+		assert.deepStrictEqual(await listCharacterDetails((await addPlayer('Alan')).id), new Map());
 	});
 
 	describe('deleting', () =>

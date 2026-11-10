@@ -63,8 +63,8 @@ export function characterPath(universeId: string, characterId: string): string
 }
 
 /**
- * A race's or class's name: the universe's own, or a default's key that finds its name in
- * DEFAULT_RACE_NAMES or DEFAULT_CLASS_NAMES
+ * A race's, class's, theme's or item's name: the universe's own, or a default's key that finds its name
+ * in DEFAULT_RACE_NAMES, DEFAULT_CLASS_NAMES, DEFAULT_THEME_NAMES or DEFAULT_ITEM_NAMES
  */
 export interface OptionName
 {

@@ -5,25 +5,24 @@
  */
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { accountExportFileName, DEFAULT_CLASS_NAMES, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, MAX_LOCALE_LENGTH, type AccountDeletionPayload, type AccountExport, type ExportedCharacter, type MessageDescriptor, type Ruleset, type Translator } from '@multiverse-kiln/shared';
+import { accountExportFileName, DEFAULT_CLASS_NAMES, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, MAX_LOCALE_LENGTH, type AccountDeletionPayload, type AccountExport, type ExportedCharacter, type MessageDescriptor, type OptionName, type Ruleset, type Translator } from '@multiverse-kiln/shared';
 
 import { findPlayerAdminEvents } from '../db/adminEventRepo.js';
 import { findPlayerAuthEvents } from '../db/authEventRepo.js';
 import { listOwnChatMessages, listOwnChatReads } from '../db/chatRepo.js';
-import { findCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
-import { loadEditorClasses } from '../db/classRepo.js';
-import { anchorsAnyGroup, findMembership } from '../db/groupRepo.js';
-import { loadEditorItems } from '../db/itemRepo.js';
+import { listCharacterDetails, listCharacterDrafts, listProfileCharacters, type ProfileCharacterRecord } from '../db/characterRepo.js';
+import { loadLiveClassNames } from '../db/classRepo.js';
+import { anchorsAnyGroup, listPlayerMemberships } from '../db/groupRepo.js';
+import { loadLiveItemNames } from '../db/itemRepo.js';
 import { findOwnProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
 import { isLastServerAdmin } from '../db/serverAdminRepo.js';
-import { loadEditorRaces } from '../db/raceRepo.js';
+import { loadLiveRaceNames } from '../db/raceRepo.js';
 import { listPlayerSessions } from '../db/sessionRepo.js';
-import { loadEditorThemes } from '../db/themeRepo.js';
+import { loadLiveThemeNames } from '../db/themeRepo.js';
 import { findTwoFactorState, hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listEditorChanges, listPlayerUniverseEdits } from '../db/universeEditRepo.js';
 import { listEditableUniverses, listOtherUniverseEditors, listSoleCreatedUniverses } from '../db/universeEditorRepo.js';
-import { liveVersion } from '../db/universeVersions.js';
 import { emailTranslator } from '../email/emailLocales.js';
 import { playerIdOf } from './editorAccess.js';
 import { errorMessages, sendError } from './errors.js';
@@ -34,16 +33,6 @@ import { errorMessages, sendError } from './errors.js';
 const exportLocale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
 
 /**
- * Something named the way races, classes, themes and items are: a name of the universe's own, or a
- * default's key
- */
-interface Named
-{
-	key: string | null;
-	name: string | null;
-}
-
-/**
  * A race's, class's, theme's or item's name as the universe calls it
  *
  * @param named It, or undefined when it can't be found
@@ -51,7 +40,7 @@ interface Named
  * @param translator The language default names are written in
  * @return The name, the key of a default the ruleset has no name for, or an empty string
  */
-function nameOf(named: Named | undefined, defaultNames: Record<string, MessageDescriptor | undefined>, translator: Translator): string
+function nameOf(named: OptionName | undefined, defaultNames: Record<string, MessageDescriptor | undefined>, translator: Translator): string
 {
 	if (named?.name)
 	{
@@ -107,7 +96,8 @@ export async function deletionRoute(request: Request, response: Response): Promi
 }
 
 /**
- * The player's characters as the export gives them, with the names their universes use
+ * The player's characters as the export gives them, with the names their universes use. Loads them in
+ * a fixed number of queries, however many characters and universes the player has
  *
  * @param playerId The player's ID
  * @param records The player's characters
@@ -116,46 +106,51 @@ export async function deletionRoute(request: Request, response: Response): Promi
  */
 async function exportCharacters(playerId: string, records: readonly ProfileCharacterRecord[], translator: Translator): Promise<ExportedCharacter[]>
 {
-	const universes = new Map(records.map((record) => [record.universeId, record.ruleset]));
-	const options = new Map(await Promise.all([...universes].map(async ([universeId, ruleset]) =>
+	if (records.length === 0)
 	{
-		const [races, classes, themes, items] = await Promise.all([
-			loadEditorRaces(liveVersion(universeId), ruleset),
-			loadEditorClasses(liveVersion(universeId), ruleset),
-			loadEditorThemes(liveVersion(universeId), ruleset),
-			loadEditorItems(liveVersion(universeId), ruleset)
-		]);
+		return([]);
+	}
 
-		return([universeId, { races, classes, themes, items }] as const);
-	})));
-	const exported = await Promise.all(records.map(async (record): Promise<ExportedCharacter | undefined> =>
+	const universes = [...new Map(records.map((record) => [record.universeId, {
+		id: record.universeId,
+		ruleset: record.ruleset
+	}])).values()];
+	const [details, membershipList, raceNames, classNames, themeNames] = await Promise.all([
+		listCharacterDetails(playerId),
+		listPlayerMemberships(playerId),
+		loadLiveRaceNames(universes),
+		loadLiveClassNames(universes),
+		loadLiveThemeNames(universes)
+	]);
+	const memberships = new Map(membershipList.map((membership) => [membership.character.characterId, membership]));
+	const itemNames = await loadLiveItemNames(universes, [...details.values()].flatMap((character) => character.items.map((item) => item.itemId)));
+	const exported: ExportedCharacter[] = [];
+
+	for (const record of records)
 	{
 		const ruleset: Ruleset = record.ruleset;
-		const [details, membership] = await Promise.all([
-			findCharacterDetails(playerId, record.universeId, ruleset, record.id),
-			findMembership(record.id)
-		]);
-		const universeOptions = options.get(record.universeId);
+		const character = details.get(record.id);
+		const membership = memberships.get(record.id);
 
-		if (!details || !universeOptions)
+		if (!character)
 		{
-			return(undefined);
+			continue;
 		}
 
-		return({
-			id: details.id,
-			name: details.name,
+		exported.push({
+			id: character.id,
+			name: character.name,
 			universe: {
 				id: record.universeId,
 				name: record.universeName
 			},
-			race: nameOf(universeOptions.races.find((race) => (race.id === details.raceId)), DEFAULT_RACE_NAMES[ruleset], translator),
-			characterClass: nameOf(universeOptions.classes.find((option) => (option.id === details.classId)), DEFAULT_CLASS_NAMES[ruleset], translator),
-			theme: ((details.themeId === null) ? null : nameOf(universeOptions.themes.find((theme) => (theme.id === details.themeId)), DEFAULT_THEME_NAMES[ruleset], translator)),
-			abilityScores: details.abilityScores,
-			money: details.money,
-			items: details.items.map(({ itemId, quantity }) => ({
-				name: nameOf(universeOptions.items.find((item) => (item.id === itemId)), DEFAULT_ITEM_NAMES[ruleset], translator),
+			race: nameOf(raceNames.get(record.universeId)?.get(character.raceId), DEFAULT_RACE_NAMES[ruleset], translator),
+			characterClass: nameOf(classNames.get(record.universeId)?.get(character.classId), DEFAULT_CLASS_NAMES[ruleset], translator),
+			theme: ((character.themeId === null) ? null : nameOf(themeNames.get(record.universeId)?.get(character.themeId), DEFAULT_THEME_NAMES[ruleset], translator)),
+			abilityScores: character.abilityScores,
+			money: character.money,
+			items: character.items.map(({ itemId, quantity }) => ({
+				name: nameOf(itemNames.get(record.universeId)?.get(itemId), DEFAULT_ITEM_NAMES[ruleset], translator),
 				quantity
 			})),
 			group: (membership
@@ -165,11 +160,11 @@ async function exportCharacters(playerId: string, records: readonly ProfileChara
 				}
 				: null),
 			visibleOnProfile: record.visibleOnProfile,
-			deleteAt: (details.deleteAt?.toISOString() ?? null)
+			deleteAt: (character.deleteAt?.toISOString() ?? null)
 		});
-	}));
+	}
 
-	return(exported.filter((character): character is ExportedCharacter => (character !== undefined)));
+	return(exported);
 }
 
 /**

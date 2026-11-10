@@ -753,8 +753,8 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 }
 
 /**
- * The memberships of a player's characters, for telling the groups' rooms before deleting the player's
- * account
+ * The memberships of a player's characters, for the account export and for telling the groups' rooms
+ * before deleting the player's account
  *
  * @param playerId The player's ID
  * @param executor The database, or a transaction

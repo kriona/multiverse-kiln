@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
-import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse } from './fixtures.js';
 
@@ -105,6 +105,33 @@ describe('itemRepo', () =>
 
 			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, custom: false, edited: true });
 			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, custom: false, edited: false });
+		});
+	});
+
+	describe('loadLiveItemNames', () =>
+	{
+		it('names only the items asked for, as each universe\'s live version calls them', async () =>
+		{
+			const editedId = await addUniverse('Edited');
+			const plainId = await addUniverse('Plain');
+			const id = await daggerId();
+			const torchId = await createCustomItem(liveVersion(editedId), 'pf1e', torch);
+			const lanternId = await createCustomItem(liveVersion(editedId), 'pf1e', { ...torch, name: 'Lantern' });
+
+			await saveEditedDefaultItem(liveVersion(editedId), 'pf1e', id, rustyDagger);
+
+			const names = await loadLiveItemNames([
+				{ id: editedId, ruleset: 'pf1e' },
+				{ id: plainId, ruleset: 'pf1e' }
+			], [id, torchId, id]);
+
+			assert.deepStrictEqual(names.get(editedId), new Map([
+				[id, { key: 'dagger', name: 'rusty dagger' }],
+				[torchId, { key: null, name: 'torch' }]
+			]));
+			assert.strictEqual(names.get(editedId)?.has(lanternId), false);
+			assert.deepStrictEqual(names.get(plainId), new Map([[id, { key: 'dagger', name: null }]]));
+			assert.deepStrictEqual(await loadLiveItemNames([{ id: plainId, ruleset: 'pf1e' }], []), new Map([[plainId, new Map()]]));
 		});
 	});
 

@@ -1,7 +1,8 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
  * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
- * tell which characters are in a group, universes only to name a profile's characters' universes, and
+ * tell which characters are in a group, universes only to name a profile's characters' universes and
+ * find the rulesets of a player's characters, and
  * players only to name and search for the players of the editor's list of a universe's characters
  */
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
@@ -470,6 +471,126 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 		},
 		items: carried
 	});
+}
+
+/**
+ * Every one of a player's characters in every universe, with their ability scores, money and items, as
+ * findCharacterDetails() finds each, in four queries however many characters there are
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The characters, by ID
+ */
+export async function listCharacterDetails(playerId: string, executor: Executor = db): Promise<Map<string, CharacterDetails>>
+{
+	const ownCharacters = and(
+		eq(characters.playerId, playerId),
+		notExpired
+	);
+	const [rows, pf1eRows, sf1eRows, carried] = await Promise.all([
+		executor
+			.select({
+				id: characters.id,
+				name: characters.name,
+				raceId: characters.raceId,
+				classId: characters.classId,
+				deleteAt: characters.deleteAt,
+				platinum: characters.platinum,
+				gold: characters.gold,
+				silver: characters.silver,
+				copper: characters.copper,
+				credits: characters.credits,
+				ruleset: universes.ruleset
+			})
+			.from(characters)
+			.innerJoin(universes, eq(universes.id, characters.universeId))
+			.where(ownCharacters),
+		executor
+			.select({
+				characterId: pf1eCharacters.characterId,
+				strength: pf1eCharacters.strength,
+				dexterity: pf1eCharacters.dexterity,
+				constitution: pf1eCharacters.constitution,
+				intelligence: pf1eCharacters.intelligence,
+				wisdom: pf1eCharacters.wisdom,
+				charisma: pf1eCharacters.charisma
+			})
+			.from(pf1eCharacters)
+			.innerJoin(characters, eq(characters.id, pf1eCharacters.characterId))
+			.where(ownCharacters),
+		executor
+			.select({
+				characterId: sf1eCharacters.characterId,
+				themeId: sf1eCharacters.themeId,
+				strength: sf1eCharacters.strength,
+				dexterity: sf1eCharacters.dexterity,
+				constitution: sf1eCharacters.constitution,
+				intelligence: sf1eCharacters.intelligence,
+				wisdom: sf1eCharacters.wisdom,
+				charisma: sf1eCharacters.charisma
+			})
+			.from(sf1eCharacters)
+			.innerJoin(characters, eq(characters.id, sf1eCharacters.characterId))
+			.where(ownCharacters),
+		executor
+			.select({
+				characterId: characterItems.characterId,
+				itemId: characterItems.itemId,
+				quantity: characterItems.quantity
+			})
+			.from(characterItems)
+			.innerJoin(characters, eq(characters.id, characterItems.characterId))
+			.where(and(
+				ownCharacters,
+				eq(characterItems.hidden, false)
+			))
+			.orderBy(asc(characterItems.characterId), asc(characterItems.itemId))
+	]);
+	const abilities: Record<Ruleset, Map<string, { abilityScores: AbilityScores; themeId: number | null }>> = {
+		pf1e: new Map(pf1eRows.map(({ characterId, ...abilityScores }) => [characterId, {
+			abilityScores,
+			themeId: null
+		}])),
+		sf1e: new Map(sf1eRows.map(({ characterId, themeId, ...abilityScores }) => [characterId, {
+			abilityScores,
+			themeId
+		}]))
+	};
+	const items = Map.groupBy(carried, (row) => row.characterId);
+	const details = new Map<string, CharacterDetails>();
+
+	for (const row of rows)
+	{
+		const own = abilities[row.ruleset].get(row.id);
+
+		if (!own)
+		{
+			continue;
+		}
+
+		details.set(row.id, {
+			id: row.id,
+			name: row.name,
+			raceId: row.raceId,
+			classId: row.classId,
+			deleteAt: row.deleteAt,
+			themeId: own.themeId,
+			abilityScores: own.abilityScores,
+			money: {
+				pp: row.platinum,
+				gp: row.gold,
+				sp: row.silver,
+				cp: row.copper,
+				cr: row.credits
+			},
+			items: (items.get(row.id) ?? []).map(({ itemId, quantity }) => ({
+				itemId,
+				quantity
+			}))
+		});
+	}
+
+	return(details);
 }
 
 /**

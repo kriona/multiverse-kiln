@@ -1,9 +1,9 @@
 /**
  * Items: the only module that reads or writes the items table
  */
-import { and, count, eq, isNull, or } from 'drizzle-orm';
+import { and, count, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -74,6 +74,76 @@ export async function findDefaultItemIds(ruleset: Ruleset, executor: Executor = 
 export async function loadEditorItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorItem[]>
 {
 	return((await loadNamedItems(version, ruleset, executor)).map(({ item }) => item));
+}
+
+/**
+ * What some items are called in the live versions of several universes, without their settings, in
+ * one query: a default item's key, and the name the universe gives it, if any
+ *
+ * @param universes The universes, with their rulesets
+ * @param itemIds The items' IDs, such as those the universes' characters carry
+ * @param executor The database, or a transaction
+ * @return The keys and names of those items each universe can use, by item ID, by the universe's ID
+ */
+export async function loadLiveItemNames(universes: readonly { id: string; ruleset: Ruleset }[], itemIds: readonly number[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if ((universes.length === 0) || (itemIds.length === 0))
+	{
+		return(new Map(universes.map((universe) => [universe.id, new Map()])));
+	}
+
+	// The IDs go in one array parameter, since the items every character carries can be many
+	const ids = sql.param([...new Set(itemIds)]);
+	const rows = await executor
+		.select({
+			id: items.id,
+			ruleset: items.ruleset,
+			universeId: items.universeId,
+			overridesItemId: items.overridesItemId,
+			key: items.key,
+			name: items.name
+		})
+		.from(items)
+		.where(or(
+			and(
+				isNull(items.universeId),
+				inArray(items.ruleset, [...new Set(universes.map((universe) => universe.ruleset))]),
+				sql`${items.id} = ANY(${ids}::integer[])`
+			),
+			and(
+				inArray(items.universeId, universes.map((universe) => universe.id)),
+				eq(items.draft, false),
+				or(
+					sql`${items.id} = ANY(${ids}::integer[])`,
+					sql`${items.overridesItemId} = ANY(${ids}::integer[])`
+				)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) =>
+	{
+		const universeRows = [
+			...(defaults.get(universe.ruleset) ?? []),
+			...(owned.get(universe.id) ?? [])
+		];
+		const copies = new Map(universeRows
+			.filter((row) => (row.overridesItemId !== null))
+			.map((row) => [row.overridesItemId, row]));
+
+		return([universe.id, new Map(universeRows
+			.filter((row) => (row.overridesItemId === null))
+			.map((row) =>
+			{
+				const custom = (row.universeId !== null);
+
+				return([row.id, {
+					key: (custom ? null : row.key),
+					name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+				}]);
+			}))]);
+	})));
 }
 
 /**

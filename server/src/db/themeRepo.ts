@@ -3,8 +3,8 @@
  *
  * Only Starfinder 1E has themes (rulesetHasThemes()), so every theme's rules are in sf1e_themes
  */
-import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
-import type { EditorTheme, Ruleset, ThemeSettings } from '@multiverse-kiln/shared';
+import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import type { EditorTheme, OptionName, Ruleset, ThemeSettings } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { sf1eThemes, themes } from './schema.js';
@@ -37,6 +37,69 @@ function usableThemes(version: UniverseVersion, ruleset: Ruleset): SQL | undefin
 			inVersion(themes, version)
 		)
 	));
+}
+
+/**
+ * What each theme the live versions of several universes can use is called, without its settings, in
+ * one query: a default theme's key, and the name the universe gives it, if any
+ *
+ * @param universes The universes, with their rulesets
+ * @param executor The database, or a transaction
+ * @return Each universe's themes' keys and names, by theme ID, by the universe's ID; none for a
+ * ruleset without themes
+ */
+export async function loadLiveThemeNames(universes: readonly { id: string; ruleset: Ruleset }[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if (universes.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			id: themes.id,
+			ruleset: themes.ruleset,
+			universeId: themes.universeId,
+			overridesThemeId: themes.overridesThemeId,
+			key: themes.key,
+			name: themes.name
+		})
+		.from(themes)
+		.where(or(
+			and(
+				isNull(themes.universeId),
+				inArray(themes.ruleset, [...new Set(universes.map((universe) => universe.ruleset))])
+			),
+			and(
+				inArray(themes.universeId, universes.map((universe) => universe.id)),
+				eq(themes.draft, false)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) =>
+	{
+		const universeRows = [
+			...(defaults.get(universe.ruleset) ?? []),
+			...(owned.get(universe.id) ?? [])
+		];
+		const copies = new Map(universeRows
+			.filter((row) => (row.overridesThemeId !== null))
+			.map((row) => [row.overridesThemeId, row]));
+
+		return([universe.id, new Map(universeRows
+			.filter((row) => (row.overridesThemeId === null))
+			.map((row) =>
+			{
+				const custom = (row.universeId !== null);
+
+				return([row.id, {
+					key: (custom ? null : row.key),
+					name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+				}]);
+			}))]);
+	})));
 }
 
 /**
