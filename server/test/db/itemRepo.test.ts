@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
-import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse } from './fixtures.js';
 
@@ -105,6 +105,27 @@ describe('itemRepo', () =>
 
 			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, custom: false, edited: true });
 			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, custom: false, edited: false });
+		});
+	});
+
+	describe('loadEditorItemsIn', () =>
+	{
+		it('loads only the items asked for, as loadEditorItems() gives them', async () =>
+		{
+			const universeId = await addUniverse('Mine');
+			const otherId = await addUniverse('Theirs');
+			const id = await daggerId();
+			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
+			const theirsId = await createCustomItem(liveVersion(otherId), 'pf1e', { ...torch, name: 'Lantern' });
+
+			await createCustomItem(liveVersion(universeId), 'pf1e', { ...torch, name: 'Rope' });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', id, rustyDagger);
+
+			const all = await loadEditorItems(liveVersion(universeId), 'pf1e');
+
+			assert.deepStrictEqual(await loadEditorItemsIn(liveVersion(universeId), 'pf1e', [torchId, id, theirsId, id]), all.filter((item) => [id, torchId].includes(item.id)));
+			assert.deepStrictEqual((await loadEditorItemsIn(liveVersion(otherId), 'pf1e', [id]))[0].name, null);
+			assert.deepStrictEqual(await loadEditorItemsIn(liveVersion(universeId), 'pf1e', []), []);
 		});
 	});
 

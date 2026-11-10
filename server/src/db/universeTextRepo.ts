@@ -31,6 +31,12 @@ export interface UniverseTranslationRecord extends UniverseTextRef
 }
 
 /**
+ * A kind of universe text to load the translations of: all of it, or only that of some things, such as
+ * the items one character carries
+ */
+export type WantedText = UniverseTextKind | { kind: UniverseTextKind; thingIds: readonly (number | string)[] };
+
+/**
  * What the universe's editors say to translators about a piece of universe text
  */
 export interface TranslatorNoteRecord extends UniverseTextRef
@@ -348,6 +354,28 @@ export async function listTranslations(version: UniverseVersion, languages: read
 }
 
 /**
+ * Matches the translations of some kinds of universe text, each whole or only some things'
+ *
+ * @param kinds The kinds of text, none empty
+ * @return The condition
+ */
+function wantedTextCondition(kinds: readonly WantedText[]): SQL | undefined
+{
+	const whole = kinds.filter((wanted): wanted is UniverseTextKind => (typeof wanted === 'string'));
+	const some = kinds.filter((wanted): wanted is Exclude<WantedText, UniverseTextKind> => (typeof wanted !== 'string'));
+
+	// The IDs go in one array parameter rather than one parameter each (inArray()), since a character
+	// can carry many items
+	return(or(
+		((whole.length === 0) ? undefined : inArray(universeTranslations.kind, whole)),
+		...some.map(({ kind, thingIds }) => and(
+			eq(universeTranslations.kind, kind),
+			sql`${universeTranslations.thingId} = ANY(${sql.param([...new Set(thingIds.map(String))])}::text[])`
+		))
+	));
+}
+
+/**
  * Translations of several universes' live text, each into its own languages, such as for a list of
  * universes or of characters in several universes
  *
@@ -356,7 +384,7 @@ export async function listTranslations(version: UniverseVersion, languages: read
  * @param executor The database, or a transaction
  * @return The translations with their universes, in no particular order
  */
-export async function listTranslationsIn(wanted: readonly { universeId: string; languages: readonly string[] }[], kinds: readonly UniverseTextKind[] | undefined, executor: Executor = db): Promise<(UniverseTranslationRecord & { universeId: string })[]>
+export async function listTranslationsIn(wanted: readonly { universeId: string; languages: readonly string[] }[], kinds: readonly WantedText[] | undefined, executor: Executor = db): Promise<(UniverseTranslationRecord & { universeId: string })[]>
 {
 	const universes = wanted.filter(({ languages }) => (languages.length > 0));
 
@@ -381,7 +409,7 @@ export async function listTranslationsIn(wanted: readonly { universeId: string; 
 				inVersion(universeTranslations, liveVersion(universeId)),
 				inArray(universeTranslations.language, [...languages])
 			))),
-			((kinds === undefined) ? undefined : inArray(universeTranslations.kind, [...kinds])),
+			((kinds === undefined) ? undefined : wantedTextCondition(kinds)),
 			// Text marked as needing no translation is shown as written
 			notExists(executor
 				.select({

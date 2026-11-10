@@ -9,14 +9,14 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage, type UniverseTextKind } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { findMembership } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
-import { loadEditorItems } from '../db/itemRepo.js';
+import { loadEditorItems, loadEditorItemsIn } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { findPf1eSettings, findSf1eSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
@@ -24,6 +24,7 @@ import { loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
+import type { WantedText } from '../db/universeTextRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
@@ -252,10 +253,10 @@ export function universeOf(request: Request): PlayableUniverse
  *
  * @param request The request
  * @param universe The universe
- * @param kinds The kinds of text the response shows
+ * @param kinds The kinds of text the response shows, each whole or only some things'
  * @return The translator
  */
-export async function loadTranslator(request: Request, universe: PlayableUniverse, kinds: readonly UniverseTextKind[]): Promise<UniverseTextTranslator>
+export async function loadTranslator(request: Request, universe: PlayableUniverse, kinds: readonly WantedText[]): Promise<UniverseTextTranslator>
 {
 	return(UniverseTextTranslator.load(universe, await requestLanguages(request), kinds));
 }
@@ -314,15 +315,13 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, membership, races, classes, themes, items, siteSettings, translator] = await Promise.all([
+	const [character, membership, races, classes, themes, siteSettings] = await Promise.all([
 		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
 		findMembership(characterId),
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
 		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
-		loadEditorItems(liveVersion(universe.id), universe.ruleset),
-		findSiteSettings(),
-		loadTranslator(request, universe, ['race', 'class', 'theme', 'item', 'coin'])
+		findSiteSettings()
 	]);
 
 	if (!character)
@@ -331,6 +330,30 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	// Only the character's own items and their names' translations, of the thousands a universe can have
+	const itemIds = character.items.map((item) => item.itemId);
+	const [items, translator] = await Promise.all([
+		loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, itemIds),
+		loadTranslator(request, universe, [
+			{
+				kind: 'race',
+				thingIds: [character.raceId]
+			},
+			{
+				kind: 'class',
+				thingIds: [character.classId]
+			},
+			{
+				kind: 'theme',
+				thingIds: ((character.themeId === null) ? [] : [character.themeId])
+			},
+			{
+				kind: 'item',
+				thingIds: itemIds
+			},
+			'coin'
+		])
+	]);
 	const race = races.find((option) => (option.id === character.raceId));
 	const characterClass = classes.find((option) => (option.id === character.classId));
 	const theme = themes.find((option) => (option.id === character.themeId));

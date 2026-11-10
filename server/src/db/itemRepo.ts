@@ -1,7 +1,7 @@
 /**
  * Items: the only module that reads or writes the items table
  */
-import { and, count, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
@@ -77,6 +77,38 @@ export async function loadEditorItems(version: UniverseVersion, ruleset: Ruleset
 }
 
 /**
+ * Some of the items a universe can use, as loadEditorItems() gives them, such as those a character carries
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param itemIds The items' IDs
+ * @param executor The database, or a transaction
+ * @return Those of the items the version can use, by ID
+ */
+export async function loadEditorItemsIn(version: UniverseVersion, ruleset: Ruleset, itemIds: readonly number[], executor: Executor = db): Promise<EditorItem[]>
+{
+	if (itemIds.length === 0)
+	{
+		return([]);
+	}
+
+	return((await loadNamedItems(version, ruleset, executor, itemIds)).map(({ item }) => item));
+}
+
+/**
+ * A condition that an item ID column holds one of some IDs. The IDs go in one array parameter rather
+ * than one parameter each (inArray()), since the items characters carry can be many
+ *
+ * @param column The column: an item's own ID, or the default item an edited copy is of
+ * @param itemIds The IDs
+ * @return The condition
+ */
+function itemIdIn(column: typeof items.id | typeof items.overridesItemId, itemIds: readonly number[]): SQL
+{
+	return(sql`${column} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`);
+}
+
+/**
  * What some items are called in the live versions of several universes, without their settings, in
  * one query: a default item's key, and the name the universe gives it, if any
  *
@@ -92,8 +124,6 @@ export async function loadLiveItemNames(universes: readonly { id: string; rulese
 		return(new Map(universes.map((universe) => [universe.id, new Map()])));
 	}
 
-	// The IDs go in one array parameter, since the items every character carries can be many
-	const ids = sql.param([...new Set(itemIds)]);
 	const rows = await executor
 		.select({
 			id: items.id,
@@ -108,14 +138,14 @@ export async function loadLiveItemNames(universes: readonly { id: string; rulese
 			and(
 				isNull(items.universeId),
 				inArray(items.ruleset, [...new Set(universes.map((universe) => universe.ruleset))]),
-				sql`${items.id} = ANY(${ids}::integer[])`
+				itemIdIn(items.id, itemIds)
 			),
 			and(
 				inArray(items.universeId, universes.map((universe) => universe.id)),
 				eq(items.draft, false),
 				or(
-					sql`${items.id} = ANY(${ids}::integer[])`,
-					sql`${items.overridesItemId} = ANY(${ids}::integer[])`
+					itemIdIn(items.id, itemIds),
+					itemIdIn(items.overridesItemId, itemIds)
 				)
 			)
 		));
@@ -153,9 +183,10 @@ export async function loadLiveItemNames(universes: readonly { id: string; rulese
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
+ * @param itemIds Only these items, or undefined for every item
  * @return The items, by ID
  */
-async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<{ item: EditorItem; englishName: string }[]>
+async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor, itemIds?: readonly number[]): Promise<{ item: EditorItem; englishName: string }[]>
 {
 	const rows = await executor
 		.select({
@@ -173,7 +204,13 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			or(
 				isNull(items.universeId),
 				inVersion(items, version)
-			)
+			),
+			((itemIds === undefined)
+				? undefined
+				: or(
+					itemIdIn(items.id, itemIds),
+					itemIdIn(items.overridesItemId, itemIds)
+				))
 		))
 		.orderBy(items.id);
 	const copies = new Map(rows

@@ -125,6 +125,25 @@ describe('universeTextRepo', () =>
 		assert.deepStrictEqual(await shown(), ['Forêt']);
 	});
 
+	it('lists the translations of whole kinds of text, or of only some things of a kind', async () =>
+	{
+		const universeId = await addUniverse();
+		const translated = [['item', '12', 'Épée'], ['item', '13', 'Hache'], ['item', '14', 'Arc'], ['race', '12', 'Nain'], ['coin', 'gp', 'Écus']] as const;
+
+		for (const [kind, thingId, text] of translated)
+		{
+			await saveTranslation(liveVersion(universeId), { kind, thingId, field: 'name', language: 'fr', text, sourceHash: sourceTextHash(text) });
+		}
+
+		const shown = async (kinds: Parameters<typeof listTranslationsIn>[1]): Promise<string[]> => (await listTranslationsIn([{ universeId, languages: ['fr'] }], kinds))
+			.map(({ text }) => text)
+			.sort();
+
+		assert.deepStrictEqual(await shown([{ kind: 'item', thingIds: [12, 14, 12] }, 'coin']), ['Arc', 'Écus', 'Épée']);
+		assert.deepStrictEqual(await shown([{ kind: 'item', thingIds: [] }, { kind: 'race', thingIds: ['12'] }]), ['Nain']);
+		assert.deepStrictEqual(await shown(['item']), ['Arc', 'Hache', 'Épée']);
+	});
+
 	it('deletes a thing\'s translations and notes, leaving others\' alone', async () =>
 	{
 		const universeId = await addUniverse();
