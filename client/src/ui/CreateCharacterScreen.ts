@@ -1134,6 +1134,12 @@ export class CreateCharacterScreen
 		this.fields.disabled = true;
 		showMessage(this.error, undefined);
 
+		// A draft save finishing after the character is made would store the draft the server throws away
+		while (this.saving)
+		{
+			await this.saving;
+		}
+
 		try
 		{
 			await this.api.createCharacter(this.universeId, {
