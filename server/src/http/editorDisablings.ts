@@ -9,7 +9,7 @@
 import type { AreaEvacuation, GroupSizeLowering, ItemDisabling } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
-import { setCarriedItemHidden } from '../db/characterRepo.js';
+import { setCarriedItemsHidden } from '../db/characterRepo.js';
 import { deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
 import { evacuatedPlaces, membersOverSize } from '../logic/disabling.js';
@@ -119,6 +119,8 @@ export class SaveDisablings
 
 		// An item the save deleted isn't listed, and nobody carries it
 		const { items } = await listEditorItems(context.version, universe.ruleset, { ids: [...this.items.keys()] }, transaction);
+		const taken: number[] = [];
+		const givenBack: number[] = [];
 
 		for (const item of items)
 		{
@@ -126,13 +128,16 @@ export class SaveDisablings
 
 			if (noted?.wasEnabled && !item.enabled && (noted.choice === 'remove'))
 			{
-				await setCarriedItemHidden(universe.id, item.id, true, transaction);
+				taken.push(item.id);
 			}
 			else if ((noted !== undefined) && !noted.wasEnabled && item.enabled)
 			{
-				await setCarriedItemHidden(universe.id, item.id, false, transaction);
+				givenBack.push(item.id);
 			}
 		}
+
+		await setCarriedItemsHidden(universe.id, taken, true, transaction);
+		await setCarriedItemsHidden(universe.id, givenBack, false, transaction);
 	}
 
 	/**

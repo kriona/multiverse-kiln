@@ -1161,23 +1161,29 @@ export async function countCharactersCarrying(universeId: string, itemIds: reado
 }
 
 /**
- * Takes an item from every character of a universe carrying it, or gives it back: a taken item is
- * hidden, keeping how many each character had
+ * Takes some items from every character of a universe carrying them, or gives them back, in one
+ * statement: a taken item is hidden, keeping how many each character had. The IDs go in one array
+ * parameter, since a save can disable thousands of items
  *
  * @param universeId The universe's ID
- * @param itemId The item, by its own ID
- * @param hidden True to take it, false to give it back
+ * @param itemIds The items, by their own IDs
+ * @param hidden True to take them, false to give them back
  * @param executor The database, or a transaction
  */
-export async function setCarriedItemHidden(universeId: string, itemId: number, hidden: boolean, executor: Executor = db): Promise<void>
+export async function setCarriedItemsHidden(universeId: string, itemIds: readonly number[], hidden: boolean, executor: Executor = db): Promise<void>
 {
+	if (itemIds.length === 0)
+	{
+		return;
+	}
+
 	await executor
 		.update(characterItems)
 		.set({
 			hidden
 		})
 		.where(and(
-			eq(characterItems.itemId, itemId),
+			sql`${characterItems.itemId} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`,
 			eq(characterItems.hidden, !hidden),
 			inArray(characterItems.characterId, executor
 				.select({
