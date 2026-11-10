@@ -116,7 +116,7 @@
 		"description": "Note in the admin page's list of server admins on the player looking at it"
 	},
 	"admin.areasPerUniverse": {
-		"defaultMessage": "Areas each universe can have",
+		"defaultMessage": "Max number of areas each universe can have",
 		"description": "Label of the field on the site settings page for the most areas (maps of the game world) one universe may have"
 	},
 	"admin.areasPerUniverseHint": {
@@ -138,6 +138,14 @@
 	"admin.characters": {
 		"defaultMessage": "Characters",
 		"description": "Heading of the site settings about players' characters"
+	},
+	"admin.charactersPerUniverse": {
+		"defaultMessage": "Max number of characters each player can have in a universe",
+		"description": "Label of the field on the site settings page for the most characters one player may have in one universe"
+	},
+	"admin.charactersPerUniverseHint": {
+		"defaultMessage": "This counts characters given their last rites until they are deleted. A player with more characters keeps them, but can't make more until they have fewer.",
+		"description": "Explains the field on the site settings page for the most characters one player may have in one universe. Last rites is how players delete a character after some days"
 	},
 	"admin.column.actions": {
 		"defaultMessage": "Actions",
@@ -628,7 +636,7 @@
 		"description": "Explains on the site settings page that the universe settings only affect making new universes"
 	},
 	"admin.universesPerCreator": {
-		"defaultMessage": "Universes each player can create",
+		"defaultMessage": "Max number of universes each player can create",
 		"description": "Label of the field on the site settings page for the most universes one player may create"
 	},
 	"area.announce.appeared": {
@@ -752,8 +760,8 @@
 		"description": "Label of the field for which ability gets the bonus some races (such as humans) let the player place"
 	},
 	"character.create.limit": {
-		"defaultMessage": "You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have.",
-		"description": "Shown on the Create Character page when the player can't make another character in this universe; {max} is the most allowed"
+		"defaultMessage": "You have {count, plural, one {# character} other {# characters}} in this universe, and can have at most {max}.",
+		"description": "Shown on the Create Character page when the player can't make another character in this universe; {count} is how many they have, which can be more than {max}, the most the site allows"
 	},
 	"character.create.loadFailed": {
 		"defaultMessage": "Could not load the races, classes and ability scores.",

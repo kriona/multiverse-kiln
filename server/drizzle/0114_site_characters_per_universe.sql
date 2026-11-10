@@ -1,0 +1,2 @@
+ALTER TABLE "site_settings" ADD COLUMN "characters_per_universe" integer DEFAULT 20 NOT NULL;--> statement-breakpoint
+ALTER TABLE "site_settings" ADD CONSTRAINT "site_settings_characters_per_universe_range" CHECK ("site_settings"."characters_per_universe" BETWEEN 1 AND 1000);

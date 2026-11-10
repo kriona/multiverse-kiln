@@ -30,11 +30,6 @@ import type { Ruleset } from './universes.js';
 import type { Darkvision } from './vision.js';
 
 /**
- * Most characters a player may have in one universe
- */
-export const MAX_CHARACTERS_PER_UNIVERSE = 20;
-
-/**
  * Longest character name, after trimming
  */
 export const MAX_CHARACTER_NAME_LENGTH = 40;
@@ -328,6 +323,11 @@ export interface NewCharacterOptions
 	 * How many characters the player already has in the universe
 	 */
 	characterCount: number;
+
+	/**
+	 * Most characters the player may have in the universe (the site's charactersPerUniverse)
+	 */
+	characterLimit: number;
 
 	/**
 	 * The player's saved progress, or null when they haven't started one

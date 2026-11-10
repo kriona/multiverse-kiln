@@ -42,6 +42,16 @@ export const MIN_AREAS_PER_UNIVERSE = 2;
 export const MAX_AREAS_PER_UNIVERSE = 10000;
 
 /**
+ * Fewest characters the site can let each player have in one universe
+ */
+export const MIN_CHARACTERS_PER_UNIVERSE = 1;
+
+/**
+ * Most characters the site can let each player have in one universe
+ */
+export const MAX_CHARACTERS_PER_UNIVERSE = 100;
+
+/**
  * Most days the site can wait after a character's last rites before deleting them
  */
 export const MAX_CHARACTER_DELETION_DAYS = 365;
@@ -131,6 +141,13 @@ export interface SiteSettings
 	areasPerUniverse: number;
 
 	/**
+	 * Most characters one player may have in one universe, from MIN_CHARACTERS_PER_UNIVERSE to
+	 * MAX_CHARACTERS_PER_UNIVERSE, counting those given their last rites. A player with more keeps them, but
+	 * can't make any until they have fewer
+	 */
+	charactersPerUniverse: number;
+
+	/**
 	 * How many days after their last rites a character is deleted, from 0 to MAX_CHARACTER_DELETION_DAYS.
 	 * 0 turns last rites off, so characters can only be deleted. Characters already given
 	 * their last rites keep the day they were given
@@ -161,6 +178,7 @@ export const DEFAULT_SITE_SETTINGS: Readonly<SiteSettings> = {
 	universeCreationEnabled: true,
 	universesPerCreator: 5,
 	areasPerUniverse: 1000,
+	charactersPerUniverse: 20,
 	characterDeletionDays: 7,
 	socials: {
 		discord: null,

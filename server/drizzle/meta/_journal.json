@@ -799,6 +799,20 @@
       "when": 1794278813294,
       "tag": "0113_confirm_login_email_code",
       "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1794351647703,
+      "tag": "0114_site_characters_per_universe",
+      "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1794351832546,
+      "tag": "0115_site_characters_per_universe_range",
+      "breakpoints": true
     }
   ]
 }

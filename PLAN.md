@@ -486,6 +486,8 @@ Needed before universes are open to the public.
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
 - [ ] A way to tell users with the same name apart, which user search depends on
+- [ ] Emoji reactions
+- [ ] @messages
 
 **Done when:** players can message each other and invite each other to groups, and can block anyone who abuses it.
 

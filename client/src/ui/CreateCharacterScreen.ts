@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, characterSteps, DISALLOWED_TEXT_CHARACTERS, FLOATING_ABILITY_BONUSES, isReservedName, mainAbility, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, SF1E_BASE_ABILITY_SCORE, SF1E_MAX_BOUGHT_SCORE, SF1E_THEME_ABILITY_BONUS, sf1eAbilityPointsSpent, sf1eOverraisedAbilities, type Ability, type AbilityScores, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type CharacterThemeOption, type NewCharacterOptions, type Ruleset } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSteps, DISALLOWED_TEXT_CHARACTERS, FLOATING_ABILITY_BONUSES, isReservedName, mainAbility, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, SF1E_BASE_ABILITY_SCORE, SF1E_MAX_BOUGHT_SCORE, SF1E_THEME_ABILITY_BONUS, sf1eAbilityPointsSpent, sf1eOverraisedAbilities, type Ability, type AbilityScores, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type CharacterThemeOption, type NewCharacterOptions, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale, formatList, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
@@ -258,14 +258,15 @@ export class CreateCharacterScreen
 		this.loading.hidden = true;
 		this.body.hidden = false;
 
-		if (options.characterCount >= MAX_CHARACTERS_PER_UNIVERSE)
+		if (options.characterCount >= options.characterLimit)
 		{
 			showMessage(this.pageError, t({
 				id: 'character.create.limit',
-				defaultMessage: 'You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have.',
-				description: 'Shown on the Create Character page when the player can\'t make another character in this universe; {max} is the most allowed'
+				defaultMessage: 'You have {count, plural, one {# character} other {# characters}} in this universe, and can have at most {max}.',
+				description: 'Shown on the Create Character page when the player can\'t make another character in this universe; {count} is how many they have, which can be more than {max}, the most the site allows'
 			}, {
-				max: MAX_CHARACTERS_PER_UNIVERSE
+				count: options.characterCount,
+				max: options.characterLimit
 			}));
 			this.createButton.disabled = true;
 		}

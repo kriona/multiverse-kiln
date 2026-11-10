@@ -116,8 +116,8 @@
 		"source": "You"
 	},
 	"admin.areasPerUniverse": {
-		"message": "Areas each universe can hold",
-		"source": "Areas each universe can have"
+		"message": "Max number o' areas each universe can hold",
+		"source": "Max number of areas each universe can have"
 	},
 	"admin.areasPerUniverseHint": {
 		"message": "The live universe and its draft be counted apart, and this holds fer haulin' in a universe too. A universe with more areas keeps 'em, but can't lay down more till it has fewer.",
@@ -138,6 +138,14 @@
 	"admin.characters": {
 		"message": "Hands",
 		"source": "Characters"
+	},
+	"admin.charactersPerUniverse": {
+		"message": "Max number o' hands each captain can muster in a universe",
+		"source": "Max number of characters each player can have in a universe"
+	},
+	"admin.charactersPerUniverseHint": {
+		"message": "Hands what had their last rites be counted till Davy Jones takes 'em. A captain with more hands keeps 'em, but can't sign on more till they have fewer.",
+		"source": "This counts characters given their last rites until they are deleted. A player with more characters keeps them, but can't make more until they have fewer."
 	},
 	"admin.column.actions": {
 		"message": "Orders",
@@ -628,8 +636,8 @@
 		"source": "These only affect new universes. Universes that already exist persist, even for players who have more than the limit."
 	},
 	"admin.universesPerCreator": {
-		"message": "Universes each hand can create",
-		"source": "Universes each player can create"
+		"message": "Max number o' universes each hand can create",
+		"source": "Max number of universes each player can create"
 	},
 	"area.announce.appeared": {
 		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
@@ -752,8 +760,8 @@
 		"source": "Ability for the race's bonus"
 	},
 	"character.create.limit": {
-		"message": "Ye've {max, plural, one {# hand} other {# hands}} in this universe, as many as the articles allow.",
-		"source": "You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have."
+		"message": "Ye've {count, plural, one {# hand} other {# hands}} in this universe, and the articles allow no more than {max}.",
+		"source": "You have {count, plural, one {# character} other {# characters}} in this universe, and can have at most {max}."
 	},
 	"character.create.loadFailed": {
 		"message": "Couldn't haul in the folk, callin's an' knacks.",

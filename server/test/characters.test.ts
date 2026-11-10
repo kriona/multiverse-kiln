@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_CHARACTERS_PER_UNIVERSE, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload,type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { adminDb, inAdminTransaction } from '../src/db/adminClient.js';
 import { countCharacters } from '../src/db/characterRepo.js';
@@ -251,6 +251,7 @@ describe('Character routes', () =>
 		assert.ok(first.races.some((race) => (race.id === dwarfId)));
 		assert.ok(first.classes.some((characterClass) => (characterClass.id === fighterId)));
 		assert.strictEqual(first.characterCount, 0);
+		assert.strictEqual(first.characterLimit, DEFAULT_SITE_SETTINGS.charactersPerUniverse);
 	});
 
 	it('makes a character from the rolled scores in any order, and rolls again for the next', async () =>
@@ -617,9 +618,13 @@ describe('Character routes', () =>
 		assert.strictEqual((await saveEditorChange(ada, universeId, { kind: 'removeRace', id: raceId })).status, 409);
 	});
 
-	it('allows at most MAX_CHARACTERS_PER_UNIVERSE characters', async () =>
+	it('allows at most the site\'s characters per universe', async () =>
 	{
 		await usePointBuy();
+		await saveSiteSettings({
+			...DEFAULT_SITE_SETTINGS,
+			charactersPerUniverse: 3
+		}, adminDb);
 
 		const request: NewCharacterRequest = {
 			name: 'Brokk',
@@ -630,12 +635,30 @@ describe('Character routes', () =>
 			floatingAbility: null
 		};
 
-		for (let count = 0; count < MAX_CHARACTERS_PER_UNIVERSE; count++)
+		for (let count = 0; count < 3; count++)
 		{
 			assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 201);
 		}
 
+		const refused = await send<ErrorPayload>(ada, 'POST', charactersPath(universeId), request);
+
+		assert.strictEqual(refused.status, 409);
+		assert.strictEqual(refused.body.error.values?.max, 3);
+		assert.strictEqual((await newOptions()).characterLimit, 3);
+
+		// Lowering the limit keeps the characters a player has
+		await saveSiteSettings({
+			...DEFAULT_SITE_SETTINGS,
+			charactersPerUniverse: 2
+		}, adminDb);
+		assert.strictEqual(await countCharacters(ada.playerId, universeId), 3);
 		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 409);
+
+		await saveSiteSettings({
+			...DEFAULT_SITE_SETTINGS,
+			charactersPerUniverse: 4
+		}, adminDb);
+		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 201);
 	});
 
 	it('saves progress, gives it back, and throws it away to start over', async () =>
