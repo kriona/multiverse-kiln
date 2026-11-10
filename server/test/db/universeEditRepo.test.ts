@@ -1,7 +1,8 @@
 import assert from 'assert';
+import type { SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { deletePlayer } from '../../src/db/playerRepo.js';
-import { deleteUniverseEditsBefore, listUniverseEdits, recordUniverseEdit } from '../../src/db/universeEditRepo.js';
+import { deleteUniverseEditsBefore, findLastSavers, listUniverseEdits, recordUniverseEdit } from '../../src/db/universeEditRepo.js';
 import { deleteUniverse } from '../../src/db/universeRepo.js';
 import { addPlayer } from '../players.js';
 import { addUniverse } from './fixtures.js';
@@ -107,5 +108,48 @@ describe('universeEditRepo', () =>
 
 		assert.strictEqual(await deleteUniverseEditsBefore(new Date(now + dayMs), 10), 1);
 		assert.strictEqual((await listUniverseEdits(universeId, { offset: 0, limit: 10 })).total, 1);
+	});
+
+	it('finds who last saved each of several settings in one version, skipping deleted accounts', async () =>
+	{
+		const universeId = await addUniverse();
+		const otherId = await addUniverse('Elsewhere');
+		const ada = await addPlayer('Ada');
+		const grace = await addPlayer('Grace');
+		const linus = await addPlayer('Linus');
+		const raceName = (id: number | string | null): SavedEditDetail => ({ subject: 'race', id, action: 'changed', target: { key: null, name: 'Elf' }, fields: [{ field: 'name', value: 'Elf' }], count: 1 });
+		const saves: { universe: string; player: string; draft: boolean; minute: number; details: SavedEditDetail[] }[] = [
+			{ universe: universeId, player: ada.id, draft: false, minute: 1, details: [raceName(7), { subject: 'settings', id: null, action: 'changed', target: null, fields: [{ field: 'stage', value: 'prologue' }, { field: 'name', value: 'Here' }], count: 1 }] },
+			{ universe: universeId, player: grace.id, draft: false, minute: 2, details: [raceName(7)] },
+			{ universe: universeId, player: linus.id, draft: false, minute: 3, details: [{ subject: 'settings', id: null, action: 'changed', target: null, fields: [{ field: 'name', value: 'There' }], count: 1 }] },
+			{ universe: universeId, player: ada.id, draft: true, minute: 4, details: [raceName(7)] },
+			{ universe: otherId, player: ada.id, draft: false, minute: 5, details: [raceName(7)] }
+		];
+
+		for (const save of saves)
+		{
+			await recordUniverseEdit({
+				universeId: save.universe,
+				playerId: save.player,
+				role: 'creator',
+				draft: save.draft,
+				changeDetails: save.details,
+				savedAt: new Date(Date.UTC(2026, 10, 1, 12, save.minute))
+			});
+		}
+
+		await deletePlayer(linus.id);
+
+		const names = async (draft: boolean): Promise<(string | undefined)[]> => (await findLastSavers(universeId, draft, [
+			{ subject: 'race', id: 7, field: 'name' },
+			{ subject: 'race', id: 7, field: 'shortDescription' },
+			{ subject: 'race', id: '7', field: 'name' },
+			{ subject: 'settings', id: null, field: 'name' },
+			{ subject: 'settings', id: null, field: 'stage' }
+		])).map((saver) => saver?.name);
+
+		assert.deepStrictEqual(await names(false), ['Grace', undefined, undefined, 'Ada', 'Ada']);
+		assert.deepStrictEqual(await names(true), ['Ada', undefined, undefined, undefined, undefined]);
+		assert.deepStrictEqual(await findLastSavers(universeId, false, []), []);
 	});
 });

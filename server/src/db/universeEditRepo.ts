@@ -23,7 +23,7 @@ export interface NewUniverseEdit
 	draft?: boolean;
 
 	/**
-	 * What it changed, each with the ID of the thing (SavedEditDetail), which findLastSaver() looks for
+	 * What it changed, each with the ID of the thing (SavedEditDetail), which findLastSavers() looks for
 	 */
 	changeDetails: UniverseEditDetail[];
 	savedAt: Date;
@@ -129,39 +129,53 @@ export async function deleteUniverseEditsBefore(before: Date, limit: number, exe
 }
 
 /**
- * Who last saved a setting of something in a version of a universe, from the saves recorded with the ID
- * of each thing they changed (SavedEditDetail)
+ * Who last saved each of several settings in a version of a universe, from the saves recorded with the ID
+ * of each thing they changed (SavedEditDetail). The version's saves are read once for all the settings,
+ * each save's details split into one row per setting it changed
  *
  * @param universeId The universe's ID
  * @param draft Whether to look in the draft's saves rather than the live version's
- * @param setting What the setting belongs to, its ID (null for the universe's settings and the ruleset),
- * and the setting as the Audit tab names it
+ * @param settings For each setting, what it belongs to, its ID (null for the universe's settings and the
+ * ruleset), and the setting as the Audit tab names it
  * @param executor The database, or a transaction
- * @return Their display name and username, or undefined when no recorded save names it or their account is deleted
+ * @return For each setting, in order, the display name and username of the last player to save it whose
+ * account still exists, or undefined when there is none
  */
-export async function findLastSaver(universeId: string, draft: boolean, setting: { subject: AuditSubject; id: number | string | null; field: AuditField }, executor: Executor = db): Promise<{ name: string; username: string } | undefined>
+export async function findLastSavers(universeId: string, draft: boolean, settings: readonly { subject: AuditSubject; id: number | string | null; field: AuditField }[], executor: Executor = db): Promise<({ name: string; username: string } | undefined)[]>
 {
-	const pattern = JSON.stringify([{
-		subject: setting.subject,
-		id: setting.id,
-		fields: [{ field: setting.field }]
-	}]);
-	const [row] = await executor
-		.select({
-			name: players.displayName,
-			username: players.username
-		})
-		.from(universeEdits)
-		.innerJoin(players, eq(players.id, universeEdits.playerId))
-		.where(and(
-			eq(universeEdits.universeId, universeId),
-			eq(universeEdits.draft, draft),
-			sql`${universeEdits.changeDetails} @> ${pattern}::jsonb`
-		))
-		.orderBy(desc(universeEdits.savedAt), desc(universeEdits.id))
-		.limit(1);
+	if (settings.length === 0)
+	{
+		return([]);
+	}
 
-	return(row);
+	const result = await executor.execute<{ position: string; name: string; username: string }>(sql`
+		SELECT DISTINCT ON (wanted.position) wanted.position, ${players.displayName} AS name, ${players.username} AS username
+		FROM (
+			SELECT ${universeEdits.id} AS edit_id, ${universeEdits.savedAt} AS saved_at, ${universeEdits.playerId} AS player_id,
+				detail ->> 'subject' AS subject, detail -> 'id' AS id, changed ->> 'field' AS field
+			FROM ${universeEdits}
+			CROSS JOIN LATERAL jsonb_array_elements(${universeEdits.changeDetails}) AS detail
+			CROSS JOIN LATERAL jsonb_array_elements(coalesce(detail -> 'fields', '[]'::jsonb)) AS changed
+			WHERE ${universeEdits.universeId} = ${universeId}
+				AND ${universeEdits.draft} = ${draft}
+		) AS saved
+		JOIN unnest(
+			${sql.param(settings.map((setting) => setting.subject))}::text[],
+			${sql.param(settings.map((setting) => JSON.stringify(setting.id)))}::jsonb[],
+			${sql.param(settings.map((setting) => setting.field))}::text[]
+		) WITH ORDINALITY AS wanted (subject, id, field, position)
+			ON wanted.subject = saved.subject
+			AND wanted.id = saved.id
+			AND wanted.field = saved.field
+		JOIN ${players} ON ${players.id} = saved.player_id
+		ORDER BY wanted.position, saved.saved_at DESC, saved.edit_id DESC
+	`);
+	const savers = new Map(result.rows.map((row) => [Number(row.position), {
+		name: row.name,
+		username: row.username
+	}]));
+
+	return(settings.map((setting, index) => savers.get(index + 1)));
 }
 
 /**
@@ -263,7 +277,7 @@ export async function listUniverseEdits(universeId: string, page: { offset: numb
 	return({
 		edits: rows.map(({ username, displayName, changeDetails, ...edit }) => ({
 			...edit,
-			// The ID of each thing changed is kept for findLastSaver(), and the Audit tab names things by name
+			// The ID of each thing changed is kept for findLastSavers(), and the Audit tab names things by name
 			changeDetails: (changeDetails?.map((detail) => omitId(detail)) ?? null),
 			player: (((username === null) || (displayName === null)) ? null : {
 				username,

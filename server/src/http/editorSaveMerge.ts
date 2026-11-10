@@ -7,7 +7,7 @@
  */
 import { changeSettings, changeText, flattenSettings, isMergedChange, isMergedTextChange, mergeSettings, sameValue, unflattenSettings, withChangeSettings, type AuditFieldChange, type EditorChange, type FlatSettings, type MergedTextChange, type SaveConflict } from '@multiverse-kiln/shared';
 
-import { findLastSaver } from '../db/universeEditRepo.js';
+import { findLastSavers } from '../db/universeEditRepo.js';
 import type { ChangeContext } from './editorChangeContext.js';
 import { isAuditField, settingGroup, type SaveAudit } from './editorSaveAudit.js';
 import { findSavedText } from './editorTranslations.js';
@@ -21,6 +21,12 @@ export class SaveMerge
 	 * The settings that conflict, in the order of the changes
 	 */
 	readonly conflicts: SaveConflict[] = [];
+
+	/**
+	 * The conflicting settings whose last saver findSavers() looks up, with the setting as the Audit tab
+	 * names it
+	 */
+	private readonly saverLookups: { conflict: SaveConflict; setting: Parameters<typeof findLastSavers>[2][number] }[] = [];
 
 	/**
 	 * @param context The save
@@ -75,6 +81,21 @@ export class SaveMerge
 		}
 
 		return(withChangeSettings(change, unflattenSettings(merged, shape), undefined));
+	}
+
+	/**
+	 * Fills in who last saved each conflicting setting, all at once. Call it once the save's changes are
+	 * merged, before the conflicts are sent
+	 */
+	async findSavers(): Promise<void>
+	{
+		const savers = await findLastSavers(this.context.universe.id, this.context.version.draft, this.saverLookups.map((lookup) => lookup.setting), this.context.transaction);
+
+		this.saverLookups.forEach((lookup, index) =>
+		{
+			lookup.conflict.savedBy = (savers[index] ?? null);
+		});
+		this.saverLookups.length = 0;
 	}
 
 	/**
@@ -141,7 +162,7 @@ export class SaveMerge
 	 * @param found What the change changes, as savedSettings() found it
 	 * @param keys The settings that make up the setting, by key
 	 * @param settings The change's settings, the thing's as saved and those the editor loaded, each flattened
-	 * @return The conflict
+	 * @return The conflict, whose savedBy findSavers() fills in
 	 */
 	private async describe(index: number, found: NonNullable<Awaited<ReturnType<SaveAudit['savedSettings']>>>, keys: readonly string[], settings: { sent: FlatSettings; saved: FlatSettings; loaded: FlatSettings }): Promise<SaveConflict>
 	{
@@ -157,15 +178,7 @@ export class SaveMerge
 		const mine = changedField(await this.audit.describeSettings(found.subject, found.saved, mineValues), loadedFields);
 		const theirs = changedField(await this.audit.describeSettings(found.subject, found.saved, savedValues), loadedFields);
 		const savedByField = (theirs?.field ?? field);
-		const savedBy = ((savedByField === null)
-			? undefined
-			: await findLastSaver(this.context.universe.id, this.context.version.draft, {
-				subject: found.subject,
-				id: found.id,
-				field: savedByField
-			}, this.context.transaction));
-
-		return({
+		const conflict: SaveConflict = {
 			changeIndex: index,
 			subject: found.subject,
 			target: found.target,
@@ -174,8 +187,22 @@ export class SaveMerge
 			text: null,
 			mine: (mine ?? null),
 			theirs: (theirs ?? null),
-			savedBy: (savedBy ?? null)
-		});
+			savedBy: null
+		};
+
+		if (savedByField !== null)
+		{
+			this.saverLookups.push({
+				conflict,
+				setting: {
+					subject: found.subject,
+					id: found.id,
+					field: savedByField
+				}
+			});
+		}
+
+		return(conflict);
 	}
 }
 

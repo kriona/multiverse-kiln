@@ -398,6 +398,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 
 			if (merge.conflicts.length > 0)
 			{
+				await merge.findSavers();
 				current = merge.conflicts[0].changeIndex;
 
 				throw new ChangeRefusal({
