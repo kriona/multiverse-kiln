@@ -13,8 +13,9 @@ import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
-import { areaChanges } from '../world/areaChanges.js';
+import { areaChanges, type AreaChange } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
+import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { isLoggedInToMatchmake } from './matchmakingAuth.js';
@@ -180,6 +181,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	private readonly joinChanges = new JoinChanges<LobbyJoinChange, LobbyLookup>();
 
+	private readonly whileCreating = new ChangesWhileCreating();
+
 	/**
 	 * Each player's characters in the universe, read again whenever one of their windows joins
 	 */
@@ -309,6 +312,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const { universeId } = parsed.data;
 
 		lobbyRooms.claim(universeId, this);
+		this.followChanges();
 
 		const universe = await findUniverse(universeId);
 
@@ -329,113 +333,147 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
 		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 
-		this.stopFollowingChanges = areaChanges.onChange((change) =>
-		{
-			if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
-			{
-				this.joinChanges.note('universe');
-
-				for (const client of this.clients)
-				{
-					client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
-				}
-
-				return;
-			}
-
-			if (change.kind === 'text')
-			{
-				if (change.universeId === this.universeId)
-				{
-					this.broadcast(ServerMessageType.UniverseText);
-				}
-
-				return;
-			}
-
-			if ((change.kind === 'lobby') && (change.universeId === this.universeId))
-			{
-				this.refreshLobby().catch((error: unknown) =>
-				{
-					console.error('Could not move the lobby of universe', this.universeId, error);
-				});
-				return;
-			}
-
-			// Players in the lobby start in its area, at its starting cell. Without a lobby area, nobody is in an area
-			if (change.kind === 'evacuated')
-			{
-				const destination = (change.destination ?? ((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell }));
-
-				if (destination)
-				{
-					this.areaPlayers.evacuate(change.areaId, destination);
-				}
-
-				return;
-			}
-
-			this.areaPlayers.applyChange(change)
-				.then(() => (((change.kind === 'area') && (change.areaId === this.lobbyAreaId)) ? this.loadLobbyArea(false) : undefined))
-				.catch((error: unknown) =>
-				{
-					console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
-				});
-		});
-
 		this.stopListingOccupants = areaOccupants.register(universeId, () => [...this.playing].flatMap(([playerId, character]) =>
 		{
 			const areaId = this.areaPlayers.getAreaId(playerId);
 
 			return(((areaId === undefined) ? [] : [{ characterId: character.id, areaId }]));
 		}));
+		this.whileCreating.created();
+	}
+
+	/**
+	 * Starts following changes to the world, to players' characters, to groups, to sessions, to who may
+	 * play, to the universe's stage and to what bars characters. Called before onCreate's first read, so
+	 * none published while it loads are missed: until it has loaded, they are held (whileCreating)
+	 */
+	private followChanges(): void
+	{
+		this.stopFollowingChanges = areaChanges.onChange((change) =>
+		{
+			this.whileCreating.apply(() => this.applyAreaChange(change));
+		});
 
 		this.stopFollowingBarred = universeAccessChanges.onBarredChanged((change) =>
 		{
-			if (change.universeId === this.universeId)
+			this.whileCreating.apply(() =>
 			{
-				this.applyBarredChange(change);
-			}
+				if (change.universeId === this.universeId)
+				{
+					this.applyBarredChange(change);
+				}
+			});
 		});
 
 		this.stopFollowingCharacters = characterChanges.onChange((change) =>
 		{
-			this.applyCharacterChange(change);
+			this.whileCreating.apply(() => this.applyCharacterChange(change));
 		});
 
 		this.stopFollowingGroups = groupChanges.onChange((change) =>
 		{
-			this.applyGroupChange(change);
+			this.whileCreating.apply(() => this.applyGroupChange(change));
 		});
 
 		this.stopFollowingSessions = connectedSessions.onEnd((sessionIds) =>
 		{
-			this.joinChanges.note('session');
-			this.turnAwaySessions(sessionIds);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('session');
+				this.turnAwaySessions(sessionIds);
+			});
 		});
 
 		this.stopFollowingDeletions = accountDeletions.onDeleted((playerId) =>
 		{
-			this.forgetChatAuthor(playerId);
+			this.whileCreating.apply(() => this.forgetChatAuthor(playerId));
 		});
 
 		this.stopFollowingAccess = universeAccessChanges.onLost((change) =>
 		{
-			if (change.universeId === this.universeId)
+			this.whileCreating.apply(() =>
 			{
-				this.joinChanges.note('access');
-				this.turnAwayPlayers(change.playerIds);
-			}
+				if (change.universeId === this.universeId)
+				{
+					this.joinChanges.note('access');
+					this.turnAwayPlayers(change.playerIds);
+				}
+			});
 		});
 
 		this.stopFollowingStage = universeAccessChanges.onStageChanged((change) =>
 		{
+			this.whileCreating.apply(() =>
+			{
+				if (change.universeId === this.universeId)
+				{
+					this.joinChanges.note('stage');
+					this.applyStageChange(change);
+				}
+			});
+		});
+	}
+
+	/**
+	 * Follows a change the world editor made: the universe being deleted or disabled turns every window
+	 * away, its text changing tells them to read it again, the lobby moving or its area changing moves
+	 * the lobby, an area disabled elsewhere sends its players away, and any other change goes to the
+	 * players it affects
+	 *
+	 * @param change The change
+	 */
+	private applyAreaChange(change: AreaChange): void
+	{
+		if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
+		{
+			this.joinChanges.note('universe');
+
+			for (const client of this.clients)
+			{
+				client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
+			}
+
+			return;
+		}
+
+		if (change.kind === 'text')
+		{
 			if (change.universeId === this.universeId)
 			{
-				this.joinChanges.note('stage');
-				this.applyStageChange(change);
+				this.broadcast(ServerMessageType.UniverseText);
 			}
-		});
+
+			return;
+		}
+
+		if ((change.kind === 'lobby') && (change.universeId === this.universeId))
+		{
+			this.refreshLobby().catch((error: unknown) =>
+			{
+				console.error('Could not move the lobby of universe', this.universeId, error);
+			});
+			return;
+		}
+
+		// Players in the lobby start in its area, at its starting cell. Without a lobby area, nobody is in an area
+		if (change.kind === 'evacuated')
+		{
+			const destination = (change.destination ?? ((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell }));
+
+			if (destination)
+			{
+				this.areaPlayers.evacuate(change.areaId, destination);
+			}
+
+			return;
+		}
+
+		this.areaPlayers.applyChange(change)
+			.then(() => (((change.kind === 'area') && (change.areaId === this.lobbyAreaId)) ? this.loadLobbyArea(false) : undefined))
+			.catch((error: unknown) =>
+			{
+				console.error('Could not apply a world change to the lobby of universe', this.universeId, error);
+			});
 	}
 
 	/**

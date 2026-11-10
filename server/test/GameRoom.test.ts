@@ -24,6 +24,7 @@ import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
+import { KeptChatLog } from '../src/rooms/keptChat.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
@@ -375,6 +376,36 @@ describe('GameRoom', () =>
 		const options: GameJoinOptions = { groupId, characterId: anchor.characterId };
 
 		return(colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, options));
+	}
+
+	/**
+	 * Creates the test group's room, making a change while it is created: after the room has read the
+	 * group, its members and the universe's stage, while it loads the group's chat
+	 *
+	 * @param change Makes the change, and publishes it as its route would
+	 * @return The server-side room
+	 */
+	async function createGameRoomChanging(change: () => Promise<void>): Promise<GameRoom>
+	{
+		const prototype = KeptChatLog.prototype as unknown as Record<string, unknown>;
+		const originalLoad = prototype.load as (this: KeptChatLog, ...args: unknown[]) => Promise<void>;
+
+		prototype.load = async function (this: KeptChatLog, ...args: unknown[]): Promise<void>
+		{
+			prototype.load = originalLoad;
+			await change();
+
+			return(originalLoad.apply(this, args));
+		};
+
+		try
+		{
+			return(await createGameRoom());
+		}
+		finally
+		{
+			prototype.load = originalLoad;
+		}
 	}
 
 	before(async () =>
@@ -1359,6 +1390,31 @@ describe('GameRoom', () =>
 			await room.waitForNextTimestep();
 
 			assert.ok(client.connection.isOpen);
+		});
+
+		it('lets in a character who joined the group while its room was being created', async () =>
+		{
+			const newcomer = await addPlayerWithCharacter('Newcomer');
+			const room = await createGameRoomChanging(() => joinGroup(newcomer));
+			const { client } = await joinAs(room, browserIdA, newcomer);
+
+			assert.strictEqual(playerIdOf(room, client), newcomer.characterId);
+		});
+
+		it('locks when the universe reaches the end of time while its room is being created', async () =>
+		{
+			const room = await createGameRoomChanging(async () =>
+			{
+				await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+				universeAccessChanges.publishStage({
+					universeId: universe.universeId,
+					stage: 'end_of_time',
+					previousStage: 'let_there_be_light',
+					roles: new Map()
+				});
+			});
+
+			assert.strictEqual(room.state.locked, true);
 		});
 	});
 

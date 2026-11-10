@@ -14,6 +14,7 @@ import { twoFactorChanges } from '../players/twoFactorChanges.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
+import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
@@ -177,6 +178,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	private readonly joinChanges = new JoinChanges<EditorJoinChange, EditorLookup>();
 
+	private readonly whileCreating = new ChangesWhileCreating();
+
 	/**
 	 * Each window's key in its player's EditorPresence.windows, by the client's session ID
 	 */
@@ -309,6 +312,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		const { universeId } = parsed.data;
 
 		editorRooms.claim(universeId, this);
+		this.followChanges();
 
 		if (!await findUniverse(universeId))
 		{
@@ -323,58 +327,89 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			void this.saveChat();
 		}, CHAT_SAVE_INTERVAL_MS);
 
+		this.whileCreating.created();
+	}
+
+	/**
+	 * Starts following changes to sessions, roles and the universe, and deleted accounts, whose names
+	 * the chat drops. Called before onCreate's first read, so none published while it loads are missed:
+	 * until it has loaded, they are held (whileCreating)
+	 */
+	private followChanges(): void
+	{
 		this.stopFollowingSessions = connectedSessions.onEnd((sessionIds) =>
 		{
-			this.joinChanges.note('session');
-			this.turnAway((identity) => sessionIds.has(identity.sessionId), ServerCloseCode.LoggedOut);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('session');
+				this.turnAway((identity) => sessionIds.has(identity.sessionId), ServerCloseCode.LoggedOut);
+			});
 		});
 
 		this.stopFollowingWorld = areaChanges.onChange((change) =>
 		{
-			if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+			this.whileCreating.apply(() =>
 			{
-				this.joinChanges.note('universeDeleted');
-				this.turnAway(() => true, ServerCloseCode.UniverseDeleted);
-			}
+				if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+				{
+					this.joinChanges.note('universeDeleted');
+					this.turnAway(() => true, ServerCloseCode.UniverseDeleted);
+				}
+			});
 		});
 
 		this.stopFollowingUpdates = editorUpdates.onUpdate((update) =>
 		{
-			if (update.universeId === this.universeId)
+			this.whileCreating.apply(() =>
 			{
-				this.applyUpdate(update);
-			}
+				if (update.universeId === this.universeId)
+				{
+					this.applyUpdate(update);
+				}
+			});
 		});
 
 		this.stopFollowingStage = universeAccessChanges.onStageChanged((change) =>
 		{
-			if (change.universeId === this.universeId)
+			this.whileCreating.apply(() =>
 			{
-				this.joinChanges.note('stage');
-				this.applyStageChange(change);
-			}
+				if (change.universeId === this.universeId)
+				{
+					this.joinChanges.note('stage');
+					this.applyStageChange(change);
+				}
+			});
 		});
 
 		this.stopFollowingAdmins = serverAdminChanges.onLost((playerId) =>
 		{
-			this.joinChanges.note('serverAdmin');
-			void this.applyServerAdminLost(playerId);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('serverAdmin');
+				void this.applyServerAdminLost(playerId);
+			});
 		});
 
 		this.stopFollowingTwoFactor = twoFactorChanges.onChange((playerId, on) =>
 		{
-			this.joinChanges.note('twoFactor');
-			void this.applyTwoFactorChange(playerId, on);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('twoFactor');
+				void this.applyTwoFactorChange(playerId, on);
+			});
 		});
 
 		this.stopFollowingDeletions = accountDeletions.onDeleted((playerId) =>
 		{
-			if (this.chat.forgetAuthor(playerId))
+			this.whileCreating.apply(() =>
 			{
-				const deleted: ChatAuthorDeletedPayload = { playerId };
+				if (this.chat.forgetAuthor(playerId))
+				{
+					const deleted: ChatAuthorDeletedPayload = { playerId };
 
-				this.broadcast(EditorServerMessageType.ChatAuthorDeleted, deleted);
-			}
+					this.broadcast(EditorServerMessageType.ChatAuthorDeleted, deleted);
+				}
+			});
 		});
 	}
 

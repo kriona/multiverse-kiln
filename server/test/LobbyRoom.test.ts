@@ -20,7 +20,7 @@ import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
-import { CHAT_HISTORY_LENGTH, type LobbyRoom } from '../src/rooms/LobbyRoom.js';
+import { CHAT_HISTORY_LENGTH, LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
@@ -482,6 +482,37 @@ describe('LobbyRoom', () =>
 
 			assert.strictEqual(room.getAreaId(grace.playerId), houseAreaId);
 			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, houseAreaId);
+		});
+
+		it('puts the first player in the lobby\'s new area when it moves while the room is being created', async () =>
+		{
+			const { universeId, squareAreaId, houseAreaId } = universe;
+			const prototype = LobbyRoom.prototype as unknown as Record<string, unknown>;
+			const originalLobbyArea = prototype.lobbyArea as (this: LobbyRoom) => Promise<unknown>;
+
+			// The editor's save commits and publishes after the room has read the universe, while it loads the old lobby area
+			prototype.lobbyArea = async function (this: LobbyRoom): Promise<unknown>
+			{
+				prototype.lobbyArea = originalLobbyArea;
+
+				const found = await originalLobbyArea.call(this);
+
+				await updateUniverseSettings(liveVersion(universeId), { lobbyAreaId: houseAreaId, lobbyColumn: 2, lobbyRow: 2 });
+				areaChanges.publish({ kind: 'area', areaId: squareAreaId });
+				areaChanges.publish({ kind: 'area', areaId: houseAreaId });
+				areaChanges.publish({ kind: 'lobby', universeId });
+
+				return(found);
+			};
+
+			const ada = await joinAsNewPlayer(universeId, 'Ada')
+				.finally(() =>
+				{
+					prototype.lobbyArea = originalLobbyArea;
+				});
+			const room = lobbyOf(ada);
+
+			await waitUntil(() => (room.getAreaId(ada.playerId) === houseAreaId));
 		});
 
 		it('puts a player who joins while the lobby\'s area is disabled in no area', async () =>

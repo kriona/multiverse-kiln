@@ -17,10 +17,11 @@ import { characterChanges, type CharacterChange } from '../players/characterChan
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
-import { areaChanges, type AreaPlace } from '../world/areaChanges.js';
+import { areaChanges, type AreaChange, type AreaPlace } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
+import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
@@ -233,6 +234,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	private readonly joinChanges = new JoinChanges<GameJoinChange, GameLookup>();
 
+	private readonly whileCreating = new ChangesWhileCreating();
+
 	/**
 	 * The group's chat, loaded in onCreate. It takes in the notices written in it, such as a character
 	 * leaving, and sends them to the room's windows
@@ -357,6 +360,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const { groupId } = parsed.data;
 
 		gameRooms.claim(groupId, this);
+		this.followChanges();
 
 		const group = await findGroup(groupId);
 		const universe = (group ? await findUniverse(group.universeId) : undefined);
@@ -433,103 +437,140 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			void this.saveChat();
 		}, CHAT_SAVE_INTERVAL_MS);
 
+		this.stopListening.push(areaOccupants.register(this.universeId, () => [...this.members.keys()].flatMap((characterId) =>
+		{
+			const areaId = this.areaPlayers.getAreaId(characterId);
+
+			return(((areaId === undefined) ? [] : [{ characterId, areaId }]));
+		})));
+		this.whileCreating.created();
+	}
+
+	/**
+	 * Starts following changes to the group, its characters, the world, sessions and who may open the
+	 * universe's groups. Called before onCreate's first read, so none published while it loads are
+	 * missed: until it has loaded, they are held (whileCreating)
+	 */
+	private followChanges(): void
+	{
 		this.stopListening.push(
 			groupChanges.onChange((change) =>
 			{
-				this.applyGroupChange(change);
+				this.whileCreating.apply(() => this.applyGroupChange(change));
 			}),
 			accountDeletions.onDeleted((playerId) =>
 			{
-				if (this.chat.forgetAuthor(playerId))
+				this.whileCreating.apply(() =>
 				{
-					const deleted: ChatAuthorDeletedPayload = { playerId };
+					if (this.chat.forgetAuthor(playerId))
+					{
+						const deleted: ChatAuthorDeletedPayload = { playerId };
 
-					this.broadcast(GameServerMessageType.ChatAuthorDeleted, deleted);
-				}
+						this.broadcast(GameServerMessageType.ChatAuthorDeleted, deleted);
+					}
+				});
 			}),
 			characterChanges.onChange((change) =>
 			{
-				this.applyCharacterChange(change);
+				this.whileCreating.apply(() => this.applyCharacterChange(change));
 			}),
 			areaChanges.onChange((change) =>
 			{
-				if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
-				{
-					this.joinChanges.note('universe');
-
-					for (const client of this.clients)
-					{
-						client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
-					}
-
-					return;
-				}
-
-				if (change.kind === 'text')
+				this.whileCreating.apply(() => this.applyAreaChange(change));
+			}),
+			universeAccessChanges.onBarredChanged((change) =>
+			{
+				this.whileCreating.apply(() =>
 				{
 					if (change.universeId === this.universeId)
 					{
-						this.broadcast(ServerMessageType.UniverseText);
+						this.applyBarredChange(change);
 					}
-
-					return;
-				}
-
-				if (change.kind === 'deleted')
-				{
-					this.seen.forget(change.areaId);
-				}
-
-				if (change.kind === 'evacuated')
-				{
-					this.evacuate(change.areaId, change.destination).catch((error: unknown) =>
-					{
-						console.error('Could not move the characters of group', this.groupId, 'out of area', change.areaId, error);
-					});
-
-					return;
-				}
-
-				this.areaPlayers.applyChange(change).catch((error: unknown) =>
-				{
-					console.error('Could not apply a world change to the room of group', this.groupId, error);
 				});
-			}),
-			areaOccupants.register(this.universeId, () => [...this.members.keys()].flatMap((characterId) =>
-			{
-				const areaId = this.areaPlayers.getAreaId(characterId);
-
-				return(((areaId === undefined) ? [] : [{ characterId, areaId }]));
-			})),
-			universeAccessChanges.onBarredChanged((change) =>
-			{
-				if (change.universeId === this.universeId)
-				{
-					this.applyBarredChange(change);
-				}
 			}),
 			connectedSessions.onEnd((sessionIds) =>
 			{
-				this.joinChanges.note('session');
-				this.turnAwaySessions(sessionIds);
+				this.whileCreating.apply(() =>
+				{
+					this.joinChanges.note('session');
+					this.turnAwaySessions(sessionIds);
+				});
 			}),
 			universeAccessChanges.onLost((change) =>
 			{
-				if (change.universeId === this.universeId)
+				this.whileCreating.apply(() =>
 				{
-					this.joinChanges.note('access');
-					this.turnAwayPlayers(change.playerIds);
-				}
+					if (change.universeId === this.universeId)
+					{
+						this.joinChanges.note('access');
+						this.turnAwayPlayers(change.playerIds);
+					}
+				});
 			}),
 			universeAccessChanges.onStageChanged((change) =>
 			{
-				if (change.universeId === this.universeId)
+				this.whileCreating.apply(() =>
 				{
-					this.joinChanges.note('stage');
-					this.applyStageChange(change);
-				}
+					if (change.universeId === this.universeId)
+					{
+						this.joinChanges.note('stage');
+						this.applyStageChange(change);
+					}
+				});
 			})
 		);
+	}
+
+	/**
+	 * Follows a change the world editor made: the universe being deleted or disabled turns every window
+	 * away, its text changing tells them to read it again, an area disabled elsewhere sends its members
+	 * away, and any other change goes to the members it affects
+	 *
+	 * @param change The change
+	 */
+	private applyAreaChange(change: AreaChange): void
+	{
+		if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
+		{
+			this.joinChanges.note('universe');
+
+			for (const client of this.clients)
+			{
+				client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
+			}
+
+			return;
+		}
+
+		if (change.kind === 'text')
+		{
+			if (change.universeId === this.universeId)
+			{
+				this.broadcast(ServerMessageType.UniverseText);
+			}
+
+			return;
+		}
+
+		if (change.kind === 'deleted')
+		{
+			this.seen.forget(change.areaId);
+		}
+
+		if (change.kind === 'evacuated')
+		{
+			this.evacuate(change.areaId, change.destination).catch((error: unknown) =>
+			{
+				console.error('Could not move the characters of group', this.groupId, 'out of area', change.areaId, error);
+			});
+
+			return;
+		}
+
+		this.areaPlayers.applyChange(change).catch((error: unknown) =>
+		{
+			console.error('Could not apply a world change to the room of group', this.groupId, error);
+		});
 	}
 
 	/**
