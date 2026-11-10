@@ -86,15 +86,12 @@ export async function recordRateLimitEvent(kind: RateLimitKind, subjectHash: Uin
  */
 export async function deleteRateLimitEventsBefore(kinds: readonly RateLimitKind[], before: Date, executor: Executor = db): Promise<number>
 {
-	const rows = await executor
+	const result = await executor
 		.delete(rateLimitEvents)
 		.where(and(
 			inArray(rateLimitEvents.kind, [...kinds]),
 			lte(rateLimitEvents.occurredAt, before)
-		))
-		.returning({
-			id: rateLimitEvents.id
-		});
+		));
 
-	return(rows.length);
+	return(result.rowCount ?? 0);
 }

@@ -343,14 +343,11 @@ export async function deletePlayerPendingTwoFactorLogins(playerId: string, execu
  */
 export async function deleteExpiredPendingTwoFactorLogins(now: Date, executor: Executor = db): Promise<number>
 {
-	const rows = await executor
+	const result = await executor
 		.delete(pendingTwoFactorLogins)
-		.where(lte(pendingTwoFactorLogins.expiresAt, now))
-		.returning({
-			id: pendingTwoFactorLogins.id
-		});
+		.where(lte(pendingTwoFactorLogins.expiresAt, now));
 
-	return(rows.length);
+	return(result.rowCount ?? 0);
 }
 
 /**
@@ -426,14 +423,11 @@ export async function deleteTrustedBrowsers(playerId: string, executor: Executor
  */
 export async function deleteExpiredTrustedBrowsers(now: Date, executor: Executor = db): Promise<number>
 {
-	const rows = await executor
+	const result = await executor
 		.delete(trustedBrowsers)
-		.where(lte(trustedBrowsers.expiresAt, now))
-		.returning({
-			id: trustedBrowsers.id
-		});
+		.where(lte(trustedBrowsers.expiresAt, now));
 
-	return(rows.length);
+	return(result.rowCount ?? 0);
 }
 
 /**
