@@ -1379,6 +1379,30 @@ describe('GameRoom', () =>
 			assert.strictEqual(await left2, ServerCloseCode.GroupDisbanded);
 		});
 
+		it('turns away a window whose group is disbanded while it joins, saying why', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const left = waitForLeave(client);
+
+			changeDuringNextLookup(room, 'lookUp', () =>
+			{
+				groupChanges.publish({
+					kind: 'disbanded',
+					groupId,
+					universeId: universe.universeId,
+					members: [],
+					groupSizeLowered: true
+				});
+
+				return(Promise.resolve());
+			});
+
+			await assert.rejects(joinAs(room, browserIdB, anchor), refusedWith(ServerCloseCode.GroupSizeLowered));
+			assert.strictEqual(await left, ServerCloseCode.GroupSizeLowered);
+			assert.strictEqual(room.getAreaId(anchor.characterId), undefined);
+		});
+
 		it('ignores changes to other groups', async () =>
 		{
 			const room = await createGameRoom();

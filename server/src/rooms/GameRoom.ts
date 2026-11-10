@@ -223,9 +223,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly windows = new Map<string, Set<GameClient>>();
 
 	/**
-	 * Whether the anchor being has left, so the group is no more and nothing is saved
+	 * Once the anchor being has left, or the group size was lowered, so the group is no more, the close
+	 * code its windows are turned away with; nothing is saved from then on, and no window may join.
+	 * Undefined while the group is still together
 	 */
-	private disbanded = false;
+	private disbanded: ServerCloseCode | undefined;
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -650,12 +652,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	/**
 	 * Puts every playable character of the joining client's player into play, if they aren't already,
 	 * gives the client the character it asked for, and sends it the group's chat. A window that may have
-	 * missed a change while it joined looks itself up again first (recheckJoining())
+	 * missed a change while it joined looks itself up again first (recheckJoining()), and one whose group
+	 * is no more is turned away
 	 *
 	 * @param client The joining client
 	 */
 	private async join(client: GameClient): Promise<void>
 	{
+		// Colyseus lists the client among the room's clients just before onJoin, so a disbanding from here
+		// on turns it away with the rest; one before it, while onAuth looked the window up, is caught here
+		if (this.disbanded !== undefined)
+		{
+			throw new ServerError(this.disbanded, 'The window\'s group was disbanded while it joined');
+		}
+
 		await this.recheckJoining(client);
 
 		const { playerId, characterId } = identityOf(client);
@@ -717,7 +727,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		try
 		{
-			if (!this.disbanded)
+			if (this.disbanded === undefined)
 			{
 				await saveMemberPositions(this.groupId, positions);
 				await saveGroupClock(this.groupId, this.gameClock.seconds);
@@ -761,7 +771,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	saveChat(): Promise<void>
 	{
-		if (this.disbanded)
+		if (this.disbanded !== undefined)
 		{
 			return(Promise.resolve());
 		}
@@ -1032,7 +1042,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	private async saveSeen(): Promise<void>
 	{
-		if (this.disbanded)
+		if (this.disbanded !== undefined)
 		{
 			return;
 		}
@@ -1228,11 +1238,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		if (change.kind === 'disbanded')
 		{
-			this.disbanded = true;
+			const code = ((change.groupSizeLowered === true) ? ServerCloseCode.GroupSizeLowered : ServerCloseCode.GroupDisbanded);
+
+			this.disbanded = code;
 
 			for (const client of this.clients)
 			{
-				client.leave(((change.groupSizeLowered === true) ? ServerCloseCode.GroupSizeLowered : ServerCloseCode.GroupDisbanded));
+				client.leave(code);
 			}
 
 			return;
