@@ -260,6 +260,14 @@ export class CellMaskShader
 	}
 
 	/**
+	 * Hides the shader until it is next drawn over covered cells, so it isn't run while it can't show
+	 */
+	hide(): void
+	{
+		this.shader.setVisible(false);
+	}
+
+	/**
 	 * Changes one of the shader's own uniforms (see CellMaskShaderConfig.uniforms)
 	 *
 	 * @param name The uniform's name

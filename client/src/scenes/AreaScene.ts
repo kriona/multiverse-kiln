@@ -246,6 +246,12 @@ export class AreaScene extends Phaser.Scene
 	private glare?: CellMaskShader;
 
 	/**
+	 * Whether the glare is opaque enough to show (see updateDaylight). While it isn't, it is hidden, since a
+	 * shown shader runs over the whole view every frame even when fully transparent
+	 */
+	private glaring = false;
+
+	/**
 	 * The area's cells as vision sees them, from the chunks received so far
 	 */
 	private visionArea!: VisionArea;
@@ -303,6 +309,7 @@ export class AreaScene extends Phaser.Scene
 		this.announcer = new AreaAnnouncer();
 		this.night = undefined;
 		this.glare = undefined;
+		this.glaring = false;
 		this.fog = undefined;
 		this.paper = undefined;
 		this.fogKey = '';
@@ -565,7 +572,15 @@ export class AreaScene extends Phaser.Scene
 		};
 
 		this.fog?.draw(left, top, isFogged);
-		this.glare?.draw(left, top, (column, row) => !isFogged(column, row));
+
+		if (this.glaring)
+		{
+			this.glare?.draw(left, top, (column, row) => !isFogged(column, row));
+		}
+		else
+		{
+			this.glare?.hide();
+		}
 
 		this.paper?.draw(left, top, (column, row) =>
 		{
@@ -654,7 +669,8 @@ export class AreaScene extends Phaser.Scene
 	 * Darkens the area for the light where the player is: the time of day outdoors, or an indoor area's
 	 * light level. A character with darkvision and light sensitivity sees the dark only faintly, and
 	 * outdoors the daylight glares for them. Outdoors, tells screen reader users as the part of the day
-	 * changes; indoors the light doesn't change with it
+	 * changes; indoors the light doesn't change with it. Runs before updateFog, so the fog is drawn again in
+	 * the same frame when the glare starts or stops showing
 	 */
 	private updateDaylight(): void
 	{
@@ -671,7 +687,16 @@ export class AreaScene extends Phaser.Scene
 		const darkAdapted = ((own.darkvision > 0) && own.lightSensitivity);
 
 		this.night?.setAlpha((1 - light) * (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA));
-		this.glare?.setUniform('uAlpha', ((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0));
+		const glareAlpha = ((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0);
+		const glaring = (glareAlpha > 0);
+
+		this.glare?.setUniform('uAlpha', glareAlpha);
+
+		if (glaring !== this.glaring)
+		{
+			this.glaring = glaring;
+			this.fogKey = '';
+		}
 
 		if (outdoors)
 		{
