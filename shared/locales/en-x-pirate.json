@@ -4119,6 +4119,18 @@
 		"message": "Yer code to change yer email address on {siteName}",
 		"source": "Your code to change your email address on {siteName}"
 	},
+	"email.code.confirmLogin.intro": {
+		"message": "Some scallywag be comin' aboard yer account on {siteName} with yer password. Yer account's been driftin' a long while, so we be checkin' 'tis ye. If it be, enter this code to finish comin' aboard:",
+		"source": "Someone is logging in to your account on {siteName} with your password. Your account hasn't been used for a while, so we're checking it's you. If it is, enter this code to finish logging in:"
+	},
+	"email.code.confirmLogin.notYou": {
+		"message": "If it ain't ye, some other swab knows yer password. They can't come aboard without this code, but reset yer password to keep 'em off yer ship.",
+		"source": "If it isn't you, someone else knows your password. They can't log in without this code, but reset your password to keep them out."
+	},
+	"email.code.confirmLogin.subject": {
+		"message": "Yer code to come aboard {siteName}",
+		"source": "Your code to log in to {siteName}"
+	},
 	"email.code.deleteAccount.intro": {
 		"message": "Some scallywag asked to scuttle yer account on {siteName}, an' there be no raisin' it after. If 'twas ye, enter this code to sail on:",
 		"source": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:"
@@ -5758,6 +5770,10 @@
 	"login.codeResent": {
 		"message": "Sent a fresh code. The one afore it no longer works.",
 		"source": "Sent a new code. The one before no longer works."
+	},
+	"login.codeSentConfirmLogin": {
+		"message": "Ye've not come aboard in a long while, so we've sent a letter to {email} with a code to check 'tis ye. Enter the code from it to finish comin' aboard. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"source": "You haven't logged in for a while, so we've emailed {email} a code to check it's you. Enter the code from the email to finish logging in. It works once, for {minutes, plural, one {# minute} other {# minutes}}."
 	},
 	"login.codeSentLink": {
 		"message": "We've sent a letter to {email}. Enter the code from it to lash yer login on. It works but once, for {minutes, plural, one {# minute} other {# minutes}}.",

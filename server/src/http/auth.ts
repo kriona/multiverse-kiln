@@ -23,15 +23,16 @@ import { endSession, resolveSession, startSession, type SessionIdentity } from '
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient } from '../db/playerRepo.js';
+import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient, type LocalLogin } from '../db/playerRepo.js';
 import { deletePlayerPendingProviderLogins, lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
-import { deletePlayerPendingTwoFactorLogins, deleteTrustedBrowsers } from '../db/twoFactorRepo.js';
+import { deletePlayerPendingTwoFactorLogins, deleteTrustedBrowsers, hasTwoFactor } from '../db/twoFactorRepo.js';
 import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
+import { needsLoginEmailCode } from '../logic/dormantLogins.js';
 import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
@@ -63,7 +64,8 @@ const locale = z.string().max(MAX_LOCALE_LENGTH).regex(/^[A-Za-z0-9-]+$/);
 const loginRequest = z.object({
 	email: emailAddress,
 	password: z.string().max(MAX_PASSWORD_LENGTH * 4),
-	rememberMe: z.boolean()
+	rememberMe: z.boolean(),
+	locale
 }) satisfies z.ZodType<LoginRequest>;
 
 const emailCodeRequest = z.object({
@@ -284,6 +286,50 @@ async function confirmedChangeToken(request: Request, playerId: string, now: Dat
 }
 
 /**
+ * Counts an email code about to be sent against the network's limit and the address's (decideEmailCodeSend()),
+ * locking the address's limits until the transaction ends
+ *
+ * @param networkHash The keyed hash of the network asking (clientNetworkHash())
+ * @param addressHash The keyed hash of the address the code goes to
+ * @param now The time now
+ * @param response The response, which gets a Retry-After header when a limit is reached
+ * @param executor A transaction, which must be committed even when the code can't be sent, so the attempt counts
+ * @return Why the code can't be sent, or undefined when it can
+ */
+async function takeCodeSend(networkHash: ReturnType<typeof clientNetworkHash>, addressHash: Buffer, now: Date, response: Response, executor: Executor): Promise<AuthRefusal | undefined>
+{
+	const network = await takeAttempt([
+		{
+			kind: 'networkCodeRequest',
+			subjectHash: networkHash,
+			limit: MAX_EMAIL_CODES_PER_NETWORK_HOUR
+		}
+	], now, executor);
+
+	if (!network.allowed)
+	{
+		return(tooManyAttempts(network, now, response));
+	}
+
+	await lockRateLimitSubject(addressHash, executor);
+
+	const send = decideEmailCodeSend({
+		sentAt: await findRateLimitTimes('addressCodeSent', addressHash, new Date(now.getTime() - HOUR_MS), executor),
+		wrongGuessesAt: await findRateLimitTimes('addressWrongGuess', addressHash, new Date(now.getTime() - DAY_MS), executor)
+	}, now);
+
+	if (!send.allowed)
+	{
+		return(tooManyAttempts(send, now, response));
+	}
+
+	// Counted whatever is sent, so the limits don't depend on whether the address has an account
+	await recordRateLimitEvent('addressCodeSent', addressHash, now, executor);
+
+	return(undefined);
+}
+
+/**
  * GET AUTH_SESSION_PATH: who the browser is logged in as
  *
  * @param request The request
@@ -310,7 +356,9 @@ async function sessionRoute(request: Request, response: Response): Promise<void>
  * POST AUTH_LOGIN_PATH: logs in to a local account with its email address and password. A wrong
  * address and a wrong password get the same answer, in about the same time. An account with 2FA, on a
  * browser it doesn't trust, then waits for its authenticator or recovery code, and a server admin's
- * without 2FA for them to turn it on (twoFactorAuth.ts)
+ * without 2FA for them to turn it on (twoFactorAuth.ts). An account without 2FA that hasn't logged in
+ * for DORMANT_LOGIN_DAYS is emailed a code instead, and logs in once this browser has entered it and
+ * gives the password again
  *
  * @param request The request, with a LoginRequest
  * @param response The response: a LoginPayload, with the session cookie, or the cookie that lets this
@@ -326,7 +374,7 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const { email, password, rememberMe } = body.data;
+	const { email, password, rememberMe, locale: emailLocale } = body.data;
 	const now = new Date();
 
 	// A browser that has logged in to the account counts its own tries, so others' guesses at the address can't lock it out
@@ -379,7 +427,8 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const payload = await inTransaction(async (executor): Promise<LoginPayload> =>
+	const continuationHash = continuationHashOf(request);
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { payload: LoginPayload; email?: EmailContent }> =>
 	{
 		if (check.newHash !== undefined)
 		{
@@ -391,13 +440,85 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 		{
 			await waitForSecondFactor(response, login.id, rememberMe, now, executor);
 
-			return({ outcome: 'twoFactor' });
+			return({ payload: { outcome: 'twoFactor' } });
 		}
 
-		return({ outcome: await startLogin(request, response, login.id, rememberMe, now, executor) });
+		const dormant = needsLoginEmailCode({
+			lastLoginAt: login.lastLoginAt,
+			createdAt: login.createdAt,
+			hasTwoFactor: await hasTwoFactor(login.id, executor)
+		}, now);
+
+		if (dormant)
+		{
+			const confirmation = ((continuationHash === undefined) ? undefined : await lockContinuation('confirmLogin', continuationHash, now, executor));
+
+			if (confirmation?.playerId !== login.id)
+			{
+				return(await sendLoginEmailCode(request, response, login, emailLocale, now, executor));
+			}
+
+			await deleteEmailCode(confirmation.id, executor);
+			clearCookie(response, CONTINUATION_COOKIE);
+		}
+
+		return({ payload: { outcome: await startLogin(request, response, login.id, rememberMe, now, executor) } });
 	});
 
-	response.json(payload);
+	if ('status' in outcome)
+	{
+		sendRefusal(response, outcome);
+		return;
+	}
+
+	response.json(outcome.payload);
+
+	if (outcome.email)
+	{
+		sendEmailInBackground({
+			to: login.email,
+			...outcome.email
+		});
+	}
+}
+
+/**
+ * Emails a 'confirmLogin' code to an account whose password was right but which hasn't logged in for
+ * DORMANT_LOGIN_DAYS, replacing any code sent before, within the same limits as other email codes.
+ * The browser that enters it (AUTH_CODE_CHECK_PATH) logs in by giving the password again
+ *
+ * @param request The request
+ * @param response The response, which gets a Retry-After header when a limit is reached
+ * @param login The account
+ * @param emailLocale The language to write the email in
+ * @param now The time now
+ * @param executor A transaction, which must be committed even when the code can't be sent, so the attempt counts
+ * @return Why the code can't be sent, or the answer and the email to send after it
+ */
+async function sendLoginEmailCode(request: Request, response: Response, login: LocalLogin, emailLocale: string, now: Date, executor: Executor): Promise<AuthRefusal | { payload: LoginPayload; email: EmailContent }>
+{
+	// The address the player typed, which the code is checked with, hashes the same as the stored one
+	const addressHash = hashAddress(login.email);
+	const refusal = await takeCodeSend(clientNetworkHash(request), addressHash, now, response, executor);
+
+	if (refusal)
+	{
+		return(refusal);
+	}
+
+	const code = emailCodeFromBytes(randomBytes(EMAIL_CODE_LENGTH));
+
+	await replaceEmailCode({
+		purpose: 'confirmLogin',
+		addressHash,
+		playerId: login.id,
+		codeHash: keyedHash('emailCode', code)
+	}, now, executor);
+
+	return({
+		payload: { outcome: 'confirmEmail' },
+		email: emailCodeEmail('confirmLogin', code, await findDisplayName(login.id, executor), emailLocale)
+	});
 }
 
 /**
@@ -477,39 +598,15 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 	const networkHash = clientNetworkHash(request);
 	const outcome = await inTransaction(async (executor): Promise<CodeOutcome> =>
 	{
-		const network = await takeAttempt([
-			{
-				kind: 'networkCodeRequest',
-				subjectHash: networkHash,
-				limit: MAX_EMAIL_CODES_PER_NETWORK_HOUR
-			}
-		], now, executor);
+		const refusal = await takeCodeSend(networkHash, addressHash, now, response, executor);
 
-		if (!network.allowed)
+		if (refusal)
 		{
 			return({
 				kind: 'refused',
-				refusal: tooManyAttempts(network, now, response)
+				refusal
 			});
 		}
-
-		await lockRateLimitSubject(addressHash, executor);
-
-		const send = decideEmailCodeSend({
-			sentAt: await findRateLimitTimes('addressCodeSent', addressHash, new Date(now.getTime() - HOUR_MS), executor),
-			wrongGuessesAt: await findRateLimitTimes('addressWrongGuess', addressHash, new Date(now.getTime() - DAY_MS), executor)
-		}, now);
-
-		if (!send.allowed)
-		{
-			return({
-				kind: 'refused',
-				refusal: tooManyAttempts(send, now, response)
-			});
-		}
-
-		// Counted whatever is sent, so the limits don't depend on whether the address has an account
-		await recordRateLimitEvent('addressCodeSent', addressHash, now, executor);
 
 		const ownerId = await findPlayerIdByEmail(email, executor);
 		let playerId: string | null;
@@ -567,6 +664,14 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 			}
 
 			playerId = ownerId;
+		}
+		else if (purpose === 'confirmLogin')
+		{
+			// Only logging in with the account's password sends it (loginRoute)
+			return({
+				kind: 'send',
+				email: undefined
+			});
 		}
 		else
 		{

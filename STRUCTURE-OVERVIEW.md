@@ -43,6 +43,9 @@ Accounts can turn on 2FA with an authenticator app (TOTP), and get recovery code
 - Resetting a forgotten password and linking a Google or Discord login (with the password or an email code) ask for the app's code too, unless the browser is trusted, so someone who gets into the player's email still can't take the account.
 - Turning it off and making new recovery codes ask for the password and a code. Turning it on or off emails the account. A player who loses the app and every recovery code can't get back in on their own: only the site's contact can help.
 
+### Dormant accounts
+An account without 2FA that hasn't logged in for 180 days (`DORMANT_LOGIN_DAYS`, longer than a remembered session lasts, so a player who keeps playing never sees it; counted from when the account was made if it never has) needs an [email code](#email-codes) to log in with its password, in case the password leaked while nobody used it. After the right password, the login page asks for the code sent to the account's address, and once that browser has entered it, logs in with the password again. Sending another code logs in again too, since nothing else sends this code. The email says someone is logging in with the password and, if it isn't the owner, to reset it. Accounts with 2FA already check it's the owner, and Google and Discord logins already confirmed the address, so neither is asked.
+
 ### Login limits
 An address can be tried 10 times an hour at login, and a network 30 times, so passwords can't be guessed quickly. Wrong passwords typed while logged in (changing the password or 2FA, deleting the account) count against the same limits. Anyone can use up an address's tries, so a browser that has logged in to the account (marked by a signed cookie that lasts 180 days after its last login and doesn't name the account) counts its own 10 tries an hour instead, and can still log in while others' guesses have used up the address's.
 
@@ -58,7 +61,7 @@ If the address already has an account, the page answers the same as for a new on
 Enter an email, it sends you an [email code](#email-codes), enter the code to change your password (with an authenticator or recovery code too, when the account has 2FA). Emails you when the password is changed, signs the account out everywhere, and stops trusting every browser that skipped the 2FA code.
 
 ## Email codes
-Registering, resetting a password, changing an email and linking a Google or Discord login all send a code by email, as do deleting an account, changing 2FA and [deleting a universe](#deleting-a-universe) when the account has no password. Every code follows these rules:
+Registering, resetting a password, changing an email and linking a Google or Discord login all send a code by email, as do deleting an account, changing 2FA and [deleting a universe](#deleting-a-universe) when the account has no password, and logging in to a [dormant account](#dormant-accounts). Every code follows these rules:
 - Sending
 	- generated with a cryptographically secure random number generator
 	- 6 characters from Crockford's base32 alphabet (the digits and capital letters except I, L, O and U), a little over a billion possible codes

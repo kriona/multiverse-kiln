@@ -105,10 +105,21 @@ describe('playerRepo', () =>
 				passwordHash: null
 			});
 
-			assert.deepStrictEqual(await findLocalLogin('ADA@example.com'), {
+			const login = await findLocalLogin('ADA@example.com');
+
+			assert.ok(login);
+			assert.deepStrictEqual({
+				id: login.id,
+				passwordHash: login.passwordHash,
+				email: login.email,
+				lastLoginAt: login.lastLoginAt
+			}, {
 				id: player.id,
-				passwordHash: '$argon2id$v=19$m=19456,p=1,t=2$c2FsdA$aGFzaA'
+				passwordHash: '$argon2id$v=19$m=19456,p=1,t=2$c2FsdA$aGFzaA',
+				email: 'ada@example.com',
+				lastLoginAt: null
 			});
+			assert.ok(login.createdAt instanceof Date);
 			assert.strictEqual(await findLocalLogin('grace@example.com'), undefined);
 			assert.strictEqual(await findLocalLogin('nobody@example.com'), undefined);
 		});

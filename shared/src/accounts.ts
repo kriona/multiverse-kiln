@@ -266,6 +266,13 @@ export const REMEMBERED_SESSION_IDLE_DAYS = 30;
 export const REMEMBERED_SESSION_TOTAL_DAYS = 90;
 
 /**
+ * How long an account without 2FA goes without logging in before logging in with its password also
+ * needs a code emailed to it, in case the password leaked while nobody used it. Longer than
+ * REMEMBERED_SESSION_TOTAL_DAYS, so a player who keeps playing never sees it
+ */
+export const DORMANT_LOGIN_DAYS = 180;
+
+/**
  * How long the log of logins and changes to how an account logs in keeps each record. The database's
  * delete_auth_events_before() never deletes one sooner (server/drizzle/0101_append_only_audit_tables.sql),
  * so keeping them a shorter time needs a migration too
@@ -282,9 +289,11 @@ export const MAX_TWO_FACTOR_CODE_INPUT_LENGTH = 32;
  * current address of an account without a password, to check it's the owner changing it.
  * 'deleteAccount' checks it's the owner deleting an account without a password, 'changeTwoFactor'
  * that it's the owner turning 2FA on or off, or making new recovery codes, for an account without one,
- * and 'deleteUniverse' that it's the owner deleting a universe, for an account without one
+ * and 'deleteUniverse' that it's the owner deleting a universe, for an account without one.
+ * 'confirmLogin' checks it's the owner logging in with the password to an account without 2FA that
+ * hasn't logged in for DORMANT_LOGIN_DAYS; only logging in sends it (POST AUTH_LOGIN_PATH)
  */
-export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount', 'changeTwoFactor', 'deleteUniverse'] as const;
+export const EMAIL_CODE_PURPOSES = ['register', 'resetPassword', 'changeEmail', 'linkLogin', 'confirmEmailChange', 'deleteAccount', 'changeTwoFactor', 'deleteUniverse', 'confirmLogin'] as const;
 
 export type EmailCodePurpose = (typeof EMAIL_CODE_PURPOSES)[number];
 
@@ -356,6 +365,11 @@ export interface LoginRequest
 	 * all) rather than SESSION_IDLE_HOURS (SESSION_TOTAL_HOURS in all)
 	 */
 	rememberMe: boolean;
+
+	/**
+	 * The language to write the email in when the login needs an emailed code, such as the page's
+	 */
+	locale: string;
 }
 
 /**
@@ -371,11 +385,13 @@ export interface SessionStartPayload
 
 /**
  * Response of POST AUTH_LOGIN_PATH: as SessionStartPayload, or the account has 2FA and the login waits
- * a few minutes for its code (AUTH_TWO_FACTOR_LOGIN_PATH), from this browser
+ * a few minutes for its code (AUTH_TWO_FACTOR_LOGIN_PATH), from this browser, or the account hasn't
+ * logged in for DORMANT_LOGIN_DAYS and has no 2FA, so a 'confirmLogin' code was emailed to it. Once
+ * this browser has entered that code (AUTH_CODE_CHECK_PATH), logging in again with the password goes on
  */
 export interface LoginPayload
 {
-	outcome: SessionStartPayload['outcome'] | 'twoFactor';
+	outcome: SessionStartPayload['outcome'] | 'twoFactor' | 'confirmEmail';
 }
 
 /**

@@ -48,6 +48,18 @@ export interface LocalLogin
 {
 	id: string;
 	passwordHash: string;
+
+	/**
+	 * The account's address as stored, which a login typed with other capitals still emails
+	 */
+	email: string;
+
+	/**
+	 * When the account last logged in, or null when it never has
+	 */
+	lastLoginAt: Date | null;
+
+	createdAt: Date;
 }
 
 /**
@@ -262,27 +274,34 @@ export async function findPlayerIdByEmail(email: string, executor: Executor = db
  *
  * @param email The address
  * @param executor The database, or a transaction
- * @return The account's ID and password hash, or undefined when no account with a password has it
+ * @return The account's ID, password hash, address and when it last logged in, or undefined when no
+ * account with a password has it
  */
 export async function findLocalLogin(email: string, executor: Executor = db): Promise<LocalLogin | undefined>
 {
 	const [row] = await executor
 		.select({
 			id: players.id,
-			passwordHash: players.passwordHash
+			passwordHash: players.passwordHash,
+			email: players.email,
+			lastLoginAt: players.lastLoginAt,
+			createdAt: players.createdAt
 		})
 		.from(players)
 		.where(sql`lower(${players.email}) = lower(${email.trim()})`)
 		.limit(1);
 
-	if (!row || (row.passwordHash === null))
+	if (!row || (row.passwordHash === null) || (row.email === null))
 	{
 		return(undefined);
 	}
 
 	return({
 		id: row.id,
-		passwordHash: row.passwordHash
+		passwordHash: row.passwordHash,
+		email: row.email,
+		lastLoginAt: row.lastLoginAt,
+		createdAt: row.createdAt
 	});
 }
 

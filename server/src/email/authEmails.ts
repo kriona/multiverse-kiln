@@ -1,6 +1,7 @@
 /**
  * The emails logins send (see Email codes in STRUCTURE-OVERVIEW.md): codes for registering, resetting
- * a password, changing an email address and linking a provider login, and the notices sent when an
+ * a password, changing an email address, linking a provider login and logging in to an account unused
+ * for DORMANT_LOGIN_DAYS, and the notices sent when an
  * account is created, its password or email address changes or a provider login is linked to it, or
  * someone tries to register an address that already has an account. Each is written in its recipient's
  * language, as HTML with a plain text part, and ends with a link to the site (SITE_URL)
@@ -70,6 +71,8 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, name: st
 	});
 	let subject: string;
 	let intro: string;
+	let notYou = unaskedCodeParagraph(translator);
+	let action: EmailAction | undefined;
 
 	if (purpose === 'register')
 	{
@@ -162,6 +165,25 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, name: st
 			description: 'First paragraph of the email with the code that checks it\'s the owner turning two-factor authentication on or off, or making new recovery codes, for an account without a password, shown just above the code; {siteName} is the site\'s name'
 		}, values);
 	}
+	else if (purpose === 'confirmLogin')
+	{
+		subject = translator.format({
+			id: 'email.code.confirmLogin.subject',
+			defaultMessage: 'Your code to log in to {siteName}',
+			description: 'Subject of the email with the code that checks it\'s the owner logging in with the password to an account that hasn\'t been used for months and has no two-factor authentication; {siteName} is the site\'s name'
+		}, values);
+		intro = translator.format({
+			id: 'email.code.confirmLogin.intro',
+			defaultMessage: 'Someone is logging in to your account on {siteName} with your password. Your account hasn\'t been used for a while, so we\'re checking it\'s you. If it is, enter this code to finish logging in:',
+			description: 'First paragraph of the email with the code that checks it\'s the owner logging in with the password to an account that hasn\'t been used for months and has no two-factor authentication, shown just above the code; {siteName} is the site\'s name'
+		}, values);
+		notYou = translator.format({
+			id: 'email.code.confirmLogin.notYou',
+			defaultMessage: 'If it isn\'t you, someone else knows your password. They can\'t log in without this code, but reset your password to keep them out.',
+			description: 'Last paragraph of the email with the code that checks it\'s the owner logging in to an account that hasn\'t been used for months, for someone who isn\'t logging in: whoever is knows the password. A link to reset the password follows'
+		});
+		action = resetPasswordAction(translator);
+	}
 	else
 	{
 		subject = translator.format({
@@ -179,8 +201,9 @@ export function emailCodeEmail(purpose: EmailCodePurpose, code: string, name: st
 	return(layOut(translator, {
 		subject,
 		recipientName: name,
-		paragraphs: [intro, lifetime, unaskedCodeParagraph(translator)],
-		code
+		paragraphs: [intro, lifetime, notYou],
+		code,
+		action
 	}));
 }
 

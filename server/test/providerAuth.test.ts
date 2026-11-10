@@ -199,7 +199,7 @@ describe('provider login routes', () =>
 	{
 		const browser = new Browser();
 
-		assert.strictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email, password: PASSWORD, rememberMe: false })).status, 200);
+		assert.strictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email, password: PASSWORD, rememberMe: false, locale: 'en' })).status, 200);
 
 		return(browser);
 	}
@@ -637,7 +637,7 @@ describe('provider login routes', () =>
 		const switched = await logInWithPassword('ada@example.com');
 		const switchedState = await startLogin(switched, 'google', false, withPassword());
 
-		assert.strictEqual((await switched.send('POST', AUTH_LOGIN_PATH, { email: 'grace@example.com', password: PASSWORD, rememberMe: false })).status, 200);
+		assert.strictEqual((await switched.send('POST', AUTH_LOGIN_PATH, { email: 'grace@example.com', password: PASSWORD, rememberMe: false, locale: 'en' })).status, 200);
 		assert.strictEqual((await comeBack(switched, GOOGLE_ADA, switchedState)).status, 401);
 		assert.strictEqual((await pool.query('SELECT * FROM provider_logins')).rowCount, 0);
 	});

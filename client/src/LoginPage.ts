@@ -1,4 +1,4 @@
-import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, TRUSTED_BROWSER_DAYS, type AuthField, type LoginProvider, type SessionStartPayload } from '@multiverse-kiln/shared';
+import { EMAIL_CODE_LIFETIME_MINUTES, LOGIN_PROVIDER_NAMES, MAX_EMAIL_LENGTH, PASSWORD_RESET_PARAMETER, MAX_USERNAME_LENGTH, MAX_PASSWORD_LENGTH, MAX_PLAYER_NAME_LENGTH, MIN_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, TRUSTED_BROWSER_DAYS, type AuthField, type LoginPayload, type LoginProvider, type SessionStartPayload } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from './localization';
 import { authFieldOf, type AuthApi } from './network/authApi';
@@ -17,13 +17,13 @@ import { UsernameLookup, type UsernameCheck } from './ui/UsernameLookup';
 /**
  * What an emailed code is for on this page
  */
-type CodePurpose = 'register' | 'resetPassword' | 'linkLogin';
+type CodePurpose = 'register' | 'resetPassword' | 'linkLogin' | 'confirmLogin';
 
 /**
- * What a code typed on the email screen is for: linking asks for no address, since it goes to the
- * account the provider login matched
+ * What a code typed on the email screen is for: linking and confirming a login ask for no address,
+ * since the code goes to the account the provider login matched, or the one being logged in to
  */
-type EmailPurpose = Exclude<CodePurpose, 'linkLogin'>;
+type EmailPurpose = Exclude<CodePurpose, 'linkLogin' | 'confirmLogin'>;
 
 /**
  * A provider login waiting to be linked to the account with its email address
@@ -84,7 +84,9 @@ function findForm(name: ScreenName, fields: Partial<Record<AuthField, HTMLInputE
  * the code, then the rest. Google and Discord send the browser back to this page, which finishes the
  * login, or asks for a username for a new account, or for the password of the account with the same
  * address (or a code sent to it) to link them. An account with 2FA is asked for its authenticator or
- * recovery code too: after the password, with the new password, or with the link. A server admin
+ * recovery code too: after the password, with the new password, or with the link. An account without
+ * 2FA that hasn't logged in for DORMANT_LOGIN_DAYS is asked for a code emailed to it after the
+ * password, and the password is sent again once it is entered. A server admin
  * without 2FA turns it on at that point instead (TwoFactorSetupDialog), since they can't log in without
  * it. Once logged in, the page tells the browser's other tabs and goes back to the page that sent the
  * player here (readNextPage()); a new account is first offered setting up 2FA
@@ -323,6 +325,10 @@ export class LoginPage
 				{
 					this.showProviderLink();
 				}
+				else if (this.purpose === 'confirmLogin')
+				{
+					this.showLogin();
+				}
 				else
 				{
 					this.askForEmail(this.purpose);
@@ -517,19 +523,45 @@ export class LoginPage
 
 	/**
 	 * Logs in with the address and password typed, then asks for the authenticator code if the account
-	 * has 2FA, or for a server admin without it, to turn it on
+	 * has 2FA, for a server admin without it, to turn it on, or for an account that hasn't logged in for
+	 * months, for the code emailed to it
 	 */
 	private async logIn(): Promise<void>
 	{
-		const outcome = await this.api.logIn({
+		await this.goOnFromLogin(await this.sendLogin());
+	}
+
+	/**
+	 * Sends the address and password typed to log in
+	 *
+	 * @return What the server answered
+	 */
+	private async sendLogin(): Promise<LoginPayload['outcome']>
+	{
+		return(this.api.logIn({
 			email: this.loginEmail.value.trim(),
 			password: this.loginPassword.value,
-			rememberMe: this.loginRemember.checked
-		});
+			rememberMe: this.loginRemember.checked,
+			locale: currentLocale()
+		}));
+	}
 
+	/**
+	 * Takes the step a login answered with
+	 *
+	 * @param outcome What the server answered
+	 */
+	private async goOnFromLogin(outcome: LoginPayload['outcome']): Promise<void>
+	{
 		if (outcome === 'twoFactor')
 		{
 			this.askForTwoFactorCode('login');
+		}
+		else if (outcome === 'confirmEmail')
+		{
+			this.purpose = 'confirmLogin';
+			this.email = this.loginEmail.value.trim();
+			this.askForCode();
 		}
 		else
 		{
@@ -937,6 +969,14 @@ export class LoginPage
 				description: 'On the screen for the emailed code when resetting a password; {email} is the address typed. The page can\'t say whether the address has an account, so it can\'t say a code was sent'
 			}, values);
 		}
+		else if (this.purpose === 'confirmLogin')
+		{
+			this.codeIntro.textContent = t({
+				id: 'login.codeSentConfirmLogin',
+				defaultMessage: 'You haven\'t logged in for a while, so we\'ve emailed {email} a code to check it\'s you. Enter the code from the email to finish logging in. It works once, for {minutes, plural, one {# minute} other {# minutes}}.',
+				description: 'On the screen for the emailed code when logging in with the password to an account that hasn\'t been used for months and has no two-factor authentication; {email} is the account\'s address'
+			}, values);
+		}
 		else
 		{
 			this.codeIntro.textContent = t({
@@ -964,11 +1004,26 @@ export class LoginPage
 
 		try
 		{
-			await this.api.sendCode({
-				purpose: this.purpose,
-				email: this.email,
-				locale: currentLocale()
-			});
+			if (this.purpose === 'confirmLogin')
+			{
+				// Only logging in sends this code, so the password is given again
+				const outcome = await this.sendLogin();
+
+				if (outcome !== 'confirmEmail')
+				{
+					await this.goOnFromLogin(outcome);
+					return;
+				}
+			}
+			else
+			{
+				await this.api.sendCode({
+					purpose: this.purpose,
+					email: this.email,
+					locale: currentLocale()
+				});
+			}
+
 			resetCodeInput(this.codeInput);
 			this.codeInput.focus();
 			this.codeStatus.textContent = t({
@@ -989,7 +1044,7 @@ export class LoginPage
 
 	/**
 	 * Checks the code typed, then asks for the rest of the new account or the new password, or links the
-	 * provider login and logs in
+	 * provider login and logs in, or finishes logging in with the password typed
 	 */
 	private async checkCode(): Promise<void>
 	{
@@ -999,7 +1054,11 @@ export class LoginPage
 			code: this.codeInput.value
 		});
 
-		if (this.purpose === 'register')
+		if (this.purpose === 'confirmLogin')
+		{
+			await this.goOnFromLogin(await this.sendLogin());
+		}
+		else if (this.purpose === 'register')
 		{
 			this.registerEmail.value = this.email;
 			this.show('register', this.registerForm);

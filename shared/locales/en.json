@@ -4119,6 +4119,18 @@
 		"defaultMessage": "Your code to change your email address on {siteName}",
 		"description": "Subject of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password; {siteName} is the site's name"
 	},
+	"email.code.confirmLogin.intro": {
+		"defaultMessage": "Someone is logging in to your account on {siteName} with your password. Your account hasn't been used for a while, so we're checking it's you. If it is, enter this code to finish logging in:",
+		"description": "First paragraph of the email with the code that checks it's the owner logging in with the password to an account that hasn't been used for months and has no two-factor authentication, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.confirmLogin.notYou": {
+		"defaultMessage": "If it isn't you, someone else knows your password. They can't log in without this code, but reset your password to keep them out.",
+		"description": "Last paragraph of the email with the code that checks it's the owner logging in to an account that hasn't been used for months, for someone who isn't logging in: whoever is knows the password. A link to reset the password follows"
+	},
+	"email.code.confirmLogin.subject": {
+		"defaultMessage": "Your code to log in to {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner logging in with the password to an account that hasn't been used for months and has no two-factor authentication; {siteName} is the site's name"
+	},
 	"email.code.deleteAccount.intro": {
 		"defaultMessage": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:",
 		"description": "First paragraph of the email with the code that checks it's the owner deleting an account without a password, shown just above the code; {siteName} is the site's name"
@@ -5758,6 +5770,10 @@
 	"login.codeResent": {
 		"defaultMessage": "Sent a new code. The one before no longer works.",
 		"description": "Shown under the code field after another code was emailed"
+	},
+	"login.codeSentConfirmLogin": {
+		"defaultMessage": "You haven't logged in for a while, so we've emailed {email} a code to check it's you. Enter the code from the email to finish logging in. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when logging in with the password to an account that hasn't been used for months and has no two-factor authentication; {email} is the account's address"
 	},
 	"login.codeSentLink": {
 		"defaultMessage": "We've emailed {email}. Enter the code from the email to link your login. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
