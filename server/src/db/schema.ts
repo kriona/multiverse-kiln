@@ -215,6 +215,10 @@ export const universes = pgTable('universes', {
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
 
+	// Reads Home's list of a stage's universes (listUniverses) a page at a time in its order, rather than
+	// sorting every universe in the stage
+	index('universes_listed_index').on(table.stage, table.name, table.id).where(sql`${table.disabledAt} is null`),
+
 	// Finds the universes whose name holds some text (the admin pages' search, LIKE '%text%') without
 	// reading every universe
 	index('universes_name_trigram_index').using('gin', sql`lower(${table.name}) gin_trgm_ops`),
