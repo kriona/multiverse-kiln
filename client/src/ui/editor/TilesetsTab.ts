@@ -3,9 +3,9 @@ import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { showStagedTileGraphic } from '../../rendering/tileGraphics';
-import { announceListPage } from '../announcer';
 import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
+import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
@@ -727,17 +727,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		}
 
 		this.render();
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.tiles.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.tiles.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.tiles.length) >= page.total);
 

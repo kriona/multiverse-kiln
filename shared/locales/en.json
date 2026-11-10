@@ -6203,6 +6203,10 @@
 		"defaultMessage": "{first, number}-{last, number} of {total, number}",
 		"description": "Which items of a list a page shows, e.g. 1-500 of 1200"
 	},
+	"pager.rangeSpoken": {
+		"defaultMessage": "{first, number} to {last, number} of {total, number}",
+		"description": "Which items of a list a page shows, e.g. 1 to 500 of 1200, read out by screen readers in place of the 1-500 of 1200 shown between a list's Previous and Next buttons, and when the page or the list's search or filters change"
+	},
 	"pf1e.ability.charisma": {
 		"defaultMessage": "Charisma",
 		"description": "Name of a character's ability score in Pathfinder: force of personality"

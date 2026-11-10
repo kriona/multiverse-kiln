@@ -2,10 +2,10 @@ import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DI
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { announceListPage } from '../announcer';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { engineCoinName } from '../moneyField';
+import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES, readTranslationFileFrom } from '../translationFiles';
 import type { EditorSave } from './editorSave';
@@ -647,17 +647,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 
 		this.shown = page.rows;
 		this.render();
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.rows.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.rows.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.rows.length) >= page.total);
 

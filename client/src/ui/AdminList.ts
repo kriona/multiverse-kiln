@@ -3,9 +3,10 @@ import { defineMessages, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, type 
 import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
 import { describeEditorError } from '../network/editorApi';
-import { announce, announceListPage } from './announcer';
+import { announce } from './announcer';
 import { getElement, setOptions, showMessage } from './dom';
 import { formMessages } from './formMessages';
+import { announceListPage, showPageRange } from './pager';
 
 /**
  * Notes more than one admin page shows (see shared/src/localization.ts)
@@ -288,17 +289,7 @@ export class AdminList<Row>
 
 			return(element);
 		}), (this.empty.hidden ? undefined : this.empty));
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: (this.offset + 1),
-				last: (this.offset + page.rows.length),
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.rows.length, page.total);
 		this.updatePageButtons();
 
 		if (announcement === 'page')

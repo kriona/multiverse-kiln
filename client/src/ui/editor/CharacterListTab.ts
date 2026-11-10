@@ -2,10 +2,10 @@ import { canEditWorld, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, t
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { announceListPage } from '../announcer';
 import { characterMessages } from '../characterMessages';
 import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
+import { announceListPage, showPageRange } from '../pager';
 import { playerCell } from '../playerCell';
 import { characterDescription, className, raceName } from '../raceAndClassNames';
 import { TableSorter } from '../tableSorter';
@@ -294,17 +294,7 @@ export class CharacterListTab
 
 		this.rows.replaceChildren(...page.characters.map((character) => this.createRow(character, universe)));
 		this.showEmpty(page.total);
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.characters.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.characters.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.characters.length) >= page.total);
 

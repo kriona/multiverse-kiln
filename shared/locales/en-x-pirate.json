@@ -6203,6 +6203,10 @@
 		"message": "{first, number}-{last, number} o' {total, number}",
 		"source": "{first, number}-{last, number} of {total, number}"
 	},
+	"pager.rangeSpoken": {
+		"message": "{first, number} to {last, number} o' {total, number}",
+		"source": "{first, number} to {last, number} of {total, number}"
+	},
 	"pf1e.ability.charisma": {
 		"message": "Swagger",
 		"source": "Charisma"

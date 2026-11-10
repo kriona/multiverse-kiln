@@ -2,8 +2,8 @@ import { canManageEditors, EDITOR_ROLE_NAMES, MAX_UNIVERSE_EDITS_PER_PAGE, type 
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { announceListPage } from '../announcer';
 import { getElement, showMessage } from '../dom';
+import { announceListPage, showPageRange } from '../pager';
 import { playerCell } from '../playerCell';
 import { describeDetail, describeFieldChange } from './auditDetails';
 
@@ -182,17 +182,7 @@ export class AuditTab
 				defaultMessage: 'Nothing has been saved in this universe\'s editor yet.',
 				description: 'Shown on the editor\'s Audit tab instead of the list of saves when nobody has saved a change to the universe yet'
 			})));
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.edits.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.edits.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.edits.length) >= page.total);
 
