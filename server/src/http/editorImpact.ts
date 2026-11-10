@@ -10,13 +10,13 @@ import { isNewRef, mayMakeChange, type ChangeImpact, type EditableUniverseDetail
 import { listAreas } from '../db/areaRepo.js';
 import { countCharactersCarrying, countCharactersOfClasses, countCharactersOfRaces } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
-import { listGroupsLargerThan, listMembersInAreas } from '../db/groupRepo.js';
+import { countGroupsLargerThan, listMembersInAreas } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { areas, classes, items, races } from '../db/schema.js';
 import { findDraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
-import { draftVersion, liveVersion } from '../db/universeVersions.js';
+import { draftVersion, liveVersion, type UniverseVersion } from '../db/universeVersions.js';
 import { countCharactersInAreas, enabledAncestor } from '../logic/disabling.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { universeContextOf } from './editorAccess.js';
@@ -92,13 +92,13 @@ interface Disabling<Id>
  */
 export async function findImpacts(universe: EditableUniverseDetails, changes: readonly EditorChange[]): Promise<ChangeImpact[]>
 {
-	const impacts = [
-		...await raceImpacts(universe, changes),
-		...await classImpacts(universe, changes),
-		...await itemImpacts(universe, changes),
-		...await areaImpacts(universe, changes),
-		...await groupSizeImpacts(universe, changes)
-	];
+	const impacts = (await Promise.all([
+		raceImpacts(universe, changes),
+		classImpacts(universe, changes),
+		itemImpacts(universe, changes),
+		areaImpacts(universe, changes),
+		groupSizeImpacts(universe, changes)
+	])).flat();
 
 	return(impacts.sort((first, second) => (first.changeIndex - second.changeIndex)));
 }
@@ -115,68 +115,88 @@ export async function findImpacts(universe: EditableUniverseDetails, changes: re
  */
 async function draftImpacts(universeId: string, ruleset: Ruleset, changeIndex: number): Promise<ChangeImpact[]>
 {
-	const live = liveVersion(universeId);
-	const draft = draftVersion(universeId);
-	const liveUniverse = await findEditableUniverse(live);
-	const draftUniverse = await findEditableUniverse(draft);
+	const [liveUniverse, draftUniverse] = await Promise.all([
+		findEditableUniverse(liveVersion(universeId)),
+		findEditableUniverse(draftVersion(universeId))
+	]);
 
 	if (!liveUniverse || !draftUniverse)
 	{
 		return([]);
 	}
 
-	const impacts: ChangeImpact[] = [];
+	return((await Promise.all([
+		draftOptionImpacts('race', universeId, changeIndex, (version) => loadEditorRaces(version, ruleset), races, countCharactersOfRaces),
+		draftOptionImpacts('class', universeId, changeIndex, (version) => loadEditorClasses(version, ruleset), classes, countCharactersOfClasses),
+		draftOptionImpacts('item', universeId, changeIndex, (version) => loadEditorItems(version, ruleset), items, countCharactersCarrying),
+		draftAreaImpacts(liveUniverse, changeIndex),
+		draftGroupSizeImpacts(liveUniverse, draftUniverse, changeIndex)
+	])).flat());
+}
 
-	for (const [kind, liveOptions, draftOptions, origins, count] of [
-		['race', await loadEditorRaces(live, ruleset), await loadEditorRaces(draft, ruleset), await findDraftOrigins<number>(races, universeId), countCharactersOfRaces],
-		['class', await loadEditorClasses(live, ruleset), await loadEditorClasses(draft, ruleset), await findDraftOrigins<number>(classes, universeId), countCharactersOfClasses],
-		['item', await loadEditorItems(live, ruleset), await loadEditorItems(draft, ruleset), await findDraftOrigins<number>(items, universeId), countCharactersCarrying]
-	] as const)
+/**
+ * The live races, classes or items that a universe's draft disables or deletes with characters using them
+ *
+ * @param kind What they are
+ * @param universeId The universe's ID
+ * @param changeIndex The applyDraft change's place in the save
+ * @param load Loads every one of them in a version
+ * @param table Their table, whose draft rows map back to the live rows they came from
+ * @param count Counts the characters using each of some of them
+ * @return Their impacts
+ */
+async function draftOptionImpacts(kind: 'race' | 'class' | 'item', universeId: string, changeIndex: number, load: (version: UniverseVersion) => Promise<(OptionName & { id: number; enabled: boolean })[]>, table: typeof races | typeof classes | typeof items, count: (universeId: string, ids: readonly number[]) => Promise<Map<number, number>>): Promise<ChangeImpact[]>
+{
+	const [liveOptions, draftOptions, origins] = await Promise.all([
+		load(liveVersion(universeId)),
+		load(draftVersion(universeId)),
+		findDraftOrigins<number>(table, universeId)
+	]);
+
+	// A default's ID is the same in both, and the draft's own rows map back to the live rows they came from
+	const inDraft = new Map(draftOptions.map((option) => [(origins.get(option.id) ?? option.id), option]));
+	const disabled = liveOptions.filter((option) => (option.enabled && !(inDraft.get(option.id)?.enabled ?? false)));
+	const counts = await count(universeId, disabled.map(({ id }) => id));
+
+	return(disabled.flatMap((option): ChangeImpact[] =>
 	{
-		// A default's ID is the same in both, and the draft's own rows map back to the live rows they came from
-		const inDraft = new Map<number, OptionName & { enabled: boolean }>(draftOptions.map((option) => [(origins.get(option.id) ?? option.id), option]));
-		const disabled = liveOptions.filter((option) => (option.enabled && !(inDraft.get(option.id)?.enabled ?? false)));
-		const counts = await count(universeId, disabled.map(({ id }) => id));
+		const characters = (counts.get(option.id) ?? 0);
+		const named = (inDraft.get(option.id) ?? option);
 
-		for (const option of disabled)
-		{
-			const characters = (counts.get(option.id) ?? 0);
-			const named = (inDraft.get(option.id) ?? option);
+		return(((characters > 0) ? [{
+			changeIndex,
+			kind,
+			id: option.id,
+			name: {
+				key: named.key,
+				name: named.name
+			},
+			characters
+		}] : []));
+	}));
+}
 
-			if (characters > 0)
-			{
-				impacts.push({
-					changeIndex,
-					kind,
-					id: option.id,
-					name: {
-						key: named.key,
-						name: named.name
-					},
-					characters
-				});
-			}
-		}
+/**
+ * The group size a universe's draft gives it, when it is lower than the live one, with how many groups
+ * are larger
+ *
+ * @param liveUniverse The universe, with its live version's settings
+ * @param draftUniverse The universe, with its draft's settings
+ * @param changeIndex The applyDraft change's place in the save
+ * @return Its impact
+ */
+async function draftGroupSizeImpacts(liveUniverse: EditableUniverseDetails, draftUniverse: EditableUniverseDetails, changeIndex: number): Promise<ChangeImpact[]>
+{
+	const groupSize = draftUniverse.groupSize;
+
+	if (groupSize >= liveUniverse.groupSize)
+	{
+		return([]);
 	}
 
-	impacts.push(...await draftAreaImpacts(liveUniverse, changeIndex));
+	const groups = await countGroupsLargerThan(liveUniverse.id, groupSize);
 
-	if (draftUniverse.groupSize < liveUniverse.groupSize)
-	{
-		const groups = (await listGroupsLargerThan(universeId, draftUniverse.groupSize)).length;
-
-		if (groups > 0)
-		{
-			impacts.push({
-				changeIndex,
-				kind: 'groupSize',
-				groupSize: draftUniverse.groupSize,
-				groups
-			});
-		}
-	}
-
-	return(impacts);
+	return(((groups > 0) ? [{ changeIndex, kind: 'groupSize', groupSize, groups }] : []));
 }
 
 /**
@@ -190,13 +210,16 @@ async function draftImpacts(universeId: string, ruleset: Ruleset, changeIndex: n
 async function draftAreaImpacts(liveUniverse: EditableUniverseDetails, changeIndex: number): Promise<ChangeImpact[]>
 {
 	const universeId = liveUniverse.id;
-	const liveAreas = await listAreas(liveVersion(universeId));
-	const origins = await findDraftOrigins<string>(areas, universeId);
+	const [liveAreas, draftAreas, origins] = await Promise.all([
+		listAreas(liveVersion(universeId)),
+		listAreas(draftVersion(universeId)),
+		findDraftOrigins<string>(areas, universeId)
+	]);
 	const liveIdOf = (id: string): string => (origins.get(id) ?? id);
 
 	// The areas once the draft is applied, by their live IDs; those it deletes are there, disabled, so the
 	// parent of a deleted area can be found
-	const inDraft = new Map((await listAreas(draftVersion(universeId))).map((area) => [liveIdOf(area.id), {
+	const inDraft = new Map(draftAreas.map((area) => [liveIdOf(area.id), {
 		...area,
 		id: liveIdOf(area.id),
 		parentAreaId: ((area.parentAreaId === null) ? null : liveIdOf(area.parentAreaId))
@@ -307,6 +330,11 @@ function nameOf(saved: OptionName | undefined, name: string | null): OptionName
  */
 async function raceImpacts(universe: EditableUniverseDetails, changes: readonly EditorChange[]): Promise<ChangeImpact[]>
 {
+	if (!changes.some((change) => ((change.kind === 'saveRace') && !change.settings.enabled)))
+	{
+		return([]);
+	}
+
 	const races = new Map((await loadEditorRaces(liveVersion(universe.id), universe.ruleset)).map((race) => [race.id, race]));
 	const found = disablings(changes, (change) => savedOptionOf(change, ['saveRace', 'removeRace']), savesDisabled, (id) => (races.get(id)?.enabled ?? false));
 	const counts = await countCharactersOfRaces(universe.id, found.map(({ id }) => id));
@@ -329,6 +357,11 @@ async function raceImpacts(universe: EditableUniverseDetails, changes: readonly 
  */
 async function classImpacts(universe: EditableUniverseDetails, changes: readonly EditorChange[]): Promise<ChangeImpact[]>
 {
+	if (!changes.some((change) => ((change.kind === 'saveClass') && !change.settings.enabled)))
+	{
+		return([]);
+	}
+
 	const classes = new Map((await loadEditorClasses(liveVersion(universe.id), universe.ruleset)).map((option) => [option.id, option]));
 	const found = disablings(changes, (change) => savedOptionOf(change, ['saveClass', 'removeClass']), savesDisabled, (id) => (classes.get(id)?.enabled ?? false));
 	const counts = await countCharactersOfClasses(universe.id, found.map(({ id }) => id));
@@ -378,9 +411,16 @@ async function itemImpacts(universe: EditableUniverseDetails, changes: readonly 
  */
 async function areaImpacts(universe: EditableUniverseDetails, changes: readonly EditorChange[]): Promise<ChangeImpact[]>
 {
+	const disablesArea = (change: EditorChange): boolean => ((change.kind === 'updateArea') && (change.update.enabled === false));
+
+	if (!changes.some(disablesArea))
+	{
+		return([]);
+	}
+
 	const areas = await listAreas(liveVersion(universe.id));
 	const byId = new Map(areas.map((area) => [area.id, area]));
-	const found = disablings(changes, (change) => areaTouched(change, universe), (change) => ((change.kind === 'updateArea') && (change.update.enabled === false)), (id) => (byId.get(id)?.enabled ?? false));
+	const found = disablings(changes, (change) => areaTouched(change, universe), disablesArea, (id) => (byId.get(id)?.enabled ?? false));
 	const areaIds = found.map(({ id }) => id);
 	const saved = (await listMembersInAreas(areaIds)).map(({ characterId, areaId }) => ({ characterId, areaId }));
 	const counts = countCharactersInAreas(saved, areaOccupants.list(universe.id), areaIds);
@@ -429,7 +469,7 @@ async function groupSizeImpacts(universe: EditableUniverseDetails, changes: read
 		return([]);
 	}
 
-	const groups = (await listGroupsLargerThan(universe.id, groupSize)).length;
+	const groups = await countGroupsLargerThan(universe.id, groupSize);
 
 	return(((groups > 0) ? [{ changeIndex, kind: 'groupSize', groupSize, groups }] : []));
 }

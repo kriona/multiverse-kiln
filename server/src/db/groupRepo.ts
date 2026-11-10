@@ -565,17 +565,17 @@ export interface LargerGroup
 }
 
 /**
- * A universe's groups with more members than a size, counting those given their last rites until their
- * time comes, as countGroupMembers() does
+ * A query for the IDs of a universe's groups with more members than a size, counting those given their
+ * last rites until their time comes, as countGroupMembers() does
  *
  * @param universeId The universe's ID
  * @param size The size
  * @param executor The database, or a transaction
- * @return The groups, by ID
+ * @return The query, with a groupId column
  */
-export async function listGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<LargerGroup[]>
+function groupsLargerThan(universeId: string, size: number, executor: Executor)
 {
-	const larger = executor
+	return(executor
 		.select({
 			groupId: groupMembers.groupId
 		})
@@ -587,7 +587,41 @@ export async function listGroupsLargerThan(universeId: string, size: number, exe
 			notExpired
 		))
 		.groupBy(groupMembers.groupId)
-		.having(sql`count(*) > ${size}`);
+		.having(sql`count(*) > ${size}`));
+}
+
+/**
+ * How many of a universe's groups have more members than a size, counting them as
+ * listGroupsLargerThan() does
+ *
+ * @param universeId The universe's ID
+ * @param size The size
+ * @param executor The database, or a transaction
+ * @return The number of groups
+ */
+export async function countGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<number>
+{
+	const [row] = await executor
+		.select({
+			total: count()
+		})
+		.from(groupsLargerThan(universeId, size, executor).as('larger_groups'));
+
+	return(row.total);
+}
+
+/**
+ * A universe's groups with more members than a size, counting those given their last rites until their
+ * time comes, as countGroupMembers() does
+ *
+ * @param universeId The universe's ID
+ * @param size The size
+ * @param executor The database, or a transaction
+ * @return The groups, by ID
+ */
+export async function listGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<LargerGroup[]>
+{
+	const larger = groupsLargerThan(universeId, size, executor);
 	const rows = await executor
 		.select({
 			groupId: groups.id,
