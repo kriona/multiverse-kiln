@@ -227,6 +227,16 @@ export class AreaPlayers
 	 */
 	private walkListener?: WalkListener;
 
+	/**
+	 * Whether refreshing the views waits for the end of refreshingViewsOnce()
+	 */
+	private viewsHeld = false;
+
+	/**
+	 * Whether the views needed refreshing while they were held
+	 */
+	private viewsStale = false;
+
 
 	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
@@ -671,6 +681,39 @@ export class AreaPlayers
 		if (link?.mode === 'manual')
 		{
 			this.takeLinkFrom(playerId, link);
+		}
+	}
+
+	/**
+	 * Makes changes to many players, such as their appearances, refreshing the clients' views once at the
+	 * end rather than after each change. Each refresh looks at every pair of players, so refreshing after
+	 * each of a few hundred changes would stall the room
+	 *
+	 * @param changes Makes the changes
+	 */
+	refreshingViewsOnce(changes: () => void): void
+	{
+		if (this.viewsHeld)
+		{
+			changes();
+			return;
+		}
+
+		this.viewsHeld = true;
+		this.viewsStale = false;
+
+		try
+		{
+			changes();
+		}
+		finally
+		{
+			this.viewsHeld = false;
+
+			if (this.viewsStale)
+			{
+				this.refreshViews();
+			}
 		}
 	}
 
@@ -1369,10 +1412,17 @@ export class AreaPlayers
 	/**
 	 * Shows every client the players its player sees, and only them
 	 *
-	 * Runs every tick, and immediately when players come, go, change area or stop being a ghost
+	 * Runs every tick, and immediately when players come, go, change area or stop being a ghost, or once
+	 * refreshingViewsOnce() finishes when it holds the refresh
 	 */
 	private refreshViews(): void
 	{
+		if (this.viewsHeld)
+		{
+			this.viewsStale = true;
+			return;
+		}
+
 		const seenByPlayer = new Map<string, Set<string>>();
 		const nowMilliseconds = Date.now();
 

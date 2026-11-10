@@ -763,6 +763,31 @@ describe('LobbyRoom', () =>
 			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, character.id);
 		});
 
+		it('hides and shows again every player whose race is barred and allowed, on cells of their own', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+			const [adaCharacter] = await listPlayableCharacters(ada.playerId, universe.universeId);
+			const [graceCharacter] = await listPlayableCharacters(grace.playerId, universe.universeId);
+
+			assert.strictEqual(graceCharacter.raceId, adaCharacter.raceId);
+			await waitUntil(() => ada.room.state.players.has(grace.playerId));
+
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: { raceIds: new Set([adaCharacter.raceId]), classIds: new Set() } });
+			assert.strictEqual(playerOf(ada).ghost, true);
+			assert.strictEqual(playerOf(grace).ghost, true);
+			await waitUntil(() => (!ada.room.state.players.has(grace.playerId) && !grace.room.state.players.has(ada.playerId)));
+
+			// Ghosts can share a cell; once they show again, the second placed moves off the first's
+			placeOnCell(playerOf(ada), 2, 2);
+			placeOnCell(playerOf(grace), 2, 2);
+			universeAccessChanges.publishBarred({ universeId: universe.universeId, barred: NOTHING_BARRED });
+			assert.strictEqual(playerOf(ada).ghost, false);
+			assert.strictEqual(playerOf(grace).ghost, false);
+			assert.notDeepStrictEqual([playerOf(ada).x, playerOf(ada).y], [playerOf(grace).x, playerOf(grace).y]);
+			await waitUntil(() => (ada.room.state.players.has(grace.playerId) && grace.room.state.players.has(ada.playerId)));
+		});
+
 		it('starts a player who joins as a ghost when their only character is barred', async () =>
 		{
 			const playerId = (await addPlayer('Grace')).id;
