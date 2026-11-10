@@ -1587,6 +1587,10 @@
 		"defaultMessage": "starting area",
 		"description": "Under an area in the list of areas, for the area new characters start in"
 	},
+	"editor.audit.caption": {
+		"defaultMessage": "Saves",
+		"description": "Name of the table on the editor's Audit tab listing the saves made in the universe's editor, read out by screen readers"
+	},
 	"editor.audit.changes": {
 		"defaultMessage": "Changes",
 		"description": "Heading of the column on the editor's Audit tab listing what each save changed, such as Changed item Dagger, with a line for each setting it changed"
@@ -1766,6 +1770,10 @@
 	"editor.changedSince": {
 		"defaultMessage": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}",
 		"description": "In the world editor, under something the player has unsaved changes to (a race, item, tile, the universe's settings and so on) that another editor saved changes to in the meantime; the player's changes stay as they are. {names} is who saved, by display name, {fields} the settings they changed, e.g. \"Name and Speed\", and {fieldCount} how many"
+	},
+	"editor.characterList.caption": {
+		"defaultMessage": "Characters",
+		"description": "Name of the table of the universe's characters on the editor's Character List tab, read out by screen readers"
 	},
 	"editor.characterList.class": {
 		"defaultMessage": "Class",
@@ -2231,6 +2239,10 @@
 		"defaultMessage": "Add Editor",
 		"description": "Title of the dialog on the editor's Editors tab for giving a player a role in the universe"
 	},
+	"editor.editors.caption": {
+		"defaultMessage": "Editors",
+		"description": "Name of the table on the editor's Editors tab listing the players with a role in the universe, read out by screen readers"
+	},
 	"editor.editors.choosePlayer": {
 		"defaultMessage": "Search for the player by name or username, then choose them from the list.",
 		"description": "Shown under the field for finding a player in the dialog for adding an editor on the editor's Editors tab, when Apply is pressed before a player is chosen from the list"
@@ -2490,6 +2502,10 @@
 	"editor.items.add": {
 		"defaultMessage": "Add Item",
 		"description": "Button that opens the dialog for making a new item"
+	},
+	"editor.items.caption": {
+		"defaultMessage": "Items",
+		"description": "Name of the table of items on the editor's Items tab, read out by screen readers"
 	},
 	"editor.items.category": {
 		"defaultMessage": "Kind",
@@ -3366,6 +3382,10 @@
 	"editor.tiles.add": {
 		"defaultMessage": "Add Tile",
 		"description": "Button that opens the dialog for making a new tile"
+	},
+	"editor.tiles.caption": {
+		"defaultMessage": "Tiles",
+		"description": "Name of the table of tiles on the editor's Tilesets tab, read out by screen readers"
 	},
 	"editor.tiles.deleteUploadFailed": {
 		"defaultMessage": "Could not delete the tileset \"{name}\".",

@@ -2,6 +2,7 @@ import { canEditWorld, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, t
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { announceListPage } from '../announcer';
 import { characterMessages } from '../characterMessages';
 import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
@@ -63,7 +64,7 @@ export class CharacterListTab
 			direction: 'ascending'
 		}, () =>
 		{
-			this.reload();
+			this.reload(false);
 		});
 
 		setOptions(this.groupFilter, [
@@ -85,7 +86,7 @@ export class CharacterListTab
 		{
 			filter.addEventListener('change', () =>
 			{
-				this.reload();
+				this.reload(true);
 			});
 		}
 
@@ -94,20 +95,20 @@ export class CharacterListTab
 			window.clearTimeout(this.searchTimer);
 			this.searchTimer = window.setTimeout(() =>
 			{
-				this.reload();
+				this.reload(true);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_CHARACTERS_PER_PAGE);
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
 			this.offset += MAX_CHARACTERS_PER_PAGE;
-			void this.refresh();
+			void this.refresh(true);
 		});
 	}
 
@@ -208,11 +209,13 @@ export class CharacterListTab
 
 	/**
 	 * Loads the first page again, after the search, a filter or the order changed
+	 *
+	 * @param announcePage Whether to read out what the list shows, as after the search or a filter changed
 	 */
-	private reload(): void
+	private reload(announcePage: boolean): void
 	{
 		this.offset = 0;
-		void this.refresh();
+		void this.refresh(announcePage);
 	}
 
 	/**
@@ -227,8 +230,10 @@ export class CharacterListTab
 
 	/**
 	 * Loads the page of characters the search, filters, order and offset ask for, and shows it
+	 *
+	 * @param announcePage Whether to read out what the list shows, as after the player changed its page or filters
 	 */
-	private async refresh(): Promise<void>
+	private async refresh(announcePage = false): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
@@ -264,6 +269,11 @@ export class CharacterListTab
 					defaultMessage: 'Could not list the characters.',
 					description: 'Shown on the editor\'s Character List tab when the universe\'s characters couldn\'t be loaded'
 				}));
+
+				if (announcePage)
+				{
+					announceListPage(this.page, this.empty);
+				}
 			}
 
 			return;
@@ -278,7 +288,7 @@ export class CharacterListTab
 		if ((page.characters.length === 0) && (this.offset > 0))
 		{
 			this.offset = Math.max(0, this.offset - MAX_CHARACTERS_PER_PAGE);
-			void this.refresh();
+			void this.refresh(announcePage);
 			return;
 		}
 
@@ -297,6 +307,11 @@ export class CharacterListTab
 			}));
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.characters.length) >= page.total);
+
+		if (announcePage)
+		{
+			announceListPage(this.page, this.empty);
+		}
 	}
 
 	/**

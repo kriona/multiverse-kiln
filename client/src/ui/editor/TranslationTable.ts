@@ -2,6 +2,7 @@ import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DI
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { announceListPage } from '../announcer';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { engineCoinName } from '../moneyField';
@@ -224,7 +225,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			filter.addEventListener('change', () =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			});
 		}
 
@@ -234,20 +235,20 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			this.searchTimer = window.setTimeout(() =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_UNIVERSE_TEXT_PER_PAGE);
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
 			this.offset += MAX_UNIVERSE_TEXT_PER_PAGE;
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		setOptions(this.format, namedOptions(TRANSLATION_FILE_FORMATS, FILE_FORMAT_NAMES));
@@ -580,8 +581,10 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	/**
 	 * Loads the page of text the language, search, filters, order and offset ask for, then shows it with
 	 * the changes made since. While the tab is hidden it only notes that the page is out of date
+	 *
+	 * @param announcePage Whether to read out what the table shows, as after the player changed its page, search or filters
 	 */
-	private async refresh(): Promise<void>
+	private async refresh(announcePage = false): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
@@ -627,6 +630,11 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 					description: 'Shown on the editor\'s Translations tab when the universe\'s text and its translations couldn\'t be loaded'
 				}));
 				this.rows.replaceChildren();
+
+				if (announcePage)
+				{
+					announceListPage(this.page, this.empty);
+				}
 			}
 
 			return;
@@ -652,6 +660,11 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			}));
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.rows.length) >= page.total);
+
+		if (announcePage)
+		{
+			announceListPage(this.page, this.empty);
+		}
 	}
 
 	/**

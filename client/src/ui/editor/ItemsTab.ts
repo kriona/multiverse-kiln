@@ -2,6 +2,7 @@ import { canEditWorld, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { announceListPage } from '../announcer';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { formMessages } from '../formMessages';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
@@ -123,7 +124,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			filter.addEventListener('change', () =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			});
 		}
 
@@ -135,7 +136,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			}
 
 			this.offset = 0;
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nameFilter.addEventListener('input', () =>
@@ -144,20 +145,20 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			this.searchTimer = window.setTimeout(() =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_ITEMS_PER_PAGE);
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
 			this.offset += MAX_ITEMS_PER_PAGE;
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.addButton.addEventListener('click', () =>
@@ -303,8 +304,10 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since
+	 *
+	 * @param announcePage Whether to read out what the list shows, as after the player changed its page or filters
 	 */
-	private async refresh(): Promise<void>
+	private async refresh(announcePage = false): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
@@ -342,6 +345,11 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 					defaultMessage: 'Could not list the items.',
 					description: 'Shown on the Items tab when the items couldn\'t be loaded'
 				}));
+
+				if (announcePage)
+				{
+					announceListPage(this.page, this.empty);
+				}
 			}
 
 			return;
@@ -356,7 +364,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		if ((page.items.length === 0) && (this.offset > 0))
 		{
 			this.offset = Math.max(0, this.offset - MAX_ITEMS_PER_PAGE);
-			void this.refresh();
+			void this.refresh(announcePage);
 			return;
 		}
 
@@ -381,6 +389,11 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			}));
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.items.length) >= page.total);
+
+		if (announcePage)
+		{
+			announceListPage(this.page, this.empty);
+		}
 	}
 
 	/**

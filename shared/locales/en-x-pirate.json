@@ -1587,6 +1587,10 @@
 		"message": "home port",
 		"source": "starting area"
 	},
+	"editor.audit.caption": {
+		"message": "Stowin's",
+		"source": "Saves"
+	},
 	"editor.audit.changes": {
 		"message": "Alterations",
 		"source": "Changes"
@@ -1766,6 +1770,10 @@
 	"editor.changedSince": {
 		"message": "{action, select, deleted {{names} scuttled this since ye opened it.} restored {{names} restored this to its default since ye opened it.} other {{fieldCount, plural, =0 {{names} changed this since ye opened it.} other {{names} changed {fields} since ye opened this.}}}}",
 		"source": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}"
+	},
+	"editor.characterList.caption": {
+		"message": "Hands",
+		"source": "Characters"
 	},
 	"editor.characterList.class": {
 		"message": "Callin'",
@@ -2231,6 +2239,10 @@
 		"message": "Sign On a Hand",
 		"source": "Add Editor"
 	},
+	"editor.editors.caption": {
+		"message": "Officers",
+		"source": "Editors"
+	},
 	"editor.editors.choosePlayer": {
 		"message": "Search for the sailor by name or username, then pick them from the list.",
 		"source": "Search for the player by name or username, then choose them from the list."
@@ -2490,6 +2502,10 @@
 	"editor.items.add": {
 		"message": "Add Booty",
 		"source": "Add Item"
+	},
+	"editor.items.caption": {
+		"message": "Booty",
+		"source": "Items"
 	},
 	"editor.items.category": {
 		"message": "Kind",
@@ -3366,6 +3382,10 @@
 	"editor.tiles.add": {
 		"message": "Add Tile",
 		"source": "Add Tile"
+	},
+	"editor.tiles.caption": {
+		"message": "Tiles",
+		"source": "Tiles"
 	},
 	"editor.tiles.deleteUploadFailed": {
 		"message": "Couldn't scuttle the tileset \"{name}\".",

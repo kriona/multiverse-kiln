@@ -11,7 +11,7 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<!-- include admin-crumb.html -->
-					<h1 data-message="admin.universes.heading" data-translation-context="Heading of the admin page listing every universe, where admins disable and enable them">Universes</h1>
+					<h1 id="admin-heading" data-message="admin.universes.heading" data-translation-context="Heading of the admin page listing every universe, where admins disable and enable them">Universes</h1>
 					<!-- include account.html -->
 				</header>
 				<div class="admin-body admin-body-wide">
@@ -26,7 +26,7 @@
 						</div>
 						<p id="universe-list-error" class="form-error" role="alert" hidden></p>
 						<div class="admin-table-scroll">
-							<table class="admin-table">
+							<table class="admin-table" aria-labelledby="admin-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-message="admin.universes.universe" data-translation-context="Heading of the column of universes' names in the admin page's list of universes, each linking to the universe's editor">Universe</th>

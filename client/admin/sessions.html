@@ -11,7 +11,7 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<!-- include admin-crumb.html -->
-					<h1 data-message="admin.sessions.heading" data-translation-context="Heading of the admin page listing the browsers logged in to the site">Sessions</h1>
+					<h1 id="admin-heading" data-message="admin.sessions.heading" data-translation-context="Heading of the admin page listing the browsers logged in to the site">Sessions</h1>
 					<!-- include account.html -->
 				</header>
 				<div class="admin-body admin-body-wide">
@@ -27,7 +27,7 @@
 						</div>
 						<p id="session-list-error" class="form-error" role="alert" hidden></p>
 						<div class="admin-table-scroll">
-							<table class="admin-table">
+							<table class="admin-table" aria-labelledby="admin-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-message="admin.column.player" data-translation-context="Heading of the column of players' names and usernames in the admin pages' lists of sessions, players and server admins">Player</th>

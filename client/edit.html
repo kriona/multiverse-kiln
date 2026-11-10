@@ -135,6 +135,7 @@
 							</div>
 							<p id="editors-error" class="form-error" role="alert" hidden></p>
 							<table class="item-table">
+								<caption class="visually-hidden" data-message="editor.editors.caption" data-translation-context="Name of the table on the editor's Editors tab listing the players with a role in the universe, read out by screen readers">Editors</caption>
 								<thead>
 									<tr>
 										<th scope="col" data-message="editor.editors.username" data-translation-context="Heading of the column of usernames on the editor's Editors tab">Username</th>
@@ -228,7 +229,7 @@
 								<button id="difficulty-add" type="button" data-shortcut="Alt+I" data-message="editor.difficulty.add" data-translation-context="Button that opens the dialog for making a new difficulty level"><!-- icon ph:plus -->Add Difficulty</button>
 							</div>
 							<p id="difficulty-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table">
+							<table class="item-table" aria-labelledby="ruleset-difficulty-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</th>
@@ -316,7 +317,7 @@
 								<button id="race-add" type="button" data-shortcut="Alt+R" data-message="editor.races.add" data-translation-context="Button that opens the dialog for making a new race"><!-- icon ph:plus -->Add Race</button>
 							</div>
 							<p id="race-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table">
+							<table class="item-table" aria-labelledby="characters-races-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
@@ -335,7 +336,7 @@
 								<button id="class-add" type="button" data-shortcut="Alt+L" data-message="editor.classes.add" data-translation-context="Button that opens the dialog for making a new character class"><!-- icon ph:plus -->Add Class</button>
 							</div>
 							<p id="class-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table">
+							<table class="item-table" aria-labelledby="characters-classes-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
@@ -354,7 +355,7 @@
 								<button id="theme-add" type="button" data-shortcut="Alt+T" data-message="editor.themes.add" data-translation-context="Button that opens the dialog for making a new theme (a character background, such as ace pilot)"><!-- icon ph:plus -->Add Theme</button>
 							</div>
 							<p id="theme-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table">
+							<table class="item-table" aria-labelledby="characters-themes-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
@@ -384,6 +385,7 @@
 							</label>
 						</div>
 						<table id="character-list-table" class="item-table">
+							<caption class="visually-hidden" data-message="editor.characterList.caption" data-translation-context="Name of the table of the universe's characters on the editor's Character List tab, read out by screen readers">Characters</caption>
 							<thead>
 								<tr>
 									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="editor.characterList.name" data-translation-context="Heading of the column of characters' names on the editor's Character List tab">Name</button></th>
@@ -430,6 +432,7 @@
 						</div>
 						<p id="tile-list-error" class="form-error" role="alert" hidden></p>
 						<table id="tile-table" class="tile-table">
+							<caption class="visually-hidden" data-message="editor.tiles.caption" data-translation-context="Name of the table of tiles on the editor's Tilesets tab, read out by screen readers">Tiles</caption>
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.tile.color" data-translation-context="The color a tile is drawn in: the label of its field in the tile editor, and the heading of the Tilesets table's column of colors; also names the setting in the list of what a save changed, on the editor's Audit tab">Color</th>
@@ -610,6 +613,7 @@
 						</div>
 						<p id="item-list-error" class="form-error" role="alert" hidden></p>
 						<table id="item-table" class="item-table">
+							<caption class="visually-hidden" data-message="editor.items.caption" data-translation-context="Name of the table of items on the editor's Items tab, read out by screen readers">Items</caption>
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
@@ -631,6 +635,7 @@
 					<section id="editor-panel-audit" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-audit" hidden>
 						<p id="audit-hint" class="hint"></p>
 						<table id="audit-table" class="item-table">
+							<caption class="visually-hidden" data-message="editor.audit.caption" data-translation-context="Name of the table on the editor's Audit tab listing the saves made in the universe's editor, read out by screen readers">Saves</caption>
 							<thead>
 								<tr>
 									<th scope="col" data-message="editor.audit.saved" data-translation-context="Heading of the column on the editor's Audit tab for the date and time of each save">Saved</th>
@@ -701,7 +706,7 @@
 								<p id="translations-files-hint" class="hint" data-message="editor.translations.filesHint" data-translation-context="Under the Export and Import buttons on the editor's Translations tab, explaining translation files">Export the text to translate it in another tool, then import it here and save. A translation that was out of date and comes back unchanged stays out of date.</p>
 								<p id="translations-import-status" class="hint" role="status" hidden></p>
 								<p id="translations-list-error" class="form-error" role="alert" hidden></p>
-								<table id="translations-table" class="item-table translations-table">
+								<table id="translations-table" class="item-table translations-table" aria-labelledby="translations-text-heading">
 									<thead>
 										<tr>
 											<th scope="col" data-sort="place"><button type="button" class="sort-button" data-message="editor.translations.place" data-translation-context="Heading of the column on the editor's Translations tab saying where each piece of text comes from, such as Area: Waterdeep, name">From</button></th>
