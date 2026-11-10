@@ -318,28 +318,39 @@ export class SaveBar
 
 		try
 		{
-			if (await this.askAboutImpacts(universe, save))
+			try
 			{
-				ids = await this.send(universe, save);
+				if (await this.askAboutImpacts(universe, save))
+				{
+					ids = await this.send(universe, save);
+				}
 			}
-		}
-		catch (error)
-		{
-			this.refused(save, error);
+			catch (error)
+			{
+				this.refused(save, error);
+			}
+			finally
+			{
+				save.finish();
+			}
+
+			// Saving stays on until every tab has taken its changes as saved: until then, the tabs not yet
+			// done still have them, and another save would send them again
+			if (ids)
+			{
+				for (const tab of tabs)
+				{
+					await tab.saved(ids);
+				}
+			}
 		}
 		finally
 		{
 			this.saving = false;
-			save.finish();
 		}
 
 		if (ids)
 		{
-			for (const tab of tabs)
-			{
-				await tab.saved(ids);
-			}
-
 			this.afterSave(tabs);
 			this.justSaved = (announce && !this.hasUnsavedChanges());
 
