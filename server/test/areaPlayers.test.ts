@@ -65,17 +65,41 @@ class FakeRoom
 	holdReads = false;
 
 	/**
+	 * Whether area reads wait for finishAreaReads(), each with the area as it was when it began
+	 */
+	holdAreaReads = false;
+
+	/**
+	 * The areas an editor has disabled, by ID
+	 */
+	readonly disabledAreas = new Set<string>();
+
+	/**
 	 * The cache's clock, in milliseconds
 	 */
 	time = 0;
 
 	private readonly heldReads: (() => void)[] = [];
 
+	private readonly heldAreaReads: (() => void)[] = [];
+
 	readonly cache = new AreaCache(
 		(areaId) =>
 		{
+			const loaded = loadedArea(areaId);
+
+			loaded.area.enabled = !this.disabledAreas.has(areaId);
 			this.areaReads.push(areaId);
-			return(Promise.resolve(loadedArea(areaId)));
+
+			if (!this.holdAreaReads)
+			{
+				return(Promise.resolve(loaded));
+			}
+
+			return(new Promise((resolve) =>
+			{
+				this.heldAreaReads.push(() => resolve(loaded));
+			}));
 		},
 		() => new Promise<AreaChunk[]>((resolve) =>
 		{
@@ -138,6 +162,22 @@ class FakeRoom
 			finish();
 		}
 	}
+
+	/**
+	 * Lets the area reads held finish, and any they lead to, until none are left
+	 */
+	async finishAreaReads(): Promise<void>
+	{
+		while (this.heldAreaReads.length > 0)
+		{
+			for (const finish of this.heldAreaReads.splice(0))
+			{
+				finish();
+			}
+
+			await settle();
+		}
+	}
 }
 
 /**
@@ -188,4 +228,26 @@ describe('AreaPlayers', () =>
 
 		assert.strictEqual(room.players.getAreaId(PLAYER_ID), 'away');
 	});
+
+	for (const change of [{ kind: 'area', areaId: 'away' }, { kind: 'tiles', universeId: 'universe' }] as const)
+	{
+		it(`keeps an area as the change left it when '${change.kind}' changes arrive while it loads`, async () =>
+		{
+			const room = new FakeRoom();
+
+			room.holdAreaReads = true;
+
+			const loading = room.cache.load('away');
+
+			room.disabledAreas.add('away');
+
+			const applying = room.players.applyChange(change);
+
+			await room.finishAreaReads();
+			await applying;
+
+			assert.strictEqual((await loading)?.loaded.area.enabled, false);
+			assert.strictEqual(room.cache.get('away')?.loaded.area.enabled, false);
+		});
+	}
 });

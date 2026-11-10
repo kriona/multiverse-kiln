@@ -46,6 +46,18 @@ export type AreaLoader = (areaId: string) => Promise<LoadedArea | undefined>;
 export type ChunkReader = (areaId: string, chunks: { chunkColumn: number; chunkRow: number }[]) => Promise<AreaChunk[]>;
 
 /**
+ * A read of an area's settings, links and tiles under way
+ */
+interface AreaRead
+{
+	/**
+	 * Whether an editor changed the area after the read's query began, so what it read may be from
+	 * before the change
+	 */
+	changed: boolean;
+}
+
+/**
  * How long an area stays loaded after it was last asked for (see forgetIdle), while nobody is in it.
  * It covers the time between a room loading an area and putting a player in it, and keeps an area
  * players soon come back to from being read again
@@ -65,6 +77,12 @@ export class AreaCache
 {
 	private readonly areas = new Map<string, ActiveArea>();
 	private readonly loading = new Map<string, Promise<ActiveArea | undefined>>();
+
+	/**
+	 * The reads of each area's settings, links and tiles under way, by area ID, so a change heard while
+	 * one runs makes it read the area again
+	 */
+	private readonly reads = new Map<string, Set<AreaRead>>();
 
 	/**
 	 * When each area was last asked for with load(), in milliseconds by the cache's clock
@@ -294,6 +312,26 @@ export class AreaCache
 	}
 
 	/**
+	 * Notes that an editor has changed an area, so the reads of it under way, whose queries may have run
+	 * before the change was saved, read it again before their result is kept. reload() notes the change
+	 * itself; this is for a change to an area that isn't loaded, which may be loading
+	 *
+	 * @param areaId The area's ID; undefined for every area, such as when the universe's tiles change
+	 */
+	noteChange(areaId?: string): void
+	{
+		const reads = ((areaId !== undefined) ? [this.reads.get(areaId) ?? []] : this.reads.values());
+
+		for (const areaReads of reads)
+		{
+			for (const read of areaReads)
+			{
+				read.changed = true;
+			}
+		}
+	}
+
+	/**
 	 * Reads a loaded area's settings, links and tiles again, after an editor has changed them
 	 *
 	 * @param areaId The area's ID
@@ -303,6 +341,8 @@ export class AreaCache
 	 */
 	async reload(areaId: string, keepChunks: boolean): Promise<ActiveArea | undefined>
 	{
+		this.noteChange(areaId);
+
 		const before = this.areas.get(areaId);
 
 		if (!before)
@@ -310,7 +350,7 @@ export class AreaCache
 			return(undefined);
 		}
 
-		const loaded = await this.loadArea(areaId);
+		const loaded = await this.readCurrent(areaId);
 
 		if (this.areas.get(areaId) !== before)
 		{
@@ -368,7 +408,7 @@ export class AreaCache
 	 */
 	private async read(areaId: string): Promise<ActiveArea | undefined>
 	{
-		const loaded = await this.loadArea(areaId);
+		const loaded = await this.readCurrent(areaId);
 
 		if (!loaded)
 		{
@@ -381,6 +421,50 @@ export class AreaCache
 		this.usedAt.set(areaId, this.now());
 
 		return(area);
+	}
+
+	/**
+	 * Reads an area's settings, links and tiles, and reads them again whenever noteChange() is called
+	 * for the area while they are being read, so the result is from after every change heard so far
+	 *
+	 * @param areaId The area's ID
+	 * @return The area as read, or undefined when there is no such area
+	 */
+	private async readCurrent(areaId: string): Promise<LoadedArea | undefined>
+	{
+		const read: AreaRead = { changed: false };
+		let reads = this.reads.get(areaId);
+
+		if (!reads)
+		{
+			reads = new Set();
+			this.reads.set(areaId, reads);
+		}
+
+		reads.add(read);
+
+		try
+		{
+			let loaded: LoadedArea | undefined;
+
+			do
+			{
+				read.changed = false;
+				loaded = await this.loadArea(areaId);
+			}
+			while (read.changed);
+
+			return(loaded);
+		}
+		finally
+		{
+			reads.delete(read);
+
+			if (reads.size === 0)
+			{
+				this.reads.delete(areaId);
+			}
+		}
 	}
 }
 

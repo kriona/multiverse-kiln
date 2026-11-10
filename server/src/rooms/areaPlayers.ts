@@ -902,7 +902,8 @@ export class AreaPlayers
 
 	/**
 	 * Brings a change the world editor has made to the players it affects, if this room has the area
-	 * loaded. A changed area nobody is in or on their way to is forgotten, to be read when it is next needed
+	 * loaded or is loading it. A changed area nobody is in or on their way to is forgotten, to be read
+	 * when it is next needed
 	 *
 	 * Runs outside the simulation tick
 	 *
@@ -917,6 +918,9 @@ export class AreaPlayers
 		else if ((change.kind === 'tiles') || (change.kind === 'time'))
 		{
 			const inUse = this.areasInUse();
+
+			// Which universe an area still loading is in isn't known yet, so every load under way reads again
+			this.areas.noteChange();
 			const areaIds = this.areas.all()
 				.map((area) => area.loaded.area)
 				.filter((area) => (area.universeId === change.universeId))
@@ -1008,6 +1012,8 @@ export class AreaPlayers
 	{
 		if (!this.areas.get(areaId))
 		{
+			// A load of the area under way reads it again
+			this.areas.noteChange(areaId);
 			return;
 		}
 

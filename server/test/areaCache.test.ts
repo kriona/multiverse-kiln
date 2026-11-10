@@ -108,6 +108,49 @@ class FakeDatabase
 	}
 }
 
+/**
+ * An AreaCache over a fake database whose area reads take the area as it is when their query runs,
+ * as a query begun before an editor's save commits does, and finish when the test lets them
+ */
+class SlowAreaDatabase
+{
+	/**
+	 * Whether the stored area is enabled
+	 */
+	enabled = true;
+
+	readonly reads: (() => void)[] = [];
+
+	readonly cache = new AreaCache(
+		() =>
+		{
+			const area = loadedArea();
+			const read: LoadedArea = {
+				...area,
+				area: {
+					...area.area,
+					enabled: this.enabled
+				}
+			};
+
+			return(new Promise((resolve) =>
+			{
+				this.reads.push(() => resolve(read));
+			}));
+		},
+		() => Promise.resolve([])
+	);
+
+	/**
+	 * Lets the oldest area read waiting finish, and waits for what follows from it
+	 */
+	async finishRead(): Promise<void>
+	{
+		this.reads.shift()?.();
+		await new Promise((resolve) => setImmediate(resolve));
+	}
+}
+
 describe('AreaCache', () =>
 {
 	it('loads an area without its chunks, which can\'t be entered until they load', async () =>
@@ -227,6 +270,52 @@ describe('AreaCache', () =>
 
 		assert.strictEqual(await database.cache.reload(AREA_ID, false), undefined);
 		assert.strictEqual(database.cache.get(AREA_ID), undefined);
+	});
+
+	for (const [changed, areaId] of [['the area', AREA_ID], ['every area', undefined]] as const)
+	{
+		it(`reads an area again when a change to ${changed} is heard while it loads`, async () =>
+		{
+			const database = new SlowAreaDatabase();
+			const loading = database.cache.load(AREA_ID);
+
+			database.enabled = false;
+			database.cache.noteChange(areaId);
+			await database.finishRead();
+
+			assert.strictEqual(database.cache.get(AREA_ID), undefined);
+			assert.strictEqual(database.reads.length, 1);
+
+			await database.finishRead();
+
+			assert.strictEqual((await loading)?.loaded.area.enabled, false);
+			assert.strictEqual(database.cache.get(AREA_ID)?.loaded.area.enabled, false);
+		});
+	}
+
+	it('keeps the area from after the later change when two reloads overlap', async () =>
+	{
+		const database = new SlowAreaDatabase();
+		const loading = database.cache.load(AREA_ID);
+
+		await database.finishRead();
+		await loading;
+
+		const first = database.cache.reload(AREA_ID, false);
+
+		database.enabled = false;
+
+		const second = database.cache.reload(AREA_ID, false);
+
+		// The first reload's read, from before the second change, finishes first
+		while (database.reads.length > 0)
+		{
+			await database.finishRead();
+		}
+
+		await Promise.all([first, second]);
+
+		assert.strictEqual(database.cache.get(AREA_ID)?.loaded.area.enabled, false);
 	});
 
 	it('forgets an area once it has gone AREA_IDLE_MS without being asked for, unless it is in use', async () =>
