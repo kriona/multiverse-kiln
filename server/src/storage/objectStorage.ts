@@ -5,7 +5,7 @@
  *
  * The only module that talks to the storage service
  */
-import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, DeleteObjectsCommand, GetObjectCommand, HeadBucketCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 /**
  * The storage service's settings
@@ -38,6 +38,11 @@ const STORAGE_REQUEST_TIMEOUT_MS = 10000;
  * ones only 3 seconds in, and not at all once the response's headers have arrived
  */
 const STORAGE_SOCKET_TIMEOUT_MS = 4000;
+
+/**
+ * The most keys one DeleteObjects request may name
+ */
+const MAX_KEYS_PER_DELETE = 1000;
 
 /**
  * The storage service's settings, read from the environment the first time they are needed, so the
@@ -135,18 +140,39 @@ export async function getObject(key: string): Promise<Buffer | undefined>
 }
 
 /**
- * Deletes a stored file, if there is one
+ * Deletes stored files, up to MAX_KEYS_PER_DELETE in each request. A key with nothing stored under it
+ * counts as deleted. Files that can't be deleted are logged rather than failing: callers delete the
+ * files of rows already gone, and nothing serves a file without its row
  *
- * @param key Its key
+ * @param keys Their keys
  */
-export async function deleteObject(key: string): Promise<void>
+export async function deleteObjects(keys: readonly string[]): Promise<void>
 {
-	const { client, bucket } = storage();
+	for (let start = 0; start < keys.length; start += MAX_KEYS_PER_DELETE)
+	{
+		const batch = keys.slice(start, (start + MAX_KEYS_PER_DELETE));
 
-	await client.send(new DeleteObjectCommand({
-		Bucket: bucket,
-		Key: key
-	}));
+		try
+		{
+			const { client, bucket } = storage();
+			const result = await client.send(new DeleteObjectsCommand({
+				Bucket: bucket,
+				Delete: {
+					Objects: batch.map((key) => ({ Key: key })),
+					Quiet: true
+				}
+			}));
+
+			for (const failure of (result.Errors ?? []))
+			{
+				console.error(`Could not delete the stored file ${failure.Key}: ${failure.Code} ${failure.Message}`);
+			}
+		}
+		catch (error)
+		{
+			console.error(`Could not delete the stored files ${batch.join(', ')}:`, error);
+		}
+	}
 }
 
 /**

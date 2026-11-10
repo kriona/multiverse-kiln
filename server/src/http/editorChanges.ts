@@ -20,7 +20,7 @@ import { listUniverseRoles } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, findUniverse, hasDraft, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
-import { deleteObject } from '../storage/objectStorage.js';
+import { deleteObjects } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates } from '../world/editorUpdates.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
@@ -474,7 +474,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 	}
 	catch (error)
 	{
-		await deleteImages([...uploads.values()].map((upload) => upload.storageKey));
+		await deleteObjects([...uploads.values()].map((upload) => upload.storageKey));
 
 		const refusal = refusalOf(error);
 
@@ -679,7 +679,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
  */
 async function afterCommit(context: ChangeContext, stageChange: StageChange | undefined): Promise<void>
 {
-	await deleteImages(context.deletedImages);
+	await deleteObjects(context.deletedImages);
 
 	try
 	{
@@ -764,25 +764,4 @@ async function publishSave(base: UniverseContext, windowId: string | undefined, 
 		version: (base.version.draft ? 'draft' : 'live'),
 		details
 	});
-}
-
-/**
- * Removes images from storage. One that can't be removed is only logged: nothing serves an image
- * without its row, so it does no harm
- *
- * @param storageKeys The images' keys
- */
-async function deleteImages(storageKeys: readonly string[]): Promise<void>
-{
-	for (const storageKey of storageKeys)
-	{
-		try
-		{
-			await deleteObject(storageKey);
-		}
-		catch (error)
-		{
-			console.error(`Could not delete the image ${storageKey}:`, error);
-		}
-	}
 }
