@@ -12,8 +12,9 @@ import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
 import { deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
-import { evacuatedPlaces, membersOverSize } from '../logic/disabling.js';
+import { evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
 import { groupChanges } from '../players/groupChanges.js';
+import type { AreaPlace } from '../world/areaChanges.js';
 import type { ChangeContext } from './editorChangeContext.js';
 import { parentPlace } from './editorAreas.js';
 
@@ -155,14 +156,20 @@ export class SaveDisablings
 		const { universe, transaction } = context;
 
 		// An area the save deleted isn't listed
-		for (const area of await listAreas(context.version, transaction))
+		const areas = await listAreas(context.version, transaction);
+		const loadedLinks = new Map<string, readonly LinkInto[]>();
+
+		for (const area of areas)
 		{
 			const noted = this.areas.get(area.id);
 
 			// The lobby's players are always in its area, and have nowhere else to start
 			if (noted?.wasEnabled && !area.enabled && (area.id !== universe.lobbyAreaId))
 			{
-				await evacuateArea(context, area.id, (noted.choice ?? 'start'));
+				const moveTo = (noted.choice ?? 'start');
+				const destination = ((moveTo === 'parent') ? await parentPlace(transaction, areas, area.id, loadedLinks) : null);
+
+				await evacuateArea(context, area.id, destination);
 			}
 		}
 	}
@@ -205,17 +212,16 @@ function note<Id, Choice>(noted: Map<Id, Noted<Choice>>, id: Id, wasEnabled: boo
 }
 
 /**
- * Sends the characters in a disabled area where moveTo says: those saved there by their group now, and
+ * Sends the characters in a disabled area to a destination: those saved there by their group now, and
  * those playing there once the save commits
  *
  * @param context The save
  * @param areaId The area
- * @param moveTo Where they go
+ * @param destination Where they all go, or null to send each where their group starts
  */
-async function evacuateArea(context: ChangeContext, areaId: string, moveTo: AreaEvacuation): Promise<void>
+async function evacuateArea(context: ChangeContext, areaId: string, destination: AreaPlace | null): Promise<void>
 {
 	const { universe, transaction } = context;
-	const destination = ((moveTo === 'parent') ? await parentPlace(context, areaId) : null);
 	const universeStart = ((universe.startingAreaId === null)
 		? null
 		: {

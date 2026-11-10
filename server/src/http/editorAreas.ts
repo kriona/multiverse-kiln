@@ -10,7 +10,7 @@ import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileR
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
-import { arrivalCell, enabledAncestor } from '../logic/disabling.js';
+import { arrivalCell, enabledAncestor, type AreaInTree, type LinkInto } from '../logic/disabling.js';
 import { chunksOfChanges, wouldCreateCycle } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
 import type { AreaPlace } from '../world/areaChanges.js';
@@ -293,23 +293,33 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
  * Where characters leaving a disabled area for its parent arrive: the nearest enabled area holding it,
  * on a link there leading back in, or its center
  *
- * @param context The save
+ * @param transaction The save's transaction
+ * @param areas Every area of the universe, as the save leaves them
  * @param areaId The disabled area
+ * @param loadedLinks The links of the areas loaded so far, by area, which it adds the area it finds to,
+ * so areas sharing a parent load its links once
  * @return The place, or null when no enabled area holds it, so they go where they start instead
  */
-export async function parentPlace(context: Pick<ChangeContext, 'version' | 'transaction'>, areaId: string): Promise<AreaPlace | null>
+export async function parentPlace(transaction: Executor, areas: readonly AreaInTree[], areaId: string, loadedLinks: Map<string, readonly LinkInto[]>): Promise<AreaPlace | null>
 {
-	const { version, transaction } = context;
-	const found = enabledAncestor(await listAreas(version, transaction), areaId);
+	const found = enabledAncestor(areas, areaId);
 
 	if (!found)
 	{
 		return(null);
 	}
 
+	let links = loadedLinks.get(found.ancestorId);
+
+	if (links === undefined)
+	{
+		links = await listAreaLinks(found.ancestorId, transaction);
+		loadedLinks.set(found.ancestorId, links);
+	}
+
 	return({
 		areaId: found.ancestorId,
-		...arrivalCell(await listAreaLinks(found.ancestorId, transaction), found.passed)
+		...arrivalCell(links, found.passed)
 	});
 }
 
