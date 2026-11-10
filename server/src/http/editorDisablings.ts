@@ -12,7 +12,7 @@ import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
 import { deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
-import { evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
+import { areasById, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
 import { groupChanges } from '../players/groupChanges.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import type { ChangeContext } from './editorChangeContext.js';
@@ -157,6 +157,7 @@ export class SaveDisablings
 
 		// An area the save deleted isn't listed
 		const areas = await listAreas(context.version, transaction);
+		const byId = areasById(areas);
 		const loadedLinks = new Map<string, readonly LinkInto[]>();
 
 		for (const area of areas)
@@ -167,7 +168,7 @@ export class SaveDisablings
 			if (noted?.wasEnabled && !area.enabled && (area.id !== universe.lobbyAreaId))
 			{
 				const moveTo = (noted.choice ?? 'start');
-				const destination = ((moveTo === 'parent') ? await parentPlace(transaction, areas, area.id, loadedLinks) : null);
+				const destination = ((moveTo === 'parent') ? await parentPlace(transaction, byId, area.id, loadedLinks) : null);
 
 				await evacuateArea(context, area.id, destination);
 			}

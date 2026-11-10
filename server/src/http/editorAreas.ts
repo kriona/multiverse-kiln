@@ -294,13 +294,13 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
  * on a link there leading back in, or its center
  *
  * @param transaction The save's transaction
- * @param areas Every area of the universe, as the save leaves them
+ * @param areas Every area of the universe, as the save leaves them, by ID (see areasById())
  * @param areaId The disabled area
  * @param loadedLinks The links of the areas loaded so far, by area, which it adds the area it finds to,
  * so areas sharing a parent load its links once
  * @return The place, or null when no enabled area holds it, so they go where they start instead
  */
-export async function parentPlace(transaction: Executor, areas: readonly AreaInTree[], areaId: string, loadedLinks: Map<string, readonly LinkInto[]>): Promise<AreaPlace | null>
+export async function parentPlace(transaction: Executor, areas: ReadonlyMap<string, AreaInTree>, areaId: string, loadedLinks: Map<string, readonly LinkInto[]>): Promise<AreaPlace | null>
 {
 	const found = enabledAncestor(areas, areaId);
 

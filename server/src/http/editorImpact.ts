@@ -17,7 +17,7 @@ import { areas, classes, items, races } from '../db/schema.js';
 import { findDraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { draftVersion, liveVersion, type UniverseVersion } from '../db/universeVersions.js';
-import { countCharactersInAreas, enabledAncestor } from '../logic/disabling.js';
+import { areasById, countCharactersInAreas, enabledAncestor } from '../logic/disabling.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { universeContextOf } from './editorAccess.js';
 import { saveChangesRequest } from './editorPayloads.js';
@@ -224,9 +224,9 @@ async function draftAreaImpacts(liveUniverse: EditableUniverseDetails, changeInd
 		id: liveIdOf(area.id),
 		parentAreaId: ((area.parentAreaId === null) ? null : liveIdOf(area.parentAreaId))
 	}]));
-	const tree = [...inDraft.values(), ...liveAreas
+	const tree = areasById([...inDraft.values(), ...liveAreas
 		.filter((area) => !inDraft.has(area.id))
-		.map((area) => ({ ...area, enabled: false }))];
+		.map((area) => ({ ...area, enabled: false }))]);
 	const disabled = liveAreas.filter((area) => (area.enabled && (area.id !== liveUniverse.lobbyAreaId) && !(inDraft.get(area.id)?.enabled ?? false)));
 	const areaIds = disabled.map(({ id }) => id);
 	const saved = (await listMembersInAreas(areaIds)).map(({ characterId, areaId }) => ({ characterId, areaId }));
@@ -419,7 +419,7 @@ async function areaImpacts(universe: EditableUniverseDetails, changes: readonly 
 	}
 
 	const areas = await listAreas(liveVersion(universe.id));
-	const byId = new Map(areas.map((area) => [area.id, area]));
+	const byId = areasById(areas);
 	const found = disablings(changes, (change) => areaTouched(change, universe), disablesArea, (id) => (byId.get(id)?.enabled ?? false));
 	const areaIds = found.map(({ id }) => id);
 	const saved = (await listMembersInAreas(areaIds)).map(({ characterId, areaId }) => ({ characterId, areaId }));
@@ -431,7 +431,7 @@ async function areaImpacts(universe: EditableUniverseDetails, changes: readonly 
 		const characters = (counts.get(id) ?? 0);
 		const name = (((change.kind === 'updateArea') ? change.update.name : undefined) ?? byId.get(id)?.name ?? '');
 
-		return(((characters > 0) ? [{ changeIndex, kind: 'area', id, name, characters, hasParent: (enabledAncestor(areas, id) !== undefined) }] : []));
+		return(((characters > 0) ? [{ changeIndex, kind: 'area', id, name, characters, hasParent: (enabledAncestor(byId, id) !== undefined) }] : []));
 	}));
 }
 
