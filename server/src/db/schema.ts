@@ -154,6 +154,12 @@ export const players = pgTable('players', {
 }, (table) => [
 	uniqueIndex('players_username_lower_unique').on(sql`lower(${table.username})`),
 	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`),
+
+	// Find the players whose username, name or email address holds some text (searchPlayers and the admin
+	// pages' searches, LIKE '%text%') without reading every player
+	index('players_username_trigram_index').using('gin', sql`lower(${table.username}) gin_trgm_ops`),
+	index('players_display_name_trigram_index').using('gin', sql`lower(${table.displayName}) gin_trgm_ops`),
+	index('players_email_trigram_index').using('gin', sql`lower(${table.email}) gin_trgm_ops`),
 	check('players_username_form', sql`${table.username} ~ ${sql.raw(`'^[A-Za-z0-9_]{${MIN_USERNAME_LENGTH},${MAX_USERNAME_LENGTH}}$'`)}`),
 	check('players_locale_length', sql`char_length(${table.locale}) <= ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
 	check('players_pronouns_length', sql`char_length(${table.pronouns}) <= ${sql.raw(String(MAX_PRONOUNS_LENGTH))}`),
@@ -208,6 +214,10 @@ export const universes = pgTable('universes', {
 	deletionPrevented: boolean('deletion_prevented').notNull().default(false)
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
+
+	// Finds the universes whose name holds some text (the admin pages' search, LIKE '%text%') without
+	// reading every universe
+	index('universes_name_trigram_index').using('gin', sql`lower(${table.name}) gin_trgm_ops`),
 	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
 	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
 	check('universes_deletion_prevented_disabled', sql`NOT ${table.deletionPrevented} OR (${table.disabledAt} IS NOT NULL)`),

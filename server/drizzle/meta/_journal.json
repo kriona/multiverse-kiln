@@ -771,6 +771,20 @@
       "when": 1794230106873,
       "tag": "0109_universe_edits_editor_ids_index",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1794272845299,
+      "tag": "0110_pg_trgm",
+      "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1794272858343,
+      "tag": "0111_search_trigram_indexes",
+      "breakpoints": true
     }
   ]
 }
