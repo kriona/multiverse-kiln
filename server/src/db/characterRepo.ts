@@ -1065,6 +1065,106 @@ export async function isCarriedItem(itemId: number, executor: Executor = db): Pr
 }
 
 /**
+ * Which of some races any character is, in one query. The IDs go in one array parameter, since applying a
+ * draft can remove thousands of them
+ *
+ * @param raceIds The races' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the races a character is
+ */
+export async function racesWithCharacters(raceIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (raceIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: characters.raceId
+		})
+		.from(characters)
+		.where(sql`${characters.raceId} = ANY(${sql.param([...new Set(raceIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
+ * Which of some classes any character is, in one query. The IDs go in one array parameter, since applying
+ * a draft can remove thousands of them
+ *
+ * @param classIds The classes' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the classes a character is
+ */
+export async function classesWithCharacters(classIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (classIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: characters.classId
+		})
+		.from(characters)
+		.where(sql`${characters.classId} = ANY(${sql.param([...new Set(classIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
+ * Which of some themes any character has, in one query. The IDs go in one array parameter, since applying
+ * a draft can remove thousands of them
+ *
+ * @param themeIds The themes' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the themes a character has
+ */
+export async function themesWithCharacters(themeIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (themeIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: sf1eCharacters.themeId
+		})
+		.from(sf1eCharacters)
+		.where(sql`${sf1eCharacters.themeId} = ANY(${sql.param([...new Set(themeIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
+ * Which of some items any character carries, in one query. The IDs go in one array parameter, since
+ * applying a draft can remove thousands of them
+ *
+ * @param itemIds The items' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the items a character carries
+ */
+export async function carriedItems(itemIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (itemIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: characterItems.itemId
+		})
+		.from(characterItems)
+		.where(sql`${characterItems.itemId} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
  * How many of a universe's characters are each of some races, leaving out those past their last rites
  *
  * @param universeId The universe's ID

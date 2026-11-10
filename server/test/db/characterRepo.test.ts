@@ -2,7 +2,7 @@ import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../../src/db/adminClient.js';
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacterDetails, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
+import { carriedItems, classesWithCharacters, countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacterDetails, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, racesWithCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, themesWithCharacters, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
@@ -171,6 +171,22 @@ describe('characterRepo', () =>
 		assert.strictEqual(await hasCharactersOfRace(elfId), false);
 		assert.strictEqual(await hasCharactersOfClass(brokk.classId), true);
 		assert.strictEqual(await isCarriedItem(brokk.items[0].itemId), true);
+	});
+
+	it('finds which of some races, classes and items characters have in one query each', async () =>
+	{
+		const brokk = await dwarfFighter(playerId, universeId);
+		const elfId = (await findDefaultRaceIds('pf1e')).get('elf') ?? 0;
+		const itemId = brokk.items[0].itemId;
+
+		assert.deepStrictEqual(await racesWithCharacters([brokk.raceId, elfId]), new Set());
+		await inTransaction((transaction) => createCharacter(brokk, transaction));
+
+		assert.deepStrictEqual(await racesWithCharacters([brokk.raceId, elfId, brokk.raceId]), new Set([brokk.raceId]));
+		assert.deepStrictEqual(await racesWithCharacters([]), new Set());
+		assert.deepStrictEqual(await classesWithCharacters([brokk.classId]), new Set([brokk.classId]));
+		assert.deepStrictEqual(await carriedItems([itemId, -1]), new Set([itemId]));
+		assert.deepStrictEqual(await themesWithCharacters([-1]), new Set());
 	});
 
 	it('makes a character without items', async () =>

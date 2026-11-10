@@ -7,7 +7,7 @@ import { universeSlug, type DraftApplyChoices } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
-import { hasCharactersOfClass, hasCharactersOfRace, hasCharactersOfTheme, isCarriedItem } from '../db/characterRepo.js';
+import { carriedItems, classesWithCharacters, racesWithCharacters, themesWithCharacters } from '../db/characterRepo.js';
 import { findDefaultDifficultyLevel } from '../db/difficultyRepo.js';
 import { moveGroupsToDifficultyLevel } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
@@ -121,10 +121,10 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 	const kept = await keptRows(removed, transaction);
 
 	await disableLiveRows(universeId, areas, removed.areaIds, transaction);
-	await disableLiveRows(universeId, races, kept.raceIds, transaction);
-	await disableLiveRows(universeId, classes, kept.classIds, transaction);
-	await disableLiveRows(universeId, themes, kept.themeIds, transaction);
-	await disableLiveRows(universeId, items, kept.itemIds, transaction);
+	await disableLiveRows(universeId, races, [...kept.raceIds], transaction);
+	await disableLiveRows(universeId, classes, [...kept.classIds], transaction);
+	await disableLiveRows(universeId, themes, [...kept.themeIds], transaction);
+	await disableLiveRows(universeId, items, [...kept.itemIds], transaction);
 	await setLiveKeepPlaying(universeId, races, keepPlayingOf(choices.races), transaction);
 	await setLiveKeepPlaying(universeId, classes, keepPlayingOf(choices.classes), transaction);
 
@@ -152,10 +152,10 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 
 	context.deletedImages.push(...await deleteRemovedRows(universeId, {
 		...removed,
-		raceIds: removed.raceIds.filter((id) => !kept.raceIds.includes(id)),
-		classIds: removed.classIds.filter((id) => !kept.classIds.includes(id)),
-		themeIds: removed.themeIds.filter((id) => !kept.themeIds.includes(id)),
-		itemIds: removed.itemIds.filter((id) => !kept.itemIds.includes(id))
+		raceIds: removed.raceIds.filter((id) => !kept.raceIds.has(id)),
+		classIds: removed.classIds.filter((id) => !kept.classIds.has(id)),
+		themeIds: removed.themeIds.filter((id) => !kept.themeIds.has(id)),
+		itemIds: removed.itemIds.filter((id) => !kept.itemIds.has(id))
 	}, transaction));
 
 	const barred = await loadBarredOptions(universeId, transaction);
@@ -191,6 +191,17 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 }
 
 /**
+ * The races, classes, themes and items a draft applied didn't have that characters still use, by ID
+ */
+interface KeptRows
+{
+	raceIds: Set<number>;
+	classIds: Set<number>;
+	themeIds: Set<number>;
+	itemIds: Set<number>;
+}
+
+/**
  * Of the live rows a draft applied didn't have, the races, classes, themes and items characters still
  * use, which are kept disabled rather than deleted
  *
@@ -198,49 +209,20 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
  * @param transaction The save's transaction
  * @return The rows to keep
  */
-async function keptRows(removed: RemovedRows, transaction: ChangeContext['transaction']): Promise<Pick<RemovedRows, 'raceIds' | 'classIds' | 'themeIds' | 'itemIds'>>
+async function keptRows(removed: RemovedRows, transaction: ChangeContext['transaction']): Promise<KeptRows>
 {
-	const kept = {
-		raceIds: [] as number[],
-		classIds: [] as number[],
-		themeIds: [] as number[],
-		itemIds: [] as number[]
-	};
-
 	// One after another, since a transaction runs one query at a time
-	for (const id of removed.raceIds)
-	{
-		if (await hasCharactersOfRace(id, transaction))
-		{
-			kept.raceIds.push(id);
-		}
-	}
+	const raceIds = await racesWithCharacters(removed.raceIds, transaction);
+	const classIds = await classesWithCharacters(removed.classIds, transaction);
+	const themeIds = await themesWithCharacters(removed.themeIds, transaction);
+	const itemIds = await carriedItems(removed.itemIds, transaction);
 
-	for (const id of removed.classIds)
-	{
-		if (await hasCharactersOfClass(id, transaction))
-		{
-			kept.classIds.push(id);
-		}
-	}
-
-	for (const id of removed.themeIds)
-	{
-		if (await hasCharactersOfTheme(id, transaction))
-		{
-			kept.themeIds.push(id);
-		}
-	}
-
-	for (const id of removed.itemIds)
-	{
-		if (await isCarriedItem(id, transaction))
-		{
-			kept.itemIds.push(id);
-		}
-	}
-
-	return(kept);
+	return({
+		raceIds,
+		classIds,
+		themeIds,
+		itemIds
+	});
 }
 
 /**
