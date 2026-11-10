@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createToken, hashToken } from '../../src/auth/tokens.js';
 import { adminDb } from '../../src/db/adminClient.js';
 import { addServerAdmin } from '../../src/db/serverAdminRepo.js';
-import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findPlayersWithSessions, findSessionByTokenHash, findSessionWithPlayer, listActiveSessions, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
+import { createSession, deleteExpiredSessions, deletePlayerSessions, deleteSession, findSessionByTokenHash, findSessionWithPlayer, listActiveSessions, listSessionsOfPlayers, touchSession, touchSessions } from '../../src/db/sessionRepo.js';
 import { addPlayer } from '../players.js';
 import { turnOnTwoFactor } from '../twoFactorAccounts.js';
 
@@ -81,10 +81,30 @@ describe('sessionRepo', () =>
 		await touchSessions(ids, later);
 
 		assert.deepStrictEqual((await findSessionByTokenHash(tokenHash))?.lastUsedAt, later);
-		assert.deepStrictEqual([...await findPlayersWithSessions([player.id], ids)], [player.id]);
 		assert.deepStrictEqual((await listActiveSessions({ connected: { ids, connected: true } }, page, later)).sessions.map((found) => found.id), [session.id]);
 		assert.deepStrictEqual((await listActiveSessions({ connected: { ids, connected: false } }, page, later)).sessions.map((found) => found.id), [other.id]);
 		assert.deepStrictEqual((await listActiveSessions({ connected: { ids: [], connected: false } }, page, later)).total, 2);
+	});
+
+	it('lists the sessions of some players', async () =>
+	{
+		const ada = await addPlayer('Ada');
+		const grace = await addPlayer('Grace');
+		const alan = await addPlayer('Alan');
+		const adaSessions = [await createSession(ada.id, hashToken(createToken()), false), await createSession(ada.id, hashToken(createToken()), true)];
+		const graceSession = await createSession(grace.id, hashToken(createToken()), false);
+
+		await createSession(alan.id, hashToken(createToken()), false);
+
+		const found = (await listSessionsOfPlayers([ada.id, grace.id]))
+			.map((session) => [session.id, session.playerId])
+			.sort(([a], [b]) => a.localeCompare(b));
+		const expected = [...adaSessions, graceSession]
+			.map((session) => [session.id, session.playerId])
+			.sort(([a], [b]) => a.localeCompare(b));
+
+		assert.deepStrictEqual(found, expected);
+		assert.deepStrictEqual(await listSessionsOfPlayers([]), []);
 	});
 
 	it('finds nothing for an unknown token', async () =>

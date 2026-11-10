@@ -244,31 +244,27 @@ export async function deleteExpiredSessions(now: Date, executor: Executor = db):
 }
 
 /**
- * Which of some players have one of some sessions, such as those with windows connected
+ * The sessions of some players, such as a page of the admin player list, to check which have windows
+ * connected
  *
  * @param playerIds The players' IDs
- * @param sessionIds The sessions' IDs
  * @param executor The database, or a transaction
- * @return The IDs of the players with one
+ * @return Each session's ID and its player's
  */
-export async function findPlayersWithSessions(playerIds: readonly string[], sessionIds: readonly string[], executor: Executor = db): Promise<Set<string>>
+export async function listSessionsOfPlayers(playerIds: readonly string[], executor: Executor = db): Promise<{ id: string; playerId: string }[]>
 {
-	if ((playerIds.length === 0) || (sessionIds.length === 0))
+	if (playerIds.length === 0)
 	{
-		return(new Set());
+		return([]);
 	}
 
-	const rows = await executor
-		.selectDistinct({
+	return(executor
+		.select({
+			id: sessions.id,
 			playerId: sessions.playerId
 		})
 		.from(sessions)
-		.where(and(
-			inArray(sessions.playerId, [...playerIds]),
-			sessionIdIn(sessionIds)
-		));
-
-	return(new Set(rows.map((row) => row.playerId)));
+		.where(inArray(sessions.playerId, [...playerIds])));
 }
 
 /**

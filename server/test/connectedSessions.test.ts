@@ -20,6 +20,8 @@ describe('ConnectedSessions', () =>
 
 		sessions.disconnect(second);
 		assert.deepStrictEqual(sessions.ids(), ['s2']);
+		assert.ok(!sessions.has('s1'));
+		assert.ok(sessions.has('s2'));
 	});
 
 	it('uncounts only windows it counted, once each', () =>
