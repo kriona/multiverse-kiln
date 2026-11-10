@@ -763,6 +763,18 @@
 		"message": "Name",
 		"source": "Name"
 	},
+	"character.create.noClass": {
+		"message": "Pick a callin', matey.",
+		"source": "Choose a class."
+	},
+	"character.create.noRace": {
+		"message": "Pick yer folk, matey.",
+		"source": "Choose a race."
+	},
+	"character.create.noTheme": {
+		"message": "Pick a yarn, matey.",
+		"source": "Choose a theme."
+	},
 	"character.create.overBudget": {
 		"message": "These scores cost more than yer {budget, plural, one {# doubloon} other {# doubloons}}. Lower some o' them.",
 		"source": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them."
@@ -891,8 +903,8 @@
 		"message": "Name",
 		"source": "Name"
 	},
-	"character.review.noName": {
-		"message": "Not chosen yet",
+	"character.review.notChosen": {
+		"message": "Not picked yet",
 		"source": "Not chosen yet"
 	},
 	"character.review.race": {

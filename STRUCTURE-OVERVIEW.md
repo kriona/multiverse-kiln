@@ -146,7 +146,7 @@ Based entirely on the universe's ruleset. It is a page of its own, reached from 
 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
-- the player chooses a name, an enabled race and an enabled class. A race with a floating ability bonus asks which ability gets it
+- the player chooses a name, an enabled race and an enabled class. The race, class and theme fields start blank, so the player must choose each rather than taking whatever is first. A race with a floating ability bonus asks which ability gets it
 - the character starts with the universe's, race's and class's starting money added coin by coin, and their starting equipment added together (enabled items only). Where they start is chosen when a group is made around them (see [starting area](#tab-characters))
 - the lobby lists the player's characters in the universe
 - a race, class, theme or item that characters have can't be deleted; it can be disabled instead

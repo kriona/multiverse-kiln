@@ -763,6 +763,18 @@
 		"defaultMessage": "Name",
 		"description": "Label of the field for a new character's name"
 	},
+	"character.create.noClass": {
+		"defaultMessage": "Choose a class.",
+		"description": "Shown under the class field of Create Character when the player tries to make the character without choosing a class"
+	},
+	"character.create.noRace": {
+		"defaultMessage": "Choose a race.",
+		"description": "Shown under the race field of Create Character when the player tries to make the character without choosing a race"
+	},
+	"character.create.noTheme": {
+		"defaultMessage": "Choose a theme.",
+		"description": "Shown under the theme field of Create Character in Starfinder when the player tries to make the character without choosing a theme (a background, such as ace pilot)"
+	},
 	"character.create.overBudget": {
 		"defaultMessage": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.",
 		"description": "Shown in Create Character, under the ability scores, while the bought scores cost more points than the player has; {budget} is how many they have"
@@ -891,9 +903,9 @@
 		"defaultMessage": "Name",
 		"description": "In the review step of Create Character, the label of the character's name"
 	},
-	"character.review.noName": {
+	"character.review.notChosen": {
 		"defaultMessage": "Not chosen yet",
-		"description": "In the review step of Create Character, shown for the name when the player hasn't written one"
+		"description": "In the review step of Create Character, shown for the name, race, class or theme when the player hasn't chosen one"
 	},
 	"character.review.race": {
 		"defaultMessage": "Race",

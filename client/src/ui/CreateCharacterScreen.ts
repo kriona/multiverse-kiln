@@ -6,7 +6,7 @@ import { describeEditorError } from '../network/editorApi';
 import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { ChangeTracker } from './changeTracker';
-import { getElement, setOptions, setPageTitle, showMessage, titleLink } from './dom';
+import { getElement, setOptions, setPageTitle, showMessage, titleLink, type SelectOption } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { className, raceName, themeName } from './raceAndClassNames';
@@ -139,6 +139,7 @@ export class CreateCharacterScreen
 
 		this.race.addEventListener('change', () =>
 		{
+			setFieldError(this.race, undefined);
 			this.showRace();
 		});
 
@@ -149,11 +150,13 @@ export class CreateCharacterScreen
 
 		this.characterClass.addEventListener('change', () =>
 		{
+			setFieldError(this.characterClass, undefined);
 			this.showClass();
 		});
 
 		this.theme.addEventListener('change', () =>
 		{
+			setFieldError(this.theme, undefined);
 			this.showTheme();
 		});
 
@@ -233,18 +236,18 @@ export class CreateCharacterScreen
 		this.steps = characterSteps(ruleset);
 		this.setTitle(options.universeName);
 		this.showRulesetSteps(ruleset);
-		setOptions(this.race, sortByName(options.races.map((race) => ({
+		setOptions(this.race, withNoChoice(sortByName(options.races.map((race) => ({
 			value: String(race.id),
 			label: raceName(race, ruleset)
-		}))));
-		setOptions(this.characterClass, sortByName(options.classes.map((characterClass) => ({
+		})))));
+		setOptions(this.characterClass, withNoChoice(sortByName(options.classes.map((characterClass) => ({
 			value: String(characterClass.id),
 			label: className(characterClass, ruleset)
-		}))));
-		setOptions(this.theme, sortByName(options.themes.map((theme) => ({
+		})))));
+		setOptions(this.theme, withNoChoice(sortByName(options.themes.map((theme) => ({
 			value: String(theme.id),
 			label: themeName(theme, ruleset)
-		}))));
+		})))));
 		setOptions(this.floating, PF1E_ABILITIES.map((ability) => ({
 			value: ability,
 			label: this.abilityName(ability)
@@ -340,9 +343,9 @@ export class CreateCharacterScreen
 		}
 
 		this.name.value = (draft?.name ?? '');
-		this.race.value = String(options.races.find((race) => (race.id === draft?.raceId))?.id ?? (this.race.options[0]?.value ?? ''));
-		this.characterClass.value = String(options.classes.find((characterClass) => (characterClass.id === draft?.classId))?.id ?? (this.characterClass.options[0]?.value ?? ''));
-		this.theme.value = String(options.themes.find((theme) => (theme.id === draft?.themeId))?.id ?? (this.theme.options[0]?.value ?? ''));
+		this.race.value = String(options.races.find((race) => (race.id === draft?.raceId))?.id ?? '');
+		this.characterClass.value = String(options.classes.find((characterClass) => (characterClass.id === draft?.classId))?.id ?? '');
+		this.theme.value = String(options.themes.find((theme) => (theme.id === draft?.themeId))?.id ?? '');
 		this.setBaseScores(draft?.baseScores ?? null);
 		this.floatingLabel.hidden = true;
 		this.showClass();
@@ -868,18 +871,17 @@ export class CreateCharacterScreen
 		const { ruleset } = options;
 		const scores = this.finalScores(options);
 		const floatingAbility = this.chosenFloatingAbility();
+		const notChosen = t({
+			id: 'character.review.notChosen',
+			defaultMessage: 'Not chosen yet',
+			description: 'In the review step of Create Character, shown for the name, race, class or theme when the player hasn\'t chosen one'
+		});
 		const entries: [string, string][] = [
 			[t({
 				id: 'character.review.name',
 				defaultMessage: 'Name',
 				description: 'In the review step of Create Character, the label of the character\'s name'
-			}), ((this.name.value.trim() === '')
-				? t({
-					id: 'character.review.noName',
-					defaultMessage: 'Not chosen yet',
-					description: 'In the review step of Create Character, shown for the name when the player hasn\'t written one'
-				})
-				: this.name.value.trim())],
+			}), ((this.name.value.trim() === '') ? notChosen : this.name.value.trim())],
 			[t({
 				id: 'character.review.race',
 				defaultMessage: 'Race',
@@ -894,12 +896,12 @@ export class CreateCharacterScreen
 					bonus: FLOATING_ABILITY_BONUSES[ruleset],
 					ability: this.abilityName(floatingAbility)
 				})
-				: (race ? raceName(race, ruleset) : ''))],
+				: (race ? raceName(race, ruleset) : notChosen))],
 			[t({
 				id: 'character.review.class',
 				defaultMessage: 'Class',
 				description: 'In the review step of Create Character, the label of the character\'s class'
-			}), (characterClass ? className(characterClass, ruleset) : '')]
+			}), (characterClass ? className(characterClass, ruleset) : notChosen)]
 		];
 
 		if (this.steps.includes('theme'))
@@ -908,7 +910,7 @@ export class CreateCharacterScreen
 				id: 'character.review.theme',
 				defaultMessage: 'Theme',
 				description: 'In the review step of Create Character in Starfinder, the label of the character\'s theme (a background, such as ace pilot)'
-			}), (theme ? themeName(theme, ruleset) : '')]);
+			}), (theme ? themeName(theme, ruleset) : notChosen)]);
 		}
 
 		entries.push(...PF1E_ABILITIES.map((ability): [string, string] => [this.abilityName(ability), t({
@@ -1066,7 +1068,7 @@ export class CreateCharacterScreen
 		const theme = this.chosenTheme();
 		const name = this.name.value.trim();
 
-		if (!options || !race || !characterClass || (this.steps.includes('theme') && !theme))
+		if (!options)
 		{
 			return;
 		}
@@ -1082,6 +1084,39 @@ export class CreateCharacterScreen
 		{
 			this.goToStep('name');
 			reportFieldError(this.name, t(NAME_MESSAGES.reserved));
+			return;
+		}
+
+		if (!race)
+		{
+			this.goToStep('race');
+			reportFieldError(this.race, t({
+				id: 'character.create.noRace',
+				defaultMessage: 'Choose a race.',
+				description: 'Shown under the race field of Create Character when the player tries to make the character without choosing a race'
+			}));
+			return;
+		}
+
+		if (!characterClass)
+		{
+			this.goToStep('class');
+			reportFieldError(this.characterClass, t({
+				id: 'character.create.noClass',
+				defaultMessage: 'Choose a class.',
+				description: 'Shown under the class field of Create Character when the player tries to make the character without choosing a class'
+			}));
+			return;
+		}
+
+		if (this.steps.includes('theme') && !theme)
+		{
+			this.goToStep('theme');
+			reportFieldError(this.theme, t({
+				id: 'character.create.noTheme',
+				defaultMessage: 'Choose a theme.',
+				description: 'Shown under the theme field of Create Character in Starfinder when the player tries to make the character without choosing a theme (a background, such as ace pilot)'
+			}));
 			return;
 		}
 
@@ -1353,6 +1388,23 @@ function showChangedMessage(element: HTMLElement, message: string | undefined): 
 	{
 		showMessage(element, message);
 	}
+}
+
+/**
+ * Choices after a blank first choice, which a select shows until the player picks one
+ *
+ * @param options The choices
+ * @return A new list starting with the blank choice
+ */
+function withNoChoice(options: SelectOption[]): SelectOption[]
+{
+	return([
+		{
+			value: '',
+			label: ''
+		},
+		...options
+	]);
 }
 
 /**
