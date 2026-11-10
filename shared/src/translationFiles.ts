@@ -848,9 +848,22 @@ function parseXml(text: string): XmlElement
 				children: []
 			};
 
-			for (const attribute of body.slice(nameMatch[0].length).matchAll(/([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g))
+			// Sticky, so each attribute must start where the last one ended: text that isn't an attribute
+			// is found at once rather than retried from each of its characters, which would take time
+			// growing with the square of its length
+			const attributeText = body.slice(nameMatch[0].length);
+			const attributePattern = /\s+([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/y;
+			let attributesEnd = 0;
+
+			for (let attribute = attributePattern.exec(attributeText); attribute; attribute = attributePattern.exec(attributeText))
 			{
 				element.attributes.set((attribute[1].split(':').pop() ?? ''), decodeXml((attribute[2] ?? attribute[3]), () => lineAt(position)));
+				attributesEnd = attributePattern.lastIndex;
+			}
+
+			if (attributeText.slice(attributesEnd).trim() !== '')
+			{
+				throw new TranslationFileError(lineAt(position));
 			}
 
 			current.children.push(element);
