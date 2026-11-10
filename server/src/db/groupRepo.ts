@@ -424,7 +424,8 @@ export async function addGroupMember(groupId: string, characterId: string, execu
 
 /**
  * Takes a character out of their group. The anchor being leaving deletes the group, with its members
- * and invites
+ * and invites. In a transaction, it locks the group (lockGroup) before reading its members, so a
+ * character joining at the same time is either in the members it returns or doesn't join
  *
  * @param groupId The group's ID
  * @param characterId The character's ID
@@ -433,7 +434,7 @@ export async function addGroupMember(groupId: string, characterId: string, execu
  */
 export async function leaveGroup(groupId: string, characterId: string, executor: Executor = db): Promise<LeftGroup | undefined>
 {
-	const group = await findGroup(groupId, executor);
+	const group = await lockGroup(groupId, executor);
 	const members = await listGroupMembers(groupId, executor);
 	const member = members.find((each) => (each.characterId === characterId));
 
