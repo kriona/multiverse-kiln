@@ -1243,7 +1243,10 @@ export class AreaPlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.refreshViews();
-		this.sendArea(playerId, target, this.getClients(playerId));
+
+		// The area follows the patch with the player's position in it, so the window draws the area
+		// around where they arrive rather than where they were
+		this.sendArea(playerId, target, this.getClients(playerId), true);
 	}
 
 	/**
@@ -1252,8 +1255,9 @@ export class AreaPlayers
 	 * @param playerId The player's ID
 	 * @param area The area they are in
 	 * @param clients The clients to send it to
+	 * @param afterNextPatch Whether to send it after the next state patch rather than at once
 	 */
-	private sendArea(playerId: string, area: ActiveArea, clients: Client[]): void
+	private sendArea(playerId: string, area: ActiveArea, clients: Client[], afterNextPatch = false): void
 	{
 		const near = this.loadedChunksNear(playerId, area);
 		const payload = toAreaPayload(area, near, this.vision.memory);
@@ -1262,9 +1266,8 @@ export class AreaPlayers
 
 		for (const client of clients)
 		{
-			client.send(ServerMessageType.Area, payload);
+			client.send(ServerMessageType.Area, payload, { afterNextPatch });
 		}
-
 	}
 
 	/**

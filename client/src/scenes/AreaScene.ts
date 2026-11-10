@@ -344,7 +344,7 @@ export class AreaScene extends Phaser.Scene
 
 			if (!sameArea)
 			{
-				this.forgetOwnPosition();
+				this.placeOwnPlayer();
 				this.announcer.enteredArea(this.areaName(area));
 			}
 		}));
@@ -838,21 +838,35 @@ export class AreaScene extends Phaser.Scene
 	}
 
 	/**
-	 * Makes the player's next position from the server be drawn immediately, rather than reached
-	 * smoothly from where they were in the area they have just left
+	 * Draws the player, and so the camera following them, where they are in the area they have just
+	 * entered, rather than reaching it smoothly from where they were in the area they left
 	 *
-	 * Players in the old area are removed and those in the new one added through the state, like any
-	 * other player coming and going
+	 * The server sends the area after the patch with the player's position in it, so the state holds
+	 * where they arrived. Players in the old area are removed and those in the new one added through the
+	 * state, like any other player coming and going
 	 */
-	private forgetOwnPosition(): void
+	private placeOwnPlayer(): void
 	{
 		const own = this.players.get(this.ownPlayerId);
+		const state = this.room.state.players?.get(this.ownPlayerId);
 
-		own?.positions.clear();
-
-		if (own)
+		if (!own)
 		{
-			own.lastPosition = undefined;
+			return;
+		}
+
+		own.positions.clear();
+		own.lastPosition = undefined;
+
+		if (state)
+		{
+			this.trackPosition(own, state);
+			own.shape.setPosition(state.x, state.y);
+			own.label.setPosition(state.x, state.y - PLAYER_RADIUS - NAME_OFFSET);
+
+			// The camera moves to the player as the frame renders, after update() has drawn the area around
+			// its view; moving it now draws the area where they arrived, not where they were
+			this.cameras.main.preRender();
 		}
 	}
 
