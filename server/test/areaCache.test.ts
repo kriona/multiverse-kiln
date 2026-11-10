@@ -3,7 +3,7 @@ import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, UNSEE
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { SeenCells } from '../src/logic/seenCells.js';
-import { toAreaPayload, AreaCache } from '../src/rooms/areaCache.js';
+import { toAreaPayload, AREA_IDLE_MS, AreaCache } from '../src/rooms/areaCache.js';
 
 const AREA_ID = 'area';
 
@@ -72,6 +72,11 @@ class FakeDatabase
 	readonly reads: { chunks: string[]; finish: () => void }[] = [];
 	exists = true;
 
+	/**
+	 * The cache's clock, in milliseconds
+	 */
+	time = 0;
+
 	readonly cache = new AreaCache(
 		() => Promise.resolve((this.exists ? loadedArea() : undefined)),
 		(_areaId, chunks) => new Promise((resolve) =>
@@ -87,7 +92,8 @@ class FakeDatabase
 						.filter((chunk) => (chunk !== undefined)));
 				}
 			});
-		})
+		}),
+		() => this.time
 	);
 
 	/**
@@ -220,6 +226,28 @@ describe('AreaCache', () =>
 		database.exists = false;
 
 		assert.strictEqual(await database.cache.reload(AREA_ID, false), undefined);
+		assert.strictEqual(database.cache.get(AREA_ID), undefined);
+	});
+
+	it('forgets an area once it has gone AREA_IDLE_MS without being asked for, unless it is in use', async () =>
+	{
+		const database = new FakeDatabase();
+
+		await database.cache.load(AREA_ID);
+		database.time = AREA_IDLE_MS - 1;
+		database.cache.forgetIdle(() => false);
+
+		assert.ok(database.cache.get(AREA_ID));
+
+		// Asking for it again starts the wait over
+		await database.cache.load(AREA_ID);
+		database.time += AREA_IDLE_MS;
+		database.cache.forgetIdle(() => true);
+
+		assert.ok(database.cache.get(AREA_ID));
+
+		database.cache.forgetIdle(() => false);
+
 		assert.strictEqual(database.cache.get(AREA_ID), undefined);
 	});
 

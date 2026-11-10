@@ -213,9 +213,10 @@ export class AreaPlayers
 	private readonly presses = new Map<string, DirectionPress>();
 
 	/**
-	 * Players waiting for the area a link is taking them to; they don't move until they arrive
+	 * Players waiting for the area a link is taking them to, with that area's ID; they don't move until
+	 * they arrive
 	 */
-	private readonly travelling = new Set<string>();
+	private readonly travelling = new Map<string, string>();
 
 	/**
 	 * The chunks of their area each player's clients have been sent, by chunkKey()
@@ -856,12 +857,15 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Loads the chunks players have come near, drops the ones nobody is near, and sends each player the
-	 * loaded chunks near them they haven't been sent. Runs outside the simulation tick; loading finishes
-	 * later, and the chunks are sent once they arrive
+	 * Forgets the areas nobody has been in, on their way to or about to be placed in for a while, loads
+	 * the chunks players have come near, drops the ones nobody is near, and sends each player the loaded
+	 * chunks near them they haven't been sent. Runs outside the simulation tick; loading finishes later,
+	 * and the chunks are sent once they arrive
 	 */
 	refreshChunks(): void
 	{
+		this.areas.forgetIdle(this.areasInUse());
+
 		for (const area of this.areas.all())
 		{
 			const areaId = area.loaded.area.id;
@@ -897,7 +901,8 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Brings a change the world editor has made to the players it affects, if this room has the area loaded
+	 * Brings a change the world editor has made to the players it affects, if this room has the area
+	 * loaded. A changed area nobody is in or on their way to is forgotten, to be read when it is next needed
 	 *
 	 * Runs outside the simulation tick
 	 *
@@ -911,14 +916,17 @@ export class AreaPlayers
 		}
 		else if ((change.kind === 'tiles') || (change.kind === 'time'))
 		{
-			for (const area of this.areas.all().filter((each) => (each.loaded.area.universeId === change.universeId)))
-			{
-				await this.applyAreaChange(area.loaded.area.id, true);
-			}
+			const inUse = this.areasInUse();
+			const areaIds = this.areas.all()
+				.map((area) => area.loaded.area)
+				.filter((area) => (area.universeId === change.universeId))
+				.map((area) => area.id);
+
+			await Promise.all(areaIds.map((areaId) => this.applyAreaChange(areaId, true, inUse)));
 		}
 		else if ((change.kind === 'area') || (change.kind === 'deleted'))
 		{
-			await this.applyAreaChange(change.areaId, false);
+			await this.applyAreaChange(change.areaId, false, this.areasInUse());
 		}
 	}
 
@@ -993,11 +1001,19 @@ export class AreaPlayers
 	 *
 	 * @param areaId The area's ID
 	 * @param keepChunks Whether only the tiles changed, so the loaded chunks are still right
+	 * @param inUse Whether an area is one players are in or on their way to; one that isn't is forgotten
+	 * rather than read again
 	 */
-	private async applyAreaChange(areaId: string, keepChunks: boolean): Promise<void>
+	private async applyAreaChange(areaId: string, keepChunks: boolean, inUse: (areaId: string) => boolean): Promise<void>
 	{
 		if (!this.areas.get(areaId))
 		{
+			return;
+		}
+
+		if (!inUse(areaId))
+		{
+			this.areas.forget(areaId);
 			return;
 		}
 
@@ -1170,7 +1186,7 @@ export class AreaPlayers
 	{
 		const targetCell = { column: link.targetColumn, row: link.targetRow };
 
-		this.travelling.add(playerId);
+		this.travelling.set(playerId, link.targetAreaId);
 		this.heldDirections.delete(playerId);
 		this.presses.delete(playerId);
 		this.steps.delete(playerId);
@@ -1574,6 +1590,18 @@ export class AreaPlayers
 	private playersIn(areaId: string | undefined): string[]
 	{
 		return([...(((areaId !== undefined) ? this.playerIdsByArea.get(areaId) : undefined) ?? [])]);
+	}
+
+	/**
+	 * Which areas players are in or on their way to, as they are now
+	 *
+	 * @return Whether an area is one of them
+	 */
+	private areasInUse(): (areaId: string) => boolean
+	{
+		const destinations = new Set(this.travelling.values());
+
+		return((areaId) => (this.playerIdsByArea.has(areaId) || destinations.has(areaId)));
 	}
 
 	/**

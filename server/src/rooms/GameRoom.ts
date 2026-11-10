@@ -629,10 +629,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		clients.add(client);
 		await this.bringIn(playerId);
 
-		const startingArea = this.areas.get(this.startingAreaId);
-
 		// The character may have left the group, or been given their last rites, while the area loaded
-		if (!this.areaPlayers.has(characterId) || !startingArea)
+		if (!this.areaPlayers.has(characterId))
 		{
 			clients.delete(client);
 			throw new Error(`Character ${characterId} can no longer be played in group ${this.groupId}`);
@@ -640,7 +638,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		const member = this.members.get(characterId);
 
-		this.areaPlayers.join(client, characterId, this.appearanceOf(member), startingArea);
+		// bringIn() has put the character in play, so join() has no area to place them in
+		this.areaPlayers.join(client, characterId, this.appearanceOf(member), undefined);
 		client.send(GameServerMessageType.ChatHistory, this.chat.history());
 		connectedSessions.connect(client, identityOf(client).sessionId);
 
