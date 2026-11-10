@@ -19,7 +19,7 @@ import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
 import { countUniverseGroups } from '../db/groupRepo.js';
 import { findDisplayName, findEmailRecipient, findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
-import { inTransaction } from '../db/transactions.js';
+import { inBulkTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listUniverseEditors } from '../db/universeEditorRepo.js';
 import { deleteUniverse, findUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
@@ -150,7 +150,7 @@ async function deletionRoute(request: Request, response: Response): Promise<void
 async function deleteAsCreatorRoute(request: Request, response: Response): Promise<void>
 {
 	await deleteUniverseRoute(request, response, universeContextOf(request).universe.id, {
-		inTransaction,
+		inTransaction: inBulkTransaction,
 		check: checkCreatorMayDelete,
 		asAdmin: false
 	});

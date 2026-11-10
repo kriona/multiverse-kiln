@@ -26,7 +26,7 @@ import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { listTileGraphics } from '../db/tileGraphicRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
-import { inSnapshot } from '../db/transactions.js';
+import { inBulkSnapshot } from '../db/transactions.js';
 import { findAllDraftOrigins, type DraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse, isUniverseNameTaken } from '../db/universeRepo.js';
 import { listThingNames, listTranslations, listTranslatorNotes, type TranslatorNoteRecord, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
@@ -154,7 +154,7 @@ function textKey(kind: UniverseTextKind, thingId: string, field: string): string
  */
 export async function loadImportTarget(version: UniverseVersion, file: ImportFile, keepsAreas: boolean, translator: Translator): Promise<ImportTarget | undefined>
 {
-	return(inSnapshot(async (executor) =>
+	return(inBulkSnapshot(async (executor) =>
 	{
 		const universe = await findEditableUniverse(version, executor);
 

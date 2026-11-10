@@ -13,7 +13,7 @@ import { EDITOR_CHANGE_CHECKS, localize, MAX_UPLOADED_TILE_GRAPHICS, mayMakeChan
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
-import { inTransaction } from '../db/transactions.js';
+import { inBulkTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
@@ -277,7 +277,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 		}
 
 		current = 0;
-		context = await inTransaction(async (transaction) =>
+		context = await inBulkTransaction(async (transaction) =>
 		{
 			await lockUniverse(base.universe.id, transaction);
 
