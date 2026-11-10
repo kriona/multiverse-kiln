@@ -28,12 +28,13 @@ import { sendEmailInBackground } from '../email/mailer.js';
 import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { accountDeletionChanges, groupChanges, type GroupChange } from '../players/groupChanges.js';
+import { deleteObjects } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { authMessages, cookieTokenHash, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { clearCookie, CONTINUATION_COOKIE, SESSION_COOKIE } from './cookies.js';
 import { sendInvalidRequest } from './errors.js';
 import { checkAccountPassword, checkSecondFactor, requireSession } from './twoFactorAuth.js';
-import { deleteStoredUploads, deleteUniverseWithUploads, emailUniverseDeleted } from './universeDeletion.js';
+import { deleteUniverseWithUploads, emailUniverseDeleted } from './universeDeletion.js';
 
 /**
  * Reasons the account deletion route gives (see shared/src/localization.ts)
@@ -225,7 +226,7 @@ async function deleteAccountRoute(request: Request, response: Response): Promise
 		await emailUniverseDeleted(universe.name, universe.editorIds, outcome.displayName);
 	}
 
-	await deleteStoredUploads(outcome.storageKeys);
+	await deleteObjects(outcome.storageKeys);
 
 	if (outcome.recipient)
 	{

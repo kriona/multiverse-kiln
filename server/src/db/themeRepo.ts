@@ -3,8 +3,8 @@
  *
  * Only Starfinder 1E has themes (rulesetHasThemes()), so every theme's rules are in sf1e_themes
  */
-import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
-import type { EditorTheme, Ruleset, ThemeSettings } from '@multiverse-kiln/shared';
+import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import type { EditorTheme, OptionName, Ruleset, ThemeSettings } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { sf1eThemes, themes } from './schema.js';
@@ -26,17 +26,87 @@ export type ThemeKind = 'default' | 'custom';
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
+ * @param themeId Only this theme's rows (its own and its edited copies), or undefined for every theme's
  * @return The condition
  */
-function usableThemes(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
+function usableThemes(version: UniverseVersion, ruleset: Ruleset, themeId?: number): SQL | undefined
 {
 	return(and(
 		eq(themes.ruleset, ruleset),
 		or(
 			isNull(themes.universeId),
 			inVersion(themes, version)
-		)
+		),
+		((themeId === undefined)
+			? undefined
+			: or(
+				eq(themes.id, themeId),
+				eq(themes.overridesThemeId, themeId)
+			))
 	));
+}
+
+/**
+ * What each theme the live versions of several universes can use is called, without its settings, in
+ * one query: a default theme's key, and the name the universe gives it, if any
+ *
+ * @param universes The universes, with their rulesets
+ * @param executor The database, or a transaction
+ * @return Each universe's themes' keys and names, by theme ID, by the universe's ID; none for a
+ * ruleset without themes
+ */
+export async function loadLiveThemeNames(universes: readonly { id: string; ruleset: Ruleset }[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if (universes.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			id: themes.id,
+			ruleset: themes.ruleset,
+			universeId: themes.universeId,
+			overridesThemeId: themes.overridesThemeId,
+			key: themes.key,
+			name: themes.name
+		})
+		.from(themes)
+		.where(or(
+			and(
+				isNull(themes.universeId),
+				inArray(themes.ruleset, [...new Set(universes.map((universe) => universe.ruleset))])
+			),
+			and(
+				inArray(themes.universeId, universes.map((universe) => universe.id)),
+				eq(themes.draft, false)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) =>
+	{
+		const universeRows = [
+			...(defaults.get(universe.ruleset) ?? []),
+			...(owned.get(universe.id) ?? [])
+		];
+		const copies = new Map(universeRows
+			.filter((row) => (row.overridesThemeId !== null))
+			.map((row) => [row.overridesThemeId, row]));
+
+		return([universe.id, new Map(universeRows
+			.filter((row) => (row.overridesThemeId === null))
+			.map((row) =>
+			{
+				const custom = (row.universeId !== null);
+
+				return([row.id, {
+					key: (custom ? null : row.key),
+					name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+				}]);
+			}))]);
+	})));
 }
 
 /**
@@ -50,6 +120,35 @@ function usableThemes(version: UniverseVersion, ruleset: Ruleset): SQL | undefin
  */
 export async function loadEditorThemes(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorTheme[]>
 {
+	return(loadThemes(version, ruleset, undefined, executor));
+}
+
+/**
+ * One theme a universe can use, as the editor lists it
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param themeId The theme's ID
+ * @param executor The database, or a transaction
+ * @return The theme, or undefined when the universe can't use a theme with that ID (an edited copy's
+ * own ID included)
+ */
+export async function findEditorTheme(version: UniverseVersion, ruleset: Ruleset, themeId: number, executor: Executor = db): Promise<EditorTheme | undefined>
+{
+	return((await loadThemes(version, ruleset, themeId, executor))[0]);
+}
+
+/**
+ * The themes a universe can use, or one of them, as the editor lists them
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param themeId The theme's ID, or undefined for every theme
+ * @param executor The database, or a transaction
+ * @return The themes, by ID; none for a ruleset without themes
+ */
+async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: number | undefined, executor: Executor): Promise<EditorTheme[]>
+{
 	const rows = await executor
 		.select({
 			id: themes.id,
@@ -62,7 +161,7 @@ export async function loadEditorThemes(version: UniverseVersion, ruleset: Rulese
 		})
 		.from(themes)
 		.innerJoin(sf1eThemes, eq(sf1eThemes.themeId, themes.id))
-		.where(usableThemes(version, ruleset))
+		.where(usableThemes(version, ruleset, themeId))
 		.orderBy(asc(themes.id));
 	const copies = new Map(rows
 		.filter((row) => (row.overridesThemeId !== null))

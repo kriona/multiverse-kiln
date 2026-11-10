@@ -17,7 +17,7 @@ import { adminDb, inAdminTransaction } from '../db/adminClient.js';
 import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { findPlayerByUsername, listPlayersForAdmin } from '../db/playerRepo.js';
 import { addServerAdmin, isServerAdmin, listServerAdmins, removeServerAdmin, searchPlayersToMakeAdmin } from '../db/serverAdminRepo.js';
-import { deletePlayerSessions, findPlayersWithSessions, listActiveSessions } from '../db/sessionRepo.js';
+import { deletePlayerSessions, listActiveSessions, listSessionsOfPlayers } from '../db/sessionRepo.js';
 import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listUniversesForAdmin, lockUniverse, setUniverseDisabled } from '../db/universeRepo.js';
@@ -356,7 +356,10 @@ async function listPlayers(request: Request, response: Response): Promise<void>
 		offset,
 		limit
 	});
-	const active = await findPlayersWithSessions(page.players.map((player) => player.id), connectedSessions.ids());
+	const pageSessions = await listSessionsOfPlayers(page.players.map((player) => player.id));
+	const active = new Set(pageSessions
+		.filter((session) => connectedSessions.has(session.id))
+		.map((session) => session.playerId));
 	const payload: AdminPlayerListPayload = {
 		players: page.players.map((player) => ({
 			username: player.username,

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { eq } from 'drizzle-orm';
-import { charactersPath, sourceTextHash, UNIVERSES_PATH, type NewCharacterOptions, type UniverseDetails, type UniverseListPayload, type UniverseTextPayload } from '@multiverse-kiln/shared';
+import { charactersPath, sourceTextHash, UNIVERSES_PATH, type NewCharacterOptions, type UniverseDetails, type UniverseListPayload, type UniverseStage, type UniverseTextPayload } from '@multiverse-kiln/shared';
 
 import { db } from '../src/db/client.js';
 import { players } from '../src/db/schema.js';
@@ -46,16 +46,17 @@ async function translate(universeId: string, kind: 'universe' | 'area' | 'tile' 
 }
 
 /**
- * A universe ready for everyone, written in English and translated into French and Brazilian Portuguese,
- * with its name translated into both and its short description into French
+ * A universe written in English and translated into French and Brazilian Portuguese, with its name
+ * translated into both and its short description into French
  *
+ * @param stage The universe's stage, ready for everyone unless given
  * @return The universe's ID, and its creator's browser
  */
-async function translatedUniverse(): Promise<{ universeId: string; ada: Editor }>
+async function translatedUniverse(stage: UniverseStage = 'let_there_be_light'): Promise<{ universeId: string; ada: Editor }>
 {
 	const ada = await logIn('Ada');
 	const universeId = await createUniverse(ada, 'Kilnhaven');
-	const saved = await saveChanges(ada, universeId, [{ kind: 'universe', update: { stage: 'let_there_be_light', translationLanguages: ['fr', 'pt-BR'] } }]);
+	const saved = await saveChanges(ada, universeId, [{ kind: 'universe', update: { stage, translationLanguages: ['fr', 'pt-BR'] } }]);
 
 	assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
 	await translate(universeId, 'universe', universeId, 'name', 'fr', 'Fourneauville');
@@ -112,6 +113,26 @@ describe('universe text in the player\'s language', () =>
 
 		assert.strictEqual(body.name, 'Fornalha');
 		assert.strictEqual(options.body.universeName, 'Fornalha');
+	});
+
+	it('puts the language on the player\'s profile first for a universe only some players may see', async () =>
+	{
+		const { universeId, ada } = await translatedUniverse('prologue');
+		const areaId = await createArea(ada, universeId, { name: 'Meadow', enabled: true });
+
+		await translate(universeId, 'area', areaId, 'name', 'fr', 'Pré');
+		await translate(universeId, 'area', areaId, 'name', 'pt-BR', 'Prado');
+		await db
+			.update(players)
+			.set({ locale: 'pt-BR' })
+			.where(eq(players.id, ada.playerId));
+
+		const page = await fetchUniverse<UniverseDetails>(`/${universeId}`, { 'Accept-Language': 'fr' }, ada);
+		const text = await fetchUniverse<UniverseTextPayload>(`/${universeId}/text`, { 'Accept-Language': 'fr' }, ada);
+
+		assert.strictEqual(page.body.name, 'Fornalha');
+		assert.strictEqual(text.body.areas[areaId], 'Prado');
+		assert.strictEqual((await fetchUniverse(`/${universeId}/text`, { 'Accept-Language': 'fr' })).response.status, 404);
 	});
 
 	it('names areas and tiles by ID, with an ETag that changes with the text and the language', async () =>

@@ -2,13 +2,26 @@ import assert from 'assert';
 import { MAX_DISABLED_REASON_LENGTH } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../../src/db/adminClient.js';
-import { createUniverse, deleteUniverse, findDisabledReason, findEditableUniverse, findUniverse, findUniverseDetails, isUniverseDeletionPrevented, listUniverses, lockUniverse, setUniverseAreas, setUniverseDisabled, UniverseNameTakenError, updateUniverseSettings } from '../../src/db/universeRepo.js';
+import { createUniverse, deleteUniverse, findDisabledReason, findEditableUniverse, findUniverse, findUniverseDetails, isUniverseDeletionPrevented, listUniverses, lockUniverse, lockUniverseShared, setUniverseAreas, setUniverseDisabled, UniverseNameTakenError, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { loadArea } from '../../src/db/areaRepo.js';
 import { createCharacter } from '../../src/db/characterRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
 import { addUniverse, addArea, dwarfFighter, inTransactionWithoutWaiting } from './fixtures.js';
+
+/**
+ * Whether a query failed because it waited for a lock past inTransactionWithoutWaiting()'s timeout
+ *
+ * @param error What the query threw, which Drizzle wraps around Postgres's error
+ * @return True for Postgres's lock_not_available
+ */
+function isLockTimeout(error: unknown): boolean
+{
+	const cause = ((error instanceof Error) ? error.cause : undefined);
+
+	return(((cause as { code?: string } | undefined)?.code === '55P03'));
+}
 
 describe('universeRepo', () =>
 {
@@ -74,6 +87,26 @@ describe('universeRepo', () =>
 			assert.strictEqual(await lockUniverse(universeId, transaction), true);
 			await inTransactionWithoutWaiting((other) => createCharacter(character, other));
 		});
+	});
+
+	it('shares a universe\'s shared lock between transactions, but not with its lock', async () =>
+	{
+		const universeId = await addUniverse();
+
+		await inTransaction(async (transaction) =>
+		{
+			assert.strictEqual(await lockUniverseShared(universeId, transaction), true);
+			assert.strictEqual(await inTransactionWithoutWaiting((other) => lockUniverseShared(universeId, other)), true);
+			await assert.rejects(inTransactionWithoutWaiting((other) => lockUniverse(universeId, other)), isLockTimeout);
+		});
+
+		await inTransaction(async (transaction) =>
+		{
+			await lockUniverse(universeId, transaction);
+			await assert.rejects(inTransactionWithoutWaiting((other) => lockUniverseShared(universeId, other)), isLockTimeout);
+		});
+
+		assert.strictEqual(await inTransaction((transaction) => lockUniverseShared('00000000-0000-0000-0000-000000000000', transaction)), false);
 	});
 
 	it('refuses a disabled universe without a reason, or with one too long', async () =>

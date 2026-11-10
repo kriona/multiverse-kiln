@@ -185,6 +185,16 @@ export class AreaPlayers
 	 */
 	private readonly areaIds = new Map<string, string>();
 
+	/**
+	 * The players in each area, by the area's ID, kept with areaIds by putInArea() and takeOutOfArea()
+	 */
+	private readonly playerIdsByArea = new Map<string, Set<string>>();
+
+	/**
+	 * The players each client's view holds, by the view (see showOnly); a view missing here holds none
+	 */
+	private shownIn = new WeakMap<StateView, ReadonlySet<string>>();
+
 	private readonly moveInputs = new InputQueue<MovePayload>(MAX_QUEUED_MOVES);
 
 	/**
@@ -203,9 +213,10 @@ export class AreaPlayers
 	private readonly presses = new Map<string, DirectionPress>();
 
 	/**
-	 * Players waiting for the area a link is taking them to; they don't move until they arrive
+	 * Players waiting for the area a link is taking them to, with that area's ID; they don't move until
+	 * they arrive
 	 */
-	private readonly travelling = new Set<string>();
+	private readonly travelling = new Map<string, string>();
 
 	/**
 	 * The chunks of their area each player's clients have been sent, by chunkKey()
@@ -216,6 +227,16 @@ export class AreaPlayers
 	 * Told of each step a player other than a ghost finishes (see onWalk)
 	 */
 	private walkListener?: WalkListener;
+
+	/**
+	 * Whether refreshing the views waits for the end of refreshingViewsOnce()
+	 */
+	private viewsHeld = false;
+
+	/**
+	 * Whether the views needed refreshing while they were held
+	 */
+	private viewsStale = false;
 
 
 	/**
@@ -353,7 +374,7 @@ export class AreaPlayers
 
 		player.x = position.x;
 		player.y = position.y;
-		this.areaIds.set(playerId, area.loaded.area.id);
+		this.putInArea(playerId, area.loaded.area.id);
 
 		if (occupancy && !player.ghost)
 		{
@@ -466,7 +487,7 @@ export class AreaPlayers
 		this.stop(playerId);
 
 		// Out of every area first, so the views that hold the player let go of them before they are deleted
-		this.areaIds.delete(playerId);
+		this.takeOutOfArea(playerId);
 		this.refreshViews();
 		this.players.delete(playerId);
 		this.steps.delete(playerId);
@@ -483,7 +504,11 @@ export class AreaPlayers
 	{
 		this.stopAll();
 		this.areaIds.clear();
+		this.playerIdsByArea.clear();
 		this.refreshViews();
+
+		// Players placed again are new objects, which the views don't hold even where their IDs are the same
+		this.shownIn = new WeakMap();
 		this.players.clear();
 		this.steps.clear();
 		this.presses.clear();
@@ -661,6 +686,39 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Makes changes to many players, such as their appearances, refreshing the clients' views once at the
+	 * end rather than after each change. Each refresh looks at every pair of players, so refreshing after
+	 * each of a few hundred changes would stall the room
+	 *
+	 * @param changes Makes the changes
+	 */
+	refreshingViewsOnce(changes: () => void): void
+	{
+		if (this.viewsHeld)
+		{
+			changes();
+			return;
+		}
+
+		this.viewsHeld = true;
+		this.viewsStale = false;
+
+		try
+		{
+			changes();
+		}
+		finally
+		{
+			this.viewsHeld = false;
+
+			if (this.viewsStale)
+			{
+				this.refreshViews();
+			}
+		}
+	}
+
+	/**
 	 * Changes how a player shows. A ghost becoming visible stops where they are, moving to the nearest
 	 * free cell if another player holds theirs, and appears to the others in their area who can see
 	 * them; a player becoming a ghost disappears from the others' view
@@ -799,12 +857,15 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Loads the chunks players have come near, drops the ones nobody is near, and sends each player the
-	 * loaded chunks near them they haven't been sent. Runs outside the simulation tick; loading finishes
-	 * later, and the chunks are sent once they arrive
+	 * Forgets the areas nobody has been in, on their way to or about to be placed in for a while, loads
+	 * the chunks players have come near, drops the ones nobody is near, and sends each player the loaded
+	 * chunks near them they haven't been sent. Runs outside the simulation tick; loading finishes later,
+	 * and the chunks are sent once they arrive
 	 */
 	refreshChunks(): void
 	{
+		this.areas.forgetIdle(this.areasInUse());
+
 		for (const area of this.areas.all())
 		{
 			const areaId = area.loaded.area.id;
@@ -840,7 +901,8 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Brings a change the world editor has made to the players it affects, if this room has the area loaded
+	 * Brings a change the world editor has made to the players it affects, if this room has the area
+	 * loaded. A changed area nobody is in or on their way to is forgotten, to be read when it is next needed
 	 *
 	 * Runs outside the simulation tick
 	 *
@@ -854,14 +916,17 @@ export class AreaPlayers
 		}
 		else if ((change.kind === 'tiles') || (change.kind === 'time'))
 		{
-			for (const area of this.areas.all().filter((each) => (each.loaded.area.universeId === change.universeId)))
-			{
-				await this.applyAreaChange(area.loaded.area.id, true);
-			}
+			const inUse = this.areasInUse();
+			const areaIds = this.areas.all()
+				.map((area) => area.loaded.area)
+				.filter((area) => (area.universeId === change.universeId))
+				.map((area) => area.id);
+
+			await Promise.all(areaIds.map((areaId) => this.applyAreaChange(areaId, true, inUse)));
 		}
 		else if ((change.kind === 'area') || (change.kind === 'deleted'))
 		{
-			await this.applyAreaChange(change.areaId, false);
+			await this.applyAreaChange(change.areaId, false, this.areasInUse());
 		}
 	}
 
@@ -936,11 +1001,19 @@ export class AreaPlayers
 	 *
 	 * @param areaId The area's ID
 	 * @param keepChunks Whether only the tiles changed, so the loaded chunks are still right
+	 * @param inUse Whether an area is one players are in or on their way to; one that isn't is forgotten
+	 * rather than read again
 	 */
-	private async applyAreaChange(areaId: string, keepChunks: boolean): Promise<void>
+	private async applyAreaChange(areaId: string, keepChunks: boolean, inUse: (areaId: string) => boolean): Promise<void>
 	{
 		if (!this.areas.get(areaId))
 		{
+			return;
+		}
+
+		if (!inUse(areaId))
+		{
+			this.areas.forget(areaId);
 			return;
 		}
 
@@ -1113,7 +1186,7 @@ export class AreaPlayers
 	{
 		const targetCell = { column: link.targetColumn, row: link.targetRow };
 
-		this.travelling.add(playerId);
+		this.travelling.set(playerId, link.targetAreaId);
 		this.heldDirections.delete(playerId);
 		this.presses.delete(playerId);
 		this.steps.delete(playerId);
@@ -1166,7 +1239,7 @@ export class AreaPlayers
 			return;
 		}
 
-		this.areaIds.set(playerId, target.loaded.area.id);
+		this.putInArea(playerId, target.loaded.area.id);
 		player.x = position.x;
 		player.y = position.y;
 		this.refreshViews();
@@ -1355,10 +1428,17 @@ export class AreaPlayers
 	/**
 	 * Shows every client the players its player sees, and only them
 	 *
-	 * Runs every tick, and immediately when players come, go, change area or stop being a ghost
+	 * Runs every tick, and immediately when players come, go, change area or stop being a ghost, or once
+	 * refreshingViewsOnce() finishes when it holds the refresh
 	 */
 	private refreshViews(): void
 	{
+		if (this.viewsHeld)
+		{
+			this.viewsStale = true;
+			return;
+		}
+
 		const seenByPlayer = new Map<string, Set<string>>();
 		const nowMilliseconds = Date.now();
 
@@ -1387,10 +1467,12 @@ export class AreaPlayers
 	 * Makes a client's view hold some players and no others
 	 *
 	 * Players who stay in view aren't removed and added again, which would make the client redraw them,
-	 * and a player the view doesn't hold isn't removed, which would still send the client a removal
+	 * and a player the view doesn't hold isn't removed, which would still send the client a removal. Only
+	 * the players the view held and those it is to hold are looked at, not every player in the room
 	 *
 	 * @param client The client
-	 * @param playerIds The players it sees
+	 * @param playerIds The players it sees, which nothing changes afterward, so the view can keep them as
+	 * the players it holds
 	 */
 	private showOnly(client: Client, playerIds: ReadonlySet<string>): void
 	{
@@ -1399,19 +1481,30 @@ export class AreaPlayers
 			client.view = new StateView();
 		}
 
-		for (const [playerId, player] of this.players)
-		{
-			const isShown = client.view.has(player);
+		const view = client.view;
+		const shown = this.shownIn.get(view);
 
-			if (playerIds.has(playerId) && !isShown)
+		for (const playerId of (shown ?? []))
+		{
+			const player = this.players.get(playerId);
+
+			if (player && !playerIds.has(playerId))
 			{
-				client.view.add(player);
-			}
-			else if (!playerIds.has(playerId) && isShown)
-			{
-				client.view.remove(player);
+				view.remove(player);
 			}
 		}
+
+		for (const playerId of playerIds)
+		{
+			const player = this.players.get(playerId);
+
+			if (player && !(shown?.has(playerId) ?? false))
+			{
+				view.add(player);
+			}
+		}
+
+		this.shownIn.set(view, playerIds);
 	}
 
 	/**
@@ -1496,9 +1589,67 @@ export class AreaPlayers
 	 */
 	private playersIn(areaId: string | undefined): string[]
 	{
-		return([...this.areaIds]
-			.filter(([, playerAreaId]) => (playerAreaId === areaId))
-			.map(([playerId]) => playerId));
+		return([...(((areaId !== undefined) ? this.playerIdsByArea.get(areaId) : undefined) ?? [])]);
+	}
+
+	/**
+	 * Which areas players are in or on their way to, as they are now
+	 *
+	 * @return Whether an area is one of them
+	 */
+	private areasInUse(): (areaId: string) => boolean
+	{
+		const destinations = new Set(this.travelling.values());
+
+		return((areaId) => (this.playerIdsByArea.has(areaId) || destinations.has(areaId)));
+	}
+
+	/**
+	 * Records a player as in an area, and out of any area they were in
+	 *
+	 * @param playerId The player's ID
+	 * @param areaId The area's ID
+	 */
+	private putInArea(playerId: string, areaId: string): void
+	{
+		this.takeOutOfArea(playerId);
+		this.areaIds.set(playerId, areaId);
+
+		const playerIds = this.playerIdsByArea.get(areaId);
+
+		if (playerIds)
+		{
+			playerIds.add(playerId);
+		}
+		else
+		{
+			this.playerIdsByArea.set(areaId, new Set([playerId]));
+		}
+	}
+
+	/**
+	 * Records a player as in no area
+	 *
+	 * @param playerId The player's ID
+	 */
+	private takeOutOfArea(playerId: string): void
+	{
+		const areaId = this.areaIds.get(playerId);
+
+		if (areaId === undefined)
+		{
+			return;
+		}
+
+		const playerIds = this.playerIdsByArea.get(areaId);
+
+		this.areaIds.delete(playerId);
+		playerIds?.delete(playerId);
+
+		if (playerIds?.size === 0)
+		{
+			this.playerIdsByArea.delete(areaId);
+		}
 	}
 
 	/**

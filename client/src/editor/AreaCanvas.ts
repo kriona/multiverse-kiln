@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { IMPASSABLE_WALK_SECONDS, type EditorTile, type EditorArea, type AreaBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
 
+import { sleepGameLoop, wakeGameLoop } from '../rendering/gameLoop';
 import { AREA_EDITOR_SCENE_KEY, AreaEditorScene, type CameraState, type AreaEditorHost } from '../scenes/AreaEditorScene';
 import { announce } from '../ui/announcer';
 import { cellsBetween, type BrushCell } from './brush';
@@ -140,6 +141,7 @@ export class AreaCanvas
 				return;
 			}
 
+			wakeGameLoop(this.game);
 			this.game.scene.start(AREA_EDITOR_SCENE_KEY, data);
 		}));
 	}
@@ -152,7 +154,12 @@ export class AreaCanvas
 		this.stopPainting();
 		this.current = undefined;
 		this.host = undefined;
-		this.game?.scene.stop(AREA_EDITOR_SCENE_KEY);
+
+		if (this.game)
+		{
+			this.game.scene.stop(AREA_EDITOR_SCENE_KEY);
+			sleepGameLoop(this.game);
+		}
 	}
 
 	/**

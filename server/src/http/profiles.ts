@@ -12,14 +12,13 @@ import { z } from 'zod';
 import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, DISMISSIBLE_NOTICES, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type DismissibleNotice, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
 import { listProfileCharacters, setCharacterVisibility, type ProfileCharacterRecord } from '../db/characterRepo.js';
-import { loadEditorClasses } from '../db/classRepo.js';
+import { loadLiveClassNames } from '../db/classRepo.js';
 import { AccountTakenError, dismissNotice, findOwnProfile, findProfileByUsername, forgetDismissedNotice, forgetDismissedNotices, replaceProfileLocale, saveProfile } from '../db/playerRepo.js';
 import { listProviderLogins } from '../db/providerLoginRepo.js';
-import { loadEditorRaces } from '../db/raceRepo.js';
+import { loadLiveRaceNames } from '../db/raceRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { findTwoFactorState } from '../db/twoFactorRepo.js';
 import { listTwoFactorUniverseNames } from '../db/universeEditorRepo.js';
-import { liveVersion } from '../db/universeVersions.js';
 import { displayText } from '../rooms/payloads.js';
 import { deletionRoute, exportRoute } from './accountData.js';
 import { authMessages, checkDisplayName, checkUsername, sendRefusal, type AuthRefusal } from './authCommon.js';
@@ -225,25 +224,17 @@ async function nameCharacters(request: Request, records: ProfileCharacterRecord[
 		translationLanguages: record.translationLanguages
 	}]));
 	const translators = await UniverseTextTranslator.loadAll([...universes.values()], await requestLanguages(request), ['universe', 'race', 'class']);
-	const names = new Map(await Promise.all([...universes.values()].map(async ({ id: universeId, ruleset }) =>
-	{
-		const [races, classes] = await Promise.all([
-			loadEditorRaces(liveVersion(universeId), ruleset),
-			loadEditorClasses(liveVersion(universeId), ruleset)
-		]);
-
-		return([universeId, {
-			races: new Map(races.map(({ id, key, name }) => [id, { key, name }])),
-			classes: new Map(classes.map(({ id, key, name }) => [id, { key, name }]))
-		}] as const);
-	})));
+	const [raceNames, classNames] = await Promise.all([
+		loadLiveRaceNames([...universes.values()]),
+		loadLiveClassNames([...universes.values()])
+	]);
 	const unnamed: OptionName = { key: null, name: null };
 
 	return(records.map((record) =>
 	{
 		const translator = translators.get(record.universeId);
-		const race = (names.get(record.universeId)?.races.get(record.raceId) ?? unnamed);
-		const characterClass = (names.get(record.universeId)?.classes.get(record.classId) ?? unnamed);
+		const race = (raceNames.get(record.universeId)?.get(record.raceId) ?? unnamed);
+		const characterClass = (classNames.get(record.universeId)?.get(record.classId) ?? unnamed);
 
 		return({
 			id: record.id,

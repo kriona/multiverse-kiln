@@ -23,7 +23,7 @@ import { loadRulesetSettings } from '../db/rulesetRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { listTileGraphicFiles } from '../db/tileGraphicRepo.js';
 import { loadEditorTiles } from '../db/tileRepo.js';
-import { inSnapshot } from '../db/transactions.js';
+import { inBulkSnapshot } from '../db/transactions.js';
 import { listUniverseEditors } from '../db/universeEditorRepo.js';
 import { findAllDraftOrigins, type DraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
@@ -124,7 +124,7 @@ async function exportRoute(request: Request, response: Response): Promise<void>
 	try
 	{
 		const exportedAt = new Date();
-		const snapshot = await inSnapshot((executor) => readExport(version, playerId, exportedAt, executor));
+		const snapshot = await inBulkSnapshot((executor) => readExport(version, playerId, exportedAt, executor));
 
 		if (snapshot === 'not_found')
 		{

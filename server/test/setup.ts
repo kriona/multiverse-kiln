@@ -158,11 +158,11 @@ export const mochaHooks = {
 			return;
 		}
 
-		const { pool } = await import('../src/db/client.js');
+		const { bulkPool, pool } = await import('../src/db/client.js');
 		const { adminPool } = await import('../src/db/adminClient.js');
 
 		await (await testServerHooks())?.shutDown();
 		await closeTestDatabase();
-		await Promise.all([pool.end(), adminPool.end()]);
+		await Promise.all([pool.end(), bulkPool.end(), adminPool.end()]);
 	}
 };

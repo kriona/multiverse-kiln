@@ -6,7 +6,7 @@ import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, ma
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { db } from '../../src/db/client.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
-import { addGroupMember, countGroupMembers, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listMembersOfGroups, listPlayerGroupIds, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
+import { addGroupMember, countGroupMembers, countGroupsLargerThan, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listGroupsLargerThan, listMembersOfGroups, listPlayerGroupIds, moveMembers, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
 import { addPlayer } from '../players.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -70,6 +70,43 @@ describe('groupRepo', () =>
 		assert.deepStrictEqual((await listMembersOfGroups([groupId])).get(groupId)?.map(({ characterId }) => characterId).sort(), [anchorId, memberId].sort());
 	});
 
+	it('saves only its own members\' places, the last given for each', async () =>
+	{
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, universe.fieldAreaId, 'The Others');
+
+		await saveMemberPositions(groupId, [
+			{ characterId: anchorId, areaId: universe.fieldAreaId, column: 1, row: 2 },
+			{ characterId: memberId, areaId: universe.fieldAreaId, column: 5, row: 6 },
+			{ characterId: memberId, areaId: universe.houseAreaId, column: 3, row: 4 },
+			{ characterId: otherAnchorId, areaId: universe.houseAreaId, column: 7, row: 8 }
+		]);
+
+		assert.deepStrictEqual((await listGroupMembers(groupId)).map(({ characterId, position }) => ({ characterId, position })), [
+			{ characterId: anchorId, position: { areaId: universe.fieldAreaId, column: 1, row: 2 } },
+			{ characterId: memberId, position: { areaId: universe.houseAreaId, column: 3, row: 4 } }
+		]);
+		assert.strictEqual((await listGroupMembers(otherGroupId))[0]?.position, null);
+	});
+
+	it('moves members of every group at once', async () =>
+	{
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, universe.fieldAreaId, 'The Others');
+
+		await moveMembers([
+			{ characterId: memberId, areaId: universe.houseAreaId, column: 3, row: 4 },
+			{ characterId: otherAnchorId, areaId: universe.houseAreaId, column: 7, row: 8 }
+		]);
+		await moveMembers([]);
+
+		assert.deepStrictEqual((await listGroupMembers(groupId)).map(({ characterId, position }) => ({ characterId, position })), [
+			{ characterId: anchorId, position: null },
+			{ characterId: memberId, position: { areaId: universe.houseAreaId, column: 3, row: 4 } }
+		]);
+		assert.deepStrictEqual((await listGroupMembers(otherGroupId))[0]?.position, { areaId: universe.houseAreaId, column: 7, row: 8 });
+	});
+
 	it('marks a member given their last rites as not playable', async () =>
 	{
 		await scheduleCharacterDeletion(playerId, universe.universeId, memberId, new Date(Date.now() + 60000));
@@ -96,6 +133,20 @@ describe('groupRepo', () =>
 		assert.deepStrictEqual(left, { kind: 'left', character: { characterId: memberId, playerId, name: 'Member', raceId: await defaultRaceId('dwarf'), classId: (await findDefaultClassIds('pf1e')).get('fighter'), playable: true } });
 		assert.strictEqual(await findMembership(memberId), undefined);
 		assert.strictEqual(await leaveGroup(groupId, memberId), undefined);
+	});
+
+	it('counts the groups larger than a size as it lists them', async () =>
+	{
+		const loneId = await addCharacter(playerId, universe.universeId, 'Lone');
+
+		await addGroup(universe.universeId, loneId, universe.fieldAreaId, 'The Lone');
+
+		for (const size of [0, 1, 2])
+		{
+			assert.strictEqual(await countGroupsLargerThan(universe.universeId, size), (await listGroupsLargerThan(universe.universeId, size)).length);
+		}
+
+		assert.deepStrictEqual([await countGroupsLargerThan(universe.universeId, 0), await countGroupsLargerThan(universe.universeId, 1), await countGroupsLargerThan(universe.universeId, 2)], [2, 1, 0]);
 	});
 
 	it('disbands the group when the anchor being leaves, with its invites', async () =>

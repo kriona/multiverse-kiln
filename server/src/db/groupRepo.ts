@@ -477,20 +477,45 @@ export async function leaveGroup(groupId: string, characterId: string, executor:
  */
 export async function saveMemberPositions(groupId: string, positions: readonly MemberPosition[], executor: Executor = db): Promise<void>
 {
-	for (const { characterId, areaId, column, row } of positions)
+	await updateMemberPositions(positions, eq(groupMembers.groupId, groupId), executor);
+}
+
+/**
+ * Writes group members' places in one statement, whatever their number. A character given more than
+ * one place gets the last
+ *
+ * @param positions Where each one is now
+ * @param condition Which members may be changed, on top of matching a character, or undefined for any
+ * @param executor The database, or a transaction
+ */
+async function updateMemberPositions(positions: readonly MemberPosition[], condition: SQL | undefined, executor: Executor): Promise<void>
+{
+	const latest = [...new Map(positions.map((position) => [position.characterId, position])).values()];
+
+	if (latest.length === 0)
 	{
-		await executor
-			.update(groupMembers)
-			.set({
-				areaId,
-				column,
-				row
-			})
-			.where(and(
-				eq(groupMembers.groupId, groupId),
-				eq(groupMembers.characterId, characterId)
-			));
+		return;
 	}
+
+	const moved = sql`unnest(
+		${sql.param(latest.map((position) => position.characterId))}::uuid[],
+		${sql.param(latest.map((position) => position.areaId))}::uuid[],
+		${sql.param(latest.map((position) => position.column))}::integer[],
+		${sql.param(latest.map((position) => position.row))}::integer[]
+	) AS moved (character_id, area_id, area_column, area_row)`;
+
+	await executor
+		.update(groupMembers)
+		.set({
+			areaId: sql`moved.area_id`,
+			column: sql`moved.area_column`,
+			row: sql`moved.area_row`
+		})
+		.from(moved)
+		.where(and(
+			eq(groupMembers.characterId, sql`moved.character_id`),
+			condition
+		));
 }
 
 /**
@@ -540,17 +565,17 @@ export interface LargerGroup
 }
 
 /**
- * A universe's groups with more members than a size, counting those given their last rites until their
- * time comes, as countGroupMembers() does
+ * A query for the IDs of a universe's groups with more members than a size, counting those given their
+ * last rites until their time comes, as countGroupMembers() does
  *
  * @param universeId The universe's ID
  * @param size The size
  * @param executor The database, or a transaction
- * @return The groups, by ID
+ * @return The query, with a groupId column
  */
-export async function listGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<LargerGroup[]>
+function groupsLargerThan(universeId: string, size: number, executor: Executor)
 {
-	const larger = executor
+	return(executor
 		.select({
 			groupId: groupMembers.groupId
 		})
@@ -562,7 +587,41 @@ export async function listGroupsLargerThan(universeId: string, size: number, exe
 			notExpired
 		))
 		.groupBy(groupMembers.groupId)
-		.having(sql`count(*) > ${size}`);
+		.having(sql`count(*) > ${size}`));
+}
+
+/**
+ * How many of a universe's groups have more members than a size, counting them as
+ * listGroupsLargerThan() does
+ *
+ * @param universeId The universe's ID
+ * @param size The size
+ * @param executor The database, or a transaction
+ * @return The number of groups
+ */
+export async function countGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<number>
+{
+	const [row] = await executor
+		.select({
+			total: count()
+		})
+		.from(groupsLargerThan(universeId, size, executor).as('larger_groups'));
+
+	return(row.total);
+}
+
+/**
+ * A universe's groups with more members than a size, counting those given their last rites until their
+ * time comes, as countGroupMembers() does
+ *
+ * @param universeId The universe's ID
+ * @param size The size
+ * @param executor The database, or a transaction
+ * @return The groups, by ID
+ */
+export async function listGroupsLargerThan(universeId: string, size: number, executor: Executor = db): Promise<LargerGroup[]>
+{
+	const larger = groupsLargerThan(universeId, size, executor);
 	const rows = await executor
 		.select({
 			groupId: groups.id,
@@ -625,23 +684,20 @@ export async function deleteGroups(groupIds: readonly string[], executor: Execut
 }
 
 /**
- * Takes characters out of a group. Call it only for members other than the anchor being, whose leaving
- * disbands the group (see leaveGroup())
+ * Takes characters out of their groups in one statement, whichever groups they are in. Call it only for
+ * members other than the anchor being, whose leaving disbands the group (see leaveGroup()). The IDs go
+ * in one array parameter, since lowering the group size can take members out of thousands of groups
  *
- * @param groupId The group's ID
  * @param characterIds The characters' IDs
  * @param executor The database, or a transaction
  */
-export async function removeGroupMembers(groupId: string, characterIds: readonly string[], executor: Executor = db): Promise<void>
+export async function removeGroupMembers(characterIds: readonly string[], executor: Executor = db): Promise<void>
 {
 	if (characterIds.length > 0)
 	{
 		await executor
 			.delete(groupMembers)
-			.where(and(
-				eq(groupMembers.groupId, groupId),
-				inArray(groupMembers.characterId, [...characterIds])
-			));
+			.where(sql`${groupMembers.characterId} = ANY(${sql.param([...new Set(characterIds)])}::uuid[])`);
 	}
 }
 
@@ -712,17 +768,7 @@ export async function listMembersInAreas(areaIds: readonly string[], executor: E
  */
 export async function moveMembers(positions: readonly MemberPosition[], executor: Executor = db): Promise<void>
 {
-	for (const { characterId, areaId, column, row } of positions)
-	{
-		await executor
-			.update(groupMembers)
-			.set({
-				areaId,
-				column,
-				row
-			})
-			.where(eq(groupMembers.characterId, characterId));
-	}
+	await updateMemberPositions(positions, undefined, executor);
 }
 
 /**
@@ -738,8 +784,8 @@ export async function listExpiredMemberships(executor: Executor = db): Promise<(
 }
 
 /**
- * The memberships of a player's characters, for telling the groups' rooms before deleting the player's
- * account
+ * The memberships of a player's characters, for the account export and for telling the groups' rooms
+ * before deleting the player's account
  *
  * @param playerId The player's ID
  * @param executor The database, or a transaction

@@ -737,24 +737,28 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		const affected = ((change.kind === 'disbanded') ? change.members : [change.character]);
 		const players = new Set<string>();
 
-		for (const { characterId, playerId, name, raceId, classId, playable } of affected)
+		// A disbanded group can bring each of its members out of being a ghost
+		this.areaPlayers.refreshingViewsOnce(() =>
 		{
-			if (!this.characters.has(playerId))
+			for (const { characterId, playerId, name, raceId, classId, playable } of affected)
 			{
-				continue;
-			}
+				if (!this.characters.has(playerId))
+				{
+					continue;
+				}
 
-			if (change.kind === 'joined')
-			{
-				this.withdraw(playerId, characterId);
-			}
-			else if (playable)
-			{
-				this.offer(playerId, { id: characterId, name, raceId, classId });
-			}
+				if (change.kind === 'joined')
+				{
+					this.withdraw(playerId, characterId);
+				}
+				else if (playable)
+				{
+					this.offer(playerId, { id: characterId, name, raceId, classId });
+				}
 
-			players.add(playerId);
-		}
+				players.add(playerId);
+			}
+		});
 
 		for (const playerId of players)
 		{
@@ -846,28 +850,32 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		this.barred = change.barred;
 
-		for (const playerId of this.characters.keys())
+		// One change can turn every player in the room into a ghost or back
+		this.areaPlayers.refreshingViewsOnce(() =>
 		{
-			const playing = this.playing.get(playerId);
-
-			if (playing && !this.isChoosable(playing))
+			for (const playerId of this.characters.keys())
 			{
-				const notice: NoticePayload = { reason: NoticeReason.CharacterBarred };
+				const playing = this.playing.get(playerId);
 
-				this.playNext(playerId);
-
-				for (const client of this.areaPlayers.getClients(playerId))
+				if (playing && !this.isChoosable(playing))
 				{
-					client.send(LobbyServerMessageType.Notice, notice);
-				}
-			}
-			else if (!playing)
-			{
-				this.playNext(playerId);
-			}
+					const notice: NoticePayload = { reason: NoticeReason.CharacterBarred };
 
-			this.sendCharactersChanged(playerId);
-		}
+					this.playNext(playerId);
+
+					for (const client of this.areaPlayers.getClients(playerId))
+					{
+						client.send(LobbyServerMessageType.Notice, notice);
+					}
+				}
+				else if (!playing)
+				{
+					this.playNext(playerId);
+				}
+
+				this.sendCharactersChanged(playerId);
+			}
+		});
 	}
 
 	/**

@@ -154,6 +154,12 @@ export const players = pgTable('players', {
 }, (table) => [
 	uniqueIndex('players_username_lower_unique').on(sql`lower(${table.username})`),
 	uniqueIndex('players_email_lower_unique').on(sql`lower(${table.email})`),
+
+	// Find the players whose username, name or email address holds some text (searchPlayers and the admin
+	// pages' searches, LIKE '%text%') without reading every player
+	index('players_username_trigram_index').using('gin', sql`lower(${table.username}) gin_trgm_ops`),
+	index('players_display_name_trigram_index').using('gin', sql`lower(${table.displayName}) gin_trgm_ops`),
+	index('players_email_trigram_index').using('gin', sql`lower(${table.email}) gin_trgm_ops`),
 	check('players_username_form', sql`${table.username} ~ ${sql.raw(`'^[A-Za-z0-9_]{${MIN_USERNAME_LENGTH},${MAX_USERNAME_LENGTH}}$'`)}`),
 	check('players_locale_length', sql`char_length(${table.locale}) <= ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
 	check('players_pronouns_length', sql`char_length(${table.pronouns}) <= ${sql.raw(String(MAX_PRONOUNS_LENGTH))}`),
@@ -208,6 +214,14 @@ export const universes = pgTable('universes', {
 	deletionPrevented: boolean('deletion_prevented').notNull().default(false)
 }, (table) => [
 	uniqueIndex('universes_slug_unique').on(table.slug),
+
+	// Reads Home's list of a stage's universes (listUniverses) a page at a time in its order, rather than
+	// sorting every universe in the stage
+	index('universes_listed_index').on(table.stage, table.name, table.id).where(sql`${table.disabledAt} is null`),
+
+	// Finds the universes whose name holds some text (the admin pages' search, LIKE '%text%') without
+	// reading every universe
+	index('universes_name_trigram_index').using('gin', sql`lower(${table.name}) gin_trgm_ops`),
 	check('universes_disabled_reason_set', sql`(${table.disabledAt} IS NULL) = (${table.disabledReason} IS NULL)`),
 	check('universes_disabled_reason_length', sql`char_length(${table.disabledReason}) BETWEEN 1 AND ${sql.raw(String(MAX_DISABLED_REASON_LENGTH))}`),
 	check('universes_deletion_prevented_disabled', sql`NOT ${table.deletionPrevented} OR (${table.disabledAt} IS NOT NULL)`),
@@ -445,6 +459,19 @@ export const universeEditors = pgTable('universe_editors', {
 ]);
 
 /**
+ * The player IDs of the editors a save added, changed or removed, as a JSON array of strings, from its
+ * change details. universe_edits indexes it, so a query finds a player's saves by it only when it uses
+ * this same expression
+ *
+ * @param changeDetails The change_details column
+ * @return The expression
+ */
+export function editorIdsIn(changeDetails: AnyPgColumn): SQL
+{
+	return(sql`jsonb_path_query_array(${changeDetails}, '$[*] ? (@.subject == "editor").id')`);
+}
+
+/**
  * A record of each save made in a universe's editor, for its Audit tab: who saved, with which role, what
  * the save changed, and when. Kept for UNIVERSE_EDIT_DAYS (shared/src/editor.ts), and deleted sooner
  * with the universe; kept after the account that saved is deleted, which empties playerId
@@ -479,6 +506,10 @@ export const universeEdits = pgTable('universe_edits', {
 }, (table) => [
 	index('universe_edits_universe_id_saved_at_index').on(table.universeId, table.savedAt),
 	index('universe_edits_player_id_index').on(table.playerId),
+
+	// Finds the saves that changed a player's editor role (listEditorChanges) without reading every
+	// universe's saves. Only the editor IDs are indexed, not every value in a save's details
+	index('universe_edits_editor_ids_index').using('gin', editorIdsIn(table.changeDetails)),
 
 	// Finds the saves old enough to delete across every universe, without reading the rest
 	index('universe_edits_saved_at_index').on(table.savedAt)

@@ -1,17 +1,17 @@
 import assert from 'assert';
 
-import { arrivalCell, countCharactersInAreas, enabledAncestor, evacuatedPlaces, membersOverSize, type AreaInTree } from '../../src/logic/disabling.js';
+import { areasById, arrivalCell, countCharactersInAreas, enabledAncestor, evacuatedPlaces, membersOverSize, type AreaInTree } from '../../src/logic/disabling.js';
 
 describe('disabling', () =>
 {
 	describe('enabledAncestor', () =>
 	{
-		const areas: AreaInTree[] = [
+		const areas = areasById<AreaInTree>([
 			{ id: 'world', parentAreaId: null, enabled: true },
 			{ id: 'town', parentAreaId: 'world', enabled: false },
 			{ id: 'inn', parentAreaId: 'town', enabled: true },
 			{ id: 'island', parentAreaId: null, enabled: true }
-		];
+		]);
 
 		it('finds the parent when it is enabled', () =>
 		{
@@ -26,15 +26,15 @@ describe('disabling', () =>
 		it('finds nothing for an area inside no enabled area', () =>
 		{
 			assert.strictEqual(enabledAncestor(areas, 'island'), undefined);
-			assert.strictEqual(enabledAncestor([{ id: 'cave', parentAreaId: 'gone', enabled: true }], 'cave'), undefined);
+			assert.strictEqual(enabledAncestor(areasById([{ id: 'cave', parentAreaId: 'gone', enabled: true }]), 'cave'), undefined);
 		});
 
 		it('stops at a loop rather than going round it', () =>
 		{
-			const loop: AreaInTree[] = [
+			const loop = areasById<AreaInTree>([
 				{ id: 'a', parentAreaId: 'b', enabled: false },
 				{ id: 'b', parentAreaId: 'a', enabled: false }
-			];
+			]);
 
 			assert.strictEqual(enabledAncestor(loop, 'a'), undefined);
 		});

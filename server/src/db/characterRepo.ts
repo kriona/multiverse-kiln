@@ -1,7 +1,8 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
  * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
- * tell which characters are in a group, universes only to name a profile's characters' universes, and
+ * tell which characters are in a group, universes only to name a profile's characters' universes and
+ * find the rulesets of a player's characters, and
  * players only to name and search for the players of the editor's list of a universe's characters
  */
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
@@ -470,6 +471,126 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 		},
 		items: carried
 	});
+}
+
+/**
+ * Every one of a player's characters in every universe, with their ability scores, money and items, as
+ * findCharacterDetails() finds each, in four queries however many characters there are
+ *
+ * @param playerId The player's ID
+ * @param executor The database, or a transaction
+ * @return The characters, by ID
+ */
+export async function listCharacterDetails(playerId: string, executor: Executor = db): Promise<Map<string, CharacterDetails>>
+{
+	const ownCharacters = and(
+		eq(characters.playerId, playerId),
+		notExpired
+	);
+	const [rows, pf1eRows, sf1eRows, carried] = await Promise.all([
+		executor
+			.select({
+				id: characters.id,
+				name: characters.name,
+				raceId: characters.raceId,
+				classId: characters.classId,
+				deleteAt: characters.deleteAt,
+				platinum: characters.platinum,
+				gold: characters.gold,
+				silver: characters.silver,
+				copper: characters.copper,
+				credits: characters.credits,
+				ruleset: universes.ruleset
+			})
+			.from(characters)
+			.innerJoin(universes, eq(universes.id, characters.universeId))
+			.where(ownCharacters),
+		executor
+			.select({
+				characterId: pf1eCharacters.characterId,
+				strength: pf1eCharacters.strength,
+				dexterity: pf1eCharacters.dexterity,
+				constitution: pf1eCharacters.constitution,
+				intelligence: pf1eCharacters.intelligence,
+				wisdom: pf1eCharacters.wisdom,
+				charisma: pf1eCharacters.charisma
+			})
+			.from(pf1eCharacters)
+			.innerJoin(characters, eq(characters.id, pf1eCharacters.characterId))
+			.where(ownCharacters),
+		executor
+			.select({
+				characterId: sf1eCharacters.characterId,
+				themeId: sf1eCharacters.themeId,
+				strength: sf1eCharacters.strength,
+				dexterity: sf1eCharacters.dexterity,
+				constitution: sf1eCharacters.constitution,
+				intelligence: sf1eCharacters.intelligence,
+				wisdom: sf1eCharacters.wisdom,
+				charisma: sf1eCharacters.charisma
+			})
+			.from(sf1eCharacters)
+			.innerJoin(characters, eq(characters.id, sf1eCharacters.characterId))
+			.where(ownCharacters),
+		executor
+			.select({
+				characterId: characterItems.characterId,
+				itemId: characterItems.itemId,
+				quantity: characterItems.quantity
+			})
+			.from(characterItems)
+			.innerJoin(characters, eq(characters.id, characterItems.characterId))
+			.where(and(
+				ownCharacters,
+				eq(characterItems.hidden, false)
+			))
+			.orderBy(asc(characterItems.characterId), asc(characterItems.itemId))
+	]);
+	const abilities: Record<Ruleset, Map<string, { abilityScores: AbilityScores; themeId: number | null }>> = {
+		pf1e: new Map(pf1eRows.map(({ characterId, ...abilityScores }) => [characterId, {
+			abilityScores,
+			themeId: null
+		}])),
+		sf1e: new Map(sf1eRows.map(({ characterId, themeId, ...abilityScores }) => [characterId, {
+			abilityScores,
+			themeId
+		}]))
+	};
+	const items = Map.groupBy(carried, (row) => row.characterId);
+	const details = new Map<string, CharacterDetails>();
+
+	for (const row of rows)
+	{
+		const own = abilities[row.ruleset].get(row.id);
+
+		if (!own)
+		{
+			continue;
+		}
+
+		details.set(row.id, {
+			id: row.id,
+			name: row.name,
+			raceId: row.raceId,
+			classId: row.classId,
+			deleteAt: row.deleteAt,
+			themeId: own.themeId,
+			abilityScores: own.abilityScores,
+			money: {
+				pp: row.platinum,
+				gp: row.gold,
+				sp: row.silver,
+				cp: row.copper,
+				cr: row.credits
+			},
+			items: (items.get(row.id) ?? []).map(({ itemId, quantity }) => ({
+				itemId,
+				quantity
+			}))
+		});
+	}
+
+	return(details);
 }
 
 /**
@@ -944,6 +1065,106 @@ export async function isCarriedItem(itemId: number, executor: Executor = db): Pr
 }
 
 /**
+ * Which of some races any character is, in one query. The IDs go in one array parameter, since applying a
+ * draft can remove thousands of them
+ *
+ * @param raceIds The races' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the races a character is
+ */
+export async function racesWithCharacters(raceIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (raceIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: characters.raceId
+		})
+		.from(characters)
+		.where(sql`${characters.raceId} = ANY(${sql.param([...new Set(raceIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
+ * Which of some classes any character is, in one query. The IDs go in one array parameter, since applying
+ * a draft can remove thousands of them
+ *
+ * @param classIds The classes' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the classes a character is
+ */
+export async function classesWithCharacters(classIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (classIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: characters.classId
+		})
+		.from(characters)
+		.where(sql`${characters.classId} = ANY(${sql.param([...new Set(classIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
+ * Which of some themes any character has, in one query. The IDs go in one array parameter, since applying
+ * a draft can remove thousands of them
+ *
+ * @param themeIds The themes' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the themes a character has
+ */
+export async function themesWithCharacters(themeIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (themeIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: sf1eCharacters.themeId
+		})
+		.from(sf1eCharacters)
+		.where(sql`${sf1eCharacters.themeId} = ANY(${sql.param([...new Set(themeIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
+ * Which of some items any character carries, in one query. The IDs go in one array parameter, since
+ * applying a draft can remove thousands of them
+ *
+ * @param itemIds The items' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of the items a character carries
+ */
+export async function carriedItems(itemIds: readonly number[], executor: Executor = db): Promise<Set<number>>
+{
+	if (itemIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.selectDistinct({
+			id: characterItems.itemId
+		})
+		.from(characterItems)
+		.where(sql`${characterItems.itemId} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`);
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
  * How many of a universe's characters are each of some races, leaving out those past their last rites
  *
  * @param universeId The universe's ID
@@ -1040,23 +1261,29 @@ export async function countCharactersCarrying(universeId: string, itemIds: reado
 }
 
 /**
- * Takes an item from every character of a universe carrying it, or gives it back: a taken item is
- * hidden, keeping how many each character had
+ * Takes some items from every character of a universe carrying them, or gives them back, in one
+ * statement: a taken item is hidden, keeping how many each character had. The IDs go in one array
+ * parameter, since a save can disable thousands of items
  *
  * @param universeId The universe's ID
- * @param itemId The item, by its own ID
- * @param hidden True to take it, false to give it back
+ * @param itemIds The items, by their own IDs
+ * @param hidden True to take them, false to give them back
  * @param executor The database, or a transaction
  */
-export async function setCarriedItemHidden(universeId: string, itemId: number, hidden: boolean, executor: Executor = db): Promise<void>
+export async function setCarriedItemsHidden(universeId: string, itemIds: readonly number[], hidden: boolean, executor: Executor = db): Promise<void>
 {
+	if (itemIds.length === 0)
+	{
+		return;
+	}
+
 	await executor
 		.update(characterItems)
 		.set({
 			hidden
 		})
 		.where(and(
-			eq(characterItems.itemId, itemId),
+			sql`${characterItems.itemId} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`,
 			eq(characterItems.hidden, !hidden),
 			inArray(characterItems.characterId, executor
 				.select({

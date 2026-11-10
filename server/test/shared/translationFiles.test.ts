@@ -200,6 +200,23 @@ describe('translation files (shared)', () =>
 		assert.ok((elapsedMs < 1000), `Reading took ${Math.round(elapsedMs)} ms`);
 	});
 
+	it('refuses an XLIFF tag holding text that isn\'t attributes, in time growing with its length, not its square', () =>
+	{
+		assert.throws(() => readTranslationFile('xliff', '<xliff>\n<unit id="a"b="c"></unit>\n</xliff>'), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 2)));
+		assert.throws(() => readTranslationFile('xliff', '<xliff><unit id="a" junk></unit></xliff>'), TranslationFileError);
+
+		// Searched for attributes from each of its characters, this tag takes several seconds; read in
+		// a single pass, a few milliseconds, so the limit leaves room for a slow machine
+		const malformed = `<xliff><unit a${'b'.repeat(100000)}></unit></xliff>`;
+		const start = performance.now();
+
+		assert.throws(() => readTranslationFile('xliff', malformed), TranslationFileError);
+
+		const elapsedMs = (performance.now() - start);
+
+		assert.ok((elapsedMs < 1000), `Reading took ${Math.round(elapsedMs)} ms`);
+	});
+
 	it('reads CSV by its column names, in any order, with a byte order mark and line breaks in quotes', () =>
 	{
 		const file = String.fromCharCode(0xfeff) + 'Translation,ID\n"Zwei\nZeilen",area:a:name\n,item:3:name\n';

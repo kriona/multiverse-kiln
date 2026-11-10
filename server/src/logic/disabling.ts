@@ -34,17 +34,27 @@ export interface LinkInto
 }
 
 /**
+ * Areas by their IDs, for enabledAncestor(), which is called once for each of many disabled areas
+ *
+ * @param areas The areas
+ * @return Each area, by its ID
+ */
+export function areasById<Area extends AreaInTree>(areas: readonly Area[]): Map<string, Area>
+{
+	return(new Map(areas.map((area) => [area.id, area])));
+}
+
+/**
  * The enabled area characters leaving a disabled area go to when they go to its parent: its parent, or
  * the nearest area above that is enabled
  *
- * @param areas Every area of the universe
+ * @param byId Every area of the universe, by ID (see areasById())
  * @param areaId The disabled area
  * @return The area it is inside, and the areas passed on the way up (the disabled area first), whose
  * links from that area lead back toward where the characters were; undefined when no enabled area holds it
  */
-export function enabledAncestor(areas: readonly AreaInTree[], areaId: string): { ancestorId: string; passed: string[] } | undefined
+export function enabledAncestor(byId: ReadonlyMap<string, AreaInTree>, areaId: string): { ancestorId: string; passed: string[] } | undefined
 {
-	const byId = new Map(areas.map((area) => [area.id, area]));
 	const passed = [areaId];
 	let parentId = (byId.get(areaId)?.parentAreaId ?? null);
 
@@ -190,11 +200,12 @@ export function countCharactersInAreas(saved: readonly CharacterInArea[], playin
 		where.set(characterId, areaId);
 	}
 
+	const counted = new Set(areaIds);
 	const counts = new Map<string, number>();
 
 	for (const areaId of where.values())
 	{
-		if (areaIds.includes(areaId))
+		if (counted.has(areaId))
 		{
 			counts.set(areaId, ((counts.get(areaId) ?? 0) + 1));
 		}

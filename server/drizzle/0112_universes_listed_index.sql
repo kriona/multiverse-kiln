@@ -1,0 +1,1 @@
+CREATE INDEX "universes_listed_index" ON "universes" USING btree ("stage","name","id") WHERE "universes"."disabled_at" is null;

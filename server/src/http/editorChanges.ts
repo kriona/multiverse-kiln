@@ -13,14 +13,14 @@ import { EDITOR_CHANGE_CHECKS, localize, MAX_UPLOADED_TILE_GRAPHICS, mayMakeChan
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
-import { inTransaction } from '../db/transactions.js';
+import { inBulkTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { recordUniverseEdit } from '../db/universeEditRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, findUniverse, hasDraft, lockUniverse, UniverseNameTakenError } from '../db/universeRepo.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
-import { deleteObject } from '../storage/objectStorage.js';
+import { deleteObjects } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates } from '../world/editorUpdates.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
@@ -277,7 +277,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 		}
 
 		current = 0;
-		context = await inTransaction(async (transaction) =>
+		context = await inBulkTransaction(async (transaction) =>
 		{
 			await lockUniverse(base.universe.id, transaction);
 
@@ -398,6 +398,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 
 			if (merge.conflicts.length > 0)
 			{
+				await merge.findSavers();
 				current = merge.conflicts[0].changeIndex;
 
 				throw new ChangeRefusal({
@@ -473,7 +474,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 	}
 	catch (error)
 	{
-		await deleteImages([...uploads.values()].map((upload) => upload.storageKey));
+		await deleteObjects([...uploads.values()].map((upload) => upload.storageKey));
 
 		const refusal = refusalOf(error);
 
@@ -678,7 +679,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
  */
 async function afterCommit(context: ChangeContext, stageChange: StageChange | undefined): Promise<void>
 {
-	await deleteImages(context.deletedImages);
+	await deleteObjects(context.deletedImages);
 
 	try
 	{
@@ -763,25 +764,4 @@ async function publishSave(base: UniverseContext, windowId: string | undefined, 
 		version: (base.version.draft ? 'draft' : 'live'),
 		details
 	});
-}
-
-/**
- * Removes images from storage. One that can't be removed is only logged: nothing serves an image
- * without its row, so it does no harm
- *
- * @param storageKeys The images' keys
- */
-async function deleteImages(storageKeys: readonly string[]): Promise<void>
-{
-	for (const storageKey of storageKeys)
-	{
-		try
-		{
-			await deleteObject(storageKey);
-		}
-		catch (error)
-		{
-			console.error(`Could not delete the image ${storageKey}:`, error);
-		}
-	}
 }

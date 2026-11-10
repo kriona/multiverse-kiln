@@ -1,0 +1,1 @@
+CREATE INDEX "universe_edits_editor_ids_index" ON "universe_edits" USING gin (jsonb_path_query_array("change_details", '$[*] ? (@.subject == "editor").id'));

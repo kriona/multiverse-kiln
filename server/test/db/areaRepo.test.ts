@@ -1,14 +1,15 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
-import { liveVersion } from '../../src/db/universeVersions.js';
+import { startDraft } from '../../src/db/universeDraftRepo.js';
+import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
 import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea } from './fixtures.js';
 
@@ -177,6 +178,24 @@ describe('areaRepo', () =>
 			assert.deepStrictEqual((await listAreas(liveVersion(universeId))).map((area) => area.name), ['Abbey', 'Village']);
 			assert.strictEqual(await countAreas(liveVersion(universeId)), 2);
 		});
+
+		it('finds which of some areas are in a version, leaving out other universes\' and the draft\'s', async () =>
+		{
+			const universeId = await addUniverse();
+			const villageId = await addArea(universeId, 'Village');
+			const abbeyId = await addArea(universeId, 'Abbey');
+			const elsewhereId = await addArea(await addUniverse('Other'), 'Elsewhere');
+			const missingId = randomUUID();
+
+			await inTransaction((transaction) => startDraft(universeId, transaction));
+
+			const draftIds = (await listAreas(draftVersion(universeId))).map((area) => area.id);
+
+			assert.deepStrictEqual(await findAreaIdsIn(liveVersion(universeId), [villageId, elsewhereId, villageId, missingId, ...draftIds]), new Set([villageId]));
+			assert.deepStrictEqual(await findAreaIdsIn(draftVersion(universeId), [villageId, abbeyId, ...draftIds]), new Set(draftIds));
+			assert.deepStrictEqual(await findAreaIdsIn(liveVersion(universeId), []), new Set());
+			assert.strictEqual(draftIds.length, 2);
+		});
 	});
 
 	describe('editCells', () =>
@@ -199,6 +218,33 @@ describe('areaRepo', () =>
 			layout = await loadWholeArea(areaId);
 
 			assert.deepStrictEqual([...(layout?.tiles.chunks.keys() ?? [])], [chunkKey(-1, 0)]);
+		});
+
+		it('stores and stops storing more chunks than one statement holds', async () =>
+		{
+			// The largest area, 16 by 16 chunks, painting the first cell of each
+			const side = (MAX_AREA_SIDE / CHUNK_SIZE);
+			const areaId = await addArea(await addUniverse(), 'Field', { bounds: { minColumn: 0, minRow: 0, maxColumn: ((side * CHUNK_SIZE) - 1), maxRow: ((side * CHUNK_SIZE) - 1) } });
+			const forest = await defaultTileId('forest');
+			const water = await defaultTileId('water');
+			const range = {
+				minChunkColumn: 0,
+				minChunkRow: 0,
+				maxChunkColumn: (side - 1),
+				maxChunkRow: (side - 1)
+			};
+			const firstCells = Array.from({ length: (side * side) }, (_, index) => [((index % side) * CHUNK_SIZE), (Math.floor(index / side) * CHUNK_SIZE)]);
+
+			await inTransaction((transaction) => editCells(areaId, firstCells.map(([column, row]) => [column, row, forest]), transaction));
+			assert.strictEqual((await loadChunks(areaId, range)).length, (side * side));
+
+			// The first 14 rows of chunks go back to the default tile, and the last 2 turn to water
+			await inTransaction((transaction) => editCells(areaId, firstCells.map(([column, row]) => [column, row, ((row < (14 * CHUNK_SIZE)) ? DEFAULT_TILE_CELL : water)]), transaction));
+
+			const chunks = await loadChunks(areaId, range);
+
+			assert.strictEqual(chunks.length, (2 * side));
+			assert.ok(chunks.every((chunk) => ((chunk.chunkRow >= 14) && (chunk.cells[cellIndexInChunk(0, 0)] === water))));
 		});
 
 		it('changes nothing when a cell is outside the bounds', async () =>
@@ -290,6 +336,24 @@ describe('areaRepo', () =>
 			assert.ok(layout);
 			assert.strictEqual(tileIdAt(layout.tiles, 40, 0), layout.tiles.defaultTileId);
 			assert.strictEqual(tileIdAt(layout.tiles, 0, 0), forest);
+		});
+
+		it('clips the chunks on the new edge and deletes the chunks wholly outside it', async () =>
+		{
+			const areaId = await addArea(await addUniverse(), 'Field', { bounds: { minColumn: -64, minRow: -64, maxColumn: 127, maxRow: 127 } });
+			const forest = await defaultTileId('forest');
+			const shrunk = { minColumn: 0, minRow: 0, maxColumn: 39, maxRow: 39 };
+
+			await inTransaction((transaction) => editCells(areaId, [[10, 10, forest], [35, 5, forest], [45, 5, forest], [100, 100, forest], [-10, 0, VOID_CELL]], transaction));
+
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, shrunk, true, transaction)), { resized: true, discardedCells: 3, discardedLinks: 0 });
+
+			const chunks = await loadChunks(areaId, { minChunkColumn: -2, minChunkRow: -2, maxChunkColumn: 3, maxChunkRow: 3 });
+			const edge = chunks.find((chunk) => ((chunk.chunkColumn === 1) && (chunk.chunkRow === 0)));
+
+			assert.deepStrictEqual(chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow)).sort(), [chunkKey(0, 0), chunkKey(1, 0)].sort());
+			assert.strictEqual(edge?.cells[cellIndexInChunk(35, 5)], forest);
+			assert.strictEqual(edge?.cells[cellIndexInChunk(45, 5)], DEFAULT_TILE_CELL);
 		});
 	});
 

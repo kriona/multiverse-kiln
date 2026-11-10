@@ -2,7 +2,7 @@ import assert from 'assert';
 import { charactersPath, type ChangeImpact, type CharacterListPayload, type EditorChange, type EditorItem, type EditorRace, type ItemListPayload, type RaceListPayload, type RaceSettings, type SaveImpactPayload } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions } from '../src/db/barredOptions.js';
-import { findCharacterDetails, findLastPlayedCharacterId } from '../src/db/characterRepo.js';
+import { createCharacter, findCharacterDetails, findLastPlayedCharacterId } from '../src/db/characterRepo.js';
 import { updateAreaSettings } from '../src/db/areaRepo.js';
 import { addGroupMember, findGroup, listGroupMembers, listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
@@ -10,7 +10,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
 import { universeAccessChanges, type BarredChange } from '../src/players/universeAccess.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, send, type Editor } from './editorRequests.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -181,6 +181,37 @@ describe('Disabling things players are using', () =>
 		assert.deepStrictEqual(await brokkItems(), carried);
 	});
 
+	it('takes several carried items in one save, and gives some back while taking another', async () =>
+	{
+		const dagger = await defaultItem('dagger');
+		const created = await saveAll(ada, universe.universeId, [
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } },
+			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', type: 'rope', enabled: true } }
+		]);
+		const torch = { id: Number(created['new:torch']), name: 'Torch', type: 'torch' };
+		const rope = { id: Number(created['new:rope']), name: 'Rope', type: 'rope' };
+		const character = await dwarfFighter(playerId, universe.universeId, 'Thora');
+
+		character.items = [dagger, torch, rope].map((item) => ({ itemId: item.id, quantity: 1 }));
+
+		const thoraId = await inTransaction((transaction) => createCharacter(character, transaction));
+		const carriedIds = async (): Promise<number[]> => ((await findCharacterDetails(playerId, universe.universeId, 'pf1e', thoraId))?.items ?? [])
+			.map((item) => item.itemId)
+			.sort((a, b) => (a - b));
+		const idsOf = (...carried: { id: number }[]): number[] => carried
+			.map((item) => item.id)
+			.sort((a, b) => (a - b));
+		const saveItem = (item: { id: number; name: string | null; type: string }, enabled: boolean): EditorChange => ({ kind: 'saveItem', id: item.id, settings: { name: item.name, type: item.type, enabled }, whenDisabled: (enabled ? undefined : 'remove') });
+
+		assert.deepStrictEqual(await carriedIds(), idsOf(dagger, torch, rope));
+
+		await saveAll(ada, universe.universeId, [saveItem({ ...dagger, name: null }, false), saveItem(torch, false)]);
+		assert.deepStrictEqual(await carriedIds(), idsOf(rope));
+
+		await saveAll(ada, universe.universeId, [saveItem({ ...dagger, name: null }, true), saveItem(torch, true), saveItem(rope, false)]);
+		assert.deepStrictEqual(await carriedIds(), idsOf(dagger, torch));
+	});
+
 	it('lets characters keep a disabled item when told to', async () =>
 	{
 		const dagger = await defaultItem('dagger');
@@ -248,14 +279,20 @@ describe('Disabling things players are using', () =>
 		const groupId = await addGroup(universe.universeId, brokkId, null);
 		const firstId = await addCharacter(playerId, universe.universeId, 'First');
 		const secondId = await addCharacter(playerId, universe.universeId, 'Second');
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other anchor');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, null);
+		const thirdId = await addCharacter(playerId, universe.universeId, 'Third');
+		const fourthId = await addCharacter(playerId, universe.universeId, 'Fourth');
 		const left: GroupChange[] = [];
 
 		await inTransaction((transaction) => addGroupMember(groupId, firstId, transaction));
 		await inTransaction((transaction) => addGroupMember(groupId, secondId, transaction));
+		await inTransaction((transaction) => addGroupMember(otherGroupId, thirdId, transaction));
+		await inTransaction((transaction) => addGroupMember(otherGroupId, fourthId, transaction));
 
 		const lower: EditorChange = { kind: 'universe', update: { groupSize: 2 }, largerGroups: 'removeMembers' };
 
-		assert.deepStrictEqual(await impactsOf([lower]), [{ changeIndex: 0, kind: 'groupSize', groupSize: 2, groups: 1 }]);
+		assert.deepStrictEqual(await impactsOf([lower]), [{ changeIndex: 0, kind: 'groupSize', groupSize: 2, groups: 2 }]);
 
 		const stop = groupChanges.onChange((change) =>
 		{
@@ -272,7 +309,8 @@ describe('Disabling things players are using', () =>
 		}
 
 		assert.deepStrictEqual((await listGroupMembers(groupId)).map((member) => member.characterId), [brokkId, firstId]);
-		assert.deepStrictEqual(left.map((change) => ((change.kind === 'left') ? [change.character.characterId, change.groupSizeLowered] : change.kind)), [[secondId, true]]);
+		assert.deepStrictEqual((await listGroupMembers(otherGroupId)).map((member) => member.characterId), [otherAnchorId, thirdId]);
+		assert.deepStrictEqual(left.map((change) => ((change.kind === 'left') ? [change.groupId, change.character.characterId, change.groupSizeLowered] : change.kind)).sort(), [[groupId, secondId, true], [otherGroupId, fourthId, true]].sort());
 	});
 
 	it('disbands groups larger than a lowered group size when told to, and keeps them when told to', async () =>

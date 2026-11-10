@@ -87,6 +87,12 @@ export interface VisionArea
 	loopsNorthSouth: boolean;
 
 	/**
+	 * Whether every cell's vision cost is 0, as in a lobby with no vision cost, so a cell is seen
+	 * whenever it is near enough and no line to it needs walking
+	 */
+	clear: boolean;
+
+	/**
 	 * How much harder a cell of the area is to see past, in percent: 0 is clear, 50 spends twice as much
 	 * of the budget, and OPAQUE_VISION_COST can't be seen past
 	 *
@@ -122,6 +128,7 @@ export function createVisionArea(tiles: AreaTiles, loopsEastWest: boolean, loops
 		bounds: tiles.bounds,
 		loopsEastWest,
 		loopsNorthSouth,
+		clear: [...tileVisionCosts.values()].every((cost) => (cost === 0)),
 		visionCost: (column, row) =>
 		{
 			const tileId = tileIdAt(tiles, column, row);
@@ -218,8 +225,9 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, area: V
 	const { width, height } = sizeOf(area.bounds);
 	const column = (area.loopsEastWest ? nearestCopy(to.column, from.column, width) : to.column);
 	const row = (area.loopsNorthSouth ? nearestCopy(to.row, from.row, height) : to.row);
+	const costAt = (area.clear ? undefined : (columns: number, rows: number): number => visionCostAt(from.column + columns, from.row + rows, area));
 
-	return(isSeen(from, column - from.column, row - from.row, budget, area));
+	return(isSeen(column - from.column, row - from.row, budget, costAt));
 }
 
 /**
@@ -228,27 +236,65 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, area: V
  * @param from The character's cell
  * @param budget The character's vision budget (visionBudget)
  * @param area The area
+ * @param skip Which cells to leave out without looking at them, such as those a group has already seen,
+ * given the cell inside the area; none when undefined
  * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area
  */
-export function visibleCells(from: VisionCell, budget: number, area: VisionArea): Set<string>
+export function visibleCells(from: VisionCell, budget: number, area: VisionArea, skip?: (column: number, row: number) => boolean): Set<string>
 {
 	const visible = new Set<string>();
 	const reach = Math.floor(budget);
+
+	// isSeen() reads the cells beside a wall at the edge of reach, a square further out, before finding them too far
+	const costAt = (area.clear ? undefined : readCosts(from, reach + 1, area));
 
 	for (let rows = -reach; rows <= reach; rows++)
 	{
 		for (let columns = -reach; columns <= reach; columns++)
 		{
-			const cell = wrap({ column: from.column + columns, row: from.row + rows }, area);
+			const column = wrapColumn(from.column + columns, area);
+			const row = wrapRow(from.row + rows, area);
 
-			if (isInBounds(area.bounds, cell.column, cell.row) && isSeen(from, columns, rows, budget, area))
+			// Looking is what costs, so a skipped cell is left out before it
+			if (isInBounds(area.bounds, column, row) && !(skip?.(column, row) ?? false) && isSeen(columns, rows, budget, costAt))
 			{
-				visible.add(visionKey(cell.column, cell.row));
+				visible.add(visionKey(column, row));
 			}
 		}
 	}
 
 	return(visible);
+}
+
+/**
+ * The vision cost of the cell some columns and rows from the cell looked from, which may be past a
+ * looping edge (see visionCostAt)
+ */
+type CostAt = (columns: number, rows: number) => number;
+
+/**
+ * Reads the vision cost of every cell around the cell looked from once, for the lines to every cell in
+ * reach to look up
+ *
+ * @param from The cell looked from
+ * @param radius How many columns and rows each way to read
+ * @param area The area
+ * @return The cost of a cell up to radius columns and rows from the cell looked from
+ */
+function readCosts(from: VisionCell, radius: number, area: VisionArea): CostAt
+{
+	const side = (2 * radius) + 1;
+	const costs = new Float64Array(side * side);
+
+	for (let rows = -radius; rows <= radius; rows++)
+	{
+		for (let columns = -radius; columns <= radius; columns++)
+		{
+			costs[((rows + radius) * side) + columns + radius] = visionCostAt(from.column + columns, from.row + rows, area);
+		}
+	}
+
+	return((columns, rows) => costs[((rows + radius) * side) + columns + radius]);
 }
 
 /**
@@ -273,23 +319,26 @@ export function visionKey(column: number, row: number): string
  * Open ground diagonally beside a wall only counts at an inside corner (isCornerOrSide), so a wall
  * doesn't show when the open ground on its sides is hidden
  *
- * @param from The cell looked from
- * @param columns How many columns away the other cell is, which may be past a looping edge
+ * @param columns How many columns from the cell looked from the other cell is, which may be past a looping edge
  * @param rows How many rows away the other cell is, likewise
  * @param budget The vision budget
- * @param area The area
+ * @param costAt The vision cost of each cell, by its columns and rows from the cell looked from; undefined when the area is clear
  * @return True when the other cell can be seen
  */
-function isSeen(from: VisionCell, columns: number, rows: number, budget: number, area: VisionArea): boolean
+function isSeen(columns: number, rows: number, budget: number, costAt: CostAt | undefined): boolean
 {
-	if (isInSight(from, columns, rows, budget, area))
+	// Every line spends its length, and a line between two cells of the area stays inside it
+	if (!costAt)
+	{
+		return(shortestDistance(columns, rows) <= budget);
+	}
+
+	if (isInSight(columns, rows, budget, costAt))
 	{
 		return(true);
 	}
 
-	const target = { column: from.column + columns, row: from.row + rows };
-
-	if ((visionCostAt(target, area) < OPAQUE_VISION_COST) || (shortestDistance(columns, rows) > budget))
+	if ((costAt(columns, rows) < OPAQUE_VISION_COST) || (shortestDistance(columns, rows) > budget))
 	{
 		return(false);
 	}
@@ -298,9 +347,7 @@ function isSeen(from: VisionCell, columns: number, rows: number, budget: number,
 	{
 		for (let columnStep = -1; columnStep <= 1; columnStep++)
 		{
-			const beside = { column: target.column + columnStep, row: target.row + rowStep };
-
-			if (((columnStep !== 0) || (rowStep !== 0)) && isCornerOrSide(target, columnStep, rowStep, area) && (visionCostAt(beside, area) < OPAQUE_VISION_COST) && isInSight(from, columns + columnStep, rows + rowStep, budget, area))
+			if (((columnStep !== 0) || (rowStep !== 0)) && isCornerOrSide(columns, rows, columnStep, rowStep, costAt) && (costAt(columns + columnStep, rows + rowStep) < OPAQUE_VISION_COST) && isInSight(columns + columnStep, rows + rowStep, budget, costAt))
 			{
 				return(true);
 			}
@@ -314,20 +361,21 @@ function isSeen(from: VisionCell, columns: number, rows: number, budget: number,
  * Whether the cell one step from a wall can show the wall: one on its side, or one diagonally beside it
  * at an inside corner, where both cells between them can't be seen past either, as in a room's corner
  *
- * @param wall The wall's cell
+ * @param columns How many columns the wall is from the cell looked from
+ * @param rows How many rows the wall is from the cell looked from
  * @param columnStep How many columns the other cell is from the wall: -1, 0 or 1
  * @param rowStep How many rows the other cell is from the wall: -1, 0 or 1
- * @param area The area
+ * @param costAt The vision cost of each cell, by its columns and rows from the cell looked from
  * @return True when the other cell is on the wall's side or at an inside corner
  */
-function isCornerOrSide(wall: VisionCell, columnStep: number, rowStep: number, area: VisionArea): boolean
+function isCornerOrSide(columns: number, rows: number, columnStep: number, rowStep: number, costAt: CostAt): boolean
 {
 	if ((columnStep === 0) || (rowStep === 0))
 	{
 		return(true);
 	}
 
-	return((visionCostAt({ column: wall.column + columnStep, row: wall.row }, area) >= OPAQUE_VISION_COST) && (visionCostAt({ column: wall.column, row: wall.row + rowStep }, area) >= OPAQUE_VISION_COST));
+	return((costAt(columns + columnStep, rows) >= OPAQUE_VISION_COST) && (costAt(columns, rows + rowStep) >= OPAQUE_VISION_COST));
 }
 
 /**
@@ -349,14 +397,13 @@ function shortestDistance(columns: number, rows: number): number
  * The line steps one column or row at a time along its longer side, through the cells nearest it, the
  * same way in every direction, so a view mirrored east to west or north to south is mirrored too
  *
- * @param from The cell looked from
- * @param columns How many columns away the other cell is, which may be past a looping edge
+ * @param columns How many columns from the cell looked from the other cell is, which may be past a looping edge
  * @param rows How many rows away the other cell is, likewise
  * @param budget The vision budget
- * @param area The area
+ * @param costAt The vision cost of each cell, by its columns and rows from the cell looked from
  * @return True when the other cell can be seen
  */
-function isInSight(from: VisionCell, columns: number, rows: number, budget: number, area: VisionArea): boolean
+function isInSight(columns: number, rows: number, budget: number, costAt: CostAt): boolean
 {
 	const steps = Math.max(Math.abs(columns), Math.abs(rows));
 
@@ -367,18 +414,17 @@ function isInSight(from: VisionCell, columns: number, rows: number, budget: numb
 	}
 
 	let spent = 0;
-	let previous = from;
+	let previousColumn = 0;
+	let previousRow = 0;
 
 	for (let step = 1; step <= steps; step++)
 	{
-		const cell = {
-			column: from.column + roundAwayFromZero((columns * step) / steps),
-			row: from.row + roundAwayFromZero((rows * step) / steps)
-		};
-		const length = (((cell.column !== previous.column) && (cell.row !== previous.row)) ? 1.5 : 1);
+		const column = roundAwayFromZero((columns * step) / steps);
+		const row = roundAwayFromZero((rows * step) / steps);
+		const length = (((column !== previousColumn) && (row !== previousRow)) ? 1.5 : 1);
 
 		// The character's own cell doesn't get in their way
-		const cost = ((step === 1) ? 0 : visionCostAt(previous, area));
+		const cost = ((step === 1) ? 0 : costAt(previousColumn, previousRow));
 
 		if (cost >= OPAQUE_VISION_COST)
 		{
@@ -392,7 +438,8 @@ function isInSight(from: VisionCell, columns: number, rows: number, budget: numb
 			return(false);
 		}
 
-		previous = cell;
+		previousColumn = column;
+		previousRow = row;
 	}
 
 	return(true);
@@ -401,38 +448,50 @@ function isInSight(from: VisionCell, columns: number, rows: number, budget: numb
 /**
  * The vision cost of a cell, which may be past a looping edge
  *
- * @param cell The cell
+ * @param column The cell's column
+ * @param row The cell's row
  * @param area The area
  * @return Its vision cost; OPAQUE_VISION_COST outside the area
  */
-function visionCostAt(cell: VisionCell, area: VisionArea): number
+function visionCostAt(column: number, row: number, area: VisionArea): number
 {
-	const wrapped = wrap(cell, area);
+	const wrappedColumn = wrapColumn(column, area);
+	const wrappedRow = wrapRow(row, area);
 
-	if (!isInBounds(area.bounds, wrapped.column, wrapped.row))
+	if (!isInBounds(area.bounds, wrappedColumn, wrappedRow))
 	{
 		return(OPAQUE_VISION_COST);
 	}
 
-	return(area.visionCost(wrapped.column, wrapped.row));
+	return(area.visionCost(wrappedColumn, wrappedRow));
 }
 
 /**
- * The cell inside the area a cell past a looping edge stands for
+ * The column inside the area a column past a looping edge stands for
  *
- * @param cell The cell
+ * @param column The column
  * @param area The area
- * @return The cell, unchanged along an axis that doesn't loop
+ * @return The column, unchanged when the area doesn't loop east-west
  */
-function wrap(cell: VisionCell, area: VisionArea): VisionCell
+function wrapColumn(column: number, area: VisionArea): number
 {
-	const { minColumn, minRow } = area.bounds;
-	const { width, height } = sizeOf(area.bounds);
+	const { minColumn, maxColumn } = area.bounds;
 
-	return({
-		column: (area.loopsEastWest ? minColumn + positiveModulo(cell.column - minColumn, width) : cell.column),
-		row: (area.loopsNorthSouth ? minRow + positiveModulo(cell.row - minRow, height) : cell.row)
-	});
+	return((area.loopsEastWest ? minColumn + positiveModulo(column - minColumn, (maxColumn - minColumn) + 1) : column));
+}
+
+/**
+ * The row inside the area a row past a looping edge stands for
+ *
+ * @param row The row
+ * @param area The area
+ * @return The row, unchanged when the area doesn't loop north-south
+ */
+function wrapRow(row: number, area: VisionArea): number
+{
+	const { minRow, maxRow } = area.bounds;
+
+	return((area.loopsNorthSouth ? minRow + positiveModulo(row - minRow, (maxRow - minRow) + 1) : row));
 }
 
 /**

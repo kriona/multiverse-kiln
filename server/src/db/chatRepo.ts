@@ -322,8 +322,8 @@ export async function findChatRead(chat: KeptChat, playerId: string, executor: E
 }
 
 /**
- * Records how far players have read a chat. A player's record only moves forward, so a write that
- * arrives late never undoes a newer one
+ * Records how far players have read a chat, in one statement. A player's record only moves forward, so
+ * a write that arrives late never undoes a newer one
  *
  * @param chat The chat
  * @param reads When the newest message each player has seen was sent, by player ID
@@ -331,39 +331,59 @@ export async function findChatRead(chat: KeptChat, playerId: string, executor: E
  */
 export async function saveChatReads(chat: KeptChat, reads: ReadonlyMap<string, Date>): Promise<number>
 {
-	let dropped = 0;
-
-	for (const [playerId, readAt] of reads)
+	if (reads.size === 0)
 	{
-		try
-		{
-			await db
-				.insert(chatReads)
-				.values({
-					playerId,
-					universeId: chat.universeId,
-					groupId: ((chat.kind === 'group') ? chat.groupId : null),
-					readAt
-				})
-				.onConflictDoUpdate({
-					target: [chatReads.playerId, chatReads.universeId, chatReads.groupId],
-					set: {
-						readAt: sql`greatest(${chatReads.readAt}, excluded.read_at)`
-					}
-				});
-		}
-		catch (error)
-		{
-			if (!isForeignKeyViolation(error))
-			{
-				throw error;
-			}
-
-			dropped++;
-		}
+		return(0);
 	}
 
-	return(dropped);
+	let saved: number;
+
+	try
+	{
+		saved = await upsertChatReads(chat, reads);
+	}
+	catch (error)
+	{
+		if (!isForeignKeyViolation(error))
+		{
+			throw error;
+		}
+
+		// A row was deleted after the statement checked it was there; run it again, which leaves it out
+		saved = await upsertChatReads(chat, reads);
+	}
+
+	return(reads.size - saved);
+}
+
+/**
+ * Writes how far players have read a chat in one INSERT, leaving out the players whose account is gone,
+ * and every player when the chat's universe or group is gone
+ *
+ * @param chat The chat
+ * @param reads When the newest message each player has seen was sent, by player ID
+ * @return How many records were written
+ */
+async function upsertChatReads(chat: KeptChat, reads: ReadonlyMap<string, Date>): Promise<number>
+{
+	const groupId = ((chat.kind === 'group') ? chat.groupId : null);
+	const chatExists = ((groupId === null)
+		? sql`EXISTS (SELECT 1 FROM ${universes} WHERE ${universes.id} = ${chat.universeId})`
+		: sql`EXISTS (SELECT 1 FROM ${groups} WHERE ${groups.id} = ${groupId})`);
+
+	const result = await db.execute(sql`
+		INSERT INTO ${chatReads} (player_id, universe_id, group_id, read_at)
+		SELECT reader.player_id, ${chat.universeId}::uuid, ${groupId}::uuid, reader.read_at
+		FROM unnest(
+			${sql.param([...reads.keys()])}::uuid[],
+			${sql.param([...reads.values()].map((readAt) => readAt.toISOString()))}::timestamptz[]
+		) AS reader (player_id, read_at)
+		WHERE EXISTS (SELECT 1 FROM ${players} WHERE ${players.id} = reader.player_id)
+			AND ${chatExists}
+		ON CONFLICT (player_id, universe_id, group_id) DO UPDATE SET read_at = greatest(${chatReads}.read_at, excluded.read_at)
+	`);
+
+	return(result.rowCount ?? 0);
 }
 
 /**

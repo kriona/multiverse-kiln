@@ -1,8 +1,9 @@
 /**
  * Items: the only module that reads or writes the items table
  */
-import { and, count, eq, isNull, or } from 'drizzle-orm';
-import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { and, count, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
+import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -22,6 +23,19 @@ export type CustomItemSettings = ItemSettings & { name: string };
  * Whether an item ID names one of a ruleset's default items or one a universe added
  */
 export type ItemKind = 'default' | 'custom';
+
+/**
+ * An item a universe can use, as findItem() finds it
+ */
+export interface FoundItem
+{
+	kind: ItemKind;
+
+	/**
+	 * Whether the universe has it enabled
+	 */
+	enabled: boolean;
+}
 
 /**
  * The IDs of a ruleset's default items
@@ -63,15 +77,116 @@ export async function loadEditorItems(version: UniverseVersion, ruleset: Ruleset
 }
 
 /**
+ * Some of the items a universe can use, as loadEditorItems() gives them, such as those a character carries
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param itemIds The items' IDs
+ * @param executor The database, or a transaction
+ * @return Those of the items the version can use, by ID
+ */
+export async function loadEditorItemsIn(version: UniverseVersion, ruleset: Ruleset, itemIds: readonly number[], executor: Executor = db): Promise<EditorItem[]>
+{
+	if (itemIds.length === 0)
+	{
+		return([]);
+	}
+
+	return((await loadNamedItems(version, ruleset, executor, itemIds)).map(({ item }) => item));
+}
+
+/**
+ * A condition that an item ID column holds one of some IDs. The IDs go in one array parameter rather
+ * than one parameter each (inArray()), since the items characters carry can be many
+ *
+ * @param column The column: an item's own ID, or the default item an edited copy is of
+ * @param itemIds The IDs
+ * @return The condition
+ */
+function itemIdIn(column: typeof items.id | typeof items.overridesItemId, itemIds: readonly number[]): SQL
+{
+	return(sql`${column} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`);
+}
+
+/**
+ * What some items are called in the live versions of several universes, without their settings, in
+ * one query: a default item's key, and the name the universe gives it, if any
+ *
+ * @param universes The universes, with their rulesets
+ * @param itemIds The items' IDs, such as those the universes' characters carry
+ * @param executor The database, or a transaction
+ * @return The keys and names of those items each universe can use, by item ID, by the universe's ID
+ */
+export async function loadLiveItemNames(universes: readonly { id: string; ruleset: Ruleset }[], itemIds: readonly number[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if ((universes.length === 0) || (itemIds.length === 0))
+	{
+		return(new Map(universes.map((universe) => [universe.id, new Map()])));
+	}
+
+	const rows = await executor
+		.select({
+			id: items.id,
+			ruleset: items.ruleset,
+			universeId: items.universeId,
+			overridesItemId: items.overridesItemId,
+			key: items.key,
+			name: items.name
+		})
+		.from(items)
+		.where(or(
+			and(
+				isNull(items.universeId),
+				inArray(items.ruleset, [...new Set(universes.map((universe) => universe.ruleset))]),
+				itemIdIn(items.id, itemIds)
+			),
+			and(
+				inArray(items.universeId, universes.map((universe) => universe.id)),
+				eq(items.draft, false),
+				or(
+					itemIdIn(items.id, itemIds),
+					itemIdIn(items.overridesItemId, itemIds)
+				)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) =>
+	{
+		const universeRows = [
+			...(defaults.get(universe.ruleset) ?? []),
+			...(owned.get(universe.id) ?? [])
+		];
+		const copies = new Map(universeRows
+			.filter((row) => (row.overridesItemId !== null))
+			.map((row) => [row.overridesItemId, row]));
+
+		return([universe.id, new Map(universeRows
+			.filter((row) => (row.overridesItemId === null))
+			.map((row) =>
+			{
+				const custom = (row.universeId !== null);
+
+				return([row.id, {
+					key: (custom ? null : row.key),
+					name: (custom ? row.name : (copies.get(row.id)?.name ?? null))
+				}]);
+			}))]);
+	})));
+}
+
+/**
  * Every item a universe can use, as the editor lists them, each with a name in English: the
  * universe's name for it, or a default item's own
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param executor The database, or a transaction
+ * @param itemIds Only these items, or undefined for every item
  * @return The items, by ID
  */
-async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<{ item: EditorItem; englishName: string }[]>
+async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, executor: Executor, itemIds?: readonly number[]): Promise<{ item: EditorItem; englishName: string }[]>
 {
 	const rows = await executor
 		.select({
@@ -89,7 +204,13 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			or(
 				isNull(items.universeId),
 				inVersion(items, version)
-			)
+			),
+			((itemIds === undefined)
+				? undefined
+				: or(
+					itemIdIn(items.id, itemIds),
+					itemIdIn(items.overridesItemId, itemIds)
+				))
 		))
 		.orderBy(items.id);
 	const copies = new Map(rows
@@ -189,22 +310,31 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 }
 
 /**
- * Whether an item ID is one of a ruleset's default items or one of a universe's own items
+ * Whether an item ID is one of a ruleset's default items or one of a universe's own items, and whether
+ * the universe has it enabled
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param itemId The item's ID
  * @param executor The database, or a transaction
- * @return The kind of item, or undefined when the universe can't use an item with that ID (an edited
- * copy's own ID included)
+ * @return The kind of item and whether it is enabled (a default item's from the universe's edited copy,
+ * when it has one), or undefined when the universe can't use an item with that ID (an edited copy's own
+ * ID included)
  */
-export async function findItemKind(version: UniverseVersion, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<ItemKind | undefined>
+export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<FoundItem | undefined>
 {
+	const copies = alias(items, 'copies');
 	const [row] = await executor
 		.select({
-			universeId: items.universeId
+			universeId: items.universeId,
+			enabled: items.enabled,
+			copyEnabled: copies.enabled
 		})
 		.from(items)
+		.leftJoin(copies, and(
+			eq(copies.overridesItemId, items.id),
+			inVersion(copies, version)
+		))
 		.where(and(
 			eq(items.id, itemId),
 			eq(items.ruleset, ruleset),
@@ -221,7 +351,10 @@ export async function findItemKind(version: UniverseVersion, ruleset: Ruleset, i
 		return(undefined);
 	}
 
-	return(((row.universeId === null) ? 'default' : 'custom'));
+	return({
+		kind: ((row.universeId === null) ? 'default' : 'custom'),
+		enabled: (row.copyEnabled ?? row.enabled)
+	});
 }
 
 /**
@@ -270,7 +403,7 @@ export async function createCustomItem(version: UniverseVersion, ruleset: Rulese
  * Changes one of a universe's own items
  *
  * @param version The universe's live version or draft
- * @param itemId The item's ID, from findItemKind() as custom
+ * @param itemId The item's ID, from findItem() as custom
  * @param settings The item's new settings
  * @param executor The database, or a transaction
  */
@@ -290,7 +423,7 @@ export async function updateCustomItem(version: UniverseVersion, itemId: number,
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
- * @param defaultItemId The default item's ID, from findItemKind() as default
+ * @param defaultItemId The default item's ID, from findItem() as default
  * @param settings The copy's settings; a null name keeps the default item's
  * @param executor The database, or a transaction
  */
@@ -332,7 +465,7 @@ export async function restoreDefaultItem(version: UniverseVersion, defaultItemId
  * Deletes one of a universe's own items
  *
  * @param version The universe's live version or draft
- * @param itemId The item's ID, from findItemKind() as custom
+ * @param itemId The item's ID, from findItem() as custom
  * @param executor The database, or a transaction
  */
 export async function deleteCustomItem(version: UniverseVersion, itemId: number, executor: Executor = db): Promise<void>

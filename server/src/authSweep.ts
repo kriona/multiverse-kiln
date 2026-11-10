@@ -36,11 +36,19 @@ export async function sweepAuth(now: Date = new Date()): Promise<void>
 	try
 	{
 		await touchSessions(connectedSessions.ids(), now);
+	}
+	catch (error)
+	{
+		console.error('Could not record the use of the connected login sessions:', error);
+	}
+
+	try
+	{
 		connectedSessions.end(await deleteExpiredSessions(now));
 	}
 	catch (error)
 	{
-		console.error('Could not tidy the login sessions:', error);
+		console.error('Could not delete the expired login sessions:', error);
 	}
 
 	try

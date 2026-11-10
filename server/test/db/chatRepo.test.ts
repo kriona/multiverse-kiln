@@ -2,6 +2,7 @@ import assert from 'assert';
 import { MAX_KEPT_CHAT_MESSAGES } from '@multiverse-kiln/shared';
 
 import { addChatMessages, findChatRead, forgetChatAuthor, listChatMessages, listOwnChatMessages, listOwnChatReads, saveChatReads, type KeptChat, type NewChatMessage } from '../../src/db/chatRepo.js';
+import { deleteGroups } from '../../src/db/groupRepo.js';
 import { deletePlayer } from '../../src/db/playerRepo.js';
 import { deleteUniverse } from '../../src/db/universeRepo.js';
 import { addPlayer, usernameFor } from '../players.js';
@@ -171,6 +172,27 @@ describe('chatRepo', () =>
 
 			assert.deepStrictEqual(await listOwnChatReads(ada.id), []);
 			assert.strictEqual(await saveChatReads(editors, new Map([[ada.id, later]])), 1);
+		});
+
+		it('drops every record for a group that is gone, keeping the editors\' chat', async () =>
+		{
+			const universeId = await addUniverse();
+			const ada = await addPlayer('Ada');
+			const grace = await addPlayer('Grace');
+			const groupId = await addGroup(universeId, await addCharacter(ada.id, universeId, 'Brokk'), null);
+			const editors: KeptChat = { kind: 'editors', universeId };
+			const group: KeptChat = { kind: 'group', universeId, groupId };
+
+			await deleteGroups([groupId]);
+
+			assert.strictEqual(await saveChatReads(group, new Map([[ada.id, earlier], [grace.id, earlier]])), 2);
+			assert.strictEqual(await saveChatReads(editors, new Map([[ada.id, later]])), 0);
+			assert.deepStrictEqual((await listOwnChatReads(ada.id)).map(({ groupId: chatGroup, readAt }) => [chatGroup, readAt]), [[null, later]]);
+		});
+
+		it('saves nothing for no players', async () =>
+		{
+			assert.strictEqual(await saveChatReads({ kind: 'editors', universeId: await addUniverse() }, new Map()), 0);
 		});
 	});
 });

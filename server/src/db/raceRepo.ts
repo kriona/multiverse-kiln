@@ -1,9 +1,10 @@
 /**
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
-import { and, asc, count, eq, isNull, or, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
+import type { StartingAreaRace } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { pf1eRaces, races, raceStartingItems, sf1eRaces } from './schema.js';
@@ -46,6 +47,17 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
 }
 
 /**
+ * The columns the race names are made from
+ */
+const raceNameColumns = {
+	id: races.id,
+	universeId: races.universeId,
+	overridesRaceId: races.overridesRaceId,
+	key: races.key,
+	name: races.name
+};
+
+/**
  * What each race a universe can use is called, without its settings: a default race's key, and the
  * name the universe gives it, if any
  *
@@ -57,15 +69,61 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
 export async function loadRaceNames(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<Map<number, OptionName>>
 {
 	const rows = await executor
-		.select({
-			id: races.id,
-			universeId: races.universeId,
-			overridesRaceId: races.overridesRaceId,
-			key: races.key,
-			name: races.name
-		})
+		.select(raceNameColumns)
 		.from(races)
 		.where(usableRaces(version, ruleset));
+
+	return(nameRaces(rows));
+}
+
+/**
+ * What each race the live versions of several universes can use is called, as loadRaceNames() gives it
+ * for one, in one query
+ *
+ * @param universes The universes, with their rulesets
+ * @param executor The database, or a transaction
+ * @return Each universe's races' keys and names, by race ID, by the universe's ID
+ */
+export async function loadLiveRaceNames(universes: readonly { id: string; ruleset: Ruleset }[], executor: Executor = db): Promise<Map<string, Map<number, OptionName>>>
+{
+	if (universes.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			...raceNameColumns,
+			ruleset: races.ruleset
+		})
+		.from(races)
+		.where(or(
+			and(
+				isNull(races.universeId),
+				inArray(races.ruleset, [...new Set(universes.map((universe) => universe.ruleset))])
+			),
+			and(
+				inArray(races.universeId, universes.map((universe) => universe.id)),
+				eq(races.draft, false)
+			)
+		));
+	const defaults = Map.groupBy(rows.filter((row) => (row.universeId === null)), (row) => row.ruleset);
+	const owned = Map.groupBy(rows.filter((row) => (row.universeId !== null)), (row) => row.universeId);
+
+	return(new Map(universes.map((universe) => [universe.id, nameRaces([
+		...(defaults.get(universe.ruleset) ?? []),
+		...(owned.get(universe.id) ?? [])
+	])])));
+}
+
+/**
+ * Names the races of one version of a universe from their rows
+ *
+ * @param rows The rows of the races the version can use: the default races, and the version's own races and edited copies
+ * @return Each race's key and name, by its ID
+ */
+function nameRaces(rows: readonly { id: number; universeId: string | null; overridesRaceId: number | null; key: string | null; name: string | null }[]): Map<number, OptionName>
+{
 	const copies = new Map(rows
 		.filter((row) => (row.overridesRaceId !== null))
 		.map((row) => [row.overridesRaceId, row]));
@@ -94,6 +152,77 @@ export async function loadRaceNames(version: UniverseVersion, ruleset: Ruleset, 
  */
 export async function loadEditorRaces(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorRace[]>
 {
+	return(loadRaces(version, ruleset, undefined, executor));
+}
+
+/**
+ * One race a universe can use, as the editor lists it
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param raceId The race's ID
+ * @param executor The database, or a transaction
+ * @return The race, or undefined when the universe can't use a race with that ID (an edited copy's own
+ * ID included)
+ */
+export async function findEditorRace(version: UniverseVersion, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<EditorRace | undefined>
+{
+	return((await loadRaces(version, ruleset, raceId, executor))[0]);
+}
+
+/**
+ * Where one race a universe can use says its characters start, as findEditorRace() finds it, without
+ * the rest of its settings
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param raceId The race's ID
+ * @param executor The database, or a transaction
+ * @return The race's ID with its starting area and cell, or undefined when the universe can't use a race
+ * with that ID (an edited copy's own ID included)
+ */
+export async function findRaceStart(version: UniverseVersion, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<StartingAreaRace | undefined>
+{
+	const rows = await executor
+		.select({
+			id: races.id,
+			universeId: races.universeId,
+			overridesRaceId: races.overridesRaceId,
+			startingAreaId: races.startingAreaId,
+			startingColumn: races.startingColumn,
+			startingRow: races.startingRow
+		})
+		.from(races)
+		.where(usableRaces(version, ruleset, raceId));
+	const race = rows.find((row) => (row.overridesRaceId === null));
+
+	if (!race)
+	{
+		return(undefined);
+	}
+
+	const copy = ((race.universeId === null) ? rows.find((row) => (row.overridesRaceId === race.id)) : undefined);
+	const settings = (copy ?? race);
+
+	return({
+		id: race.id,
+		startingAreaId: settings.startingAreaId,
+		startingColumn: settings.startingColumn,
+		startingRow: settings.startingRow
+	});
+}
+
+/**
+ * The races a universe can use, or one of them, as the editor lists them
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param raceId The race's ID, or undefined for every race
+ * @param executor The database, or a transaction
+ * @return The races, by ID
+ */
+async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: number | undefined, executor: Executor): Promise<EditorRace[]>
+{
 	const rows = await executor
 		.select({
 			id: races.id,
@@ -113,10 +242,10 @@ export async function loadEditorRaces(version: UniverseVersion, ruleset: Ruleset
 			startingRow: races.startingRow
 		})
 		.from(races)
-		.where(usableRaces(version, ruleset))
+		.where(usableRaces(version, ruleset, raceId))
 		.orderBy(asc(races.id));
-	const rules = await loadRaceRules(version, ruleset, executor);
-	const startingItems = await loadRaceStartingItems(version, executor);
+	const rules = await loadRaceRules(version, ruleset, raceId, executor);
+	const startingItems = await loadRaceStartingItems(version, raceId, executor);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesRaceId !== null))
 		.map((row) => [row.overridesRaceId, row]));
@@ -203,16 +332,37 @@ export async function listBarredRaceIds(version: UniverseVersion, executor: Exec
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
+ * @param raceId Only this race's rows, or undefined for every race's
  * @return The condition
  */
-function usableRaces(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
+function usableRaces(version: UniverseVersion, ruleset: Ruleset, raceId?: number): SQL | undefined
 {
 	return(and(
 		eq(races.ruleset, ruleset),
 		or(
 			isNull(races.universeId),
 			inVersion(races, version)
-		)
+		),
+		raceRows(raceId)
+	));
+}
+
+/**
+ * Matches the rows of one race: the race's own, and its edited copies
+ *
+ * @param raceId The race's ID, or undefined to match every race's rows
+ * @return The condition, or undefined for every race
+ */
+function raceRows(raceId: number | undefined): SQL | undefined
+{
+	if (raceId === undefined)
+	{
+		return(undefined);
+	}
+
+	return(or(
+		eq(races.id, raceId),
+		eq(races.overridesRaceId, raceId)
 	));
 }
 
@@ -221,10 +371,11 @@ function usableRaces(version: UniverseVersion, ruleset: Ruleset): SQL | undefine
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
+ * @param raceId Only this race's rows, or undefined for every race's
  * @param executor The database, or a transaction
  * @return The rules, keyed by the ID of the row holding the race's settings
  */
-async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<Map<number, RaceRules>>
+async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, raceId: number | undefined, executor: Executor): Promise<Map<number, RaceRules>>
 {
 	switch (ruleset)
 	{
@@ -246,7 +397,7 @@ async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, executo
 				})
 				.from(pf1eRaces)
 				.innerJoin(races, eq(races.id, pf1eRaces.raceId))
-				.where(usableRaces(version, ruleset));
+				.where(usableRaces(version, ruleset, raceId));
 
 			return(new Map(rows.map((row): [number, Pf1eRaceRules] => [row.raceId, {
 				abilityModifiers: {
@@ -283,7 +434,7 @@ async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, executo
 				})
 				.from(sf1eRaces)
 				.innerJoin(races, eq(races.id, sf1eRaces.raceId))
-				.where(usableRaces(version, ruleset));
+				.where(usableRaces(version, ruleset, raceId));
 
 			return(new Map(rows.map((row): [number, Sf1eRaceRules] => [row.raceId, {
 				abilityModifiers: {
@@ -308,10 +459,11 @@ async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, executo
  * The extra starting equipment of each of a universe's rows of race settings
  *
  * @param version The universe's live version or draft
+ * @param raceId Only this race's rows, or undefined for every race's
  * @param executor The database, or a transaction
  * @return The items and how many of each, by item ID, keyed by the ID of the row holding the race's settings
  */
-async function loadRaceStartingItems(version: UniverseVersion, executor: Executor): Promise<Map<number, ItemQuantity[]>>
+async function loadRaceStartingItems(version: UniverseVersion, raceId: number | undefined, executor: Executor): Promise<Map<number, ItemQuantity[]>>
 {
 	const rows = await executor
 		.select({
@@ -321,7 +473,10 @@ async function loadRaceStartingItems(version: UniverseVersion, executor: Executo
 		})
 		.from(raceStartingItems)
 		.innerJoin(races, eq(races.id, raceStartingItems.raceId))
-		.where(inVersion(races, version))
+		.where(and(
+			inVersion(races, version),
+			raceRows(raceId)
+		))
 		.orderBy(asc(raceStartingItems.itemId));
 	const byRace = new Map<number, ItemQuantity[]>();
 

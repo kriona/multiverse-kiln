@@ -1,4 +1,4 @@
-import { ancestorAreas, isInBounds, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
+import { isInBounds, parentAreas, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -257,7 +257,9 @@ export class AreaSelectDialog
 		const chosen = matches.find((area) => (area.id === this.chosenAreaId));
 		const listed = (chosen ? [chosen, ...matches.filter((area) => (area !== chosen))] : matches).slice(0, MAX_RESULTS);
 
-		this.results.replaceChildren(...listed.map((area) => this.createChoice(area)));
+		const parents = parentAreas(this.areas);
+
+		this.results.replaceChildren(...listed.map((area) => this.createChoice(area, parents.get(area.id))));
 		this.results.hidden = (listed.length === 0);
 		this.none.hidden = (listed.length > 0);
 		this.submit.disabled = (chosen === undefined);
@@ -267,16 +269,16 @@ export class AreaSelectDialog
 	 * One area's choice: a radio button with the area's name, the area it is inside and whether it is disabled
 	 *
 	 * @param area The area
+	 * @param parent The area it is inside, if any
 	 * @return The choice's label, holding its radio button
 	 */
-	private createChoice(area: EditorAreaSummary): HTMLLabelElement
+	private createChoice(area: EditorAreaSummary, parent: EditorAreaSummary | undefined): HTMLLabelElement
 	{
 		const label = document.createElement('label');
 		const input = document.createElement('input');
 		const text = document.createElement('span');
 		const name = document.createElement('span');
 		const description = document.createElement('span');
-		const parent = ancestorAreas(this.areas, area.id)[0];
 		const notes: string[] = [];
 
 		if (parent)

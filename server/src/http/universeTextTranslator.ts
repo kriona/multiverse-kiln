@@ -5,7 +5,7 @@
 import { chooseUniverseLanguage, translationLanguagesFor, universeText, type OptionName, type UniverseTextField, type UniverseTextKind } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { listTranslationsIn } from '../db/universeTextRepo.js';
+import { listTranslationsIn, type WantedText } from '../db/universeTextRepo.js';
 
 /**
  * The languages of a universe
@@ -49,11 +49,11 @@ export class UniverseTextTranslator
 	 *
 	 * @param universe The universe and its languages
 	 * @param requested The languages asked for, most wanted first (requestLanguages())
-	 * @param kinds The kinds of text that will be shown, or undefined for every kind
+	 * @param kinds The kinds of text that will be shown, each whole or only some things', or undefined for every kind
 	 * @param executor The database, or a transaction
 	 * @return The translator
 	 */
-	static async load(universe: UniverseLanguages, requested: readonly string[], kinds?: readonly UniverseTextKind[], executor?: Executor): Promise<UniverseTextTranslator>
+	static async load(universe: UniverseLanguages, requested: readonly string[], kinds?: readonly WantedText[], executor?: Executor): Promise<UniverseTextTranslator>
 	{
 		const translators = await UniverseTextTranslator.loadAll([universe], requested, kinds, executor);
 
@@ -65,11 +65,11 @@ export class UniverseTextTranslator
 	 *
 	 * @param universes The universes and their languages
 	 * @param requested The languages asked for, most wanted first (requestLanguages())
-	 * @param kinds The kinds of text that will be shown, or undefined for every kind
+	 * @param kinds The kinds of text that will be shown, each whole or only some things', or undefined for every kind
 	 * @param executor The database, or a transaction
 	 * @return A translator for each universe, by ID
 	 */
-	static async loadAll(universes: readonly UniverseLanguages[], requested: readonly string[], kinds?: readonly UniverseTextKind[], executor?: Executor): Promise<Map<string, UniverseTextTranslator>>
+	static async loadAll(universes: readonly UniverseLanguages[], requested: readonly string[], kinds?: readonly WantedText[], executor?: Executor): Promise<Map<string, UniverseTextTranslator>>
 	{
 		const chosen = new Map(universes.map((universe) => [universe.id, chooseUniverseLanguage(requested, universe.sourceLanguage, universe.translationLanguages)]));
 		const rows = await listTranslationsIn(universes.map((universe) =>

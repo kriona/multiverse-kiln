@@ -1,4 +1,4 @@
-import type { Application } from 'express';
+import type { Application, Request } from 'express';
 import { z } from 'zod';
 import { canViewUniverse, editorAccessOf, MAX_UNIVERSE_NAME_LENGTH, MAX_UNIVERSES_PER_PAGE, UNIVERSES_PATH, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseTextPayload } from '@multiverse-kiln/shared';
 
@@ -10,7 +10,7 @@ import { findUniverseAccess, findUniverseRole } from '../db/universeEditorRepo.j
 import { findUniverseDetails, listUniverses } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { errorMessages, sendError, sendInvalidRequest } from './errors.js';
-import { requestLanguages } from './requestLanguages.js';
+import { rememberProfileLocale, requestLanguages } from './requestLanguages.js';
 import { universeTextCache } from './universeTextCache.js';
 import { UniverseTextTranslator } from './universeTextTranslator.js';
 
@@ -33,17 +33,19 @@ const universeKey = z.string().min(1).max(MAX_UNIVERSE_NAME_LENGTH * 2);
  * end of time, and a logged-in player one whose stage their role lets them play it in
  *
  * @param universe The universe
- * @param cookieHeader The request's Cookie header
+ * @param request The request, which remembers its player's profile language for requestLanguages()
  * @return True when they may
  */
-async function maySeeUniverse(universe: UniverseDetails, cookieHeader: string | undefined): Promise<boolean>
+async function maySeeUniverse(universe: UniverseDetails, request: Request): Promise<boolean>
 {
 	if (canViewUniverse(universe.stage, undefined))
 	{
 		return(true);
 	}
 
-	const session = await resolveSession(cookieHeader);
+	const session = await resolveSession(request.headers.cookie);
+
+	rememberProfileLocale(request, (session?.locale ?? null));
 
 	return((session !== undefined) && canViewUniverse(universe.stage, await findUniverseRole(universe.id, session.playerId)));
 }
@@ -54,12 +56,14 @@ async function maySeeUniverse(universe: UniverseDetails, cookieHeader: string | 
  * testers only play it, so they aren't shown the editor
  *
  * @param universe The universe
- * @param cookieHeader The request's Cookie header
+ * @param request The request, which remembers its player's profile language for requestLanguages()
  * @return Whether they may see it, and whether they may edit it
  */
-async function findPageAccess(universe: UniverseDetails, cookieHeader: string | undefined): Promise<{ visible: boolean; editable: boolean }>
+async function findPageAccess(universe: UniverseDetails, request: Request): Promise<{ visible: boolean; editable: boolean }>
 {
-	const session = await resolveSession(cookieHeader);
+	const session = await resolveSession(request.headers.cookie);
+
+	rememberProfileLocale(request, (session?.locale ?? null));
 
 	if (session === undefined)
 	{
@@ -135,7 +139,7 @@ export function addUniversesRoutes(app: Application): void
 		try
 		{
 			const universe = await findUniverseDetails(key.data);
-			const access = (universe ? await findPageAccess(universe, request.headers.cookie) : undefined);
+			const access = (universe ? await findPageAccess(universe, request) : undefined);
 
 			if (!universe || !access?.visible)
 			{
@@ -180,7 +184,7 @@ export function addUniversesRoutes(app: Application): void
 		{
 			const universe = await findUniverseDetails(key.data);
 
-			if (!universe || !await maySeeUniverse(universe, request.headers.cookie))
+			if (!universe || !await maySeeUniverse(universe, request))
 			{
 				sendError(response, 404, errorMessages.noSuchUniverse);
 				return;

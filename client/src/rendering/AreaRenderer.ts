@@ -25,6 +25,13 @@ const DRAW_MARGIN = GRID_CELL_SIZE * 4;
 const PIECE_SIZE = CHUNK_SIZE * GRID_CELL_SIZE;
 
 /**
+ * How far beyond the camera's view, in world units, pieces already drawn are kept. Further out than
+ * DRAW_MARGIN, so a view moving back and forth across the line where a piece is drawn doesn't drop it and
+ * draw it again each time
+ */
+const KEEP_MARGIN = DRAW_MARGIN + (PIECE_SIZE / 2);
+
+/**
  * Half a cell: how far up and left of the cells the frames are drawn, each centered on a corner where 4 cells meet
  */
 const HALF_CELL = GRID_CELL_SIZE / 2;
@@ -244,6 +251,11 @@ export class AreaRenderer
 	private readonly pieces = new Map<string, Piece>();
 
 	/**
+	 * The pieces showing chunks that have changed, by the same key as pieces, to draw again at the next update
+	 */
+	private readonly stalePieces = new Set<string>();
+
+	/**
 	 * The camera's view at the last update, for redrawing pieces between updates
 	 */
 	private lastView: Phaser.Geom.Rectangle | undefined;
@@ -284,13 +296,15 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws the pieces of the area the camera can see, or nearly, and drops the rest
+	 * Draws the pieces of the area the camera can see, or nearly, and drops the rest; pieces showing chunks
+	 * that have changed are drawn again
 	 *
 	 * @param view The camera's view of the world
 	 */
 	update(view: Phaser.Geom.Rectangle): void
 	{
 		this.lastView = view;
+		this.dropStalePieces();
 		this.drawPieces(view);
 
 		if (this.atlasFull)
@@ -302,7 +316,10 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Redraws the pieces showing chunks that have changed
+	 * Marks the pieces showing chunks that have changed, so the next update draws them again
+	 *
+	 * The scene calls update() on every frame, so changes made several times within a frame, such as each
+	 * cell of a brush stroke, draw each piece once. The pieces keep showing what they did until then
 	 *
 	 * @param chunkKeys The changed chunks, by chunkKey()
 	 */
@@ -312,16 +329,10 @@ export class AreaRenderer
 
 		for (const [key, piece] of this.pieces)
 		{
-			if ([...piece.chunks].some((chunk) => changed.has(chunk)))
+			if (!this.stalePieces.has(key) && [...piece.chunks].some((chunk) => changed.has(chunk)))
 			{
-				piece.map.destroy();
-				this.pieces.delete(key);
+				this.stalePieces.add(key);
 			}
-		}
-
-		if (this.lastView)
-		{
-			this.update(this.lastView);
 		}
 	}
 
@@ -417,6 +428,7 @@ export class AreaRenderer
 		}
 
 		this.pieces.clear();
+		this.stalePieces.clear();
 		this.scene.textures.remove(this.textureKey);
 	}
 
@@ -479,23 +491,23 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws the pieces of the area in or near a view, and drops the rest
+	 * Draws the pieces of the area within DRAW_MARGIN of a view, and drops those further out than KEEP_MARGIN
 	 *
 	 * @param view The camera's view of the world
 	 */
 	private drawPieces(view: Phaser.Geom.Rectangle): void
 	{
-		const wanted = new Set<string>();
-		const columns = this.pieceRange(view.x, view.right, this.area.bounds.minColumn, this.area.bounds.maxColumn, this.area.loopsEastWest);
-		const rows = this.pieceRange(view.y, view.bottom, this.area.bounds.minRow, this.area.bounds.maxRow, this.area.loopsNorthSouth);
+		const { bounds, loopsEastWest, loopsNorthSouth } = this.area;
+		const columns = this.pieceRange(view.x, view.right, DRAW_MARGIN, bounds.minColumn, bounds.maxColumn, loopsEastWest);
+		const rows = this.pieceRange(view.y, view.bottom, DRAW_MARGIN, bounds.minRow, bounds.maxRow, loopsNorthSouth);
+		const keptColumns = this.pieceRange(view.x, view.right, KEEP_MARGIN, bounds.minColumn, bounds.maxColumn, loopsEastWest);
+		const keptRows = this.pieceRange(view.y, view.bottom, KEEP_MARGIN, bounds.minRow, bounds.maxRow, loopsNorthSouth);
 
 		for (let pieceRow = rows.first; pieceRow <= rows.last; pieceRow++)
 		{
 			for (let pieceColumn = columns.first; pieceColumn <= columns.last; pieceColumn++)
 			{
 				const key = chunkKey(pieceColumn, pieceRow);
-
-				wanted.add(key);
 
 				if (!this.pieces.has(key))
 				{
@@ -506,7 +518,9 @@ export class AreaRenderer
 
 		for (const [key, piece] of this.pieces)
 		{
-			if (!wanted.has(key))
+			const { chunkColumn, chunkRow } = parseChunkKey(key);
+
+			if ((chunkColumn < keptColumns.first) || (chunkColumn > keptColumns.last) || (chunkRow < keptRows.first) || (chunkRow > keptRows.last))
 			{
 				piece.map.destroy();
 				this.pieces.delete(key);
@@ -537,6 +551,20 @@ export class AreaRenderer
 	}
 
 	/**
+	 * Drops the pieces showing chunks that have changed, so drawPieces() draws them again
+	 */
+	private dropStalePieces(): void
+	{
+		for (const key of this.stalePieces)
+		{
+			this.pieces.get(key)?.map.destroy();
+			this.pieces.delete(key);
+		}
+
+		this.stalePieces.clear();
+	}
+
+	/**
 	 * Empties the atlas and drops every piece, so the pieces drawn next fill it with only the frames they need
 	 */
 	private clearAtlas(): void
@@ -547,6 +575,7 @@ export class AreaRenderer
 		}
 
 		this.pieces.clear();
+		this.stalePieces.clear();
 		this.frames.clear();
 		this.nextFrame = GRID_FRAME + 1;
 		this.atlasFull = false;
@@ -582,21 +611,22 @@ export class AreaRenderer
 	}
 
 	/**
-	 * The pieces along one axis that cover a stretch of the world, plus the margin
+	 * The pieces along one axis that cover a stretch of the world, plus a margin
 	 *
 	 * Along an axis that doesn't loop, only pieces that hold some of the area's corners are drawn
 	 *
 	 * @param start Where the view starts, in world units
 	 * @param end Where the view ends, in world units
+	 * @param margin How far beyond the view to cover, in world units
 	 * @param minCell The area's first column or row
 	 * @param maxCell The area's last column or row
 	 * @param loops Whether the area loops along this axis
 	 * @return The first and last piece, which may be an empty range
 	 */
-	private pieceRange(start: number, end: number, minCell: number, maxCell: number, loops: boolean): { first: number; last: number }
+	private pieceRange(start: number, end: number, margin: number, minCell: number, maxCell: number, loops: boolean): { first: number; last: number }
 	{
-		const first = Math.floor(((start - DRAW_MARGIN) + HALF_CELL) / PIECE_SIZE);
-		const last = Math.floor(((end + DRAW_MARGIN) + HALF_CELL) / PIECE_SIZE);
+		const first = Math.floor(((start - margin) + HALF_CELL) / PIECE_SIZE);
+		const last = Math.floor(((end + margin) + HALF_CELL) / PIECE_SIZE);
 
 		if (loops)
 		{

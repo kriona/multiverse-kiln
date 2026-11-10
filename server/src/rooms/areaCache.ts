@@ -46,18 +46,30 @@ export type AreaLoader = (areaId: string) => Promise<LoadedArea | undefined>;
 export type ChunkReader = (areaId: string, chunks: { chunkColumn: number; chunkRow: number }[]) => Promise<AreaChunk[]>;
 
 /**
+ * How long an area stays loaded after it was last asked for (see forgetIdle), while nobody is in it.
+ * It covers the time between a room loading an area and putting a player in it, and keeps an area
+ * players soon come back to from being read again
+ */
+export const AREA_IDLE_MS = 60_000;
+
+/**
  * The areas a room has loaded, so each is read from the database once however many players use it,
  * and the chunks of them near the players
  *
  * Loading happens outside the simulation tick: the tick only reads what is already here (get), a
  * player waits while the area they are heading for loads (load), and chunks arrive while players
  * move toward them (loadChunks). An area can be up to MAX_AREA_SIDE across, so only the chunks
- * near players are kept
+ * near players are kept, and areas nobody uses are forgotten (forgetIdle)
  */
 export class AreaCache
 {
 	private readonly areas = new Map<string, ActiveArea>();
 	private readonly loading = new Map<string, Promise<ActiveArea | undefined>>();
+
+	/**
+	 * When each area was last asked for with load(), in milliseconds by the cache's clock
+	 */
+	private readonly usedAt = new Map<string, number>();
 
 	/**
 	 * The reads under way for each area's chunks, by chunkKey(), so no chunk is asked for twice at once
@@ -68,8 +80,9 @@ export class AreaCache
 	/**
 	 * @param loadArea Reads an area's settings, links and tiles
 	 * @param readChunks Reads some of an area's stored chunks
+	 * @param now The time in milliseconds, for how long areas have gone unused
 	 */
-	constructor(private readonly loadArea: AreaLoader, private readonly readChunks: ChunkReader)
+	constructor(private readonly loadArea: AreaLoader, private readonly readChunks: ChunkReader, private readonly now: () => number = Date.now)
 	{
 	}
 
@@ -107,6 +120,7 @@ export class AreaCache
 
 		if (area)
 		{
+			this.usedAt.set(areaId, this.now());
 			return(area);
 		}
 
@@ -305,7 +319,7 @@ export class AreaCache
 
 		if (!loaded)
 		{
-			this.areas.delete(areaId);
+			this.forget(areaId);
 			return(undefined);
 		}
 
@@ -317,13 +331,33 @@ export class AreaCache
 	}
 
 	/**
-	 * Forgets an area, such as one that has been deleted
+	 * Forgets an area, such as one that has been deleted or that nobody is using
 	 *
 	 * @param areaId The area's ID
 	 */
 	forget(areaId: string): void
 	{
 		this.areas.delete(areaId);
+		this.usedAt.delete(areaId);
+		this.pendingChunks.delete(areaId);
+	}
+
+	/**
+	 * Forgets the areas not asked for with load() in the last AREA_IDLE_MS, other than those still in use
+	 *
+	 * @param inUse Whether an area is in use, such as one players are in or on their way to
+	 */
+	forgetIdle(inUse: (areaId: string) => boolean): void
+	{
+		const now = this.now();
+
+		for (const areaId of this.areas.keys())
+		{
+			if (!inUse(areaId) && ((now - (this.usedAt.get(areaId) ?? 0)) >= AREA_IDLE_MS))
+			{
+				this.forget(areaId);
+			}
+		}
 	}
 
 	/**
@@ -344,6 +378,7 @@ export class AreaCache
 		const area = activate(loaded, new Map(), new Set());
 
 		this.areas.set(areaId, area);
+		this.usedAt.set(areaId, this.now());
 
 		return(area);
 	}

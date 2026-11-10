@@ -19,13 +19,13 @@ import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
 import { countUniverseGroups } from '../db/groupRepo.js';
 import { findDisplayName, findEmailRecipient, findPasswordHash, findPlayerEmail } from '../db/playerRepo.js';
 import { listTileGraphicStorageKeys } from '../db/tileGraphicRepo.js';
-import { inTransaction } from '../db/transactions.js';
+import { inBulkTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listUniverseEditors } from '../db/universeEditorRepo.js';
 import { deleteUniverse, findUniverse, isUniverseDeletionPrevented, lockUniverse } from '../db/universeRepo.js';
 import { sendEmailInBackground } from '../email/mailer.js';
 import { universeDeletedEmail } from '../email/universeEmails.js';
-import { deleteObject } from '../storage/objectStorage.js';
+import { deleteObjects } from '../storage/objectStorage.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { authMessages, cookieTokenHash, sendRefusal, type AuthRefusal } from './authCommon.js';
 import { clearCookie, CONTINUATION_COOKIE } from './cookies.js';
@@ -150,7 +150,7 @@ async function deletionRoute(request: Request, response: Response): Promise<void
 async function deleteAsCreatorRoute(request: Request, response: Response): Promise<void>
 {
 	await deleteUniverseRoute(request, response, universeContextOf(request).universe.id, {
-		inTransaction,
+		inTransaction: inBulkTransaction,
 		check: checkCreatorMayDelete,
 		asAdmin: false
 	});
@@ -353,7 +353,7 @@ export async function deleteUniverseRoute(request: Request, response: Response, 
 		universeId
 	});
 	await emailUniverseDeleted(outcome.universeName, outcome.editorIds, (deleter.asAdmin ? null : outcome.deleterName));
-	await deleteStoredUploads(outcome.storageKeys);
+	await deleteObjects(outcome.storageKeys);
 }
 
 /**
@@ -388,7 +388,7 @@ export async function emailUniverseDeleted(universeName: string, editorIds: read
  * groups, characters and chats
  *
  * @param universeId The universe
- * @param executor A transaction, which deleteStoredUploads() follows once it commits
+ * @param executor A transaction, which deleteObjects() follows once it commits
  * @return Where its uploaded tile graphics are in object storage, to delete once the transaction commits
  */
 export async function deleteUniverseWithUploads(universeId: string, executor: Executor): Promise<string[]>
@@ -398,25 +398,4 @@ export async function deleteUniverseWithUploads(universeId: string, executor: Ex
 	await deleteUniverse(universeId, executor);
 
 	return(storageKeys);
-}
-
-/**
- * Deletes the uploads of deleted universes from object storage, logging those that can't be deleted
- * rather than failing, since the universes are gone either way
- *
- * @param storageKeys Their keys in object storage
- */
-export async function deleteStoredUploads(storageKeys: readonly string[]): Promise<void>
-{
-	for (const storageKey of storageKeys)
-	{
-		try
-		{
-			await deleteObject(storageKey);
-		}
-		catch (error)
-		{
-			console.error(`Could not delete the image ${storageKey}:`, error);
-		}
-	}
 }

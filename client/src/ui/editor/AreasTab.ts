@@ -1,4 +1,4 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, parentAreas, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -1035,6 +1035,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		const editable = (canEditWorld(universe.role) && !deleted);
 		const areas = this.allAreas();
 		const excluded = descendantAreaIds(areas, area.id).add(area.id);
+		const parents = parentAreas(areas);
 		const isLobby = (area.id === this.areas.lobbyAreaId);
 		const isStart = (area.id === this.areas.startingAreaId);
 
@@ -1056,7 +1057,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 				.map((other) => ({
 					value: other.id,
 					name: other.name,
-					detail: ancestorAreas(areas, other.id)[0]?.name
+					detail: parents.get(other.id)?.name
 				}))
 		]);
 		this.fillSettings(area);

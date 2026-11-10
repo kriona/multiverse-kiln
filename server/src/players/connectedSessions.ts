@@ -81,6 +81,17 @@ export class ConnectedSessions
 	}
 
 	/**
+	 * Whether a session has at least one window connected
+	 *
+	 * @param sessionId The session
+	 * @return Whether it has
+	 */
+	has(sessionId: string): boolean
+	{
+		return(this.windows.has(sessionId));
+	}
+
+	/**
 	 * Tells the rooms that sessions have ended, and stops counting them
 	 *
 	 * @param sessionIds The sessions, already deleted from the database

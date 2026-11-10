@@ -8,7 +8,7 @@ import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type ItemDi
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
-import { countCustomItems, createCustomItem, deleteCustomItem, findItemKind, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findItem, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
 import { isRaceStartingItem } from '../db/raceRepo.js';
 import { isStartingItem } from '../db/startingItemRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
@@ -106,21 +106,6 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 }
 
 /**
- * Whether an item is enabled, as the changes before this one left it
- *
- * @param context The save
- * @param itemId The item, which exists
- * @return True when it is
- */
-async function isItemEnabled(context: ChangeContext, itemId: number): Promise<boolean>
-{
-	const { universe, version, transaction } = context;
-	const [item] = (await listEditorItems(version, universe.ruleset, { ids: [itemId] }, transaction)).items;
-
-	return(item?.enabled ?? true);
-}
-
-/**
  * Changes one of the universe's items, or stores its edited copy of a default item. Once the save has
  * saved every change, an item it disables with remove is taken from the characters carrying it, and one
  * it enables gives back what was taken (see editorDisablings.ts)
@@ -134,10 +119,10 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 {
 	const { universe, version, transaction } = context;
 	const itemId = resolveNumberRef(context, id);
-	const kind = await findItemKind(version, universe.ruleset, itemId, transaction);
+	const item = await findItem(version, universe.ruleset, itemId, transaction);
 	const { name } = settings;
 
-	if (kind === undefined)
+	if (item === undefined)
 	{
 		refuse(404, messages.noSuchItem);
 	}
@@ -147,9 +132,9 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 		refuse(400, messages.unknownItemType);
 	}
 
-	context.disablings.item(itemId, await isItemEnabled(context, itemId), (settings.enabled ? undefined : whenDisabled));
+	context.disablings.item(itemId, item.enabled, (settings.enabled ? undefined : whenDisabled));
 
-	if (kind === 'default')
+	if (item.kind === 'default')
 	{
 		await saveEditedDefaultItem(version, universe.ruleset, itemId, settings, transaction);
 	}
@@ -174,17 +159,17 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 {
 	const { universe, version, transaction } = context;
 	const itemId = resolveNumberRef(context, id);
-	const kind = await findItemKind(version, universe.ruleset, itemId, transaction);
+	const item = await findItem(version, universe.ruleset, itemId, transaction);
 
-	if (kind === undefined)
+	if (item === undefined)
 	{
 		refuse(404, messages.noSuchItem);
 	}
 
 	// Default items are enabled, so restoring one gives back what was taken while it was disabled
-	if (kind === 'default')
+	if (item.kind === 'default')
 	{
-		context.disablings.item(itemId, await isItemEnabled(context, itemId));
+		context.disablings.item(itemId, item.enabled);
 		await restoreDefaultItem(version, itemId, transaction);
 		await deleteUniverseTextOf(version, 'item', itemId, transaction);
 		return;

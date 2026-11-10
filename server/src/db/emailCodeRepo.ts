@@ -202,7 +202,7 @@ export async function deletePlayerEmailCodes(playerId: string, executor: Executo
  */
 export async function deleteStaleEmailCodes(now: Date, executor: Executor = db): Promise<number>
 {
-	const rows = await executor
+	const result = await executor
 		.delete(emailCodes)
 		.where(and(
 			lte(emailCodes.sentAt, new Date(now.getTime() - EMAIL_CODE_LIFETIME_MS)),
@@ -210,10 +210,7 @@ export async function deleteStaleEmailCodes(now: Date, executor: Executor = db):
 				isNull(emailCodes.continuationExpiresAt),
 				lte(emailCodes.continuationExpiresAt, now)
 			)
-		))
-		.returning({
-			id: emailCodes.id
-		});
+		));
 
-	return(rows.length);
+	return(result.rowCount ?? 0);
 }

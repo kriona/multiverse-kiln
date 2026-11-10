@@ -129,6 +129,23 @@ interface PageText
 type PageNode = PageElement | PageText;
 
 /**
+ * What one TypeScript file holds, with the modification time and size it was read at
+ */
+interface CodeFileMessages
+{
+	modified: number;
+	size: number;
+	found: FoundMessage[];
+	problems: string[];
+}
+
+/**
+ * Each TypeScript file's messages by its full path, kept between calls so the client's dev server,
+ * which extracts after every save, re-parses only the files that changed
+ */
+const codeFiles = new Map<string, CodeFileMessages>();
+
+/**
  * What extracting the messages found
  */
 export interface Extraction
@@ -154,12 +171,25 @@ export function extractMessages(root: string): Extraction
 {
 	const problems: string[] = [];
 	const found: FoundMessage[] = [];
+	const listed = new Set<string>();
 
 	for (const folder of SOURCE_FOLDERS)
 	{
 		for (const file of listTypeScriptFiles(path.join(root, folder)))
 		{
-			findCodeMessages(file, root, found, problems);
+			const messages = codeFileMessages(file, root);
+
+			listed.add(file);
+			found.push(...messages.found);
+			problems.push(...messages.problems);
+		}
+	}
+
+	for (const file of codeFiles.keys())
+	{
+		if (!listed.has(file))
+		{
+			codeFiles.delete(file);
 		}
 	}
 
@@ -277,6 +307,43 @@ function listTypeScriptFiles(folder: string): string[]
 }
 
 /**
+ * The messages in a TypeScript file and their problems: from the cache while the file's modification
+ * time and size are the same, otherwise read again. A file whose text names neither defaultMessage nor
+ * defineMessages can't hold a message, so it isn't parsed
+ *
+ * @param file The file's full path
+ * @param root The repository's root folder, which locations are given from
+ * @return The file's messages and problems
+ */
+function codeFileMessages(file: string, root: string): CodeFileMessages
+{
+	const stats = fs.statSync(file);
+	const cached = codeFiles.get(file);
+
+	if (cached && (cached.modified === stats.mtimeMs) && (cached.size === stats.size))
+	{
+		return(cached);
+	}
+
+	const messages: CodeFileMessages = {
+		modified: stats.mtimeMs,
+		size: stats.size,
+		found: [],
+		problems: []
+	};
+	const text = fs.readFileSync(file, 'utf8');
+
+	if (text.includes('defaultMessage') || text.includes('defineMessages'))
+	{
+		findCodeMessages(file, text, root, messages.found, messages.problems);
+	}
+
+	codeFiles.set(file, messages);
+
+	return(messages);
+}
+
+/**
  * Finds the messages declared in a TypeScript file
  *
  * A message is an object literal with a defaultMessage given as a string literal, wherever it is: where
@@ -284,13 +351,14 @@ function listTypeScriptFiles(folder: string): string[]
  * extractor can read it without running the code
  *
  * @param file The file's path
+ * @param text The file's text
  * @param root The repository's root folder, which locations are given from
  * @param found Where to add the messages
  * @param problems Where to add problems
  */
-function findCodeMessages(file: string, root: string, found: FoundMessage[], problems: string[]): void
+function findCodeMessages(file: string, text: string, root: string, found: FoundMessage[], problems: string[]): void
 {
-	const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+	const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
 
 	/**
 	 * Where a node is, as "path:line"

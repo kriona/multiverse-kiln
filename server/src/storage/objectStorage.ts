@@ -5,7 +5,7 @@
  *
  * The only module that talks to the storage service
  */
-import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, DeleteObjectsCommand, GetObjectCommand, HeadBucketCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 /**
  * The storage service's settings
@@ -17,6 +17,32 @@ interface StorageSettings
 }
 
 let settings: StorageSettings | undefined;
+
+/**
+ * How long connecting to the storage service may take. The S3 client's own defaults have no timeouts,
+ * so it would wait forever on a storage service that stops answering, holding the request that needed it
+ */
+const STORAGE_CONNECTION_TIMEOUT_MS = 3000;
+
+/**
+ * How long a storage request may take from sending it to the response's headers. The files stored
+ * are small (tile graphics are at most MAX_TILE_GRAPHIC_BYTES), so this is generous
+ */
+const STORAGE_REQUEST_TIMEOUT_MS = 10000;
+
+/**
+ * How long a storage request's connection may go without sending or receiving anything, which also
+ * covers reading the response's body. The S3 client tries a request three times, so a storage service
+ * that accepts connections and never answers fails it after about 12 seconds. Kept under 6 seconds:
+ * the HTTP handler watches the socket from the start for shorter timeouts, but starts watching longer
+ * ones only 3 seconds in, and not at all once the response's headers have arrived
+ */
+const STORAGE_SOCKET_TIMEOUT_MS = 4000;
+
+/**
+ * The most keys one DeleteObjects request may name
+ */
+const MAX_KEYS_PER_DELETE = 1000;
 
 /**
  * The storage service's settings, read from the environment the first time they are needed, so the
@@ -50,6 +76,12 @@ function storage(): StorageSettings
 			credentials: {
 				accessKeyId,
 				secretAccessKey
+			},
+			requestHandler: {
+				connectionTimeout: STORAGE_CONNECTION_TIMEOUT_MS,
+				requestTimeout: STORAGE_REQUEST_TIMEOUT_MS,
+				throwOnRequestTimeout: true,
+				socketTimeout: STORAGE_SOCKET_TIMEOUT_MS
 			}
 		})
 	};
@@ -108,18 +140,39 @@ export async function getObject(key: string): Promise<Buffer | undefined>
 }
 
 /**
- * Deletes a stored file, if there is one
+ * Deletes stored files, up to MAX_KEYS_PER_DELETE in each request. A key with nothing stored under it
+ * counts as deleted. Files that can't be deleted are logged rather than failing: callers delete the
+ * files of rows already gone, and nothing serves a file without its row
  *
- * @param key Its key
+ * @param keys Their keys
  */
-export async function deleteObject(key: string): Promise<void>
+export async function deleteObjects(keys: readonly string[]): Promise<void>
 {
-	const { client, bucket } = storage();
+	for (let start = 0; start < keys.length; start += MAX_KEYS_PER_DELETE)
+	{
+		const batch = keys.slice(start, (start + MAX_KEYS_PER_DELETE));
 
-	await client.send(new DeleteObjectCommand({
-		Bucket: bucket,
-		Key: key
-	}));
+		try
+		{
+			const { client, bucket } = storage();
+			const result = await client.send(new DeleteObjectsCommand({
+				Bucket: bucket,
+				Delete: {
+					Objects: batch.map((key) => ({ Key: key })),
+					Quiet: true
+				}
+			}));
+
+			for (const failure of (result.Errors ?? []))
+			{
+				console.error(`Could not delete the stored file ${failure.Key}: ${failure.Code} ${failure.Message}`);
+			}
+		}
+		catch (error)
+		{
+			console.error(`Could not delete the stored files ${batch.join(', ')}:`, error);
+		}
+	}
 }
 
 /**

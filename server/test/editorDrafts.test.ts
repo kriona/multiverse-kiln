@@ -1,12 +1,13 @@
 import assert from 'assert';
-import { universeSlug, type AreaListPayload, type ChangeImpact, type EditableUniverse, type EditorChange, type RaceListPayload, type SaveChangesPayload, type SaveImpactPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { universeSlug, type AreaListPayload, type ChangeImpact, type EditableUniverse, type EditorChange, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type SaveImpactPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions } from '../src/db/barredOptions.js';
-import { findCharacterDetails } from '../src/db/characterRepo.js';
+import { createCharacter, findCharacterDetails } from '../src/db/characterRepo.js';
+import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { deleteUniverse, hasDraft } from '../src/db/universeRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addCharacter, addPlayableUniverse, addUniverse, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, send, type Editor, type EditorResponse } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -173,6 +174,34 @@ describe('Universe drafts', () =>
 		assert.ok((await loadBarredOptions(universe.universeId)).raceIds.has(dwarfId));
 		assert.ok(published.some((change) => ((change.kind === 'area') && (change.areaId === universe.houseAreaId))));
 		assert.strictEqual((await findCharacterDetails(playerId, universe.universeId, 'pf1e', brokkId))?.raceId, dwarfId);
+	});
+
+	it('keeps the items the draft deleted that characters carry, disabled, and deletes the rest', async () =>
+	{
+		const created = await saveAll(ada, universe.universeId, [
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } },
+			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', type: 'rope', enabled: true } }
+		]);
+		const torchId = Number(created['new:torch']);
+		const ropeId = Number(created['new:rope']);
+		const thora = await dwarfFighter(playerId, universe.universeId, 'Thora');
+
+		thora.items = [{ itemId: torchId, quantity: 1 }];
+		await inTransaction((transaction) => createCharacter(thora, transaction));
+		await saveAll(ada, universe.universeId, [{ kind: 'startDraft' }]);
+
+		const draftItems = (await send<ItemListPayload>(ada, 'GET', `/${universe.universeId}/items?custom=true&version=draft`)).body.items;
+		const removed = await saveToDraft(draftItems.map((item): EditorChange => ({ kind: 'removeItem', id: item.id })));
+
+		assert.strictEqual(removed.status, 200, JSON.stringify(removed.body));
+		assert.strictEqual(draftItems.length, 2);
+
+		await saveAll(ada, universe.universeId, [{ kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {} } }]);
+
+		const liveItems = (await send<ItemListPayload>(ada, 'GET', `/${universe.universeId}/items?custom=true`)).body.items;
+
+		assert.deepStrictEqual(liveItems.map((item) => [item.id, item.enabled]), [[torchId, false]]);
+		assert.ok(!liveItems.some((item) => (item.id === ropeId)));
 	});
 
 	it('refuses a save that applies or discards the draft with other changes, or starts it before them, changing nothing', async () =>

@@ -108,6 +108,32 @@ export function ancestorAreas<T extends AreaTreeNode>(areas: readonly T[], areaI
 }
 
 /**
+ * The area each area is directly inside, for showing beside every area of a list without searching the
+ * areas once per area
+ *
+ * @param areas Every area of the universe
+ * @return Each area's parent by the area's ID, leaving out top-level areas and areas whose parent isn't
+ * among the areas or is the area itself
+ */
+export function parentAreas<T extends AreaTreeNode>(areas: readonly T[]): Map<string, T>
+{
+	const byId = new Map(areas.map((area) => [area.id, area]));
+	const parents = new Map<string, T>();
+
+	for (const area of areas)
+	{
+		const parent = ((area.parentAreaId === null) ? undefined : byId.get(area.parentAreaId));
+
+		if ((parent !== undefined) && (parent.id !== area.id))
+		{
+			parents.set(area.id, parent);
+		}
+	}
+
+	return(parents);
+}
+
+/**
  * Every area inside an area, however deep
  *
  * @param areas Every area of the universe

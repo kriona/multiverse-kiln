@@ -4,8 +4,8 @@
  */
 import { defineMessages } from '@multiverse-kiln/shared';
 
-import { loadEditorItems } from '../db/itemRepo.js';
-import { listAreas } from '../db/areaRepo.js';
+import { loadEditorItemsIn } from '../db/itemRepo.js';
+import { findAreaIdsIn } from '../db/areaRepo.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 
 /**
@@ -54,11 +54,9 @@ export async function checkStartingReferences(context: ChangeContext, references
 
 	if (areaIds.length > 0)
 	{
-		const usableAreaIds = new Set((await listAreas(version, transaction))
-			.map((area) => area.id)
-			.filter((areaId) => (areaId !== universe.lobbyAreaId)));
+		const foundAreaIds = await findAreaIdsIn(version, areaIds, transaction);
 
-		if (!areaIds.every((areaId) => usableAreaIds.has(areaId)))
+		if (!areaIds.every((areaId) => (foundAreaIds.has(areaId) && (areaId !== universe.lobbyAreaId))))
 		{
 			refuse(400, startingMessages.unusableStartingArea);
 		}
@@ -66,7 +64,7 @@ export async function checkStartingReferences(context: ChangeContext, references
 
 	if (itemIds.length > 0)
 	{
-		const usableItemIds = new Set((await loadEditorItems(version, universe.ruleset, transaction)).map((item) => item.id));
+		const usableItemIds = new Set((await loadEditorItemsIn(version, universe.ruleset, itemIds, transaction)).map((item) => item.id));
 
 		if (!itemIds.every((itemId) => usableItemIds.has(itemId)))
 		{
