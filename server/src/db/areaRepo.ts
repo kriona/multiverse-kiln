@@ -389,6 +389,34 @@ export async function listAreas(version: UniverseVersion, executor: Executor = d
 }
 
 /**
+ * Which of some areas are in a universe's version, without loading its other areas
+ *
+ * @param version The universe's live version or draft
+ * @param areaIds The areas' IDs
+ * @param executor The database, or a transaction
+ * @return The IDs of those areas the version has
+ */
+export async function findAreaIdsIn(version: UniverseVersion, areaIds: readonly string[], executor: Executor = db): Promise<Set<string>>
+{
+	if (areaIds.length === 0)
+	{
+		return(new Set());
+	}
+
+	const rows = await executor
+		.select({
+			id: areas.id
+		})
+		.from(areas)
+		.where(and(
+			inVersion(areas, version),
+			inArray(areas.id, [...new Set(areaIds)])
+		));
+
+	return(new Set(rows.map((row) => row.id)));
+}
+
+/**
  * How many areas a universe has
  *
  * @param version The universe's live version or draft

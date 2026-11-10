@@ -5,10 +5,11 @@ import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAUL
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
-import { liveVersion } from '../../src/db/universeVersions.js';
+import { startDraft } from '../../src/db/universeDraftRepo.js';
+import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
 import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea } from './fixtures.js';
 
@@ -176,6 +177,24 @@ describe('areaRepo', () =>
 			});
 			assert.deepStrictEqual((await listAreas(liveVersion(universeId))).map((area) => area.name), ['Abbey', 'Village']);
 			assert.strictEqual(await countAreas(liveVersion(universeId)), 2);
+		});
+
+		it('finds which of some areas are in a version, leaving out other universes\' and the draft\'s', async () =>
+		{
+			const universeId = await addUniverse();
+			const villageId = await addArea(universeId, 'Village');
+			const abbeyId = await addArea(universeId, 'Abbey');
+			const elsewhereId = await addArea(await addUniverse('Other'), 'Elsewhere');
+			const missingId = randomUUID();
+
+			await inTransaction((transaction) => startDraft(universeId, transaction));
+
+			const draftIds = (await listAreas(draftVersion(universeId))).map((area) => area.id);
+
+			assert.deepStrictEqual(await findAreaIdsIn(liveVersion(universeId), [villageId, elsewhereId, villageId, missingId, ...draftIds]), new Set([villageId]));
+			assert.deepStrictEqual(await findAreaIdsIn(draftVersion(universeId), [villageId, abbeyId, ...draftIds]), new Set(draftIds));
+			assert.deepStrictEqual(await findAreaIdsIn(liveVersion(universeId), []), new Set());
+			assert.strictEqual(draftIds.length, 2);
 		});
 	});
 
