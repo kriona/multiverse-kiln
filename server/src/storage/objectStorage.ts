@@ -19,6 +19,27 @@ interface StorageSettings
 let settings: StorageSettings | undefined;
 
 /**
+ * How long connecting to the storage service may take. The S3 client's own defaults have no timeouts,
+ * so it would wait forever on a storage service that stops answering, holding the request that needed it
+ */
+const STORAGE_CONNECTION_TIMEOUT_MS = 3000;
+
+/**
+ * How long a storage request may take from sending it to the response's headers. The files stored
+ * are small (tile graphics are at most MAX_TILE_GRAPHIC_BYTES), so this is generous
+ */
+const STORAGE_REQUEST_TIMEOUT_MS = 10000;
+
+/**
+ * How long a storage request's connection may go without sending or receiving anything, which also
+ * covers reading the response's body. The S3 client tries a request three times, so a storage service
+ * that accepts connections and never answers fails it after about 12 seconds. Kept under 6 seconds:
+ * the HTTP handler watches the socket from the start for shorter timeouts, but starts watching longer
+ * ones only 3 seconds in, and not at all once the response's headers have arrived
+ */
+const STORAGE_SOCKET_TIMEOUT_MS = 4000;
+
+/**
  * The storage service's settings, read from the environment the first time they are needed, so the
  * server runs without storage until something is uploaded or served
  *
@@ -50,6 +71,12 @@ function storage(): StorageSettings
 			credentials: {
 				accessKeyId,
 				secretAccessKey
+			},
+			requestHandler: {
+				connectionTimeout: STORAGE_CONNECTION_TIMEOUT_MS,
+				requestTimeout: STORAGE_REQUEST_TIMEOUT_MS,
+				throwOnRequestTimeout: true,
+				socketTimeout: STORAGE_SOCKET_TIMEOUT_MS
 			}
 		})
 	};
