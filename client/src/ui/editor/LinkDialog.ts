@@ -1,4 +1,4 @@
-import { ancestorAreas, isInBounds, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { isInBounds, parentAreas, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type Ruleset, type AreaLinkMode, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -247,10 +247,12 @@ export class LinkDialog
 		this.pickDestination.checked = true;
 		this.deleteButton.hidden = !link;
 		this.fields.disabled = false;
+		const parents = parentAreas(target.areas);
+
 		this.targetArea.setChoices(others.map((area) => ({
 			value: area.id,
 			name: area.name,
-			detail: ancestorAreas(target.areas, area.id)[0]?.name
+			detail: parents.get(area.id)?.name
 		})));
 		this.targetArea.value = (link?.targetAreaId ?? others[0]?.id ?? '');
 		setFieldError(this.targetArea.field, undefined);

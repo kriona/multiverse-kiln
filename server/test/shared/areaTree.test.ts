@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { ancestorAreas, childAreas, descendantAreaIds, areasTabListing, type AreaTreeNode } from '@multiverse-kiln/shared';
+import { ancestorAreas, childAreas, descendantAreaIds, parentAreas, areasTabListing, type AreaTreeNode } from '@multiverse-kiln/shared';
 
 /**
  * An area with no parent, or inside another
@@ -65,7 +65,7 @@ describe('area tree (shared)', () =>
 		});
 	});
 
-	describe('childAreas, ancestorAreas and descendantAreaIds', () =>
+	describe('childAreas, ancestorAreas, parentAreas and descendantAreaIds', () =>
 	{
 		const areas = [
 			area('world'),
@@ -85,6 +85,17 @@ describe('area tree (shared)', () =>
 		{
 			assert.deepStrictEqual(ids(ancestorAreas(areas, 'inn')), ['city', 'continent', 'world']);
 			assert.deepStrictEqual(ancestorAreas(areas, 'moon'), []);
+		});
+
+		it('finds the area each area is directly inside', () =>
+		{
+			const parents = parentAreas([...areas, area('cave', 'missing'), area('self', 'self')]);
+
+			assert.deepStrictEqual([...parents].map(([id, parent]) => [id, parent.id]), [
+				['continent', 'world'],
+				['city', 'continent'],
+				['inn', 'city']
+			]);
 		});
 
 		it('finds every area inside an area, however deep', () =>
