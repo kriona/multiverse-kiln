@@ -12,15 +12,15 @@ import { z } from 'zod';
 import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
-import { loadEditorClasses } from '../db/classRepo.js';
+import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { findMembership } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
-import { loadEditorItems, loadEditorItemsIn } from '../db/itemRepo.js';
-import { loadEditorRaces } from '../db/raceRepo.js';
+import { loadEditorItemsIn } from '../db/itemRepo.js';
+import { findEditorRace, loadEditorRaces } from '../db/raceRepo.js';
 import { findPf1eSettings, findSf1eSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
-import { loadEditorThemes } from '../db/themeRepo.js';
+import { findEditorTheme, loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
@@ -805,9 +805,9 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const race = (await loadEditorRaces(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === raceId) && option.enabled));
+		const race = await findEditorRace(liveVersion(universeId), universe.ruleset, raceId, transaction);
 
-		if (!race)
+		if (!race?.enabled)
 		{
 			return({
 				status: 409,
@@ -815,9 +815,9 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const characterClass = (await loadEditorClasses(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === classId) && option.enabled));
+		const characterClass = await findEditorClass(liveVersion(universeId), universe.ruleset, classId, transaction);
 
-		if (!characterClass)
+		if (!characterClass?.enabled)
 		{
 			return({
 				status: 409,
@@ -825,11 +825,11 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const theme = (rulesetHasThemes(universe.ruleset)
-			? (await loadEditorThemes(liveVersion(universeId), universe.ruleset, transaction)).find((option) => ((option.id === themeId) && option.enabled))
+		const theme = ((rulesetHasThemes(universe.ruleset) && (themeId !== null))
+			? await findEditorTheme(liveVersion(universeId), universe.ruleset, themeId, transaction)
 			: undefined);
 
-		if (rulesetHasThemes(universe.ruleset) ? !theme : (themeId !== null))
+		if (rulesetHasThemes(universe.ruleset) ? !theme?.enabled : (themeId !== null))
 		{
 			return({
 				status: 409,
@@ -855,7 +855,8 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		const enabledItemIds = new Set((await loadEditorItems(liveVersion(universeId), universe.ruleset, transaction))
+		const startingItems = [universe.startingItems, race.startingItems, characterClass.startingItems];
+		const enabledItemIds = new Set((await loadEditorItemsIn(liveVersion(universeId), universe.ruleset, startingItems.flat().map((item) => item.itemId), transaction))
 			.filter((item) => item.enabled)
 			.map((item) => item.id));
 		const characterId = await createCharacter({
@@ -868,7 +869,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			themeId: (theme?.id ?? null),
 			abilityScores: finalAbilityScores(universe.ruleset, baseScores, bonuses),
 			money: addMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
-			items: combineStartingItems([universe.startingItems, race.startingItems, characterClass.startingItems], enabledItemIds)
+			items: combineStartingItems(startingItems, enabledItemIds)
 		}, transaction);
 
 		if (source.kind === 'roll')

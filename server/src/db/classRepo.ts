@@ -152,6 +152,35 @@ function nameClasses(rows: readonly { id: number; universeId: string | null; ove
  */
 export async function loadEditorClasses(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorClass[]>
 {
+	return(loadClasses(version, ruleset, undefined, executor));
+}
+
+/**
+ * One class a universe can use, as the editor lists it
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param classId The class's ID
+ * @param executor The database, or a transaction
+ * @return The class, or undefined when the universe can't use a class with that ID (an edited copy's
+ * own ID included)
+ */
+export async function findEditorClass(version: UniverseVersion, ruleset: Ruleset, classId: number, executor: Executor = db): Promise<EditorClass | undefined>
+{
+	return((await loadClasses(version, ruleset, classId, executor))[0]);
+}
+
+/**
+ * The classes a universe can use, or one of them, as the editor lists them
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param classId The class's ID, or undefined for every class
+ * @param executor The database, or a transaction
+ * @return The classes, by ID
+ */
+async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: number | undefined, executor: Executor): Promise<EditorClass[]>
+{
 	const rows = await executor
 		.select({
 			id: classes.id,
@@ -171,11 +200,11 @@ export async function loadEditorClasses(version: UniverseVersion, ruleset: Rules
 			startingRow: classes.startingRow
 		})
 		.from(classes)
-		.where(usableClasses(version, ruleset))
+		.where(usableClasses(version, ruleset, classId))
 		.orderBy(asc(classes.id));
-	const rules = await loadClassRules(version, ruleset, executor);
-	const startingItems = await loadClassStartingItems(version, executor);
-	const raceAreas = await loadClassRaceAreas(version, executor);
+	const rules = await loadClassRules(version, ruleset, classId, executor);
+	const startingItems = await loadClassStartingItems(version, classId, executor);
+	const raceAreas = await loadClassRaceAreas(version, classId, executor);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesClassId !== null))
 		.map((row) => [row.overridesClassId, row]));
@@ -245,16 +274,37 @@ export async function listBarredClassIds(version: UniverseVersion, executor: Exe
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
+ * @param classId Only this class's rows, or undefined for every class's
  * @return The condition
  */
-function usableClasses(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
+function usableClasses(version: UniverseVersion, ruleset: Ruleset, classId?: number): SQL | undefined
 {
 	return(and(
 		eq(classes.ruleset, ruleset),
 		or(
 			isNull(classes.universeId),
 			inVersion(classes, version)
-		)
+		),
+		classRows(classId)
+	));
+}
+
+/**
+ * Matches the rows of one class: the class's own, and its edited copies
+ *
+ * @param classId The class's ID, or undefined to match every class's rows
+ * @return The condition, or undefined for every class
+ */
+function classRows(classId: number | undefined): SQL | undefined
+{
+	if (classId === undefined)
+	{
+		return(undefined);
+	}
+
+	return(or(
+		eq(classes.id, classId),
+		eq(classes.overridesClassId, classId)
 	));
 }
 
@@ -263,10 +313,11 @@ function usableClasses(version: UniverseVersion, ruleset: Ruleset): SQL | undefi
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
+ * @param classId Only this class's rows, or undefined for every class's
  * @param executor The database, or a transaction
  * @return The rules, keyed by the ID of the row holding the class's settings
  */
-async function loadClassRules(version: UniverseVersion, ruleset: Ruleset, executor: Executor): Promise<Map<number, ClassRules>>
+async function loadClassRules(version: UniverseVersion, ruleset: Ruleset, classId: number | undefined, executor: Executor): Promise<Map<number, ClassRules>>
 {
 	switch (ruleset)
 	{
@@ -281,7 +332,7 @@ async function loadClassRules(version: UniverseVersion, ruleset: Ruleset, execut
 				})
 				.from(pf1eClasses)
 				.innerJoin(classes, eq(classes.id, pf1eClasses.classId))
-				.where(usableClasses(version, ruleset));
+				.where(usableClasses(version, ruleset, classId));
 
 			return(new Map(rows.map(({ classId, ...rules }): [number, Pf1eClassRules] => [classId, rules])));
 		}
@@ -297,7 +348,7 @@ async function loadClassRules(version: UniverseVersion, ruleset: Ruleset, execut
 				})
 				.from(sf1eClasses)
 				.innerJoin(classes, eq(classes.id, sf1eClasses.classId))
-				.where(usableClasses(version, ruleset));
+				.where(usableClasses(version, ruleset, classId));
 
 			return(new Map(rows.map(({ classId, ...rules }): [number, Sf1eClassRules] => [classId, rules])));
 		}
@@ -308,10 +359,11 @@ async function loadClassRules(version: UniverseVersion, ruleset: Ruleset, execut
  * The extra starting equipment of each of a universe's rows of class settings
  *
  * @param version The universe's live version or draft
+ * @param classId Only this class's rows, or undefined for every class's
  * @param executor The database, or a transaction
  * @return The items and how many of each, by item ID, keyed by the ID of the row holding the class's settings
  */
-async function loadClassStartingItems(version: UniverseVersion, executor: Executor): Promise<Map<number, ItemQuantity[]>>
+async function loadClassStartingItems(version: UniverseVersion, classId: number | undefined, executor: Executor): Promise<Map<number, ItemQuantity[]>>
 {
 	const rows = await executor
 		.select({
@@ -321,7 +373,10 @@ async function loadClassStartingItems(version: UniverseVersion, executor: Execut
 		})
 		.from(classStartingItems)
 		.innerJoin(classes, eq(classes.id, classStartingItems.classId))
-		.where(inVersion(classes, version))
+		.where(and(
+			inVersion(classes, version),
+			classRows(classId)
+		))
 		.orderBy(asc(classStartingItems.itemId));
 	const byClass = new Map<number, ItemQuantity[]>();
 
@@ -337,10 +392,11 @@ async function loadClassStartingItems(version: UniverseVersion, executor: Execut
  * Where each of a universe's rows of class settings starts its characters of each race
  *
  * @param version The universe's live version or draft
+ * @param classId Only this class's rows, or undefined for every class's
  * @param executor The database, or a transaction
  * @return The areas, by race ID, keyed by the ID of the row holding the class's settings
  */
-async function loadClassRaceAreas(version: UniverseVersion, executor: Executor): Promise<Map<number, ClassRaceArea[]>>
+async function loadClassRaceAreas(version: UniverseVersion, classId: number | undefined, executor: Executor): Promise<Map<number, ClassRaceArea[]>>
 {
 	const rows = await executor
 		.select({
@@ -352,7 +408,10 @@ async function loadClassRaceAreas(version: UniverseVersion, executor: Executor):
 		})
 		.from(classRaceAreas)
 		.innerJoin(classes, eq(classes.id, classRaceAreas.classId))
-		.where(inVersion(classes, version))
+		.where(and(
+			inVersion(classes, version),
+			classRows(classId)
+		))
 		.orderBy(asc(classRaceAreas.raceId));
 	const byClass = new Map<number, ClassRaceArea[]>();
 

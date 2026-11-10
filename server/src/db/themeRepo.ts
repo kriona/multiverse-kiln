@@ -26,16 +26,23 @@ export type ThemeKind = 'default' | 'custom';
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
+ * @param themeId Only this theme's rows (its own and its edited copies), or undefined for every theme's
  * @return The condition
  */
-function usableThemes(version: UniverseVersion, ruleset: Ruleset): SQL | undefined
+function usableThemes(version: UniverseVersion, ruleset: Ruleset, themeId?: number): SQL | undefined
 {
 	return(and(
 		eq(themes.ruleset, ruleset),
 		or(
 			isNull(themes.universeId),
 			inVersion(themes, version)
-		)
+		),
+		((themeId === undefined)
+			? undefined
+			: or(
+				eq(themes.id, themeId),
+				eq(themes.overridesThemeId, themeId)
+			))
 	));
 }
 
@@ -113,6 +120,35 @@ export async function loadLiveThemeNames(universes: readonly { id: string; rules
  */
 export async function loadEditorThemes(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<EditorTheme[]>
 {
+	return(loadThemes(version, ruleset, undefined, executor));
+}
+
+/**
+ * One theme a universe can use, as the editor lists it
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param themeId The theme's ID
+ * @param executor The database, or a transaction
+ * @return The theme, or undefined when the universe can't use a theme with that ID (an edited copy's
+ * own ID included)
+ */
+export async function findEditorTheme(version: UniverseVersion, ruleset: Ruleset, themeId: number, executor: Executor = db): Promise<EditorTheme | undefined>
+{
+	return((await loadThemes(version, ruleset, themeId, executor))[0]);
+}
+
+/**
+ * The themes a universe can use, or one of them, as the editor lists them
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param themeId The theme's ID, or undefined for every theme
+ * @param executor The database, or a transaction
+ * @return The themes, by ID; none for a ruleset without themes
+ */
+async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: number | undefined, executor: Executor): Promise<EditorTheme[]>
+{
 	const rows = await executor
 		.select({
 			id: themes.id,
@@ -125,7 +161,7 @@ export async function loadEditorThemes(version: UniverseVersion, ruleset: Rulese
 		})
 		.from(themes)
 		.innerJoin(sf1eThemes, eq(sf1eThemes.themeId, themes.id))
-		.where(usableThemes(version, ruleset))
+		.where(usableThemes(version, ruleset, themeId))
 		.orderBy(asc(themes.id));
 	const copies = new Map(rows
 		.filter((row) => (row.overridesThemeId !== null))

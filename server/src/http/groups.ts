@@ -12,12 +12,12 @@ import { canPlayUniverse, characterBar, defineMessages, DISALLOWED_TEXT_CHARACTE
 
 import { loadBarredOptions } from '../db/barredOptions.js';
 import { findOwnCharacter, type OwnCharacter } from '../db/characterRepo.js';
-import { loadEditorClasses } from '../db/classRepo.js';
+import { findEditorClass } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { findDifficultyLevel, listDifficultyLevels } from '../db/difficultyRepo.js';
 import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listGroupMembers, lockGroup, type GroupCharacter, type GroupRecord } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
-import { loadEditorRaces } from '../db/raceRepo.js';
+import { findEditorRace } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
@@ -178,8 +178,8 @@ async function difficultyLevelsRoute(request: Request, response: Response): Prom
  */
 async function findStartingPlace(universe: PlayableUniverse, character: OwnCharacter, executor: Executor): Promise<StartingPlace | null>
 {
-	const race = (await loadEditorRaces(liveVersion(universe.id), universe.ruleset, executor)).find((option) => (option.id === character.raceId));
-	const characterClass = (await loadEditorClasses(liveVersion(universe.id), universe.ruleset, executor)).find((option) => (option.id === character.classId));
+	const race = await findEditorRace(liveVersion(universe.id), universe.ruleset, character.raceId, executor);
+	const characterClass = await findEditorClass(liveVersion(universe.id), universe.ruleset, character.classId, executor);
 
 	// A race or class that characters have can't be deleted
 	if (!race || !characterClass)

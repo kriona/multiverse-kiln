@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { createCustomTheme, loadEditorThemes, loadLiveThemeNames, saveEditedDefaultTheme, type CustomThemeSettings } from '../../src/db/themeRepo.js';
+import { createCustomTheme, findEditorTheme, loadEditorThemes, loadLiveThemeNames, saveEditedDefaultTheme, type CustomThemeSettings } from '../../src/db/themeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
@@ -17,6 +17,41 @@ const smuggler: CustomThemeSettings = {
 
 describe('themeRepo', () =>
 {
+	it('finds one theme as it lists them', async () =>
+	{
+		const universeId = await createUniverse({
+			name: 'Edited',
+			ruleset: 'sf1e'
+		});
+		const otherId = await createUniverse({
+			name: 'Other',
+			ruleset: 'sf1e'
+		});
+		const mercenary = (await loadEditorThemes(liveVersion(universeId), 'sf1e')).find((theme) => (theme.key === 'mercenary'));
+
+		assert.ok(mercenary);
+
+		const otherSmugglerId = await inTransaction((transaction) => createCustomTheme(liveVersion(otherId), 'sf1e', smuggler, transaction));
+
+		await inTransaction((transaction) => createCustomTheme(liveVersion(universeId), 'sf1e', smuggler, transaction));
+		await inTransaction((transaction) => saveEditedDefaultTheme(liveVersion(universeId), 'sf1e', mercenary.id, { ...mercenary, enabled: false, rules: { ability: 'wisdom' } }, transaction));
+		await inTransaction((transaction) => startDraft(universeId, transaction));
+		await inTransaction((transaction) => saveEditedDefaultTheme(draftVersion(universeId), 'sf1e', mercenary.id, { ...mercenary, name: 'Draft Sword' }, transaction));
+
+		for (const version of [liveVersion(universeId), draftVersion(universeId)])
+		{
+			for (const theme of await loadEditorThemes(version, 'sf1e'))
+			{
+				assert.deepStrictEqual(await findEditorTheme(version, 'sf1e', theme.id), theme);
+			}
+		}
+
+		assert.strictEqual((await findEditorTheme(liveVersion(universeId), 'sf1e', mercenary.id))?.enabled, false);
+		assert.strictEqual((await findEditorTheme(draftVersion(universeId), 'sf1e', mercenary.id))?.name, 'Draft Sword');
+		assert.strictEqual(await findEditorTheme(liveVersion(universeId), 'sf1e', otherSmugglerId), undefined);
+		assert.strictEqual(await findEditorTheme(liveVersion(universeId), 'pf1e', mercenary.id), undefined);
+	});
+
 	it('names the themes of several universes\' live versions at once, as the editor lists them', async () =>
 	{
 		const editedId = await createUniverse({

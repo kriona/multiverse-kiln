@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_CLASS_NAMES, emptyMoney, NEW_PF1E_CLASS_RULES, PF1E_CLASSES, type ClassSettings, type EditorClass } from '@multiverse-kiln/shared';
 
-import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, findDefaultClassIds, isClassStartingItem, loadClassNames, loadEditorClasses, loadLiveClassNames, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass, type CustomClassSettings } from '../../src/db/classRepo.js';
+import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, findDefaultClassIds, findEditorClass, isClassStartingItem, loadClassNames, loadEditorClasses, loadLiveClassNames, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass, type CustomClassSettings } from '../../src/db/classRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -163,6 +163,39 @@ describe('classRepo', () =>
 
 		await restoreDefaultClass(liveVersion(universeId), wizardId);
 		assert.deepStrictEqual(await findClass(universeId, wizardId), original);
+	});
+
+	it('finds one class as it lists them', async () =>
+	{
+		const universeId = await addUniverse();
+		const otherId = await addUniverse('Other');
+		const areaId = await addArea(universeId);
+		const elfId = (await findDefaultRaceIds('pf1e')).get('elf') as number;
+		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
+		const wizardId = await defaultClassId('wizard');
+		const wizard = await findClass(universeId, wizardId) as EditorClass;
+		const gunslingerId = await inTransaction((transaction) => createCustomClass(liveVersion(universeId), 'pf1e', { ...gunslinger, startingItems: [{ itemId: daggerId, quantity: 2 }] }, transaction));
+		const otherGunslingerId = await inTransaction((transaction) => createCustomClass(liveVersion(otherId), 'pf1e', gunslinger, transaction));
+		const raceAreas = [{ raceId: elfId, areaId, column: -4, row: 7 }];
+
+		await inTransaction((transaction) => saveEditedDefaultClass(liveVersion(universeId), 'pf1e', wizardId, { ...wizard, enabled: false, startingItems: [{ itemId: daggerId, quantity: 1 }], raceAreas }, transaction));
+		await inTransaction((transaction) => startDraft(universeId, transaction));
+		await inTransaction((transaction) => saveEditedDefaultClass(draftVersion(universeId), 'pf1e', wizardId, { ...wizard, name: 'Draft Mage' }, transaction));
+
+		for (const version of [liveVersion(universeId), draftVersion(universeId)])
+		{
+			for (const characterClass of await loadEditorClasses(version, 'pf1e'))
+			{
+				assert.deepStrictEqual(await findEditorClass(version, 'pf1e', characterClass.id), characterClass);
+			}
+		}
+
+		assert.strictEqual((await findEditorClass(liveVersion(universeId), 'pf1e', wizardId))?.enabled, false);
+		assert.deepStrictEqual((await findEditorClass(liveVersion(universeId), 'pf1e', wizardId))?.raceAreas, raceAreas);
+		assert.strictEqual((await findEditorClass(draftVersion(universeId), 'pf1e', wizardId))?.name, 'Draft Mage');
+		assert.deepStrictEqual((await findEditorClass(liveVersion(universeId), 'pf1e', gunslingerId))?.startingItems, [{ itemId: daggerId, quantity: 2 }]);
+		assert.strictEqual(await findEditorClass(liveVersion(universeId), 'pf1e', otherGunslingerId), undefined);
+		assert.strictEqual(await findEditorClass(liveVersion(universeId), 'sf1e', wizardId), undefined);
 	});
 
 	it('names the classes of several universes\' live versions at once, as it names one', async () =>
