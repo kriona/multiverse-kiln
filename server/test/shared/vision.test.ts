@@ -241,6 +241,33 @@ describe('vision (shared)', () =>
 			assert.ok(!visible.has(visionKey(51, 0)));
 		});
 
+		it('looks the shorter way round an area narrower than its reach, as canSee() does', () =>
+		{
+			// Ten columns wide and one row tall, looping both ways, with a wall at column 2: the short way to
+			// column 4 is through the wall, the long way round is clear
+			const area: VisionArea = {
+				bounds: {
+					minColumn: 0,
+					minRow: 0,
+					maxColumn: 9,
+					maxRow: 0
+				},
+				loopsEastWest: true,
+				loopsNorthSouth: true,
+				clear: false,
+				visionCost: (column) => ((column === 2) ? 100 : 0)
+			};
+			const visible = visibleCells(origin, DAY_VISION_SQUARES, area);
+
+			assert.ok(!visible.has(visionKey(4, 0)));
+			assert.ok(visible.has(visionKey(6, 0)));
+
+			for (let column = 0; column <= 9; column++)
+			{
+				assert.strictEqual(visible.has(visionKey(column, 0)), canSee(origin, { column, row: 0 }, DAY_VISION_SQUARES, area), visionKey(column, 0));
+			}
+		});
+
 		it('leaves out the cells it is told to skip, and sees the rest as it would without them', () =>
 		{
 			const costs: Record<string, number> = {};

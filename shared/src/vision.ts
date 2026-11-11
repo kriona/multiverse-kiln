@@ -238,22 +238,36 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, area: V
  * @param area The area
  * @param skip Which cells to leave out without looking at them, such as those a group has already seen,
  * given the cell inside the area; none when undefined
- * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area
+ * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area,
+ * each seen or not along the shorter way round, as canSee() looks at it
  */
 export function visibleCells(from: VisionCell, budget: number, area: VisionArea, skip?: (column: number, row: number) => boolean): Set<string>
 {
 	const visible = new Set<string>();
 	const reach = Math.floor(budget);
+	const { width, height } = sizeOf(area.bounds);
 
 	// isSeen() reads the cells beside a wall at the edge of reach, a square further out, before finding them too far
 	const costAt = (area.clear ? undefined : readCosts(from, reach + 1, area));
 
 	for (let rows = -reach; rows <= reach; rows++)
 	{
+		const row = wrapRow(from.row + rows, area);
+
+		// An area narrower than the reach across brings a cell into reach both ways round; only the shorter counts
+		if (area.loopsNorthSouth && (nearestCopy(row, from.row, height) !== (from.row + rows)))
+		{
+			continue;
+		}
+
 		for (let columns = -reach; columns <= reach; columns++)
 		{
 			const column = wrapColumn(from.column + columns, area);
-			const row = wrapRow(from.row + rows, area);
+
+			if (area.loopsEastWest && (nearestCopy(column, from.column, width) !== (from.column + columns)))
+			{
+				continue;
+			}
 
 			// Looking is what costs, so a skipped cell is left out before it
 			if (isInBounds(area.bounds, column, row) && !(skip?.(column, row) ?? false) && isSeen(columns, rows, budget, costAt))
