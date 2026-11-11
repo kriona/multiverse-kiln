@@ -31,6 +31,7 @@ export async function findSiteSettings(executor: Executor = db): Promise<SiteSet
 		universeCreationEnabled: row.universeCreationEnabled,
 		universesPerCreator: row.universesPerCreator,
 		areasPerUniverse: row.areasPerUniverse,
+		charactersPerUniverse: row.charactersPerUniverse,
 		characterDeletionDays: row.characterDeletionDays,
 		socials: {
 			discord: row.discordUrl,
@@ -57,6 +58,7 @@ export async function saveSiteSettings(settings: SiteSettings, executor: Executo
 		universeCreationEnabled: settings.universeCreationEnabled,
 		universesPerCreator: settings.universesPerCreator,
 		areasPerUniverse: settings.areasPerUniverse,
+		charactersPerUniverse: settings.charactersPerUniverse,
 		characterDeletionDays: settings.characterDeletionDays,
 		discordUrl: settings.socials.discord,
 		facebookUrl: settings.socials.facebook,

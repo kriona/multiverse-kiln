@@ -5,7 +5,7 @@
  */
 import { ArcticFetchError, decodeIdToken, Discord, Google, OAuth2RequestError } from 'arctic';
 import { z } from 'zod';
-import { LOGIN_PROVIDERS, MAX_PLAYER_NAME_LENGTH, PROVIDER_RETURN_PATH, type LoginProvider } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, LOGIN_PROVIDERS, MAX_PLAYER_NAME_LENGTH, PROVIDER_RETURN_PATH, type LoginProvider } from '@multiverse-kiln/shared';
 
 import { sitePageUrl } from '../siteUrl.js';
 
@@ -106,14 +106,25 @@ let clients: Map<LoginProvider, ProviderClient> | undefined;
 let replacements: Partial<Record<LoginProvider, ProviderClient>> | undefined;
 
 /**
- * A provider's name for a player, cut to the longest name a player can have
+ * Every character a player's name can't have, to remove from the names providers give
+ */
+const DISALLOWED_NAME_CHARACTERS = new RegExp(DISALLOWED_TEXT_CHARACTERS.source, 'gu');
+
+/**
+ * A provider's name for a player, made into one the register route accepts: the characters a name can't
+ * have taken out (a line break or tab becomes a space, so the words around it stay apart) and cut to the
+ * longest name a player can have
  *
  * @param name The name, if the provider has one
  * @return The name, trimmed, or empty
  */
-function providerDisplayName(name: string | null | undefined): string
+export function providerDisplayName(name: string | null | undefined): string
 {
-	return([...(name ?? '').trim()].slice(0, MAX_PLAYER_NAME_LENGTH).join('').trim());
+	const allowed = (name ?? '')
+		.replace(DISALLOWED_NAME_CHARACTERS, (character) => (/\s/u.test(character) ? ' ' : ''))
+		.trim();
+
+	return([...allowed].slice(0, MAX_PLAYER_NAME_LENGTH).join('').trim());
 }
 
 /**

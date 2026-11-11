@@ -15,7 +15,7 @@ import { startDraftLabel } from './StartDraftDialog';
 const LEFT_OUT_MESSAGES: Record<UniverseImportLeftOut, MessageDescriptor> = defineMessages({
 	universeOnly: {
 		id: 'editor.universeImport.leftOut.universeOnly',
-		defaultMessage: 'Its editors, stage and two-factor setting, which belong to the universe rather than its draft',
+		defaultMessage: 'Its editors, its stage, and whether builders make their changes in a draft and editors need two-factor authentication, which belong to the universe rather than its draft',
 		description: 'In the list of what a file chosen in the dialog importing it into the universe\'s draft leaves out: the parts of the universe a draft has no copy of'
 	},
 	settingsRole: {
@@ -67,12 +67,12 @@ const draftMessages = defineMessages({
 	startDraft: {
 		id: 'editor.universeImport.needsDraft.start',
 		defaultMessage: 'Files must be imported into the universe\'s draft. The universe has no draft yet; you must start one to import changes.',
-		description: 'In the dialog Import Universe opens on the editor\'s Universe tab, for a creator, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file'
+		description: 'In the dialog Import Universe opens on the editor\'s Universe tab, for a creator or builder, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file'
 	},
-	creatorsStart: {
-		id: 'editor.universeImport.needsDraft.creatorsStart',
-		defaultMessage: 'Files must be imported into the universe\'s draft. The universe has no draft yet, and only its creators can start one.',
-		description: 'In the dialog Import Universe opens on the editor\'s Universe tab, for a builder or translator, while the universe has no draft, which only its creators can start'
+	othersStart: {
+		id: 'editor.universeImport.needsDraft.othersStart',
+		defaultMessage: 'Files must be imported into the universe\'s draft. The universe has no draft yet, and only its creators and builders can start one.',
+		description: 'In the dialog Import Universe opens on the editor\'s Universe tab, for a translator, while the universe has no draft, which only its creators and builders can start'
 	},
 	starting: {
 		id: 'editor.universeImport.startingDraft',
@@ -341,7 +341,7 @@ export class UniverseImportSection
 		const canStart = (!universe.hasDraft && this.drafts.canStart());
 		const unsaved = this.drafts.hasUnsavedChanges();
 
-		this.draftText.textContent = t(universe.hasDraft ? draftMessages.openDraft : (canStart ? draftMessages.startDraft : draftMessages.creatorsStart));
+		this.draftText.textContent = t(universe.hasDraft ? draftMessages.openDraft : (canStart ? draftMessages.startDraft : draftMessages.othersStart));
 		this.draftUnsaved.hidden = !(canStart && unsaved);
 		this.draftStatus.textContent = '';
 		this.startButton.hidden = !canStart;

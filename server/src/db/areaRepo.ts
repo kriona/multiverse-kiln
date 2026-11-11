@@ -668,6 +668,11 @@ export interface ResizeResult
 	 * Links on cells outside the new bounds, and links from other areas into them
 	 */
 	discardedLinks: number;
+
+	/**
+	 * The other areas whose links into those cells were deleted; empty when it wasn't resized
+	 */
+	linkingAreaIds: string[];
 }
 
 /**
@@ -756,7 +761,7 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 
 	if (!discard && ((discardedCells > 0) || (discardedLinks > 0)))
 	{
-		return({ resized: false, discardedCells, discardedLinks });
+		return({ resized: false, discardedCells, discardedLinks, linkingAreaIds: [] });
 	}
 
 	await storeGroundChunks(areaId, clipped, executor);
@@ -765,16 +770,21 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 		.delete(areaChunks)
 		.where(outsideChunkCondition);
 
-	await executor
+	const deletedLinks = await executor
 		.delete(areaLinks)
-		.where(discardedLinkCondition);
+		.where(discardedLinkCondition)
+		.returning({ areaId: areaLinks.areaId });
 
 	await executor
 		.update(areas)
 		.set(bounds)
 		.where(eq(areas.id, areaId));
 
-	return({ resized: true, discardedCells, discardedLinks });
+	const linkingAreaIds = new Set(deletedLinks
+		.map((link) => link.areaId)
+		.filter((linkAreaId) => (linkAreaId !== areaId)));
+
+	return({ resized: true, discardedCells, discardedLinks, linkingAreaIds: [...linkingAreaIds] });
 }
 
 /**

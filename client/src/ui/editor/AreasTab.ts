@@ -1,4 +1,4 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, parentAreas, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canEditWorldOpen, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, parentAreas, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -342,7 +342,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		}
 
 		this.universe = universe;
-		this.addButton.hidden = !canEditWorld(universe.role);
+		this.addButton.hidden = !canEditWorldOpen(universe);
 
 		if (areaId === undefined)
 		{
@@ -382,7 +382,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			const isLobby = (this.area.id === lobbyAreaId);
 
 			this.showLobby(isLobby);
-			this.deleteButton.hidden = (!canEditWorld(this.universe.role) || isLobby || (this.area.id === this.areas.startingAreaId));
+			this.deleteButton.hidden = (!canEditWorldOpen(this.universe) || isLobby || (this.area.id === this.areas.startingAreaId));
 		}
 	}
 
@@ -1032,7 +1032,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private showArea(universe: EditableUniverse, area: EditorArea): void
 	{
 		const deleted = this.staged.isDeleted(area.id);
-		const editable = (canEditWorld(universe.role) && !deleted);
+		const editable = (canEditWorldOpen(universe) && !deleted);
 		const areas = this.allAreas();
 		const excluded = descendantAreaIds(areas, area.id).add(area.id);
 		const parents = parentAreas(areas);
@@ -1066,7 +1066,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.updateParentMessage();
 		this.fields.disabled = !editable;
 		this.name.disabled = !editable;
-		this.deleteButton.hidden = (!canEditWorld(universe.role) || isLobby || isStart);
+		this.deleteButton.hidden = (!canEditWorldOpen(universe) || isLobby || isStart);
 		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
 			id: 'editor.area.delete',
 			defaultMessage: 'Delete Area',
@@ -1224,11 +1224,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Whether the player may change areas
 	 *
-	 * @return True for a creator or builder
+	 * @return True for a creator or builder, in a version they may change
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+		return((this.universe !== undefined) && canEditWorldOpen(this.universe));
 	}
 
 	/**

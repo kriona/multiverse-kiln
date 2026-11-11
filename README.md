@@ -89,7 +89,7 @@ Each `replace-me` needs a generated secret. The quickest way is to let a script 
 npm run secrets -w server
 ```
 
-It copies each `.env.example` with a new secret in place of each placeholder, each value the two files share already the same in both. It never replaces a file that exists: it writes the new version next to it as `.env.generated` instead (git-ignored), for you to copy settings from. `client/.env` has no secrets, so copy it from its example as above.
+It copies each `.env.example` with a new secret in place of each placeholder, each value the two files share already the same in both. A shared value (a database password or storage key) already set in an existing file is kept, since Postgres and the storage container use it. It never replaces a file that exists: it writes the new version next to it as `.env.generated` instead (git-ignored), for you to copy settings from. `client/.env` has no secrets, so copy it from its example as above.
 
 To make them by hand instead, use one of two formats. Use the right one for each setting: a base64 value in a hex setting breaks it.
 

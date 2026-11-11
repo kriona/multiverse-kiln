@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditWorld, canManageEditors, canManageVersions, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type DismissibleNotice, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditVersionOpen, canEditWorld, canManageEditors, canStartDraft, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type DismissibleNotice, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
@@ -39,6 +39,7 @@ import { UniverseDeleteSection } from './UniverseDeleteSection';
 import { UniverseExportSection } from './UniverseExportSection';
 import { UniverseImportSection } from './UniverseImportSection';
 import { UniverseTab } from './UniverseTab';
+import { rememberVersion } from './versionMemory';
 import type { AreaClaims } from './areaClaims';
 import { AreaSelectDialog } from './AreaSelectDialog';
 import { AreasTab } from './AreasTab';
@@ -301,8 +302,11 @@ export class EditorScreen
 	 * @param actions What the screen's controls do
 	 * @param accountApis The auth routes and the admin routes, which deleting the universe uses, and the
 	 * profile routes, which remember the notices the player dismisses
+	 * @param versionChosen Whether the version the API opens was chosen, by the address or by the player
+	 * before (rememberedVersion()), rather than the live version by default, which a builder who must make
+	 * their changes in the draft is taken from to the draft
 	 */
-	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions, accountApis: { auth: AuthApi; admin: AdminApi; profile: ProfileApi })
+	constructor(private readonly api: EditorApi, private readonly actions: EditorScreenActions, accountApis: { auth: AuthApi; admin: AdminApi; profile: ProfileApi }, private versionChosen: boolean)
 	{
 		this.profileApi = accountApis.profile;
 		this.universeTab = new UniverseTab((update) =>
@@ -312,7 +316,7 @@ export class EditorScreen
 		this.universeDeleteSection = new UniverseDeleteSection(api, accountApis.auth, accountApis.admin, hasUnsavedWork);
 		this.universeExportSection = new UniverseExportSection(api);
 		this.universeImportSection = new UniverseImportSection(api, {
-			canStart: () => ((this.universe !== undefined) && canManageVersions(this.universe.role) && !this.saveBar.isLocked()),
+			canStart: () => ((this.universe !== undefined) && canStartDraft(this.universe.role) && !this.saveBar.isLocked()),
 			hasUnsavedChanges: () => this.hasTabChanges(),
 			// The save says the changes were saved only when there were some besides starting the draft
 			start: () => this.draftSection.stageAndSave('start', this.hasTabChanges()),
@@ -627,6 +631,7 @@ export class EditorScreen
 			// The draft may have been applied or discarded since the address was made, so the live version opens
 			if ((version === this.openVersion) && (this.api.version === 'draft') && (error instanceof EditorApiError) && (error.status === 404))
 			{
+				rememberVersion(universeId, null);
 				this.api.version = 'live';
 				this.actions.versionChanged('live');
 				await this.open(universeId, { tab: place.tab, areaId: undefined });
@@ -659,12 +664,21 @@ export class EditorScreen
 			return;
 		}
 
+		// Before any tab loads the live version's lists, which the draft's would replace at once
+		if (!this.versionChosen && (universe.version === 'live') && universe.hasDraft && !canEditVersionOpen(universe))
+		{
+			this.api.version = 'draft';
+			this.actions.versionChanged('draft');
+			await this.open(universeId, { tab: place.tab, areaId: undefined });
+			return;
+		}
+
 		this.place = { tab: (place.tab ?? ((place.areaId === undefined) ? 'universe' : 'areas')), areaId: place.areaId };
 		this.setUniverse(universe);
 		this.saveBar.setLocked(((universe.disabledReason !== null) && !universe.serverAdmin));
 		this.showAccessNotice(universe);
 		this.showVersion(universe);
-		this.startDraftButton.hidden = (universe.hasDraft || !canManageVersions(universe.role) || this.saveBar.isLocked());
+		this.startDraftButton.hidden = (universe.hasDraft || !canStartDraft(universe.role) || this.saveBar.isLocked());
 
 		this.universeTab.open(universe);
 		this.universeDeleteSection.open(universe);
@@ -768,8 +782,9 @@ export class EditorScreen
 
 	/**
 	 * Says above the tabs when a server admin has disabled the universe, and why, when the universe is
-	 * locked at the end of time and the player isn't one who may still change it, and when the player
-	 * edits it with the site admin role
+	 * locked at the end of time and the player isn't one who may still change it, when the player is a
+	 * builder with the live version open while builders must make their changes in the draft, and when
+	 * the player edits it with the site admin role
 	 *
 	 * @param universe The universe
 	 */
@@ -803,6 +818,22 @@ export class EditorScreen
 				description: 'Shown above the editor\'s tabs to a builder, beta tester or translator of a universe in the stage end of time, which locks it'
 			}));
 		}
+		else if (!canEditVersionOpen(universe) && universe.hasDraft)
+		{
+			this.showNotice(t({
+				id: 'editor.builderDraftRequired.open',
+				defaultMessage: 'While this universe is ready for everyone, you must make changes in a draft. You can view the live version but not change it.',
+				description: 'Shown above the editor\'s tabs to a builder with the live version open, while the universe is in the stage "let there be light" (open to everyone), its creators require builders to make their changes in its draft (a copy players don\'t see until a creator applies it), and it has one'
+			}));
+		}
+		else if (!canEditVersionOpen(universe))
+		{
+			this.showNotice(t({
+				id: 'editor.builderDraftRequired.start',
+				defaultMessage: 'While this universe is ready for everyone, builders make their changes in its draft, so you can look at the live version but not change it. Start a draft to make changes.',
+				description: 'Shown above the editor\'s tabs to a builder with the live version open, while the universe is in the stage "let there be light" (open to everyone), its creators require builders to make their changes in its draft (a copy players don\'t see until a creator applies it), and it has none yet; Start Draft is in the toolbar'
+			}));
+		}
 		else if (universe.role === ADMIN_ROLE)
 		{
 			this.showNotice(t({
@@ -815,8 +846,8 @@ export class EditorScreen
 
 	/**
 	 * Loads the universe again after what the player may do in it changed (their role, its stage, whether
-	 * the site's admins have disabled it, or whether they have 2FA on, which a creator needs to require
-	 * it), on the tab and area showing. While anything is unsaved it only says so, since loading again
+	 * builders must make their changes in its draft, whether the site's admins have disabled it, or
+	 * whether they have 2FA on, which a creator needs to require it), on the tab and area showing. While anything is unsaved it only says so, since loading again
 	 * would throw the changes away
 	 *
 	 * @return True when the universe loads again
@@ -825,8 +856,8 @@ export class EditorScreen
 	{
 		return(this.reloadUniverse(t({
 			id: 'editor.accessChanged',
-			defaultMessage: 'What you can do in this universe has changed: your role, its stage, whether the site\'s admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.',
-			description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage or whether the site\'s admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away'
+			defaultMessage: 'What you can do in this universe has changed: your role, its stage, whether builders make their changes in a draft, whether the site\'s admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.',
+			description: 'Shown above the editor\'s tabs when the player\'s role in the universe, its stage, whether its creators require builders to make their changes in its draft or whether the site\'s admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away'
 		})));
 	}
 
@@ -1095,13 +1126,15 @@ export class EditorScreen
 	 * Shows which version of the universe is open, with the choice of the other while it has a draft, and
 	 * says what saving it does, unless the player dismissed the notice saying it: the draft reaches no
 	 * player until it is applied, and changes saved to the live version while there is a draft are
-	 * replaced when it is applied
+	 * replaced when it is applied (not said to a player who can't save to the live version: a beta
+	 * tester, or a builder who must make their changes in the draft)
 	 *
 	 * @param universe The universe
 	 */
 	private showVersion(universe: EditableUniverse): void
 	{
-		const kind = ((universe.version === 'draft') ? 'editorDraft' : (universe.hasDraft ? 'editorLiveWithDraft' : undefined));
+		const savesLive = ((universe.role !== 'beta_tester') && canEditVersionOpen(universe));
+		const kind = ((universe.version === 'draft') ? 'editorDraft' : ((universe.hasDraft && savesLive) ? 'editorLiveWithDraft' : undefined));
 
 		this.versionField.hidden = !universe.hasDraft;
 		this.versionChoice.value = universe.version;
@@ -1195,8 +1228,9 @@ export class EditorScreen
 	}
 
 	/**
-	 * Opens another version of the universe on the tab showing. The area open stays closed, since the
-	 * versions' areas have IDs of their own
+	 * Opens another version of the universe on the tab showing, and remembers it as the one the player
+	 * chose, which the editor opens next time. The area open stays closed, since the versions' areas have
+	 * IDs of their own
 	 *
 	 * @param version The version
 	 */
@@ -1210,6 +1244,8 @@ export class EditorScreen
 		}
 
 		closeOpenDialogs();
+		this.versionChosen = true;
+		rememberVersion(universe.id, version);
 		this.api.version = version;
 		this.actions.versionChanged(version);
 		this.setPlace({ tab: this.place.tab, areaId: undefined });

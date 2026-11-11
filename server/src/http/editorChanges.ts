@@ -9,7 +9,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { EDITOR_CHANGE_CHECKS, localize, MAX_UPLOADED_TILE_GRAPHICS, mayMakeChange, maySaveInStage, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { EDITOR_CHANGE_CHECKS, localize, MAX_UPLOADED_TILE_GRAPHICS, mayMakeChange, maySaveInStage, maySaveToVersion, mustEditInDraft, onlyLeaves, type EditorAccess, type EditorChange, type NewRef, type SaveChangesPayload, type SaveRefusedPayload, type SavedEditDetail } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
 import { findPlayer } from '../db/playerRepo.js';
@@ -319,6 +319,20 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				});
 			}
 
+			const requireBuilderDraftBefore = (locked?.requireBuilderDraft ?? true);
+			const mustUseDraft = mustEditInDraft(access.role, stageBefore, requireBuilderDraftBefore);
+
+			// A save holding changes a function makes is never only starting the draft and leaving
+			if (!maySaveToVersion(given, base.playerId, base.version.draft, mustUseDraft) || (mustUseDraft && !base.version.draft && (given.length !== changes.length)))
+			{
+				refusedWhole = true;
+				refuse(403, {
+					id: 'error.builderDraftRequiredSave',
+					defaultMessage: 'Builders make their changes to this universe in its draft while it\'s ready for everyone, so changes to the live version can\'t be saved. Open the draft, or start one, and make your changes there.',
+					description: 'Why the world editor couldn\'t save: the player is a builder, the universe is in the stage "let there be light" (open to everyone), and its creators require builders to make their changes in its draft, a copy players don\'t see until a creator applies it. Starting a draft and leaving the universe can still be saved'
+				});
+			}
+
 			if ((locked?.requireTwoFactor ?? false) && !onlyLeaving && !await hasTwoFactor(base.playerId, transaction))
 			{
 				refusedWhole = true;
@@ -441,6 +455,17 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 						kind: 'twoFactorRequirement',
 						universeId: base.universe.id,
 						required: requireTwoFactor
+					});
+				});
+			}
+
+			if (mustEditInDraft('builder', stageBefore, requireBuilderDraftBefore) !== mustEditInDraft('builder', saving.universe.stage, saving.universe.requireBuilderDraft))
+			{
+				saving.onCommit.push(() =>
+				{
+					editorUpdates.publish({
+						kind: 'builderDraftRequirement',
+						universeId: base.universe.id
 					});
 				});
 			}

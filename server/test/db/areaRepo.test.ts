@@ -301,7 +301,7 @@ describe('areaRepo', () =>
 			const areaId = await addArea(await addUniverse());
 			const bounds = { minColumn: -10, minRow: -10, maxColumn: 10, maxRow: 10 };
 
-			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, bounds, false, transaction)), { resized: true, discardedCells: 0, discardedLinks: 0 });
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, bounds, false, transaction)), { resized: true, discardedCells: 0, discardedLinks: 0, linkingAreaIds: [] });
 			assert.deepStrictEqual((await findEditorArea(areaId))?.area.bounds, bounds);
 		});
 
@@ -321,10 +321,10 @@ describe('areaRepo', () =>
 
 			const refused = await inTransaction((transaction) => resizeArea(areaId, narrow, false, transaction));
 
-			assert.deepStrictEqual(refused, { resized: false, discardedCells: 2, discardedLinks: 2 });
+			assert.deepStrictEqual(refused, { resized: false, discardedCells: 2, discardedLinks: 2, linkingAreaIds: [] });
 			assert.deepStrictEqual((await findEditorArea(areaId))?.area.bounds, wide);
 
-			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, narrow, true, transaction)), { resized: true, discardedCells: 2, discardedLinks: 2 });
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, narrow, true, transaction)), { resized: true, discardedCells: 2, discardedLinks: 2, linkingAreaIds: [otherId] });
 			assert.deepStrictEqual(await listAreaLinks(areaId), []);
 			assert.deepStrictEqual((await listAreaLinks(otherId)).map((link) => link.column), [-1]);
 
@@ -346,7 +346,7 @@ describe('areaRepo', () =>
 
 			await inTransaction((transaction) => editCells(areaId, [[10, 10, forest], [35, 5, forest], [45, 5, forest], [100, 100, forest], [-10, 0, VOID_CELL]], transaction));
 
-			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, shrunk, true, transaction)), { resized: true, discardedCells: 3, discardedLinks: 0 });
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, shrunk, true, transaction)), { resized: true, discardedCells: 3, discardedLinks: 0, linkingAreaIds: [] });
 
 			const chunks = await loadChunks(areaId, { minChunkColumn: -2, minChunkRow: -2, maxChunkColumn: 3, maxChunkRow: 3 });
 			const edge = chunks.find((chunk) => ((chunk.chunkColumn === 1) && (chunk.chunkRow === 0)));

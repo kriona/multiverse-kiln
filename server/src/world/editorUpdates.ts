@@ -38,12 +38,15 @@ export interface SavedUpdate
  * - access: a server admin disabled the universe or enabled it again, which changes who may save
  * - twoFactorRequirement: a save made the universe require its editors to have 2FA on (required), or
  *   stop requiring it, which changes whether editors without it may open its editor
+ * - builderDraftRequirement: a save changed whether builders must make their changes in the draft
+ *   (mustEditInDraft()), by changing the stage or the universe's requireBuilderDraft
  * - saved: a save committed (SavedUpdate)
  */
 export type EditorUpdate =
 	| { kind: 'roles'; universeId: string; roles: ReadonlyMap<string, UniverseRole | undefined> }
 	| { kind: 'access'; universeId: string }
 	| { kind: 'twoFactorRequirement'; universeId: string; required: boolean }
+	| { kind: 'builderDraftRequirement'; universeId: string }
 	| SavedUpdate;
 
 /**

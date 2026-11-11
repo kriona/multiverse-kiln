@@ -53,7 +53,7 @@ describe('account deletion and data export', () =>
 		})).id;
 		const browser = new Browser();
 
-		assert.strictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email, password: PASSWORD, rememberMe: false })).status, 200);
+		assert.strictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email, password: PASSWORD, rememberMe: false, locale: 'en' })).status, 200);
 
 		return({ playerId, browser });
 	}

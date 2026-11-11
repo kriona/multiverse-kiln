@@ -50,7 +50,7 @@ describe('2FA routes', () =>
 	 */
 	async function logIn(browser: Browser): Promise<LoginPayload>
 	{
-		const answer = await browser.send<LoginPayload>('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: PASSWORD, rememberMe: false });
+		const answer = await browser.send<LoginPayload>('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: PASSWORD, rememberMe: false, locale: 'en' });
 
 		assert.strictEqual(answer.status, 200, JSON.stringify(answer.body));
 
@@ -458,7 +458,7 @@ describe('2FA routes', () =>
 			});
 
 			await turnOnTwoFactor(grace.id);
-			assert.deepStrictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email: 'grace@example.com', password: PASSWORD, rememberMe: false })).body, { outcome: 'twoFactor' });
+			assert.deepStrictEqual((await browser.send('POST', AUTH_LOGIN_PATH, { email: 'grace@example.com', password: PASSWORD, rememberMe: false, locale: 'en' })).body, { outcome: 'twoFactor' });
 
 			// Expired
 			await pool.query('UPDATE trusted_browsers SET expires_at = now() - interval \'1 minute\'');
@@ -524,7 +524,7 @@ describe('2FA routes', () =>
 
 			await enterResetCode(browser);
 			assert.strictEqual((await browser.send('POST', AUTH_PASSWORD_RESET_PATH, { password: 'a new passphrase', rememberMe: false, locale: 'en', twoFactorCode: authenticator.recoveryCodes[0] })).status, 200);
-			assert.deepStrictEqual((await trusted.send('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: 'a new passphrase', rememberMe: false })).body, { outcome: 'twoFactor' });
+			assert.deepStrictEqual((await trusted.send('POST', AUTH_LOGIN_PATH, { email: EMAIL, password: 'a new passphrase', rememberMe: false, locale: 'en' })).body, { outcome: 'twoFactor' });
 		});
 
 		it('ends the logins waiting on a code that gave the old password', async () =>

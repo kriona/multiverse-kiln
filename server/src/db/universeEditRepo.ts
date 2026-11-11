@@ -138,8 +138,8 @@ export async function deleteUniverseEditsBefore(before: Date, limit: number, exe
  * @param settings For each setting, what it belongs to, its ID (null for the universe's settings and the
  * ruleset), and the setting as the Audit tab names it
  * @param executor The database, or a transaction
- * @return For each setting, in order, the display name and username of the last player to save it whose
- * account still exists, or undefined when there is none
+ * @return For each setting, in order, the display name and username of the last player to save it, or
+ * undefined when no save names it or that player's account has been deleted
  */
 export async function findLastSavers(universeId: string, draft: boolean, settings: readonly { subject: AuditSubject; id: number | string | null; field: AuditField }[], executor: Executor = db): Promise<({ name: string; username: string } | undefined)[]>
 {
@@ -148,7 +148,7 @@ export async function findLastSavers(universeId: string, draft: boolean, setting
 		return([]);
 	}
 
-	const result = await executor.execute<{ position: string; name: string; username: string }>(sql`
+	const result = await executor.execute<{ position: string; name: string | null; username: string | null }>(sql`
 		SELECT DISTINCT ON (wanted.position) wanted.position, ${players.displayName} AS name, ${players.username} AS username
 		FROM (
 			SELECT ${universeEdits.id} AS edit_id, ${universeEdits.savedAt} AS saved_at, ${universeEdits.playerId} AS player_id,
@@ -167,13 +167,21 @@ export async function findLastSavers(universeId: string, draft: boolean, setting
 			ON wanted.subject = saved.subject
 			AND wanted.id = saved.id
 			AND wanted.field = saved.field
-		JOIN ${players} ON ${players.id} = saved.player_id
+		LEFT JOIN ${players} ON ${players.id} = saved.player_id
 		ORDER BY wanted.position, saved.saved_at DESC, saved.edit_id DESC
 	`);
-	const savers = new Map(result.rows.map((row) => [Number(row.position), {
-		name: row.name,
-		username: row.username
-	}]));
+	const savers = new Map<number, { name: string; username: string }>();
+
+	for (const row of result.rows)
+	{
+		if ((row.name !== null) && (row.username !== null))
+		{
+			savers.set(Number(row.position), {
+				name: row.name,
+				username: row.username
+			});
+		}
+	}
 
 	return(settings.map((setting, index) => savers.get(index + 1)));
 }

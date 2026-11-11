@@ -14,6 +14,7 @@ import { twoFactorChanges } from '../players/twoFactorChanges.js';
 import { universeAccessChanges, type StageChange } from '../players/universeAccess.js';
 import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates, type EditorUpdate, type SavedUpdate } from '../world/editorUpdates.js';
+import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
@@ -177,6 +178,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 
 	private readonly joinChanges = new JoinChanges<EditorJoinChange, EditorLookup>();
 
+	private readonly whileCreating = new ChangesWhileCreating();
+
 	/**
 	 * Each window's key in its player's EditorPresence.windows, by the client's session ID
 	 */
@@ -309,6 +312,7 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 		const { universeId } = parsed.data;
 
 		editorRooms.claim(universeId, this);
+		this.followChanges();
 
 		if (!await findUniverse(universeId))
 		{
@@ -323,58 +327,89 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			void this.saveChat();
 		}, CHAT_SAVE_INTERVAL_MS);
 
+		this.whileCreating.created();
+	}
+
+	/**
+	 * Starts following changes to sessions, roles and the universe, and deleted accounts, whose names
+	 * the chat drops. Called before onCreate's first read, so none published while it loads are missed:
+	 * until it has loaded, they are held (whileCreating)
+	 */
+	private followChanges(): void
+	{
 		this.stopFollowingSessions = connectedSessions.onEnd((sessionIds) =>
 		{
-			this.joinChanges.note('session');
-			this.turnAway((identity) => sessionIds.has(identity.sessionId), ServerCloseCode.LoggedOut);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('session');
+				this.turnAway((identity) => sessionIds.has(identity.sessionId), ServerCloseCode.LoggedOut);
+			});
 		});
 
 		this.stopFollowingWorld = areaChanges.onChange((change) =>
 		{
-			if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+			this.whileCreating.apply(() =>
 			{
-				this.joinChanges.note('universeDeleted');
-				this.turnAway(() => true, ServerCloseCode.UniverseDeleted);
-			}
+				if ((change.kind === 'universeDeleted') && (change.universeId === this.universeId))
+				{
+					this.joinChanges.note('universeDeleted');
+					this.turnAway(() => true, ServerCloseCode.UniverseDeleted);
+				}
+			});
 		});
 
 		this.stopFollowingUpdates = editorUpdates.onUpdate((update) =>
 		{
-			if (update.universeId === this.universeId)
+			this.whileCreating.apply(() =>
 			{
-				this.applyUpdate(update);
-			}
+				if (update.universeId === this.universeId)
+				{
+					this.applyUpdate(update);
+				}
+			});
 		});
 
 		this.stopFollowingStage = universeAccessChanges.onStageChanged((change) =>
 		{
-			if (change.universeId === this.universeId)
+			this.whileCreating.apply(() =>
 			{
-				this.joinChanges.note('stage');
-				this.applyStageChange(change);
-			}
+				if (change.universeId === this.universeId)
+				{
+					this.joinChanges.note('stage');
+					this.applyStageChange(change);
+				}
+			});
 		});
 
 		this.stopFollowingAdmins = serverAdminChanges.onLost((playerId) =>
 		{
-			this.joinChanges.note('serverAdmin');
-			void this.applyServerAdminLost(playerId);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('serverAdmin');
+				void this.applyServerAdminLost(playerId);
+			});
 		});
 
 		this.stopFollowingTwoFactor = twoFactorChanges.onChange((playerId, on) =>
 		{
-			this.joinChanges.note('twoFactor');
-			void this.applyTwoFactorChange(playerId, on);
+			this.whileCreating.apply(() =>
+			{
+				this.joinChanges.note('twoFactor');
+				void this.applyTwoFactorChange(playerId, on);
+			});
 		});
 
 		this.stopFollowingDeletions = accountDeletions.onDeleted((playerId) =>
 		{
-			if (this.chat.forgetAuthor(playerId))
+			this.whileCreating.apply(() =>
 			{
-				const deleted: ChatAuthorDeletedPayload = { playerId };
+				if (this.chat.forgetAuthor(playerId))
+				{
+					const deleted: ChatAuthorDeletedPayload = { playerId };
 
-				this.broadcast(EditorServerMessageType.ChatAuthorDeleted, deleted);
-			}
+					this.broadcast(EditorServerMessageType.ChatAuthorDeleted, deleted);
+				}
+			});
 		});
 	}
 
@@ -685,7 +720,8 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 	 * Follows an update for the universe's editors: players whose role a save changed are listed with
 	 * the new one, and their windows load the universe again, or are turned away when they may no longer
 	 * open the editor; a server admin disabling or enabling the universe has every window load it again,
-	 * and the universe starting to require 2FA turns away the windows of players without it on
+	 * the universe starting to require 2FA turns away the windows of players without it on, and a change
+	 * to whether builders must make their changes in the draft has builders' windows load it again
 	 *
 	 * @param update The update
 	 */
@@ -705,6 +741,22 @@ export class EditorRoom extends Room<{ state: EditorState; client: EditorClient 
 			if (update.required)
 			{
 				this.turnAway((identity) => !identity.twoFactor, ServerCloseCode.TwoFactorRequired);
+			}
+
+			return;
+		}
+
+		if (update.kind === 'builderDraftRequirement')
+		{
+			// Noted as access, so a builder's window joining meanwhile loads the universe again too
+			this.joinChanges.note('access');
+
+			for (const client of this.clients)
+			{
+				if (identityOf(client).role === 'builder')
+				{
+					client.send(EditorServerMessageType.AccessChanged);
+				}
 			}
 
 			return;

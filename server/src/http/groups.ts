@@ -334,6 +334,11 @@ async function leaveRoute(request: Request, response: Response): Promise<void>
 
 	const result = await inTransaction(async (transaction) =>
 	{
+		// The player, then the universe, then the group (leaveGroup locks it): the order making and joining
+		// a group take them in
+		await lockPlayer(playerId, transaction);
+		await lockUniverseShared(universe.id, transaction);
+
 		if (!await findOwnCharacter(playerId, universe.id, body.data.characterId, transaction))
 		{
 			return(undefined);

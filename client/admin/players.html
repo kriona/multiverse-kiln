@@ -11,7 +11,7 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<!-- include admin-crumb.html -->
-					<h1 data-message="admin.players.heading" data-translation-context="Heading of the admin page listing every player account">Players</h1>
+					<h1 id="admin-heading" data-message="admin.players.heading" data-translation-context="Heading of the admin page listing every player account">Players</h1>
 					<!-- include account.html -->
 				</header>
 				<div class="admin-body admin-body-wide">
@@ -26,7 +26,7 @@
 						</div>
 						<p id="player-list-error" class="form-error" role="alert" hidden></p>
 						<div class="admin-table-scroll">
-							<table class="admin-table">
+							<table class="admin-table" aria-labelledby="admin-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-message="admin.column.player" data-translation-context="Heading of the column of players' names and usernames in the admin pages' lists of sessions, players and server admins">Player</th>

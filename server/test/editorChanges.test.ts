@@ -329,6 +329,53 @@ describe('Saving editor changes', () =>
 		}
 	});
 
+	it('tells the rooms of the areas that lose links when the area they lead to is shrunk or deleted', async () =>
+	{
+		const universeId = await createUniverse(ada);
+		const roadId = await createArea(ada, universeId, { name: 'Road' });
+		const innId = await createArea(ada, universeId, { name: 'Inn' });
+		const caveId = await createArea(ada, universeId, { name: 'Cave' });
+		const heard: AreaChange[] = [];
+		const stop = areaChanges.onChange((change) =>
+		{
+			heard.push(change);
+		});
+		const linkInto = (areaId: string, column: number, targetAreaId: string, targetColumn: number): Promise<unknown> => createAreaLink({
+			areaId,
+			column,
+			row: 0,
+			targetAreaId,
+			targetColumn,
+			targetRow: 0,
+			mode: 'automatic',
+			requiresWholeGroup: false
+		});
+		const areasHeard = (): string[] => heard
+			.filter((change) => (change.kind === 'area'))
+			.map((change) => change.areaId)
+			.sort();
+
+		await linkInto(roadId, 0, innId, 2);
+		await linkInto(caveId, 0, innId, 0);
+		await linkInto(roadId, 1, caveId, 0);
+
+		try
+		{
+			// Only the road's link leads outside the inn's new bounds
+			await saveAll(ada, universeId, [{ kind: 'resizeArea', areaId: innId, bounds: { minColumn: 0, minRow: 0, maxColumn: 0, maxRow: 0 }, discard: true }]);
+			assert.deepStrictEqual(areasHeard(), [innId, roadId].sort());
+
+			heard.length = 0;
+			await saveAll(ada, universeId, [{ kind: 'deleteArea', areaId: caveId }]);
+			assert.deepStrictEqual(areasHeard(), [roadId]);
+			assert.ok(heard.some((change) => ((change.kind === 'deleted') && (change.areaId === caveId))));
+		}
+		finally
+		{
+			stop();
+		}
+	});
+
 	it('refuses a save from another origin, and answers uncached with nosniff', async () =>
 	{
 		const universeId = await createUniverse(ada);

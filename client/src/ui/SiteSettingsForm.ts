@@ -1,4 +1,4 @@
-import { isPrivacyContact, isSiteSocialUrl, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
+import { isPrivacyContact, isSiteSocialUrl, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
 
 import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
@@ -13,7 +13,7 @@ import { showToast } from './toast';
 
 /**
  * The admin settings page's form: settings for the whole site, such as whether players can create universes,
- * how many areas each universe can have, how long last rites wait before deleting a character, the social sites the footer links to and the
+ * how many areas each universe can have, how many characters each player can have in a universe, how long last rites wait before deleting a character, the social sites the footer links to and the
  * privacy policy's contact
  */
 export class SiteSettingsForm
@@ -24,6 +24,7 @@ export class SiteSettingsForm
 	private readonly universeCreation = getElement('site-universe-creation', HTMLInputElement);
 	private readonly universesPerCreator = getElement('site-universes-per-creator', HTMLInputElement);
 	private readonly areasPerUniverse = getElement('site-areas-per-universe', HTMLInputElement);
+	private readonly charactersPerUniverse = getElement('site-characters-per-universe', HTMLInputElement);
 	private readonly characterDeletionDays = getElement('site-character-deletion-days', HTMLInputElement);
 	private readonly socials: Readonly<Record<SiteSocialSite, HTMLInputElement>> = {
 		discord: getElement('site-social-discord', HTMLInputElement),
@@ -55,6 +56,8 @@ export class SiteSettingsForm
 		this.universesPerCreator.max = String(MAX_UNIVERSES_PER_CREATOR);
 		this.areasPerUniverse.min = String(MIN_AREAS_PER_UNIVERSE);
 		this.areasPerUniverse.max = String(MAX_AREAS_PER_UNIVERSE);
+		this.charactersPerUniverse.min = String(MIN_CHARACTERS_PER_UNIVERSE);
+		this.charactersPerUniverse.max = String(MAX_CHARACTERS_PER_UNIVERSE);
 		this.characterDeletionDays.min = '0';
 		this.characterDeletionDays.max = String(MAX_CHARACTER_DELETION_DAYS);
 
@@ -65,7 +68,7 @@ export class SiteSettingsForm
 
 		this.privacyContact.maxLength = MAX_EMAIL_LENGTH;
 
-		for (const field of [this.universesPerCreator, this.areasPerUniverse, this.characterDeletionDays, ...Object.values(this.socials), this.privacyContact])
+		for (const field of [this.universesPerCreator, this.areasPerUniverse, this.charactersPerUniverse, this.characterDeletionDays, ...Object.values(this.socials), this.privacyContact])
 		{
 			field.addEventListener('input', () =>
 			{
@@ -117,6 +120,7 @@ export class SiteSettingsForm
 		this.universeCreation.checked = settings.universeCreationEnabled;
 		this.universesPerCreator.value = String(settings.universesPerCreator);
 		this.areasPerUniverse.value = String(settings.areasPerUniverse);
+		this.charactersPerUniverse.value = String(settings.charactersPerUniverse);
 		this.characterDeletionDays.value = String(settings.characterDeletionDays);
 
 		for (const site of SITE_SOCIAL_SITES)
@@ -146,6 +150,13 @@ export class SiteSettingsForm
 		const areasPerUniverse = readWholeNumber(this.areasPerUniverse, MIN_AREAS_PER_UNIVERSE, MAX_AREAS_PER_UNIVERSE);
 
 		if (areasPerUniverse === undefined)
+		{
+			return;
+		}
+
+		const charactersPerUniverse = readWholeNumber(this.charactersPerUniverse, MIN_CHARACTERS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE);
+
+		if (charactersPerUniverse === undefined)
 		{
 			return;
 		}
@@ -180,6 +191,7 @@ export class SiteSettingsForm
 			universeCreationEnabled: this.universeCreation.checked,
 			universesPerCreator,
 			areasPerUniverse,
+			charactersPerUniverse,
 			characterDeletionDays,
 			socials,
 			privacyContact: ((privacyContact === '') ? null : privacyContact)

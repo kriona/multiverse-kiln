@@ -11,7 +11,7 @@
 				<header class="toolbar">
 					<!-- include site-name.html -->
 					<!-- include admin-crumb.html -->
-					<h1 data-message="admin.admins.heading" data-translation-context="Heading of the admin page listing the site's server admins, where admins add and remove other admins">Server Admins</h1>
+					<h1 id="admin-heading" data-message="admin.admins.heading" data-translation-context="Heading of the admin page listing the site's server admins, where admins add and remove other admins">Server Admins</h1>
 					<!-- include account.html -->
 				</header>
 				<div class="admin-body admin-body-wide">
@@ -39,7 +39,7 @@
 							<p id="admin-add-error" class="form-error" role="alert" hidden></p>
 						</form>
 						<div class="admin-table-scroll">
-							<table class="admin-table">
+							<table class="admin-table" aria-labelledby="admin-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-message="admin.column.player" data-translation-context="Heading of the column of players' names and usernames in the admin pages' lists of sessions, players and server admins">Player</th>

@@ -711,6 +711,22 @@ interface XmlElement
 }
 
 /**
+ * Whether a code point is a character XML allows (the Char production): tab, line feed, carriage
+ * return, and everything else in Unicode but the other control characters, the surrogates and
+ * U+FFFE and U+FFFF
+ *
+ * @param codePoint The code point
+ * @return Whether XML allows it
+ */
+function isXmlCharacter(codePoint: number): boolean
+{
+	return((codePoint === 0x9) || (codePoint === 0xa) || (codePoint === 0xd)
+		|| ((codePoint >= 0x20) && (codePoint <= 0xd7ff))
+		|| ((codePoint >= 0xe000) && (codePoint <= 0xfffd))
+		|| ((codePoint >= 0x10000) && (codePoint <= 0x10ffff)));
+}
+
+/**
  * The text of XML character data, its entities read
  *
  * @param text The character data
@@ -731,14 +747,16 @@ function decodeXml(text: string, line: () => number): string
 			throw new TranslationFileError(line());
 		}
 
-		if (code !== null)
+		if ((code !== null) || (decimal !== null))
 		{
-			return(String.fromCodePoint(parseInt(code, 16)));
-		}
+			const codePoint = ((code !== null) ? parseInt(code, 16) : Number(decimal));
 
-		if (decimal !== null)
-		{
-			return(String.fromCodePoint(Number(decimal)));
+			if (!isXmlCharacter(codePoint))
+			{
+				throw new TranslationFileError(line());
+			}
+
+			return(String.fromCodePoint(codePoint));
 		}
 
 		const character = named[entity];

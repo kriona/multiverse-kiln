@@ -43,7 +43,8 @@ describe('universeRepo', () =>
 			startingColumn: 0,
 			startingRow: 0,
 			disabled: false,
-			requireTwoFactor: false
+			requireTwoFactor: false,
+			requireBuilderDraft: true
 		});
 	});
 

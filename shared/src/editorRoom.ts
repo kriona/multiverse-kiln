@@ -120,20 +120,20 @@ export interface EditorSavedPayload
 
 /**
  * The parts of a save that change what the universe holds once, its editors and its draft, whichever
- * version is open. Its stage and whether it requires 2FA are among its settings, kept apart in
- * detailsForVersionOpen()
+ * version is open. Its stage and whether it requires builders to use a draft and its editors to have
+ * 2FA are among its settings, kept apart in detailsForVersionOpen()
  */
 const UNIVERSE_WIDE_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['editor', 'draft']);
 
 /**
  * The universe's settings that it holds once, the same in both versions
  */
-const UNIVERSE_WIDE_FIELDS: ReadonlySet<AuditField> = new Set(['stage', 'requireTwoFactor']);
+const UNIVERSE_WIDE_FIELDS: ReadonlySet<AuditField> = new Set(['stage', 'requireBuilderDraft', 'requireTwoFactor']);
 
 /**
  * What a window follows of a save: everything, when it has the version saved open, and otherwise only
  * what the universe holds once, the same in both versions: its editors, its stage, whether it requires
- * 2FA and its draft
+ * builders to use a draft and its editors to have 2FA, and its draft
  *
  * @param details What the save changed, as the Audit tab lists it
  * @param savedVersion The version the save changed

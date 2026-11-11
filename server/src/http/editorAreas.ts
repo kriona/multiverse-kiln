@@ -343,9 +343,17 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 		});
 	}
 
+	// The links leading here go with it, so the areas they're on are read again
+	const linkingAreaIds = await listAreasLinkingTo(area.id, context.transaction);
+
 	await deleteArea(area.id, context.transaction);
 	await deleteUniverseTextOf(version, 'area', area.id, context.transaction);
 	context.published.push({ kind: 'deleted', areaId: area.id });
+
+	for (const linkingAreaId of linkingAreaIds)
+	{
+		context.published.push({ kind: 'area', areaId: linkingAreaId });
+	}
 }
 
 /**
@@ -382,6 +390,12 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 	}
 
 	context.published.push({ kind: 'area', areaId: area.id });
+
+	// Links from other areas into the cells it lost were deleted, so those areas are read again
+	for (const linkingAreaId of result.linkingAreaIds)
+	{
+		context.published.push({ kind: 'area', areaId: linkingAreaId });
+	}
 }
 
 /**

@@ -1,4 +1,4 @@
-import { canEditWorld, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditWorldOpen, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 
 import { formatDuration, t } from '../../localization';
@@ -260,7 +260,7 @@ export class TileDialog
 	open(universe: EditableUniverse, tile: EditorTile | undefined, edit: StagedEdit<TileSettings>, onChanged: () => void): void
 	{
 		const settings = (tile ?? NEW_TILE);
-		const canEdit = canEditWorld(universe.role);
+		const canEdit = canEditWorldOpen(universe);
 		const editable = (canEdit && !edit.removed);
 		const name = (tile ? tileName(tile, universe.ruleset) : '');
 

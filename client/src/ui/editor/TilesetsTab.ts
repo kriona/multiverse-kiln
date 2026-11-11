@@ -1,10 +1,11 @@
-import { canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { showStagedTileGraphic } from '../../rendering/tileGraphics';
 import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
+import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
@@ -234,7 +235,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			filter.addEventListener('change', () =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			});
 		}
 
@@ -262,20 +263,20 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			this.searchTimer = window.setTimeout(() =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_TILES_PER_PAGE);
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
 			this.offset += MAX_TILES_PER_PAGE;
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.addButton.addEventListener('click', () =>
@@ -309,7 +310,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();
-		this.addButton.hidden = !canEditWorld(universe.role);
+		this.addButton.hidden = !canEditWorldOpen(universe);
 		this.savedUploads = [];
 		void this.refresh();
 		void this.loadUploads(universe);
@@ -415,11 +416,11 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Whether the player may change the tiles
 	 *
-	 * @return True for a creator or builder
+	 * @return True for a creator or builder, in a version they may change
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canEditWorld(this.universe.role));
+		return((this.universe !== undefined) && canEditWorldOpen(this.universe));
 	}
 
 	/**
@@ -654,8 +655,10 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * Loads the page of tiles the filters and offset ask for, then shows it with the changes made since
+	 *
+	 * @param announcePage Whether to read out what the list shows, as after the player changed its page or filters
 	 */
-	private async refresh(): Promise<void>
+	private async refresh(announcePage = false): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
@@ -693,6 +696,11 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 					defaultMessage: 'Could not list the tiles.',
 					description: 'Shown on the Tilesets tab when the tiles couldn\'t be loaded'
 				}));
+
+				if (announcePage)
+				{
+					announceListPage(this.page, this.empty);
+				}
 			}
 
 			return;
@@ -707,7 +715,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		if ((page.tiles.length === 0) && (this.offset > 0))
 		{
 			this.offset = Math.max(0, this.offset - MAX_TILES_PER_PAGE);
-			void this.refresh();
+			void this.refresh(announcePage);
 			return;
 		}
 
@@ -719,19 +727,14 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		}
 
 		this.render();
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.tiles.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.tiles.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.tiles.length) >= page.total);
+
+		if (announcePage)
+		{
+			announceListPage(this.page, this.empty);
+		}
 	}
 
 	/**

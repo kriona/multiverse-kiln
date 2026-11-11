@@ -1,10 +1,11 @@
-import { canEditWorld, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditVersionOpen, canEditWorld, canEditWorldOpen, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { engineCoinName } from '../moneyField';
+import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { describeTooLarge, describeUnreadable, describeWrongLanguage, downloadText, FILE_FORMAT_NAMES, readTranslationFileFrom } from '../translationFiles';
 import type { EditorSave } from './editorSave';
@@ -224,7 +225,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			filter.addEventListener('change', () =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			});
 		}
 
@@ -234,20 +235,20 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			this.searchTimer = window.setTimeout(() =>
 			{
 				this.offset = 0;
-				void this.refresh();
+				void this.refresh(true);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_UNIVERSE_TEXT_PER_PAGE);
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
 			this.offset += MAX_UNIVERSE_TEXT_PER_PAGE;
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		setOptions(this.format, namedOptions(TRANSLATION_FILE_FORMATS, FILE_FORMAT_NAMES));
@@ -383,7 +384,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	{
 		const universe = this.universe;
 
-		return((universe !== undefined) && (canEditWorld(universe.role) || canMarkNoTranslation(universe) || universe.translationLanguages.some((language) => canTranslate(universe, language))));
+		return((universe !== undefined) && canEditVersionOpen(universe) && (canEditWorld(universe.role) || canMarkNoTranslation(universe) || universe.translationLanguages.some((language) => canTranslate(universe, language))));
 	}
 
 	/**
@@ -580,8 +581,10 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	/**
 	 * Loads the page of text the language, search, filters, order and offset ask for, then shows it with
 	 * the changes made since. While the tab is hidden it only notes that the page is out of date
+	 *
+	 * @param announcePage Whether to read out what the table shows, as after the player changed its page, search or filters
 	 */
-	private async refresh(): Promise<void>
+	private async refresh(announcePage = false): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
@@ -627,6 +630,11 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 					description: 'Shown on the editor\'s Translations tab when the universe\'s text and its translations couldn\'t be loaded'
 				}));
 				this.rows.replaceChildren();
+
+				if (announcePage)
+				{
+					announceListPage(this.page, this.empty);
+				}
 			}
 
 			return;
@@ -639,19 +647,14 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 
 		this.shown = page.rows;
 		this.render();
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.rows.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.rows.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.rows.length) >= page.total);
+
+		if (announcePage)
+		{
+			announceListPage(this.page, this.empty);
+		}
 	}
 
 	/**
@@ -995,9 +998,9 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			note: shown.note,
 			noTranslation: shown.noTranslation,
 			outOfDate: shown.outOfDate,
-			mayTranslate: canTranslate(universe, language),
-			mayWriteNote: canEditWorld(universe.role),
-			mayMarkNoTranslation: canMarkNoTranslation(universe),
+			mayTranslate: (canTranslate(universe, language) && canEditVersionOpen(universe)),
+			mayWriteNote: canEditWorldOpen(universe),
+			mayMarkNoTranslation: (canMarkNoTranslation(universe) && canEditVersionOpen(universe)),
 			apply: (translation, note, noTranslation) =>
 			{
 				if (noTranslation === row.noTranslation)

@@ -21,7 +21,7 @@ import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { SortDirection } from './sorting.js';
 import type { TileGraphic, TileGraphicFormat } from './tileGraphics.js';
 import type { Darkvision } from './vision.js';
-import type { DisplayTime, EditorRole, FaerieMorning, LobbyPassageOfTime, PassageOfTime, Ruleset, UniverseRole, UniverseStage, AreaLightLevel, AreaLinkMode, AreaPassageOfTime } from './universes.js';
+import { canEditWorld, mustEditInDraft, type DisplayTime, type EditorRole, type FaerieMorning, type LobbyPassageOfTime, type PassageOfTime, type Ruleset, type UniverseRole, type UniverseStage, type AreaLightLevel, type AreaLinkMode, type AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -379,6 +379,13 @@ export interface UniverseSettings
 	 */
 	requireTwoFactor: boolean;
 
+	/**
+	 * Whether builders make their changes in the universe's draft while it is let there be light, and
+	 * may save nothing to its live version then but starting a draft and leaving the universe
+	 * (mustEditInDraft()). Like the stage, the universe has it once for both versions
+	 */
+	requireBuilderDraft: boolean;
+
 	passageOfTime: PassageOfTime;
 
 	/**
@@ -571,6 +578,30 @@ export interface EditableUniverse extends UniverseSettings
  * A universe as the server reads it, before it is told whose editor it is for
  */
 export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'twoFactor' | 'translationCounts' | 'dismissedNotices'>;
+
+/**
+ * Whether the player may save changes to the version of the universe the editor has open: every version
+ * but the live one while their role must make its changes in the draft (mustEditInDraft())
+ *
+ * @param universe The universe, in the version the editor has open
+ * @return True when they may
+ */
+export function canEditVersionOpen(universe: Pick<EditableUniverse, 'role' | 'stage' | 'requireBuilderDraft' | 'version'>): boolean
+{
+	return((universe.version === 'draft') || !mustEditInDraft(universe.role, universe.stage, universe.requireBuilderDraft));
+}
+
+/**
+ * Whether the player may change the world of the version of the universe the editor has open: its tiles,
+ * items, areas and links (canEditWorld() and canEditVersionOpen())
+ *
+ * @param universe The universe, in the version the editor has open
+ * @return True when they may
+ */
+export function canEditWorldOpen(universe: Pick<EditableUniverse, 'role' | 'stage' | 'requireBuilderDraft' | 'version'>): boolean
+{
+	return(canEditWorld(universe.role) && canEditVersionOpen(universe));
+}
 
 /**
  * Someone with a role in a universe, as the Editors tab lists them
@@ -812,6 +843,7 @@ export const AUDIT_FIELDS = [
 	'sourceLanguage',
 	'translationLanguages',
 	'stage',
+	'requireBuilderDraft',
 	'requireTwoFactor',
 	'passageOfTime',
 	'displayTime',
@@ -912,6 +944,7 @@ export interface AuditFieldValues
 	sourceLanguage: string;
 	translationLanguages: string[];
 	stage: UniverseStage;
+	requireBuilderDraft: boolean;
 	requireTwoFactor: boolean;
 	passageOfTime: AuditPassageOfTime;
 	displayTime: DisplayTime;

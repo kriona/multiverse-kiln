@@ -145,6 +145,18 @@
 	max-width: 8ch;
 }
 
+#site-areas-per-universe
+{
+	// Up to MAX_AREAS_PER_UNIVERSE
+	max-width: 9ch;
+}
+
+#site-characters-per-universe
+{
+	// Up to MAX_CHARACTERS_PER_UNIVERSE
+	max-width: 7ch;
+}
+
 #site-character-deletion-days
 {
 	// Up to MAX_CHARACTER_DELETION_DAYS

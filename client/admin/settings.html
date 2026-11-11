@@ -27,16 +27,21 @@
 									Players can create universes
 								</label>
 								<label data-message="admin.universesPerCreator" data-translation-context="Label of the field on the site settings page for the most universes one player may create">
-									Universes each player can create
+									Max number of universes each player can create
 									<input id="site-universes-per-creator" type="number" step="1" required />
 								</label>
 								<p class="hint" data-message="admin.universesHint" data-translation-context="Explains on the site settings page that the universe settings only affect making new universes">These only affect new universes. Universes that already exist persist, even for players who have more than the limit.</p>
 								<label data-message="admin.areasPerUniverse" data-translation-context="Label of the field on the site settings page for the most areas (maps of the game world) one universe may have">
-									Areas each universe can have
+									Max number of areas each universe can have
 									<input id="site-areas-per-universe" type="number" step="1" required aria-describedby="site-areas-per-universe-hint" />
 								</label>
 								<p id="site-areas-per-universe-hint" class="hint" data-message="admin.areasPerUniverseHint" data-translation-context="Explains the field on the site settings page for the most areas one universe may have. A universe's draft is the copy its editors change before players see it">This counts the live universe and its draft separately, and applies to importing a universe too. A universe with more areas keeps them, but can't add more until it has fewer.</p>
 								<h2 data-message="admin.characters" data-translation-context="Heading of the site settings about players' characters">Characters</h2>
+								<label data-message="admin.charactersPerUniverse" data-translation-context="Label of the field on the site settings page for the most characters one player may have in one universe">
+									Max number of characters each player can have in a universe
+									<input id="site-characters-per-universe" type="number" step="1" required aria-describedby="site-characters-per-universe-hint" />
+								</label>
+								<p id="site-characters-per-universe-hint" class="hint" data-message="admin.charactersPerUniverseHint" data-translation-context="Explains the field on the site settings page for the most characters one player may have in one universe. Last rites is how players delete a character after some days">This counts characters given their last rites until they are deleted. A player with more characters keeps them, but can't make more until they have fewer.</p>
 								<label data-message="admin.characterDeletionDays" data-translation-context="Label of the field on the site settings page for how many days a character given their last rites waits before being deleted">
 									Days between last rites and deletion
 									<input id="site-character-deletion-days" type="number" step="1" required aria-describedby="site-character-deletion-hint" />

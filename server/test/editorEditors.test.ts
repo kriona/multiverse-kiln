@@ -330,7 +330,7 @@ describe('Editing a universe\'s editors', () =>
 		assert.strictEqual(await findUniverseAccess(universeId, grace.playerId), undefined);
 
 		// A creator can still change the universe, and bring it back from the end of time
-		await saveAll(ada, universeId, [{ kind: 'universe', update: { stage: 'let_there_be_light' } }]);
+		await saveAll(ada, universeId, [{ kind: 'universe', update: { stage: 'prologue' } }]);
 		assert.strictEqual((await saveChanges(bob, universeId, [worldChange])).status, 404, 'the builder may save again, and is told the tileset doesn\'t exist');
 	});
 

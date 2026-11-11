@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_SITE_SETTINGS, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, type SiteSettings } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../../src/db/adminClient.js';
 import { findSiteSettings, saveSiteSettings } from '../../src/db/siteSettingsRepo.js';
@@ -9,6 +9,7 @@ const closed: SiteSettings = {
 	universeCreationEnabled: false,
 	universesPerCreator: 12,
 	areasPerUniverse: 40,
+	charactersPerUniverse: 6,
 	characterDeletionDays: 0,
 	socials: {
 		discord: 'https://discord.gg/example',
@@ -52,6 +53,14 @@ describe('siteSettingsRepo', () =>
 			await assert.rejects(saveSiteSettings({
 				...closed,
 				areasPerUniverse
+			}, adminDb));
+		}
+
+		for (const charactersPerUniverse of [MIN_CHARACTERS_PER_UNIVERSE - 1, MAX_CHARACTERS_PER_UNIVERSE + 1])
+		{
+			await assert.rejects(saveSiteSettings({
+				...closed,
+				charactersPerUniverse
 			}, adminDb));
 		}
 

@@ -116,7 +116,7 @@
 		"description": "Note in the admin page's list of server admins on the player looking at it"
 	},
 	"admin.areasPerUniverse": {
-		"defaultMessage": "Areas each universe can have",
+		"defaultMessage": "Max number of areas each universe can have",
 		"description": "Label of the field on the site settings page for the most areas (maps of the game world) one universe may have"
 	},
 	"admin.areasPerUniverseHint": {
@@ -138,6 +138,14 @@
 	"admin.characters": {
 		"defaultMessage": "Characters",
 		"description": "Heading of the site settings about players' characters"
+	},
+	"admin.charactersPerUniverse": {
+		"defaultMessage": "Max number of characters each player can have in a universe",
+		"description": "Label of the field on the site settings page for the most characters one player may have in one universe"
+	},
+	"admin.charactersPerUniverseHint": {
+		"defaultMessage": "This counts characters given their last rites until they are deleted. A player with more characters keeps them, but can't make more until they have fewer.",
+		"description": "Explains the field on the site settings page for the most characters one player may have in one universe. Last rites is how players delete a character after some days"
 	},
 	"admin.column.actions": {
 		"defaultMessage": "Actions",
@@ -628,7 +636,7 @@
 		"description": "Explains on the site settings page that the universe settings only affect making new universes"
 	},
 	"admin.universesPerCreator": {
-		"defaultMessage": "Universes each player can create",
+		"defaultMessage": "Max number of universes each player can create",
 		"description": "Label of the field on the site settings page for the most universes one player may create"
 	},
 	"area.announce.appeared": {
@@ -752,8 +760,8 @@
 		"description": "Label of the field for which ability gets the bonus some races (such as humans) let the player place"
 	},
 	"character.create.limit": {
-		"defaultMessage": "You have {max, plural, one {# character} other {# characters}} in this universe, as many as you can have.",
-		"description": "Shown on the Create Character page when the player can't make another character in this universe; {max} is the most allowed"
+		"defaultMessage": "You have {count, plural, one {# character} other {# characters}} in this universe, and can have at most {max}.",
+		"description": "Shown on the Create Character page when the player can't make another character in this universe; {count} is how many they have, which can be more than {max}, the most the site allows"
 	},
 	"character.create.loadFailed": {
 		"defaultMessage": "Could not load the races, classes and ability scores.",
@@ -762,6 +770,18 @@
 	"character.create.name": {
 		"defaultMessage": "Name",
 		"description": "Label of the field for a new character's name"
+	},
+	"character.create.noClass": {
+		"defaultMessage": "Choose a class.",
+		"description": "Shown under the class field of Create Character when the player tries to make the character without choosing a class"
+	},
+	"character.create.noRace": {
+		"defaultMessage": "Choose a race.",
+		"description": "Shown under the race field of Create Character when the player tries to make the character without choosing a race"
+	},
+	"character.create.noTheme": {
+		"defaultMessage": "Choose a theme.",
+		"description": "Shown under the theme field of Create Character in Starfinder when the player tries to make the character without choosing a theme (a background, such as ace pilot)"
 	},
 	"character.create.overBudget": {
 		"defaultMessage": "These scores cost more than your {budget, plural, one {# point} other {# points}}. Lower some of them.",
@@ -891,9 +911,9 @@
 		"defaultMessage": "Name",
 		"description": "In the review step of Create Character, the label of the character's name"
 	},
-	"character.review.noName": {
+	"character.review.notChosen": {
 		"defaultMessage": "Not chosen yet",
-		"description": "In the review step of Create Character, shown for the name when the player hasn't written one"
+		"description": "In the review step of Create Character, shown for the name, race, class or theme when the player hasn't chosen one"
 	},
 	"character.review.race": {
 		"defaultMessage": "Race",
@@ -1216,8 +1236,8 @@
 		"description": "Name of the easiest default difficulty level, for players who are there for the story: mobs (monsters and enemies) are 50% easier"
 	},
 	"editor.accessChanged": {
-		"defaultMessage": "What you can do in this universe has changed: your role, its stage, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.",
-		"description": "Shown above the editor's tabs when the player's role in the universe, its stage or whether the site's admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away"
+		"defaultMessage": "What you can do in this universe has changed: your role, its stage, whether builders make their changes in a draft, whether the site's admins have disabled it, or whether you have two-factor authentication on. Save or undo your changes, then reload the page to see what you can do now.",
+		"description": "Shown above the editor's tabs when the player's role in the universe, its stage, whether its creators require builders to make their changes in its draft or whether the site's admins disabled it changed, or the player turned two-factor authentication on or off, while they had unsaved changes, which loading the universe again would throw away"
 	},
 	"editor.accessLost": {
 		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
@@ -1575,6 +1595,10 @@
 		"defaultMessage": "starting area",
 		"description": "Under an area in the list of areas, for the area new characters start in"
 	},
+	"editor.audit.caption": {
+		"defaultMessage": "Saves",
+		"description": "Name of the table on the editor's Audit tab listing the saves made in the universe's editor, read out by screen readers"
+	},
 	"editor.audit.changes": {
 		"defaultMessage": "Changes",
 		"description": "Heading of the column on the editor's Audit tab listing what each save changed, such as Changed item Dagger, with a line for each setting it changed"
@@ -1751,9 +1775,21 @@
 		"defaultMessage": "yes",
 		"description": "The value of a checkbox setting a save turned on, in the editor's Audit tab's list of what a save changed, e.g. \"Track ammunition (yes)\""
 	},
+	"editor.builderDraftRequired.open": {
+		"defaultMessage": "While this universe is ready for everyone, you must make changes in a draft. You can view the live version but not change it.",
+		"description": "Shown above the editor's tabs to a builder with the live version open, while the universe is in the stage \"let there be light\" (open to everyone), its creators require builders to make their changes in its draft (a copy players don't see until a creator applies it), and it has one"
+	},
+	"editor.builderDraftRequired.start": {
+		"defaultMessage": "While this universe is ready for everyone, builders make their changes in its draft, so you can look at the live version but not change it. Start a draft to make changes.",
+		"description": "Shown above the editor's tabs to a builder with the live version open, while the universe is in the stage \"let there be light\" (open to everyone), its creators require builders to make their changes in its draft (a copy players don't see until a creator applies it), and it has none yet; Start Draft is in the toolbar"
+	},
 	"editor.changedSince": {
 		"defaultMessage": "{action, select, deleted {{names} deleted this since you opened it.} restored {{names} restored this to its default since you opened it.} other {{fieldCount, plural, =0 {{names} changed this since you opened it.} other {{names} changed {fields} since you opened this.}}}}",
 		"description": "In the world editor, under something the player has unsaved changes to (a race, item, tile, the universe's settings and so on) that another editor saved changes to in the meantime; the player's changes stay as they are. {names} is who saved, by display name, {fields} the settings they changed, e.g. \"Name and Speed\", and {fieldCount} how many"
+	},
+	"editor.characterList.caption": {
+		"defaultMessage": "Characters",
+		"description": "Name of the table of the universe's characters on the editor's Character List tab, read out by screen readers"
 	},
 	"editor.characterList.class": {
 		"defaultMessage": "Class",
@@ -2219,6 +2255,10 @@
 		"defaultMessage": "Add Editor",
 		"description": "Title of the dialog on the editor's Editors tab for giving a player a role in the universe"
 	},
+	"editor.editors.caption": {
+		"defaultMessage": "Editors",
+		"description": "Name of the table on the editor's Editors tab listing the players with a role in the universe, read out by screen readers"
+	},
 	"editor.editors.choosePlayer": {
 		"defaultMessage": "Search for the player by name or username, then choose them from the list.",
 		"description": "Shown under the field for finding a player in the dialog for adding an editor on the editor's Editors tab, when Apply is pressed before a player is chosen from the list"
@@ -2478,6 +2518,10 @@
 	"editor.items.add": {
 		"defaultMessage": "Add Item",
 		"description": "Button that opens the dialog for making a new item"
+	},
+	"editor.items.caption": {
+		"defaultMessage": "Items",
+		"description": "Name of the table of items on the editor's Items tab, read out by screen readers"
 	},
 	"editor.items.category": {
 		"defaultMessage": "Kind",
@@ -3355,6 +3399,10 @@
 		"defaultMessage": "Add Tile",
 		"description": "Button that opens the dialog for making a new tile"
 	},
+	"editor.tiles.caption": {
+		"defaultMessage": "Tiles",
+		"description": "Name of the table of tiles on the editor's Tilesets tab, read out by screen readers"
+	},
 	"editor.tiles.deleteUploadFailed": {
 		"defaultMessage": "Could not delete the tileset \"{name}\".",
 		"description": "Shown on the Tilesets tab when the server refused to delete an uploaded tileset, followed by why; {name} is the name it was given. Nothing was saved"
@@ -3663,6 +3711,14 @@
 		"defaultMessage": "Preview",
 		"description": "Heading above the long description as players will see it"
 	},
+	"editor.universe.requireBuilderDraft": {
+		"defaultMessage": "Builders make their changes in a draft",
+		"description": "Checkbox on the editor's Universe tab, under the stage while \"let there be light\" (open to everyone) is chosen, for whether builders must make their changes in the universe's draft, a copy players don't see until a creator applies it, rather than in the live version; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.universe.requireBuilderDraftHint": {
+		"defaultMessage": "While players can join, builders can start a draft and switch between it and the live version, but can only save changes to the draft. Players see their work once a creator applies the draft.",
+		"description": "Explains the checkbox on the editor's Universe tab, shown while the stage \"let there be light\" (open to everyone) is chosen, that requires builders to make their changes in the universe's draft, a copy players don't see until a creator applies it"
+	},
 	"editor.universe.saveFailed": {
 		"defaultMessage": "Could not save the universe.",
 		"description": "Shown on the Universe tab when the server refused its settings, followed by why; nothing was saved"
@@ -3860,7 +3916,7 @@
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: translations the player's role, or the universe's languages, don't take"
 	},
 	"editor.universeImport.leftOut.universeOnly": {
-		"defaultMessage": "Its editors, stage and two-factor setting, which belong to the universe rather than its draft",
+		"defaultMessage": "Its editors, its stage, and whether builders make their changes in a draft and editors need two-factor authentication, which belong to the universe rather than its draft",
 		"description": "In the list of what a file chosen in the dialog importing it into the universe's draft leaves out: the parts of the universe a draft has no copy of"
 	},
 	"editor.universeImport.leftOut.worldRole": {
@@ -3871,17 +3927,17 @@
 		"defaultMessage": "It has been modified from its original export.",
 		"description": "Warning in the dialog importing a zip file into the universe's draft, under which universe it was exported from, when and by whom (which the site confirmed from its signature): files inside the zip file were changed, added or removed since it was exported"
 	},
-	"editor.universeImport.needsDraft.creatorsStart": {
-		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators can start one.",
-		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a builder or translator, while the universe has no draft, which only its creators can start"
-	},
 	"editor.universeImport.needsDraft.open": {
 		"defaultMessage": "Files must be imported into the universe's draft. Open the draft to import into it.",
 		"description": "In the dialog Import Universe opens on the editor's Universe tab while the editor shows the live version and the universe has a draft; Open Draft follows"
 	},
+	"editor.universeImport.needsDraft.othersStart": {
+		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet, and only its creators and builders can start one.",
+		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a translator, while the universe has no draft, which only its creators and builders can start"
+	},
 	"editor.universeImport.needsDraft.start": {
 		"defaultMessage": "Files must be imported into the universe's draft. The universe has no draft yet; you must start one to import changes.",
-		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a creator, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file"
+		"description": "In the dialog Import Universe opens on the editor's Universe tab, for a creator or builder, while the universe has no draft; Start Draft follows, which starts one and then opens the dialog importing a file"
 	},
 	"editor.universeImport.openDraftButton": {
 		"defaultMessage": "Open Draft",
@@ -4106,6 +4162,18 @@
 	"email.code.confirmEmailChange.subject": {
 		"defaultMessage": "Your code to change your email address on {siteName}",
 		"description": "Subject of the email, sent to an account's current address, with the code that checks it's the owner changing the account's email address, for an account without a password; {siteName} is the site's name"
+	},
+	"email.code.confirmLogin.intro": {
+		"defaultMessage": "Someone is logging in to your account on {siteName} with your password. Your account hasn't been used for a while, so we're checking it's you. If it is, enter this code to finish logging in:",
+		"description": "First paragraph of the email with the code that checks it's the owner logging in with the password to an account that hasn't been used for months and has no two-factor authentication, shown just above the code; {siteName} is the site's name"
+	},
+	"email.code.confirmLogin.notYou": {
+		"defaultMessage": "If it isn't you, someone else knows your password. They can't log in without this code, but reset your password to keep them out.",
+		"description": "Last paragraph of the email with the code that checks it's the owner logging in to an account that hasn't been used for months, for someone who isn't logging in: whoever is knows the password. A link to reset the password follows"
+	},
+	"email.code.confirmLogin.subject": {
+		"defaultMessage": "Your code to log in to {siteName}",
+		"description": "Subject of the email with the code that checks it's the owner logging in with the password to an account that hasn't been used for months and has no two-factor authentication; {siteName} is the site's name"
 	},
 	"email.code.deleteAccount.intro": {
 		"defaultMessage": "Someone asked to delete your account on {siteName}, which can't be undone. If it was you, enter this code to go on:",
@@ -4470,6 +4538,10 @@
 	"error.auth.wrongTwoFactorCode": {
 		"defaultMessage": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code.",
 		"description": "Shown under the two-factor code field when the authenticator or recovery code is wrong, or was already used"
+	},
+	"error.builderDraftRequiredSave": {
+		"defaultMessage": "Builders make their changes to this universe in its draft while it's ready for everyone, so changes to the live version can't be saved. Open the draft, or start one, and make your changes there.",
+		"description": "Why the world editor couldn't save: the player is a builder, the universe is in the stage \"let there be light\" (open to everyone), and its creators require builders to make their changes in its draft, a copy players don't see until a creator applies it. Starting a draft and leaving the universe can still be saved"
 	},
 	"error.cantDeleteArea": {
 		"defaultMessage": "The lobby and starting areas can't be deleted.",
@@ -5747,6 +5819,10 @@
 		"defaultMessage": "Sent a new code. The one before no longer works.",
 		"description": "Shown under the code field after another code was emailed"
 	},
+	"login.codeSentConfirmLogin": {
+		"defaultMessage": "You haven't logged in for a while, so we've emailed {email} a code to check it's you. Enter the code from the email to finish logging in. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
+		"description": "On the screen for the emailed code when logging in with the password to an account that hasn't been used for months and has no two-factor authentication; {email} is the account's address"
+	},
 	"login.codeSentLink": {
 		"defaultMessage": "We've emailed {email}. Enter the code from the email to link your login. It works once, for {minutes, plural, one {# minute} other {# minutes}}.",
 		"description": "On the screen for the emailed code when linking a Google or Discord login to the account with the same email address; {email} is the address it was sent to"
@@ -6154,6 +6230,10 @@
 	"pager.range": {
 		"defaultMessage": "{first, number}-{last, number} of {total, number}",
 		"description": "Which items of a list a page shows, e.g. 1-500 of 1200"
+	},
+	"pager.rangeSpoken": {
+		"defaultMessage": "{first, number} to {last, number} of {total, number}",
+		"description": "Which items of a list a page shows, e.g. 1 to 500 of 1200, read out by screen readers in place of the 1-500 of 1200 shown between a list's Previous and Next buttons, and when the page or the list's search or filters change"
 	},
 	"pf1e.ability.charisma": {
 		"defaultMessage": "Charisma",

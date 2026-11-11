@@ -9,7 +9,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, MAX_CHARACTERS_PER_UNIVERSE, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
@@ -635,12 +635,13 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [abilities, races, classes, themes, characterCount, storedDraft, translator] = await Promise.all([
+	const [abilities, races, classes, themes, characterCount, siteSettings, storedDraft, translator] = await Promise.all([
 		offerAbilities(universe, playerId),
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
 		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
 		countCharacters(playerId, universe.id),
+		findSiteSettings(),
 		findCharacterDraft(playerId, universe.id),
 		loadTranslator(request, universe, ['universe', 'race', 'class', 'theme'])
 	]);
@@ -661,6 +662,7 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 			.filter((theme) => theme.enabled)
 			.map(({ id, key, name, rules }) => translator.name('theme', id, { id, key, name, rules })),
 		characterCount,
+		characterLimit: siteSettings.charactersPerUniverse,
 		draft: (draft.success ? draft.data : null)
 	};
 
@@ -786,12 +788,14 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
-		if (await countCharacters(playerId, universeId, transaction) >= MAX_CHARACTERS_PER_UNIVERSE)
+		const { charactersPerUniverse } = await findSiteSettings(transaction);
+
+		if (await countCharacters(playerId, universeId, transaction) >= charactersPerUniverse)
 		{
 			return({
 				status: 409,
 				message: messages.characterLimit,
-				values: { max: MAX_CHARACTERS_PER_UNIVERSE }
+				values: { max: charactersPerUniverse }
 			});
 		}
 

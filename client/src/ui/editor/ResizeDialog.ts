@@ -3,6 +3,7 @@ import { MAX_AREA_SIDE, type AreaBounds } from '@multiverse-kiln/shared';
 import { t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { announce } from '../announcer';
+import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonText, showMessage } from '../dom';
 
 /**
@@ -69,6 +70,12 @@ export class ResizeDialog
 	private readonly warning = getElement('resize-warning', HTMLElement);
 	private readonly submit = getElement('resize-submit', HTMLButtonElement);
 
+	/**
+	 * Whether the sides have changed from the area's bounds. Extend by is left out, since it only sets how
+	 * far the Extend Size buttons reach
+	 */
+	private readonly changes = new ChangeTracker({ root: this.form });
+
 	private target: ResizeTarget | undefined;
 
 	/**
@@ -101,9 +108,14 @@ export class ResizeDialog
 			});
 		}
 
+		this.changes.guardDialog(this.dialog);
+
 		getElement('resize-cancel', HTMLButtonElement).addEventListener('click', () =>
 		{
-			this.dialog.close();
+			if (this.changes.confirmDiscard())
+			{
+				this.dialog.close();
+			}
 		});
 
 		this.form.addEventListener('submit', (event) =>
@@ -127,6 +139,7 @@ export class ResizeDialog
 		this.east.value = String(target.bounds.maxColumn);
 		this.updateTotal();
 		this.dialog.showModal();
+		this.changes.markSaved();
 	}
 
 	/**
@@ -149,6 +162,7 @@ export class ResizeDialog
 
 		field.value = String((Number.isInteger(current) ? current : 0) + cells);
 		this.updateTotal();
+		this.changes.check();
 
 		// The warning is an alert, read out by itself
 		if (this.warning.hidden)

@@ -3,6 +3,7 @@ import { canManageEditors, EDITOR_ROLE_NAMES, MAX_UNIVERSE_EDITS_PER_PAGE, type 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
+import { announceListPage, showPageRange } from '../pager';
 import { playerCell } from '../playerCell';
 import { describeDetail, describeFieldChange } from './auditDetails';
 
@@ -55,13 +56,13 @@ export class AuditTab
 		this.previousButton.addEventListener('click', () =>
 		{
 			this.offset = Math.max(0, this.offset - MAX_UNIVERSE_EDITS_PER_PAGE);
-			void this.refresh();
+			void this.refresh(true);
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
 			this.offset += MAX_UNIVERSE_EDITS_PER_PAGE;
-			void this.refresh();
+			void this.refresh(true);
 		});
 	}
 
@@ -118,8 +119,10 @@ export class AuditTab
 	/**
 	 * Loads the page of saves the offset asks for, and shows it. While the tab is hidden it only notes
 	 * that the page is out of date
+	 *
+	 * @param announcePage Whether to read out what the list shows, as after the player changed its page
 	 */
-	private async refresh(): Promise<void>
+	private async refresh(announcePage = false): Promise<void>
 	{
 		const universe = this.universe;
 		const version = ++this.requestVersion;
@@ -156,6 +159,11 @@ export class AuditTab
 					defaultMessage: 'Could not list the saves.',
 					description: 'Shown on the editor\'s Audit tab when the record of saves made in the universe\'s editor couldn\'t be loaded'
 				}));
+
+				if (announcePage)
+				{
+					announceListPage(this.page, this.empty);
+				}
 			}
 
 			return;
@@ -174,19 +182,14 @@ export class AuditTab
 				defaultMessage: 'Nothing has been saved in this universe\'s editor yet.',
 				description: 'Shown on the editor\'s Audit tab instead of the list of saves when nobody has saved a change to the universe yet'
 			})));
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: this.offset + 1,
-				last: this.offset + page.edits.length,
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.edits.length, page.total);
 		this.previousButton.disabled = (this.offset === 0);
 		this.nextButton.disabled = ((this.offset + page.edits.length) >= page.total);
+
+		if (announcePage)
+		{
+			announceListPage(this.page, this.empty);
+		}
 	}
 }
 

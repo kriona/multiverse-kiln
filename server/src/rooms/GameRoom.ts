@@ -17,10 +17,11 @@ import { characterChanges, type CharacterChange } from '../players/characterChan
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
-import { areaChanges, type AreaPlace } from '../world/areaChanges.js';
+import { areaChanges, type AreaChange, type AreaPlace } from '../world/areaChanges.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
+import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
@@ -150,6 +151,12 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly seen = new SeenCells();
 
 	/**
+	 * The save of the seen cells going on, if any. Each waits for the one before, since a save writes
+	 * whole chunks, and one finishing late would write an older copy of a chunk over a newer one
+	 */
+	private seenSaving: Promise<void> = Promise.resolve();
+
+	/**
 	 * Characters whose area is deleted go to the group's starting area. Everyone here is in the group,
 	 * so they see what any of them sees, and are sent only the cells the group has seen. A link that
 	 * needs the whole group is refused unless every member who can be played, and the anchor being, is
@@ -222,9 +229,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly windows = new Map<string, Set<GameClient>>();
 
 	/**
-	 * Whether the anchor being has left, so the group is no more and nothing is saved
+	 * Once the anchor being has left, or the group size was lowered, so the group is no more, the close
+	 * code its windows are turned away with; nothing is saved from then on, and no window may join.
+	 * Undefined while the group is still together
 	 */
-	private disbanded = false;
+	private disbanded: ServerCloseCode | undefined;
 
 	/**
 	 * How many invalid messages each client has sent this session (server-only, not synced)
@@ -232,6 +241,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly invalidMessages = new InvalidMessages();
 
 	private readonly joinChanges = new JoinChanges<GameJoinChange, GameLookup>();
+
+	private readonly whileCreating = new ChangesWhileCreating();
 
 	/**
 	 * The group's chat, loaded in onCreate. It takes in the notices written in it, such as a character
@@ -255,19 +266,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				return;
 			}
 
-			// Nothing moves in a universe at the end of time
-			if (!this.state.locked)
-			{
-				this.areaPlayers.queueMove(client.sessionId, result.data);
-			}
+			// Nothing moves in a universe at the end of time (areaPlayers is locked)
+			this.areaPlayers.queueMove(client.sessionId, result.data);
 		},
 
 		[MessageType.TakeLink]: (client: GameClient) =>
 		{
-			if (!this.state.locked)
-			{
-				this.areaPlayers.takeLink(client.sessionId);
-			}
+			this.areaPlayers.takeLink(client.sessionId);
 		},
 
 		[GameMessageType.Control]: (client: GameClient, payload: unknown) =>
@@ -357,6 +362,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		const { groupId } = parsed.data;
 
 		gameRooms.claim(groupId, this);
+		this.followChanges();
 
 		const group = await findGroup(groupId);
 		const universe = (group ? await findUniverse(group.universeId) : undefined);
@@ -386,6 +392,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.gameClock = new GroupClock(group.clockSeconds);
 		this.state.clock = this.gameClock.seconds;
 		this.state.locked = (universe.stage === 'end_of_time');
+		this.areaPlayers.setLocked(this.state.locked);
 		this.raceSight = await loadRaceSight(universe.id, universe.ruleset);
 		this.barred = await loadBarredOptions(universe.id);
 
@@ -433,103 +440,155 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			void this.saveChat();
 		}, CHAT_SAVE_INTERVAL_MS);
 
+		this.stopListening.push(areaOccupants.register(this.universeId, () => [...this.members.keys()].flatMap((characterId) =>
+		{
+			const areaId = this.areaPlayers.getAreaId(characterId);
+
+			return(((areaId === undefined) ? [] : [{ characterId, areaId }]));
+		})));
+		this.whileCreating.created();
+	}
+
+	/**
+	 * Starts following changes to the group, its characters, the world, sessions and who may open the
+	 * universe's groups. Called before onCreate's first read, so none published while it loads are
+	 * missed: until it has loaded, they are held (whileCreating)
+	 */
+	private followChanges(): void
+	{
 		this.stopListening.push(
 			groupChanges.onChange((change) =>
 			{
-				this.applyGroupChange(change);
+				this.whileCreating.apply(() => this.applyGroupChange(change));
 			}),
 			accountDeletions.onDeleted((playerId) =>
 			{
-				if (this.chat.forgetAuthor(playerId))
+				this.whileCreating.apply(() =>
 				{
-					const deleted: ChatAuthorDeletedPayload = { playerId };
+					if (this.chat.forgetAuthor(playerId))
+					{
+						const deleted: ChatAuthorDeletedPayload = { playerId };
 
-					this.broadcast(GameServerMessageType.ChatAuthorDeleted, deleted);
-				}
+						this.broadcast(GameServerMessageType.ChatAuthorDeleted, deleted);
+					}
+				});
 			}),
 			characterChanges.onChange((change) =>
 			{
-				this.applyCharacterChange(change);
+				this.whileCreating.apply(() => this.applyCharacterChange(change));
 			}),
 			areaChanges.onChange((change) =>
 			{
-				if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
-				{
-					this.joinChanges.note('universe');
-
-					for (const client of this.clients)
-					{
-						client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
-					}
-
-					return;
-				}
-
-				if (change.kind === 'text')
+				this.whileCreating.apply(() => this.applyAreaChange(change));
+			}),
+			universeAccessChanges.onBarredChanged((change) =>
+			{
+				this.whileCreating.apply(() =>
 				{
 					if (change.universeId === this.universeId)
 					{
-						this.broadcast(ServerMessageType.UniverseText);
+						this.applyBarredChange(change);
 					}
-
-					return;
-				}
-
-				if (change.kind === 'deleted')
-				{
-					this.seen.forget(change.areaId);
-				}
-
-				if (change.kind === 'evacuated')
-				{
-					this.evacuate(change.areaId, change.destination).catch((error: unknown) =>
-					{
-						console.error('Could not move the characters of group', this.groupId, 'out of area', change.areaId, error);
-					});
-
-					return;
-				}
-
-				this.areaPlayers.applyChange(change).catch((error: unknown) =>
-				{
-					console.error('Could not apply a world change to the room of group', this.groupId, error);
 				});
-			}),
-			areaOccupants.register(this.universeId, () => [...this.members.keys()].flatMap((characterId) =>
-			{
-				const areaId = this.areaPlayers.getAreaId(characterId);
-
-				return(((areaId === undefined) ? [] : [{ characterId, areaId }]));
-			})),
-			universeAccessChanges.onBarredChanged((change) =>
-			{
-				if (change.universeId === this.universeId)
-				{
-					this.applyBarredChange(change);
-				}
 			}),
 			connectedSessions.onEnd((sessionIds) =>
 			{
-				this.joinChanges.note('session');
-				this.turnAwaySessions(sessionIds);
+				this.whileCreating.apply(() =>
+				{
+					this.joinChanges.note('session');
+					this.turnAwaySessions(sessionIds);
+				});
 			}),
 			universeAccessChanges.onLost((change) =>
 			{
-				if (change.universeId === this.universeId)
+				this.whileCreating.apply(() =>
 				{
-					this.joinChanges.note('access');
-					this.turnAwayPlayers(change.playerIds);
-				}
+					if (change.universeId === this.universeId)
+					{
+						this.joinChanges.note('access');
+						this.turnAwayPlayers(change.playerIds);
+					}
+				});
 			}),
 			universeAccessChanges.onStageChanged((change) =>
 			{
-				if (change.universeId === this.universeId)
+				this.whileCreating.apply(() =>
 				{
-					this.joinChanges.note('stage');
-					this.applyStageChange(change);
-				}
+					if (change.universeId === this.universeId)
+					{
+						this.joinChanges.note('stage');
+						this.applyStageChange(change);
+					}
+				});
 			})
 		);
+	}
+
+	/**
+	 * Follows a change the world editor made: the universe being deleted or disabled turns every window
+	 * away, its text changing tells them to read it again, an area disabled elsewhere sends its members
+	 * away, the group's starting area being deleted makes the universe's its starting area, and any
+	 * other change goes to the members it affects
+	 *
+	 * @param change The change
+	 */
+	private applyAreaChange(change: AreaChange): void
+	{
+		if (((change.kind === 'universeDeleted') || (change.kind === 'universeDisabled')) && (change.universeId === this.universeId))
+		{
+			this.joinChanges.note('universe');
+
+			for (const client of this.clients)
+			{
+				client.leave(((change.kind === 'universeDeleted') ? ServerCloseCode.UniverseDeleted : ServerCloseCode.UniverseDisabled));
+			}
+
+			return;
+		}
+
+		if (change.kind === 'text')
+		{
+			if (change.universeId === this.universeId)
+			{
+				this.broadcast(ServerMessageType.UniverseText);
+			}
+
+			return;
+		}
+
+		if (change.kind === 'deleted')
+		{
+			this.seen.forget(change.areaId);
+
+			// The group's own starting area, a race's or class's, can be deleted (the universe's can't), so
+			// the members in it go to the universe's instead
+			if (change.areaId === this.startingAreaId)
+			{
+				this.useUniverseStartingArea()
+					.then(() => this.areaPlayers.applyChange(change))
+					.catch((error: unknown) =>
+					{
+						console.error('Could not move the characters of group', this.groupId, 'out of its deleted starting area', change.areaId, error);
+					});
+
+				return;
+			}
+		}
+
+		if (change.kind === 'evacuated')
+		{
+			this.evacuate(change.areaId, change.destination).catch((error: unknown) =>
+			{
+				console.error('Could not move the characters of group', this.groupId, 'out of area', change.areaId, error);
+			});
+
+			return;
+		}
+
+		this.areaPlayers.applyChange(change).catch((error: unknown) =>
+		{
+			console.error('Could not apply a world change to the room of group', this.groupId, error);
+		});
 	}
 
 	/**
@@ -609,12 +668,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	/**
 	 * Puts every playable character of the joining client's player into play, if they aren't already,
 	 * gives the client the character it asked for, and sends it the group's chat. A window that may have
-	 * missed a change while it joined looks itself up again first (recheckJoining())
+	 * missed a change while it joined looks itself up again first (recheckJoining()), and one whose group
+	 * is no more is turned away
 	 *
 	 * @param client The joining client
 	 */
 	private async join(client: GameClient): Promise<void>
 	{
+		// Colyseus lists the client among the room's clients just before onJoin, so a disbanding from here
+		// on turns it away with the rest; one before it, while onAuth looked the window up, is caught here
+		if (this.disbanded !== undefined)
+		{
+			throw new ServerError(this.disbanded, 'The window\'s group was disbanded while it joined');
+		}
+
 		await this.recheckJoining(client);
 
 		const { playerId, characterId } = identityOf(client);
@@ -676,7 +743,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		try
 		{
-			if (!this.disbanded)
+			if (this.disbanded === undefined)
 			{
 				await saveMemberPositions(this.groupId, positions);
 				await saveGroupClock(this.groupId, this.gameClock.seconds);
@@ -720,7 +787,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	saveChat(): Promise<void>
 	{
-		if (this.disbanded)
+		if (this.disbanded !== undefined)
 		{
 			return(Promise.resolve());
 		}
@@ -859,7 +926,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}
 		}
 
-		const startingArea = await this.areas.load(this.startingAreaId);
+		const startingArea = await this.loadStartingArea();
 
 		if (!startingArea)
 		{
@@ -870,6 +937,44 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			area: startingArea,
 			...startingCellOn(startingArea.loaded.bounds, this.startingCell)
 		});
+	}
+
+	/**
+	 * Loads the group's starting area, switching to the universe's when the group's own is gone
+	 * (useUniverseStartingArea())
+	 *
+	 * @return The area; undefined when neither exists
+	 */
+	private async loadStartingArea(): Promise<ActiveArea | undefined>
+	{
+		const startingArea = await this.areas.load(this.startingAreaId);
+
+		if (startingArea)
+		{
+			return(startingArea);
+		}
+
+		await this.useUniverseStartingArea();
+
+		return(this.areas.load(this.startingAreaId));
+	}
+
+	/**
+	 * Makes the universe's starting area and cell the group's, as they are for a room whose group has no
+	 * starting area of its own, for when the group's own has been deleted
+	 */
+	private async useUniverseStartingArea(): Promise<void>
+	{
+		const universe = await findUniverse(this.universeId);
+
+		if (universe?.startingAreaId !== undefined)
+		{
+			this.startingAreaId = universe.startingAreaId;
+			this.startingCell = {
+				column: universe.startingColumn,
+				row: universe.startingRow
+			};
+		}
 	}
 
 	/**
@@ -986,27 +1091,36 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Saves the chunks the group has seen more of since the last save, unless the group is no more.
-	 * Those that couldn't be saved are tried again next time
+	 * Saves the chunks the group has seen more of since the last save, unless the group is no more, after
+	 * any save going on. Those that couldn't be saved are tried again next time
+	 *
+	 * @return Resolves once they are saved, or rejects when they couldn't be
 	 */
-	private async saveSeen(): Promise<void>
+	private saveSeen(): Promise<void>
 	{
-		if (this.disbanded)
+		const saving = this.seenSaving.then(async () =>
 		{
-			return;
-		}
+			if (this.disbanded !== undefined)
+			{
+				return;
+			}
 
-		const changed = this.seen.takeChanged();
+			const changed = this.seen.takeChanged();
 
-		try
-		{
-			await saveSeenChunks(this.groupId, changed);
-		}
-		catch (error)
-		{
-			this.seen.putBack(changed);
-			throw error;
-		}
+			try
+			{
+				await saveSeenChunks(this.groupId, changed);
+			}
+			catch (error)
+			{
+				this.seen.putBack(changed);
+				throw error;
+			}
+		});
+
+		this.seenSaving = saving.catch(() => undefined);
+
+		return(saving);
 	}
 
 	/**
@@ -1147,7 +1261,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	 */
 	private async evacuate(areaId: string, destination: AreaPlace | null): Promise<void>
 	{
-		const startingArea = (destination ? undefined : await this.areas.load(this.startingAreaId));
+		const startingArea = (destination ? undefined : await this.loadStartingArea());
 		const target = (destination ?? (startingArea
 			? {
 				areaId: startingArea.loaded.area.id,
@@ -1187,11 +1301,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		if (change.kind === 'disbanded')
 		{
-			this.disbanded = true;
+			const code = ((change.groupSizeLowered === true) ? ServerCloseCode.GroupSizeLowered : ServerCloseCode.GroupDisbanded);
+
+			this.disbanded = code;
 
 			for (const client of this.clients)
 			{
-				client.leave(((change.groupSizeLowered === true) ? ServerCloseCode.GroupSizeLowered : ServerCloseCode.GroupDisbanded));
+				client.leave(code);
 			}
 
 			return;
@@ -1349,11 +1465,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private applyStageChange(change: StageChange): void
 	{
 		this.state.locked = (change.stage === 'end_of_time');
-
-		if (this.state.locked)
-		{
-			this.areaPlayers.stopAll();
-		}
+		this.areaPlayers.setLocked(this.state.locked);
 
 		for (const client of this.clients)
 		{

@@ -80,7 +80,8 @@ export function pngImageChunks(upload: Buffer): Buffer | null
 
 /**
  * Checks that an upload is a PNG of a sheet in a format, that format's size (TILE_GRAPHIC_SIZES) and at
- * most MAX_TILE_GRAPHIC_BYTES, and re-encodes it. Only the chunks its pixels need are decoded, and
+ * most MAX_TILE_GRAPHIC_BYTES, and re-encodes it. Only the chunks its pixels need are decoded, only once
+ * its header gives the format's size, and
  * re-encoding keeps only the pixels: metadata (such as where a photo was taken), extra chunks and anything
  * hidden after the image are dropped
  *
@@ -104,16 +105,17 @@ export async function prepareTileSheet(upload: Buffer, format: TileGraphicFormat
 		return({ ok: false, problem: 'notPng' });
 	}
 
-	// A sheet's worth of pixels is all a valid upload has, so a larger image is refused before it is decoded
-	const image = sharp(imageChunks, {
-		limitInputPixels: width * height,
-		failOn: 'error'
-	});
 	let metadata: Metadata;
 
+	// Reading the metadata only reads the header, so it needs no pixel limit, and an image larger than the
+	// sheet is refused for its size rather than as a file that couldn't be read
 	try
 	{
-		metadata = await image.metadata();
+		metadata = await sharp(imageChunks, {
+			limitInputPixels: false,
+			failOn: 'error'
+		})
+			.metadata();
 	}
 	catch
 	{
@@ -130,11 +132,15 @@ export async function prepareTileSheet(upload: Buffer, format: TileGraphicFormat
 		return({ ok: false, problem: 'wrongSize' });
 	}
 
+	// A sheet's worth of pixels is all a valid upload has, so the decoder never reads more than that
 	try
 	{
 		return({
 			ok: true,
-			png: await image
+			png: await sharp(imageChunks, {
+				limitInputPixels: width * height,
+				failOn: 'error'
+			})
 				.ensureAlpha()
 				.png({ compressionLevel: 9 })
 				.toBuffer()

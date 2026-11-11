@@ -48,6 +48,13 @@ type Destination =
 interface JoinedGroup
 {
 	groupId: string;
+
+	/**
+	 * The character the window has asked to play in the room: the one it joined as, or the one it last
+	 * switched to (controlCharacter())
+	 */
+	characterId: string;
+
 	connection: GameConnection;
 }
 
@@ -437,15 +444,27 @@ export class GamePage
 
 		if (this.joinedGroup?.groupId === character.groupId)
 		{
-			const control: ControlPayload = { characterId: character.id };
-
 			this.rememberCharacter(character.id);
 			this.destination = { kind: 'group', groupId: character.groupId, characterId: character.id };
-			this.joinedGroup.connection.room.send(GameMessageType.Control, control);
+			this.controlCharacter(this.joinedGroup, character.id);
 			return;
 		}
 
 		this.goToGroup(character.groupId, character.id);
+	}
+
+	/**
+	 * Switches the window to another of the player's characters in the group's room
+	 *
+	 * @param joined The group's room
+	 * @param characterId The character's ID
+	 */
+	private controlCharacter(joined: JoinedGroup, characterId: string): void
+	{
+		const control: ControlPayload = { characterId };
+
+		joined.characterId = characterId;
+		joined.connection.room.send(GameMessageType.Control, control);
 	}
 
 	/**
@@ -848,6 +867,11 @@ export class GamePage
 				{
 					await this.enterLobby(wantedLobby);
 				}
+				else if (wantedGroup && this.joinedGroup && (this.joinedGroup.characterId !== wantedGroup.characterId))
+				{
+					// Another of the player's characters in the group, chosen while its room was being joined
+					this.controlCharacter(this.joinedGroup, wantedGroup.characterId);
+				}
 				else
 				{
 					break;
@@ -1103,7 +1127,7 @@ export class GamePage
 			return;
 		}
 
-		this.joinedGroup = { groupId, connection };
+		this.joinedGroup = { groupId, characterId, connection };
 
 		// The room locks when the universe reaches the end of time, and unlocks when it leaves it
 		Callbacks.get(connection.room).listen('locked', (locked: boolean) =>

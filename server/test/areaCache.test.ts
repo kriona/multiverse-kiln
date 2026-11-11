@@ -64,6 +64,7 @@ function forestChunk(chunkColumn: number, chunkRow: number): AreaChunk
 
 /**
  * An AreaCache over a fake database, whose stored chunks the test can change, and whose chunk reads
+ * see the chunks as they were when the read began (as a query begun before a save commits does) and
  * wait until the test lets them finish
  */
 class FakeDatabase
@@ -82,14 +83,15 @@ class FakeDatabase
 		(_areaId, chunks) => new Promise((resolve) =>
 		{
 			const keys = chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow));
+			const found = keys
+				.map((key) => this.stored.get(key))
+				.filter((chunk) => (chunk !== undefined));
 
 			this.reads.push({
 				chunks: keys,
 				finish: () =>
 				{
-					resolve(keys
-						.map((key) => this.stored.get(key))
-						.filter((chunk) => (chunk !== undefined)));
+					resolve(found);
 				}
 			});
 		}),
@@ -105,6 +107,49 @@ class FakeDatabase
 		{
 			read.finish();
 		}
+	}
+}
+
+/**
+ * An AreaCache over a fake database whose area reads take the area as it is when their query runs,
+ * as a query begun before an editor's save commits does, and finish when the test lets them
+ */
+class SlowAreaDatabase
+{
+	/**
+	 * Whether the stored area is enabled
+	 */
+	enabled = true;
+
+	readonly reads: (() => void)[] = [];
+
+	readonly cache = new AreaCache(
+		() =>
+		{
+			const area = loadedArea();
+			const read: LoadedArea = {
+				...area,
+				area: {
+					...area.area,
+					enabled: this.enabled
+				}
+			};
+
+			return(new Promise((resolve) =>
+			{
+				this.reads.push(() => resolve(read));
+			}));
+		},
+		() => Promise.resolve([])
+	);
+
+	/**
+	 * Lets the oldest area read waiting finish, and waits for what follows from it
+	 */
+	async finishRead(): Promise<void>
+	{
+		this.reads.shift()?.();
+		await new Promise((resolve) => setImmediate(resolve));
 	}
 }
 
@@ -188,6 +233,33 @@ describe('AreaCache', () =>
 		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 10);
 	});
 
+	it('reads changed chunks on their way again, keeping the cells read after the change', async () =>
+	{
+		const database = new FakeDatabase();
+		const area = await database.cache.load(AREA_ID);
+
+		// A read begun before the change was saved, which lands after the read made for the change
+		const loading = database.cache.loadChunks(AREA_ID, [chunkKey(0, 0)]);
+
+		database.stored.delete(chunkKey(0, 0));
+
+		const reloading = database.cache.reloadChunks(AREA_ID, [chunkKey(0, 0)]);
+		const [before, after] = database.reads.splice(0);
+
+		assert.deepStrictEqual(after.chunks, [chunkKey(0, 0)]);
+
+		after.finish();
+		await new Promise((resolve) => setImmediate(resolve));
+		before.finish();
+
+		assert.deepStrictEqual(await loading, [chunkKey(0, 0)]);
+		assert.deepStrictEqual(await reloading, [chunkKey(0, 0)]);
+		assert.ok(area);
+		assert.ok(area.loadedChunks.has(chunkKey(0, 0)));
+		assert.strictEqual(area.chunks.has(chunkKey(0, 0)), false);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 10);
+	});
+
 	it('reloads an area, keeping its chunks only when asked to', async () =>
 	{
 		const database = new FakeDatabase();
@@ -218,6 +290,30 @@ describe('AreaCache', () =>
 		assert.strictEqual(reloaded?.loadedChunks.size, 0);
 	});
 
+	for (const keepChunks of [false, true])
+	{
+		it(`reads chunks for a reloaded area that were on their way for its previous copy (keepChunks ${keepChunks})`, async () =>
+		{
+			const database = new FakeDatabase();
+			const key = chunkKey(0, 0);
+
+			await database.cache.load(AREA_ID);
+
+			const first = database.cache.loadChunks(AREA_ID, [key]);
+			const reloaded = await database.cache.reload(AREA_ID, keepChunks);
+			const second = database.cache.loadChunks(AREA_ID, [key]);
+
+			assert.strictEqual(database.reads.length, 2);
+
+			database.finishReads();
+
+			assert.deepStrictEqual(await first, []);
+			assert.deepStrictEqual(await second, [key]);
+			assert.strictEqual(database.cache.get(AREA_ID), reloaded);
+			assert.ok(reloaded?.loadedChunks.has(key));
+		});
+	}
+
 	it('forgets an area that no longer exists when reloaded', async () =>
 	{
 		const database = new FakeDatabase();
@@ -227,6 +323,52 @@ describe('AreaCache', () =>
 
 		assert.strictEqual(await database.cache.reload(AREA_ID, false), undefined);
 		assert.strictEqual(database.cache.get(AREA_ID), undefined);
+	});
+
+	for (const [changed, areaId] of [['the area', AREA_ID], ['every area', undefined]] as const)
+	{
+		it(`reads an area again when a change to ${changed} is heard while it loads`, async () =>
+		{
+			const database = new SlowAreaDatabase();
+			const loading = database.cache.load(AREA_ID);
+
+			database.enabled = false;
+			database.cache.noteChange(areaId);
+			await database.finishRead();
+
+			assert.strictEqual(database.cache.get(AREA_ID), undefined);
+			assert.strictEqual(database.reads.length, 1);
+
+			await database.finishRead();
+
+			assert.strictEqual((await loading)?.loaded.area.enabled, false);
+			assert.strictEqual(database.cache.get(AREA_ID)?.loaded.area.enabled, false);
+		});
+	}
+
+	it('keeps the area from after the later change when two reloads overlap', async () =>
+	{
+		const database = new SlowAreaDatabase();
+		const loading = database.cache.load(AREA_ID);
+
+		await database.finishRead();
+		await loading;
+
+		const first = database.cache.reload(AREA_ID, false);
+
+		database.enabled = false;
+
+		const second = database.cache.reload(AREA_ID, false);
+
+		// The first reload's read, from before the second change, finishes first
+		while (database.reads.length > 0)
+		{
+			await database.finishRead();
+		}
+
+		await Promise.all([first, second]);
+
+		assert.strictEqual(database.cache.get(AREA_ID)?.loaded.area.enabled, false);
 	});
 
 	it('forgets an area once it has gone AREA_IDLE_MS without being asked for, unless it is in use', async () =>

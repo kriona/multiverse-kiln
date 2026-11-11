@@ -14,7 +14,7 @@ import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, AuditField, AuditFieldChange, AuditSubject, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { LoadedSettings } from './fieldMerge.js';
 import type { AreaBounds } from './areaCells.js';
-import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
+import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canStartDraft, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 import type { UniverseTextRef } from './universeText.js';
 
 /**
@@ -165,7 +165,8 @@ export interface EditorRoleSettings
  *   it to the live version for good, or delete it (see Universe versions in STRUCTURE-OVERVIEW.md).
  *   startDraft comes after every other change in a save, and applyDraft and discardDraft are the only
  *   change in theirs; the server refuses a save that puts them anywhere else. applyDraft carries what
- *   happens to the players using what the draft disables or deletes
+ *   happens to the players using what the draft disables or deletes. Builders may start a draft, and
+ *   only creators (and the site admin role) apply or discard it
  *
  * A change to settings (saveEditor, universe, ruleset, and saving a tile, item, race, class, theme,
  * difficulty level or area) may carry loaded, the settings as the editor loaded them: then only the
@@ -219,9 +220,10 @@ export type EditorChangeKind = EditorChange['kind'];
  * - editWorld: canEditWorld()
  * - translate: canTranslate() into the change's language
  * - markNoTranslation: canMarkNoTranslation()
+ * - startDraft: canStartDraft()
  * - manageVersions: canManageVersions()
  */
-export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'translate' | 'markNoTranslation' | 'manageVersions';
+export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'translate' | 'markNoTranslation' | 'startDraft' | 'manageVersions';
 
 /**
  * The check each kind of change needs
@@ -262,7 +264,7 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
 	saveTranslation: 'translate',
 	saveTranslatorNote: 'editWorld',
 	saveNoTranslation: 'markNoTranslation',
-	startDraft: 'manageVersions',
+	startDraft: 'startDraft',
 	applyDraft: 'manageVersions',
 	discardDraft: 'manageVersions'
 };
@@ -294,9 +296,28 @@ export function mayMakeChange(change: EditorChange, access: EditorAccess, player
 		case 'markNoTranslation':
 			return(canMarkNoTranslation(access));
 
+		case 'startDraft':
+			return(canStartDraft(access.role));
+
 		case 'manageVersions':
 			return(canManageVersions(access.role));
 	}
+}
+
+/**
+ * Whether a save may be made to the version the editor has open: a player who must make their changes
+ * in the draft (mustEditInDraft()) may save nothing to the live version but starting a draft and
+ * leaving the universe
+ *
+ * @param changes The save's changes
+ * @param playerId The player's ID
+ * @param draft Whether the save is to the draft
+ * @param mustUseDraft Whether the player must make their changes in the draft
+ * @return True when it may
+ */
+export function maySaveToVersion(changes: readonly EditorChange[], playerId: string, draft: boolean, mustUseDraft: boolean): boolean
+{
+	return(draft || !mustUseDraft || changes.every((change) => ((change.kind === 'startDraft') || ((change.kind === 'removeEditor') && (change.playerId === playerId)))));
 }
 
 /**

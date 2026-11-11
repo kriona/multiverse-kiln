@@ -766,6 +766,23 @@ describe('EditorRoom', () =>
 			assert.ok(room.state.editors.has(grace.playerId));
 		});
 
+		it('has builders\' windows load the universe again when whether they must use the draft changes', async () =>
+		{
+			const grace = await addEditor('Grace', 'builder');
+			const adaWindow = await openEditor(ada, universeId);
+			const graceWindow = await openEditor(grace, universeId);
+
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { stage: 'let_there_be_light' } }])).status, 200);
+			await graceWindow.inbox.take(EditorServerMessageType.AccessChanged);
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { requireBuilderDraft: false } }])).status, 200);
+			await graceWindow.inbox.take(EditorServerMessageType.AccessChanged);
+
+			// A save that leaves builders as they were tells no one
+			assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'universe', update: { stage: 'prologue' } }])).status, 200);
+			await assert.rejects(graceWindow.inbox.take(EditorServerMessageType.AccessChanged, 200));
+			assert.strictEqual(adaWindow.inbox.pending(EditorServerMessageType.AccessChanged), 0);
+		});
+
 		it('turns away a player\'s windows when they turn 2FA off while the universe requires it, and has them load it again otherwise', async () =>
 		{
 			const grace = await addEditor('Grace', 'builder');

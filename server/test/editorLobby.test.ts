@@ -96,6 +96,38 @@ describe('Choosing the lobby\'s area', () =>
 		assert.strictEqual((await findUniverse(universeId))?.lobbyAreaId, universe.squareAreaId);
 	});
 
+	it('swaps the lobby and the starting area in one change', async () =>
+	{
+		const { universeId, squareAreaId, fieldAreaId } = universe;
+
+		await saveAll(ada, universeId, [{
+			kind: 'universe',
+			update: {
+				lobbyAreaId: fieldAreaId,
+				lobbyColumn: 0,
+				lobbyRow: 0,
+				startingAreaId: squareAreaId,
+				startingColumn: 0,
+				startingRow: 0
+			}
+		}]);
+
+		const saved = await findUniverse(universeId);
+
+		assert.deepStrictEqual([saved?.lobbyAreaId, saved?.startingAreaId], [fieldAreaId, squareAreaId]);
+	});
+
+	it('refuses one change making the same area the lobby and the starting area', async () =>
+	{
+		const { universeId, squareAreaId, fieldAreaId, houseAreaId } = universe;
+		const answer = await saveChanges(ada, universeId, [{ kind: 'universe', update: { lobbyAreaId: houseAreaId, startingAreaId: houseAreaId } }]);
+		const saved = await findUniverse(universeId);
+
+		assert.strictEqual(answer.status, 400);
+		assert.strictEqual(answer.body.error.id, 'error.unusableStartingArea');
+		assert.deepStrictEqual([saved?.lobbyAreaId, saved?.startingAreaId], [squareAreaId, fieldAreaId]);
+	});
+
 	it('lists the starting areas, which the Lobby tab doesn\'t offer', async () =>
 	{
 		const { universeId, fieldAreaId } = universe;

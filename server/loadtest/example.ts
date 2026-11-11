@@ -77,8 +77,11 @@ export async function main(options: Options)
 	await playInLobby(client);
 }
 
-// Default the endpoint from LOADTEST_ENDPOINT (server/.env); an explicit --endpoint argument wins
-if (process.env.LOADTEST_ENDPOINT && !process.argv.includes('--endpoint'))
+// Default the endpoint from LOADTEST_ENDPOINT (server/.env); an explicit --endpoint argument wins, in either
+// the --endpoint URL or --endpoint=URL form
+const hasEndpoint = process.argv.some((argument) => ((argument === '--endpoint') || argument.startsWith('--endpoint=')));
+
+if (process.env.LOADTEST_ENDPOINT && !hasEndpoint)
 {
 	process.argv.push('--endpoint', process.env.LOADTEST_ENDPOINT);
 }

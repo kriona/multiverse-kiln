@@ -6,6 +6,7 @@ import { describeEditorError } from '../network/editorApi';
 import { announce } from './announcer';
 import { getElement, setOptions, showMessage } from './dom';
 import { formMessages } from './formMessages';
+import { announceListPage, showPageRange } from './pager';
 
 /**
  * Notes more than one admin page shows (see shared/src/localization.ts)
@@ -22,6 +23,12 @@ export const adminNoteMessages = defineMessages({
  * How long the list waits after the last key typed in its search before asking the server, in milliseconds
  */
 const SEARCH_DELAY_MS = 250;
+
+/**
+ * What an admin list reads out once a page has loaded: how many rows match, as after a search, which rows
+ * the page holds, as after Previous or Next, or nothing
+ */
+type ListAnnouncement = 'matches' | 'page' | 'none';
 
 /**
  * What an admin list asks the server for
@@ -95,7 +102,7 @@ export interface AdminListOptions<Row>
 /**
  * A list on an admin page, such as the login sessions, the players or the universes: a table the server fills a page
  * at a time, narrowed by a search and a yes-or-no filter, with Previous and Next under it. Screen
- * readers are told how many rows match after each search
+ * readers are told how many rows match after each search, and which rows a page holds after Previous or Next
  */
 export class AdminList<Row>
 {
@@ -171,23 +178,23 @@ export class AdminList<Row>
 			window.clearTimeout(this.searchTimer);
 			this.searchTimer = window.setTimeout(() =>
 			{
-				void this.refresh(true, 0);
+				void this.refresh('matches', 0);
 			}, SEARCH_DELAY_MS);
 		});
 
 		this.filter.addEventListener('change', () =>
 		{
-			void this.refresh(true, 0);
+			void this.refresh('matches', 0);
 		});
 
 		this.previousButton.addEventListener('click', () =>
 		{
-			void this.refresh(false, Math.max(0, (this.offset - MAX_ADMIN_ROWS_PER_PAGE)));
+			void this.refresh('page', Math.max(0, (this.offset - MAX_ADMIN_ROWS_PER_PAGE)));
 		});
 
 		this.nextButton.addEventListener('click', () =>
 		{
-			void this.refresh(false, (this.offset + MAX_ADMIN_ROWS_PER_PAGE));
+			void this.refresh('page', (this.offset + MAX_ADMIN_ROWS_PER_PAGE));
 		});
 	}
 
@@ -196,7 +203,7 @@ export class AdminList<Row>
 	 */
 	async load(): Promise<void>
 	{
-		await this.refresh(false, 0);
+		await this.refresh('none', 0);
 	}
 
 	/**
@@ -204,16 +211,16 @@ export class AdminList<Row>
 	 */
 	async reload(): Promise<void>
 	{
-		await this.refresh(false, this.offset);
+		await this.refresh('none', this.offset);
 	}
 
 	/**
 	 * Loads a page of the rows the search and filter ask for, and shows it
 	 *
-	 * @param announceMatches Whether to tell screen readers how many rows match, as after a search
+	 * @param announcement What to tell screen readers once it shows
 	 * @param offset How many matching rows come before the page
 	 */
-	private async refresh(announceMatches: boolean, offset: number): Promise<void>
+	private async refresh(announcement: ListAnnouncement, offset: number): Promise<void>
 	{
 		const version = ++this.requestVersion;
 		const search = this.search.value.trim();
@@ -261,7 +268,7 @@ export class AdminList<Row>
 		{
 			const lastPage = (Math.max(0, (Math.ceil(page.total / MAX_ADMIN_ROWS_PER_PAGE) - 1)) * MAX_ADMIN_ROWS_PER_PAGE);
 
-			await this.refresh(announceMatches, Math.max(0, Math.min(lastPage, (offset - MAX_ADMIN_ROWS_PER_PAGE))));
+			await this.refresh(announcement, Math.max(0, Math.min(lastPage, (offset - MAX_ADMIN_ROWS_PER_PAGE))));
 			return;
 		}
 
@@ -282,20 +289,14 @@ export class AdminList<Row>
 
 			return(element);
 		}), (this.empty.hidden ? undefined : this.empty));
-		this.page.textContent = ((page.total === 0)
-			? ''
-			: t({
-				id: 'pager.range',
-				defaultMessage: '{first, number}-{last, number} of {total, number}',
-				description: 'Which items of a list a page shows, e.g. 1-500 of 1200'
-			}, {
-				first: (this.offset + 1),
-				last: (this.offset + page.rows.length),
-				total: page.total
-			}));
+		showPageRange(this.page, this.offset, page.rows.length, page.total);
 		this.updatePageButtons();
 
-		if (announceMatches)
+		if (announcement === 'page')
+		{
+			announceListPage(this.page, this.empty);
+		}
+		else if (announcement === 'matches')
 		{
 			announce(t({
 				id: 'admin.matches',

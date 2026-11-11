@@ -24,7 +24,7 @@ import { isDevCode } from '../auth/devCodes.js';
 import { keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { takeAttempt } from '../auth/rateLimits.js';
-import { resolveSession, startSession, type SessionIdentity } from '../auth/sessions.js';
+import { giveSession, resolveSession, startSession, type SessionIdentity, type StartedSession } from '../auth/sessions.js';
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import { decryptTotpSecret, encryptTotpSecret } from '../auth/totpSecrets.js';
 import type { Executor } from '../db/client.js';
@@ -245,32 +245,73 @@ export async function waitForSecondFactor(response: Response, playerId: string, 
 }
 
 /**
+ * A login startLogin() started, for finishLogin() to answer once its transaction commits
+ */
+export interface StartedLogin
+{
+	/**
+	 * Whether the browser is logged in, or waits to turn 2FA on
+	 */
+	outcome: SessionStartPayload['outcome'];
+
+	/**
+	 * The session to give the browser, when it is logged in
+	 */
+	session: StartedSession | undefined;
+}
+
+/**
  * Logs a browser in once it has shown it's the account's owner (and given the account's authenticator
  * or recovery code, when it needs one), recording the login. A server admin without 2FA isn't logged
  * in: the login waits for them to turn it on (AUTH_TWO_FACTOR_LOGIN_SETUP_PATH), since their sessions
- * don't count without it (resolveSession())
+ * don't count without it (resolveSession()). Once the transaction commits, finishLogin() gives the
+ * browser its session
  *
  * @param request The request, with the browser's cookies
- * @param response The response, which carries the session cookie, or the cookie that lets this browser
- * turn 2FA on
+ * @param response The response, which carries the cookie that lets this browser turn 2FA on
  * @param playerId The account
  * @param rememberMe Whether the player checked "Remember me"
  * @param now The time now
  * @param executor A transaction
- * @return Whether the browser is logged in, or waits to turn 2FA on
+ * @return Whether the browser is logged in, with its session, or waits to turn 2FA on
  */
-export async function startLogin(request: Request, response: Response, playerId: string, rememberMe: boolean, now: Date, executor: Executor): Promise<SessionStartPayload['outcome']>
+export async function startLogin(request: Request, response: Response, playerId: string, rememberMe: boolean, now: Date, executor: Executor): Promise<StartedLogin>
 {
 	if (await isServerAdminWithoutTwoFactor(playerId, executor))
 	{
 		await waitForSecondFactor(response, playerId, rememberMe, now, executor);
-		return('twoFactorSetup');
+
+		return({
+			outcome: 'twoFactorSetup',
+			session: undefined
+		});
 	}
 
-	await startSession(request, response, playerId, rememberMe, executor);
+	const session = await startSession(request, playerId, rememberMe, executor);
+
 	await recordEvent(request, playerId, 'loggedIn', now, executor);
 
-	return('loggedIn');
+	return({
+		outcome: 'loggedIn',
+		session
+	});
+}
+
+/**
+ * Gives the browser the session a login started, once the login's transaction has committed
+ *
+ * @param response The response, which carries the session cookie
+ * @param login The login, from startLogin()
+ * @return Whether the browser is logged in, or waits to turn 2FA on
+ */
+export function finishLogin(response: Response, login: StartedLogin): SessionStartPayload['outcome']
+{
+	if (login.session)
+	{
+		giveSession(response, login.session);
+	}
+
+	return(login.outcome);
 }
 
 /**
@@ -431,7 +472,9 @@ function tooManyWrongAuthenticatorCodes(decision: SendDecision & { allowed: fals
 }
 
 /**
- * Emails an account that one of its recovery codes was used, after the request is answered
+ * Emails an account that one of its recovery codes was used. The change the code allowed is already
+ * saved, so a failure finding the address is logged rather than thrown: it mustn't fail the request or
+ * stop the caller's other notices
  *
  * @param playerId The account
  * @param outcome What checking its code decided
@@ -444,14 +487,21 @@ export async function reportRecoveryCodeUse(playerId: string, outcome: SecondFac
 		return;
 	}
 
-	const recipient = await findEmailRecipient(playerId);
-
-	if (recipient)
+	try
 	{
-		sendEmailInBackground({
-			to: recipient.email,
-			...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, recipient.displayName, emailLocale)
-		});
+		const recipient = await findEmailRecipient(playerId);
+
+		if (recipient)
+		{
+			sendEmailInBackground({
+				to: recipient.email,
+				...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, recipient.displayName, emailLocale)
+			});
+		}
+	}
+	catch (error)
+	{
+		console.error('Could not email an account that a recovery code was used:', error);
 	}
 }
 
@@ -627,7 +677,7 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 	const { code, trustBrowser: trust, locale: emailLocale } = body.data;
 	const continuationHash = cookieTokenHash(request, TWO_FACTOR_LOGIN_COOKIE);
 	const now = new Date();
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; check: SecondFactorOutcome }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; check: SecondFactorOutcome; session: StartedSession; trustToken: string | undefined }> =>
 	{
 		const pending = ((continuationHash === undefined) ? undefined : await lockPendingTwoFactorLogin(continuationHash, now, executor));
 
@@ -682,23 +732,27 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 		}
 
 		await deletePendingTwoFactorLogin(pending.id, executor);
-		await startSession(request, response, pending.playerId, pending.rememberMe, executor);
+		const session = await startSession(request, pending.playerId, pending.rememberMe, executor);
+
 		await recordEvent(request, pending.playerId, 'loggedIn', now, executor);
+
+		let trustToken: string | undefined;
 
 		if (trust)
 		{
 			// A browser keeps one trust token, which every account it trusts shares
 			const existing = readCookie(request.headers.cookie, TRUSTED_BROWSER_COOKIE);
-			const token = (((existing !== undefined) && isTokenForm(existing)) ? existing : createToken());
 
-			await trustBrowser(hashToken(token), pending.playerId, new Date(now.getTime() + TRUSTED_BROWSER_LIFETIME_MS), executor);
+			trustToken = (((existing !== undefined) && isTokenForm(existing)) ? existing : createToken());
+			await trustBrowser(hashToken(trustToken), pending.playerId, new Date(now.getTime() + TRUSTED_BROWSER_LIFETIME_MS), executor);
 			await recordEvent(request, pending.playerId, 'browserTrusted', now, executor);
-			setCookie(response, TRUSTED_BROWSER_COOKIE, token, TRUSTED_BROWSER_LIFETIME_MS);
 		}
 
 		return({
 			playerId: pending.playerId,
-			check
+			check,
+			session,
+			trustToken
 		});
 	});
 
@@ -706,6 +760,13 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 	{
 		sendRefusal(response, outcome);
 		return;
+	}
+
+	giveSession(response, outcome.session);
+
+	if (outcome.trustToken !== undefined)
+	{
+		setCookie(response, TRUSTED_BROWSER_COOKIE, outcome.trustToken, TRUSTED_BROWSER_LIFETIME_MS);
 	}
 
 	clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
@@ -791,7 +852,7 @@ async function loginEnableRoute(request: Request, response: Response): Promise<v
 	const { code: typed, locale: emailLocale } = body.data;
 	const continuationHash = cookieTokenHash(request, TWO_FACTOR_LOGIN_COOKIE);
 	const now = new Date();
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; codes: string[]; ended: string[] }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; codes: string[]; ended: string[]; session: StartedSession }> =>
 	{
 		const pending = ((continuationHash === undefined) ? undefined : await lockPendingTwoFactorLogin(continuationHash, now, executor));
 
@@ -835,13 +896,15 @@ async function loginEnableRoute(request: Request, response: Response): Promise<v
 
 		await deletePendingTwoFactorLogin(pending.id, executor);
 		await recordEvent(request, pending.playerId, 'twoFactorEnabled', now, executor);
-		await startSession(request, response, pending.playerId, pending.rememberMe, executor);
+		const session = await startSession(request, pending.playerId, pending.rememberMe, executor);
+
 		await recordEvent(request, pending.playerId, 'loggedIn', now, executor);
 
 		return({
 			playerId: pending.playerId,
 			codes: enabled.codes,
-			ended
+			ended,
+			session
 		});
 	});
 
@@ -851,6 +914,7 @@ async function loginEnableRoute(request: Request, response: Response): Promise<v
 		return;
 	}
 
+	giveSession(response, outcome.session);
 	clearCookie(response, TWO_FACTOR_LOGIN_COOKIE);
 	await answerTwoFactorEnabled(response, outcome.playerId, outcome.codes, outcome.ended, emailLocale);
 }

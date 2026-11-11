@@ -177,6 +177,11 @@ export interface UniverseRecord
 	 * Whether its editors need 2FA on to save changes to it, other than leaving it
 	 */
 	requireTwoFactor: boolean;
+
+	/**
+	 * Whether builders make their changes in its draft while it is let there be light
+	 */
+	requireBuilderDraft: boolean;
 }
 
 /**
@@ -264,7 +269,8 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		startingColumn: row.startingColumn,
 		startingRow: row.startingRow,
 		disabled: (row.disabledAt !== null),
-		requireTwoFactor: row.requireTwoFactor
+		requireTwoFactor: row.requireTwoFactor,
+		requireBuilderDraft: row.requireBuilderDraft
 	});
 }
 
@@ -440,6 +446,7 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
 			slug: universes.slug,
 			stage: universes.stage,
 			requireTwoFactor: universes.requireTwoFactor,
+			requireBuilderDraft: universes.requireBuilderDraft,
 			ruleset: universes.ruleset,
 			disabledReason: universes.disabledReason,
 			deletionPrevented: universes.deletionPrevented
@@ -469,8 +476,9 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
 }
 
 /**
- * Changes some of a universe's settings: its stage and whether it requires 2FA, which the universe has
- * once for both versions, whichever version is given, and the rest in that version
+ * Changes some of a universe's settings: its stage and whether it requires builders to use a draft and
+ * its editors to have 2FA, which the universe has once for both versions, whichever version is given,
+ * and the rest in that version
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
  * faerie time (for the universe and for its lobby), and a lobby day length, group size or starting
@@ -485,7 +493,7 @@ export async function findEditableUniverse(version: UniverseVersion, executor: E
  */
 export async function updateUniverseSettings(version: UniverseVersion, update: UniverseSettingsUpdate, executor: Executor = db): Promise<void>
 {
-	const { startingMoney, coinNames, coinAbbreviations, startingItems, name, stage, requireTwoFactor, ...settings } = update;
+	const { startingMoney, coinNames, coinAbbreviations, startingItems, name, stage, requireTwoFactor, requireBuilderDraft, ...settings } = update;
 	const versionSettings = {
 		...settings,
 		...((startingMoney === undefined) ? {} : toCoinColumns(startingMoney)),
@@ -498,13 +506,14 @@ export async function updateUniverseSettings(version: UniverseVersion, update: U
 		await replaceStartingItems(version, startingItems, executor);
 	}
 
-	if ((stage !== undefined) || (requireTwoFactor !== undefined))
+	if ((stage !== undefined) || (requireTwoFactor !== undefined) || (requireBuilderDraft !== undefined))
 	{
 		await executor
 			.update(universes)
 			.set({
 				stage,
-				requireTwoFactor
+				requireTwoFactor,
+				requireBuilderDraft
 			})
 			.where(eq(universes.id, version.universeId));
 	}

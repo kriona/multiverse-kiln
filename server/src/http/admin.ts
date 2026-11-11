@@ -10,7 +10,7 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_AREAS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE,MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
 import { adminDb, inAdminTransaction } from '../db/adminClient.js';
@@ -49,6 +49,7 @@ const siteSettingsBody: z.ZodType<SiteSettings> = z.strictObject({
 	universeCreationEnabled: z.boolean(),
 	universesPerCreator: z.number().int().min(MIN_UNIVERSES_PER_CREATOR).max(MAX_UNIVERSES_PER_CREATOR),
 	areasPerUniverse: z.number().int().min(MIN_AREAS_PER_UNIVERSE).max(MAX_AREAS_PER_UNIVERSE),
+	charactersPerUniverse: z.number().int().min(MIN_CHARACTERS_PER_UNIVERSE).max(MAX_CHARACTERS_PER_UNIVERSE),
 	characterDeletionDays: z.number().int().min(0).max(MAX_CHARACTER_DELETION_DAYS),
 	socials: z.strictObject({
 		discord: socialUrl('discord'),

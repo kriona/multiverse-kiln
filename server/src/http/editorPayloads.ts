@@ -280,6 +280,7 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	translationLanguages: translationLanguages.optional(),
 	stage: z.enum(UNIVERSE_STAGES).optional(),
 	requireTwoFactor: z.boolean().optional(),
+	requireBuilderDraft: z.boolean().optional(),
 	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
 	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
 	displayTime: z.enum(DISPLAY_TIMES).optional(),

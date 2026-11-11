@@ -4,14 +4,14 @@ import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { matchMaker } from 'colyseus';
 
-import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { adminDb } from '../src/db/adminClient.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
-import { createAreaLink, updateAreaSettings } from '../src/db/areaRepo.js';
+import { createAreaLink, deleteArea, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
@@ -24,6 +24,7 @@ import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
+import { KeptChatLog } from '../src/rooms/keptChat.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
@@ -377,6 +378,36 @@ describe('GameRoom', () =>
 		return(colyseus.createRoom<GameRoom>(GAME_ROOM_NAME, options));
 	}
 
+	/**
+	 * Creates the test group's room, making a change while it is created: after the room has read the
+	 * group, its members and the universe's stage, while it loads the group's chat
+	 *
+	 * @param change Makes the change, and publishes it as its route would
+	 * @return The server-side room
+	 */
+	async function createGameRoomChanging(change: () => Promise<void>): Promise<GameRoom>
+	{
+		const prototype = KeptChatLog.prototype as unknown as Record<string, unknown>;
+		const originalLoad = prototype.load as (this: KeptChatLog, ...args: unknown[]) => Promise<void>;
+
+		prototype.load = async function (this: KeptChatLog, ...args: unknown[]): Promise<void>
+		{
+			prototype.load = originalLoad;
+			await change();
+
+			return(originalLoad.apply(this, args));
+		};
+
+		try
+		{
+			return(await createGameRoom());
+		}
+		finally
+		{
+			prototype.load = originalLoad;
+		}
+	}
+
 	before(async () =>
 	{
 		colyseus = await getTestServer();
@@ -502,6 +533,66 @@ describe('GameRoom', () =>
 			roles: new Map()
 		});
 		assert.strictEqual(await left, ServerCloseCode.StageChanged);
+	});
+
+	it('finishes a step under way at the end of time without taking the automatic link it ends on', async () =>
+	{
+		await createAreaLink({ areaId: universe.fieldAreaId, column: 4, row: 3, targetAreaId: universe.houseAreaId, targetColumn: 2, targetRow: 2, mode: 'automatic', requiresWholeGroup: false });
+
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const playerId = playerIdOf(room, client);
+		const player = room.state.players.get(playerId) as Player;
+
+		placeOnCell(player, 3, 3);
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+
+		for (let tick = 0; (tick < 30) && (player.x === startCenter.x); tick++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		assert.ok((player.x > startCenter.x) && (player.x < startCenter.x + GRID_CELL_SIZE), `the step is under way: x = ${player.x}`);
+
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'end_of_time',
+			previousStage: 'let_there_be_light',
+			roles: new Map()
+		});
+		await waitUntilStopped(room, player);
+
+		assert.strictEqual(player.x, startCenter.x + GRID_CELL_SIZE);
+		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
+	});
+
+	it('ignores TakeLink at the end of time', async () =>
+	{
+		await createAreaLink({ areaId: universe.fieldAreaId, column: 5, row: 5, targetAreaId: universe.houseAreaId, targetColumn: 2, targetRow: 2, mode: 'manual', requiresWholeGroup: false });
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const playerId = playerIdOf(room, client);
+		const player = room.state.players.get(playerId) as Player;
+		const linkCenter = cellCenter({ column: 5, row: 5 }, grid);
+
+		placeOnCell(player, 5, 5);
+		client.send(MessageType.TakeLink);
+		await room.waitForNextMessage();
+
+		// A member travelling through the link couldn't walk off it once the room unlocks
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'let_there_be_light',
+			previousStage: 'end_of_time',
+			roles: new Map()
+		});
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await waitUntil(() => (player.x > linkCenter.x));
+
+		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
 	});
 
 	it('syncs the group\'s name, anchor being and members', async () =>
@@ -699,6 +790,33 @@ describe('GameRoom', () =>
 
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(20, 3)], DEFAULT_TILE_CELL);
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(31, 17)], UNSEEN_CELL);
+	});
+
+	it('keeps the newer copy of a chunk when saves of the seen cells overlap', async () =>
+	{
+		const room = await createGameRoom() as unknown as { seen: SeenCells; saveSeen(): Promise<void> };
+		const areaId = universe.fieldAreaId;
+		// More chunks than one batch writes, far from the map so nobody sees them, with the last in the second batch
+		const firstColumn = 5000 * CHUNK_SIZE;
+		const lastColumn = firstColumn + (1000 * CHUNK_SIZE);
+		const cells: string[] = [];
+
+		for (let column = firstColumn; column <= lastColumn; column += CHUNK_SIZE)
+		{
+			cells.push(`${column},0`);
+		}
+
+		room.seen.mark(areaId, cells);
+
+		const first = room.saveSeen();
+
+		room.seen.mark(areaId, [`${lastColumn + 1},0`]);
+		await Promise.all([first, room.saveSeen()]);
+
+		const saved = new SeenCells();
+
+		saved.load(await loadSeenChunks(groupId));
+		assert.ok(saved.has(areaId, lastColumn, 0) && saved.has(areaId, lastColumn + 1, 0));
 	});
 
 	it('does not use the database while players move', async () =>
@@ -1348,6 +1466,30 @@ describe('GameRoom', () =>
 			assert.strictEqual(await left2, ServerCloseCode.GroupDisbanded);
 		});
 
+		it('turns away a window whose group is disbanded while it joins, saying why', async () =>
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA);
+			const left = waitForLeave(client);
+
+			changeDuringNextLookup(room, 'lookUp', () =>
+			{
+				groupChanges.publish({
+					kind: 'disbanded',
+					groupId,
+					universeId: universe.universeId,
+					members: [],
+					groupSizeLowered: true
+				});
+
+				return(Promise.resolve());
+			});
+
+			await assert.rejects(joinAs(room, browserIdB, anchor), refusedWith(ServerCloseCode.GroupSizeLowered));
+			assert.strictEqual(await left, ServerCloseCode.GroupSizeLowered);
+			assert.strictEqual(room.getAreaId(anchor.characterId), undefined);
+		});
+
 		it('ignores changes to other groups', async () =>
 		{
 			const room = await createGameRoom();
@@ -1359,6 +1501,31 @@ describe('GameRoom', () =>
 			await room.waitForNextTimestep();
 
 			assert.ok(client.connection.isOpen);
+		});
+
+		it('lets in a character who joined the group while its room was being created', async () =>
+		{
+			const newcomer = await addPlayerWithCharacter('Newcomer');
+			const room = await createGameRoomChanging(() => joinGroup(newcomer));
+			const { client } = await joinAs(room, browserIdA, newcomer);
+
+			assert.strictEqual(playerIdOf(room, client), newcomer.characterId);
+		});
+
+		it('locks when the universe reaches the end of time while its room is being created', async () =>
+		{
+			const room = await createGameRoomChanging(async () =>
+			{
+				await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+				universeAccessChanges.publishStage({
+					universeId: universe.universeId,
+					stage: 'end_of_time',
+					previousStage: 'let_there_be_light',
+					roles: new Map()
+				});
+			});
+
+			assert.strictEqual(room.state.locked, true);
 		});
 	});
 
@@ -1416,6 +1583,26 @@ describe('GameRoom', () =>
 
 			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
 			await waitUntil(() => (room.getAreaId(characterId) === universe.fieldAreaId));
+		});
+
+		it('sends the members in the group\'s own starting area to the universe\'s when it is deleted, and still lets windows in', async () =>
+		{
+			// The house is neither the universe's lobby nor its starting area, so an editor may delete it
+			anchor = await addPlayerWithCharacter('Homebody');
+			groupId = await addGroup(universe.universeId, anchor.characterId, universe.houseAreaId, 'The Homebodies');
+
+			const room = await createGameRoom();
+
+			await joinAs(room, browserIdA, anchor);
+			assert.strictEqual(room.getAreaId(anchor.characterId), universe.houseAreaId);
+
+			await deleteArea(universe.houseAreaId);
+			areaChanges.publish({ kind: 'deleted', areaId: universe.houseAreaId });
+			await waitUntil(() => (room.getAreaId(anchor.characterId) === universe.fieldAreaId));
+
+			const { client } = await joinAs(room, browserIdA, anchor);
+
+			assert.strictEqual(playerIdOf(room, client), anchor.characterId);
 		});
 
 		it('sends a member who comes back while their area is disabled where its members are sent', async () =>

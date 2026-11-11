@@ -1,4 +1,4 @@
-import { canEditWorld, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorldOpen, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
@@ -98,7 +98,7 @@ export class ItemDialog
 	 */
 	open(universe: EditableUniverse, item: EditorItem | undefined, edit: StagedEdit<ItemSettings>, onChanged: () => void): void
 	{
-		const canEdit = canEditWorld(universe.role);
+		const canEdit = canEditWorldOpen(universe);
 		const editable = (canEdit && !edit.removed);
 		const name = (item ? itemName(item, universe.ruleset) : '');
 

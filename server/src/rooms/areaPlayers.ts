@@ -219,6 +219,11 @@ export class AreaPlayers
 	private readonly travelling = new Map<string, string>();
 
 	/**
+	 * Whether players are kept from starting steps and taking links (see setLocked)
+	 */
+	private locked = false;
+
+	/**
 	 * The chunks of their area each player's clients have been sent, by chunkKey()
 	 */
 	private readonly sentChunks = new Map<string, Set<string>>();
@@ -616,6 +621,23 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Locks or unlocks the players' movement, as a group's room does at the end of time. While locked,
+	 * Moves and TakeLink are ignored, and a step under way finishes without taking the automatic link it
+	 * ends on
+	 *
+	 * @param locked Whether players are locked
+	 */
+	setLocked(locked: boolean): void
+	{
+		this.locked = locked;
+
+		if (locked)
+		{
+			this.stopAll();
+		}
+	}
+
+	/**
 	 * Stops every player at the end of their current step, as when the room stops taking moves
 	 */
 	stopAll(): void
@@ -639,7 +661,7 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Queues a client's Move for the next tick
+	 * Queues a client's Move for the next tick, unless players are locked
 	 *
 	 * @param sessionId The client's session ID
 	 * @param move The direction held
@@ -648,15 +670,15 @@ export class AreaPlayers
 	{
 		const playerId = this.sessions.getPlayerId(sessionId);
 
-		if (playerId !== undefined)
+		if ((playerId !== undefined) && !this.locked)
 		{
 			this.moveInputs.push(playerId, move);
 		}
 	}
 
 	/**
-	 * Takes the manual link the client's player is standing on, if there is one; does nothing while the
-	 * player is mid-step or already travelling
+	 * Takes the manual link the client's player is standing on, if there is one; does nothing while
+	 * players are locked, or the player is mid-step or already travelling
 	 *
 	 * @param sessionId The client's session ID
 	 */
@@ -664,7 +686,7 @@ export class AreaPlayers
 	{
 		const playerId = this.sessions.getPlayerId(sessionId);
 
-		if ((playerId === undefined) || this.travelling.has(playerId) || this.steps.has(playerId))
+		if ((playerId === undefined) || this.locked || this.travelling.has(playerId) || this.steps.has(playerId))
 		{
 			return;
 		}
@@ -845,7 +867,7 @@ export class AreaPlayers
 				}
 			}
 
-			const link = (mover.stoppedAt ? linkAt(area.layout, mover.stoppedAt) : undefined);
+			const link = ((mover.stoppedAt && !this.locked) ? linkAt(area.layout, mover.stoppedAt) : undefined);
 
 			if (link)
 			{
@@ -902,7 +924,8 @@ export class AreaPlayers
 
 	/**
 	 * Brings a change the world editor has made to the players it affects, if this room has the area
-	 * loaded. A changed area nobody is in or on their way to is forgotten, to be read when it is next needed
+	 * loaded or is loading it. A changed area nobody is in or on their way to is forgotten, to be read
+	 * when it is next needed
 	 *
 	 * Runs outside the simulation tick
 	 *
@@ -917,6 +940,9 @@ export class AreaPlayers
 		else if ((change.kind === 'tiles') || (change.kind === 'time'))
 		{
 			const inUse = this.areasInUse();
+
+			// Which universe an area still loading is in isn't known yet, so every load under way reads again
+			this.areas.noteChange();
 			const areaIds = this.areas.all()
 				.map((area) => area.loaded.area)
 				.filter((area) => (area.universeId === change.universeId))
@@ -1008,6 +1034,8 @@ export class AreaPlayers
 	{
 		if (!this.areas.get(areaId))
 		{
+			// A load of the area under way reads it again
+			this.areas.noteChange(areaId);
 			return;
 		}
 
@@ -1243,7 +1271,10 @@ export class AreaPlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.refreshViews();
-		this.sendArea(playerId, target, this.getClients(playerId));
+
+		// The area follows the patch with the player's position in it, so the window draws the area
+		// around where they arrive rather than where they were
+		this.sendArea(playerId, target, this.getClients(playerId), true);
 	}
 
 	/**
@@ -1252,8 +1283,9 @@ export class AreaPlayers
 	 * @param playerId The player's ID
 	 * @param area The area they are in
 	 * @param clients The clients to send it to
+	 * @param afterNextPatch Whether to send it after the next state patch rather than at once
 	 */
-	private sendArea(playerId: string, area: ActiveArea, clients: Client[]): void
+	private sendArea(playerId: string, area: ActiveArea, clients: Client[], afterNextPatch = false): void
 	{
 		const near = this.loadedChunksNear(playerId, area);
 		const payload = toAreaPayload(area, near, this.vision.memory);
@@ -1262,9 +1294,8 @@ export class AreaPlayers
 
 		for (const client of clients)
 		{
-			client.send(ServerMessageType.Area, payload);
+			client.send(ServerMessageType.Area, payload, { afterNextPatch });
 		}
-
 	}
 
 	/**

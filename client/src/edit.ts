@@ -1,3 +1,5 @@
+import { UNIVERSE_VERSIONS } from '@multiverse-kiln/shared';
+
 import { EditorPage } from './EditorPage';
 import { t } from './localization';
 import { startPage } from './pageStart';
@@ -36,7 +38,7 @@ async function start(): Promise<void>
 		new EditorPage(await server, universeId, {
 			tab: (isEditorTab(tab) ? tab : undefined),
 			areaId: readPageParameter(AREA_PARAMETER)
-		}, ((readPageParameter(VERSION_PARAMETER) === 'draft') ? 'draft' : 'live'));
+		}, UNIVERSE_VERSIONS.find((version) => (version === readPageParameter(VERSION_PARAMETER))));
 	}
 	catch (error)
 	{

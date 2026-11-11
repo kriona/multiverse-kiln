@@ -361,9 +361,11 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	const lobbyAreaId = ((update.lobbyAreaId === undefined) ? universe.lobbyAreaId : update.lobbyAreaId);
 	const lobbyArea = ((lobbyAreaId !== null) ? await findEditorArea(lobbyAreaId, transaction) : undefined);
 
-	if ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && (update.lobbyAreaId !== universe.lobbyAreaId))
+	const lobbyChanged = ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && (update.lobbyAreaId !== universe.lobbyAreaId));
+
+	if (lobbyChanged)
 	{
-		await checkLobbyArea(context, lobbyArea?.version, update);
+		checkLobbyArea(context, lobbyArea?.version);
 	}
 
 	const problem = (timeSettingsProblem({ ...universe, ...update })
@@ -379,10 +381,17 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
 	await checkStartingReferences(context, {
 		areaIds: (((startingAreaId === undefined) || (startingAreaId === null)) ? [] : [startingAreaId]),
-		itemIds: startingItems?.map(({ itemId }) => itemId)
+		itemIds: startingItems?.map(({ itemId }) => itemId),
+		lobbyAreaId
 	});
 	await applyLanguages(context, update);
 	await updateUniverseSettings(version, update, transaction);
+
+	// Checked once the settings are saved, so the universe's starting area is the one the change leaves
+	if (lobbyChanged && (lobbyAreaId !== null))
+	{
+		await checkLobbyNotStartingArea(context, lobbyAreaId);
+	}
 
 	// A coin given back the engine's name or abbreviation has engine text again, translated with the engine
 	for (const [field, saved, sent] of [['name', universe.coinNames, update.coinNames], ['abbreviation', universe.coinAbbreviations, update.coinAbbreviations]] as const)
@@ -462,18 +471,14 @@ async function applyLanguages(context: ChangeContext, update: UniverseSettingsUp
 }
 
 /**
- * Refuses a lobby area that isn't one of the version's areas, or is a starting area: the universe's,
- * a race's or a class's, or one the same change makes the universe's
+ * Refuses a lobby area that isn't one of the version's areas
  *
  * @param context The save
  * @param areaVersion The version the area belongs to, or undefined when there is no such area
- * @param update The universe's settings change, naming the lobby's area
  */
-async function checkLobbyArea(context: ChangeContext, areaVersion: UniverseVersion | undefined, update: UniverseSettingsUpdate): Promise<void>
+function checkLobbyArea(context: ChangeContext, areaVersion: UniverseVersion | undefined): void
 {
-	const { version, transaction } = context;
-
-	if (!areaVersion || !isSameVersion(areaVersion, version))
+	if (!areaVersion || !isSameVersion(areaVersion, context.version))
 	{
 		refuse(400, {
 			id: 'error.noSuchLobbyArea',
@@ -481,15 +486,18 @@ async function checkLobbyArea(context: ChangeContext, areaVersion: UniverseVersi
 			description: 'Why the lobby\'s area wasn\'t saved: the area chosen isn\'t one of the universe\'s, perhaps because another editor deleted it'
 		});
 	}
+}
 
-	const startingAreaIds = new Set(await listStartingAreaIds(version, transaction));
-
-	if ((update.startingAreaId !== undefined) && (update.startingAreaId !== null))
-	{
-		startingAreaIds.add(update.startingAreaId);
-	}
-
-	if ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && startingAreaIds.has(update.lobbyAreaId))
+/**
+ * Refuses a lobby area that is a starting area: the universe's, a race's or a class's. Called once the
+ * universe's settings are saved, so it sees the starting area the same change gives the universe
+ *
+ * @param context The save
+ * @param lobbyAreaId The lobby's area
+ */
+async function checkLobbyNotStartingArea(context: ChangeContext, lobbyAreaId: string): Promise<void>
+{
+	if ((await listStartingAreaIds(context.version, context.transaction)).includes(lobbyAreaId))
 	{
 		refuse(409, {
 			id: 'error.lobbyIsStartingArea',
