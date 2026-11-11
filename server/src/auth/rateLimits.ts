@@ -66,6 +66,25 @@ export interface AttemptLimit
 }
 
 /**
+ * Locks rate limit subjects until the transaction ends, in order of their hashes. Every caller locking
+ * more than one subject goes through here, so two transactions locking the same ones never wait on each other
+ *
+ * @param subjectHashes Keyed hashes of the subjects, or null for one that isn't known, which is skipped
+ * @param executor A transaction
+ */
+export async function lockRateLimitSubjects(subjectHashes: readonly (Uint8Array | null)[], executor: Executor): Promise<void>
+{
+	const known = subjectHashes
+		.filter((subjectHash): subjectHash is Uint8Array => (subjectHash !== null))
+		.sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+
+	for (const subjectHash of known)
+	{
+		await lockRateLimitSubject(subjectHash, executor);
+	}
+}
+
+/**
  * Takes an attempt against limits: when every limit allows it, records it against each. The subjects
  * stay locked until the transaction ends, so concurrent attempts are counted one after another
  *
@@ -76,15 +95,9 @@ export interface AttemptLimit
  */
 export async function takeAttempt(limits: readonly AttemptLimit[], now: Date, executor: Executor): Promise<SendDecision>
 {
-	// Locks are taken in one order, so two transactions taking the same two never wait on each other
-	const known = limits
-		.filter((limit): limit is AttemptLimit & { subjectHash: Uint8Array } => (limit.subjectHash !== null))
-		.sort((a, b) => Buffer.compare(Buffer.from(a.subjectHash), Buffer.from(b.subjectHash)));
+	const known = limits.filter((limit): limit is AttemptLimit & { subjectHash: Uint8Array } => (limit.subjectHash !== null));
 
-	for (const { subjectHash } of known)
-	{
-		await lockRateLimitSubject(subjectHash, executor);
-	}
+	await lockRateLimitSubjects(known.map((limit) => limit.subjectHash), executor);
 
 	for (const { kind, subjectHash, limit, windowMs = HOUR_MS } of known)
 	{

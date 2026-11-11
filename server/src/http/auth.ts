@@ -18,14 +18,14 @@ import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
 import { checkPwnedPassword } from '../auth/pwnedPasswords.js';
 import { hasKnownBrowserCookie, knownBrowserHash } from '../auth/knownBrowsers.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
+import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, lockRateLimitSubjects, takeAttempt } from '../auth/rateLimits.js';
 import { endSession, resolveSession, startSession, type SessionIdentity } from '../auth/sessions.js';
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
 import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient, type LocalLogin } from '../db/playerRepo.js';
 import { deletePlayerPendingProviderLogins, lockPendingProviderLogin } from '../db/providerLoginRepo.js';
-import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../db/rateLimitRepo.js';
+import { findRateLimitTimes, recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -287,7 +287,7 @@ async function confirmedChangeToken(request: Request, playerId: string, now: Dat
 
 /**
  * Counts an email code about to be sent against the network's limit and the address's (decideEmailCodeSend()),
- * locking the address's limits until the transaction ends
+ * locking both until the transaction ends
  *
  * @param networkHash The keyed hash of the network asking (clientNetworkHash())
  * @param addressHash The keyed hash of the address the code goes to
@@ -298,6 +298,9 @@ async function confirmedChangeToken(request: Request, playerId: string, now: Dat
  */
 async function takeCodeSend(networkHash: ReturnType<typeof clientNetworkHash>, addressHash: Buffer, now: Date, response: Response, executor: Executor): Promise<AuthRefusal | undefined>
 {
+	// Both at once, in the order logins lock the same network and address
+	await lockRateLimitSubjects([networkHash, addressHash], executor);
+
 	const network = await takeAttempt([
 		{
 			kind: 'networkCodeRequest',
@@ -310,8 +313,6 @@ async function takeCodeSend(networkHash: ReturnType<typeof clientNetworkHash>, a
 	{
 		return(tooManyAttempts(network, now, response));
 	}
-
-	await lockRateLimitSubject(addressHash, executor);
 
 	const send = decideEmailCodeSend({
 		sentAt: await findRateLimitTimes('addressCodeSent', addressHash, new Date(now.getTime() - HOUR_MS), executor),
