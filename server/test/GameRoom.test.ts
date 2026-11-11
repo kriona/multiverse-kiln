@@ -4,7 +4,7 @@ import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { matchMaker } from 'colyseus';
 
-import { cellIndexInChunk, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { adminDb } from '../src/db/adminClient.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
@@ -730,6 +730,33 @@ describe('GameRoom', () =>
 
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(20, 3)], DEFAULT_TILE_CELL);
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(31, 17)], UNSEEN_CELL);
+	});
+
+	it('keeps the newer copy of a chunk when saves of the seen cells overlap', async () =>
+	{
+		const room = await createGameRoom() as unknown as { seen: SeenCells; saveSeen(): Promise<void> };
+		const areaId = universe.fieldAreaId;
+		// More chunks than one batch writes, far from the map so nobody sees them, with the last in the second batch
+		const firstColumn = 5000 * CHUNK_SIZE;
+		const lastColumn = firstColumn + (1000 * CHUNK_SIZE);
+		const cells: string[] = [];
+
+		for (let column = firstColumn; column <= lastColumn; column += CHUNK_SIZE)
+		{
+			cells.push(`${column},0`);
+		}
+
+		room.seen.mark(areaId, cells);
+
+		const first = room.saveSeen();
+
+		room.seen.mark(areaId, [`${lastColumn + 1},0`]);
+		await Promise.all([first, room.saveSeen()]);
+
+		const saved = new SeenCells();
+
+		saved.load(await loadSeenChunks(groupId));
+		assert.ok(saved.has(areaId, lastColumn, 0) && saved.has(areaId, lastColumn + 1, 0));
 	});
 
 	it('does not use the database while players move', async () =>

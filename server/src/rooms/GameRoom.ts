@@ -151,6 +151,12 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly seen = new SeenCells();
 
 	/**
+	 * The save of the seen cells going on, if any. Each waits for the one before, since a save writes
+	 * whole chunks, and one finishing late would write an older copy of a chunk over a newer one
+	 */
+	private seenSaving: Promise<void> = Promise.resolve();
+
+	/**
 	 * Characters whose area is deleted go to the group's starting area. Everyone here is in the group,
 	 * so they see what any of them sees, and are sent only the cells the group has seen. A link that
 	 * needs the whole group is refused unless every member who can be played, and the anchor being, is
@@ -1090,27 +1096,36 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Saves the chunks the group has seen more of since the last save, unless the group is no more.
-	 * Those that couldn't be saved are tried again next time
+	 * Saves the chunks the group has seen more of since the last save, unless the group is no more, after
+	 * any save going on. Those that couldn't be saved are tried again next time
+	 *
+	 * @return Resolves once they are saved, or rejects when they couldn't be
 	 */
-	private async saveSeen(): Promise<void>
+	private saveSeen(): Promise<void>
 	{
-		if (this.disbanded !== undefined)
+		const saving = this.seenSaving.then(async () =>
 		{
-			return;
-		}
+			if (this.disbanded !== undefined)
+			{
+				return;
+			}
 
-		const changed = this.seen.takeChanged();
+			const changed = this.seen.takeChanged();
 
-		try
-		{
-			await saveSeenChunks(this.groupId, changed);
-		}
-		catch (error)
-		{
-			this.seen.putBack(changed);
-			throw error;
-		}
+			try
+			{
+				await saveSeenChunks(this.groupId, changed);
+			}
+			catch (error)
+			{
+				this.seen.putBack(changed);
+				throw error;
+			}
+		});
+
+		this.seenSaving = saving.catch(() => undefined);
+
+		return(saving);
 	}
 
 	/**
