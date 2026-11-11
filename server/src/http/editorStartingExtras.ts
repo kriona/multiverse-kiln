@@ -38,6 +38,12 @@ export interface StartingReferences
 	 * Items characters would start with
 	 */
 	itemIds?: readonly number[];
+
+	/**
+	 * The lobby's area as the change leaves it, for a change that also moves the lobby; the universe's
+	 * lobby when left out
+	 */
+	lobbyAreaId?: string | null;
 }
 
 /**
@@ -51,12 +57,13 @@ export async function checkStartingReferences(context: ChangeContext, references
 {
 	const { universe, version, transaction } = context;
 	const { areaIds = [], itemIds = [] } = references;
+	const lobbyAreaId = ((references.lobbyAreaId === undefined) ? universe.lobbyAreaId : references.lobbyAreaId);
 
 	if (areaIds.length > 0)
 	{
 		const foundAreaIds = await findAreaIdsIn(version, areaIds, transaction);
 
-		if (!areaIds.every((areaId) => (foundAreaIds.has(areaId) && (areaId !== universe.lobbyAreaId))))
+		if (!areaIds.every((areaId) => (foundAreaIds.has(areaId) && (areaId !== lobbyAreaId))))
 		{
 			refuse(400, startingMessages.unusableStartingArea);
 		}
