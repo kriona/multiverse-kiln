@@ -110,7 +110,7 @@ describe('universeEditRepo', () =>
 		assert.strictEqual((await listUniverseEdits(universeId, { offset: 0, limit: 10 })).total, 1);
 	});
 
-	it('finds who last saved each of several settings in one version, skipping deleted accounts', async () =>
+	it('finds who last saved each of several settings in one version, not naming deleted accounts', async () =>
 	{
 		const universeId = await addUniverse();
 		const otherId = await addUniverse('Elsewhere');
@@ -148,7 +148,7 @@ describe('universeEditRepo', () =>
 			{ subject: 'settings', id: null, field: 'stage' }
 		])).map((saver) => saver?.name);
 
-		assert.deepStrictEqual(await names(false), ['Grace', undefined, undefined, 'Ada', 'Ada']);
+		assert.deepStrictEqual(await names(false), ['Grace', undefined, undefined, undefined, 'Ada']);
 		assert.deepStrictEqual(await names(true), ['Ada', undefined, undefined, undefined, undefined]);
 		assert.deepStrictEqual(await findLastSavers(universeId, false, []), []);
 	});
