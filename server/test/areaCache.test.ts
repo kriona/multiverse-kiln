@@ -64,6 +64,7 @@ function forestChunk(chunkColumn: number, chunkRow: number): AreaChunk
 
 /**
  * An AreaCache over a fake database, whose stored chunks the test can change, and whose chunk reads
+ * see the chunks as they were when the read began (as a query begun before a save commits does) and
  * wait until the test lets them finish
  */
 class FakeDatabase
@@ -82,14 +83,15 @@ class FakeDatabase
 		(_areaId, chunks) => new Promise((resolve) =>
 		{
 			const keys = chunks.map((chunk) => chunkKey(chunk.chunkColumn, chunk.chunkRow));
+			const found = keys
+				.map((key) => this.stored.get(key))
+				.filter((chunk) => (chunk !== undefined));
 
 			this.reads.push({
 				chunks: keys,
 				finish: () =>
 				{
-					resolve(keys
-						.map((key) => this.stored.get(key))
-						.filter((chunk) => (chunk !== undefined)));
+					resolve(found);
 				}
 			});
 		}),
@@ -228,6 +230,33 @@ describe('AreaCache', () =>
 
 		assert.deepStrictEqual(await reloading, [chunkKey(0, 0)]);
 		assert.strictEqual(area?.chunks.has(chunkKey(0, 0)), false);
+		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 10);
+	});
+
+	it('reads changed chunks on their way again, keeping the cells read after the change', async () =>
+	{
+		const database = new FakeDatabase();
+		const area = await database.cache.load(AREA_ID);
+
+		// A read begun before the change was saved, which lands after the read made for the change
+		const loading = database.cache.loadChunks(AREA_ID, [chunkKey(0, 0)]);
+
+		database.stored.delete(chunkKey(0, 0));
+
+		const reloading = database.cache.reloadChunks(AREA_ID, [chunkKey(0, 0)]);
+		const [before, after] = database.reads.splice(0);
+
+		assert.deepStrictEqual(after.chunks, [chunkKey(0, 0)]);
+
+		after.finish();
+		await new Promise((resolve) => setImmediate(resolve));
+		before.finish();
+
+		assert.deepStrictEqual(await loading, [chunkKey(0, 0)]);
+		assert.deepStrictEqual(await reloading, [chunkKey(0, 0)]);
+		assert.ok(area);
+		assert.ok(area.loadedChunks.has(chunkKey(0, 0)));
+		assert.strictEqual(area.chunks.has(chunkKey(0, 0)), false);
 		assert.strictEqual(area.grid.walkSeconds({ column: 0, row: 0 }), 10);
 	});
 

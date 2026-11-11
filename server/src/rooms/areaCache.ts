@@ -249,8 +249,11 @@ export class AreaCache
 	}
 
 	/**
-	 * Reads chunks of a loaded area again, after an editor has changed them. Chunks that aren't
-	 * loaded are left for when players come near them
+	 * Reads chunks of a loaded area again, after an editor has changed them. Chunks that aren't loaded or
+	 * on their way are left for when players come near them
+	 *
+	 * A chunk on its way may have been read before the change was saved, so it is read again too, and
+	 * what this read finds replaces what that read adds once it has landed
 	 *
 	 * @param areaId The area's ID
 	 * @param chunkKeys The changed chunks, by chunkKey()
@@ -259,20 +262,34 @@ export class AreaCache
 	async reloadChunks(areaId: string, chunkKeys: Iterable<string>): Promise<string[]>
 	{
 		const area = this.areas.get(areaId);
-		const changed = [...chunkKeys].filter((key) => (area?.loadedChunks.has(key) ?? false));
 
-		if (!area || (changed.length === 0))
+		if (!area)
 		{
 			return([]);
 		}
 
-		const stored = await this.readChunks(areaId, changed.map((key) => parseChunkKey(key)));
+		const pending = this.pendingChunks.get(area);
+		const keys = [...chunkKeys].filter((key) => (area.loadedChunks.has(key) || (pending?.has(key) ?? false)));
+
+		if (keys.length === 0)
+		{
+			return([]);
+		}
+
+		const landing = new Set(keys
+			.map((key) => pending?.get(key))
+			.filter((read) => (read !== undefined)));
+		const stored = await this.readChunks(areaId, keys.map((key) => parseChunkKey(key)));
+
+		// A read that fails leaves its chunks unloaded, and is reported by the caller that started it
+		await Promise.allSettled(landing);
 
 		if (this.areas.get(areaId) !== area)
 		{
 			return([]);
 		}
 
+		const changed = keys.filter((key) => area.loadedChunks.has(key));
 		const cells = new Map(stored.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
 
 		for (const key of changed)
