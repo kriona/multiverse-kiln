@@ -266,19 +266,13 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				return;
 			}
 
-			// Nothing moves in a universe at the end of time
-			if (!this.state.locked)
-			{
-				this.areaPlayers.queueMove(client.sessionId, result.data);
-			}
+			// Nothing moves in a universe at the end of time (areaPlayers is locked)
+			this.areaPlayers.queueMove(client.sessionId, result.data);
 		},
 
 		[MessageType.TakeLink]: (client: GameClient) =>
 		{
-			if (!this.state.locked)
-			{
-				this.areaPlayers.takeLink(client.sessionId);
-			}
+			this.areaPlayers.takeLink(client.sessionId);
 		},
 
 		[GameMessageType.Control]: (client: GameClient, payload: unknown) =>
@@ -398,6 +392,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.gameClock = new GroupClock(group.clockSeconds);
 		this.state.clock = this.gameClock.seconds;
 		this.state.locked = (universe.stage === 'end_of_time');
+		this.areaPlayers.setLocked(this.state.locked);
 		this.raceSight = await loadRaceSight(universe.id, universe.ruleset);
 		this.barred = await loadBarredOptions(universe.id);
 
@@ -1470,11 +1465,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private applyStageChange(change: StageChange): void
 	{
 		this.state.locked = (change.stage === 'end_of_time');
-
-		if (this.state.locked)
-		{
-			this.areaPlayers.stopAll();
-		}
+		this.areaPlayers.setLocked(this.state.locked);
 
 		for (const client of this.clients)
 		{

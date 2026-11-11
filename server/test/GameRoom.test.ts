@@ -535,6 +535,66 @@ describe('GameRoom', () =>
 		assert.strictEqual(await left, ServerCloseCode.StageChanged);
 	});
 
+	it('finishes a step under way at the end of time without taking the automatic link it ends on', async () =>
+	{
+		await createAreaLink({ areaId: universe.fieldAreaId, column: 4, row: 3, targetAreaId: universe.houseAreaId, targetColumn: 2, targetRow: 2, mode: 'automatic', requiresWholeGroup: false });
+
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const playerId = playerIdOf(room, client);
+		const player = room.state.players.get(playerId) as Player;
+
+		placeOnCell(player, 3, 3);
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await room.waitForNextMessage();
+
+		for (let tick = 0; (tick < 30) && (player.x === startCenter.x); tick++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		assert.ok((player.x > startCenter.x) && (player.x < startCenter.x + GRID_CELL_SIZE), `the step is under way: x = ${player.x}`);
+
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'end_of_time',
+			previousStage: 'let_there_be_light',
+			roles: new Map()
+		});
+		await waitUntilStopped(room, player);
+
+		assert.strictEqual(player.x, startCenter.x + GRID_CELL_SIZE);
+		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
+	});
+
+	it('ignores TakeLink at the end of time', async () =>
+	{
+		await createAreaLink({ areaId: universe.fieldAreaId, column: 5, row: 5, targetAreaId: universe.houseAreaId, targetColumn: 2, targetRow: 2, mode: 'manual', requiresWholeGroup: false });
+		await updateUniverseSettings(liveVersion(universe.universeId), { stage: 'end_of_time' });
+
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const playerId = playerIdOf(room, client);
+		const player = room.state.players.get(playerId) as Player;
+		const linkCenter = cellCenter({ column: 5, row: 5 }, grid);
+
+		placeOnCell(player, 5, 5);
+		client.send(MessageType.TakeLink);
+		await room.waitForNextMessage();
+
+		// A member travelling through the link couldn't walk off it once the room unlocks
+		universeAccessChanges.publishStage({
+			universeId: universe.universeId,
+			stage: 'let_there_be_light',
+			previousStage: 'end_of_time',
+			roles: new Map()
+		});
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await waitUntil(() => (player.x > linkCenter.x));
+
+		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
+	});
+
 	it('syncs the group\'s name, anchor being and members', async () =>
 	{
 		const room = await createGameRoom();

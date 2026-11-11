@@ -219,6 +219,11 @@ export class AreaPlayers
 	private readonly travelling = new Map<string, string>();
 
 	/**
+	 * Whether players are kept from starting steps and taking links (see setLocked)
+	 */
+	private locked = false;
+
+	/**
 	 * The chunks of their area each player's clients have been sent, by chunkKey()
 	 */
 	private readonly sentChunks = new Map<string, Set<string>>();
@@ -616,6 +621,23 @@ export class AreaPlayers
 	}
 
 	/**
+	 * Locks or unlocks the players' movement, as a group's room does at the end of time. While locked,
+	 * Moves and TakeLink are ignored, and a step under way finishes without taking the automatic link it
+	 * ends on
+	 *
+	 * @param locked Whether players are locked
+	 */
+	setLocked(locked: boolean): void
+	{
+		this.locked = locked;
+
+		if (locked)
+		{
+			this.stopAll();
+		}
+	}
+
+	/**
 	 * Stops every player at the end of their current step, as when the room stops taking moves
 	 */
 	stopAll(): void
@@ -639,7 +661,7 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Queues a client's Move for the next tick
+	 * Queues a client's Move for the next tick, unless players are locked
 	 *
 	 * @param sessionId The client's session ID
 	 * @param move The direction held
@@ -648,15 +670,15 @@ export class AreaPlayers
 	{
 		const playerId = this.sessions.getPlayerId(sessionId);
 
-		if (playerId !== undefined)
+		if ((playerId !== undefined) && !this.locked)
 		{
 			this.moveInputs.push(playerId, move);
 		}
 	}
 
 	/**
-	 * Takes the manual link the client's player is standing on, if there is one; does nothing while the
-	 * player is mid-step or already travelling
+	 * Takes the manual link the client's player is standing on, if there is one; does nothing while
+	 * players are locked, or the player is mid-step or already travelling
 	 *
 	 * @param sessionId The client's session ID
 	 */
@@ -664,7 +686,7 @@ export class AreaPlayers
 	{
 		const playerId = this.sessions.getPlayerId(sessionId);
 
-		if ((playerId === undefined) || this.travelling.has(playerId) || this.steps.has(playerId))
+		if ((playerId === undefined) || this.locked || this.travelling.has(playerId) || this.steps.has(playerId))
 		{
 			return;
 		}
@@ -845,7 +867,7 @@ export class AreaPlayers
 				}
 			}
 
-			const link = (mover.stoppedAt ? linkAt(area.layout, mover.stoppedAt) : undefined);
+			const link = ((mover.stoppedAt && !this.locked) ? linkAt(area.layout, mover.stoppedAt) : undefined);
 
 			if (link)
 			{
