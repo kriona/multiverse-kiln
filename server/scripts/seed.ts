@@ -20,10 +20,12 @@ import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordi
 import { db, pool, type Executor } from '../src/db/client.js';
 import { findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
 import { addDefaultStartingItems } from '../src/db/startingItemRepo.js';
+import { listTileGraphicStorageKeys } from '../src/db/tileGraphicRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { createUniverse, deleteUniverse, setUniverseAreas } from '../src/db/universeRepo.js';
 import { createArea, createAreaLink, saveGroundChunk } from '../src/db/areaRepo.js';
+import { deleteObjects } from '../src/storage/objectStorage.js';
 import { SAMPLE_UNIVERSE_ID, sampleLinks, sampleTiles, sampleUniverse, sampleAreas, type SampleArea } from './sampleUniverse.js';
 
 /**
@@ -239,9 +241,12 @@ async function findCreator(): Promise<PlayerProfile | undefined>
  *
  * @param executor A transaction
  * @param creator The player to make its creator, if any
+ * @return Where the replaced universe's uploaded tile graphics are in object storage, to delete once the transaction commits
  */
-async function seed(executor: Executor, creator: PlayerProfile | undefined): Promise<void>
+async function seed(executor: Executor, creator: PlayerProfile | undefined): Promise<string[]>
 {
+	const storageKeys = await listTileGraphicStorageKeys(SAMPLE_UNIVERSE_ID, executor);
+
 	if (await deleteUniverse(SAMPLE_UNIVERSE_ID, executor))
 	{
 		console.log(`Replacing ${sampleUniverse.name}`);
@@ -323,6 +328,8 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 	{
 		console.log('Nobody can edit it. Pass --creator <username> to make an account its creator');
 	}
+
+	return(storageKeys);
 }
 
 if (process.env.NODE_ENV === 'production')
@@ -336,10 +343,12 @@ else
 	{
 		const creator = await findCreator();
 
-		await db.transaction(async (transaction) =>
+		const storageKeys = await db.transaction(async (transaction) =>
 		{
-			await seed(transaction, creator);
+			return(await seed(transaction, creator));
 		});
+
+		await deleteObjects(storageKeys);
 	}
 	catch (error)
 	{
