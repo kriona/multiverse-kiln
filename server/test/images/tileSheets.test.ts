@@ -122,6 +122,21 @@ describe('tile sheet uploads', () =>
 		assert.deepStrictEqual((await sharp(prepared.png).raw().toBuffer()), (await sharp(palette).ensureAlpha().raw().toBuffer()));
 	});
 
+	it('refuses PNGs larger or smaller than their format as the wrong size', async () =>
+	{
+		const blob = await sharp(await sheetPng())
+			.resize(TILE_GRAPHIC_SIZES.blob)
+			.png()
+			.toBuffer();
+		const smaller = await sharp(await sheetPng())
+			.resize({ width: 64, height: 64 })
+			.png()
+			.toBuffer();
+
+		assert.deepStrictEqual((await prepareTileSheet(blob, 'dualGrid')), { ok: false, problem: 'wrongSize' });
+		assert.deepStrictEqual((await prepareTileSheet(smaller, 'dualGrid')), { ok: false, problem: 'wrongSize' });
+	});
+
 	it('refuses uploads that aren\'t whole PNGs, or that have critical chunks it doesn\'t know', async () =>
 	{
 		const base = await sheetPng();

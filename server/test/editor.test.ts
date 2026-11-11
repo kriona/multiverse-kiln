@@ -1005,7 +1005,12 @@ describe('World editor API', () =>
 			assert.strictEqual(wrongSize.status, 400);
 			assert.deepStrictEqual(wrongSize.body.error.values, { width: TILE_GRAPHIC_SIZES.blob.width, height: TILE_GRAPHIC_SIZES.blob.height });
 
-			for (const body of [{ ...upload, image: await solidPng({ width: 64, height: 64 }) }, { ...upload, image: wall.image }, { ...upload, image: jpeg }, { ...upload, image: Buffer.from('not an image').toString('base64') }, { ...upload, image: 'not base64!' }, { ...upload, rightsConfirmed: false }, { ...upload, name: '' }, { ...upload, drawOrder: 0 }, { ...upload, drawOrder: 100 }, { ...upload, drawOrder: null }, { ...wall, drawOrder: 35 }, { ...upload, format: 'walls' }])
+			const larger = await uploadTileset(ada, universeId, { ...upload, image: wall.image });
+
+			assert.strictEqual(larger.status, 400);
+			assert.deepStrictEqual(larger.body.error.values, { width: TILE_GRAPHIC_SIZES.dualGrid.width, height: TILE_GRAPHIC_SIZES.dualGrid.height });
+
+			for (const body of [{ ...upload, image: await solidPng({ width: 64, height: 64 }) }, { ...upload, image: jpeg }, { ...upload, image: Buffer.from('not an image').toString('base64') }, { ...upload, image: 'not base64!' }, { ...upload, rightsConfirmed: false }, { ...upload, name: '' }, { ...upload, drawOrder: 0 }, { ...upload, drawOrder: 100 }, { ...upload, drawOrder: null }, { ...wall, drawOrder: 35 }, { ...upload, format: 'walls' }])
 			{
 				assert.strictEqual((await uploadTileset(ada, universeId, body)).status, 400, JSON.stringify({ ...body, image: body.image.slice(0, 20) }));
 			}
