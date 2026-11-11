@@ -19,7 +19,7 @@ import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from
 import { checkPwnedPassword } from '../auth/pwnedPasswords.js';
 import { hasKnownBrowserCookie, knownBrowserHash } from '../auth/knownBrowsers.js';
 import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, lockRateLimitSubjects, takeAttempt } from '../auth/rateLimits.js';
-import { endSession, resolveSession, startSession, type SessionIdentity } from '../auth/sessions.js';
+import { endSession, giveSession, resolveSession, startSession, type SessionIdentity, type StartedSession } from '../auth/sessions.js';
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
@@ -43,7 +43,7 @@ import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, se
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
 import { errorMessages, requestRoute, sendInvalidRequest } from './errors.js';
 import { addProviderRoutes } from './providerAuth.js';
-import { addTwoFactorRoutes, checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, startLogin, waitForSecondFactor, type SecondFactorOutcome } from './twoFactorAuth.js';
+import { addTwoFactorRoutes, checkAccountPassword, checkSecondFactor, finishLogin, needsSecondFactor, reportRecoveryCodeUse, startLogin, waitForSecondFactor, type SecondFactorOutcome, type StartedLogin } from './twoFactorAuth.js';
 
 /**
  * The largest request body the auth routes read
@@ -429,7 +429,7 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 	}
 
 	const continuationHash = continuationHashOf(request);
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { payload: LoginPayload; email?: EmailContent }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { payload: LoginPayload; email?: EmailContent; login?: StartedLogin }> =>
 	{
 		if (check.newHash !== undefined)
 		{
@@ -463,13 +463,23 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 			clearCookie(response, CONTINUATION_COOKIE);
 		}
 
-		return({ payload: { outcome: await startLogin(request, response, login.id, rememberMe, now, executor) } });
+		const started = await startLogin(request, response, login.id, rememberMe, now, executor);
+
+		return({
+			payload: { outcome: started.outcome },
+			login: started
+		});
 	});
 
 	if ('status' in outcome)
 	{
 		sendRefusal(response, outcome);
 		return;
+	}
+
+	if (outcome.login)
+	{
+		finishLogin(response, outcome.login);
 	}
 
 	response.json(outcome.payload);
@@ -923,7 +933,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	}
 
 	const passwordHash = await hashPassword(password);
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | StartedSession> =>
 	{
 		const code = await lockContinuation('register', continuationHash as Buffer, now, executor);
 
@@ -979,19 +989,22 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		}
 
 		await deleteEmailCode(code.id, executor);
-		await startSession(request, response, playerId, rememberMe, executor);
+
+		const session = await startSession(request, playerId, rememberMe, executor);
+
 		await recordEvent(request, playerId, 'registered', now, executor);
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
-		return(undefined);
+		return(session);
 	});
 
-	if (outcome)
+	if ('status' in outcome)
 	{
 		sendRefusal(response, outcome);
 		return;
 	}
 
+	giveSession(response, outcome);
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
 	sendEmailInBackground({
@@ -1035,7 +1048,7 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 	}
 
 	const passwordHash = await hashPassword(password);
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; ended: string[]; recipient: EmailRecipient | undefined; check: SecondFactorOutcome; login: SessionStartPayload['outcome'] }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; ended: string[]; recipient: EmailRecipient | undefined; check: SecondFactorOutcome; login: StartedLogin }> =>
 	{
 		const code = await lockContinuation('resetPassword', continuationHash as Buffer, now, executor);
 
@@ -1088,7 +1101,7 @@ async function passwordResetRoute(request: Request, response: Response): Promise
 	connectedSessions.end(outcome.ended);
 	clearCookie(response, CONTINUATION_COOKIE);
 
-	const payload: SessionStartPayload = { outcome: outcome.login };
+	const payload: SessionStartPayload = { outcome: finishLogin(response, outcome.login) };
 
 	response.json(payload);
 

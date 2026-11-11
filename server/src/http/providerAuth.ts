@@ -23,7 +23,7 @@ import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { enabledProviders, providerClient, ProviderLoginError, type ProviderUser } from '../auth/providers.js';
 import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
-import { resolveSession, startSession } from '../auth/sessions.js';
+import { giveSession, resolveSession, startSession, type StartedSession } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
@@ -38,7 +38,7 @@ import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordE
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
-import { checkAccountPassword, checkSecondFactor, needsSecondFactor, reportRecoveryCodeUse, requireSession, startLogin, waitForSecondFactor, type SecondFactorOutcome } from './twoFactorAuth.js';
+import { checkAccountPassword, checkSecondFactor, finishLogin, needsSecondFactor, reportRecoveryCodeUse, requireSession, startLogin, waitForSecondFactor, type SecondFactorOutcome, type StartedLogin } from './twoFactorAuth.js';
 
 /**
  * How long a player has at the provider before the login must start again
@@ -537,7 +537,7 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 	}
 
 	const token = createToken();
-	const payload = await inTransaction(async (executor): Promise<ProviderCallbackPayload> =>
+	const { payload, login } = await inTransaction(async (executor): Promise<{ payload: ProviderCallbackPayload; login?: StartedLogin }> =>
 	{
 		const playerId = await findProviderLoginPlayer(provider, user.providerUserId, executor);
 
@@ -548,10 +548,15 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 			{
 				await waitForSecondFactor(response, playerId, rememberMe, now, executor);
 
-				return({ outcome: 'twoFactor' });
+				return({ payload: { outcome: 'twoFactor' } });
 			}
 
-			return({ outcome: await startLogin(request, response, playerId, rememberMe, now, executor) });
+			const started = await startLogin(request, response, playerId, rememberMe, now, executor);
+
+			return({
+				payload: { outcome: started.outcome },
+				login: started
+			});
 		}
 
 		const ownerId = await findPlayerIdByEmail(email, executor);
@@ -570,21 +575,30 @@ async function callbackRoute(request: Request, response: Response): Promise<void
 		if (ownerId === undefined)
 		{
 			return({
-				outcome: 'register',
-				provider,
-				email,
-				displayName: user.displayName
+				payload: {
+					outcome: 'register',
+					provider,
+					email,
+					displayName: user.displayName
+				}
 			});
 		}
 
 		return({
-			outcome: 'link',
-			provider,
-			email,
-			hasPassword: ((await findLocalLogin(email, executor))?.id === ownerId),
-			twoFactor: await needsSecondFactor(request, ownerId, now, executor)
+			payload: {
+				outcome: 'link',
+				provider,
+				email,
+				hasPassword: ((await findLocalLogin(email, executor))?.id === ownerId),
+				twoFactor: await needsSecondFactor(request, ownerId, now, executor)
+			}
 		});
 	});
+
+	if (login)
+	{
+		finishLogin(response, login);
+	}
 
 	if ((payload.outcome === 'register') || (payload.outcome === 'link'))
 	{
@@ -685,7 +699,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	}
 
 	const now = new Date();
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { email: string }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { email: string; session: StartedSession }> =>
 	{
 		const pending = await lockBrowserLogin(request, now, executor);
 
@@ -743,11 +757,15 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		}
 
 		await deletePendingProviderLogin(pending.id, executor);
-		await startSession(request, response, playerId, pending.rememberMe, executor);
+		const session = await startSession(request, playerId, pending.rememberMe, executor);
+
 		await recordEvent(request, playerId, 'registered', now, executor);
 		await recordEvent(request, playerId, 'loggedIn', now, executor);
 
-		return({ email: pending.email });
+		return({
+			email: pending.email,
+			session
+		});
 	});
 
 	if ('status' in outcome)
@@ -756,6 +774,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 		return;
 	}
 
+	giveSession(response, outcome.session);
 	clearCookie(response, PROVIDER_LOGIN_COOKIE);
 	response.sendStatus(204);
 	sendEmailInBackground({
@@ -834,7 +853,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 		newHash = check.newHash;
 	}
 
-	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; recipient: EmailRecipient | undefined; check: SecondFactorOutcome; login: SessionStartPayload['outcome'] }> =>
+	const outcome = await inTransaction(async (executor): Promise<AuthRefusal | { playerId: string; provider: LoginProvider; recipient: EmailRecipient | undefined; check: SecondFactorOutcome; login: StartedLogin }> =>
 	{
 		const locked = await lockBrowserLogin(request, now, executor);
 
@@ -922,7 +941,7 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 	clearCookie(response, PROVIDER_LOGIN_COOKIE);
 	clearCookie(response, CONTINUATION_COOKIE);
 
-	const payload: SessionStartPayload = { outcome: outcome.login };
+	const payload: SessionStartPayload = { outcome: finishLogin(response, outcome.login) };
 
 	response.json(payload);
 

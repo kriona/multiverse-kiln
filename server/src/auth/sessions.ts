@@ -99,20 +99,45 @@ export async function resolveSession(cookieHeader: string | null | undefined, no
 }
 
 /**
- * Logs a browser in: starts a session and gives the browser its cookie. Without "Remember me" the
- * cookie goes when the browser closes; with it, the browser keeps it as long as the session can last.
- * The account's last login is recorded, and the browser is marked as known to it (knownBrowsers.ts). A session the browser was
- * already logged in with ends, so a copy of its old token stops working rather than lasting until it
- * expires
+ * A session startSession() saved, for giveSession() to hand to the browser once the transaction that
+ * saved it has committed
+ */
+export interface StartedSession
+{
+	sessionId: string;
+	playerId: string;
+
+	/**
+	 * The token the browser's cookie holds
+	 */
+	token: string;
+
+	rememberMe: boolean;
+
+	/**
+	 * When the player logged in
+	 */
+	startedAt: Date;
+
+	/**
+	 * The session the browser was logged in with, which the new one replaces, if it had one
+	 */
+	replacedSessionId: string | undefined;
+}
+
+/**
+ * Logs a browser in, in the database: starts a session and records the account's last login. A session
+ * the browser was already logged in with ends, so a copy of its old token stops working rather than
+ * lasting until it expires. The browser gets the session from giveSession(), called once the
+ * transaction commits, so a login that rolls back leaves its old session and windows as they were
  *
  * @param request The login's request, with the browser's cookies
- * @param response The response to the login, which carries the cookie
  * @param playerId The account
  * @param rememberMe Whether the player checked "Remember me"
  * @param executor The database, or a transaction
- * @return The session's ID
+ * @return The session, to give the browser
  */
-export async function startSession(request: Request, response: Response, playerId: string, rememberMe: boolean, executor?: Executor): Promise<string>
+export async function startSession(request: Request, playerId: string, rememberMe: boolean, executor?: Executor): Promise<StartedSession>
 {
 	const previous = readCookie(request.headers.cookie, SESSION_COOKIE);
 	const old = (((previous !== undefined) && isTokenForm(previous)) ? await findSessionByTokenHash(hashToken(previous), executor) : undefined);
@@ -120,7 +145,6 @@ export async function startSession(request: Request, response: Response, playerI
 	if (old)
 	{
 		await deleteSession(old.id, executor);
-		connectedSessions.end([old.id]);
 	}
 
 	const token = createToken();
@@ -128,10 +152,35 @@ export async function startSession(request: Request, response: Response, playerI
 	const session = await createSession(playerId, hashToken(token), rememberMe, executor);
 
 	await saveLastLogin(playerId, now, executor);
-	setCookie(response, SESSION_COOKIE, token, (rememberMe ? SESSION_LIFETIMES.remembered.totalMs : undefined));
-	markKnownBrowser(response, playerId, now);
 
-	return(session.id);
+	return({
+		sessionId: session.id,
+		playerId,
+		token,
+		rememberMe,
+		startedAt: now,
+		replacedSessionId: old?.id
+	});
+}
+
+/**
+ * Gives a browser the session startSession() saved, once it is committed: turns away the windows of
+ * the session it replaced and sets the session cookie. Without "Remember me" the cookie goes when the
+ * browser closes; with it, the browser keeps it as long as the session can last. The browser is marked
+ * as known to the account (knownBrowsers.ts)
+ *
+ * @param response The response to the login, which carries the cookies
+ * @param session The session
+ */
+export function giveSession(response: Response, session: StartedSession): void
+{
+	if (session.replacedSessionId !== undefined)
+	{
+		connectedSessions.end([session.replacedSessionId]);
+	}
+
+	setCookie(response, SESSION_COOKIE, session.token, (session.rememberMe ? SESSION_LIFETIMES.remembered.totalMs : undefined));
+	markKnownBrowser(response, session.playerId, session.startedAt);
 }
 
 /**
