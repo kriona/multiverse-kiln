@@ -6,7 +6,7 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { adminDb } from '../src/db/adminClient.js';
-import { listPlayableCharacters } from '../src/db/characterRepo.js';
+import { deleteCharacter, listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
@@ -22,7 +22,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, addArea,defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -1129,6 +1129,65 @@ describe('LobbyRoom', () =>
 			assert.strictEqual((await ada.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, lovelaceId);
 			await waitUntil(() => (grace.room.state.members.get(ada.playerId)?.name === 'Lovelace'));
 			assert.strictEqual(playerOf(ada).ghost, false);
+		});
+
+		it('does not play a character deleted while their player joins', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+			const graceId = (await addPlayer('Grace')).id;
+			const graceCharacterId = await addCharacter(graceId, universe.universeId, 'Grace');
+			const { cookie } = await logInBrowser(graceId);
+
+			// The lobby has read Grace's characters by the time it prepares her start
+			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
+			{
+				assert.ok(await deleteCharacter(graceId, universe.universeId, graceCharacterId));
+				characterChanges.publish({
+					kind: 'removed',
+					playerId: graceId,
+					universeId: universe.universeId,
+					characterId: graceCharacterId
+				});
+			});
+
+			const grace = await openWindow(cookie, universe.universeId);
+
+			assert.strictEqual((await grace.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			assert.ok(!room.state.members.has(graceId));
+		});
+
+		it('does not play a character who joins a group while their player joins', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const room = lobbyOf(ada);
+			const graceId = (await addPlayer('Grace')).id;
+			const graceCharacterId = await addCharacter(graceId, universe.universeId, 'Grace');
+			const { cookie } = await logInBrowser(graceId);
+
+			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
+			{
+				const groupId = await addGroup(universe.universeId, graceCharacterId, null);
+
+				groupChanges.publish({
+					kind: 'joined',
+					groupId,
+					universeId: universe.universeId,
+					character: {
+						characterId: graceCharacterId,
+						playerId: graceId,
+						name: 'Grace',
+						raceId: await defaultRaceId('dwarf'),
+						classId: await defaultClassId('fighter'),
+						playable: true
+					}
+				});
+			});
+
+			const grace = await openWindow(cookie, universe.universeId);
+
+			assert.strictEqual((await grace.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
+			assert.ok(!room.state.members.has(graceId));
 		});
 
 		it('ignores a change to a character in another universe', async () =>

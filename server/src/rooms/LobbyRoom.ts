@@ -193,6 +193,12 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	private readonly playing = new Map<string, PlayableCharacter>();
 
+	/**
+	 * How many changes to characters and groups in the universe the room has heard of, so a joining window
+	 * can tell whether one was published while it read its player's characters (readCharactersAndStart())
+	 */
+	private characterChangeCount = 0;
+
 	private readonly invalidMessages = new InvalidMessages();
 
 	messages = {
@@ -598,8 +604,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		await this.recheckJoining(client);
 
 		const { playerId } = identityOf(client);
-		const characters = await listPlayableCharacters(playerId, this.universeId);
-		const lobbyStart = (this.state.hasArea ? await this.lobbyStart() : undefined);
+		const { characters, lobbyStart } = await this.readCharactersAndStart(playerId);
 
 		this.characters.set(playerId, characters);
 
@@ -628,6 +633,34 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		client.send(LobbyServerMessageType.PlayingAs, playingAs);
 		client.send(LobbyServerMessageType.ChatHistory, history);
 		connectedSessions.connect(client, identityOf(client).sessionId);
+	}
+
+	/**
+	 * Reads a joining player's characters, then the lobby's area with the chunks around its starting cell
+	 * loaded (lobbyStart()), reading both again when a character or group in the universe changed
+	 * meanwhile. The room's listeners keep only the characters of players already in this.characters
+	 * current, and a list read before such a change would undo it, so join() stores the list with nothing
+	 * left to wait for, and the listeners follow every change from then on
+	 *
+	 * @param playerId The player's ID
+	 * @return The player's characters, and the lobby's area to start in (undefined when the lobby has none)
+	 */
+	private async readCharactersAndStart(playerId: string): Promise<{ characters: PlayableCharacter[]; lobbyStart: ActiveArea | undefined }>
+	{
+		for (;;)
+		{
+			const changeCount = this.characterChangeCount;
+			const characters = await listPlayableCharacters(playerId, this.universeId);
+			const lobbyStart = (this.state.hasArea ? await this.lobbyStart() : undefined);
+
+			if (this.characterChangeCount === changeCount)
+			{
+				return({
+					characters,
+					lobbyStart
+				});
+			}
+		}
 	}
 
 	/**
@@ -741,7 +774,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	private applyCharacterChange(change: CharacterChange): void
 	{
-		if ((change.universeId !== this.universeId) || !this.characters.has(change.playerId))
+		if (change.universeId !== this.universeId)
+		{
+			return;
+		}
+
+		this.characterChangeCount++;
+
+		if (!this.characters.has(change.playerId))
 		{
 			return;
 		}
@@ -771,6 +811,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		{
 			return;
 		}
+
+		this.characterChangeCount++;
 
 		const affected = ((change.kind === 'disbanded') ? change.members : [change.character]);
 		const players = new Set<string>();
