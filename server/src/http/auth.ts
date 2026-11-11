@@ -1265,7 +1265,6 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 	connectedSessions.end(outcome.ended);
 	clearCookie(response, CONTINUATION_COOKIE);
 	response.sendStatus(204);
-	await reportRecoveryCodeUse(session.playerId, outcome.check, emailLocale);
 
 	if (outcome.oldEmail !== null)
 	{
@@ -1282,6 +1281,8 @@ async function emailChangeRoute(request: Request, response: Response): Promise<v
 		to: email,
 		...emailChangedEmail({ address: 'new' }, outcome.name, emailLocale)
 	});
+
+	await reportRecoveryCodeUse(session.playerId, outcome.check, emailLocale);
 }
 
 /**

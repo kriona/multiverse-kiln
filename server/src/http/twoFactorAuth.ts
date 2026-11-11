@@ -472,7 +472,9 @@ function tooManyWrongAuthenticatorCodes(decision: SendDecision & { allowed: fals
 }
 
 /**
- * Emails an account that one of its recovery codes was used, after the request is answered
+ * Emails an account that one of its recovery codes was used. The change the code allowed is already
+ * saved, so a failure finding the address is logged rather than thrown: it mustn't fail the request or
+ * stop the caller's other notices
  *
  * @param playerId The account
  * @param outcome What checking its code decided
@@ -485,14 +487,21 @@ export async function reportRecoveryCodeUse(playerId: string, outcome: SecondFac
 		return;
 	}
 
-	const recipient = await findEmailRecipient(playerId);
-
-	if (recipient)
+	try
 	{
-		sendEmailInBackground({
-			to: recipient.email,
-			...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, recipient.displayName, emailLocale)
-		});
+		const recipient = await findEmailRecipient(playerId);
+
+		if (recipient)
+		{
+			sendEmailInBackground({
+				to: recipient.email,
+				...recoveryCodeUsedEmail(outcome.recoveryCodesLeft, recipient.displayName, emailLocale)
+			});
+		}
+	}
+	catch (error)
+	{
+		console.error('Could not email an account that a recovery code was used:', error);
 	}
 }
 
