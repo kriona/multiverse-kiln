@@ -176,6 +176,20 @@ describe('translation files (shared)', () =>
 		assert.throws(() => readTranslationFile('xliff', inAttribute), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 4)));
 	});
 
+	it('says which line of an XLIFF file refers to a character XML doesn\'t allow', () =>
+	{
+		for (const reference of ['&#x110000;', '&#99999999;', '&#xD800;', '&#xFFFE;', '&#0;'])
+		{
+			const file = '<xliff trgLang="de">\n<file>\n<unit id="a"><segment><source>x</source><target>' + reference + '</target></segment></unit>\n</file>\n</xliff>';
+
+			assert.throws(() => readTranslationFile('xliff', file), (error: unknown) => ((error instanceof TranslationFileError) && (error.line === 3)), reference);
+		}
+
+		const emoji = '<xliff trgLang="de"><file><unit id="a"><segment><source>x</source><target>&#x1F600;&#128512;</target></segment></unit></file></xliff>';
+
+		assert.strictEqual(readTranslationFile('xliff', emoji).translations[0].translation, '\u{1F600}\u{1F600}');
+	});
+
 	it('reads a large XLIFF file in time growing with its length, not its square', () =>
 	{
 		// Read in time growing with the square of its length, this file takes several seconds; read in a
