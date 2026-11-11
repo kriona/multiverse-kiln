@@ -90,10 +90,11 @@ export class AreaCache
 	private readonly usedAt = new Map<string, number>();
 
 	/**
-	 * The reads under way for each area's chunks, by chunkKey(), so no chunk is asked for twice at once
-	 * and a caller wanting a chunk that is on its way can wait for it
+	 * The reads under way for each loaded area's chunks, by chunkKey(), so no chunk is asked for twice
+	 * at once and a caller wanting a chunk that is on its way can wait for it. Kept per ActiveArea, since
+	 * a read for an area's copy from before reload() adds nothing to the copy that replaced it
 	 */
-	private readonly pendingChunks = new Map<string, Map<string, Promise<string[]>>>();
+	private readonly pendingChunks = new WeakMap<ActiveArea, Map<string, Promise<string[]>>>();
 
 	/**
 	 * @param loadArea Reads an area's settings, links and tiles
@@ -172,12 +173,12 @@ export class AreaCache
 			return([]);
 		}
 
-		let pending = this.pendingChunks.get(areaId);
+		let pending = this.pendingChunks.get(area);
 
 		if (!pending)
 		{
 			pending = new Map();
-			this.pendingChunks.set(areaId, pending);
+			this.pendingChunks.set(area, pending);
 		}
 
 		const missing = [...chunkKeys].filter((key) => !area.loadedChunks.has(key));
@@ -379,7 +380,6 @@ export class AreaCache
 	{
 		this.areas.delete(areaId);
 		this.usedAt.delete(areaId);
-		this.pendingChunks.delete(areaId);
 	}
 
 	/**

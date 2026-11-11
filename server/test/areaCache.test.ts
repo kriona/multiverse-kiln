@@ -261,6 +261,30 @@ describe('AreaCache', () =>
 		assert.strictEqual(reloaded?.loadedChunks.size, 0);
 	});
 
+	for (const keepChunks of [false, true])
+	{
+		it(`reads chunks for a reloaded area that were on their way for its previous copy (keepChunks ${keepChunks})`, async () =>
+		{
+			const database = new FakeDatabase();
+			const key = chunkKey(0, 0);
+
+			await database.cache.load(AREA_ID);
+
+			const first = database.cache.loadChunks(AREA_ID, [key]);
+			const reloaded = await database.cache.reload(AREA_ID, keepChunks);
+			const second = database.cache.loadChunks(AREA_ID, [key]);
+
+			assert.strictEqual(database.reads.length, 2);
+
+			database.finishReads();
+
+			assert.deepStrictEqual(await first, []);
+			assert.deepStrictEqual(await second, [key]);
+			assert.strictEqual(database.cache.get(AREA_ID), reloaded);
+			assert.ok(reloaded?.loadedChunks.has(key));
+		});
+	}
+
 	it('forgets an area that no longer exists when reloaded', async () =>
 	{
 		const database = new FakeDatabase();
