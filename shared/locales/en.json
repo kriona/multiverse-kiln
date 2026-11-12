@@ -1452,8 +1452,8 @@
 		"description": "Shown in the area editor when the server refused the area's settings, followed by why; nothing was saved"
 	},
 	"editor.area.size": {
-		"defaultMessage": "The area is {height, number} tall x {width, number} wide.",
-		"description": "The size of the area, in cells"
+		"defaultMessage": "({width, number}x{height, number})",
+		"description": "The size of the area in cells, width by height, shown before the area editor's Edit Size button"
 	},
 	"editor.area.tile": {
 		"defaultMessage": "Tile",

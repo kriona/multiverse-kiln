@@ -1143,8 +1143,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		this.size.textContent = t({
 			id: 'editor.area.size',
-			defaultMessage: 'The area is {height, number} tall x {width, number} wide.',
-			description: 'The size of the area, in cells'
+			defaultMessage: '({width, number}x{height, number})',
+			description: 'The size of the area in cells, width by height, shown before the area editor\'s Edit Size button'
 		}, {
 			height,
 			width

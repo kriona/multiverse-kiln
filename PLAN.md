@@ -401,9 +401,53 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 ## Phase 16: Regions and area editing
 
 1. Regions
-	- [ ] Decide and write into `STRUCTURE-OVERVIEW.md`: a region groups areas without cells of its own and sets general rules for the areas in it, and a creator assigns a builder to one ("this is your area, work on it"). Still open: whether a region is a kind of area (areas already nest and pass settings to the areas in them) or a thing of its own, which rules it sets, and whether an assignment limits which areas a builder may save or only says whose they are, shown beside the area claims
-	- [ ] Build it, with tests
+	- [ ] Regions may contain areas or other regions. The area/region itself points to the parent.
+	- [ ] Regions have a copy of the following settings:
+		- enabled
+		- passage of time
+		- default tile
+	- For every setting in a region:
+		- if the region is inside another region, add a default "inherit" option.
+	- [ ] Regions can have assignments - a list of creators / builders responsible for the region. Builders are limited to edit those regions.
 	- [ ] Areas can be in multiple regions. One region can group areas a builder works in, while another like "The Planet" could define the rules for all outdoor areas.
+	- [ ] Errors
+		- Create a "Errors" tab on the universe before Audit. This should be a table of errors. There should be a button to clear specific errors or clear all errors. The tab header should show the # of errors in the tab (so an index to look this count up quickly is important). Don't make it read, since it doesn't always need to draw attention, but make 0 stand out less
+		- Errors should have:
+			- error code
+			- a universe they belong to
+			- message
+			- first occurence timestamp
+			- most recent occurence timesamp
+			- Number of occurences
+		- If you attempt to log an error and the error code already exists, update the fields instead of creating a new row. "error code" + "universe" will be unique, but you can decide what the PK is
+		- You should be able to delete a region. If there are areas in a region:
+			- list areas only in this region. Options for:
+				1. Move areas to another region, show a region select control
+				2. Delete all areas. This should have multiple warnings like deleting a character.
+			- list areas in this region that are also included in another region. Options for:
+				1. Add areas to another region, show a region select control
+				2. Do not add another region, leave areas in the region they're in.
+	- [ ] Areas
+		- Every area must be in at least 1 region.
+		- For every setting in an area:
+			- if the area is inside a region, add a default "inherit" option.
+			- to determine the value of the setting, look to all immediate parents. Skip "inherit", looking for explicit values.
+				- If a single value is found, use it
+				- If multiple values are found, log a universe error in format "{area}-{setting}", and choose the first one.
+				- If no values are found, get a list of parent regions one step above all current parents, then repeat.
+				- If we run out of parent regions and no values are found, log a universe error with code "{area}-{setting}", and choose the first option in the list of options.
+		- Should we cache settings on areas? We could make a universe save clear the cache.
+	- [ ] Seed World
+			- In the seed world, make the following regions:
+			- "Lobby" region
+				- passage of time: always noon
+			- "Planet" region
+				- passage of time: normal
+			- "Capitol City", inside "planet"
+		- In the seed world, make the following areas:
+			- "Market District", inside "Capitol City"
+			- "Shop", inside "Capitol City"
+			- "Cellar", inside "Capitol City"
 2. Area editor
 	- [ ] Checkbox for "Disable fog of war / vision checks", set by default for the sample game lobby
 	- [ ] Edit Size: a field whose value differs from the area's size now shows in a changed color

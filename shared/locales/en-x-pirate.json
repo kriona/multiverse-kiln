@@ -1452,8 +1452,8 @@
 		"source": "Could not save the area."
 	},
 	"editor.area.size": {
-		"message": "The area be {height, number} tall by {width, number} wide.",
-		"source": "The area is {height, number} tall x {width, number} wide."
+		"message": "({width, number}x{height, number})",
+		"source": "({width, number}x{height, number})"
 	},
 	"editor.area.tile": {
 		"message": "Tile",

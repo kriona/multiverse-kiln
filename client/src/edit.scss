@@ -897,6 +897,13 @@ form > .changed-since,
 		gap: 12px;
 	}
 
+	// The area's size, padded like a button (padding and border) so its text lines up with Edit Size's
+	.area-size
+	{
+		padding: 7px 0;
+		color: $text-muted;
+	}
+
 	.area-full-page
 	{
 		margin-left: auto;
