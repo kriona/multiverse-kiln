@@ -400,54 +400,29 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 
 ## Phase 16: Regions and area editing
 
+Decided (see Regions in `STRUCTURE-OVERVIEW.md`):
+- Regions group areas without cells of their own. A region's parents are any number of regions (none for a top-level region), so a creator can make "Bea's regions", put other regions in it and assign Bea to it; nothing is ever inside itself. An area's parents are one or more regions and areas, all alike, at most one of them an area. Every area is in at least one region, directly or through an area it is inside. Regions and areas nest at most 10 levels deep along their longest path. Region names are unique within a version, and only seen in the editor, so they aren't universe text.
+- Regions and areas have the same settings, each of which can be `inherit` (shown as "Not set" for a top-level region): enabled, indoors or outdoors, light level, default tile and passage of time. A region can set none of them, such as one that only groups a builder's areas. The universe's passage of time goes; the Lobby tab keeps its own.
+- An area's `inherit` settings are found among its parents a level at a time, each region or area counted once; enabled is a gate, disabled when anything above is along any path, with `on` working as `inherit`. Every save that changes areas, regions, an area's parents or a tile's kinds works the settings out for every area of the version and stores them on the areas, and refuses the save when an area has two different values at one level (two `faerie` mornings included), or none at all. Outdoor areas ignore light level, and the lobby's area its passage of time, which the Lobby tab sets. The editor runs the same check as changes are made. Nothing is ever saved wrong, so there is no Errors tab (see Later).
+- Creators assign builders to regions, for the universe rather than a version. A builder edits only what is below their assignments, nothing without one, and tiles, items and mobs only with the permissions given on the Editors tab. They rename the regions they are assigned to and change their settings, but only creators change their parents or delete them, and a move, a parent or a link needs both ends within the builder's assignments, as does deleting a link or an area that areas outside them link into. Only builders are assigned.
+
 1. Regions
-	- [ ] Regions may contain areas or other regions. The area/region itself points to the parent.
-	- [ ] Regions have a copy of the following settings:
-		- enabled
-		- passage of time
-		- default tile
-	- For every setting in a region:
-		- if the region is inside another region, add a default "inherit" option.
-	- [ ] Regions can have assignments - a list of creators / builders responsible for the region. Builders are limited to edit those regions.
-	- [ ] Areas can be in multiple regions. One region can group areas a builder works in, while another like "The Planet" could define the rules for all outdoor areas.
-	- [ ] Errors
-		- Create a "Errors" tab on the universe before Audit. This should be a table of errors. There should be a button to clear specific errors or clear all errors. The tab header should show the # of errors in the tab (so an index to look this count up quickly is important). Don't make it read, since it doesn't always need to draw attention, but make 0 stand out less
-		- Errors should have:
-			- error code
-			- a universe they belong to
-			- message
-			- first occurence timestamp
-			- most recent occurence timesamp
-			- Number of occurences
-		- If you attempt to log an error and the error code already exists, update the fields instead of creating a new row. "error code" + "universe" will be unique, but you can decide what the PK is
-		- You should be able to delete a region. If there are areas in a region:
-			- list areas only in this region. Options for:
-				1. Move areas to another region, show a region select control
-				2. Delete all areas. This should have multiple warnings like deleting a character.
-			- list areas in this region that are also included in another region. Options for:
-				1. Add areas to another region, show a region select control
-				2. Do not add another region, leave areas in the region they're in.
-	- [ ] Areas
-		- Every area must be in at least 1 region.
-		- For every setting in an area:
-			- if the area is inside a region, add a default "inherit" option.
-			- to determine the value of the setting, look to all immediate parents. Skip "inherit", looking for explicit values.
-				- If a single value is found, use it
-				- If multiple values are found, log a universe error in format "{area}-{setting}", and choose the first one.
-				- If no values are found, get a list of parent regions one step above all current parents, then repeat.
-				- If we run out of parent regions and no values are found, log a universe error with code "{area}-{setting}", and choose the first option in the list of options.
-		- Should we cache settings on areas? We could make a universe save clear the cache.
-	- [ ] Seed World
-			- In the seed world, make the following regions:
-			- "Lobby" region
-				- passage of time: always noon
-			- "Planet" region
-				- passage of time: normal
-			- "Capitol City", inside "planet"
-		- In the seed world, make the following areas:
-			- "Market District", inside "Capitol City"
-			- "Shop", inside "Capitol City"
-			- "Cellar", inside "Capitol City"
+	- [ ] Schema: `regions` (universe, draft and origin, name, unique within the version not counting case, and the settings, null for `inherit`) and `region_parents` for the regions each is inside, with when each was added; an area's parents as its `parent_area_id` (or none) and `area_regions` for the regions it is in, with when each was added, at least one of them; the area's own settings nullable for `inherit`, beside the settings worked out for it (the worked-out light level null exactly when the area is outdoors, kept so by a check constraint); `region_assignments` (region by its live ID, builder); the builder permissions `can_edit_tiles`, `can_edit_items` and `can_edit_mobs` on `universe_editors`. The migration deletes every universe's areas (no universe holds real data yet), with everything pointing at them (starting areas, the lobby's area, saved positions, groups' saved state), and drops the universe's passage of time; the seed rebuilds the sample universe
+	- [ ] Working out an area's settings as a pure function in `/shared` (`resolveAreaSettings()` or similar): each setting's value and where it came from, or the conflict (the regions and their values) or missing value, with a default tile not for the area's kind passed over and `faerie` refused for a looping area. Tests for each rule: one level, a conflict between parents whatever their order, the same value twice, blank regions passed over, a region reached twice counted once (through regions with several parents too), going up past a parent area, enabled as a gate along every path, missing values at the top, light level ignored outdoors, two `faerie` mornings conflicting, the lobby's area without a passage of time
+	- [ ] Saving: every save that changes areas, regions, an area's parents or a tile's kinds works out the settings of every area of the version in the save's transaction, stores them, and refuses with a payload naming each area, setting and region (shown on the Areas tab, linking to the area). The rooms, the game and the previews read the stored settings. Applying the draft and importing into it are checked the same way. Deleting an area gives the areas inside it its parents, checking first and naming the areas that would be left with a conflict or a missing value
+	- [ ] The Areas tab as a tree of regions and areas (a region or area with several parents under each, collapsed after the first) or a table, with a Tree / Table switch and a search narrowing both, Add Region beside Add Area, and the region editor (`STRUCTURE-OVERVIEW.md`, Editor: Region): name, parents, settings, assignments and what is in it. The area and region editors' parents, with Add Parent searching regions (and areas, for an area), never offering one that would put something inside itself or nest it more than 10 levels deep. Each setting shows what it inherits and from where, and the problems a change makes as it is made; a region's own conflicting inheritance is a warning, since only areas are checked. Staged until Save, as `EditorChange` kinds, and listed on the Audit tab
+	- [ ] Deleting a region: the dialog moving or deleting the regions and areas whose only parent it is (deleting asking twice, like deleting a character, then the warnings for areas with characters in them), and adding another parent region to the regions and areas with other parents or leaving them with those, each region select offering the deleted region's parents first, checking first that what is left has a value for every setting
+	- [ ] Assignments: creators assign builders in the region editor; an assignment covers everything below the region. Builders rename and change the settings of the regions they are assigned to, but don't change their parents or delete them, and add, change, move and delete what is below them, with both ends of a move, a parent or a link within their assignments (deleting a link out of them, or an area linked into from outside them, is left to creators), and a translator note on an area's name only for an area within them; with no assignment they edit no area or region. Existing builders start with no assignments or permissions. The permissions on the Editors tab (can edit tiles, items and mobs, the last stored for later) decide the rest. The server checks every change (`EDITOR_CHANGE_CHECKS`), and the editor opens what a builder can't edit read-only
+	- [ ] Disabling: an area's parent area for "move everyone to the parent area" is the nearest enabled area above it, past regions, and disabling a region asks for every area below it with characters in it, as does any change that disables an area through what is above it (a new parent, a move, deleting a region). In the draft none of it asks or moves anyone; applying the draft asks about the live areas it disables or deletes, judged by their worked-out enabled
+	- [ ] Tiles: deleting a tile or unchecking a kind ("used in") while it is the worked-out default tile of areas opens one dialog for both (`STRUCTURE-OVERVIEW.md`, Replacing a default tile), listing the areas under the places that give them the tile: every place setting it when deleting; when unchecking, a place giving it only to areas of that kind, or else each of those areas, the place keeping it for the other kind. Each place chooses Inherit (offered only when clearing it leaves every area it served a default tile from its parents, with no conflict, showing what each gets) or a tile, with Replace All With for every place at once, and a count of the places chosen out of all of them ("1 / 20 chosen"). A tile not for the kind of every area it would become the default tile of shows a warning naming them and can't be used; the dialog checks the result for conflicts and missing values, and names places outside a builder's assignments. The server refuses a save leaving an area's default tile not for its kind
+	- [ ] Drafts copy regions like areas; exporting and importing include regions with the world, and assignments and permissions with the editors
+	- [ ] Seed world, rebuilt from scratch:
+		- "Lobby" region (outdoors), holding the "Lobby" area (a city), the lobby's area, with grass as its default tile, whose passage of time is the Lobby tab's (real time, the default)
+		- "Planet" region (flows normally, outdoors, lit, grass), holding the "Kingdom" area, outdoors and the starting area, and the "Capitol City" region
+		- "Market District", in Capitol City; "Shop", inside Market District, indoors with Wood Floor; "Cellar", inside Shop, dark (indoors and Wood Floor from Shop)
+		- one Desert cell in Kingdom with an automatic link into Market District, and a 2-wide exit from Market District back out to Kingdom beside it; Shop linked from Market District, and Cellar from Shop, both ways
+	- [ ] Tests: refusing a conflict and a missing value, a blank region causing neither, the stored settings following a change to a region above, a builder refused outside their assignments (a move, a parent or a link with one end outside), without a permission, and moving or deleting a region they are assigned to, a tile's kind change refused while an area needs it as its default tile, replacing it when unchecking a kind (on the region setting it, and on the areas below a region that also serves the other kind), clearing it to inherit when deleting or unchecking, deleting a tile replacing it as regions' and areas' default tile and refusing a replacement of the wrong kind, deleting a region each way, deleting or disabling a region in the draft moving nobody until the draft is applied, deleting an area refused when it leaves an area inside it with a conflict, a duplicate region name refused, a region put inside itself (directly or further down) or nested more than 10 levels on its longest path refused, a builder assigned to a region holding another region editing what is in that one, a builder refused deleting a link out of their assignments or an area linked into from outside them
+	- [ ] Once the rest is built: a benchmark in `scratchpad/` of working out every area's settings on a save, with thousands of areas
 2. Area editor
 	- [ ] Checkbox for "Disable fog of war / vision checks", set by default for the sample game lobby
 	- [ ] Edit Size: a field whose value differs from the area's size now shows in a changed color
@@ -558,6 +533,7 @@ Needed before universes are open to the public.
 	- A right-to-left pseudo-language (`ar-XB`, as browsers have, beside `en-XA`) to check every page with
 	- Whether to allow the left-to-right, right-to-left and Arabic letter marks (U+200E, U+200F, U+061C) in `DISALLOWED_TEXT_CHARACTERS`, which writers use to place punctuation in mixed text; only the overrides and isolates can make text read in a misleading order
 - Playing a universe's draft, so creators, builders and beta testers can test it before it is applied: choosing it, and which characters play it without changing their progress in the live version
+- An Errors tab before Audit, for problems found during play that a save can't check for in advance, for creators and builders, each version separately. Each error has a code (`area-<area ID>-<setting>` and the like, which the tab turns into a link to what it names), its universe, a message (a message ID and its values, shown in each editor's language), when it first and last happened, and how many times; logging a code the universe already has updates its row. The tab's header counts the errors (not in red, and 0 standing out less), from an index so it is quick, and errors are cleared one at a time or all at once, staged until Save. Errors a later check can prove fixed are deleted by it
 
 ---
 
@@ -566,7 +542,6 @@ Needed before universes are open to the public.
 - Whether character names must be unique within a universe (Phase 10)
 - How groups are listed in the lobby (Phase 11)
 - How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
-- What regions are and what they set (Phase 16)
 - Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
 - Which S3-compatible service stores uploads in production, and its bucket (Phase 17)
 - Telling users with the same name apart (Phase 20)
