@@ -4,6 +4,7 @@ import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { announce } from './announcer';
+import { BotCheck } from './botCheck';
 import { ChangeTracker } from './changeTracker';
 import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
@@ -40,6 +41,7 @@ export class ProviderLinkDialog
 	private readonly codeField = getElement('provider-link-dialog-code-field', HTMLElement);
 	private readonly code = getElement('provider-link-dialog-code', HTMLInputElement);
 	private readonly error = getElement('provider-link-dialog-error', HTMLElement);
+	private readonly botCheck = new BotCheck(this.error);
 	private readonly sendButton = getElement('provider-link-dialog-send', HTMLButtonElement);
 	private readonly submitButton = getElement('provider-link-dialog-submit', HTMLButtonElement);
 	private readonly tracker = new ChangeTracker({ root: this.form });
@@ -221,11 +223,12 @@ export class ProviderLinkDialog
 	{
 		const email = (this.account.email ?? '');
 
-		await this.api.sendCode({
+		await this.botCheck.send((botCheckToken) => this.api.sendCode({
 			purpose: 'linkLogin',
 			email,
-			locale: currentLocale()
-		});
+			locale: currentLocale(),
+			botCheckToken
+		}));
 		this.codeSent = true;
 		this.intro.textContent = t({
 			id: 'profile.linkCodeSent',
@@ -257,15 +260,16 @@ export class ProviderLinkDialog
 			this.emailCode.disabled = true;
 		}
 
-		const url = await this.api.startProviderLogin({
+		const url = await this.botCheck.send((botCheckToken) => this.api.startProviderLogin({
 			provider: this.provider,
 			rememberMe: false,
 			link: {
 				password: (this.account.hasPassword ? this.password.value : null),
 				twoFactorCode: (this.account.twoFactor ? this.code.value : null),
 				locale: currentLocale()
-			}
-		});
+			},
+			botCheckToken
+		}));
 
 		this.tracker.markSaved();
 		this.started(url);

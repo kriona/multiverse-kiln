@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type ServerAdminSummary, type SiteSettings, type UniverseDeleteRequest, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminSiteSettingsPayload, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type ServerAdminSummary, type SiteSettings, type UniverseDeleteRequest, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
 
 import { queryString, sendRequest } from './editorApi';
 
@@ -39,11 +39,11 @@ export class AdminApi
 	/**
 	 * The site's settings
 	 *
-	 * @return The settings
+	 * @return The settings, and whether bot checks are configured
 	 */
-	async getSiteSettings(): Promise<SiteSettings>
+	async getSiteSettings(): Promise<AdminSiteSettingsPayload>
 	{
-		return(sendRequest<SiteSettings>(this.client, 'GET', SITE_SETTINGS_PATH));
+		return(sendRequest<AdminSiteSettingsPayload>(this.client, 'GET', SITE_SETTINGS_PATH));
 	}
 
 	/**

@@ -130,36 +130,9 @@ export function normalizeAlphabetCode(typed: string, length: number): string | u
 }
 
 /**
- * What is known about the codes recently sent to and guessed for one address
- */
-export interface AddressCodeHistory
-{
-	/**
-	 * When each code was sent to the address in the past hour
-	 */
-	sentAt: readonly Date[];
-
-	/**
-	 * When each wrong guess for the address was made in the past day
-	 */
-	wrongGuessesAt: readonly Date[];
-}
-
-/**
- * Whether a code may be sent, and if not, when one may
+ * Whether an attempt may be made, such as sending a code, and if not, when one may
  */
 export type SendDecision = { allowed: true } | { allowed: false; retryAt: Date };
-
-/**
- * The latest of some times
- *
- * @param times The times, at least one
- * @return The latest
- */
-function latest(times: readonly Date[]): Date
-{
-	return(new Date(Math.max(...times.map((time) => time.getTime()))));
-}
 
 /**
  * Only the times within a window before now
@@ -172,59 +145,6 @@ function latest(times: readonly Date[]): Date
 function within(times: readonly Date[], now: Date, windowMs: number): Date[]
 {
 	return(times.filter((time) => (time.getTime() > (now.getTime() - windowMs))));
-}
-
-/**
- * Decides whether a new code may be sent to an address
- *
- * A code may be sent once every EMAIL_CODE_RESEND_MS and MAX_EMAIL_CODES_PER_ADDRESS_HOUR times an
- * hour, and not at all while the address has MAX_WRONG_GUESSES_PER_ADDRESS_DAY wrong guesses in the
- * past day, until the oldest of them is a day old
- *
- * @param history The address's codes and wrong guesses
- * @param now The time now
- * @return Whether a code may be sent
- */
-export function decideEmailCodeSend(history: AddressCodeHistory, now: Date): SendDecision
-{
-	const sent = within(history.sentAt, now, HOUR_MS);
-	const wrongGuesses = within(history.wrongGuessesAt, now, DAY_MS);
-	const waits: Date[] = [];
-
-	if (sent.length > 0)
-	{
-		const lastSent = latest(sent);
-
-		if ((now.getTime() - lastSent.getTime()) < EMAIL_CODE_RESEND_MS)
-		{
-			waits.push(new Date(lastSent.getTime() + EMAIL_CODE_RESEND_MS));
-		}
-	}
-
-	if (sent.length >= MAX_EMAIL_CODES_PER_ADDRESS_HOUR)
-	{
-		// Once enough of the oldest sends are an hour old, the count drops below the limit
-		const sorted = [...sent].sort((a, b) => (a.getTime() - b.getTime()));
-
-		waits.push(new Date(sorted[sent.length - MAX_EMAIL_CODES_PER_ADDRESS_HOUR].getTime() + HOUR_MS));
-	}
-
-	if (wrongGuesses.length >= MAX_WRONG_GUESSES_PER_ADDRESS_DAY)
-	{
-		const sorted = [...wrongGuesses].sort((a, b) => (a.getTime() - b.getTime()));
-
-		waits.push(new Date(sorted[wrongGuesses.length - MAX_WRONG_GUESSES_PER_ADDRESS_DAY].getTime() + DAY_MS));
-	}
-
-	if (waits.length === 0)
-	{
-		return({ allowed: true });
-	}
-
-	return({
-		allowed: false,
-		retryAt: latest(waits)
-	});
 }
 
 /**

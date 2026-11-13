@@ -10,10 +10,11 @@
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE,MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, DISALLOWED_TEXT_CHARACTERS, isPrivacyContact, isSiteSocialUrl, MAX_ADMIN_ROWS_PER_PAGE, MAX_ADMIN_SEARCH_LENGTH, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_DISABLED_REASON_LENGTH, MAX_PLAYER_SEARCH_RESULTS, MAX_UNIVERSES_PER_CREATOR, MAX_USERNAME_LENGTH, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE,MIN_UNIVERSES_PER_CREATOR, parsePlayerSearch, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, type AdminPlayerListPayload, type AdminPlayerListQuery, type AdminSessionListPayload, type AdminSessionListQuery, type AdminSiteSettingsPayload, type AdminUniverseListPayload, type AdminUniverseListQuery, type PlayerSearchPayload, type PublicSiteSettings, type ServerAdminListPayload, type ServerAdminRequest, type SiteSettings, type SiteSocialSite, type UniverseDisableRequest, UNIVERSE_DELETION_PATH } from '@multiverse-kiln/shared';
 
 import { resolveSession } from '../auth/sessions.js';
-import { adminDb, inAdminTransaction } from '../db/adminClient.js';
+import { botCheckVerifier } from '../auth/turnstile.js';
+import { inAdminTransaction } from '../db/adminClient.js';
 import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { findPlayerByUsername, listPlayersForAdmin } from '../db/playerRepo.js';
 import { addServerAdmin, isServerAdmin, listServerAdmins, removeServerAdmin, searchPlayersToMakeAdmin } from '../db/serverAdminRepo.js';
@@ -51,6 +52,7 @@ const siteSettingsBody: z.ZodType<SiteSettings> = z.strictObject({
 	areasPerUniverse: z.number().int().min(MIN_AREAS_PER_UNIVERSE).max(MAX_AREAS_PER_UNIVERSE),
 	charactersPerUniverse: z.number().int().min(MIN_CHARACTERS_PER_UNIVERSE).max(MAX_CHARACTERS_PER_UNIVERSE),
 	characterDeletionDays: z.number().int().min(0).max(MAX_CHARACTER_DELETION_DAYS),
+	botCheckEveryRequest: z.boolean(),
 	socials: z.strictObject({
 		discord: socialUrl('discord'),
 		facebook: socialUrl('facebook'),
@@ -262,13 +264,17 @@ async function getPublicSiteSettings(_request: Request, response: Response): Pro
  */
 async function getSiteSettings(_request: Request, response: Response): Promise<void>
 {
-	const payload: SiteSettings = await findSiteSettings();
+	const payload: AdminSiteSettingsPayload = {
+		...await findSiteSettings(),
+		botChecksConfigured: (botCheckVerifier().siteKey !== undefined)
+	};
 
 	response.json(payload);
 }
 
 /**
- * PUT SITE_SETTINGS_PATH: replaces the site's settings
+ * PUT SITE_SETTINGS_PATH: replaces the site's settings, recording turning on or off the bot check at every
+ * login and email code as an admin event
  *
  * @param request The request
  * @param response The response
@@ -283,7 +289,31 @@ async function updateSiteSettings(request: Request, response: Response): Promise
 		return;
 	}
 
-	await saveSiteSettings(body.data, adminDb);
+	const adminId = adminOf(request).playerId;
+	const botChecksConfigured = (botCheckVerifier().siteKey !== undefined);
+
+	await inAdminTransaction(async (transaction) =>
+	{
+		const previous = await findSiteSettings(transaction);
+
+		// Checking every request can't be changed while bot checks aren't configured: it is kept as it was
+		const botCheckEveryRequest = (botChecksConfigured ? body.data.botCheckEveryRequest : previous.botCheckEveryRequest);
+
+		await saveSiteSettings({
+			...body.data,
+			botCheckEveryRequest
+		}, transaction);
+
+		if (botCheckEveryRequest !== previous.botCheckEveryRequest)
+		{
+			await recordAdminEvent({
+				kind: (botCheckEveryRequest ? 'botCheckEveryRequestOn' : 'botCheckEveryRequestOff'),
+				adminId,
+				occurredAt: new Date()
+			}, transaction);
+		}
+	});
+
 	response.sendStatus(204);
 }
 

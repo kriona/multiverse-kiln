@@ -3,14 +3,11 @@
  * messages they give, checks of what players choose, auth events and the tokens in cookies
  */
 import type { Request, Response } from 'express';
-import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type MessageDescriptor, type MessageValues, type ProfileErrorPayload, type ProfileField } from '@multiverse-kiln/shared';
+import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type BotCheckChallenge, type BotCheckNeededPayload, type MessageDescriptor, type MessageValues, type ProfileErrorPayload, type ProfileField } from '@multiverse-kiln/shared';
 
-import { hashAddress } from '../auth/keyedHashes.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, type AttemptLimit } from '../auth/rateLimits.js';
 import { hashToken, isTokenForm } from '../auth/tokens.js';
 import { recordAuthEvent, type AuthEventKind } from '../db/authEventRepo.js';
 import type { Executor } from '../db/client.js';
-import type { SendDecision } from '../logic/emailCodes.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { readCookie } from './cookies.js';
 
@@ -75,6 +72,11 @@ export interface AuthRefusal<Field extends string = AuthField>
 	message: MessageDescriptor;
 	values?: MessageValues;
 	field?: Field;
+
+	/**
+	 * How to show the bot check a request needs before it is taken (botCheckRefusal())
+	 */
+	botCheck?: BotCheckChallenge;
 }
 
 /**
@@ -85,6 +87,17 @@ export interface AuthRefusal<Field extends string = AuthField>
  */
 export function sendRefusal<Field extends AuthField | ProfileField>(response: Response, refusal: AuthRefusal<Field>): void
 {
+	if (refusal.botCheck !== undefined)
+	{
+		const needed: BotCheckNeededPayload = {
+			error: localize(refusal.message, refusal.values),
+			botCheck: refusal.botCheck
+		};
+
+		response.status(refusal.status).json(needed);
+		return;
+	}
+
 	const payload: AuthErrorPayload | ProfileErrorPayload = { error: localize(refusal.message, refusal.values) };
 
 	if (refusal.field !== undefined)
@@ -103,7 +116,7 @@ export function sendRefusal<Field extends AuthField | ProfileField>(response: Re
  * @param response The response, which gets a Retry-After header
  * @return The refusal
  */
-export function tooManyAttempts(decision: SendDecision & { allowed: false }, now: Date, response: Response): AuthRefusal
+export function tooManyAttempts(decision: { retryAt: Date }, now: Date, response: Response): AuthRefusal
 {
 	const seconds = Math.max(1, Math.ceil((decision.retryAt.getTime() - now.getTime()) / 1000));
 
@@ -116,31 +129,6 @@ export function tooManyAttempts(decision: SendDecision & { allowed: false }, now
 			minutes: Math.ceil(seconds / 60)
 		}
 	});
-}
-
-/**
- * The limits a logged-in player's password counts against when it is asked for again, such as to
- * change it or turn 2FA off: the network's logins, and logins to the account's address, so someone
- * with a stolen session can't guess the password faster than logging in would let them
- *
- * @param request The request
- * @param email The account's email address, or null when it has none
- * @return The limits
- */
-export function accountPasswordLimits(request: Request, email: string | null): AttemptLimit[]
-{
-	return([
-		{
-			kind: 'networkLoginAttempt',
-			subjectHash: clientNetworkHash(request),
-			limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
-		},
-		{
-			kind: 'addressLoginAttempt',
-			subjectHash: ((email !== null) ? hashAddress(email) : null),
-			limit: MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR
-		}
-	]);
 }
 
 /**

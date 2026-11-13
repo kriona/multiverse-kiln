@@ -1,5 +1,6 @@
 export * from './accounts.js';
 export * from './admin.js';
+export * from './botChecks.js';
 export * from './characters.js';
 export * from './closeCodes.js';
 export * from './constants.js';

@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { decideEmailCodeSend, decideHourlyLimit, EMAIL_CODE_ALPHABET, EMAIL_CODE_LIFETIME_MS, emailCodeFromBytes, emailCodeState, MAX_EMAIL_CODES_PER_ADDRESS_HOUR, MAX_WRONG_GUESSES_PER_ADDRESS_DAY, MAX_WRONG_GUESSES_PER_CODE, normalizeEmailCode } from '../../src/logic/emailCodes.js';
+import { decideHourlyLimit, EMAIL_CODE_ALPHABET, EMAIL_CODE_LIFETIME_MS, emailCodeFromBytes, emailCodeState, MAX_WRONG_GUESSES_PER_CODE, normalizeEmailCode } from '../../src/logic/emailCodes.js';
 
 const NOW = new Date('2026-10-28T12:00:00Z');
 
@@ -65,63 +65,6 @@ describe('emailCodes', () =>
 		{
 			assert.strictEqual(normalizeEmailCode('ABCDEU'), undefined);
 			assert.strictEqual(normalizeEmailCode('ABCD!1'), undefined);
-		});
-	});
-
-	describe('decideEmailCodeSend', () =>
-	{
-		it('allows the first code', () =>
-		{
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: [], wrongGuessesAt: [] }, NOW), { allowed: true });
-		});
-
-		it('waits 60 seconds between codes', () =>
-		{
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: [secondsAgo(20)], wrongGuessesAt: [] }, NOW), {
-				allowed: false,
-				retryAt: secondsAgo(-40)
-			});
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: [secondsAgo(60)], wrongGuessesAt: [] }, NOW), { allowed: true });
-		});
-
-		it('allows 5 codes an hour', () =>
-		{
-			const sentAt = [secondsAgo(3000), secondsAgo(2000), secondsAgo(1000), secondsAgo(500), secondsAgo(100)];
-
-			assert.strictEqual(sentAt.length, MAX_EMAIL_CODES_PER_ADDRESS_HOUR);
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt, wrongGuessesAt: [] }, NOW), {
-				allowed: false,
-				retryAt: secondsAgo(3000 - 3600)
-			});
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: sentAt.slice(1), wrongGuessesAt: [] }, NOW), { allowed: true });
-		});
-
-		it('ignores codes sent over an hour ago', () =>
-		{
-			const sentAt = [secondsAgo(4000), secondsAgo(3900), secondsAgo(3800), secondsAgo(3700), secondsAgo(3601)];
-
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt, wrongGuessesAt: [] }, NOW), { allowed: true });
-		});
-
-		it('stops sending after 15 wrong guesses in a day, until the oldest is a day old', () =>
-		{
-			const wrongGuessesAt = Array.from({ length: MAX_WRONG_GUESSES_PER_ADDRESS_DAY }, (_value, index) => secondsAgo(80000 - index));
-
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: [], wrongGuessesAt }, NOW), {
-				allowed: false,
-				retryAt: secondsAgo(80000 - 86400)
-			});
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: [], wrongGuessesAt: wrongGuessesAt.slice(1) }, NOW), { allowed: true });
-		});
-
-		it('waits for the latest of several limits', () =>
-		{
-			const wrongGuessesAt = Array.from({ length: MAX_WRONG_GUESSES_PER_ADDRESS_DAY }, () => secondsAgo(1000));
-
-			assert.deepStrictEqual(decideEmailCodeSend({ sentAt: [secondsAgo(10)], wrongGuessesAt }, NOW), {
-				allowed: false,
-				retryAt: secondsAgo(1000 - 86400)
-			});
 		});
 	});
 

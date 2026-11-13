@@ -2,6 +2,7 @@
  * Accounts and logins: the rules for usernames and passwords, and the auth routes the client calls
  * (see Login and Email codes in STRUCTURE-OVERVIEW.md)
  */
+import type { BotCheckRequest } from './botChecks.js';
 import type { LocalizedMessage } from './localization.js';
 
 /**
@@ -355,7 +356,7 @@ export interface SessionPayload
 /**
  * Body of POST AUTH_LOGIN_PATH
  */
-export interface LoginRequest
+export interface LoginRequest extends BotCheckRequest
 {
 	email: string;
 	password: string;
@@ -415,7 +416,7 @@ export interface TwoFactorLoginRequest
 /**
  * Body of POST AUTH_TWO_FACTOR_SETUP_PATH
  */
-export interface TwoFactorSetupRequest
+export interface TwoFactorSetupRequest extends BotCheckRequest
 {
 	/**
 	 * The account's password, or null for an account without one, whose browser has entered a code sent
@@ -466,7 +467,7 @@ export interface TwoFactorEnableRequest
 /**
  * Body of POST AUTH_TWO_FACTOR_DISABLE_PATH
  */
-export interface TwoFactorDisableRequest
+export interface TwoFactorDisableRequest extends BotCheckRequest
 {
 	/**
 	 * The account's password, or null for an account without one, whose browser has entered a code sent
@@ -485,7 +486,7 @@ export interface TwoFactorDisableRequest
 /**
  * Body of POST AUTH_RECOVERY_CODES_PATH
  */
-export interface RecoveryCodesRequest
+export interface RecoveryCodesRequest extends BotCheckRequest
 {
 	/**
 	 * The account's password, or null for an account without one, whose browser has entered a code sent
@@ -513,7 +514,7 @@ export interface RecoveryCodesPayload
 /**
  * Body of POST AUTH_CODE_PATH
  */
-export interface EmailCodeRequest
+export interface EmailCodeRequest extends BotCheckRequest
 {
 	purpose: EmailCodePurpose;
 
@@ -597,7 +598,7 @@ export interface PasswordResetRequest
 /**
  * Body of POST AUTH_EMAIL_CHANGE_PATH
  */
-export interface EmailChangeRequest
+export interface EmailChangeRequest extends BotCheckRequest
 {
 	/**
 	 * The new address, which the code was sent to
@@ -621,7 +622,7 @@ export interface EmailChangeRequest
 /**
  * Body of POST AUTH_PASSWORD_CHANGE_PATH
  */
-export interface PasswordChangeRequest
+export interface PasswordChangeRequest extends BotCheckRequest
 {
 	currentPassword: string;
 	newPassword: string;
@@ -642,7 +643,7 @@ export interface ProvidersPayload
 /**
  * Body of POST AUTH_PROVIDER_START_PATH
  */
-export interface ProviderStartRequest
+export interface ProviderStartRequest extends BotCheckRequest
 {
 	provider: LoginProvider;
 
@@ -784,7 +785,7 @@ export interface ProviderRegisterRequest
 /**
  * Body of POST AUTH_PROVIDER_LINK_PATH
  */
-export interface ProviderLinkRequest
+export interface ProviderLinkRequest extends BotCheckRequest
 {
 	/**
 	 * The account's password, or null when this browser has entered a code sent to its address
@@ -816,7 +817,7 @@ export interface UniverseDecision
 /**
  * Body of POST AUTH_ACCOUNT_DELETE_PATH
  */
-export interface AccountDeleteRequest
+export interface AccountDeleteRequest extends BotCheckRequest
 {
 	/**
 	 * The account's password, or null for an account without one

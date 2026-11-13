@@ -3,6 +3,7 @@ import { defineMessages, EMAIL_CODE_LIFETIME_MINUTES, type EmailCodePurpose, typ
 import { currentLocale, t } from '../localization';
 import type { AuthApi } from '../network/authApi';
 import { announce } from './announcer';
+import type { BotCheck } from './botCheck';
 import { resetCodeInput } from './codeInputs';
 import { setFieldError } from './fieldErrors';
 
@@ -167,17 +168,20 @@ export class TwoFactorEmailCode
 
 	/**
 	 * Emails the code, then asks for it
+	 *
+	 * @param check The dialog's bot check, shown if the server asks for one
 	 */
-	async send(): Promise<void>
+	async send(check: BotCheck): Promise<void>
 	{
 		const { note, input } = this.elements;
 		const email = (this.email ?? '');
 
-		await this.api.sendCode({
+		await check.send((botCheckToken) => this.api.sendCode({
 			purpose: this.use.purpose,
 			email,
-			locale: currentLocale()
-		});
+			locale: currentLocale(),
+			botCheckToken
+		}));
 		this.sent = true;
 		note.textContent = t(this.use.sent, {
 			email,

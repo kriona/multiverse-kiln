@@ -4,6 +4,7 @@ import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { announce } from './announcer';
+import { BotCheck } from './botCheck';
 import { ChangeTracker } from './changeTracker';
 import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
@@ -40,6 +41,7 @@ export class EmailChangeDialog
 	private readonly twoFactorField = getElement('email-dialog-two-factor-field', HTMLElement);
 	private readonly twoFactorCode = getElement('email-dialog-two-factor-code', HTMLInputElement);
 	private readonly error = getElement('email-dialog-error', HTMLElement);
+	private readonly botCheck = new BotCheck(this.error);
 	private readonly emailMeButton = getElement('email-dialog-email-me', HTMLButtonElement);
 	private readonly sendButton = getElement('email-dialog-send', HTMLButtonElement);
 	private readonly confirmButton = getElement('email-dialog-confirm', HTMLButtonElement);
@@ -278,11 +280,12 @@ export class EmailChangeDialog
 	{
 		const email = (this.account.email ?? '');
 
-		await this.api.sendCode({
+		await this.botCheck.send((botCheckToken) => this.api.sendCode({
 			purpose: 'confirmEmailChange',
 			email,
-			locale: currentLocale()
-		});
+			locale: currentLocale(),
+			botCheckToken
+		}));
 		this.intro.textContent = t({
 			id: 'profile.changeEmailConfirmSent',
 			defaultMessage: 'We\'ve emailed a code to {email}. Enter it, and the new address, and we\'ll send that a code too. It works once, for {minutes, plural, one {# minute} other {# minutes}}.',
@@ -326,11 +329,12 @@ export class EmailChangeDialog
 			this.currentCode.disabled = true;
 		}
 
-		await this.api.sendCode({
+		await this.botCheck.send((botCheckToken) => this.api.sendCode({
 			purpose: 'changeEmail',
 			email,
-			locale: currentLocale()
-		});
+			locale: currentLocale(),
+			botCheckToken
+		}));
 		this.sentTo = email;
 		this.intro.textContent = t({
 			id: 'profile.changeEmailCodeSent',
@@ -364,12 +368,13 @@ export class EmailChangeDialog
 			this.code.disabled = true;
 		}
 
-		await this.api.changeEmail({
+		await this.botCheck.send((botCheckToken) => this.api.changeEmail({
 			email,
 			locale: currentLocale(),
 			currentPassword: (this.account.hasPassword ? this.password.value : null),
-			twoFactorCode: (this.account.twoFactor ? this.twoFactorCode.value : null)
-		});
+			twoFactorCode: (this.account.twoFactor ? this.twoFactorCode.value : null),
+			botCheckToken
+		}));
 		this.tracker.markSaved();
 		this.dialog.close();
 		this.changed(email);

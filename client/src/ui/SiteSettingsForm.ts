@@ -1,4 +1,4 @@
-import { isPrivacyContact, isSiteSocialUrl, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
+import { isPrivacyContact, isSiteSocialUrl, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, MIN_UNIVERSES_PER_CREATOR, SITE_SOCIAL_SITES, type AdminSiteSettingsPayload, type SiteSettings, type SiteSocialLinks, type SiteSocialSite } from '@multiverse-kiln/shared';
 
 import { showAdminRefusal } from '../AdminPage';
 import { t } from '../localization';
@@ -13,8 +13,8 @@ import { showToast } from './toast';
 
 /**
  * The admin settings page's form: settings for the whole site, such as whether players can create universes,
- * how many areas each universe can have, how many characters each player can have in a universe, how long last rites wait before deleting a character, the social sites the footer links to and the
- * privacy policy's contact
+ * how many areas each universe can have, how many characters each player can have in a universe, how long last rites wait before deleting a character, whether every login asks for a bot
+ * check, the social sites the footer links to and the privacy policy's contact
  */
 export class SiteSettingsForm
 {
@@ -34,6 +34,8 @@ export class SiteSettingsForm
 		x: getElement('site-social-x', HTMLInputElement),
 		youtube: getElement('site-social-youtube', HTMLInputElement)
 	};
+	private readonly botCheckEveryRequest = getElement('site-bot-check-every-request', HTMLInputElement);
+	private readonly botChecksUnconfigured = getElement('site-bot-check-unconfigured', HTMLElement);
 	private readonly privacyContact = getElement('site-privacy-contact', HTMLInputElement);
 	private readonly error = getElement('site-settings-error', HTMLElement);
 	private readonly saved = getElement('site-settings-saved', HTMLElement);
@@ -77,10 +79,13 @@ export class SiteSettingsForm
 			});
 		}
 
-		this.universeCreation.addEventListener('change', () =>
+		for (const checkbox of [this.universeCreation, this.botCheckEveryRequest])
 		{
-			this.saved.textContent = '';
-		});
+			checkbox.addEventListener('change', () =>
+			{
+				this.saved.textContent = '';
+			});
+		}
 
 		this.form.addEventListener('submit', (event) =>
 		{
@@ -94,7 +99,7 @@ export class SiteSettingsForm
 	 */
 	async load(): Promise<void>
 	{
-		let settings: SiteSettings;
+		let settings: AdminSiteSettingsPayload;
 
 		try
 		{
@@ -122,6 +127,11 @@ export class SiteSettingsForm
 		this.areasPerUniverse.value = String(settings.areasPerUniverse);
 		this.charactersPerUniverse.value = String(settings.charactersPerUniverse);
 		this.characterDeletionDays.value = String(settings.characterDeletionDays);
+
+		// The server keeps the setting as it was while it has no keys, so it is shown off and can't be changed
+		this.botCheckEveryRequest.checked = (settings.botChecksConfigured && settings.botCheckEveryRequest);
+		this.botCheckEveryRequest.disabled = !settings.botChecksConfigured;
+		this.botChecksUnconfigured.hidden = settings.botChecksConfigured;
 
 		for (const site of SITE_SOCIAL_SITES)
 		{
@@ -193,6 +203,7 @@ export class SiteSettingsForm
 			areasPerUniverse,
 			charactersPerUniverse,
 			characterDeletionDays,
+			botCheckEveryRequest: this.botCheckEveryRequest.checked,
 			socials,
 			privacyContact: ((privacyContact === '') ? null : privacyContact)
 		};
