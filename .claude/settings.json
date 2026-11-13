@@ -1,0 +1,13 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"permissions": {
+		"ask": [
+			"Bash(git commit:*)",
+			"Bash(git push:*)"
+		]
+	},
+	"attribution": {
+		"commit": "",
+		"pr": ""
+	}
+}
