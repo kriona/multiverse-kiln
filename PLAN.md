@@ -55,7 +55,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 4: Repository security
 
-- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 17) doesn't need `'unsafe-inline'`
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 18) doesn't need `'unsafe-inline'`
 - [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
 - [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
@@ -109,7 +109,7 @@ Built in four steps: the server API, the editor pages, the area editor's cells, 
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 19). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 20). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its cells are the next item
 - [✅] Area cells editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller area clears the undo history
@@ -215,7 +215,7 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
-- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 19. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 20. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
@@ -241,17 +241,17 @@ Decided:
 
 Decided:
 - Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
-- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 17's hosting choice has to keep.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 18's hosting choice has to keep.
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
-- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 17), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 17 sets them for the host.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 18), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 18 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
-- 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now.
+- 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now; Phase 17 adds bot checks for suspicious logins.
 - With 2FA on, resetting a forgotten password asks for an authenticator or recovery code as well as the email code, so someone who gets into the player's email still can't take the account. TOTP secrets are stored encrypted (AES-256-GCM) with a key from a server setting, apart from the database.
 - Profiles store the player's usernames on social sites rather than addresses, so a link always goes to the site it names.
 - Home, universe pages and the license and privacy pages are public; the lobby, game, editor, Create Character and profiles (editing your own, and viewing anyone's) need a login.
@@ -432,7 +432,50 @@ Built in ten steps: roles, stages, server admins, disabling things in use, then 
 
 **Done when:** a creator groups areas into a region and gives it to a builder, who fills a field with grass in one click and picks a tile off the area with the middle button. Every page shows Nunito and Alegreya from the site's own server, and its text grows with the browser's base text size.
 
-## Phase 17: Cloud deployment
+## Phase 17: Bot checks
+
+The login and email code limits (Phase 14) stop guessing, but their only answer is "no": anyone who knows an address can use up its login tries, or make 15 wrong code guesses and block its codes for a day, and a botnet spread over many networks never reaches a network's limits. A bot check asks a browser that looks suspicious to show it isn't a bot, rather than refusing it, and lets a browser that passes keep trying past others' guesses. See Bot checks in `STRUCTURE-OVERVIEW.md`.
+
+Decided:
+- Cloudflare Turnstile, not reCAPTCHA: it has no image puzzles, so it works with a keyboard and a screen reader (Cloudflare states WCAG 2.1 AA), it is free without a monthly limit, and it doesn't send players to Google. It is a widget and one server-side check, so it doesn't need the site behind Cloudflare's proxy.
+- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 18); it would change `CLIENT_ADDRESS_HEADER`.
+- What a check promises: a request past the soft limit goes through only once a check has been passed, so every guess costs something. It doesn't promise to stop every bot: services that solve checks for money exist, so the limits stay the real defense, and a check only slows guessing and makes it cost more.
+- Only suspicious requests are checked: past a soft limit, below the hard limit that refuses them today. Most players never see one, and their browser never contacts Cloudflare: the page loads Turnstile's script only when the server asks for a check.
+- Which requests: logging in with a password, the wrong passwords typed while logged in that count against the same limits (a logged-in player is asked too, once someone else's guesses have passed the address's soft limit), and sending an email code (registering, resetting a password, changing an email address, linking a login). Google and Discord logins aren't checked: the provider checks them. A dormant account's code isn't checked on its own: only someone who has just given the right password gets one, in a login that was checked if it needed to be, and "send another code" sends the password again, so it is a login try.
+- A browser that has logged in to the account (the known browser cookie) is never asked for a check, past either the address's or the network's soft limit, so players on a campus or mobile network that others share aren't asked. Its tries still count against the network's hard limit.
+- A request refused because it needs a check counts against the network's limit, which bounds how often anyone can send one, but not against the address's. A soft limit counts only requests that went through (a password checked, a code sent), so a bot that can't pass checks stops at the address's soft limit and never uses up the real player's tries.
+- A check never loosens today's limits for a browser that hasn't passed one. Each limit a passed check extends has a count of its own for the requests made past it, each with a passed check, and a hard limit of its own; these are kept per address and never raise a network's limits:
+	- logins: 10 more tries an hour past the address's 10
+	- sending codes: 5 more an hour past the address's 5, still at most one every 60 seconds
+	- once 15 wrong guesses in a day block an address's codes: up to 3 more codes that day. A code ends after 5 wrong guesses, so this allows at most 15 more, 30 in all
+- When a check is needed must not depend on whether an account exists for the address, as the rest of the login pages don't: the counts it reads are kept for every address.
+- If checks aren't configured, or Cloudflare is down, nothing is checked: below the hard limits requests go through as they do today, and past them they are refused as today. An outage only takes away the extra tries. The server can't tell whether a browser can reach Cloudflare, and a browser's own report that Turnstile wouldn't load can't be trusted, since a bot would always send it, so the server only judges whether it can reach Cloudflare itself: from its own siteverify calls timing out or failing with server errors, and, since during an outage no browser gets a token to send, by sending siteverify a token that can't be valid before asking for a check when it hasn't reached Cloudflare in the last few minutes (a quick refusal means it is up). Cloudflare is then treated as down for a few minutes before trying again. The widget and siteverify are both on `challenges.cloudflare.com`, so an outage usually shows in both.
+- A browser that can't load Turnstile while Cloudflare is up (an ad blocker, a firewall) stays at the soft limit: the page says Turnstile couldn't load and suggests another browser or network. Browsers that have logged in to the account aren't affected.
+- The server verifies any token a request sends with Turnstile's siteverify API before opening the transaction that counts the attempt (a network call never holds a database transaction open), then decides in the transaction, under the same locks as the counts, whether a check was needed. A token that fails counts as no token: below the soft limit the request still goes through, and past it the server asks for a check again. Tokens work once and for 5 minutes, so the client resets the widget after every answer and each try gets a token of its own.
+- Each kind of request has its own Turnstile action (`login`, `password` for the dialogs asking a logged-in player's password, `email-code`); the "check needed" answer names it, and the server checks the response's action and hostname (the host of `SITE_URL`).
+- The site key reaches the browser in the server's "check needed" answer, so the client needs no setting of its own; the server has `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`. Both unset turns checks off, as an unconfigured Google or Discord login is left out; the server refuses to start with only one set. Locally and in `.env.example`, Cloudflare's published test keys (one pair always passes, one always fails, one always asks the player to interact).
+- Cloudflare's test secret keys accept any test token, so the server refuses to start with one unless dev tools are on (`server/src/devTools.ts`) or `NODE_ENV=test`, so one copied to production can't let every check pass. With a test secret key the action and hostname checks are skipped, since a test token wasn't made on this site.
+- The widget is shown in the player's language when Turnstile supports it, and otherwise picks its own (`auto`); the pseudo-language and Pirate fall back.
+- The admin setting that checks every login and code request doesn't cover browsers that have logged in to the account or logged-in players' password dialogs, which are trusted; those are still checked past the soft limits. While checks aren't configured, the admin page shows the setting turned off and can't be changed, with a note saying why.
+- A check asked for, passed or failed is an auth event, with the account only when the address has one, as failed logins are, so whether an account exists still doesn't show.
+
+Steps:
+- [ ] Settle the soft and hard limits (see Open decisions) and update Bot checks in `STRUCTURE-OVERVIEW.md` to match
+- [ ] When a check is needed, as pure functions in `server/src/logic/` beside the email code decisions, given the attempt counts, whether the browser has logged in to the account, whether a check passed, and whether checks are on (configured, Cloudflare reachable) and the admin setting. Unit tests for each limit, its edges, refusals not counting against the address, and checks being off
+- [ ] Counting requests made past an address's limit with a passed check against hard limits of their own (`server/src/auth/rateLimits.ts`, new `RateLimitKind`s for checked login tries and checked code sends in an hour, and checked codes after the wrong-guess block in a day, which the auth sweep keeps for their windows), atomically through `takeAttempt()` like the other limits, with repository tests
+- [ ] Verifying a token (`server/src/auth/turnstile.ts`): POST to siteverify with the secret key, a timeout of a few seconds, checking `success`, `action` and `hostname` (both skipped with a test secret key). It remembers whether Cloudflare was reachable, and tests it with a token that can't be valid when it hasn't heard from it for a few minutes. The routes take the verifier as a parameter so tests stub it; tests never call Cloudflare
+- [ ] Refusing to start with only one of the keys set, or with a test secret key unless dev tools are on or `NODE_ENV=test`, with tests
+- [ ] The routes (`server/src/http/auth.ts`, `authCommon.ts`'s password limits and the routes sending email codes): read an optional `botCheckToken` from the body, and refuse a request needing a check without one that passed with a "check needed" error through `sendError()`, carrying the site key and the action. The payload, the error ID and the actions live in `/shared`
+- [ ] `auth_events` kinds for a check asked for, passed and failed, with the network's keyed hash; included in the player's data download like the other auth events
+- [ ] The client (`client/src/ui/botCheck.ts`): on "check needed", load Turnstile's script once (`render=explicit`), show the widget above the form's submit button in the player's language and the site's dark theme, and send the request again with the token once it arrives, resetting the widget after each answer. A line says what is happening, read out with `announce()`; when the widget needs the player, focus moves to it. A failed or expired check shows its problem with `reportFieldError()` and a button to try again, and a script that won't load says so and suggests another browser or network. Works on the login, register, forgot password and profile pages, and in the dialogs that ask for a password or send a code
+- [ ] An admin setting (Settings in the admin pages, `site_settings`) to check every login and code request while the site is under attack, recorded in `admin_events`, and shown turned off with a note while checks aren't configured
+- [ ] Privacy policy: Cloudflare Turnstile under the services the site uses, saying it is loaded only when the site asks a browser to show it isn't a bot, and what Cloudflare learns then
+- [ ] Add `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to `server/.env.example` (with the test keys) and to CLAUDE.md's Configuration
+- [ ] Check the pages with only a keyboard, with a screen reader, in the pseudo-language (`?locale=en-XA`), with the test keys that fail and that ask the player to interact, and with Turnstile's script blocked
+
+**Done when:** a browser that guesses wrong passwords for an address is asked to show it isn't a bot, and once it does can keep trying a little longer while the account's own browsers log in as before; a bot that doesn't pass checks can't use up the address's tries; a player whose address was used up by someone else's guesses still gets a code after passing a check, unless the guesser keeps passing checks too; and a player who logs in normally never loads anything from Cloudflare.
+
+## Phase 18: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -449,31 +492,31 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Before running more than one game server process: Redis presence and driver, and the in-memory publishers (`server/src/players/`, `server/src/world/`) carried over it, so the rooms and routes of one universe (editor rooms, lobbies, groups and the change routes) reach each other across processes
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
-	- `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets)
+	- `Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets; `challenges.cloudflare.com` is Turnstile's script and widget, Phase 17)
 	- `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`
 - [ ] Check whether Colyseus Cloud's proxy sends `Strict-Transport-Security` for the game server; add it if not
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 18: Robustness and polish
+## Phase 19: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
 - [ ] Basic logging and error reporting
 - [ ] Neon production autosuspend disabled or lengthened
 - [ ] Confirm Neon's point-in-time restore retention and test a restore
-- [ ] Alerts for spikes in failed logins and server errors
+- [ ] Alerts for spikes in failed logins, failed bot checks and server errors
 - [ ] Load test with simulated clients to size the Colyseus Cloud plan
 - [ ] Load test the lobby to set its `maxClients`, and open another lobby instance when one is full
 - [ ] Right-to-left languages: `dir` on the page, CSS logical properties (`margin-inline-start`) in the SCSS, and Phaser's `rtl` text style
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 19: Images and moderation
+## Phase 20: Images and moderation
 
 Needed before universes are open to the public.
 
-- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 17)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 18)
 - [ ] "I have the rights to use this image" on every upload (tilesets have it)
 - [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
@@ -481,7 +524,7 @@ Needed before universes are open to the public.
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 20: Messages
+## Phase 21: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -523,21 +566,22 @@ Needed before universes are open to the public.
 - How groups are listed in the lobby (Phase 11)
 - How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
 - What regions are and what they set (Phase 16)
-- Auth approach, account linking, the email sending service, and whether to add a CAPTCHA (Phase 14)
-- Which S3-compatible service stores uploads in production, and its bucket (Phase 17)
-- Telling users with the same name apart (Phase 20)
+- Auth approach, account linking and the email sending service (Phase 14)
+- The bot checks' soft limits (where a check starts) and the hard limits for requests made past an address's limit with a passed check (Phase 17). A starting point: a check from an address's 5th login try in an hour (half its 10) or a network's 15th (half its 30), from a browser that hasn't logged in to the account; up to 10 more login tries an hour for an address with a check each; codes checked from a network's 5th request in an hour (half its 10) or an address's 3rd (of 5), and up to 5 more codes an hour for an address with a check each; and once an address's codes are blocked by 15 wrong guesses in a day, up to 3 more codes that day with a check each (at most 30 wrong guesses)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 18)
+- Telling users with the same name apart (Phase 21)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 18)
+- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 19)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
-- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 17). The host's proxies decide which forwarding header the server trusts for clients' addresses
-- Client host, and a subdomain or separate domain for QA/staging (Phase 17)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 18). The host's proxies decide which forwarding header the server trusts for clients' addresses
+- Client host, and a subdomain or separate domain for QA/staging (Phase 18)
 
 ---
 
 ## TODO
 
-- [ ] Confirm the client address header on the game server's host (Phase 17; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+- [ ] Confirm the client address header on the game server's host (Phase 18; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
 	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
 	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
 	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header
