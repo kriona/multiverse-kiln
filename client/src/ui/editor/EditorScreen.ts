@@ -1,4 +1,4 @@
-import { ADMIN_ROLE, canEditAtEndOfTime, canEditVersionOpen, canEditWorld, canManageEditors, canStartDraft, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type DismissibleNotice, type EditableUniverse, type EditorSavedPayload, type EditorTab, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
+import { ADMIN_ROLE, canEditAtEndOfTime, canEditVersionOpen, canEditWorld, canManageEditors, canStartDraft, canViewUniverse, detailsForVersionOpen, EDITOR_ROLE_NAMES, EDITOR_TABS, EDITOR_TWO_FACTOR_ERROR_ID, type DismissibleNotice, type EditableUniverse, type EditorSavedPayload, type EditorTab, type PlaceRef, type UniverseSettingsUpdate, type UniverseVersionName } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { announce } from '../announcer';
@@ -88,12 +88,30 @@ function isSavableTab(name: EditorTab): name is SavableEditorTab
 const SHARED_TABS: ReadonlySet<EditorTab> = new Set(['editors', 'universe']);
 
 /**
- * Where in the editor the player is: the tab shown, and the area open in the area editor
+ * Where in the editor the player is: the tab shown, and the area open in the area editor or the region
+ * open in the region editor, never both
  */
 export interface EditorPlace
 {
 	tab: EditorTab;
 	areaId: string | undefined;
+	regionId: string | undefined;
+}
+
+/**
+ * The region or area open at a place in the editor
+ *
+ * @param place The place
+ * @return The region or area, or undefined for neither
+ */
+function placeOpenAt(place: Partial<EditorPlace>): PlaceRef | undefined
+{
+	if (place.areaId !== undefined)
+	{
+		return({ kind: 'area', id: place.areaId });
+	}
+
+	return(((place.regionId === undefined) ? undefined : { kind: 'region', id: place.regionId }));
 }
 
 /**
@@ -277,7 +295,11 @@ export class EditorScreen
 	 */
 	private universe: EditableUniverse | undefined;
 
-	private place: EditorPlace = { tab: 'universe', areaId: undefined };
+	private place: EditorPlace = {
+		tab: 'universe',
+		areaId: undefined,
+		regionId: undefined
+	};
 
 	/**
 	 * Changes every time a universe is opened, so one that arrives for an earlier open is ignored
@@ -389,9 +411,13 @@ export class EditorScreen
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
 		this.difficultySection = new DifficultySection(api);
-		this.areasTab = new AreasTab(api, this.tilesetsTab, (areaId) =>
+		this.areasTab = new AreasTab(api, this.tilesetsTab, (place) =>
 		{
-			this.setPlace({ ...this.place, areaId });
+			this.setPlace({
+				tab: this.place.tab,
+				areaId: ((place?.kind === 'area') ? place.id : undefined),
+				regionId: ((place?.kind === 'region') ? place.id : undefined)
+			});
 		}, () =>
 		{
 			actions.areasLoaded();
@@ -400,6 +426,7 @@ export class EditorScreen
 			this.selectTab('lobby');
 			getElement('editor-tab-lobby', HTMLButtonElement).focus();
 		});
+		this.tilesetsTab.setPlaces(this.areasTab);
 		this.itemsTab = new ItemsTab(api);
 		this.editorsTab = new EditorsTab(api, {
 			ownRoleChanged: () =>
@@ -601,8 +628,8 @@ export class EditorScreen
 	 * Loads a universe and shows it
 	 *
 	 * @param universeId The universe's ID
-	 * @param place The tab to show and the area to open; the Universe tab when neither is given, or the
-	 * Areas tab when only an area is
+	 * @param place The tab to show and the region or area to open; the Universe tab when none is given, or
+	 * the Areas tab when only a region or area is
 	 */
 	async open(universeId: string, place: Partial<EditorPlace> = {}): Promise<void>
 	{
@@ -634,7 +661,7 @@ export class EditorScreen
 				rememberVersion(universeId, null);
 				this.api.version = 'live';
 				this.actions.versionChanged('live');
-				await this.open(universeId, { tab: place.tab, areaId: undefined });
+				await this.open(universeId, { tab: place.tab });
 				this.showNotice(error.message);
 				return;
 			}
@@ -669,11 +696,17 @@ export class EditorScreen
 		{
 			this.api.version = 'draft';
 			this.actions.versionChanged('draft');
-			await this.open(universeId, { tab: place.tab, areaId: undefined });
+			await this.open(universeId, { tab: place.tab });
 			return;
 		}
 
-		this.place = { tab: (place.tab ?? ((place.areaId === undefined) ? 'universe' : 'areas')), areaId: place.areaId };
+		const placeOpen = placeOpenAt(place);
+
+		this.place = {
+			tab: (place.tab ?? ((placeOpen === undefined) ? 'universe' : 'areas')),
+			areaId: ((placeOpen?.kind === 'area') ? placeOpen.id : undefined),
+			regionId: ((placeOpen?.kind === 'region') ? placeOpen.id : undefined)
+		};
 		this.setUniverse(universe);
 		this.saveBar.setLocked(((universe.disabledReason !== null) && !universe.serverAdmin));
 		this.showAccessNotice(universe);
@@ -696,7 +729,7 @@ export class EditorScreen
 		this.racesSection.open(universe);
 		this.classesSection.open(universe);
 		this.tilesetsTab.open(universe);
-		this.areasTab.open(universe, place.areaId);
+		this.areasTab.open(universe, placeOpen);
 		this.itemsTab.open(universe);
 		this.editorsTab.open(universe);
 		this.editorsSettings.open(universe);
@@ -1248,7 +1281,11 @@ export class EditorScreen
 		rememberVersion(universe.id, version);
 		this.api.version = version;
 		this.actions.versionChanged(version);
-		this.setPlace({ tab: this.place.tab, areaId: undefined });
+		this.setPlace({
+			tab: this.place.tab,
+			areaId: undefined,
+			regionId: undefined
+		});
 		void this.open(universe.id, this.place);
 	}
 
@@ -1410,11 +1447,11 @@ export class EditorScreen
 	}
 
 	/**
-	 * Shows a tab and area the page's history went back or forward to, closing any dialog open over the
-	 * place being left
+	 * Shows a tab and region or area the page's history went back or forward to, closing any dialog open
+	 * over the place being left
 	 *
-	 * @param place The tab and area
-	 * @return False when the player kept the unsaved changes of a dialog or the area editor, staying where they were
+	 * @param place The tab and region or area
+	 * @return False when the player kept the unsaved changes of a dialog or the region or area editor, staying where they were
 	 */
 	showPlace(place: EditorPlace): boolean
 	{
@@ -1423,7 +1460,9 @@ export class EditorScreen
 			return(false);
 		}
 
-		if ((place.areaId !== this.place.areaId) && !this.areasTab.showPlace(place.areaId))
+		const moved = ((place.areaId !== this.place.areaId) || (place.regionId !== this.place.regionId));
+
+		if (moved && !this.areasTab.showPlace(placeOpenAt(place)))
 		{
 			return(false);
 		}
@@ -1436,7 +1475,7 @@ export class EditorScreen
 	/**
 	 * Remembers where the player is in the editor and tells the page
 	 *
-	 * @param place The tab and area
+	 * @param place The tab and region or area
 	 */
 	private setPlace(place: EditorPlace): void
 	{

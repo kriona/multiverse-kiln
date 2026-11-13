@@ -8,7 +8,7 @@ import { EditorApi } from './network/editorApi';
 import { ProfileApi } from './network/profileApi';
 import { joinEditorRoom, type EditorRoom, type ServerConnection } from './network/serverConnection';
 import { isLeavingPage } from './pageLifecycle';
-import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
+import { currentPageAddress, loginPageUrl, pushPageParameters, replacePageParameters, TAB_PARAMETER, AREA_PARAMETER, REGION_PARAMETER, universePageUrl, VERSION_PARAMETER } from './pages';
 import { followUnsavedWork, hasUnsavedWork } from './ui/changeTracker';
 import { showScreen, showStatus } from './ui/dom';
 import { areaClaims } from './ui/editor/areaClaims';
@@ -21,17 +21,20 @@ import { rememberedVersion } from './ui/editor/versionMemory';
 import { pageMessages } from './ui/pageMessages';
 
 /**
- * The query string parameters that show a place in the editor. The Universe tab is named whenever an
- * area is, since an address with an area and no tab opens the Areas tab
+ * The query string parameters that show a place in the editor. The Universe tab is named whenever a
+ * region or area is, since an address with one and no tab opens the Areas tab
  *
- * @param place The tab and area
+ * @param place The tab and region or area
  * @return Each parameter's value, or undefined to leave it out
  */
 function placeParameters(place: EditorPlace): Record<string, string | undefined>
 {
+	const nothingOpen = ((place.areaId === undefined) && (place.regionId === undefined));
+
 	return({
-		[TAB_PARAMETER]: (((place.tab === 'universe') && (place.areaId === undefined)) ? undefined : place.tab),
-		[AREA_PARAMETER]: place.areaId
+		[TAB_PARAMETER]: (((place.tab === 'universe') && nothingOpen) ? undefined : place.tab),
+		[AREA_PARAMETER]: place.areaId,
+		[REGION_PARAMETER]: place.regionId
 	});
 }
 
@@ -48,9 +51,9 @@ function isEditorPlace(state: unknown): state is EditorPlace
 		return(false);
 	}
 
-	const { tab, areaId } = state as Record<string, unknown>;
+	const { tab, areaId, regionId } = state as Record<string, unknown>;
 
-	return(isEditorTab(typeof tab === 'string' ? tab : undefined) && ((areaId === undefined) || (typeof areaId === 'string')));
+	return(isEditorTab(typeof tab === 'string' ? tab : undefined) && ((areaId === undefined) || (typeof areaId === 'string')) && ((regionId === undefined) || (typeof regionId === 'string')));
 }
 
 /**
@@ -82,7 +85,7 @@ export class EditorPage
 	private opened = false;
 
 	/**
-	 * The tab and area the page's address shows, once the editor has opened
+	 * The tab and region or area the page's address shows, once the editor has opened
 	 */
 	private place: EditorPlace | undefined;
 
@@ -120,7 +123,7 @@ export class EditorPage
 	/**
 	 * @param server The connection to the server and the joined session room
 	 * @param universeId The universe to edit
-	 * @param startingPlace The tab and area to open it at
+	 * @param startingPlace The tab and region or area to open it at
 	 * @param addressVersion The version of the universe the address names, or undefined when it names none:
 	 * then the version the player last chose in this browser opens, or the live version
 	 */
@@ -417,13 +420,13 @@ export class EditorPage
 	 * Puts where the player has moved to in the page's address and history, so the browser's Back button
 	 * returns to where they were. The place the editor opens at replaces the entry the page loaded with
 	 *
-	 * @param place The tab and area
+	 * @param place The tab and region or area
 	 */
 	private recordPlace(place: EditorPlace): void
 	{
 		const previous = this.place;
 
-		if (this.restoringPlace || ((previous?.tab === place.tab) && (previous.areaId === place.areaId)))
+		if (this.restoringPlace || ((previous?.tab === place.tab) && (previous.areaId === place.areaId) && (previous.regionId === place.regionId)))
 		{
 			return;
 		}

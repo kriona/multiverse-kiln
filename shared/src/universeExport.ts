@@ -10,6 +10,7 @@
  * - UNIVERSE_EXPORT_TILESETS: the uploaded tilesets and the tiles, an ExportedTilesets as JSON, when the
  *   export holds the world
  * - UNIVERSE_EXPORT_ITEMS: the items, as a JSON array, when the export holds the world
+ * - UNIVERSE_EXPORT_REGIONS: the regions, as a JSON array, when the export holds the world
  * - UNIVERSE_EXPORT_AREAS: the paths of the areas' files, as a JSON array, when the export holds the world
  * - universeExportAreaPath(): each area, an ExportedArea as JSON, when the export holds the world
  * - UNIVERSE_EXPORT_TRANSLATIONS: the notes for translators, the text needing no translation and the
@@ -33,9 +34,9 @@
  */
 import { SITE_NAME } from './constants.js';
 import type { DifficultyLevel } from './difficulty.js';
-import type { EditorArea, EditorAreaLink, EditorTheme, EditorTile, RulesetSettings, UniverseSettings, UniverseVersionName, UploadedTileGraphic } from './editor.js';
+import type { EditorArea, EditorAreaLink, EditorTheme, EditorTile, RegionSettings, RulesetSettings, UniverseSettings, UniverseVersionName, UploadedTileGraphic } from './editor.js';
 import type { UniverseTextRef } from './universeText.js';
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, universeSlug, type EditorAccess, type EditorRole, type Ruleset, type UniverseRole } from './universes.js';
+import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, universeSlug, type BuilderPermissions, type EditorAccess, type EditorRole, type Ruleset, type UniverseRole } from './universes.js';
 
 /**
  * The path under a universe's editor route (EDITOR_UNIVERSES_PATH/:universeId) that exports it
@@ -92,6 +93,11 @@ export const UNIVERSE_EXPORT_TRANSLATIONS = 'translations.json';
  * the area's name
  */
 export const UNIVERSE_EXPORT_AREAS = 'areas.json';
+
+/**
+ * The path in the archive of the regions, ExportedRegion[] by name, when the export holds the world
+ */
+export const UNIVERSE_EXPORT_REGIONS = 'regions.json';
 
 /**
  * The path in the archive of an export of the draft's ExportedLiveIds
@@ -246,6 +252,25 @@ export interface ExportedEditor
 	 * A translator's languages, by tag; empty for other roles
 	 */
 	languages: string[];
+
+	/**
+	 * A builder's permissions; none for other roles
+	 */
+	permissions: BuilderPermissions;
+
+	/**
+	 * The regions a builder is assigned to, by the export's IDs for them; none for other roles
+	 */
+	regions: string[];
+}
+
+/**
+ * A region, as the export names it (see Regions in STRUCTURE-OVERVIEW.md): its settings, each null for
+ * inherit, and the regions it is inside by their IDs in the export
+ */
+export interface ExportedRegion extends RegionSettings
+{
+	id: string;
 }
 
 /**
@@ -439,6 +464,7 @@ export interface ExportedLiveIds
 	tileGraphics: Record<string, string>;
 	tiles: Record<string, number>;
 	items: Record<string, number>;
+	regions: Record<string, string>;
 	areas: Record<string, string>;
 	races: Record<string, number>;
 	classes: Record<string, number>;

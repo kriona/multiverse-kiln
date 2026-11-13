@@ -1,8 +1,10 @@
 /**
- * The sample universe `npm run db:seed -w server` creates: a small town lobby with a cottage and a
- * cellar to walk into, and a crossroads for groups to start in
+ * The sample universe `npm run db:seed -w server` creates: a city lobby, and a planet whose kingdom
+ * groups start in, with a market district in its capitol city, a shop in the market, and a cellar under
+ * the shop (see the seed world in PLAN.md, phase 16)
  *
- * Areas are drawn one character per cell, row by row, and centered on column 0, row 0:
+ * Regions group the areas and set what they inherit (see Regions in STRUCTURE-OVERVIEW.md). Areas are
+ * drawn one character per cell, row by row, and centered on column 0, row 0:
  *
  *   .  the area's default tile        g  grass        f  forest     d  desert
  *   ^  mountains                      ~  water        =  wood floor
@@ -14,7 +16,35 @@
 import { IMPASSABLE_WALK_SECONDS, type PassageOfTime, type UniverseStage, type AreaLightLevel, type AreaLinkMode } from '@multiverse-kiln/shared';
 
 /**
- * An area to create
+ * A region to create. Settings left out inherit
+ */
+export interface SampleRegion
+{
+	/**
+	 * Name other regions and areas use for it
+	 */
+	key: string;
+
+	name: string;
+
+	/**
+	 * Keys of the regions it is inside, each created before it; none for a top-level region
+	 */
+	parents: string[];
+
+	indoors?: boolean;
+	lightLevel?: AreaLightLevel;
+
+	/**
+	 * Key of its default tile
+	 */
+	defaultTile?: string;
+
+	passageOfTime?: PassageOfTime;
+}
+
+/**
+ * An area to create. Settings left out inherit
  */
 export interface SampleArea
 {
@@ -26,21 +56,22 @@ export interface SampleArea
 	name: string;
 
 	/**
-	 * Key of the area it sits inside
+	 * Keys of the regions it is in
 	 */
-	parent?: string;
-
-	indoors: boolean;
+	regions: string[];
 
 	/**
-	 * How light the area is while it is indoors; lit when left out
+	 * Key of the area it sits inside, created before it
 	 */
+	parentArea?: string;
+
+	indoors?: boolean;
 	lightLevel?: AreaLightLevel;
 
 	/**
-	 * Key of the tile `.` stands for
+	 * Key of its own default tile, which `.` stands for; left out, `.` is the tile it inherits
 	 */
-	defaultTile: string;
+	defaultTile?: string;
 
 	loopsEastWest?: boolean;
 
@@ -69,12 +100,11 @@ export const SAMPLE_UNIVERSE_ID = '6b0f8a52-3c1e-4d7a-9f20-5e8b1c4d2a07';
 
 export const sampleUniverse = {
 	name: 'Kilnhaven',
-	shortDescription: 'A small town for trying out the engine.',
-	longDescription: 'Walk around the town square, step into the cottage, and climb down into its cellar.',
+	shortDescription: 'A small world for trying out the engine.',
+	longDescription: 'Walk around the city in the lobby, then set out across the kingdom, into the market district of its capitol, through the shop and down into its cellar.',
 	stage: 'let_there_be_light' as UniverseStage,
-	passageOfTime: 'flows_normally' as PassageOfTime,
-	lobbyArea: 'town-square',
-	startingArea: 'crossroads'
+	lobbyArea: 'lobby',
+	startingArea: 'kingdom'
 };
 
 /**
@@ -114,13 +144,36 @@ export const sampleTiles = {
 	}
 };
 
+export const sampleRegions: SampleRegion[] = [
+	{
+		key: 'lobby',
+		name: 'Lobby',
+		parents: [],
+		indoors: false
+	},
+	{
+		key: 'planet',
+		name: 'Planet',
+		parents: [],
+		indoors: false,
+		lightLevel: 'lit',
+		defaultTile: 'grass',
+		passageOfTime: 'flows_normally'
+	},
+	{
+		key: 'capitol-city',
+		name: 'Capitol City',
+		parents: ['planet']
+	}
+];
+
 export const sampleAreas: SampleArea[] = [
 	{
-		key: 'town-square',
-		name: 'Town Square',
-		indoors: false,
+		key: 'lobby',
+		name: 'Lobby',
+		regions: ['lobby'],
 		defaultTile: 'grass',
-		markers: { 1: 'wood_floor', 2: 'grass' },
+		markers: {},
 		cells: [
 			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
 			'^^ff.....................fff..^^',
@@ -128,8 +181,8 @@ export const sampleAreas: SampleArea[] = [
 			'^........#########.............^',
 			'^........#########.....~~~.....^',
 			'^...ff...#########....~~~~~....^',
-			'^..fff...####1####....~~~~~....^',
-			'^...f........2.........~~~.....^',
+			'^..fff...#########....~~~~~....^',
+			'^...f..................~~~.....^',
 			'^..............................^',
 			'^.........dddd.hhhhhhh.........^',
 			'^........ddddddh.....h.........^',
@@ -143,9 +196,60 @@ export const sampleAreas: SampleArea[] = [
 		]
 	},
 	{
-		key: 'cottage',
-		name: 'Cottage',
-		parent: 'town-square',
+		key: 'kingdom',
+		name: 'Kingdom',
+		regions: ['planet'],
+		indoors: false,
+		loopsEastWest: true,
+		markers: { 1: 'desert', 2: 'grass' },
+		cells: [
+			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
+			'^^^^......fff..........^^^^.........^^^^',
+			'..........ffff...........^^.............',
+			'...ff......ff.................fff.......',
+			'..ffff.........~~~~..........fffff......',
+			'...ff.........~~~~~~..........fff.......',
+			'...............~~~~...1.................',
+			'......................2.................',
+			'............dddd........................',
+			'...........dddddd.......................',
+			'............dddd........................',
+			'......fff..................ff...........',
+			'.....fffff........^^......ffff..........',
+			'......fff........^^^^......ff...........',
+			'..................^^....................',
+			'........................................',
+			'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+			'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+		]
+	},
+	{
+		key: 'market-district',
+		name: 'Market District',
+		regions: ['capitol-city'],
+		markers: { 1: 'wood_floor', 2: 'grass', 4: 'grass', 5: 'grass', 6: 'grass' },
+		cells: [
+			'########################',
+			'#......................#',
+			'#..wwwwwww....hhhhhh...#',
+			'#..wwwwwww....h....h...#',
+			'#..wwwwwww....h....h...#',
+			'#..www1www....hhhhhh...#',
+			'#.....2................#',
+			'#......................#',
+			'#..ff..........ff......#',
+			'#.ffff........ffff.....#',
+			'#..ff..........ff......#',
+			'#......................#',
+			'#..........4...........#',
+			'##########56############'
+		]
+	},
+	{
+		key: 'shop',
+		name: 'Shop',
+		regions: [],
+		parentArea: 'market-district',
 		indoors: true,
 		defaultTile: 'wood_floor',
 		markers: { 3: 'wood_floor', 4: 'wood_floor', 5: 'wood_floor' },
@@ -162,10 +266,9 @@ export const sampleAreas: SampleArea[] = [
 	{
 		key: 'cellar',
 		name: 'Cellar',
-		parent: 'cottage',
-		indoors: true,
+		regions: [],
+		parentArea: 'shop',
 		lightLevel: 'dark',
-		defaultTile: 'wood_floor',
 		markers: { 6: 'wood_floor' },
 		cells: [
 			'wwwwwwwww',
@@ -174,43 +277,20 @@ export const sampleAreas: SampleArea[] = [
 			'w.......w',
 			'wwwwwwwww'
 		]
-	},
-	{
-		key: 'crossroads',
-		name: 'Crossroads',
-		indoors: false,
-		defaultTile: 'grass',
-		loopsEastWest: true,
-		markers: {},
-		cells: [
-			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
-			'^^^^......fff..........^^^^.........^^^^',
-			'..........ffff...........^^.............',
-			'...ff......ff.................fff.......',
-			'..ffff.........~~~~..........fffff......',
-			'...ff.........~~~~~~..........fff.......',
-			'...............~~~~.....................',
-			'........................................',
-			'............dddd........................',
-			'...........dddddd.......................',
-			'............dddd........................',
-			'......fff..................ff...........',
-			'.....fffff........^^......ffff..........',
-			'......fff........^^^^......ff...........',
-			'..................^^....................',
-			'........................................',
-			'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
-			'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-		]
 	}
 ];
 
 export const sampleLinks: SampleLink[] = [
-	// The cottage door, both ways
-	{ from: ['town-square', '1'], to: ['cottage', '5'], mode: 'automatic' },
-	{ from: ['cottage', '4'], to: ['town-square', '2'], mode: 'automatic' },
+	// Into the market district from the desert cell, and back out through its gate, two cells wide
+	{ from: ['kingdom', '1'], to: ['market-district', '4'], mode: 'automatic' },
+	{ from: ['market-district', '5'], to: ['kingdom', '2'], mode: 'automatic' },
+	{ from: ['market-district', '6'], to: ['kingdom', '2'], mode: 'automatic' },
+
+	// The shop door, both ways
+	{ from: ['market-district', '1'], to: ['shop', '5'], mode: 'automatic' },
+	{ from: ['shop', '4'], to: ['market-district', '2'], mode: 'automatic' },
 
 	// The trapdoor and the ladder back up, each arriving on the other
-	{ from: ['cottage', '3'], to: ['cellar', '6'], mode: 'manual' },
-	{ from: ['cellar', '6'], to: ['cottage', '3'], mode: 'manual' }
+	{ from: ['shop', '3'], to: ['cellar', '6'], mode: 'manual' },
+	{ from: ['cellar', '6'], to: ['shop', '3'], mode: 'manual' }
 ];

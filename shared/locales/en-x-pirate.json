@@ -1299,9 +1299,9 @@
 		"message": "Areas in this one's hold",
 		"source": "Areas inside this one"
 	},
-	"editor.area.confirmDelete": {
-		"message": "Scuttle {area} and every passage into it when the Areas tab be stowed? Areas inside it be cast adrift as top-level areas.",
-		"source": "Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas."
+	"editor.area.confirmDeleteInRegions": {
+		"message": "Scuttle {area} and every passage into it when the Areas tab be stowed? The areas in its hold take its mothers in its place.",
+		"source": "Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place."
 	},
 	"editor.area.confirmDeleteLinks": {
 		"message": "Stowin' the smaller area scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
@@ -1318,6 +1318,10 @@
 	"editor.area.delete": {
 		"message": "Scuttle Area",
 		"source": "Delete Area"
+	},
+	"editor.area.deleteLeavesProblems": {
+		"message": "Scuttlin' this area would leave the areas in its hold, which take its mothers in its place, in troubled waters: {problems}",
+		"source": "Deleting this area would leave the areas inside it, which take its parents in its place, with problems: {problems}"
 	},
 	"editor.area.draw": {
 		"message": "Paint",
@@ -1387,10 +1391,6 @@
 		"message": "Lantern light",
 		"source": "Light level"
 	},
-	"editor.area.lightLevelHint": {
-		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
-		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
-	},
 	"editor.area.links": {
 		"message": "Passages",
 		"source": "Links"
@@ -1423,9 +1423,9 @@
 		"message": "Wraps north-south",
 		"source": "Loops north-south"
 	},
-	"editor.area.noParent": {
-		"message": "None (a top-level area)",
-		"source": "None (a top-level area)"
+	"editor.area.needsParent": {
+		"message": "An area must sail inside at least one sea or area.",
+		"source": "An area must be inside at least one region or area."
 	},
 	"editor.area.openFailed": {
 		"message": "Couldn't open the area.",
@@ -1434,10 +1434,6 @@
 	"editor.area.parent": {
 		"message": "Mother area",
 		"source": "Parent area"
-	},
-	"editor.area.parentDisabled": {
-		"message": "This area be inside {areas}, which {count, plural, one {be} other {be}} closed to all hands.",
-		"source": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled."
 	},
 	"editor.area.redo": {
 		"message": "Redo",
@@ -1483,9 +1479,13 @@
 		"message": "⚓Davy Jones' Locker",
 		"source": "🌃Void"
 	},
-	"editor.areaAdd.failed": {
-		"message": "Couldn't add the area.",
-		"source": "Could not add the area."
+	"editor.areaAdd.hint": {
+		"message": "The new area takes what's handed down from what it sails in, till ye set its own.",
+		"source": "The new area inherits its settings from what it's inside until you set its own."
+	},
+	"editor.areaAdd.needsParent": {
+		"message": "Pick the sea or area the new area sails inside.",
+		"source": "Choose the region or area the new area goes inside."
 	},
 	"editor.areaAdd.submit": {
 		"message": "Add",
@@ -1563,17 +1563,9 @@
 		"message": "Couldn't scuttle {area}.",
 		"source": "Could not delete {area}."
 	},
-	"editor.areas.heading": {
-		"message": "Areas",
-		"source": "Areas"
-	},
 	"editor.areas.claimedTag": {
 		"message": "{count, plural, one {{names} be workin' it} other {{names} be workin' it}}",
 		"source": "{count, plural, one {{names} is editing} other {{names} are editing}}"
-	},
-	"editor.areas.indoorsTag": {
-		"message": "below decks",
-		"source": "indoors"
 	},
 	"editor.areas.listFailed": {
 		"message": "Couldn't list the areas.",
@@ -1586,10 +1578,6 @@
 	"editor.areas.none": {
 		"message": "There be no areas yet.",
 		"source": "There are no areas yet."
-	},
-	"editor.areas.outdoorsTag": {
-		"message": "topside",
-		"source": "outdoors"
 	},
 	"editor.areas.startingAreaTag": {
 		"message": "home port",
@@ -1642,6 +1630,10 @@
 	"editor.audit.detail.race": {
 		"message": "{action, select, added {Took on race {name}} changed {Altered race {name}} restored {Set race {name} back t' its old ways} other {Scuttled race {name}}}",
 		"source": "{action, select, added {Added race {name}} changed {Changed race {name}} restored {Restored race {name} to its default} other {Deleted race {name}}}"
+	},
+	"editor.audit.detail.region": {
+		"message": "{action, select, added {Charted sea {name}} changed {Altered sea {name}} other {Scuttled sea {name}}}",
+		"source": "{action, select, added {Added region {name}} changed {Changed region {name}} other {Deleted region {name}}}"
 	},
 	"editor.audit.detail.ruleset": {
 		"message": "Altered the ship's articles",
@@ -1751,9 +1743,21 @@
 		"message": "{time}, mornin' be {morning}",
 		"source": "{time}, morning: {morning}"
 	},
+	"editor.audit.value.inherit": {
+		"message": "handed down",
+		"source": "inherit"
+	},
 	"editor.audit.value.itemQuantity": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
+	},
+	"editor.audit.value.items": {
+		"message": "booty",
+		"source": "items"
+	},
+	"editor.audit.value.mobs": {
+		"message": "scallywags",
+		"source": "mobs"
 	},
 	"editor.audit.value.no": {
 		"message": "nay",
@@ -1770,6 +1774,10 @@
 	"editor.audit.value.raceArea": {
 		"message": "{race}: {place}",
 		"source": "{race}: {place}"
+	},
+	"editor.audit.value.tiles": {
+		"message": "tiles",
+		"source": "tiles"
 	},
 	"editor.audit.value.yes": {
 		"message": "aye",
@@ -2255,6 +2263,22 @@
 		"message": "Sign On a Hand",
 		"source": "Add Editor"
 	},
+	"editor.editors.builderDetails": {
+		"message": "Also works on: {permissions}. Seas: {regions}",
+		"source": "Also edits: {permissions}. Regions: {regions}"
+	},
+	"editor.editors.canEditItems": {
+		"message": "Can tinker with booty",
+		"source": "Can edit items"
+	},
+	"editor.editors.canEditMobs": {
+		"message": "Can tinker with scallywags",
+		"source": "Can edit mobs"
+	},
+	"editor.editors.canEditTiles": {
+		"message": "Can tinker with tiles",
+		"source": "Can edit tiles"
+	},
 	"editor.editors.caption": {
 		"message": "Officers",
 		"source": "Editors"
@@ -2270,6 +2294,10 @@
 	"editor.editors.editTitle": {
 		"message": "Reassign {username}",
 		"source": "Edit {username}"
+	},
+	"editor.editors.items": {
+		"message": "booty",
+		"source": "items"
 	},
 	"editor.editors.languages": {
 		"message": "Tongues",
@@ -2310,6 +2338,22 @@
 	"editor.editors.listFailed": {
 		"message": "Couldn't muster the crew list.",
 		"source": "Could not list the editors."
+	},
+	"editor.editors.mobs": {
+		"message": "scallywags",
+		"source": "mobs"
+	},
+	"editor.editors.none": {
+		"message": "nothin'",
+		"source": "none"
+	},
+	"editor.editors.permissions": {
+		"message": "Leave to tinker",
+		"source": "Permissions"
+	},
+	"editor.editors.permissionsHint": {
+		"message": "Shipwrights work on the seas an' areas inside the seas they be posted to, which be posted in the sea editor, an' these besides.",
+		"source": "Builders edit the regions and areas inside the regions they're assigned to, which are assigned in the region editor, and these besides."
 	},
 	"editor.editors.player": {
 		"message": "Sailor",
@@ -2354,6 +2398,10 @@
 	"editor.editors.settingsSaveFailed": {
 		"message": "Couldn't stow whether officers must raise two-factor authentication.",
 		"source": "Could not save whether editors need two-factor authentication."
+	},
+	"editor.editors.tiles": {
+		"message": "tiles",
+		"source": "tiles"
 	},
 	"editor.editors.undoRemove": {
 		"message": "Keep Aboard",
@@ -2727,6 +2775,142 @@
 		"message": "How the hours pass",
 		"source": "Passage of time"
 	},
+	"editor.place.addParent": {
+		"message": "Add Mother",
+		"source": "Add Parent"
+	},
+	"editor.place.conflict": {
+		"message": "{area}: {setting} be {values}",
+		"source": "{area}: {setting} is {values}"
+	},
+	"editor.place.disabledBy": {
+		"message": "Closed to all hands while {places} {count, plural, one {be} other {be}} closed, above it.",
+		"source": "Disabled while {places} {count, plural, one {is} other {are}} disabled, above it."
+	},
+	"editor.place.faerieLoops": {
+		"message": "{area}: its hours pass the faerie way, so it can't loop",
+		"source": "{area}: its passage of time is faerie, so it can't loop"
+	},
+	"editor.place.faerieTime": {
+		"message": "{time}, mornin': {morning}",
+		"source": "{time}, morning: {morning}"
+	},
+	"editor.place.inherit": {
+		"message": "Handed down ({value}, from {places})",
+		"source": "Inherit ({value}, from {places})"
+	},
+	"editor.place.inheritConflict": {
+		"message": "Handed down (squabblin' in {places})",
+		"source": "Inherit (different in {places})"
+	},
+	"editor.place.inheritMissing": {
+		"message": "Handed down (nothin' above sets it)",
+		"source": "Inherit (nothing above sets it)"
+	},
+	"editor.place.inheritPlain": {
+		"message": "Handed down",
+		"source": "Inherit"
+	},
+	"editor.place.insideItself": {
+		"message": "{place} be inside its own hold",
+		"source": "{place} is inside itself"
+	},
+	"editor.place.missing": {
+		"message": "{area}: nothin' above it sets {setting, select, indoors {whether it be below decks or topside} lightLevel {its lantern light} defaultTileId {a usual tile} other {how the hours pass}}",
+		"source": "{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} other {a passage of time}}"
+	},
+	"editor.place.noRegion": {
+		"message": "{area} sails in no sea",
+		"source": "{area} isn't in any region"
+	},
+	"editor.place.notSet": {
+		"message": "Not set",
+		"source": "Not set"
+	},
+	"editor.place.off": {
+		"message": "Closed",
+		"source": "Off"
+	},
+	"editor.place.on": {
+		"message": "Open",
+		"source": "On"
+	},
+	"editor.place.parents": {
+		"message": "Mothers",
+		"source": "Parents"
+	},
+	"editor.place.problemsHeading": {
+		"message": "These troubles keep yer changes from bein' stowed:",
+		"source": "These keep your changes from saving:"
+	},
+	"editor.place.removeParent": {
+		"message": "Cast off",
+		"source": "Remove"
+	},
+	"editor.place.removeParentLabel": {
+		"message": "Cast off {parent}",
+		"source": "Remove {parent}"
+	},
+	"editor.place.settingName": {
+		"message": "{setting, select, indoors {below decks or topside} lightLevel {lantern light} defaultTileId {usual tile} other {how the hours pass}}",
+		"source": "{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} other {passage of time}}"
+	},
+	"editor.place.tooDeep": {
+		"message": "{place} be stowed more than ten holds deep",
+		"source": "{place} is nested more than ten levels deep"
+	},
+	"editor.place.valueIn": {
+		"message": "{value} in {place}",
+		"source": "{value} in {place}"
+	},
+	"editor.placeAdd.inside": {
+		"message": "Sails inside",
+		"source": "Inside"
+	},
+	"editor.places.area": {
+		"message": "Area",
+		"source": "Area"
+	},
+	"editor.places.collapse": {
+		"message": "Furl {name}",
+		"source": "Collapse {name}"
+	},
+	"editor.places.expand": {
+		"message": "Unfurl {name}",
+		"source": "Expand {name}"
+	},
+	"editor.places.heading": {
+		"message": "Seas an' Areas",
+		"source": "Regions and Areas"
+	},
+	"editor.places.kind": {
+		"message": "Sea or area",
+		"source": "Region or area"
+	},
+	"editor.places.region": {
+		"message": "Sea",
+		"source": "Region"
+	},
+	"editor.places.searchLabel": {
+		"message": "Search seas an' areas by name",
+		"source": "Search regions and areas by name"
+	},
+	"editor.places.table": {
+		"message": "Ledger",
+		"source": "Table"
+	},
+	"editor.places.tags": {
+		"message": "Markings",
+		"source": "Tags"
+	},
+	"editor.places.tree": {
+		"message": "Riggin'",
+		"source": "Tree"
+	},
+	"editor.places.view": {
+		"message": "Show as",
+		"source": "Show as"
+	},
 	"editor.presence.area": {
 		"message": "{tab} - {area}",
 		"source": "{tab} - {area}"
@@ -2742,6 +2926,138 @@
 	"editor.presence.label": {
 		"message": "Also aboard:",
 		"source": "Also here:"
+	},
+	"editor.region.assignBuilder": {
+		"message": "Post a shipwright",
+		"source": "Assign a builder"
+	},
+	"editor.region.assignments": {
+		"message": "Posted shipwrights",
+		"source": "Assigned builders"
+	},
+	"editor.region.assignmentsHint": {
+		"message": "Shipwrights work only on the seas an' areas inside the seas they be posted to. Only captains post 'em.",
+		"source": "Builders edit only the regions and areas inside the regions they're assigned to. Only creators assign them."
+	},
+	"editor.region.contents": {
+		"message": "In this sea",
+		"source": "Inside this region"
+	},
+	"editor.region.delete": {
+		"message": "Scuttle Sea",
+		"source": "Delete Region"
+	},
+	"editor.region.draftAssignments": {
+		"message": "Shipwrights can be posted to this sea once the draft be launched.",
+		"source": "Builders can be assigned to this region once the draft is applied."
+	},
+	"editor.region.empty": {
+		"message": "Nothin' sails in this sea yet.",
+		"source": "Nothing is inside this region yet."
+	},
+	"editor.region.hint": {
+		"message": "A sea gathers areas. The seas an' areas in it take what it sets as handed down, an' shipwrights posted to it can work on all that sails in it.",
+		"source": "A region groups areas. The regions and areas inside it inherit the settings it sets, and builders assigned to it can edit everything inside it."
+	},
+	"editor.region.noBuilders": {
+		"message": "No shipwrights be posted to this sea.",
+		"source": "No builders are assigned to this region."
+	},
+	"editor.region.saveFailed": {
+		"message": "Couldn't stow the sea.",
+		"source": "Could not save the region."
+	},
+	"editor.region.warningsHeading": {
+		"message": "Squabblin' values from above, which the areas in this sea must settle:",
+		"source": "Different values from above, which the areas in this region must settle:"
+	},
+	"editor.regionAdd.nameTaken": {
+		"message": "Another sea already goes by that name.",
+		"source": "Another region is already named that."
+	},
+	"editor.regionAdd.needsParent": {
+		"message": "Pick the sea the new sea sails inside.",
+		"source": "Choose the region the new region goes inside."
+	},
+	"editor.regionAdd.submit": {
+		"message": "Chart",
+		"source": "Add"
+	},
+	"editor.regionAdd.title": {
+		"message": "Chart a Sea",
+		"source": "Add Region"
+	},
+	"editor.regionAdd.topLevel": {
+		"message": "Nothin' (an open sea)",
+		"source": "Nothing (a top-level region)"
+	},
+	"editor.regionDelete.addParent": {
+		"message": "Also put 'em in",
+		"source": "Also put them in"
+	},
+	"editor.regionDelete.addTo": {
+		"message": "Sea to also put 'em in",
+		"source": "Region to also put them in"
+	},
+	"editor.regionDelete.confirmDeleteAll": {
+		"message": "Scuttle {region} an' {places}, with all that sails in 'em, when the Areas tab be stowed?",
+		"source": "Delete {region} and {places}, with everything inside them, when the Areas tab is saved?"
+	},
+	"editor.regionDelete.confirmDeleteAllAgain": {
+		"message": "Be ye sure? Their cells, passages an' translations go to the depths for good once the Areas tab be stowed.",
+		"source": "Are you sure? Their cells, links and translations will be deleted for good once the Areas tab is saved."
+	},
+	"editor.regionDelete.deleteAll": {
+		"message": "Scuttle 'em, with all that sails in 'em",
+		"source": "Delete them, with everything inside them"
+	},
+	"editor.regionDelete.leave": {
+		"message": "Leave 'em with their other mothers",
+		"source": "Leave them in their other parents"
+	},
+	"editor.regionDelete.move": {
+		"message": "Sail 'em to",
+		"source": "Move them to"
+	},
+	"editor.regionDelete.moveTo": {
+		"message": "Sea to sail 'em to",
+		"source": "Region to move them to"
+	},
+	"editor.regionDelete.onlyChoice": {
+		"message": "What becomes o' them",
+		"source": "What happens to them"
+	},
+	"editor.regionDelete.onlyIntro": {
+		"message": "{count, plural, one {This sails in nothin' but {region}:} other {These sail in nothin' but {region}:}}",
+		"source": "{count, plural, one {This is inside nothing but {region}:} other {These are inside nothing but {region}:}}"
+	},
+	"editor.regionDelete.problems": {
+		"message": "Scuttlin' it this way would leave troubles: {problems}",
+		"source": "Deleting it this way would leave problems: {problems}"
+	},
+	"editor.regionDelete.sharedChoice": {
+		"message": "What becomes o' them",
+		"source": "What happens to them"
+	},
+	"editor.regionDelete.sharedIntro": {
+		"message": "{count, plural, one {This also sails in other seas or areas:} other {These also sail in other seas or areas:}}",
+		"source": "{count, plural, one {This is also inside other regions or areas:} other {These are also inside other regions or areas:}}"
+	},
+	"editor.regionDelete.title": {
+		"message": "Scuttle {region}",
+		"source": "Delete {region}"
+	},
+	"editor.regionDelete.topLevel": {
+		"message": "nothin' (open seas)",
+		"source": "nothing (top-level regions)"
+	},
+	"editor.regions.add": {
+		"message": "Chart a Sea",
+		"source": "Add Region"
+	},
+	"editor.regions.saveFailed": {
+		"message": "Couldn't stow the seas.",
+		"source": "Could not save the regions."
 	},
 	"editor.resize.cutOffWarning": {
 		"message": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the area is stowed. Resize anyway?",
@@ -3395,6 +3711,78 @@
 		"message": "Scuttle Tileset Paintin'",
 		"source": "Delete Tileset Image"
 	},
+	"editor.tileReplace.all": {
+		"message": "Swap 'Em All For",
+		"source": "Replace All With"
+	},
+	"editor.tileReplace.areas": {
+		"message": "Its areas with the tile:",
+		"source": "Its areas with the tile:"
+	},
+	"editor.tileReplace.belowKeeper": {
+		"message": "It be handed the tile by a sea or area that keeps it for its other areas. Handed down leaves it to take what's above once the tile no longer suits it.",
+		"source": "It inherits the tile from a region or area that keeps it for its other areas. Inherit leaves it to take what is above it once the tile no longer suits it."
+	},
+	"editor.tileReplace.cantApply": {
+		"message": "These choices can't be made so; see what be listed above.",
+		"source": "These choices can't be applied; see what is listed above."
+	},
+	"editor.tileReplace.choose": {
+		"message": "Pick a tile",
+		"source": "Choose a tile"
+	},
+	"editor.tileReplace.chooseEach": {
+		"message": "Pick a tile each sea an' area can take, or Handed down where it be offered.",
+		"source": "Choose a tile each region and area can take, or Inherit where it is offered."
+	},
+	"editor.tileReplace.count": {
+		"message": "{chosen} / {total} picked",
+		"source": "{chosen} / {total} chosen"
+	},
+	"editor.tileReplace.deleteIntro": {
+		"message": "\"{tile}\" be the usual tile o' these seas an' areas. Pick what each gets instead; nothin' changes till the Tilesets tab be stowed.",
+		"source": "\"{tile}\" is the default tile of these regions and areas. Choose what each gets instead; nothing changes until the Tilesets tab is saved."
+	},
+	"editor.tileReplace.inheritEach": {
+		"message": "Handed down ({tiles})",
+		"source": "Inherit ({tiles})"
+	},
+	"editor.tileReplace.inheritValue": {
+		"message": "{tile} for {area}",
+		"source": "{tile} for {area}"
+	},
+	"editor.tileReplace.loadFailed": {
+		"message": "Couldn't find out which seas an' areas make the tile their usual tile.",
+		"source": "Could not find out which regions and areas take the tile as their default tile."
+	},
+	"editor.tileReplace.noAreas": {
+		"message": "No area takes it from here.",
+		"source": "No area takes it from here."
+	},
+	"editor.tileReplace.outside": {
+		"message": "These lie outside the seas ye be posted to, so a captain has to change 'em:",
+		"source": "These are outside the regions you're assigned, so a creator has to change them:"
+	},
+	"editor.tileReplace.place": {
+		"message": "{kind, select, region {Sea {name}} other {Area {name}}}",
+		"source": "{kind, select, region {Region {name}} other {Area {name}}}"
+	},
+	"editor.tileReplace.problems": {
+		"message": "These choices would leave troubles:",
+		"source": "These choices would leave problems:"
+	},
+	"editor.tileReplace.title": {
+		"message": "Swap the Usual Tile",
+		"source": "Replace Default Tile"
+	},
+	"editor.tileReplace.uncheckIntro": {
+		"message": "\"{tile}\" be the usual tile o' {indoors, select, true {below-decks} other {topside}} areas. Pick what these seas an' areas get instead; nothin' changes till the Tilesets tab be stowed.",
+		"source": "\"{tile}\" is the default tile of {indoors, select, true {indoor} other {outdoor}} areas. Choose what these regions and areas get instead; nothing changes until the Tilesets tab is saved."
+	},
+	"editor.tileReplace.unsuited": {
+		"message": "This tile ain't fit fer {areas}. Pick another.",
+		"source": "This tile isn't for {areas}. Choose another."
+	},
 	"editor.tiles.add": {
 		"message": "Add Tile",
 		"source": "Add Tile"
@@ -3426,6 +3814,10 @@
 	"editor.tiles.percent": {
 		"message": "{cost, number, percent}",
 		"source": "{cost, number, percent}"
+	},
+	"editor.tiles.placeTileFailed": {
+		"message": "Couldn't change the usual tile o' the seas an' areas that took the tile \"{name}\".",
+		"source": "Could not change the default tile of the regions and areas that took the tile \"{name}\"."
 	},
 	"editor.tiles.searchLabel": {
 		"message": "Search tiles by name",
@@ -4375,9 +4767,17 @@
 		"message": "They already be one o' the ship's officers.",
 		"source": "They are already one of the site's admins."
 	},
-	"error.areaInsideItself": {
-		"message": "An area can't be inside its own hold.",
-		"source": "An area can't be inside itself."
+	"error.areaParents": {
+		"message": "An area must sail in at least one sea or area, an' inside no more than one area.",
+		"source": "An area must be in at least one region or area, and inside at most one area."
+	},
+	"error.assignNonBuilder": {
+		"message": "Only the universe's shipwrights can be posted to seas.",
+		"source": "Only the universe's builders can be assigned to regions."
+	},
+	"error.assignedRegionLocked": {
+		"message": "Only the universe's captains can move or scuttle a sea ye be posted to.",
+		"source": "Only the universe's creators can move or delete a region you're assigned to."
 	},
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
@@ -4595,6 +4995,10 @@
 		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
 		"source": "The universe already has a draft. Apply it or discard it before starting another."
 	},
+	"error.draftRegionAssignment": {
+		"message": "Shipwrights can be posted to a sea the draft charted once the draft be launched.",
+		"source": "Builders can be assigned to a region the draft added once the draft is applied."
+	},
 	"error.editorNeedsTwoFactor": {
 		"message": "{universe} demands her officers raise two-factor authentication. Raise it to open the universe in the editor.",
 		"source": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor."
@@ -4803,6 +5207,10 @@
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
 	},
+	"error.noSuchRegion": {
+		"message": "That sea ain't on any chart.",
+		"source": "The region doesn't exist."
+	},
 	"error.noSuchReplacementTile": {
 		"message": "The tile picked to paint over it be lost at sea.",
 		"source": "The tile chosen to replace it doesn't exist."
@@ -4860,8 +5268,20 @@
 		"source": "Changes aren't allowed from this website."
 	},
 	"error.parentNotInUniverse": {
-		"message": "The mother area must be an area of this universe.",
-		"source": "The parent area must be an area of this universe."
+		"message": "A mother must be a sea or area of this universe.",
+		"source": "A parent must be a region or area of this universe."
+	},
+	"error.outsideAssignments": {
+		"message": "That sea or area lies outside the seas ye be posted to, so ye can't change it.",
+		"source": "That region or area isn't within the regions you're assigned to, so you can't change it."
+	},
+	"error.placeInsideItself": {
+		"message": "A sea or area can't be inside its own hold.",
+		"source": "A region or area can't be inside itself."
+	},
+	"error.placeProblems": {
+		"message": "Some areas would be left without a value fer a settin', or with squabblin' values from the seas above 'em, or seas an' areas would be stowed all wrong.",
+		"source": "Some areas would be left without a value for a setting, or with different values from the regions above them, or regions and areas would be nested wrongly."
 	},
 	"error.profile.locale": {
 		"message": "Choose a tongue from the list.",
@@ -4898,6 +5318,14 @@
 	"error.raceUnavailable": {
 		"message": "Those folk be off the books now. Choose another.",
 		"source": "That race can't be chosen any more. Choose another."
+	},
+	"error.regionLimit": {
+		"message": "A universe can chart no more than {max, plural, one {# sea} other {# seas}}.",
+		"source": "A universe can have at most {max, plural, one {# region} other {# regions}}."
+	},
+	"error.regionNameTaken": {
+		"message": "Another sea already goes by {name}.",
+		"source": "Another region is already named {name}."
 	},
 	"error.requireTwoFactorWithout": {
 		"message": "Raise two-factor authentication on yer own account before demandin' it o' the universe's officers.",
@@ -4960,8 +5388,8 @@
 		"source": "A tileset in this layout must be {width, number} by {height, number} pixels."
 	},
 	"error.tileInUse": {
-		"message": "An area uses this tile, so it can't be scuttled.",
-		"source": "An area uses this tile, so it can't be deleted."
+		"message": "An area be painted with this tile, or a sea or area makes it its usual tile, so it can't be scuttled.",
+		"source": "An area is painted with this tile, or a region or area sets it as its default tile, so it can't be deleted."
 	},
 	"error.tileLimit": {
 		"message": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
@@ -8086,6 +8514,10 @@
 	"universe.time.real_time": {
 		"message": "by the real clock",
 		"source": "real time"
+	},
+	"universe.worldRegionName": {
+		"message": "The Seven Seas",
+		"source": "World"
 	},
 	"universePage.edit": {
 		"message": "Refit Universe",

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import http from 'http';
-import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_REGIONS, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type AreaListPayload, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedRegion, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
 import { adminDb } from '../src/db/adminClient.js';
@@ -10,7 +10,7 @@ import { createTileGraphic, tileGraphicStorageKey } from '../src/db/tileGraphicR
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { isImporting } from '../src/http/universeImport.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { createArea, createUniverse, logIn, saveAll, send, solidPng, type Editor } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveAll, send, solidPng, worldRegionId, type Editor } from './editorRequests.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
 const moss: TileSettings = {
@@ -72,6 +72,11 @@ interface ExportContents
 	areas: ExportedArea[];
 
 	/**
+	 * Undefined when the archive has no regions.json
+	 */
+	regions: ExportedRegion[] | undefined;
+
+	/**
 	 * Undefined when the archive has no translations.json
 	 */
 	translations: ExportedTranslations | undefined;
@@ -111,6 +116,7 @@ async function contentsOf(archive: Buffer): Promise<ExportContents>
 		items: jsonOf<EditorItem[]>(UNIVERSE_EXPORT_ITEMS),
 		areaPaths,
 		areas: (areaPaths ?? []).map((path) => jsonOf<ExportedArea>(path) ?? assert.fail(`No ${path}`)),
+		regions: jsonOf<ExportedRegion[]>(UNIVERSE_EXPORT_REGIONS),
 		translations: jsonOf<ExportedTranslations>(UNIVERSE_EXPORT_TRANSLATIONS),
 		liveIds: jsonOf<ExportedLiveIds>(UNIVERSE_EXPORT_LIVE_IDS),
 		signature: files.get(UNIVERSE_EXPORT_SIGNATURE)?.toString('utf8')
@@ -145,6 +151,11 @@ async function archiveOf(contents: ExportContents, folder = '', others: Record<s
 	if (contents.areaPaths)
 	{
 		files.set(UNIVERSE_EXPORT_AREAS, contents.areaPaths);
+	}
+
+	if (contents.regions)
+	{
+		files.set(UNIVERSE_EXPORT_REGIONS, contents.regions);
 	}
 
 	for (const [index, path] of (contents.areaPaths ?? []).entries())
@@ -385,13 +396,61 @@ describe('importing a universe', () =>
 		]);
 	});
 
+	it('exports and imports regions, with the areas\' parents and the builders assigned to them', async () =>
+	{
+		const worldId = await worldRegionId(ada, kilnhavenId);
+		const bea = await logIn('Bea');
+
+		await saveAll(ada, kilnhavenId, [
+			{ kind: 'addEditor', username: 'Bea', settings: { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false } } },
+			{ kind: 'createRegion', ref: 'new:capitol', region: { name: 'Capitol City', parents: [{ kind: 'region', id: worldId }], enabled: null, indoors: null, lightLevel: null, defaultTileId: null, passageOfTime: 'always_noon', faerieMorning: null } },
+			{ kind: 'createArea', ref: 'new:market', area: { name: 'Market', parents: [{ kind: 'region', id: 'new:capitol' }] } },
+			{ kind: 'createArea', ref: 'new:stall', area: { name: 'Stall', parents: [{ kind: 'area', id: 'new:market' }, { kind: 'region', id: worldId }] } },
+			{ kind: 'assignBuilders', regionId: 'new:capitol', builderIds: [bea.playerId] }
+		]);
+
+		const exported = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const capitol = exported.regions?.find((region) => (region.name === 'Capitol City'));
+		const market = exported.areas.find((area) => (area.name === 'Market'));
+
+		assert.ok(capitol && market);
+		assert.deepStrictEqual(exported.regions?.map((region) => region.name), ['Capitol City', 'World']);
+		assert.deepStrictEqual(capitol.parents, [{ kind: 'region', id: worldId }]);
+		assert.strictEqual(capitol.passageOfTime, 'always_noon');
+		assert.deepStrictEqual(exported.areas.find((area) => (area.name === 'Stall'))?.parents, [{ kind: 'area', id: market.id }, { kind: 'region', id: worldId }]);
+		assert.deepStrictEqual(exported.manifest.editors?.find((editor) => (editor.username === 'Bea')), {
+			username: 'Bea',
+			role: 'builder',
+			languages: [],
+			permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false },
+			regions: [capitol.id]
+		});
+
+		const otherId = await createUniverse(ada, 'Otherhaven');
+
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+		assert.strictEqual((await importArchive(ada, otherId, await exportArchive(ada, kilnhavenId))).status, 204);
+
+		const draft = (await send<AreaListPayload>(ada, 'GET', `/${otherId}/areas?version=draft`)).body;
+		const importedCapitol = draft.regions.find((region) => (region.name === 'Capitol City'));
+		const importedWorld = draft.regions.find((region) => (region.name === 'World'));
+		const importedMarket = draft.areas.find((area) => (area.name === 'Market'));
+
+		assert.ok(importedCapitol && importedWorld && importedMarket);
+		assert.deepStrictEqual(draft.regions.map((region) => region.name), ['Capitol City', 'World']);
+		assert.deepStrictEqual(importedCapitol.parents, [{ kind: 'region', id: importedWorld.id }]);
+		assert.deepStrictEqual(importedMarket.parents, [{ kind: 'region', id: importedCapitol.id }]);
+		assert.strictEqual(importedMarket.resolved.passageOfTime, 'always_noon');
+		assert.deepStrictEqual(draft.areas.find((area) => (area.name === 'Stall'))?.parents, [{ kind: 'area', id: importedMarket.id }, { kind: 'region', id: importedWorld.id }]);
+	});
+
 	it('imports another universe\'s export into a draft, which applies to the live version', async () =>
 	{
 		const archive = await exportArchive(ada, kilnhavenId);
 		const otherId = await createUniverse(ada, 'Otherhaven');
 
 		await saveAll(ada, otherId, [
-			{ kind: 'createArea', ref: 'new:swamp', area: { name: 'Swamp' } },
+			{ kind: 'createArea', ref: 'new:swamp', area: { name: 'Swamp', parents: [{ kind: 'region', id: await worldRegionId(ada, otherId) }] } },
 			{ kind: 'startDraft' }
 		]);
 
@@ -475,7 +534,7 @@ describe('importing a universe', () =>
 		await saveToDraft(ada, kilnhavenId, [
 			{ kind: 'updateArea', areaId: draftCave.id, update: { name: 'Grotto' } },
 			{ kind: 'editCells', areaId: draftCave.id, changes: [[0, 0, VOID_CELL], [3, 3, VOID_CELL]] },
-			{ kind: 'createArea', ref: 'new:swamp', area: { name: 'Swamp' } }
+			{ kind: 'createArea', ref: 'new:swamp', area: { name: 'Swamp', parents: [{ kind: 'region', id: await worldRegionId(ada, kilnhavenId, 'draft') }] } }
 		]);
 
 		const imported = await importArchive(ada, kilnhavenId, archive);

@@ -93,10 +93,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		disablings.item(item.id, item.enabled, choices.items[String(item.id)]);
 	}
 
-	for (const area of areasBefore)
-	{
-		disablings.area(area.id, area.enabled, choices.areas[area.id]);
-	}
+	disablings.areas(choices.areas);
 
 	const removed = await applyDraft(universeId, transaction);
 	const applied = await findEditableUniverse(live, transaction);
@@ -138,7 +135,15 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		version: live
 	};
 
-	await disablings.finish(liveContext);
+	// The draft's areas come with the settings worked out for them when the draft was saved
+	const enabledBefore = new Set(areasBefore
+		.filter((area) => area.resolved.enabled)
+		.map((area) => area.id));
+	const disabledAreaIds = (await listAreas(live, transaction))
+		.filter((area) => (enabledBefore.has(area.id) && !area.resolved.enabled))
+		.map((area) => area.id);
+
+	await disablings.finish(liveContext, disabledAreaIds);
 
 	const defaultLevel = await findDefaultDifficultyLevel(live, transaction);
 

@@ -369,7 +369,7 @@ export class LinkDialog
 
 				return(describeCell({
 					cells: preview.cells,
-					defaultTileId: preview.area.defaultTileId,
+					defaultTileId: preview.area.resolved.defaultTileId,
 					tiles: target.tiles,
 					links: preview.links,
 					ruleset: target.ruleset

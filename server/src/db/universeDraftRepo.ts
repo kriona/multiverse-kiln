@@ -18,14 +18,14 @@ import type { PgTable } from 'drizzle-orm/pg-core';
 import type { UniverseTextKind } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
-import { areaChunks, areaLinks, areas, classes, classRaceAreas, classStartingItems, difficultyLevels, items, pf1eClasses, pf1eRaces, pf1eSettings, races, raceStartingItems, sf1eClasses, sf1eRaces, sf1eSettings, sf1eThemes, themes, tileGraphics, tiles, universeDrafts, universes, universeStartingItems, universeTranslations, universeTranslatorNotes } from './schema.js';
+import { areaChunks, areaLinks, areaRegions, areas, regionParents, regions, classes, classRaceAreas, classStartingItems, difficultyLevels, items, pf1eClasses, pf1eRaces, pf1eSettings, races, raceStartingItems, sf1eClasses, sf1eRaces, sf1eSettings, sf1eThemes, themes, tileGraphics, tiles, universeDrafts, universes, universeStartingItems, universeTranslations, universeTranslatorNotes } from './schema.js';
 import { findUnusedStorageKeys } from './tileGraphicRepo.js';
 
 /**
  * The content tables whose rows have IDs of their own in the draft, in the order they are copied: each
  * after the tables its rows refer to
  */
-const COPIED_TABLES = [tileGraphics, tiles, areas, items, races, classes, themes, difficultyLevels] as const;
+const COPIED_TABLES = [tileGraphics, tiles, regions, areas, items, races, classes, themes, difficultyLevels] as const;
 
 /**
  * A content table whose rows have IDs of their own in the draft
@@ -59,7 +59,9 @@ const CHILD_TABLES: readonly { child: PgTable; column: string; parent: CopiedTab
 	{ child: classRaceAreas, column: 'class_id', parent: classes, key: ['race_id'] },
 	{ child: sf1eThemes, column: 'theme_id', parent: themes, key: [] },
 	{ child: areaChunks, column: 'area_id', parent: areas, key: ['layer', 'chunk_column', 'chunk_row'] },
-	{ child: areaLinks, column: 'area_id', parent: areas, key: ['column', 'row'] }
+	{ child: areaLinks, column: 'area_id', parent: areas, key: ['column', 'row'] },
+	{ child: regionParents, column: 'region_id', parent: regions, key: ['parent_region_id'] },
+	{ child: areaRegions, column: 'area_id', parent: areas, key: ['region_id'] }
 ];
 
 /**
@@ -68,7 +70,11 @@ const CHILD_TABLES: readonly { child: PgTable; column: string; parent: CopiedTab
  */
 const REFERENCES: readonly { table: PgTable; column: string; target: CopiedTable }[] = [
 	{ table: tiles, column: 'uploaded_graphic_id', target: tileGraphics },
+	{ table: regions, column: 'default_tile_id', target: tiles },
+	{ table: regionParents, column: 'parent_region_id', target: regions },
+	{ table: areaRegions, column: 'region_id', target: regions },
 	{ table: areas, column: 'default_tile_id', target: tiles },
+	{ table: areas, column: 'resolved_default_tile_id', target: tiles },
 	{ table: areas, column: 'parent_area_id', target: areas },
 	{ table: races, column: 'starting_area_id', target: areas },
 	{ table: classes, column: 'starting_area_id', target: areas },
@@ -105,6 +111,7 @@ export interface RemovedRows
 {
 	tileGraphicIds: string[];
 	tileIds: number[];
+	regionIds: string[];
 	areaIds: string[];
 	itemIds: number[];
 	raceIds: number[];
@@ -514,6 +521,7 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 	const removed: RemovedRows = {
 		tileGraphicIds: await findRemoved(tileGraphics, universeId, executor),
 		tileIds: await findRemoved(tiles, universeId, executor),
+		regionIds: await findRemoved(regions, universeId, executor),
 		areaIds: await findRemoved(areas, universeId, executor),
 		itemIds: await findRemoved(items, universeId, executor),
 		raceIds: await findRemoved(races, universeId, executor),
@@ -538,6 +546,22 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 	// tiles while those areas are still marked draft and can be found. The other areas' chunks are
 	// remapped as they are merged
 	await executor.execute(sql`UPDATE ${areaChunks} AS d SET cells = ${remappedCells(universeId, sql`d.cells`, false)} WHERE d.area_id IN (SELECT id FROM ${areas} WHERE universe_id = ${universeId} AND draft AND origin_id IS NULL) AND d.cells && ${remappedTileIds(universeId, false)}`);
+
+	// Region names are unique within a version, and nothing uses a region the draft deleted, so those go
+	// now, before a region the draft added can take one's name. The live regions the draft renames are
+	// given names no region has first, so two regions can swap names
+	if (removed.regionIds.length > 0)
+	{
+		await executor
+			.delete(regions)
+			.where(and(
+				eq(regions.universeId, universeId),
+				eq(regions.draft, false),
+				inArray(regions.id, removed.regionIds)
+			));
+	}
+
+	await executor.execute(sql`UPDATE ${regions} AS l SET name = l.id::text FROM ${regions} AS d WHERE d.universe_id = ${universeId} AND d.draft AND d.origin_id = l.id AND d.name <> l.name`);
 
 	for (const table of COPIED_TABLES)
 	{
@@ -692,7 +716,9 @@ export async function deleteRemovedRows(universeId: string, removed: RemovedRows
 
 /**
  * Disables live areas, races, classes, themes or items, such as those a draft applied doesn't have, so
- * they are treated as disabled until they are deleted, or for good while characters use them
+ * they are treated as disabled until they are deleted, or for good while characters use them. An area's
+ * worked-out setting is disabled with its own, without the areas below it, which the draft holds its
+ * own settings for
  *
  * @param universeId The universe's ID
  * @param table The table
@@ -706,7 +732,10 @@ export async function disableLiveRows(universeId: string, table: typeof areas | 
 		return;
 	}
 
-	await executor.execute(sql`UPDATE ${table} SET enabled = false WHERE universe_id = ${universeId} AND NOT draft AND id IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+	// An area is disabled by its worked-out setting, which the rooms read
+	const set = ((table === areas) ? sql`enabled = false, resolved_enabled = false` : sql`enabled = false`);
+
+	await executor.execute(sql`UPDATE ${table} SET ${set} WHERE universe_id = ${universeId} AND NOT draft AND id IN (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
 }
 
 /**
@@ -775,6 +804,7 @@ export interface DraftOrigins
 	tileGraphics: Map<string, string>;
 	tiles: Map<number, number>;
 	items: Map<number, number>;
+	regions: Map<string, string>;
 	areas: Map<string, string>;
 	races: Map<number, number>;
 	classes: Map<number, number>;
@@ -796,6 +826,7 @@ export async function findAllDraftOrigins(universeId: string, executor: Executor
 		tileGraphics: await findDraftOrigins<string>(tileGraphics, universeId, executor),
 		tiles: await findDraftOrigins<number>(tiles, universeId, executor),
 		items: await findDraftOrigins<number>(items, universeId, executor),
+		regions: await findDraftOrigins<string>(regions, universeId, executor),
 		areas: await findDraftOrigins<string>(areas, universeId, executor),
 		races: await findDraftOrigins<number>(races, universeId, executor),
 		classes: await findDraftOrigins<number>(classes, universeId, executor),

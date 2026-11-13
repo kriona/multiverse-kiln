@@ -2,7 +2,7 @@ import assert from 'assert';
 import { DEFAULT_PF1E_SETTINGS, type ClassListPayload, type DifficultyLevelListPayload, type ItemListPayload, type RaceListPayload, type TileListPayload, type UniverseEditListPayload } from '@multiverse-kiln/shared';
 
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
+import { assignToWorld, createArea, createUniverse, logIn, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
 
@@ -31,19 +31,25 @@ describe('The editor\'s audit of saves', () =>
 			{ kind: 'universe', update: { shortDescription: 'First' } },
 			{ kind: 'universe', update: { shortDescription: 'Second' } }
 		])).status, 200);
+		await assignToWorld(ada, universeId, [grace.playerId]);
 		assert.strictEqual((await saveChanges(grace, universeId, [
-			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave' } }
+			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId) }] } }
 		])).status, 200);
 
 		const response = await send<UniverseEditListPayload>(ada, 'GET', `/${universeId}/audit`);
 
 		assert.strictEqual(response.status, 200, JSON.stringify(response.body));
-		assert.strictEqual(response.body.total, 2);
+		assert.strictEqual(response.body.total, 3);
 		assert.deepStrictEqual(response.body.edits.map(({ player, role, details }) => ({ player, role, details })), [
 			{
 				player: { username: 'Grace', displayName: 'Grace' },
 				role: 'builder',
-				details: [{ subject: 'area', action: 'added', target: { key: null, name: 'Cave' }, fields: [], count: 1 }]
+				details: [{ subject: 'area', action: 'added', target: { key: null, name: 'Cave' }, fields: [{ field: 'parents', value: ['World'] }], count: 1 }]
+			},
+			{
+				player: { username: 'Ada', displayName: 'Ada' },
+				role: 'creator',
+				details: [{ subject: 'region', action: 'changed', target: { key: null, name: 'World' }, fields: [{ field: 'assignments', value: ['Grace'] }], count: 1 }]
 			},
 			{
 				player: { username: 'Ada', displayName: 'Ada' },
@@ -110,16 +116,17 @@ describe('The editor\'s audit of saves', () =>
 		const dwarf = races.find((race) => (race.key === 'dwarf'))!;
 		const dagger = items.find((item) => (item.key === 'dagger'))!;
 		const grass = tiles.find((tile) => (tile.key === 'grass'))!;
+		const woodFloor = tiles.find((tile) => (tile.key === 'wood_floor'))!;
 
 		// Each listing's own fields, such as its ID, are left out of the settings as the save reads them
 		assert.strictEqual((await saveChanges(ada, universeId, [
 			{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, rules: { ...dwarf.rules, size: 'large' } } },
 			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, name: 'Shiv', enabled: false } },
 			{ kind: 'saveTile', id: grass.id, settings: { ...grass, visionCost: 50, walkSeconds: 9 } },
-			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave' } },
+			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId) }] } },
 			{ kind: 'editCells', areaId: 'new:cave', changes: [[0, 0, grass.id], [1, 0, grass.id]] },
 			{ kind: 'editCells', areaId: 'new:cave', changes: [[2, 0, grass.id]] },
-			{ kind: 'updateArea', areaId: 'new:cave', update: { name: 'Deep Cave', indoors: true } }
+			{ kind: 'updateArea', areaId: 'new:cave', update: { name: 'Deep Cave', indoors: true, defaultTileId: woodFloor.id } }
 		])).status, 200);
 		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'removeItem', id: dagger.id }])).status, 200);
 
@@ -147,7 +154,7 @@ describe('The editor\'s audit of saves', () =>
 				],
 				count: 1
 			},
-			{ subject: 'area', action: 'added', target: { key: null, name: 'Cave' }, fields: [], count: 1 },
+			{ subject: 'area', action: 'added', target: { key: null, name: 'Cave' }, fields: [{ field: 'parents', value: ['World'] }], count: 1 },
 			{ subject: 'cells', action: 'changed', target: { key: null, name: 'Cave' }, fields: [], count: 3 },
 			{
 				subject: 'area',
@@ -155,7 +162,8 @@ describe('The editor\'s audit of saves', () =>
 				target: { key: null, name: 'Deep Cave' },
 				fields: [
 					{ field: 'name', value: 'Deep Cave' },
-					{ field: 'indoorsOrOutdoors', value: true }
+					{ field: 'indoorsOrOutdoors', value: true },
+					{ field: 'defaultTile', value: { key: 'wood_floor', name: null } }
 				],
 				count: 1
 			}

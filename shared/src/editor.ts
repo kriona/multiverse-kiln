@@ -21,7 +21,8 @@ import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { SortDirection } from './sorting.js';
 import type { TileGraphic, TileGraphicFormat } from './tileGraphics.js';
 import type { Darkvision } from './vision.js';
-import { canEditWorld, mustEditInDraft, type DisplayTime, type EditorRole, type FaerieMorning, type LobbyPassageOfTime, type PassageOfTime, type Ruleset, type UniverseRole, type UniverseStage, type AreaLightLevel, type AreaLinkMode, type AreaPassageOfTime } from './universes.js';
+import type { PlaceRef, PlaceSettings, ResolvedAreaSettings } from './regions.js';
+import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type BuilderPermissions, type DisplayTime, type EditorRole, type FaerieMorning, type LobbyPassageOfTime, type Ruleset, type UniverseRole, type UniverseStage, type AreaLightLevel, type AreaLinkMode, type AreaPassageOfTime } from './universes.js';
 
 /**
  * Base of every editor route. Under it, with :universeId and :areaId standing for IDs:
@@ -386,13 +387,6 @@ export interface UniverseSettings
 	 */
 	requireBuilderDraft: boolean;
 
-	passageOfTime: PassageOfTime;
-
-	/**
-	 * Set exactly when passageOfTime is faerie
-	 */
-	faerieMorning: FaerieMorning | null;
-
 	/**
 	 * How players are shown the time of day, in the lobby and in the game
 	 */
@@ -547,6 +541,17 @@ export interface EditableUniverse extends UniverseSettings
 	languages: string[];
 
 	/**
+	 * The player's permissions as a builder; none for other roles
+	 */
+	permissions: BuilderPermissions;
+
+	/**
+	 * The regions of the version open the player is assigned to as a builder, by ID; empty for other
+	 * roles, who edit every region and area (editsEveryPlace()) or none
+	 */
+	assignedRegionIds: string[];
+
+	/**
 	 * The player's own ID, which the Editors tab finds them by
 	 */
 	playerId: string;
@@ -577,7 +582,7 @@ export interface EditableUniverse extends UniverseSettings
 /**
  * A universe as the server reads it, before it is told whose editor it is for
  */
-export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'playerId' | 'serverAdmin' | 'twoFactor' | 'translationCounts' | 'dismissedNotices'>;
+export type EditableUniverseDetails = Omit<EditableUniverse, 'role' | 'languages' | 'permissions' | 'assignedRegionIds' | 'playerId' | 'serverAdmin' | 'twoFactor' | 'translationCounts' | 'dismissedNotices'>;
 
 /**
  * Whether the player may save changes to the version of the universe the editor has open: every version
@@ -604,6 +609,30 @@ export function canEditWorldOpen(universe: Pick<EditableUniverse, 'role' | 'stag
 }
 
 /**
+ * Whether the player may change the tiles and tilesets of the version of the universe the editor has
+ * open: canEditWorldOpen(), and for a builder, the permission to edit tiles
+ *
+ * @param universe The universe, in the version the editor has open
+ * @return True when they may
+ */
+export function canEditTilesOpen(universe: Pick<EditableUniverse, 'role' | 'permissions' | 'stage' | 'requireBuilderDraft' | 'version'>): boolean
+{
+	return(canEditTiles(universe) && canEditVersionOpen(universe));
+}
+
+/**
+ * Whether the player may change the items of the version of the universe the editor has open:
+ * canEditWorldOpen(), and for a builder, the permission to edit items
+ *
+ * @param universe The universe, in the version the editor has open
+ * @return True when they may
+ */
+export function canEditItemsOpen(universe: Pick<EditableUniverse, 'role' | 'permissions' | 'stage' | 'requireBuilderDraft' | 'version'>): boolean
+{
+	return(canEditItems(universe) && canEditVersionOpen(universe));
+}
+
+/**
  * Someone with a role in a universe, as the Editors tab lists them
  */
 export interface UniverseEditorSummary
@@ -617,6 +646,16 @@ export interface UniverseEditorSummary
 	 * The languages a translator may translate into, by tag; empty for other roles
 	 */
 	languages: string[];
+
+	/**
+	 * A builder's permissions; none for other roles
+	 */
+	permissions: BuilderPermissions;
+
+	/**
+	 * The live regions a builder is assigned, by ID; none for other roles
+	 */
+	regionIds: string[];
 }
 
 /**
@@ -892,6 +931,9 @@ export const AUDIT_FIELDS = [
 	'mobScale',
 	'permadeath',
 	'parentArea',
+	'parents',
+	'assignments',
+	'permissions',
 	'indoorsOrOutdoors',
 	'lightLevel',
 	'defaultTile',
@@ -946,7 +988,12 @@ export interface AuditFieldValues
 	stage: UniverseStage;
 	requireBuilderDraft: boolean;
 	requireTwoFactor: boolean;
-	passageOfTime: AuditPassageOfTime;
+
+	/**
+	 * A region's or area's, null for inherit. Saves made before regions recorded the universe's too, and
+	 * an area's inherit
+	 */
+	passageOfTime: AuditPassageOfTime | null;
 	displayTime: DisplayTime;
 	lobbyPassageOfTime: AuditPassageOfTime;
 	lobbyDayHours: number;
@@ -998,7 +1045,11 @@ export interface AuditFieldValues
 	};
 	visionCost: number;
 	walkSeconds: number;
-	enabled: boolean;
+
+	/**
+	 * Null for a region or area that inherits it
+	 */
+	enabled: boolean | null;
 	keepPlaying: boolean;
 
 	/**
@@ -1027,16 +1078,31 @@ export interface AuditFieldValues
 	permadeath: boolean;
 
 	/**
-	 * Null for an area inside no other
+	 * Recorded by saves made before regions: null for an area inside no other
 	 */
 	parentArea: string | null;
 
 	/**
-	 * True for indoors
+	 * A region's or area's parents, by their names when saved, in order
 	 */
-	indoorsOrOutdoors: boolean;
-	lightLevel: AreaLightLevel;
-	defaultTile: OptionName;
+	parents: string[];
+
+	/**
+	 * The builders assigned to a region, by username
+	 */
+	assignments: string[];
+
+	/**
+	 * A builder's permissions
+	 */
+	permissions: BuilderPermissions;
+
+	/**
+	 * True for indoors; this and the settings after it are null for a region or area that inherits them
+	 */
+	indoorsOrOutdoors: boolean | null;
+	lightLevel: AreaLightLevel | null;
+	defaultTile: OptionName | null;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 }
@@ -1054,6 +1120,7 @@ export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: A
  * - tileset: an uploaded tileset (added, deleted)
  * - tile, item, race, class, theme, difficultyLevel: added, changed, deleted, or restored (one of the
  *   ruleset's defaults that had been edited, given its default settings again)
+ * - region: added, changed or deleted
  * - area: added, changed, resized or deleted
  * - cells: cells painted in an area (changed)
  * - links: an area's links, added or replaced (changed) or deleted
@@ -1064,7 +1131,7 @@ export type AuditFieldChange = { [Field in AuditField]: { field: Field; value: A
  * - draft: the universe's draft, started (added), applied to the live version (applied) or discarded
  *   (deleted); see Universe versions in STRUCTURE-OVERVIEW.md
  */
-export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'area', 'cells', 'links', 'translations', 'translatorNotes', 'noTranslation', 'draft'] as const;
+export const AUDIT_SUBJECTS = ['editor', 'settings', 'ruleset', 'tileset', 'tile', 'item', 'race', 'class', 'theme', 'difficultyLevel', 'region', 'area', 'cells', 'links', 'translations', 'translatorNotes', 'noTranslation', 'draft'] as const;
 
 export type AuditSubject = typeof AUDIT_SUBJECTS[number];
 
@@ -1794,36 +1861,18 @@ export interface ThemeListPayload
 }
 
 /**
- * An area's settings, as the area editor shows and changes them
+ * An area's settings, as the area editor shows and changes them. Each of the settings it shares with
+ * regions is null for inherit (see Regions in STRUCTURE-OVERVIEW.md)
  */
-export interface AreaSettings
+export interface AreaSettings extends PlaceSettings
 {
 	name: string;
 
 	/**
-	 * Another area of the same universe, or null for a top-level area
+	 * The regions it is in and at most one area it is inside, of the same version, in the order they were
+	 * added; at least one
 	 */
-	parentAreaId: string | null;
-
-	enabled: boolean;
-	indoors: boolean;
-
-	/**
-	 * How light the area is while it is indoors; kept while it is outdoors, where it has no effect
-	 */
-	lightLevel: AreaLightLevel;
-
-	/**
-	 * A tile the universe can use (an EditorTile's ID)
-	 */
-	defaultTileId: number;
-
-	passageOfTime: AreaPassageOfTime;
-
-	/**
-	 * Set exactly when passageOfTime is faerie
-	 */
-	faerieMorning: FaerieMorning | null;
+	parents: PlaceRef[];
 
 	/**
 	 * An area whose passage of time is faerie can't loop
@@ -1834,22 +1883,52 @@ export interface AreaSettings
 }
 
 /**
- * An area as the Areas tab lists it
+ * An area as the Areas tab lists it: its own settings, with those worked out from what is above it as
+ * the last save stored them
  */
-export interface EditorAreaSummary
+export interface EditorAreaSummary extends AreaSettings
 {
 	id: string;
-	name: string;
-	parentAreaId: string | null;
-	enabled: boolean;
-	indoors: boolean;
+	resolved: ResolvedAreaSettings;
 }
 
 /**
- * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas: every area of the universe, by name
+ * A region's settings, as the region editor shows and changes them, each of the settings it shares with
+ * areas null for inherit
+ */
+export interface RegionSettings extends PlaceSettings
+{
+	/**
+	 * Unique within the version, not counting case
+	 */
+	name: string;
+
+	/**
+	 * The regions it is inside, of the same version, in the order they were added; none for a top-level region
+	 */
+	parents: PlaceRef[];
+}
+
+/**
+ * A region as the editor shows it
+ */
+export interface EditorRegion extends RegionSettings
+{
+	id: string;
+
+	/**
+	 * The builders assigned to it, by player ID: those of its live region, for a region the draft copied,
+	 * and none for one the draft added
+	 */
+	builderIds: string[];
+}
+
+/**
+ * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas: every region and area of the version, by name
  */
 export interface AreaListPayload
 {
+	regions: EditorRegion[];
 	areas: EditorAreaSummary[];
 	lobbyAreaId: string | null;
 	startingAreaId: string | null;
@@ -1864,24 +1943,28 @@ export interface AreaListPayload
 /**
  * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId
  */
-export interface EditorArea extends AreaSettings
+export interface EditorArea extends EditorAreaSummary
 {
-	id: string;
 	bounds: AreaBounds;
 }
 
 /**
- * A new area's settings. Settings left out take their defaults: enabled while the universe is
- * in_the_beginning, outdoors, the default tile grass outdoors or wood floor indoors, inherit time, not
- * looping, and bounds of NEW_AREA_BOUNDS
+ * A new area's settings. Settings left out take their defaults: inherit for the settings areas share with
+ * regions, except enabled, which is off once the universe is past in_the_beginning, and not looping. A
+ * new area has bounds of NEW_AREA_BOUNDS
  */
-export type NewAreaRequest = Pick<AreaSettings, 'name'> & Partial<AreaSettings>;
+export type NewAreaRequest = Pick<AreaSettings, 'name' | 'parents'> & Partial<AreaSettings>;
 
 /**
  * Area settings to change. faerieMorning must be sent with passageOfTime whenever either changes to or
  * from faerie
  */
 export type AreaSettingsUpdate = Partial<AreaSettings>;
+
+/**
+ * Region settings to change, with faerieMorning sent as for an area
+ */
+export type RegionSettingsUpdate = Partial<RegionSettings>;
 
 /**
  * What giving an area smaller bounds would discard

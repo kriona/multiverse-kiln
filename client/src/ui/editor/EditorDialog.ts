@@ -1,4 +1,4 @@
-import { MAX_PLAYER_NAME_LENGTH, MAX_TRANSLATOR_LANGUAGES, MIN_PLAYER_SEARCH_LENGTH, UNIVERSE_LANGUAGES, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, UNIVERSE_ROLES, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
+import { MAX_PLAYER_NAME_LENGTH, MAX_TRANSLATOR_LANGUAGES, MIN_PLAYER_SEARCH_LENGTH, NO_BUILDER_PERMISSIONS, UNIVERSE_LANGUAGES, UNIVERSE_ROLE_DESCRIPTIONS, UNIVERSE_ROLE_NAMES, UNIVERSE_ROLES, type EditorRoleSettings, type PlayerMatch, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 import undoIcon from 'virtual:icon/ph:arrow-u-up-left';
 import removeIcon from 'virtual:icon/ph:user-minus';
 
@@ -77,6 +77,10 @@ export class EditorDialog
 
 	private readonly languagesField = getElement('editor-languages-field', HTMLElement);
 	private readonly languagesSearch = getElement('editor-languages-search', HTMLInputElement);
+	private readonly permissionsField = getElement('editor-permissions-field', HTMLFieldSetElement);
+	private readonly canEditTiles = getElement('editor-can-edit-tiles', HTMLInputElement);
+	private readonly canEditItems = getElement('editor-can-edit-items', HTMLInputElement);
+	private readonly canEditMobs = getElement('editor-can-edit-mobs', HTMLInputElement);
 	private readonly error = getElement('editor-dialog-error', HTMLElement);
 	private readonly removeButton = getElement('editor-remove', HTMLButtonElement);
 	private readonly cancelButton = getElement('editor-cancel', HTMLButtonElement);
@@ -219,8 +223,12 @@ export class EditorDialog
 		this.playerSearch.reset();
 		this.selectRole((editor?.role ?? 'builder'));
 		this.languages.values = (editor?.languages ?? []);
+		this.canEditTiles.checked = (editor?.permissions.canEditTiles ?? false);
+		this.canEditItems.checked = (editor?.permissions.canEditItems ?? false);
+		this.canEditMobs.checked = (editor?.permissions.canEditMobs ?? false);
 		this.roleField.disabled = !editable;
 		this.languagesSearch.disabled = !editable;
+		this.permissionsField.disabled = !editable;
 		this.showLanguages();
 
 		getElement('editor-apply', HTMLButtonElement).hidden = !editable;
@@ -312,11 +320,12 @@ export class EditorDialog
 	}
 
 	/**
-	 * Shows the languages field for a translator
+	 * Shows the languages field for a translator, and the permissions for a builder
 	 */
 	private showLanguages(): void
 	{
 		this.languagesField.hidden = (this.chosenRole() !== 'translator');
+		this.permissionsField.hidden = (this.chosenRole() !== 'builder');
 	}
 
 	/**
@@ -357,7 +366,14 @@ export class EditorDialog
 
 		edit.apply(player, {
 			role,
-			languages
+			languages,
+			permissions: ((role === 'builder')
+				? {
+					canEditTiles: this.canEditTiles.checked,
+					canEditItems: this.canEditItems.checked,
+					canEditMobs: this.canEditMobs.checked
+				}
+				: { ...NO_BUILDER_PERMISSIONS })
 		});
 		this.close();
 	}

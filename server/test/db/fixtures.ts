@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { sql } from 'drizzle-orm';
 
-import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type AreaBounds } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type AreaBounds, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
 import type { Executor } from '../../src/db/client.js';
@@ -13,7 +13,8 @@ import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { createUniverse, setUniverseAreas } from '../../src/db/universeRepo.js';
-import { createArea, createAreaLink, loadChunks, loadArea, saveGroundChunk } from '../../src/db/areaRepo.js';
+import { createArea, createAreaLink, findEditorArea, loadChunks, loadArea, saveGroundChunk, setAreaParents, storeResolvedSettings } from '../../src/db/areaRepo.js';
+import { createRegion, listRegions, setRegionAssignments } from '../../src/db/regionRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import type { AreaLayout } from '../../src/logic/areaGrid.js';
 
@@ -225,7 +226,71 @@ export async function addUniverse(name?: string): Promise<string>
 }
 
 /**
- * Adds an area to a universe: five columns by three rows of grass around the center, unless told otherwise
+ * The name of the region addArea() puts a universe's areas in
+ */
+export const TEST_REGION_NAME = 'Test Region';
+
+/**
+ * The region of a universe's live version that addArea() puts its areas in, added the first time: top-level,
+ * outdoors, lit, grass, with time flowing normally
+ *
+ * @param universeId The universe's ID
+ * @return The region's ID
+ */
+export async function testRegionId(universeId: string): Promise<string>
+{
+	const version = liveVersion(universeId);
+	const existing = (await listRegions(version)).find((region) => (region.name === TEST_REGION_NAME));
+
+	if (existing)
+	{
+		return(existing.id);
+	}
+
+	return(createRegion(version, {
+		name: TEST_REGION_NAME,
+		enabled: null,
+		indoors: false,
+		lightLevel: 'lit',
+		defaultTileId: await defaultTileId('grass'),
+		passageOfTime: 'flows_normally',
+		faerieMorning: null
+	}));
+}
+
+/**
+ * Changes some of the settings stored as worked out for an area, which the rooms play, as a save would
+ * once it works them out from the area's regions
+ *
+ * @param areaId The area's ID
+ * @param changes The settings to change
+ */
+export async function setWorkedOut(areaId: string, changes: Partial<ResolvedAreaSettings>): Promise<void>
+{
+	const found = await findEditorArea(areaId);
+
+	if (!found)
+	{
+		throw new Error(`No area ${areaId}`);
+	}
+
+	await storeResolvedSettings(new Map([[areaId, { ...found.area.resolved, ...changes }]]));
+}
+
+/**
+ * Assigns builders to a universe's test region (testRegionId()), so they can edit the areas addArea() adds
+ *
+ * @param universeId The universe's ID
+ * @param playerIds The builders' IDs, each already a builder of the universe
+ */
+export async function assignToTestRegion(universeId: string, playerIds: string[]): Promise<void>
+{
+	await setRegionAssignments(universeId, await testRegionId(universeId), playerIds);
+}
+
+/**
+ * Adds an area to a universe, in its test region (testRegionId()): five columns by three rows of grass
+ * around the center, unless told otherwise. A default tile or indoors given is the area's own setting
  *
  * @param universeId The universe's ID
  * @param name The area's name
@@ -234,13 +299,30 @@ export async function addUniverse(name?: string): Promise<string>
  */
 export async function addArea(universeId: string, name: string = 'Test Area', options: { bounds?: AreaBounds; tile?: string; indoors?: boolean } = {}): Promise<string>
 {
-	return(createArea({
+	const indoors = (options.indoors ?? false);
+	const tileId = await defaultTileId(options.tile ?? 'grass');
+	const regionId = await testRegionId(universeId);
+	const areaId = await createArea({
 		universeId,
 		name,
-		indoors: (options.indoors ?? false),
-		defaultTileId: await defaultTileId(options.tile ?? 'grass'),
+		loopsEastWest: false,
+		loopsNorthSouth: false,
+		indoors: ((options.indoors === undefined) ? null : indoors),
+		defaultTileId: ((options.tile === undefined) ? null : tileId),
+		resolved: {
+			enabled: true,
+			indoors,
+			lightLevel: (indoors ? 'lit' : null),
+			defaultTileId: tileId,
+			passageOfTime: 'flows_normally',
+			faerieMorning: null
+		},
 		bounds: (options.bounds ?? { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 })
-	}));
+	});
+
+	await setAreaParents(areaId, [{ kind: 'region', id: regionId }]);
+
+	return(areaId);
 }
 
 /**

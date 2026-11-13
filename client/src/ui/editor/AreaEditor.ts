@@ -466,7 +466,7 @@ export class AreaEditor
 			open.areas = open.areas.map((area) => ({
 				...area,
 				id: resolve(area.id),
-				parentAreaId: ((area.parentAreaId === null) ? null : resolve(area.parentAreaId))
+				parents: area.parents.map((parent) => ({ ...parent, id: resolve(parent.id) }))
 			}));
 		}
 
@@ -1166,7 +1166,7 @@ export class AreaEditor
 
 		const tileId = Number(this.tile.value);
 
-		return(((tileId === this.open?.area.defaultTileId) ? DEFAULT_TILE_CELL : tileId));
+		return(((tileId === this.open?.area.resolved.defaultTileId) ? DEFAULT_TILE_CELL : tileId));
 	}
 
 	/**
@@ -1417,7 +1417,7 @@ export class AreaEditor
 
 		const described = describeCell({
 			cells: open.cells,
-			defaultTileId: open.area.defaultTileId,
+			defaultTileId: open.area.resolved.defaultTileId,
 			tiles: open.tiles,
 			links: this.currentLinks(open.area.id, open.links),
 			ruleset: open.universe.ruleset
@@ -1449,7 +1449,7 @@ export class AreaEditor
 
 		if (open)
 		{
-			this.fillTiles(open.universe, { ...open.area, indoors }, open.tiles, true);
+			this.fillTiles(open.universe, { ...open.area, resolved: { ...open.area.resolved, indoors } }, open.tiles, true);
 		}
 	}
 
@@ -1489,9 +1489,9 @@ export class AreaEditor
 	 */
 	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], keepChoice: boolean): void
 	{
-		const chosen = (keepChoice ? this.tile.value : String(area.defaultTileId));
+		const chosen = (keepChoice ? this.tile.value : String(area.resolved.defaultTileId));
 		const paintable = tiles
-			.filter((tile) => ((canPaintTile(tile, area.indoors) && !this.deletedTiles.has(tile.id)) || (tile.id === area.defaultTileId)))
+			.filter((tile) => ((canPaintTile(tile, area.resolved.indoors) && !this.deletedTiles.has(tile.id)) || (tile.id === area.resolved.defaultTileId)))
 			.map((tile) => ({
 				tile,
 				name: tileName(tile, universe.ruleset)
@@ -1501,7 +1501,7 @@ export class AreaEditor
 		setOptions(this.tile, [
 			...paintable.map(({ tile, name }) => ({
 				value: String(tile.id),
-				label: ((tile.id === area.defaultTileId)
+				label: ((tile.id === area.resolved.defaultTileId)
 					? t({
 						id: 'editor.area.areaDefault',
 						defaultMessage: '{tile} (default)',
@@ -1517,7 +1517,7 @@ export class AreaEditor
 			}
 		]);
 
-		this.tile.value = ([...this.tile.options].some((option) => (option.value === chosen)) ? chosen : String(area.defaultTileId));
+		this.tile.value = ([...this.tile.options].some((option) => (option.value === chosen)) ? chosen : String(area.resolved.defaultTileId));
 	}
 
 	/**

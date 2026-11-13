@@ -6,7 +6,7 @@
  * validators a save's changes go through (editorChange in editorPayloads.ts), as the import makes its
  * changes from them
  */
-import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues, type UniverseImportSignature } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, EDITOR_ROLES, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_CONTENT_BYTES, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, MAX_PLACE_PARENTS, RULESETS, TILE_GRAPHIC_FORMATS, AREA_LINK_MODES, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_REGIONS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_VERSIONS, type AreaBounds, type MessageDescriptor, type MessageValues, type UniverseImportSignature } from '@multiverse-kiln/shared';
 import { setImmediate as yieldToEventLoop } from 'timers/promises';
 import { z } from 'zod';
 
@@ -153,6 +153,7 @@ const exportedLiveIds = z.object({
 	tileGraphics: idRecord(z.uuid()),
 	tiles: idRecord(numericId),
 	items: idRecord(numericId),
+	regions: idRecord(z.uuid()),
 	areas: idRecord(z.uuid()),
 	races: idRecord(numericId),
 	classes: idRecord(numericId),
@@ -196,12 +197,40 @@ const exportedTranslations = z.object({
 });
 
 /**
+ * A region's or area's parents, by their IDs in the file
+ */
+const importParents = z.array(z.object({
+	kind: z.enum(['region', 'area']),
+	id: z.uuid()
+})).max(MAX_PLACE_PARENTS);
+
+/**
+ * A region, as the archive's regions file has it
+ */
+const importRegion = z.looseObject({
+	id: z.uuid(),
+	name: z.string(),
+	parents: importParents,
+	defaultTileId: numericId.nullable()
+});
+
+/**
+ * The archive's regions. An export holds no more regions than areas
+ */
+const importRegions = z.array(importRegion).max(MAX_AREAS_PER_UNIVERSE);
+
+/**
+ * A region as an import reads it
+ */
+export type ImportRegion = z.infer<typeof importRegion>;
+
+/**
  * An area, as its file has it apart from its cells
  */
 const importArea = z.looseObject({
 	id: z.uuid(),
-	parentAreaId: z.uuid().nullable(),
-	defaultTileId: numericId,
+	parents: importParents,
+	defaultTileId: numericId.nullable(),
 	bounds: z.object({
 		minColumn: cellCoordinate,
 		minRow: cellCoordinate,
@@ -247,6 +276,7 @@ export type ImportManifest = z.infer<typeof universeExport> & {
 	tileGraphics?: z.infer<typeof exportedTilesets>['tileGraphics'];
 	tiles?: z.infer<typeof exportedOptions>;
 	items?: z.infer<typeof exportedOptions>;
+	regions?: ImportRegion[];
 	areas?: ImportArea[];
 	translations?: { languages: string[]; entries: NonNullable<z.infer<typeof exportedTranslations>['translations']> };
 	liveIds?: z.infer<typeof exportedLiveIds>;
@@ -367,6 +397,7 @@ export async function readImportFile(archive: Buffer, ruleset: string, areasPerU
 		manifest.tileGraphics = tilesets.tileGraphics;
 		manifest.tiles = tilesets.tiles;
 		manifest.items = checked(exportedOptions, parseJson(files, budget, UNIVERSE_EXPORT_ITEMS), UNIVERSE_EXPORT_ITEMS);
+		manifest.regions = checked(importRegions, parseJson(files, budget, UNIVERSE_EXPORT_REGIONS), UNIVERSE_EXPORT_REGIONS);
 
 		const areas: ImportArea[] = [];
 		const paths = new Set<string>();

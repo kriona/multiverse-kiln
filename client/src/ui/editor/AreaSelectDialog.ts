@@ -292,7 +292,7 @@ export class AreaSelectDialog
 			}));
 		}
 
-		if (!area.enabled)
+		if (!area.resolved.enabled)
 		{
 			notes.push(t(editorMessages.disabled));
 		}
@@ -367,7 +367,7 @@ export class AreaSelectDialog
 			defaultMessage: '{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide',
 			description: 'In the dialog for choosing an area, describes the chosen area under its preview; {height} and {width} are its size in cells'
 		}, {
-			indoors: String(area.indoors),
+			indoors: String(area.resolved.indoors),
 			height: ((bounds.maxRow - bounds.minRow) + 1),
 			width: ((bounds.maxColumn - bounds.minColumn) + 1)
 		});
@@ -429,7 +429,7 @@ export class AreaSelectDialog
 
 				return(describeCell({
 					cells: preview.cells,
-					defaultTileId: preview.area.defaultTileId,
+					defaultTileId: preview.area.resolved.defaultTileId,
 					tiles: this.tiles,
 					links: [],
 					ruleset: universe.ruleset

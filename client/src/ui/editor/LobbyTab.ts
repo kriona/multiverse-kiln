@@ -77,7 +77,7 @@ export class LobbyTab implements SavableTab
 			{
 				const disabled = new Set(this.disabledAreaIds);
 
-				if (area.enabled)
+				if (area.resolved.enabled)
 				{
 					disabled.delete(area.id);
 				}
@@ -183,7 +183,7 @@ export class LobbyTab implements SavableTab
 			if (version === this.version)
 			{
 				this.disabledAreaIds = new Set(areas
-					.filter((area) => !area.enabled)
+					.filter((area) => !area.resolved.enabled)
 					.map((area) => area.id));
 				this.area.setAreaNames(new Map(areas.map((area) => [area.id, area.name])));
 				this.showNoAreaHint();

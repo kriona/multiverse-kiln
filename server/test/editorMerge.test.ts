@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { settleConflict, settleTextConflict, sourceTextHash, type ClassListPayload, type EditorChange, type EditorClass, type EditorRace, type RaceListPayload, type SaveChangesPayload, type SaveRefusedPayload, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { NO_BUILDER_PERMISSIONS, settleConflict, settleTextConflict, sourceTextHash, type ClassListPayload, type EditorChange, type EditorClass, type EditorRace, type RaceListPayload, type SaveChangesPayload, type SaveRefusedPayload, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { findUniverseAccess, setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findTranslation } from '../src/db/universeTextRepo.js';
@@ -282,7 +282,8 @@ describe('Saving only what changed', () =>
 			assert.strictEqual((await saveChanges(grace, universeId, [settleConflict(change, refused.body.conflicts[0].saved, false)])).status, 200);
 			assert.deepStrictEqual(await findUniverseAccess(universeId, hopper.playerId), {
 				role: 'translator',
-				languages: ['de']
+				languages: ['de'],
+				permissions: NO_BUILDER_PERMISSIONS
 			});
 		});
 	});

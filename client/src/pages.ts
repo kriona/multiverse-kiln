@@ -57,6 +57,11 @@ export const TAB_PARAMETER = 'tab';
 export const AREA_PARAMETER = 'area';
 
 /**
+ * Query string parameter of the editor naming the region open in the region editor
+ */
+export const REGION_PARAMETER = 'region';
+
+/**
  * Query string parameter of the editor naming the version of the universe open: draft for its draft, or
  * left out for its live version
  */
@@ -184,6 +189,26 @@ export const HOME_PAGE_URL = '/';
 export function editPageUrl(universeId: string): string
 {
 	return(`${EDIT_PAGE}/${encodeURIComponent(universeId)}`);
+}
+
+/**
+ * The address of an area in the world editor
+ *
+ * @param universeId The universe's ID
+ * @param areaId The area's ID
+ * @param version The version of the universe it is in: draft for its draft, or undefined for the live version
+ * @return The address
+ */
+export function editorAreaUrl(universeId: string, areaId: string, version?: string): string
+{
+	const parameters = new URLSearchParams({ [AREA_PARAMETER]: areaId });
+
+	if (version !== undefined)
+	{
+		parameters.set(VERSION_PARAMETER, version);
+	}
+
+	return(`${editPageUrl(universeId)}?${parameters.toString()}`);
 }
 
 /**

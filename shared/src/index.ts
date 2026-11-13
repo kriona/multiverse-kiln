@@ -34,3 +34,5 @@ export * from './universeText.js';
 export * from './translationFiles.js';
 export * from './engineTranslations.js';
 export * from './areaTree.js';
+export * from './regions.js';
+export * from './tileReplacement.js';

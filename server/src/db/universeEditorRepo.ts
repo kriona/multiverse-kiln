@@ -3,7 +3,7 @@
  */
 import { and, count, eq, ne, notExists, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import type { EditableUniverseSummary, PlayerMatch, UniverseAccess, UniverseEditorSummary, UniverseRole } from '@multiverse-kiln/shared';
+import { NO_BUILDER_PERMISSIONS, type BuilderPermissions, type EditableUniverseSummary, type PlayerMatch, type UniverseAccess, type UniverseEditorSummary, type UniverseRole } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { searchPlayers, type PlayerSearch } from './playerRepo.js';
@@ -53,32 +53,38 @@ export async function setUniverseRole(universeId: string, playerId: string, role
 }
 
 /**
- * Gives a player a role in a universe, and a translator their languages, replacing what they had
+ * Gives a player a role in a universe, a translator their languages and a builder their permissions,
+ * replacing what they had
  *
  * @param universeId The universe's ID
  * @param playerId The player's ID
- * @param access The role, and the languages for a translator (left out for any other role)
+ * @param access The role, the languages for a translator and the permissions for a builder (left out
+ * for any other role)
  * @param executor The database, or a transaction
  */
 export async function setUniverseAccess(universeId: string, playerId: string, access: UniverseAccess, executor: Executor = db): Promise<void>
 {
 	const role = access.role;
 	const languages = ((role === 'translator') ? [...access.languages] : []);
+	const permissions = (((role === 'builder') ? access.permissions : undefined) ?? NO_BUILDER_PERMISSIONS);
+	const values = {
+		role,
+		languages,
+		canEditTiles: permissions.canEditTiles,
+		canEditItems: permissions.canEditItems,
+		canEditMobs: permissions.canEditMobs
+	};
 
 	await executor
 		.insert(universeEditors)
 		.values({
 			universeId,
 			playerId,
-			role,
-			languages
+			...values
 		})
 		.onConflictDoUpdate({
 			target: [universeEditors.universeId, universeEditors.playerId],
-			set: {
-				role,
-				languages
-			}
+			set: values
 		});
 }
 
@@ -111,14 +117,17 @@ export async function removeUniverseEditor(universeId: string, playerId: string,
  * @param universeId The universe's ID
  * @param playerId The player's ID
  * @param executor The database, or a transaction
- * @return The role and languages, or undefined when the player has no role
+ * @return The role, languages and a builder's permissions, or undefined when the player has no role
  */
 export async function findUniverseAccess(universeId: string, playerId: string, executor: Executor = db): Promise<UniverseAccess | undefined>
 {
 	const [row] = await executor
 		.select({
 			role: universeEditors.role,
-			languages: universeEditors.languages
+			languages: universeEditors.languages,
+			canEditTiles: universeEditors.canEditTiles,
+			canEditItems: universeEditors.canEditItems,
+			canEditMobs: universeEditors.canEditMobs
 		})
 		.from(universeEditors)
 		.where(and(
@@ -127,7 +136,31 @@ export async function findUniverseAccess(universeId: string, playerId: string, e
 		))
 		.limit(1);
 
-	return(row);
+	if (!row)
+	{
+		return(undefined);
+	}
+
+	return({
+		role: row.role,
+		languages: row.languages,
+		permissions: permissionsOf(row)
+	});
+}
+
+/**
+ * A builder's permissions from their row
+ *
+ * @param row The row's permission columns
+ * @return The permissions
+ */
+function permissionsOf(row: BuilderPermissions): BuilderPermissions
+{
+	return({
+		canEditTiles: row.canEditTiles,
+		canEditItems: row.canEditItems,
+		canEditMobs: row.canEditMobs
+	});
 }
 
 /**
@@ -181,22 +214,38 @@ export async function countUniverseCreators(universeId: string, executor: Execut
  *
  * @param universeId The universe's ID
  * @param executor The database, or a transaction
+ * @param executor The database, or a transaction
+ * @param assignments The live regions each builder is assigned to, by player ID
+ * (listAssignmentsByBuilder()), for those who show them; none when left out
  * @return The editors, by username
  */
-export async function listUniverseEditors(universeId: string, executor: Executor = db): Promise<UniverseEditorSummary[]>
+export async function listUniverseEditors(universeId: string, executor: Executor = db, assignments: ReadonlyMap<string, string[]> = new Map()): Promise<UniverseEditorSummary[]>
 {
-	return(executor
+	const rows = await executor
 		.select({
 			playerId: universeEditors.playerId,
 			username: players.username,
 			displayName: players.displayName,
 			role: universeEditors.role,
-			languages: universeEditors.languages
+			languages: universeEditors.languages,
+			canEditTiles: universeEditors.canEditTiles,
+			canEditItems: universeEditors.canEditItems,
+			canEditMobs: universeEditors.canEditMobs
 		})
 		.from(universeEditors)
 		.innerJoin(players, eq(players.id, universeEditors.playerId))
 		.where(eq(universeEditors.universeId, universeId))
-		.orderBy(sql`lower(${players.username})`));
+		.orderBy(sql`lower(${players.username})`);
+
+	return(rows.map((row) => ({
+		playerId: row.playerId,
+		username: row.username,
+		displayName: row.displayName,
+		role: row.role,
+		languages: row.languages,
+		permissions: permissionsOf(row),
+		regionIds: (assignments.get(row.playerId) ?? [])
+	})));
 }
 
 /**

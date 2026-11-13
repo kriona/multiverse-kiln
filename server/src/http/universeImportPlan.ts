@@ -15,9 +15,10 @@
  * can only name saved things in a save from the editor, so the import makes those changes once the
  * changes before them are saved (PendingChange)
  */
-import { ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { isNewRef, PlaceGraph, type EditorRegion, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
+import { listRegions } from '../db/regionRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { listDifficultyLevels } from '../db/difficultyRepo.js';
@@ -57,14 +58,15 @@ const ITEM_FIELDS = ['name', 'type', 'enabled'] as const;
 const OPTION_FIELDS = ['name', 'enabled', 'keepPlaying', 'rules', 'startingMoney', 'startingColumn', 'startingRow'] as const;
 const THEME_FIELDS = ['name', 'enabled', 'rules'] as const;
 const LEVEL_FIELDS = ['name', 'isDefault', 'mobScale', 'permadeath'] as const;
-const AREA_FIELDS = ['name', 'enabled', 'indoors', 'lightLevel', 'passageOfTime', 'faerieMorning', 'loopsEastWest', 'loopsNorthSouth'] as const;
-const UNIVERSE_FIELDS = ['shortDescription', 'longDescription', 'sourceLanguage', 'translationLanguages', 'passageOfTime', 'faerieMorning', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyNoVisionCost', 'groupSize', 'startingMoney', 'coinNames', 'coinAbbreviations', 'startingColumn', 'startingRow'] as const;
+const REGION_FIELDS = ['name', 'enabled', 'indoors', 'lightLevel', 'passageOfTime', 'faerieMorning'] as const;
+const AREA_FIELDS = [...REGION_FIELDS, 'loopsEastWest', 'loopsNorthSouth'] as const;
+const UNIVERSE_FIELDS = ['shortDescription', 'longDescription', 'sourceLanguage', 'translationLanguages', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyNoVisionCost', 'groupSize', 'startingMoney', 'coinNames', 'coinAbbreviations', 'startingColumn', 'startingRow'] as const;
 
 /**
  * The parts of an export that come together: an export holding one of them holds all of them
  */
 const SETTINGS_SECTIONS = ['settings', 'rulesetSettings', 'difficultyLevels', 'races', 'classes', 'themes'] as const;
-const WORLD_SECTIONS = ['tileGraphics', 'tiles', 'items', 'areas', 'translatorNotes'] as const;
+const WORLD_SECTIONS = ['tileGraphics', 'tiles', 'items', 'regions', 'areas', 'translatorNotes'] as const;
 
 /**
  * The draft an import goes into, as it is before the import's save
@@ -79,6 +81,7 @@ export interface ImportTarget
 	themes: EditorTheme[];
 	difficultyLevels: DifficultyLevel[];
 	tileGraphics: UploadedTileGraphic[];
+	regions: EditorRegion[];
 	areas: EditorArea[];
 	links: (EditorAreaLink & { areaId: string })[];
 	notes: TranslatorNoteRecord[];
@@ -176,6 +179,7 @@ export async function loadImportTarget(version: UniverseVersion, file: ImportFil
 			themes: await loadEditorThemes(version, ruleset, executor),
 			difficultyLevels: await listDifficultyLevels(version, executor),
 			tileGraphics: await listTileGraphics(version, executor),
+			regions: await listRegions(version, executor),
 			areas,
 			links: await listVersionAreaLinks(version, executor),
 			notes: await listTranslatorNotes(version, executor),
@@ -542,6 +546,65 @@ function pick(thing: Record<string, unknown>, fields: readonly string[]): Record
 }
 
 /**
+ * A file's regions or areas, each after those of the same list it is inside, so each is made after its
+ * parents; a file with one inside itself is refused
+ *
+ * @param places The regions or areas, each with its parents
+ * @param what Which list they are, for the problem
+ * @return The places, parents first
+ */
+function parentsFirst<T extends { id: string; parents: readonly { id: string }[] }>(places: readonly T[], what: string): T[]
+{
+	const byId = new Map(places.map((place) => [place.id, place]));
+	const ordered: T[] = [];
+	const done = new Set<string>();
+	const visiting = new Set<string>();
+
+	// Followed with a list rather than recursion, since places can nest deeper than a file should
+	for (const start of places)
+	{
+		const stack: { place: T; next: number }[] = [{ place: start, next: 0 }];
+
+		while (stack.length > 0)
+		{
+			const top = stack[stack.length - 1];
+
+			if (done.has(top.place.id))
+			{
+				stack.pop();
+				continue;
+			}
+
+			visiting.add(top.place.id);
+
+			const parent = top.place.parents
+				.slice(top.next)
+				.find((each) => (byId.has(each.id) && !done.has(each.id)));
+
+			if (parent === undefined)
+			{
+				visiting.delete(top.place.id);
+				done.add(top.place.id);
+				ordered.push(top.place);
+				stack.pop();
+				continue;
+			}
+
+			top.next = (top.place.parents.indexOf(parent) + 1);
+
+			if (visiting.has(parent.id))
+			{
+				refuseFile(`${what} have ${parent.id} inside itself`);
+			}
+
+			stack.push({ place: byId.get(parent.id) as T, next: 0 });
+		}
+	}
+
+	return(ordered);
+}
+
+/**
  * Refuses a file whose content doesn't add up, such as a race naming an item the file doesn't have
  *
  * @param problem What is wrong, in English
@@ -559,6 +622,7 @@ class ImportPlanner
 	readonly changes: PendingChange[] = [];
 
 	readonly counts: UniverseImportCounts = {
+		regions: 0,
 		areas: 0,
 		tileGraphics: 0,
 		tiles: 0,
@@ -591,6 +655,10 @@ class ImportPlanner
 	private readonly graphicTargets = new Map<string, Target<string> | null>();
 	private readonly tileTargets = new Map<number, Target<number>>();
 	private readonly itemTargets = new Map<number, Target<number>>();
+	private readonly regionTargets = new Map<string, Target<string>>();
+
+	// The draft's regions the file doesn't have that the import keeps, since areas it keeps are in them
+	private keptRegions = new Set<string>();
 	private readonly areaTargets = new Map<string, Target<string>>();
 	private readonly raceTargets = new Map<number, Target<number>>();
 	private readonly classTargets = new Map<number, Target<number>>();
@@ -607,6 +675,7 @@ class ImportPlanner
 		tileGraphics: Matcher<string>;
 		tiles: Matcher<number>;
 		items: Matcher<number>;
+		regions: Matcher<string>;
 		areas: Matcher<string>;
 		races: Matcher<number>;
 		classes: Matcher<number>;
@@ -639,6 +708,7 @@ class ImportPlanner
 			tileGraphics: new Matcher(target.tileGraphics.map((graphic) => graphic.id), origins.tileGraphics, { ...source, liveIds: liveIds?.tileGraphics }),
 			tiles: new Matcher(custom(target.tiles), origins.tiles, { ...source, liveIds: liveIds?.tiles }),
 			items: new Matcher(custom(target.items), origins.items, { ...source, liveIds: liveIds?.items }),
+			regions: new Matcher(target.regions.map((region) => region.id), origins.regions, { ...source, liveIds: liveIds?.regions }),
 			areas: new Matcher(target.areas.map((area) => area.id), origins.areas, { ...source, liveIds: liveIds?.areas }),
 			races: new Matcher(custom(target.races), origins.races, { ...source, liveIds: liveIds?.races }),
 			classes: new Matcher(custom(target.classes), origins.classes, { ...source, liveIds: liveIds?.classes }),
@@ -687,6 +757,7 @@ class ImportPlanner
 			this.planGraphics();
 			this.planTiles();
 			this.planItems();
+			this.planRegions(importsSettings);
 			this.planAreas();
 		}
 
@@ -945,9 +1016,99 @@ class ImportPlanner
 	}
 
 	/**
-	 * Adds and changes the draft's areas to the file's, with their cells and links. A matched area is
-	 * compared with the file's, so only what differs is changed and recorded: its bounds, the cells that
-	 * hold another tile, and the links that go elsewhere, are new or are gone
+	 * The draft's areas an import that doesn't replace the settings keeps, since the settings name them:
+	 * its lobby and starting areas, unless the file has them
+	 *
+	 * @param settings Whether the import replaces the settings
+	 * @return The areas' IDs in the draft
+	 */
+	private keptAreaIds(settings: boolean): Set<string>
+	{
+		const { target } = this;
+		const kept = new Set<string>();
+
+		if (settings)
+		{
+			return(kept);
+		}
+
+		const matched = new Set((this.manifest.areas ?? []).map((area) => this.matchers.areas.find(area.id)));
+
+		for (const areaId of [target.universe.lobbyAreaId, target.universe.startingAreaId, ...target.startingAreaIds])
+		{
+			if ((areaId !== null) && !matched.has(areaId))
+			{
+				kept.add(areaId);
+			}
+		}
+
+		return(kept);
+	}
+
+	/**
+	 * Adds and changes the draft's regions to the file's, each after the regions it is inside, deleting
+	 * the draft's regions the file doesn't have first, apart from those holding areas the import keeps. A
+	 * matched region holding a name another of the file's regions takes is renamed out of the way first
+	 *
+	 * @param settings Whether the import replaces the settings
+	 */
+	private planRegions(settings: boolean): void
+	{
+		const regions = (this.manifest.regions ?? []);
+		const draftRegions = new Map(this.target.regions.map((region) => [region.id, region]));
+
+		for (const region of regions)
+		{
+			this.regionTargets.set(region.id, (this.matchers.regions.take(region.id) ?? this.newRef('region')));
+			this.counts.regions++;
+		}
+
+		const matched = new Set([...this.regionTargets.values()].filter((target) => !isNewRef(target)));
+		const draftGraph = new PlaceGraph(this.target.regions, this.target.areas);
+		const kept = new Set([...this.keptAreaIds(settings)].flatMap((areaId) => draftGraph.ancestorsOf({ kind: 'area', id: areaId })
+			.filter((place) => ((place.kind === 'region') && !matched.has(place.id)))
+			.map((place) => place.id)));
+
+		this.keptRegions = kept;
+
+		for (const region of this.target.regions.filter((each) => (!matched.has(each.id) && !kept.has(each.id))))
+		{
+			this.add({ kind: 'deleteRegion', regionId: region.id }, `the draft's region ${region.name}`);
+		}
+
+		const finalNames = new Set(regions.map((region) => region.name.toLowerCase()));
+
+		for (const region of regions)
+		{
+			const target = this.regionTargets.get(region.id) as Target<string>;
+			const current = draftRegions.get(target);
+
+			if (current && (current.name.toLowerCase() !== region.name.toLowerCase()) && finalNames.has(current.name.toLowerCase()))
+			{
+				this.add({ kind: 'updateRegion', regionId: target, update: { name: region.id } }, `region ${region.id}`);
+			}
+		}
+
+		for (const region of parentsFirst(regions, `the file's regions`))
+		{
+			const where = `region ${region.id}`;
+			const target = this.regionTargets.get(region.id) as Target<string>;
+			const values = {
+				...pick(region, REGION_FIELDS),
+				defaultTileId: ((region.defaultTileId === null) ? null : this.tileTarget(region.defaultTileId, where)),
+				parents: region.parents.map((parent) => ({ kind: 'region', id: this.regionTarget(parent.id, where) }))
+			};
+
+			// The save records only the settings that differ
+			this.add((isNewRef(target) ? { kind: 'createRegion', ref: target, region: values } : { kind: 'updateRegion', regionId: target, update: values }), where);
+		}
+	}
+
+	/**
+	 * Adds and changes the draft's areas to the file's, with their parents, cells and links, each after the
+	 * area it is inside. A matched area is compared with the file's, so only what differs is changed and
+	 * recorded: its settings, its bounds, the cells that hold another tile, and the links that go
+	 * elsewhere, are new or are gone
 	 */
 	private planAreas(): void
 	{
@@ -963,17 +1124,7 @@ class ImportPlanner
 
 			if (matched === undefined)
 			{
-				const ref = this.newRef('area');
-
-				this.add({
-					kind: 'createArea',
-					ref,
-					area: {
-						...pick(area, AREA_FIELDS),
-						defaultTileId: this.tileTarget(area.defaultTileId, `area ${area.id}`)
-					}
-				}, `area ${area.id}`);
-				this.areaTargets.set(area.id, ref);
+				this.areaTargets.set(area.id, this.newRef('area'));
 			}
 			else
 			{
@@ -984,30 +1135,22 @@ class ImportPlanner
 			this.counts.areas++;
 		}
 
-		for (const area of areas)
+		for (const area of parentsFirst(areas, `the file's areas`))
 		{
 			const target = this.areaTarget(area.id, `area ${area.id}`);
 			const where = `area ${area.id}`;
-			const parentAreaId = ((area.parentAreaId === null) ? null : this.areaTarget(area.parentAreaId, where));
 			const draftArea = draftAreas.get(target);
+			const values = {
+				...pick(area, AREA_FIELDS),
+				defaultTileId: ((area.defaultTileId === null) ? null : this.tileTarget(area.defaultTileId, where)),
+				parents: area.parents.map((parent) => ({
+					kind: parent.kind,
+					id: ((parent.kind === 'region') ? this.regionTarget(parent.id, where) : this.areaTarget(parent.id, where))
+				}))
+			};
 
 			// The save records only the settings that differ
-			if (draftArea)
-			{
-				this.add({
-					kind: 'updateArea',
-					areaId: target,
-					update: {
-						...pick(area, AREA_FIELDS),
-						defaultTileId: this.tileTarget(area.defaultTileId, where),
-						parentAreaId
-					}
-				}, where);
-			}
-			else if (parentAreaId !== null)
-			{
-				this.add({ kind: 'updateArea', areaId: target, update: { parentAreaId } }, where);
-			}
+			this.add((draftArea ? { kind: 'updateArea', areaId: target, update: values } : { kind: 'createArea', ref: target, area: values }), where);
 
 			// Making an area smaller discards its cells and links outside the new bounds, and links into them
 			if (!sameBounds((draftArea?.bounds ?? NEW_AREA_BOUNDS), area.bounds))
@@ -1552,6 +1695,18 @@ class ImportPlanner
 	}
 
 	/**
+	 * Where one of the file's regions is in the draft
+	 *
+	 * @param fileId Its ID in the file
+	 * @param where What names it, for the problem
+	 * @return The region
+	 */
+	private regionTarget(fileId: string, where: string): Target<string>
+	{
+		return(this.regionTargets.get(fileId) ?? refuseFile(`${where} names region ${fileId}, which the file doesn't list`));
+	}
+
+	/**
 	 * The draft's thing one of the file's things is, for the parts the import doesn't replace: the same
 	 * thing in an export of the same universe
 	 *
@@ -1654,9 +1809,22 @@ class ImportPlanner
 			}
 		}
 
+		// A kept area keeps the regions above it (planRegions()), with the default tiles they set
+		const keptRegions = this.keptRegions;
+
 		for (const area of target.areas.filter((each) => keptAreas.has(each.id)))
 		{
-			keptTiles.add(area.defaultTileId);
+			keptTiles.add(area.resolved.defaultTileId);
+
+			if (area.defaultTileId !== null)
+			{
+				keptTiles.add(area.defaultTileId);
+			}
+		}
+
+		for (const region of target.regions.filter((each) => (keptRegions.has(each.id) && (each.defaultTileId !== null))))
+		{
+			keptTiles.add(region.defaultTileId as number);
 		}
 
 		for (const [tileId, areaIds] of target.tileUsage)

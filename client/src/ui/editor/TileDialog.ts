@@ -1,4 +1,4 @@
-import { canEditWorldOpen, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, type EditableUniverse, type EditorTile, type TileSettings } from '@multiverse-kiln/shared';
+import { canEditTilesOpen, defaultWalkSeconds, DISALLOWED_TEXT_CHARACTERS, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_TILE_NAME_LENGTH, MAX_WALK_SECONDS, mergeTileChanges, withTileChanges, type EditableUniverse, type EditorTile, type PlaceTileChange, type PlaceWorld, type TileSettings, type TileUsedFor } from '@multiverse-kiln/shared';
 import trashIcon from 'virtual:icon/ph:trash';
 
 import { formatDuration, t } from '../../localization';
@@ -15,6 +15,7 @@ import { FollowedDialog } from './otherSaves';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 import { TileDeleteDialog } from './TileDeleteDialog';
 import { TileGraphicDialog, type StagedUpload } from './TileGraphicDialog';
+import { TileReplaceDialog, type TilePlaces } from './TileReplaceDialog';
 import { parseTileGraphicValue, showTileSwatch, tileGraphicLayout, tileGraphicOptions, tileGraphicValue, type ShownUpload, type TileGraphicChoice } from './tileSwatches';
 
 /**
@@ -65,6 +66,40 @@ export interface TileDeletions
 	 * @param replacementId The tile to paint the areas with, or undefined when no area uses it or the mark is taken back
 	 */
 	setReplacement(tileId: number, replacementId: number | undefined): void;
+
+	/**
+	 * The regions and areas, once the Areas tab can give them, for the dialog replacing a default tile
+	 *
+	 * @return The places, or undefined
+	 */
+	places(): TilePlaces | undefined;
+
+	/**
+	 * The default tiles regions and areas get in place of a tile no longer for a kind of area, kept with
+	 * the tile's change
+	 *
+	 * @param tileId The tile
+	 * @return The changes
+	 */
+	kindTileChanges(tileId: number): readonly PlaceTileChange[];
+
+	/**
+	 * Keeps the default tiles regions and areas get in place of a tile no longer for a kind of area, until
+	 * the tab is saved. They are dropped once the tile is for every kind it is saved for again
+	 *
+	 * @param tileId The tile
+	 * @param changes The changes
+	 * @param kinds The kinds the tile is for, as changed
+	 */
+	setKindTileChanges(tileId: number, changes: readonly PlaceTileChange[], kinds: TileUsedFor): void;
+
+	/**
+	 * Keeps the default tiles regions and areas get in place of a tile marked to delete, until the tab is saved
+	 *
+	 * @param tileId The tile
+	 * @param changes The changes, or undefined when the mark is taken back
+	 */
+	setDeleteTileChanges(tileId: number, changes: readonly PlaceTileChange[] | undefined): void;
 }
 
 /**
@@ -157,6 +192,21 @@ export class TileDialog
 	private editable = false;
 
 	/**
+	 * Asks what regions and areas get as their default tile in place of the tile, when it is deleted or a
+	 * kind is unchecked
+	 */
+	private readonly replaceDialog = new TileReplaceDialog();
+
+	/**
+	 * The default tiles regions and areas get in place of the tile for each kind unchecked since the
+	 * dialog opened, from the dialog replacing a default tile
+	 */
+	private kindChanges: Record<'indoors' | 'outdoors', PlaceTileChange[]> = {
+		indoors: [],
+		outdoors: []
+	};
+
+	/**
 	 * @param api The editor's API, for which areas use a tile being deleted
 	 * @param uploads The tab's uploaded tilesets, which the graphic list offers, and their staged changes
 	 * @param deletions The tab's tiles marked to delete, and the tiles chosen to replace them in the areas
@@ -219,6 +269,7 @@ export class TileDialog
 			choice.addEventListener('change', () =>
 			{
 				this.updateDefaultWalk();
+				this.kindChanged(choice === this.indoors);
 			});
 		}
 
@@ -260,7 +311,7 @@ export class TileDialog
 	open(universe: EditableUniverse, tile: EditorTile | undefined, edit: StagedEdit<TileSettings>, onChanged: () => void): void
 	{
 		const settings = (tile ?? NEW_TILE);
-		const canEdit = canEditWorldOpen(universe);
+		const canEdit = canEditTilesOpen(universe);
 		const editable = (canEdit && !edit.removed);
 		const name = (tile ? tileName(tile, universe.ruleset) : '');
 
@@ -268,6 +319,10 @@ export class TileDialog
 		this.tile = tile;
 		this.edit = edit;
 		this.onChanged = onChanged;
+		this.kindChanges = {
+			indoors: [],
+			outdoors: []
+		};
 		if (!tile)
 		{
 			this.title.textContent = t({
@@ -339,6 +394,53 @@ export class TileDialog
 		this.updatePreview();
 		this.following.show();
 		this.changes.markSaved();
+	}
+
+	/**
+	 * After indoors or outdoors is checked or unchecked: unchecking a kind while the tile is the default
+	 * tile of areas of that kind asks what they get instead (TileReplaceDialog), and canceling that checks
+	 * it again. Checking it again drops what was chosen for it
+	 *
+	 * @param indoors Whether it was indoors
+	 */
+	private kindChanged(indoors: boolean): void
+	{
+		const choice = (indoors ? this.indoors : this.outdoors);
+		const kind = (indoors ? 'indoors' : 'outdoors');
+		const places = this.deletions.places();
+		const { universe, tile, edit } = this;
+
+		this.kindChanges[kind] = [];
+
+		if (choice.checked || !places || !universe || !tile || !edit)
+		{
+			return;
+		}
+
+		// The world as the dialog's other changes leave it: the other kind as the form shows it, and the
+		// places given another default tile already
+		const changes = mergeTileChanges(this.deletions.kindTileChanges(tile.id), this.kindChanges.indoors, this.kindChanges.outdoors);
+		const before = (world: PlaceWorld): PlaceWorld =>
+		{
+			const tileKinds = new Map(world.tileKinds);
+
+			tileKinds.set(tile.id, {
+				indoors: (indoors || this.indoors.checked),
+				outdoors: (!indoors || this.outdoors.checked)
+			});
+
+			return({ ...withTileChanges(world, changes), tileKinds });
+		};
+
+		void this.replaceDialog.open(universe, tile, { kind: 'uncheck', indoors }, places, before, (chosen) =>
+		{
+			this.kindChanges[kind] = chosen;
+		}, () =>
+		{
+			choice.checked = true;
+			this.updateDefaultWalk();
+			choice.focus();
+		});
 	}
 
 	/**
@@ -508,6 +610,15 @@ export class TileDialog
 
 		// A default tile whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.tile && !this.tile.custom) ? tileName({ key: this.tile.key, name: null }, universe.ruleset) : undefined);
+
+		if (this.tile)
+		{
+			this.deletions.setKindTileChanges(this.tile.id, mergeTileChanges(this.deletions.kindTileChanges(this.tile.id), this.kindChanges.indoors, this.kindChanges.outdoors), {
+				indoors: this.indoors.checked,
+				outdoors: this.outdoors.checked
+			});
+		}
+
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
 			indoors: this.indoors.checked,
@@ -539,6 +650,7 @@ export class TileDialog
 
 		if (edit.removed)
 		{
+			this.deletions.setDeleteTileChanges(tile.id, undefined);
 			edit.undoRemove();
 			this.deletions.setReplacement(tile.id, undefined);
 			this.close();
@@ -555,9 +667,24 @@ export class TileDialog
 
 		this.deleteDialog.open(universe, tile, (tileId) => this.deletions.isRemoved(tileId), (replacementId) =>
 		{
-			edit.remove();
-			this.deletions.setReplacement(tile.id, replacementId);
-			this.close();
+			const deleteTile = (changes: readonly PlaceTileChange[]): void =>
+			{
+				this.deletions.setDeleteTileChanges(tile.id, changes);
+				edit.remove();
+				this.deletions.setReplacement(tile.id, replacementId);
+				this.close();
+			};
+			const places = this.deletions.places();
+
+			// The places taking the tile as their default tile choose another before it goes
+			if (places)
+			{
+				void this.replaceDialog.open(universe, tile, { kind: 'delete' }, places, undefined, deleteTile, () => undefined);
+			}
+			else
+			{
+				deleteTile([]);
+			}
 		});
 	}
 

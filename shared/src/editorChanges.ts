@@ -11,10 +11,11 @@
  */
 import type { OptionName } from './characters.js';
 import type { DifficultyLevelSettings } from './difficulty.js';
-import type { AreaSettingsUpdate, AreaLinkTarget, AuditField, AuditFieldChange, AuditSubject, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
+import type { AreaSettingsUpdate, AreaLinkTarget, AuditField, AuditFieldChange, AuditSubject, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, RegionSettings, RegionSettingsUpdate, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { LoadedSettings } from './fieldMerge.js';
 import type { AreaBounds } from './areaCells.js';
-import { canEditAtEndOfTime, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canStartDraft, canTranslate, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
+import type { PlaceProblem } from './regions.js';
+import { canEditAtEndOfTime, canEditItems, canEditTiles, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canStartDraft, canTranslate, type BuilderPermissions, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 import type { UniverseTextRef } from './universeText.js';
 
 /**
@@ -44,14 +45,32 @@ export type StringRef = string;
 export type TileChangeSettings = Omit<TileSettings, 'uploadedGraphicId'> & { uploadedGraphicId: StringRef | null };
 
 /**
- * A new area's settings in a save, whose default tile and parent may be made earlier in the same save
+ * A new area's settings in a save, whose default tile and parents may be made earlier in the same save
+ * (a parent's ID may be a ref)
  */
-export type NewAreaChange = Omit<NewAreaRequest, 'defaultTileId'> & { defaultTileId?: NumberRef };
+export type NewAreaChange = Omit<NewAreaRequest, 'defaultTileId'> & { defaultTileId?: NumberRef | null };
 
 /**
- * Changed area settings in a save, whose default tile and parent may be made earlier in the same save
+ * Changed area settings in a save, whose default tile and parents may be made earlier in the same save
  */
-export type AreaChangeUpdate = Omit<AreaSettingsUpdate, 'defaultTileId'> & { defaultTileId?: NumberRef };
+export type AreaChangeUpdate = Omit<AreaSettingsUpdate, 'defaultTileId'> & { defaultTileId?: NumberRef | null };
+
+/**
+ * A new region's settings in a save, whose default tile and parents may be made earlier in the same save
+ */
+export type NewRegionChange = Omit<RegionSettings, 'defaultTileId'> & { defaultTileId: NumberRef | null };
+
+/**
+ * Changed region settings in a save, whose default tile and parents may be made earlier in the same save
+ */
+export type RegionChangeUpdate = Omit<RegionSettingsUpdate, 'defaultTileId'> & { defaultTileId?: NumberRef | null };
+
+/**
+ * Where the characters in each area a change disables go, by the area's ID (see AREA_EVACUATIONS). A
+ * change disables the areas below a region or area it disables, and those it puts under a disabled one;
+ * an area left out sends them where they start
+ */
+export type AreaEvacuations = Record<string, AreaEvacuation>;
 
 /**
  * One cell to change in a save, whose tile may be made earlier in the same save
@@ -125,12 +144,14 @@ export interface DraftApplyChoices
 }
 
 /**
- * An editor's role and languages in a save. languages is for translators only, and empty for other roles
+ * An editor's role, languages and permissions in a save. languages is for translators only, and empty
+ * for other roles; permissions is for builders only, none when left out, and never given to other roles
  */
 export interface EditorRoleSettings
 {
 	role: UniverseRole;
 	languages: string[];
+	permissions?: BuilderPermissions;
 }
 
 /**
@@ -148,8 +169,20 @@ export interface EditorRoleSettings
  *   the characters carrying it with whenDisabled, keep when left out. Enabling an item again, or restoring
  *   a default item, gives back the copies taken. A race or class says in its settings (keepPlaying)
  *   whether its characters may play while it is disabled
- * - createArea, updateArea, deleteArea: an area's settings; the lobby and starting areas can't be deleted.
- *   An updateArea disabling an area says where the characters in it go with moveTo, start when left out
+ * - createRegion, updateRegion, deleteRegion: a region's settings and parents (see Regions in
+ *   STRUCTURE-OVERVIEW.md). Deleting a region deletes nothing in it: the save moves or deletes what is
+ *   in it with other changes first, and is refused when it leaves an area in no region
+ * - assignBuilders: the builders assigned to a region, by player ID, which only creators (and the site
+ *   admin role) change. The region is named in the version open, and the assignment kept for its live
+ *   region, so a region the draft added can't be assigned
+ * - createArea, updateArea, deleteArea: an area's settings and parents; the lobby and starting areas
+ *   can't be deleted. Deleting an area gives the areas inside it its parents in its place
+ * - updateRegion, deleteRegion, updateArea and deleteArea say where the characters in the areas they
+ *   disable go with moveTo, by area, start for an area left out
+ * - every save that changes regions, areas, parents or tiles' kinds works out the settings of every area
+ *   of the version and stores them, and is refused with 409 and a SaveRefusedPayload holding
+ *   placeProblems when an area is left with a conflict or a missing value, or anything is nested wrongly.
+ *   A builder edits only the regions and areas below the regions assigned to them
  * - resizeArea: gives an area new bounds. Without discard, a resize that would discard painted cells
  *   or links is refused with 409 and a SaveRefusedPayload holding resizeConflict
  * - editCells: up to MAX_CELL_CHANGES cells inside the area's bounds; a cell listed twice takes the later value
@@ -193,9 +226,13 @@ export type EditorChange =
 	| ListChanges<'Class', ClassSettings>
 	| ListChanges<'Theme', ThemeSettings>
 	| ListChanges<'DifficultyLevel', DifficultyLevelSettings>
+	| { kind: 'createRegion'; ref: NewRef; region: NewRegionChange }
+	| { kind: 'updateRegion'; regionId: StringRef; update: RegionChangeUpdate; loaded?: LoadedSettings; moveTo?: AreaEvacuations }
+	| { kind: 'deleteRegion'; regionId: StringRef; moveTo?: AreaEvacuations }
+	| { kind: 'assignBuilders'; regionId: StringRef; builderIds: string[] }
 	| { kind: 'createArea'; ref: NewRef; area: NewAreaChange }
-	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; loaded?: LoadedSettings; moveTo?: AreaEvacuation }
-	| { kind: 'deleteArea'; areaId: StringRef }
+	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; loaded?: LoadedSettings; moveTo?: AreaEvacuations }
+	| { kind: 'deleteArea'; areaId: StringRef; moveTo?: AreaEvacuations }
 	| { kind: 'resizeArea'; areaId: StringRef; bounds: AreaBounds; discard: boolean }
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
 	| { kind: 'saveLink'; areaId: StringRef; column: number; row: number; target: AreaLinkTarget }
@@ -217,13 +254,16 @@ export type EditorChangeKind = EditorChange['kind'];
  *
  * - manageEditors: canManageEditors(), except a player removing themself
  * - editSettings: canEditUniverseSettings()
- * - editWorld: canEditWorld()
+ * - editWorld: canEditWorld(); for a builder, the server also checks that the regions and areas the
+ *   change touches are within their assignments
+ * - editTiles: canEditTiles(), a builder's permission
+ * - editItems: canEditItems(), a builder's permission
  * - translate: canTranslate() into the change's language
  * - markNoTranslation: canMarkNoTranslation()
  * - startDraft: canStartDraft()
  * - manageVersions: canManageVersions()
  */
-export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'translate' | 'markNoTranslation' | 'startDraft' | 'manageVersions';
+export type EditorChangeCheck = 'manageEditors' | 'editSettings' | 'editWorld' | 'editTiles' | 'editItems' | 'translate' | 'markNoTranslation' | 'startDraft' | 'manageVersions';
 
 /**
  * The check each kind of change needs
@@ -234,14 +274,14 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
 	removeEditor: 'manageEditors',
 	universe: 'editSettings',
 	ruleset: 'editSettings',
-	uploadTileGraphic: 'editWorld',
-	deleteTileGraphic: 'editWorld',
-	createTile: 'editWorld',
-	saveTile: 'editWorld',
-	removeTile: 'editWorld',
-	createItem: 'editWorld',
-	saveItem: 'editWorld',
-	removeItem: 'editWorld',
+	uploadTileGraphic: 'editTiles',
+	deleteTileGraphic: 'editTiles',
+	createTile: 'editTiles',
+	saveTile: 'editTiles',
+	removeTile: 'editTiles',
+	createItem: 'editItems',
+	saveItem: 'editItems',
+	removeItem: 'editItems',
 	createRace: 'editSettings',
 	saveRace: 'editSettings',
 	removeRace: 'editSettings',
@@ -254,6 +294,10 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
 	createDifficultyLevel: 'editSettings',
 	saveDifficultyLevel: 'editSettings',
 	removeDifficultyLevel: 'editSettings',
+	createRegion: 'editWorld',
+	updateRegion: 'editWorld',
+	deleteRegion: 'editWorld',
+	assignBuilders: 'manageEditors',
 	createArea: 'editWorld',
 	updateArea: 'editWorld',
 	deleteArea: 'editWorld',
@@ -289,6 +333,12 @@ export function mayMakeChange(change: EditorChange, access: EditorAccess, player
 
 		case 'editWorld':
 			return(canEditWorld(access.role));
+
+		case 'editTiles':
+			return(canEditTiles(access));
+
+		case 'editItems':
+			return(canEditItems(access));
 
 		case 'translate':
 			return((change.kind === 'saveTranslation') && canTranslate(access, change.language));
@@ -390,6 +440,15 @@ export interface SaveRefusedPayload extends ErrorPayload
 	 * something else: each such setting, in the order of the changes
 	 */
 	conflicts?: SaveConflict[];
+
+	/**
+	 * For a save refused because it leaves areas with a conflict or a missing value, or regions and areas
+	 * nested wrongly: each problem, with the name of every region and area they name by placeKey() in
+	 * placeNames
+	 */
+	placeProblems?: PlaceProblem[];
+
+	placeNames?: Record<string, string>;
 }
 
 /**

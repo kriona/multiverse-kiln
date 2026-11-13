@@ -1,39 +1,57 @@
-import { ancestorAreas, AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canEditWorld, canEditWorldOpen, canPaintTile, childAreas, DEFAULT_AREA_TILE_KEYS, descendantAreaIds, DISALLOWED_TEXT_CHARACTERS, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, MAX_AREA_NAME_LENGTH, parentAreas, PASSAGE_OF_TIME_NAMES, AREA_PASSAGES_OF_TIME, areasTabListing, loadedFor, type AreaChangeUpdate, type AuditSubject, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type FaerieMorning, type AreaListPayload, type AreaLightLevel, type AreaPassageOfTime, type AreaSettings, type SavedEditDetail } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, canTakeParent, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, isWithinAssignments, loadedFor, MAX_AREA_NAME_LENGTH, MAX_REGION_NAME_LENGTH, PlaceGraph, placeKey, resolveAreaSettings, resolvePlace, samePlace, type AreaChangeUpdate, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { announce } from '../announcer';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { SearchSelect } from '../SearchSelect';
-import { tileName } from '../tileNames';
 import { claimTag, sameClaims, type AreaClaims } from './areaClaims';
 import { AreaEditor, type FollowedPainting } from './AreaEditor';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
-import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
+import { newRef, numberRef, type EditorSave, type SaveRefusal, type SavedIds } from './editorSave';
 import { ChangedSinceLine, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { ParentsField, type ParentChoice } from './ParentsField';
+import { PlaceFields, type InheritedView } from './PlaceFields';
+import { describeProblem, placeNamer, problemPlaces, type PlaceNames } from './places';
+import { PlacesList, type ListedPlace } from './PlacesList';
+import { RegionEditorView } from './RegionEditorView';
 import { combineChanges, type SavableTab } from './SaveBar';
-import { isNewAreaId, StagedAreas } from './stagedAreas';
-import { deletedNote, labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
+import { isNewAreaId, isNewPlace, StagedAreas } from './stagedAreas';
+import { labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
+import type { TilePlaces } from './TileReplaceDialog';
 
 /**
- * How a save names an area: a saved one by its ID, and one added since the tab was last saved by its ref
+ * How a save names a region or area: a saved one by its ID, and one added since the tab was last saved
+ * by its ref
  *
- * @param areaId The area's ID on the page
+ * @param id The region's or area's ID on the page
  * @return The reference
  */
-function areaRef(areaId: string): string
+export function placeRef(id: string): string
 {
-	return((isNewAreaId(areaId) ? newRef('', areaId) : areaId));
+	return((isNewAreaId(id) ? newRef('', id) : id));
 }
+
+/**
+ * Settings that all inherit
+ */
+const BLANK_SETTINGS: PlaceSettings = {
+	enabled: null,
+	indoors: null,
+	lightLevel: null,
+	defaultTileId: null,
+	passageOfTime: null,
+	faerieMorning: null
+};
 
 /**
  * What a save changes on the tab, as the Audit tab names it
  */
-const AREA_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['area', 'cells', 'links']);
+const AREA_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['region', 'area', 'cells', 'links']);
 
 /**
  * Whether a save's detail is painting the cell editor takes into its cells as they are: painting that names
@@ -48,59 +66,61 @@ function isFollowedPainting(detail: SavedEditDetail): boolean
 }
 
 /**
- * The Areas tab: the universe's areas, opening the area editor, and adding and deleting areas
- *
- * The area editor is a view in the tab rather than a dialog, since it holds the area's cells. Areas added
- * and deleted wait on the page until the tab is saved, as do the changes made to the area open in the
- * area editor; a new area can be opened, painted and linked to before it is saved
+ * A region or area with its settings changed to the ones the editor shows, for working out settings with
+ * changes not yet saved
  */
-export class AreasTab implements SavableTab, FollowsOtherSaves
+export type PlaceOverride = { place: PlaceRef; node: PlaceNode | AreaNode };
+
+/**
+ * What the Areas tab gives the region editor: the regions and areas with the tab's changes, and the
+ * world worked out from them
+ */
+export interface PlacesHost
+{
+	readonly staged: StagedAreas;
+	universe(): EditableUniverse | undefined;
+	regions(): EditorRegion[];
+	areas(): EditorAreaSummary[];
+	world(override?: PlaceOverride): PlaceWorld;
+	names(): PlaceNames;
+	tiles(): readonly EditorTile[];
+	deletedTiles(): ReadonlySet<number>;
+	canEditPlace(place: PlaceRef): boolean;
+	parentChoices(place: PlaceRef, kind: 'region' | 'area', override: PlaceOverride): ParentChoice[];
+	open(place: PlaceRef): void;
+	showList(): void;
+	listItem(place: PlaceRef): HTMLLIElement;
+	problemsFor(place: PlaceRef, override: PlaceOverride, list: HTMLElement, container: HTMLElement): void;
+	inheritedView(place: PlaceRef, override: PlaceOverride): InheritedView;
+}
+
+/**
+ * The Areas tab: the universe's regions and areas, opening the region and area editors, and adding and
+ * deleting them (see Tab: Areas in STRUCTURE-OVERVIEW.md)
+ *
+ * The area editor is a view in the tab rather than a dialog, since it holds the area's cells. Regions and
+ * areas added, deleted and moved wait on the page until the tab is saved, as do the changes made to the
+ * region or area open; a new area can be opened, painted and linked to before it is saved
+ */
+export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, TilePlaces
 {
 	private readonly listView = getElement('area-list-view', HTMLElement);
-	private readonly list = getElement('area-list', HTMLUListElement);
 	private readonly empty = getElement('area-empty', HTMLElement);
 	private readonly listError = getElement('area-list-error', HTMLElement);
 	private readonly addButton = getElement('area-add', HTMLButtonElement);
+	private readonly addRegionButton = getElement('region-add', HTMLButtonElement);
 	private readonly editorView = getElement('area-editor-view', HTMLElement);
 	private readonly form = getElement('area-form', HTMLFormElement);
 	private readonly fields = getElement('area-fields', HTMLFieldSetElement);
 	private readonly name = getElement('area-name', HTMLInputElement);
-	private readonly enabled = getElement('area-enabled', HTMLInputElement);
-	private readonly parentDisabled = getElement('area-parent-disabled', HTMLElement);
-	private readonly parentField = getElement('area-parent', HTMLInputElement);
-
-	/**
-	 * The area the area shown is inside, chosen by typing part of its name; '' for none
-	 */
-	private readonly parent = new SearchSelect({
-		searchId: 'area-parent',
-		listboxId: 'area-parent-options',
-		choices: [],
-		onChange: () =>
-		{
-			this.areaChanges.check();
-		}
-	});
-	private readonly outdoors = getElement('area-outdoors', HTMLInputElement);
-	private readonly indoors = getElement('area-indoors', HTMLInputElement);
-	private readonly lightField = getElement('area-light-field', HTMLElement);
-	private readonly lightLevel = getElement('area-light', HTMLSelectElement);
-	private readonly lightHint = getElement('area-light-hint', HTMLElement);
-	private readonly defaultTile = getElement('area-default-tile', HTMLSelectElement);
-	private readonly timeField = getElement('area-time-field', HTMLElement);
-	private readonly time = getElement('area-time', HTMLSelectElement);
-
-	/**
-	 * Shown in place of the passage of time for the lobby, whose time the Lobby tab sets
-	 */
 	private readonly lobbyTimeHint = getElement('area-lobby-time-hint', HTMLElement);
 	private readonly lobbyNotice = getElement('area-lobby-notice', HTMLElement);
 	private readonly backToLobby = getElement('area-back-lobby', HTMLButtonElement);
-	private readonly faerieField = getElement('area-faerie-field', HTMLElement);
-	private readonly faerie = getElement('area-faerie', HTMLSelectElement);
 	private readonly loopsEastWest = getElement('area-loops-east-west', HTMLInputElement);
 	private readonly loopsNorthSouth = getElement('area-loops-north-south', HTMLInputElement);
 	private readonly loopsHint = getElement('area-loops-hint', HTMLElement);
+	private readonly problems = getElement('area-problems', HTMLElement);
+	private readonly problemList = getElement('area-problem-list', HTMLUListElement);
 	private readonly size = getElement('area-size', HTMLElement);
 	private readonly error = getElement('area-error', HTMLElement);
 	private readonly deleteButton = getElement('area-delete', HTMLButtonElement);
@@ -109,10 +129,57 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private readonly addDialog = getElement('area-add-dialog', HTMLDialogElement);
 	private readonly addForm = getElement('area-add-form', HTMLFormElement);
 	private readonly addName = getElement('area-add-name', HTMLInputElement);
-	private readonly addIndoors = getElement('area-add-indoors', HTMLInputElement);
 	private readonly addError = getElement('area-add-error', HTMLElement);
 	private readonly addSubmit = getElement('area-add-submit', HTMLButtonElement);
+	private readonly regionDialog = getElement('region-add-dialog', HTMLDialogElement);
+	private readonly regionForm = getElement('region-add-form', HTMLFormElement);
+	private readonly regionName = getElement('region-add-name', HTMLInputElement);
+	private readonly regionError = getElement('region-add-error', HTMLElement);
 	private readonly areaEditor: AreaEditor;
+	private readonly list: PlacesList;
+	private readonly regionEditor: RegionEditorView;
+
+	/**
+	 * The area's own settings shared with regions, each with its inherit choice
+	 */
+	private readonly settings = new PlaceFields('area', () =>
+	{
+		this.settingsChanged();
+	});
+
+	/**
+	 * The regions and area the area is inside
+	 */
+	private readonly parents = new ParentsField('area', () =>
+	{
+		this.settingsChanged();
+	});
+
+	/**
+	 * Where the Add Area dialog puts the new area
+	 */
+	private readonly addParent = new SearchSelect({
+		searchId: 'area-add-parent',
+		listboxId: 'area-add-parent-options',
+		choices: [],
+		onChange: () =>
+		{
+			this.addChanges.check();
+		}
+	});
+
+	/**
+	 * Where the Add Region dialog puts the new region; '' for the top level
+	 */
+	private readonly regionParent = new SearchSelect({
+		searchId: 'region-add-parent',
+		listboxId: 'region-add-parent-options',
+		choices: [],
+		onChange: () =>
+		{
+			this.regionChanges.check();
+		}
+	});
 
 	/**
 	 * Whether the cell editor has painting, a change of size or links that haven't been saved
@@ -124,7 +191,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private readonly areaChanges = new ChangeTracker({
 		root: this.form,
-		state: () => [this.cellsUnsaved, this.parent.value]
+		state: () => [this.cellsUnsaved, this.parents.value.map(placeKey).join(',')]
 	});
 
 	/**
@@ -134,14 +201,15 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private readonly changedSince = new ChangedSinceLine(this.form, this.areaChanges);
 
 	/**
-	 * The areas added and deleted since the tab was last saved
+	 * The regions and areas added, deleted and moved since the tab was last saved
 	 */
-	private readonly staged = new StagedAreas();
+	readonly staged = new StagedAreas();
 
 	/**
-	 * Whether the tab has changes that haven't been saved: areas added or deleted, or changes to the area open
+	 * Whether the tab has changes that haven't been saved: regions and areas added, deleted or moved, or
+	 * changes to the region or area open
 	 */
-	readonly changes = combineChanges(this.areaChanges, this.staged);
+	readonly changes: ReturnType<typeof combineChanges>;
 
 	/**
 	 * Where the cell editor gets areas: the page for an area added since the tab was last saved, whose
@@ -154,16 +222,29 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	};
 
 	/**
-	 * Whether the Add Area dialog has been filled in
+	 * Whether the Add Area and Add Region dialogs have been filled in
 	 */
-	private readonly addChanges = new ChangeTracker({ root: this.addForm });
+	private readonly addChanges = new ChangeTracker({
+		root: this.addForm,
+		state: () => [this.addParent.value]
+	});
+	private readonly regionChanges = new ChangeTracker({
+		root: this.regionForm,
+		state: () => [this.regionParent.value]
+	});
 
-	private universe: EditableUniverse | undefined;
+	private universeOpen: EditableUniverse | undefined;
 
 	/**
-	 * Every area of the universe, and which are the lobby and starting areas, as last loaded
+	 * Every region and area of the universe, and which are the lobby and starting areas, as last loaded
 	 */
-	private areas: AreaListPayload = { areas: [], lobbyAreaId: null, startingAreaId: null, startingAreaIds: [] };
+	private loaded: AreaListPayload = { regions: [], areas: [], lobbyAreaId: null, startingAreaId: null, startingAreaIds: [] };
+
+	/**
+	 * The universe the regions and areas, and the tiles, were last loaded for, as the editor had it open
+	 */
+	private areasLoadedFor: EditableUniverse | undefined;
+	private tilesLoadedFor: EditableUniverse | undefined;
 
 	/**
 	 * Every tile the universe can use, as last loaded
@@ -174,18 +255,18 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 * Every tile the universe can use with the Tilesets tab's changes, for the default tile choice and
 	 * the cell editor
 	 */
-	private tiles: EditorTile[] = [];
+	private tileList: EditorTile[] = [];
 
 	/**
 	 * The tiles the Tilesets tab will delete, with the tiles chosen to replace them in the areas
 	 */
-	private deletedTiles: ReadonlyMap<number, number | undefined> = new Map();
+	private tilesDeleted: ReadonlyMap<number, number | undefined> = new Map();
 
 	/**
-	 * What the save being sent holds: the areas deleted and added, the area open as it is saved and its
-	 * settings as the form showed them, and the openVersion when the save started
+	 * What the save being sent holds: the regions and areas deleted and added, the area open as it is
+	 * saved and its settings as the form showed them, and the openVersion when the save started
 	 */
-	private collected: { deletedIds: string[]; createdIds: string[]; area: EditorArea | undefined; shown: AreaSettings | undefined; version: number } = { deletedIds: [], createdIds: [], area: undefined, shown: undefined, version: -1 };
+	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; version: number } = { createdIds: [], area: undefined, shown: undefined, version: -1 };
 
 	/**
 	 * The area the editor is showing
@@ -208,19 +289,36 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private shownClaim: readonly string[] = [];
 
 	/**
-	 * Changes every time the tab opens a universe or an area, so data that arrives for an earlier one is ignored
+	 * Changes every time the tab opens a universe, a region or an area, so data that arrives for an
+	 * earlier one is ignored
 	 */
 	private openVersion = 0;
 
 	/**
 	 * @param api The editor's API
 	 * @param stagedTiles The Tilesets tab's changes, which the areas are drawn and painted with
-	 * @param onAreaChanged Called with the area the area editor opens, or undefined when the tab goes back to the list
+	 * @param onPlaceChanged Called with the region or area the tab opens, or undefined when it goes back to the list or opens one not yet saved
 	 * @param onAreasLoaded Called each time the tab has loaded the universe's areas, which areaName() names
 	 * @param onBackToLobby Called when the player leaves the lobby's area with Back to Lobby, to show the Lobby tab
 	 */
-	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onAreaChanged: (areaId: string | undefined) => void, private readonly onAreasLoaded: () => void, private readonly onBackToLobby: () => void)
+	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onPlaceChanged: (place: PlaceRef | undefined) => void, private readonly onAreasLoaded: () => void, private readonly onBackToLobby: () => void)
 	{
+		this.regionEditor = new RegionEditorView(api, this);
+		this.changes = combineChanges(this.areaChanges, this.staged, this.regionEditor.changes);
+		this.list = new PlacesList((place) =>
+		{
+			this.open(place);
+		}, (count) =>
+		{
+			showMessage(this.empty, ((count === 0)
+				? t({
+					id: 'editor.areas.none',
+					defaultMessage: 'There are no areas yet.',
+					description: 'Shown instead of the list of areas when the universe has none'
+				})
+				: undefined));
+		});
+
 		stagedTiles.tileChanges.subscribe(() =>
 		{
 			this.showTileChanges();
@@ -240,30 +338,20 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		});
 		this.name.maxLength = MAX_AREA_NAME_LENGTH;
 		this.addName.maxLength = MAX_AREA_NAME_LENGTH;
-		setOptions(this.time, namedOptions(AREA_PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
-		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
-		setOptions(this.lightLevel, namedOptions(AREA_LIGHT_LEVELS, AREA_LIGHT_LEVEL_NAMES));
-
-		this.time.addEventListener('change', () =>
-		{
-			this.updateTimeFields();
-		});
-
-
-		for (const choice of [this.outdoors, this.indoors])
-		{
-			choice.addEventListener('change', () =>
-			{
-				this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
-				this.areaEditor.showTilesFor(this.indoors.checked);
-				this.showLightField();
-			});
-		}
+		this.regionName.maxLength = MAX_REGION_NAME_LENGTH;
 
 		this.name.addEventListener('input', () =>
 		{
 			setFieldError(this.name, undefined);
 		});
+
+		for (const loop of [this.loopsEastWest, this.loopsNorthSouth])
+		{
+			loop.addEventListener('change', () =>
+			{
+				this.settingsChanged();
+			});
+		}
 
 		this.deleteButton.addEventListener('click', () =>
 		{
@@ -274,7 +362,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		{
 			if (this.areaChanges.confirmDiscard())
 			{
-				void this.showList();
+				void this.showListView();
 			}
 		});
 
@@ -282,7 +370,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		{
 			if (this.areaChanges.confirmDiscard())
 			{
-				void this.showList();
+				void this.showListView();
 				this.onBackToLobby();
 			}
 		});
@@ -296,16 +384,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		});
 
 		this.addChanges.guardDialog(this.addDialog);
+		this.regionChanges.guardDialog(this.regionDialog);
 
 		this.addButton.addEventListener('click', () =>
 		{
-			this.addForm.reset();
-			showMessage(this.addError, undefined);
-			clearFieldErrors(this.addForm);
-			this.addSubmit.disabled = false;
-			this.addDialog.showModal();
-			this.addChanges.markSaved();
-			this.addName.focus();
+			this.openAddDialog();
+		});
+
+		this.addRegionButton.addEventListener('click', () =>
+		{
+			this.openRegionDialog();
 		});
 
 		getElement('area-add-cancel', HTMLButtonElement).addEventListener('click', () =>
@@ -316,9 +404,22 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			}
 		});
 
+		getElement('region-add-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			if (this.regionChanges.confirmDiscard())
+			{
+				this.regionDialog.close();
+			}
+		});
+
 		this.addName.addEventListener('input', () =>
 		{
 			setFieldError(this.addName, undefined);
+		});
+
+		this.regionName.addEventListener('input', () =>
+		{
+			setFieldError(this.regionName, undefined);
 		});
 
 		this.addForm.addEventListener('submit', (event) =>
@@ -326,32 +427,73 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			event.preventDefault();
 			void this.addArea();
 		});
+
+		this.regionForm.addEventListener('submit', (event) =>
+		{
+			event.preventDefault();
+			this.addRegion();
+		});
 	}
 
 	/**
-	 * Lists a universe's areas, or opens one of them
+	 * Lists a universe's regions and areas, or opens one of them
 	 *
 	 * @param universe The universe
-	 * @param areaId The area to open, or undefined for the list
+	 * @param place The region or area to open, or undefined for the list
 	 */
-	open(universe: EditableUniverse, areaId?: string): void
+	open(universe: EditableUniverse, place?: PlaceRef): void;
+
+	/**
+	 * Opens a region or area in its editor, first asking whether to discard the unsaved changes of the one
+	 * shown
+	 *
+	 * @param place The region or area
+	 */
+	open(place: PlaceRef): void;
+
+	/**
+	 * Lists a universe's regions and areas, or opens one of them; or opens a region or area
+	 *
+	 * @param target The universe, or the region or area to open
+	 * @param place The region or area to open with the universe, or undefined for the list
+	 */
+	open(target: EditableUniverse | PlaceRef, place?: PlaceRef): void
 	{
-		if (this.universe?.id !== universe.id)
+		if ('kind' in target)
+		{
+			if (target.kind === 'area')
+			{
+				void this.openArea(target.id);
+			}
+			else if (this.confirmLeave())
+			{
+				this.showRegion(target.id);
+			}
+
+			return;
+		}
+
+		if (this.universeOpen?.id !== target.id)
 		{
 			this.staged.clear();
 		}
 
-		this.universe = universe;
-		this.addButton.hidden = !canEditWorldOpen(universe);
+		this.universeOpen = target;
+		this.showAddButtons();
+		void this.loadPlace(place);
+	}
 
-		if (areaId === undefined)
-		{
-			void this.showList();
-		}
-		else
-		{
-			void this.openArea(areaId);
-		}
+	/**
+	 * Shows Add Region and Add Area to those who may add them: creators, and builders while a region they
+	 * are assigned can hold them
+	 */
+	private showAddButtons(): void
+	{
+		const universe = this.universeOpen;
+		const may = ((universe !== undefined) && canEditWorldOpen(universe) && (editsEveryPlace(universe.role) || (universe.assignedRegionIds.length > 0)));
+
+		this.addButton.hidden = !may;
+		this.addRegionButton.hidden = !may;
 	}
 
 	/**
@@ -361,9 +503,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	setUniverse(universe: EditableUniverse): void
 	{
-		if (this.universe?.id === universe.id)
+		if (this.universeOpen?.id === universe.id)
 		{
-			this.universe = universe;
+			this.universeOpen = universe;
+			this.showAddButtons();
 		}
 	}
 
@@ -374,15 +517,15 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	setLobbyArea(lobbyAreaId: string | null): void
 	{
-		this.areas = { ...this.areas, lobbyAreaId };
+		this.loaded = { ...this.loaded, lobbyAreaId };
 		this.renderList();
 
-		if (this.area && this.universe)
+		if (this.area && this.universeOpen)
 		{
 			const isLobby = (this.area.id === lobbyAreaId);
 
 			this.showLobby(isLobby);
-			this.deleteButton.hidden = (!canEditWorldOpen(this.universe) || isLobby || (this.area.id === this.areas.startingAreaId));
+			this.deleteButton.hidden = (!this.canEditPlace({ kind: 'area', id: this.area.id }) || isLobby || (this.area.id === this.loaded.startingAreaId));
 		}
 	}
 
@@ -396,7 +539,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	{
 		this.lobbyNotice.hidden = !isLobby;
 		this.backToLobby.hidden = !isLobby;
-		this.timeField.hidden = isLobby;
+		this.settings.hideTime(isLobby);
 		this.lobbyTimeHint.hidden = !isLobby;
 	}
 
@@ -408,51 +551,187 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	areaName(areaId: string): string | undefined
 	{
-		return(this.areas.areas.find((area) => (area.id === areaId))?.name);
+		return(this.loaded.areas.find((area) => (area.id === areaId))?.name);
 	}
 
 	/**
-	 * Opens an area in the area editor, first asking whether to discard the unsaved changes of the area it shows
+	 * Whether the region or area editor may be left: asks first while it has unsaved changes
 	 *
-	 * @param areaId The area's ID
+	 * @return False when the player kept the changes
 	 */
-	async openArea(areaId: string): Promise<void>
-	{
-		if (!this.editorView.hidden && !this.areaChanges.confirmDiscard())
-		{
-			return;
-		}
-
-		await this.loadArea(areaId);
-	}
-
-	/**
-	 * Opens an area, or the list for none, that the page's history went back or forward to, first asking
-	 * whether to discard the unsaved changes of the area the editor shows
-	 *
-	 * @param areaId The area's ID, or undefined for the list
-	 * @return False when the player kept the changes, leaving the tab as it was
-	 */
-	showPlace(areaId: string | undefined): boolean
+	private confirmLeave(): boolean
 	{
 		if (!this.editorView.hidden && !this.areaChanges.confirmDiscard())
 		{
 			return(false);
 		}
 
-		void ((areaId === undefined) ? this.showList() : this.loadArea(areaId));
+		return(this.regionEditor.confirmLeave());
+	}
+
+	/**
+	 * Opens an area in the area editor, first asking whether to discard the unsaved changes of the region
+	 * or area it shows
+	 *
+	 * @param areaId The area's ID
+	 */
+	async openArea(areaId: string): Promise<void>
+	{
+		if (!this.confirmLeave())
+		{
+			return;
+		}
+
+		await this.loadArea(areaId);
+
+		// The row or link that opened it is hidden, so focus moves to the editor
+		if (this.area?.id === areaId)
+		{
+			this.editorView.scrollIntoView({ block: 'start' });
+			this.name.focus({ preventScroll: true });
+		}
+	}
+
+	/**
+	 * Opens a region or area, or the list for none, that the page's history went back or forward to, first
+	 * asking whether to discard the unsaved changes of the region or area the editor shows
+	 *
+	 * @param place The region or area, or undefined for the list
+	 * @return False when the player kept the changes, leaving the tab as it was
+	 */
+	showPlace(place: PlaceRef | undefined): boolean
+	{
+		if (!this.confirmLeave())
+		{
+			return(false);
+		}
+
+		void this.loadPlace(place);
 
 		return(true);
 	}
 
 	/**
-	 * Opens an area in the area editor, discarding any unsaved changes of the area it shows
+	 * Opens a region or area, or the list for none, discarding any unsaved changes of the region or area
+	 * the tab shows
+	 *
+	 * @param place The region or area, or undefined for the list
+	 */
+	private async loadPlace(place: PlaceRef | undefined): Promise<void>
+	{
+		if (place === undefined)
+		{
+			await this.showListView();
+		}
+		else if (place.kind === 'area')
+		{
+			await this.loadArea(place.id);
+		}
+		else
+		{
+			await this.loadRegion(place.id);
+		}
+	}
+
+	/**
+	 * Opens a region in the region editor, discarding any unsaved changes of the region or area the tab
+	 * shows, once the regions have loaded, as they haven't when the page opens at a region
+	 *
+	 * @param regionId The region's ID
+	 */
+	private async loadRegion(regionId: string): Promise<void>
+	{
+		const universe = this.universeOpen;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		// The region editor goes back to the list for a region it can't find, as for a role that can't load them
+		if (!canEditWorld(universe.role) || (this.areasLoadedFor === universe))
+		{
+			this.showRegion(regionId);
+			return;
+		}
+
+		const version = ++this.openVersion;
+
+		this.hideAreaEditor();
+		this.regionEditor.hide();
+		this.listView.hidden = true;
+
+		try
+		{
+			await Promise.all([
+				this.loadAreas(universe),
+				this.loadTiles(universe)
+			]);
+		}
+		catch
+		{
+			// The list loads them again, saying why when it can't
+			if (version === this.openVersion)
+			{
+				await this.showListView();
+			}
+
+			return;
+		}
+
+		if (version === this.openVersion)
+		{
+			this.showRegion(regionId);
+		}
+	}
+
+	/**
+	 * Opens a region in the region editor and moves focus to it, its changes being thrown away already
+	 *
+	 * @param regionId The region's ID
+	 */
+	private showRegion(regionId: string): void
+	{
+		const universe = this.universeOpen;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		const region: PlaceRef = { kind: 'region', id: regionId };
+
+		++this.openVersion;
+		this.hideAreaEditor();
+		// A new region has no address until it is saved
+		this.onPlaceChanged((isNewPlace(region) ? undefined : region));
+		this.listView.hidden = true;
+		this.regionEditor.show(universe, regionId);
+		this.regionEditor.focus();
+	}
+
+	/**
+	 * Hides the area editor, throwing its unsaved changes away
+	 */
+	private hideAreaEditor(): void
+	{
+		this.area = undefined;
+		this.areaEditor.hide();
+		this.areaChanges.markSaved();
+		this.changedSince.hide();
+		this.editorView.hidden = true;
+		showMessage(this.claimLine, undefined);
+		this.shownClaim = [];
+	}
+
+	/**
+	 * Opens an area in the area editor, discarding any unsaved changes of the region or area it shows
 	 *
 	 * @param areaId The area's ID
 	 */
 	private async loadArea(areaId: string): Promise<void>
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 
 		if (!universe)
 		{
@@ -462,20 +741,17 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		// A role that can't load areas gets the empty list instead
 		if (!canEditWorld(universe.role))
 		{
-			await this.showList();
+			await this.showListView();
 			return;
 		}
 
 		const version = ++this.openVersion;
 
 		// Any unsaved painting has been discarded, so the area's cells load afresh
-		this.areaEditor.hide();
-		this.areaChanges.markSaved();
-		this.changedSince.hide();
-		showMessage(this.claimLine, undefined);
-		this.shownClaim = [];
+		this.hideAreaEditor();
+		this.regionEditor.hide();
 		// A new area has no address until it is saved
-		this.onAreaChanged((isNewAreaId(areaId) ? undefined : areaId));
+		this.onPlaceChanged((isNewAreaId(areaId) ? undefined : { kind: 'area', id: areaId }));
 		this.listView.hidden = true;
 		this.editorView.hidden = false;
 		this.fields.disabled = true;
@@ -513,39 +789,47 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Shows the list of areas, loading them when a save may have changed them since they last loaded
+	 * Shows the list of regions and areas, loading them when a save may have changed them since they
+	 * last loaded
 	 */
-	private async showList(): Promise<void>
+	showList(): void
 	{
-		const universe = this.universe;
+		void this.showListView();
+	}
+
+	/**
+	 * Shows the list of regions and areas, loading them afresh
+	 */
+	private async showListView(): Promise<void>
+	{
+		const universe = this.universeOpen;
 		const version = ++this.openVersion;
 
-		this.area = undefined;
-		this.onAreaChanged(undefined);
-		this.areaEditor.hide();
-		// The hidden area editor is filled afresh when an area opens, so nothing left in it can be saved
-		this.areaChanges.markSaved();
-		this.changedSince.hide();
+		this.hideAreaEditor();
+		this.regionEditor.hide();
+		this.onPlaceChanged(undefined);
 		this.listView.hidden = false;
-		this.editorView.hidden = true;
 		this.showClaim();
 
 		// Only roles that change the world may load the areas (see shared/src/editor.ts)
 		if (!universe || !canEditWorld(universe.role))
 		{
-			this.list.replaceChildren();
+			this.list.clear();
 			return;
 		}
 
 		try
 		{
-			await this.loadAreas(universe);
+			await Promise.all([
+				this.loadAreas(universe),
+				this.loadTiles(universe)
+			]);
 		}
 		catch (error)
 		{
 			if (version === this.openVersion)
 			{
-				this.list.replaceChildren();
+				this.list.clear();
 				showMessage(this.empty, describeEditorError(error, {
 					id: 'editor.areas.listFailed',
 					defaultMessage: 'Could not list the areas.',
@@ -563,34 +847,72 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Shows the list of areas as last loaded, with the areas added and deleted since the tab was last saved
+	 * Shows the list of regions and areas as last loaded, with the tab's changes
 	 */
 	private renderList(): void
 	{
-		const listing = areasTabListing(this.allAreas());
+		const listed: ListedPlace[] = [
+			...this.regions().map((region): ListedPlace => ({
+				place: { kind: 'region', id: region.id },
+				name: region.name,
+				parents: region.parents,
+				tags: this.tagsOf({ kind: 'region', id: region.id }, true),
+				deleted: this.staged.isPlaceDeleted({ kind: 'region', id: region.id })
+			})),
+			...this.areas().map((area): ListedPlace => ({
+				place: { kind: 'area', id: area.id },
+				name: area.name,
+				parents: area.parents,
+				tags: this.tagsOf({ kind: 'area', id: area.id }, area.resolved.enabled),
+				deleted: this.staged.isDeleted(area.id)
+			}))
+		];
 
-		// An area the listing passed through is shown above the areas inside it, indented by how deep each is
-		this.list.replaceChildren(
-			...listing.path.map((area, depth) => this.createItem(area, depth)),
-			...listing.areas.map((area) => this.createItem(area, listing.path.length))
-		);
-		showMessage(this.empty, ((listing.areas.length === 0)
-			? t({
-				id: 'editor.areas.none',
-				defaultMessage: 'There are no areas yet.',
-				description: 'Shown instead of the list of areas when the universe has none'
-			})
-			: undefined));
+		this.list.show(listed);
 	}
 
 	/**
-	 * Loads every area of the universe, sharing the load with the other tabs (see EditorApi.sendShared())
+	 * What the list says of a region or area
+	 *
+	 * @param place The region or area
+	 * @param enabled Whether it is enabled, as last saved for an area
+	 * @return The tags
+	 */
+	private tagsOf(place: PlaceRef, enabled: boolean): string[]
+	{
+		const node = ((place.kind === 'region') ? this.regions().find((region) => (region.id === place.id)) : undefined);
+
+		return([
+			((place.id === this.loaded.lobbyAreaId)
+				? t({
+					id: 'editor.areas.lobbyTag',
+					defaultMessage: 'lobby',
+					description: 'Under an area in the list of areas, for the area players walk around in the universe\'s lobby'
+				})
+				: undefined),
+			((place.id === this.loaded.startingAreaId)
+				? t({
+					id: 'editor.areas.startingAreaTag',
+					defaultMessage: 'starting area',
+					description: 'Under an area in the list of areas, for the area new characters start in'
+				})
+				: undefined),
+			((!enabled || (node?.enabled === false)) ? t(editorMessages.disabledTag) : undefined),
+			(isNewPlace(place) ? stagedTag('new', false) : undefined),
+			((place.kind === 'area') && this.claims.has(place.id) ? claimTag(this.claims.get(place.id) ?? []) : undefined)
+		].filter((tag) => (tag !== undefined)));
+	}
+
+	/**
+	 * Loads every region and area of the universe, sharing the load with the other tabs (see
+	 * EditorApi.sendShared())
 	 *
 	 * @param universe The universe
 	 */
 	private async loadAreas(universe: EditableUniverse): Promise<void>
 	{
-		this.areas = await this.api.listAreas(universe.id);
+		this.loaded = await this.api.listAreas(universe.id);
+		this.areasLoadedFor = universe;
 		this.onAreasLoaded();
 	}
 
@@ -602,6 +924,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private async loadTiles(universe: EditableUniverse): Promise<void>
 	{
 		this.savedTiles = await this.api.listAllTiles(universe.id);
+		this.tilesLoadedFor = universe;
 		this.applyTileChanges();
 	}
 
@@ -629,8 +952,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	{
 		const { tiles, deleted } = this.stagedTiles.withChanges(this.savedTiles);
 
-		this.tiles = tiles;
-		this.deletedTiles = deleted;
+		this.tileList = tiles;
+		this.tilesDeleted = deleted;
 	}
 
 	/**
@@ -643,24 +966,26 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		if (this.area)
 		{
-			this.fillDefaultTiles(this.indoors.checked, Number(this.defaultTile.value));
-			void this.areaEditor.setTiles(this.tiles, this.deletedTiles, this.indoors.checked);
+			this.settingsChanged();
+			void this.areaEditor.setTiles(this.tileList, this.tilesDeleted, this.isIndoors());
 		}
+
+		this.regionEditor.refresh();
 	}
 
 	/**
-	 * Follows a save made in another window that changed areas: loads the list again, and the area open
-	 * when the save changed it and it has no unsaved changes here; with them, keeps them and says above
-	 * the area's settings what the save changed. An area the save deleted is taken as deleted here too
-	 * (StagedAreas.markDeleted()). Painting the open area's cells is left to followPainting()
+	 * Follows a save made in another window that changed regions or areas: loads the list again, and the
+	 * area open when the save changed it and it has no unsaved changes here; with them, keeps them and says
+	 * above the area's settings what the save changed. An area the save deleted is taken as deleted here
+	 * too. Painting the open area's cells is left to followPainting()
 	 *
 	 * @param save The save
-	 * @return True when the save changed an area with unsaved changes here: the area open, or one being
-	 * deleted when the tab is saved
+	 * @return True when the save changed a region or area with unsaved changes here: the one open, or one
+	 * being deleted when the tab is saved
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 		const changed = save.details.filter((detail) => AREA_SUBJECTS.has(detail.subject));
 
 		if (!universe || (changed.length === 0))
@@ -668,20 +993,50 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
-		const deletedAreaIds = new Set(changed.flatMap((detail) => (((detail.subject === 'area') && (detail.action === 'deleted') && (typeof detail.id === 'string')) ? [detail.id] : [])));
+		const deletedOf = (subject: AuditSubject): Set<string> => new Set(changed.flatMap((detail) => (((detail.subject === subject) && (detail.action === 'deleted') && (typeof detail.id === 'string')) ? [detail.id] : [])));
+		const deletedAreaIds = deletedOf('area');
+		const deletedRegionIds = deletedOf('region');
 
 		for (const areaId of deletedAreaIds)
 		{
-			this.staged.markDeleted(areaId);
+			this.staged.markDeleted(areaId, (this.loaded.areas.find((area) => (area.id === areaId))?.parents ?? []));
+		}
+
+		for (const regionId of deletedRegionIds)
+		{
+			this.staged.markPlaceDeleted({ kind: 'region', id: regionId });
+		}
+
+		const deletedHere = changed.some((detail) => ((typeof detail.id === 'string') && (this.staged.isDeleted(detail.id) || this.staged.isPlaceDeleted({ kind: 'region', id: detail.id }))));
+		const regionChanged = this.regionEditor.otherSaved(save, changed);
+
+		if (regionChanged)
+		{
+			return(true);
 		}
 
 		const open = this.area;
 		const aboutOpen = changed.filter((detail) => ((open !== undefined) && (detail.id === open.id)));
-		const deletedHere =changed.some((detail) => ((typeof detail.id === 'string') && this.staged.isDeleted(detail.id)));
 
 		if (open === undefined)
 		{
-			void this.showList();
+			if (!this.listView.hidden)
+			{
+				void this.showListView();
+			}
+			else
+			{
+				void this.loadAreas(universe)
+					.then(() =>
+					{
+						this.regionEditor.reshow();
+					})
+					.catch(() =>
+					{
+						// The regions and areas stay as they were last loaded
+					});
+			}
+
 			return(deletedHere);
 		}
 
@@ -690,10 +1045,15 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		if (rest.length === 0)
 		{
-			void this.loadAreas(universe).catch(() =>
-			{
-				// The areas stay as they were last loaded, until the next area opens
-			});
+			void this.loadAreas(universe)
+				.then(() =>
+				{
+					this.settingsChanged();
+				})
+				.catch(() =>
+				{
+					// The areas stay as they were last loaded, until the next area opens
+				});
 			return(deletedHere);
 		}
 
@@ -706,7 +1066,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 			if (deletedAreaIds.has(open.id) && !isNewAreaId(open.id))
 			{
-				this.recreateOpenArea(open, deletedAreaIds);
+				this.recreateOpenArea(open);
 			}
 
 			return(true);
@@ -717,7 +1077,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			linkDialog.close();
 		}
 
-		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showList() : this.refreshArea(open.id, save.name, rest));
+		void (aboutOpen.some((detail) => ((detail.subject === 'area') && (detail.action === 'deleted'))) ? this.showListView() : this.refreshArea(open.id, save.name, rest));
 
 		return(deletedHere);
 	}
@@ -725,25 +1085,18 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Keeps the area open, which a save in another window deleted while it had unsaved changes here, as a
 	 * new area with the settings it was loaded with and its cells as they show here (AreaEditor.recreate()),
-	 * so saving adds it again with the changes made to it, and deleting it discards them. One inside an
-	 * area the save deleted too becomes a top-level area, as the server makes the areas inside it
+	 * so saving adds it again with the changes made to it, and deleting it discards them. Parents the save
+	 * deleted are left out, as the server leaves them out of the areas inside them
 	 *
 	 * @param area The area, as it was loaded
-	 * @param deletedAreaIds The areas the save deleted
 	 */
-	private recreateOpenArea(area: EditorArea, deletedAreaIds: ReadonlySet<string>): void
+	private recreateOpenArea(area: EditorArea): void
 	{
-		const parentDeleted = ((area.parentAreaId !== null) && deletedAreaIds.has(area.parentAreaId));
-
-		if ((this.parent.value !== '') && deletedAreaIds.has(this.parent.value))
-		{
-			this.parent.value = '';
-			this.updateParentMessage();
-		}
-
+		const exists = (parent: PlaceRef): boolean => ((parent.kind === 'region') ? this.regions().some((region) => (region.id === parent.id)) : this.areas().some((other) => ((other.id === parent.id) && (other.id !== area.id))));
+		const parents = area.parents.filter(exists);
 		const added = this.staged.create({
 			name: area.name,
-			parentAreaId: (parentDeleted ? null : area.parentAreaId),
+			parents,
 			enabled: area.enabled,
 			indoors: area.indoors,
 			lightLevel: area.lightLevel,
@@ -754,10 +1107,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			loopsNorthSouth: area.loopsNorthSouth
 		});
 
+		this.parents.set(this.parents.value.filter(exists), this.names(), this.parentChoices({ kind: 'area', id: added.id }, 'area', this.areaOverride()));
 		this.areaEditor.recreate(added.id, added.bounds);
 		this.area = { ...area, id: added.id };
 		// A new area has no address until it is saved
-		this.onAreaChanged(undefined);
+		this.onPlaceChanged(undefined);
 		this.showClaim();
 	}
 
@@ -812,9 +1166,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		if (this.area)
 		{
-			this.childList.replaceChildren(...childAreas(this.allAreas(), this.area.id).map((child) => this.createItem(child, 0)));
+			this.showChildren(this.area.id);
 		}
 
+		this.regionEditor.refresh();
 		this.showClaim();
 	}
 
@@ -863,7 +1218,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private async refreshArea(areaId: string, name: string, details: readonly SavedEditDetail[]): Promise<void>
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 		const version = this.openVersion;
 
 		if (!universe)
@@ -910,10 +1265,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	async reloadTiles(): Promise<void>
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 		const version = this.openVersion;
 
-		if (!universe || !this.area)
+		if (!universe)
 		{
 			return;
 		}
@@ -933,94 +1288,391 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private universeId(): string
 	{
-		if (!this.universe)
+		if (!this.universeOpen)
 		{
 			throw new Error('The Areas tab has no universe open');
 		}
 
-		return(this.universe.id);
+		return(this.universeOpen.id);
 	}
 
 	/**
-	 * Every area of the universe as last loaded, then the areas added since the tab was last saved
+	 * The universe the tab shows
+	 *
+	 * @return The universe, or undefined while none has opened
+	 */
+	universe(): EditableUniverse | undefined
+	{
+		return(this.universeOpen);
+	}
+
+	/**
+	 * Every region of the universe as last loaded, then the regions added since the tab was last saved,
+	 * with the parents the tab's changes give them
+	 *
+	 * @return The regions, including those that will be deleted
+	 */
+	regions(): EditorRegion[]
+	{
+		return([...this.loaded.regions, ...this.staged.newRegions()].map((region) => ({
+			...region,
+			parents: [...(this.staged.movedParents({ kind: 'region', id: region.id }) ?? region.parents)]
+		})));
+	}
+
+	/**
+	 * Every area of the universe as last loaded, then the areas added since the tab was last saved, with
+	 * the parents the tab's changes give them
 	 *
 	 * @return The areas, including those that will be deleted
 	 */
-	private allAreas(): EditorAreaSummary[]
+	areas(): EditorAreaSummary[]
 	{
-		return([
-			...this.areas.areas,
-			...this.staged.newAreas().map(({ id, name, parentAreaId, enabled, indoors }) => ({ id, name, parentAreaId, enabled, indoors }))
-		]);
+		return([...this.loaded.areas, ...this.staged.newAreas()].map((area) => ({
+			...area,
+			parents: [...(this.staged.movedParents({ kind: 'area', id: area.id }) ?? area.parents)]
+		})));
 	}
 
 	/**
-	 * An area's entry in a list, opening it in the area editor
+	 * The tiles the universe can use, with the Tilesets tab's changes
 	 *
-	 * @param area The area
-	 * @param depth How far to indent it
+	 * @return The tiles
+	 */
+	tiles(): readonly EditorTile[]
+	{
+		return(this.tileList);
+	}
+
+	/**
+	 * The tiles the Tilesets tab will delete
+	 *
+	 * @return Their IDs
+	 */
+	deletedTiles(): ReadonlySet<number>
+	{
+		return(new Set(this.tilesDeleted.keys()));
+	}
+
+	/**
+	 * Names regions and areas
+	 *
+	 * @return The namer
+	 */
+	names(): PlaceNames
+	{
+		return(placeNamer([
+			...this.regions().map((region) => ({ kind: 'region' as const, id: region.id, name: region.name })),
+			...this.areas().map((area) => ({ kind: 'area' as const, id: area.id, name: area.name }))
+		]));
+	}
+
+	/**
+	 * The regions and areas as the tab's changes leave them, with the region or area open as its editor
+	 * shows it, the kinds of the tiles as the Tilesets tab's changes leave them, and the lobby's area. The
+	 * places that will be deleted are left out, an area's taking its place in the parents of the areas
+	 * inside it, as the server does
+	 *
+	 * @param override The region or area open, as its editor shows it
+	 * @return The world
+	 */
+	world(override?: PlaceOverride): PlaceWorld
+	{
+		const paint = (kind: PlaceKind, settings: PlaceNode): PlaceSettings => ({ ...settings, defaultTileId: this.defaultTileFor({ kind, id: settings.id }, settings.defaultTileId) });
+		let regions: PlaceNode[] = this.regions().map(({ builderIds: _builderIds, ...region }) => ({ ...region, ...paint('region', region) }));
+		let areas: AreaNode[] = this.areas().map(({ resolved: _resolved, ...area }) => ({ ...area, ...paint('area', area) }));
+
+		if (override)
+		{
+			if (override.place.kind === 'region')
+			{
+				regions = regions.map((region) => ((region.id === override.place.id) ? { ...override.node, ...paint('region', override.node) } : region));
+			}
+			else
+			{
+				areas = areas.map((area) => ((area.id === override.place.id) ? { ...(override.node as AreaNode), ...paint('area', override.node) } : area));
+			}
+		}
+
+		// The deleted places go, those inside a deleted area taking its parents
+		const deletedAreas = new Map(areas
+			.filter((area) => this.staged.isDeleted(area.id))
+			.map((area) => [area.id, area.parents]));
+		const replace = (parents: readonly PlaceRef[], seen: Set<string>): PlaceRef[] => parents.flatMap((parent) =>
+		{
+			if (this.staged.isPlaceDeleted(parent))
+			{
+				if ((parent.kind === 'area') && !seen.has(parent.id))
+				{
+					seen.add(parent.id);
+					return(replace((deletedAreas.get(parent.id) ?? []), seen));
+				}
+
+				return([]);
+			}
+
+			return([parent]);
+		});
+		const unique = (parents: PlaceRef[]): PlaceRef[] => parents.filter((parent, index) => (parents.findIndex((each) => samePlace(each, parent)) === index));
+
+		regions = regions
+			.filter((region) => !this.staged.isPlaceDeleted({ kind: 'region', id: region.id }))
+			.map((region) => ({ ...region, parents: unique(replace(region.parents, new Set())) }));
+		areas = areas
+			.filter((area) => !this.staged.isDeleted(area.id))
+			.map((area) => ({ ...area, parents: unique(replace(area.parents, new Set())) }));
+
+		const tileKinds = new Map<number, TileUsedFor>(this.tileList
+			.filter((tile) => !this.tilesDeleted.has(tile.id))
+			.map((tile) => [tile.id, { indoors: tile.indoors, outdoors: tile.outdoors }]));
+
+		return({ regions, areas, tileKinds, lobbyAreaId: this.loaded.lobbyAreaId });
+	}
+
+	/**
+	 * Whether the player may change a region or area: creators and the site admin role every one, and
+	 * builders those within the regions assigned to them, in a version they may change
+	 *
+	 * @param place The region or area
+	 * @return True when they may
+	 */
+	canEditPlace(place: PlaceRef): boolean
+	{
+		const universe = this.universeOpen;
+
+		if (!universe || !canEditWorldOpen(universe))
+		{
+			return(false);
+		}
+
+		if (editsEveryPlace(universe.role))
+		{
+			return(true);
+		}
+
+		const world = this.world();
+		const graph = new PlaceGraph(world.regions, world.areas);
+
+		return(isWithinAssignments(graph, place, new Set(universe.assignedRegionIds)));
+	}
+
+	/**
+	 * What a region or area can be put inside, besides its parents: the regions (and, for an area without
+	 * a parent area, the areas) that don't put it inside itself or nest anything more than ten levels
+	 * deep, leaving out those that will be deleted and, for a builder, those outside their assignments
+	 *
+	 * @param place The region or area
+	 * @param kind Whether it is a region or an area
+	 * @param override It, as its editor shows it
+	 * @return The choices, by name
+	 */
+	parentChoices(place: PlaceRef, kind: 'region' | 'area', override: PlaceOverride): ParentChoice[]
+	{
+		const world = this.world(override);
+		const graph = new PlaceGraph(world.regions, world.areas);
+		const names = this.names();
+		const hasParentArea = override.node.parents.some((parent) => (parent.kind === 'area'));
+		const candidates: PlaceRef[] = [
+			...world.regions.map((region): PlaceRef => ({ kind: 'region', id: region.id })),
+			...(((kind === 'area') && !hasParentArea) ? world.areas.map((area): PlaceRef => ({ kind: 'area', id: area.id })) : [])
+		];
+
+		return(candidates
+			.filter((candidate) => (canTakeParent(graph, place, candidate) && this.canEditPlace(candidate)))
+			.map((candidate) => ({
+				place: candidate,
+				name: names(candidate),
+				detail: (formatList(graph.parentsOf(candidate).map(names), 'conjunction') || undefined)
+			}))
+			.sort((first, second) => first.name.localeCompare(second.name)));
+	}
+
+	/**
+	 * What a region or area inherits with the changes its editor shows
+	 *
+	 * @param place The region or area
+	 * @param override It, as its editor shows it
+	 * @return What the fields show
+	 */
+	inheritedView(place: PlaceRef, override: PlaceOverride): InheritedView
+	{
+		const universe = this.universeOpen;
+		const world = this.world(override);
+		const graph = new PlaceGraph(world.regions, world.areas);
+		const blank = this.world({ place, node: { ...override.node, ...BLANK_SETTINGS } });
+		const blankGraph = new PlaceGraph(blank.regions, blank.areas);
+
+		return({
+			inherited: resolvePlace(blankGraph, place, world.tileKinds, world.lobbyAreaId),
+			resolved: resolvePlace(graph, place, world.tileKinds, world.lobbyAreaId),
+			names: this.names(),
+			tiles: this.tileList,
+			deletedTiles: this.deletedTiles(),
+			ruleset: (universe?.ruleset ?? 'pf1e'),
+			topLevel: ((place.kind === 'region') && (override.node.parents.length === 0)),
+			region: (place.kind === 'region')
+		});
+	}
+
+	/**
+	 * Lists the problems the tab's changes, with a region or area open as its editor shows it, make for
+	 * it and what is below it
+	 *
+	 * @param place The region or area
+	 * @param override It, as its editor shows it
+	 * @param list Where the problems are listed
+	 * @param container What holds the list, hidden when there are none
+	 */
+	problemsFor(place: PlaceRef, override: PlaceOverride, list: HTMLElement, container: HTMLElement): void
+	{
+		const universe = this.universeOpen;
+		const world = this.world(override);
+		const resolution = resolveAreaSettings(world);
+		const below = new Set([placeKey(place), ...resolution.graph.descendantsOf(place).map(placeKey)]);
+		const names = this.names();
+		const problems = resolution.problems.filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
+
+		this.listProblems(problems, names, list, container, (universe?.ruleset ?? 'pf1e'));
+	}
+
+	/**
+	 * Lists problems, each linking to the area it is about
+	 *
+	 * @param problems The problems
+	 * @param names Names the places
+	 * @param list Where they are listed
+	 * @param container What holds the list, hidden when there are none
+	 * @param ruleset The universe's ruleset
+	 */
+	private listProblems(problems: readonly PlaceProblem[], names: PlaceNames, list: HTMLElement, container: HTMLElement, ruleset: EditableUniverse['ruleset']): void
+	{
+		list.replaceChildren(...problems.map((problem) =>
+		{
+			const item = document.createElement('li');
+			const place = problemPlaces(problem)[0];
+			const button = document.createElement('button');
+
+			button.type = 'button';
+			button.className = 'link-button';
+			button.textContent = describeProblem(problem, names, this.tileList, ruleset);
+			button.addEventListener('click', () =>
+			{
+				this.open(place);
+			});
+			item.append(button);
+
+			return(item);
+		}));
+		container.hidden = (problems.length === 0);
+	}
+
+	/**
+	 * A region's or area's entry in a list, opening its editor
+	 *
+	 * @param place The region or area
 	 * @return The list item
 	 */
-	private createItem(area: EditorAreaSummary, depth: number): HTMLLIElement
+	listItem(place: PlaceRef): HTMLLIElement
 	{
 		const item = document.createElement('li');
 		const button = document.createElement('button');
 		const name = document.createElement('strong');
 		const details = document.createElement('span');
-		const tags = [
-			(area.indoors
-				? t({
-					id: 'editor.areas.indoorsTag',
-					defaultMessage: 'indoors',
-					description: 'Under an area in the list of areas, for an area that is indoors'
-				})
-				: t({
-					id: 'editor.areas.outdoorsTag',
-					defaultMessage: 'outdoors',
-					description: 'Under an area in the list of areas, for an area that is outdoors'
-				})),
-			((area.id === this.areas.lobbyAreaId)
-				? t({
-					id: 'editor.areas.lobbyTag',
-					defaultMessage: 'lobby',
-					description: 'Under an area in the list of areas, for the area players walk around in the universe\'s lobby'
-				})
-				: undefined),
-			((area.id === this.areas.startingAreaId)
-				? t({
-					id: 'editor.areas.startingAreaTag',
-					defaultMessage: 'starting area',
-					description: 'Under an area in the list of areas, for the area new characters start in'
-				})
-				: undefined),
-			(area.enabled
-				? undefined
-				: t(editorMessages.disabledTag)),
-			(isNewAreaId(area.id) ? stagedTag('new', false) : undefined),
-			(this.claims.has(area.id) ? claimTag(this.claims.get(area.id) ?? []) : undefined)
-		].filter((tag) => (tag !== undefined));
+		const area = ((place.kind === 'area') ? this.areas().find((each) => (each.id === place.id)) : undefined);
 
-		item.style.paddingLeft = `${depth * 20}px`;
 		button.type = 'button';
-		button.className = 'universe-item';
-		name.textContent = area.name;
+		button.className = `universe-item place-${place.kind}`;
+		name.textContent = this.names()(place);
 		details.className = 'universe-ruleset';
-		details.textContent = formatList(tags);
+		details.textContent = formatList(this.tagsOf(place, (area?.resolved.enabled ?? true)));
 		button.append(name, details);
-
-		if (this.staged.isDeleted(area.id))
-		{
-			item.classList.add('staged-deleted');
-			name.append(deletedNote());
-		}
 		button.addEventListener('click', () =>
 		{
-			void this.openArea(area.id);
+			this.open(place);
 		});
-
 		item.append(button);
 
 		return(item);
+	}
+
+	/**
+	 * Lists the areas inside the area open
+	 *
+	 * @param areaId The area's ID
+	 */
+	private showChildren(areaId: string): void
+	{
+		const children = this.areas().filter((area) => area.parents.some((parent) => ((parent.kind === 'area') && (parent.id === areaId))));
+
+		this.childList.replaceChildren(...children.map((child) => this.listItem({ kind: 'area', id: child.id })));
+		this.children.hidden = (children.length === 0);
+	}
+
+	/**
+	 * The area open as its editor shows it
+	 *
+	 * @return The override
+	 */
+	private areaOverride(): PlaceOverride
+	{
+		const area = this.area;
+
+		return({
+			place: { kind: 'area', id: (area?.id ?? '') },
+			node: {
+				...(area ?? BLANK_SETTINGS),
+				...this.settings.read(),
+				id: (area?.id ?? ''),
+				name: this.name.value,
+				parents: this.parents.value,
+				loopsEastWest: this.loopsEastWest.checked,
+				loopsNorthSouth: this.loopsNorthSouth.checked
+			}
+		});
+	}
+
+	/**
+	 * Whether the area open is indoors, as its editor shows it: its own choice, or what it inherits
+	 *
+	 * @return True when it is
+	 */
+	private isIndoors(): boolean
+	{
+		return(this.settings.kind() ?? false);
+	}
+
+	/**
+	 * Shows what the area open inherits, the problems its settings make, and the tiles it can paint, as
+	 * a setting or parent changes
+	 */
+	private settingsChanged(): void
+	{
+		const area = this.area;
+
+		if (!area)
+		{
+			return;
+		}
+
+		const place: PlaceRef = { kind: 'area', id: area.id };
+		const override = this.areaOverride();
+		const faerie = this.settings.isFaerie();
+
+		this.settings.showInherited(this.inheritedView(place, override));
+		this.parents.setChoices(this.parentChoices(place, 'area', override));
+		this.loopsHint.hidden = !faerie;
+		this.loopsEastWest.disabled = faerie;
+		this.loopsNorthSouth.disabled = faerie;
+
+		if (faerie)
+		{
+			this.loopsEastWest.checked = false;
+			this.loopsNorthSouth.checked = false;
+		}
+
+		this.problemsFor(place, this.areaOverride(), this.problemList, this.problems);
+		this.areaEditor.showTilesFor(this.isIndoors());
+		this.areaChanges.check();
 	}
 
 	/**
@@ -1031,42 +1683,20 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private showArea(universe: EditableUniverse, area: EditorArea): void
 	{
+		const place: PlaceRef = { kind: 'area', id: area.id };
 		const deleted = this.staged.isDeleted(area.id);
-		const editable = (canEditWorldOpen(universe) && !deleted);
-		const areas = this.allAreas();
-		const excluded = descendantAreaIds(areas, area.id).add(area.id);
-		const parents = parentAreas(areas);
-		const isLobby = (area.id === this.areas.lobbyAreaId);
-		const isStart = (area.id === this.areas.startingAreaId);
+		const editable = (this.canEditPlace(place) && !deleted);
+		const isLobby = (area.id === this.loaded.lobbyAreaId);
+		const isStart = (area.id === this.loaded.startingAreaId);
 
 		this.area = area;
-		const noParent = t({
-			id: 'editor.area.noParent',
-			defaultMessage: 'None (a top-level area)',
-			description: 'Choice of parent area for an area that isn\'t inside another, also shown in the empty Parent area field, where typing finds an area by name'
-		});
-
-		this.parentField.placeholder = noParent;
-		this.parent.setChoices([
-			{
-				value: '',
-				name: noParent
-			},
-			...areas
-				.filter((other) => (!excluded.has(other.id) && (!this.staged.isDeleted(other.id) || (other.id === area.parentAreaId))))
-				.map((other) => ({
-					value: other.id,
-					name: other.name,
-					detail: parents.get(other.id)?.name
-				}))
-		]);
 		this.fillSettings(area);
 		this.showLobby(isLobby);
 		this.showSize(area);
-		this.updateParentMessage();
 		this.fields.disabled = !editable;
 		this.name.disabled = !editable;
-		this.deleteButton.hidden = (!canEditWorldOpen(universe) || isLobby || isStart);
+		this.parents.setDisabled(!editable);
+		this.deleteButton.hidden = (!this.canEditPlace(place) || isLobby || isStart);
 		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
 			id: 'editor.area.delete',
 			defaultMessage: 'Delete Area',
@@ -1074,36 +1704,47 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		}));
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
-
-		const children = childAreas(areas, area.id);
-
-		this.childList.replaceChildren(...children.map((child) => this.createItem(child, 0)));
-		this.children.hidden = (children.length === 0);
+		this.showChildren(area.id);
 		this.showClaim();
 		this.areaChanges.markSaved();
-		void this.areaEditor.show(universe, area, this.tiles, this.deletedTiles, areas.filter((other) => !this.staged.isDeleted(other.id)), editable);
+		void this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.areas().filter((other) => !this.staged.isDeleted(other.id)), editable);
 	}
 
 	/**
-	 * Fills the area editor's settings fields, after its parent choices
+	 * The settings an area works out with the tab's changes, as the editor draws it: those stored for a
+	 * saved area, and those worked out for a new one
+	 *
+	 * @param area The area
+	 * @return The settings
+	 */
+	private resolvedOf(area: EditorArea): EditorArea['resolved']
+	{
+		if (!isNewAreaId(area.id))
+		{
+			return(area.resolved);
+		}
+
+		const world = this.world();
+
+		return(resolveAreaSettings(world).stored.get(area.id) ?? area.resolved);
+	}
+
+	/**
+	 * Fills the area editor's settings fields
 	 *
 	 * @param settings The settings
 	 */
-	private fillSettings(settings: AreaSettings): void
+	private fillSettings(settings: EditorArea): void
 	{
-		this.name.value = settings.name;
-		this.enabled.checked = settings.enabled;
-		this.parent.value = (settings.parentAreaId ?? '');
-		this.outdoors.checked = !settings.indoors;
-		this.indoors.checked = settings.indoors;
-		this.lightLevel.value = settings.lightLevel;
-		this.showLightField();
-		this.fillDefaultTiles(settings.indoors, settings.defaultTileId);
-		this.time.value = settings.passageOfTime;
-		this.faerie.value = (settings.faerieMorning ?? FAERIE_MORNINGS[0]);
-		this.loopsEastWest.checked = settings.loopsEastWest;
-		this.loopsNorthSouth.checked = settings.loopsNorthSouth;
-		this.updateTimeFields();
+		const place: PlaceRef = { kind: 'area', id: settings.id };
+		const node = { ...settings, parents: (this.staged.movedParents(place) ?? settings.parents) };
+
+		this.name.value = node.name;
+		this.parents.set(node.parents, this.names(), this.parentChoices(place, 'area', { place, node }));
+		this.loopsEastWest.checked = node.loopsEastWest;
+		this.loopsNorthSouth.checked = node.loopsNorthSouth;
+		this.settings.fill(node, this.inheritedView(place, { place, node }));
+		this.settingsChanged();
 	}
 
 	/**
@@ -1117,13 +1758,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	private showSavedArea(universe: EditableUniverse, area: EditorArea, collected: AreaSettings | undefined): void
 	{
 		const shown = this.shownSettings();
-		const changed = ((collected === undefined) ? [] : (Object.keys(shown) as (keyof AreaSettings)[]).filter((key) => (shown[key] !== collected[key])));
+		const changed = ((collected === undefined) ? [] : (Object.keys(shown) as (keyof AreaSettings)[]).filter((key) => (JSON.stringify(shown[key]) !== JSON.stringify(collected[key]))));
 
 		this.showArea(universe, area);
 
 		if (changed.length > 0)
 		{
 			this.fillSettings({
+				...area,
 				...this.shownSettings(),
 				...Object.fromEntries(changed.map((key) => [key, shown[key]]))
 			});
@@ -1152,83 +1794,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Lists the tiles an area can use by default: the enabled indoor tiles for an indoor area or outdoor
-	 * tiles for an outdoor one, leaving out tiles the Tilesets tab will delete, and the selected tile even
-	 * when it is disabled or for the other kind, so switching the area between them doesn't change its
-	 * default tile
-	 *
-	 * @param indoors Whether the area is indoors
-	 * @param selectedTileId The tile to select
-	 */
-	private fillDefaultTiles(indoors: boolean, selectedTileId: number): void
-	{
-		const ruleset = this.universe?.ruleset;
-
-		setOptions(this.defaultTile, this.tiles
-			.filter((tile) => ((canPaintTile(tile, indoors) && !this.deletedTiles.has(tile.id)) || (tile.id === selectedTileId)))
-			.map((tile) => ({
-				value: String(tile.id),
-				label: ((ruleset === undefined) ? (tile.name ?? '') : tileName(tile, ruleset))
-			})));
-		this.defaultTile.value = String(selectedTileId);
-	}
-
-	/**
-	 * Shows the light level while the area is indoors, the only place it has an effect
-	 */
-	private showLightField(): void
-	{
-		this.lightField.hidden = !this.indoors.checked;
-		this.lightHint.hidden = !this.indoors.checked;
-	}
-
-	/**
-	 * Shows "where is morning?" for faerie time, which also can't loop
-	 */
-	private updateTimeFields(): void
-	{
-		const faerie = (this.time.value === 'faerie');
-
-		this.faerieField.hidden = !faerie;
-		this.loopsHint.hidden = !faerie;
-		this.loopsEastWest.disabled = faerie;
-		this.loopsNorthSouth.disabled = faerie;
-
-		if (faerie)
-		{
-			this.loopsEastWest.checked = false;
-			this.loopsNorthSouth.checked = false;
-		}
-	}
-
-	/**
-	 * Warns when an area this one is inside is disabled
-	 */
-	private updateParentMessage(): void
-	{
-		const area = this.area;
-		const disabled = ((area === undefined) ? [] : ancestorAreas(this.allAreas(), area.id).filter((ancestor) => !ancestor.enabled));
-
-		showMessage(this.parentDisabled, ((disabled.length === 0)
-			? undefined
-			: t({
-				id: 'editor.area.parentDisabled',
-				defaultMessage: 'This area is inside {areas}, which {count, plural, one {is} other {are}} disabled.',
-				description: 'Warns that players can\'t reach the area; {areas} lists the areas it is inside that are disabled, and {count} is how many'
-			}, {
-				areas: formatList(disabled.map((ancestor) => ancestor.name), 'conjunction'),
-				count: disabled.length
-			})));
-	}
-
-	/**
 	 * Whether the player may change areas
 	 *
 	 * @return True for a creator or builder, in a version they may change
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canEditWorldOpen(this.universe));
+		return((this.universeOpen !== undefined) && canEditWorldOpen(this.universeOpen));
 	}
 
 	/**
@@ -1247,6 +1819,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(undefined);
 		}
 
+		if (settings.parents.length === 0)
+		{
+			showMessage(this.error, t({
+				id: 'editor.area.needsParent',
+				defaultMessage: 'An area must be inside at least one region or area.',
+				description: 'Shown in the area editor when its parents have all been removed, which keeps it from saving'
+			}));
+			return(undefined);
+		}
+
 		return({
 			...settings,
 			name
@@ -1261,36 +1843,52 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private shownSettings(): AreaSettings
 	{
-		const passageOfTime = this.time.value as AreaPassageOfTime;
-
 		return({
 			name: this.name.value,
-			parentAreaId: ((this.parent.value === '') ? null : this.parent.value),
-			enabled: this.enabled.checked,
-			indoors: this.indoors.checked,
-			lightLevel: this.lightLevel.value as AreaLightLevel,
-			defaultTileId: Number(this.defaultTile.value),
-			passageOfTime,
-			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
+			parents: this.parents.value,
+			...this.settings.read(),
 			loopsEastWest: this.loopsEastWest.checked,
 			loopsNorthSouth: this.loopsNorthSouth.checked
 		});
 	}
 
 	/**
-	 * Adds the tab's changes to a save: the areas deleted, the areas added, then the area open in the area
-	 * editor, its cells first and then its settings as the form shows them
+	 * Shows the problems the server found keeping a save from saving, under the region or area editor open
 	 *
-	 * Deleting goes first, so deleting areas can make room for new ones (the site's areasPerUniverse); a new area is added
-	 * after the area it is inside, so it can name it. Tiles staged for deletion on the Tilesets tab are
-	 * sent as the tiles chosen to replace them, as the Tilesets tab's changes repaint the saved areas
+	 * @param refusal Why the save was refused
+	 * @param fallback What to say when the server named no problems
+	 * @param error Where to say it
+	 * @param problemList Where to list the problems
+	 * @param problems What holds the list
+	 */
+	showRefusal(refusal: SaveRefusal, fallback: Parameters<typeof describeEditorError>[1], error: HTMLElement, problemList: HTMLElement, problems: HTMLElement): void
+	{
+		showMessage(error, describeEditorError(refusal.error, fallback));
+
+		if (refusal.placeProblems)
+		{
+			const named = refusal.placeProblems.names;
+			const ours = this.names();
+
+			this.listProblems(refusal.placeProblems.problems, (place) => (named[placeKey(place)] ?? ours(place)), problemList, problems, (this.universeOpen?.ruleset ?? 'pf1e'));
+		}
+	}
+
+	/**
+	 * Adds the tab's changes to a save: the regions added, the places moved, the areas deleted and added,
+	 * the regions deleted, then the region or area open in its editor, an area's cells first and then its
+	 * settings as the form shows them
+	 *
+	 * A new region or area is added after what it is inside, so it can name it. Tiles staged for deletion
+	 * on the Tilesets tab are sent as the tiles chosen to replace them, as the Tilesets tab's changes
+	 * repaint the saved areas
 	 *
 	 * @param save The save
-	 * @return False when the area editor's settings have a problem
+	 * @return False when the region or area editor's settings have a problem
 	 */
 	collect(save: EditorSave): boolean
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 		const area = this.area;
 		const error = (area ? this.error : this.listError);
 
@@ -1308,33 +1906,73 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
-		const deletedIds = this.staged.deletedIds();
-		const created = this.creationOrder(settings);
+		const regionCollected = this.regionEditor.readForSave();
 
-		/**
-		 * An area's parent as a save names it: none for a deleted parent, whose areas the server makes
-		 * top-level, and a new parent by its ref
-		 *
-		 * @param parentAreaId The parent's ID, or null for none
-		 * @return The parent, or null for none
-		 */
-		const parentOf = (parentAreaId: string | null): string | null => (((parentAreaId === null) || deletedIds.includes(parentAreaId)) ? null : areaRef(parentAreaId));
+		if (regionCollected === false)
+		{
+			return(false);
+		}
+
+		const refParents = (parents: readonly PlaceRef[]): PlaceRef[] => parents.map((parent) => ({ kind: parent.kind, id: placeRef(parent.id) }));
+		const onRefused = (fallback: Parameters<typeof describeEditorError>[1]) => (refusal: SaveRefusal): void =>
+		{
+			if (this.area)
+			{
+				this.showRefusal(refusal, fallback, this.error, this.problemList, this.problems);
+			}
+			else if (!this.regionEditor.showRefusal(refusal, fallback))
+			{
+				showMessage(this.listError, describeEditorError(refusal.error, fallback));
+			}
+		};
+		const regionFallback = {
+			id: 'editor.regions.saveFailed',
+			defaultMessage: 'Could not save the regions.',
+			description: 'Shown on the Areas tab when the server refused a change to its regions, followed by why; nothing was saved'
+		};
 
 		showMessage(error, undefined);
 
-		for (const areaId of deletedIds)
+		const createdRegions = this.regionCreationOrder(regionCollected);
+
+		for (const region of createdRegions)
+		{
+			save.add({
+				kind: 'createRegion',
+				ref: newRef('', region.id),
+				region: {
+					name: region.name,
+					parents: refParents(region.parents),
+					enabled: region.enabled,
+					indoors: region.indoors,
+					lightLevel: region.lightLevel,
+					defaultTileId: this.defaultTileRef({ kind: 'region', id: region.id }, region.defaultTileId),
+					passageOfTime: region.passageOfTime,
+					faerieMorning: region.faerieMorning
+				}
+			}, onRefused(regionFallback));
+		}
+
+		for (const { place, parents } of this.staged.movedPlaces())
+		{
+			save.add(((place.kind === 'region')
+				? { kind: 'updateRegion', regionId: place.id, update: { parents: refParents(parents) } }
+				: { kind: 'updateArea', areaId: place.id, update: { parents: refParents(parents) } }), onRefused(regionFallback));
+		}
+
+		for (const areaId of this.staged.deletedIds())
 		{
 			save.add({ kind: 'deleteArea', areaId }, (refusal) =>
 			{
-				showMessage(error, describeEditorError(refusal.error, {
+				onRefused({
 					id: 'editor.areas.deleteFailed',
 					defaultMessage: 'Could not delete {area}.',
 					description: 'Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved'
-				}, {
-					area: this.nameOf(areaId)
-				}));
+				})(refusal);
 			});
 		}
+
+		const created = this.creationOrder(settings);
 
 		for (const newArea of created)
 		{
@@ -1345,35 +1983,35 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 				ref: newRef('', newArea.id),
 				area: {
 					name: fields.name,
-					parentAreaId: parentOf(fields.parentAreaId),
+					parents: refParents(fields.parents),
 					enabled: fields.enabled,
 					indoors: fields.indoors,
 					lightLevel: fields.lightLevel,
-					defaultTileId: numberRef('tile', this.paintedAs(fields.defaultTileId)),
+					defaultTileId: this.defaultTileRef({ kind: 'area', id: newArea.id }, fields.defaultTileId),
 					passageOfTime: fields.passageOfTime,
 					faerieMorning: fields.faerieMorning,
 					loopsEastWest: fields.loopsEastWest,
 					loopsNorthSouth: fields.loopsNorthSouth
 				}
-			}, (refusal) =>
-			{
-				showMessage(error, describeEditorError(refusal.error, {
-					id: 'editor.areas.createFailed',
-					defaultMessage: 'Could not add {area}.',
-					description: 'Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved'
-				}, {
-					area: fields.name
-				}));
-			});
+			}, onRefused({
+				id: 'editor.areas.createFailed',
+				defaultMessage: 'Could not add {area}.',
+				description: 'Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved'
+			}));
 		}
+
+		for (const regionId of this.staged.deletedRegionIds())
+		{
+			save.add({ kind: 'deleteRegion', regionId }, onRefused(regionFallback));
+		}
+
+		this.regionEditor.collect(save, regionCollected, refParents, (tileId) => ((regionCollected === undefined) ? null : this.defaultTileRef({ kind: 'region', id: regionCollected.id }, tileId)));
 
 		let saved: EditorArea | undefined;
 
 		if (area && settings)
 		{
-			const defaultTileId = this.paintedAs(settings.defaultTileId);
-
-			this.areaEditor.collect(save, areaRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (refusal) =>
+			this.areaEditor.collect(save, placeRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (refusal) =>
 			{
 				showMessage(this.error, describeEditorError(refusal.error, {
 					id: 'editor.area.cellsSaveFailed',
@@ -1387,8 +2025,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			{
 				const update: AreaChangeUpdate = {
 					...settings,
-					parentAreaId: parentOf(settings.parentAreaId),
-					defaultTileId: numberRef('tile', defaultTileId)
+					parents: refParents(settings.parents),
+					defaultTileId: this.defaultTileRef({ kind: 'area', id: area.id }, settings.defaultTileId)
 				};
 
 				save.add({
@@ -1396,22 +2034,21 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 					areaId: area.id,
 					update,
 					loaded: loadedFor(area, update)
-				}, (refusal) =>
-				{
-					showMessage(this.error, describeEditorError(refusal.error, {
-						id: 'editor.area.saveFailed',
-						defaultMessage: 'Could not save the area.',
-						description: 'Shown in the area editor when the server refused the area\'s settings, followed by why; nothing was saved'
-					}));
-				});
+				}, onRefused({
+					id: 'editor.area.saveFailed',
+					defaultMessage: 'Could not save the area.',
+					description: 'Shown in the area editor when the server refused the area\'s settings, followed by why; nothing was saved'
+				}));
 			}
 
-			saved = { ...area, ...settings, defaultTileId };
+			saved = { ...area, ...settings, defaultTileId: this.defaultTileFor({ kind: 'area', id: area.id }, settings.defaultTileId) };
 		}
 
 		this.collected = {
-			deletedIds,
-			createdIds: created.map((newArea) => newArea.id),
+			createdIds: [
+				...createdRegions.map((region): PlaceRef => ({ kind: 'region', id: region.id })),
+				...created.map((newArea): PlaceRef => ({ kind: 'area', id: newArea.id }))
+			],
 			area: saved,
 			shown: ((saved === undefined) ? undefined : this.shownSettings()),
 			version: this.openVersion
@@ -1421,17 +2058,17 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Takes the tab's changes as saved: the new areas get the IDs they were saved with, and the list or
-	 * the area editor shows them as the server has them
+	 * Takes the tab's changes as saved: the new regions and areas get the IDs they were saved with, and the
+	 * list or the editor open shows them as the server has them
 	 *
-	 * @param ids The IDs the save gave the areas and tiles it made
+	 * @param ids The IDs the save gave the regions, areas and tiles it made
 	 */
 	async saved(ids: SavedIds): Promise<void>
 	{
-		const universe = this.universe;
-		const { deletedIds, createdIds, area, shown, version } = this.collected;
+		const universe = this.universeOpen;
+		const { createdIds, area, shown, version } = this.collected;
 
-		this.collected = { deletedIds: [], createdIds: [], area: undefined, shown: undefined, version: -1 };
+		this.collected = { createdIds: [], area: undefined, shown: undefined, version: -1 };
 
 		if (!universe)
 		{
@@ -1440,32 +2077,72 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		this.areaEditor.saved();
 
-		for (const areaId of deletedIds)
+		const deletedAreas = this.staged.deletedIds();
+
+		for (const areaId of deletedAreas)
 		{
-			this.staged.markDeleted(areaId);
+			this.staged.markDeleted(areaId, (this.loaded.areas.find((each) => (each.id === areaId))?.parents ?? []));
 		}
 
-		for (const areaId of createdIds)
+		for (const regionId of this.staged.deletedRegionIds())
 		{
-			const savedId = ids.string(areaRef(areaId));
+			this.staged.markPlaceDeleted({ kind: 'region', id: regionId });
+		}
+
+		this.staged.markMovesSaved();
+
+		const savedIds = new Map<string, string>();
+
+		for (const place of createdIds)
+		{
+			const savedId = ids.string(placeRef(place.id));
 
 			if (savedId !== undefined)
 			{
-				this.areaCreated(areaId, savedId);
+				savedIds.set(place.id, savedId);
+				this.placeCreated(place, savedId);
 			}
 		}
 
 		await this.loadTilesQuietly(universe);
+
+		const regionOpen = this.regionEditor.saved(savedIds);
+
+		if (regionOpen !== undefined)
+		{
+			try
+			{
+				await this.loadAreas(universe);
+			}
+			catch
+			{
+				// The list stays as it was last loaded
+			}
+
+			if (version === this.openVersion)
+			{
+				this.regionEditor.showAfterSave(universe, regionOpen);
+
+				// Gives a region new until the save its address
+				if (this.regions().some((region) => (region.id === regionOpen)))
+				{
+					this.onPlaceChanged({ kind: 'region', id: regionOpen });
+				}
+			}
+
+			return;
+		}
+
 		await this.refreshAfterSave(universe, version, (area && {
 			...area,
-			id: (ids.string(areaRef(area.id)) ?? area.id),
-			parentAreaId: ((area.parentAreaId === null) ? null : (ids.string(areaRef(area.parentAreaId)) ?? null)),
-			defaultTileId: (ids.number(numberRef('tile', area.defaultTileId)) ?? area.defaultTileId)
+			id: (savedIds.get(area.id) ?? area.id),
+			parents: area.parents.map((parent) => ({ kind: parent.kind, id: (savedIds.get(parent.id) ?? parent.id) })),
+			defaultTileId: ((area.defaultTileId === null) ? null : (ids.number(numberRef('tile', area.defaultTileId)) ?? area.defaultTileId))
 		}), shown);
 	}
 
 	/**
-	 * The tile a cell or area's default painted with a tile shows once saved: the tile chosen to replace
+	 * The tile a cell or a default tile painted with a tile shows once saved: the tile chosen to replace
 	 * one staged for deletion on the Tilesets tab, or the tile itself
 	 *
 	 * @param tileId The tile's ID
@@ -1473,25 +2150,126 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	 */
 	private paintedAs(tileId: number): number
 	{
-		return(this.deletedTiles.get(tileId) ?? tileId);
+		return(this.tilesDeleted.get(tileId) ?? tileId);
 	}
 
 	/**
-	 * The areas added since the tab was last saved, each after the new area it is inside, so it can name
-	 * that area's saved ID
+	 * The default tile a region or area takes once saved: what the Tilesets tab chose for it in place of
+	 * the tile it sets, when that tile is being deleted or is no longer for its areas' kind, and otherwise
+	 * the tile it sets
 	 *
-	 * @param settings The area editor's settings, for the area open, whose parent the form may have changed
-	 * @return The areas
+	 * @param place The region or area
+	 * @param defaultTileId The default tile it sets, or null when it inherits one
+	 * @return The default tile, or null
 	 */
-	private creationOrder(settings: AreaSettings | undefined): EditorArea[]
+	private defaultTileFor(place: PlaceRef, defaultTileId: number | null): number | null
 	{
-		const waiting = this.staged.newAreas().map((area) => (((area.id === this.area?.id) && settings) ? { ...area, parentAreaId: settings.parentAreaId } : area));
-		const order: EditorArea[] = [];
+		if (defaultTileId === null)
+		{
+			return(null);
+		}
+
+		const change = this.stagedTiles.defaultTileChanges().get(placeKey(place));
+
+		return((((change !== undefined) && (change.from === defaultTileId)) ? change.to : this.paintedAs(defaultTileId)));
+	}
+
+	/**
+	 * How a save names the default tile a region or area takes (defaultTileFor())
+	 *
+	 * @param place The region or area
+	 * @param defaultTileId The default tile it sets, or null when it inherits one
+	 * @return The tile's ref, or null
+	 */
+	private defaultTileRef(place: PlaceRef, defaultTileId: number | null): NumberRef | null
+	{
+		const tileId = this.defaultTileFor(place, defaultTileId);
+
+		return(((tileId === null) ? null : numberRef('tile', tileId)));
+	}
+
+	/**
+	 * Shows the regions and areas as a save of the Tilesets tab left them, once it gave some of them other
+	 * default tiles: the list, the region open or the area open, loaded again. While the tab has unsaved
+	 * changes, it was saved too, and shows them once it takes them as saved
+	 */
+	async placesSaved(): Promise<void>
+	{
+		const universe = this.universeOpen;
+		const version = this.openVersion;
+
+		if (!universe || (this.areasLoadedFor !== universe) || this.changes.hasUnsavedChanges())
+		{
+			return;
+		}
+
+		if (this.area && !this.editorView.hidden)
+		{
+			await this.refreshAfterSave(universe, version, this.area);
+			return;
+		}
+
+		try
+		{
+			await Promise.all([
+				this.loadAreas(universe),
+				this.loadTiles(universe)
+			]);
+		}
+		catch
+		{
+			// The regions and areas stay as they were last loaded
+			return;
+		}
+
+		if (version !== this.openVersion)
+		{
+			return;
+		}
+
+		if (!this.listView.hidden)
+		{
+			this.renderList();
+		}
+
+		this.regionEditor.reshow();
+	}
+
+	/**
+	 * Loads the regions, areas and tiles for the dialog replacing a default tile on the Tilesets tab,
+	 * unless they have loaded for the universe open
+	 */
+	async loadPlaces(): Promise<void>
+	{
+		const universe = this.universeOpen;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		await Promise.all([
+			((this.areasLoadedFor === universe) ? undefined : this.loadAreas(universe)),
+			((this.tilesLoadedFor === universe) ? undefined : this.loadTiles(universe))
+		]);
+	}
+
+	/**
+	 * The regions added since the tab was last saved, each after the new regions it is inside, so it can
+	 * name their saved IDs
+	 *
+	 * @param open The region open in the region editor, as its form shows it, when it is new
+	 * @return The regions
+	 */
+	private regionCreationOrder(open: EditorRegion | undefined): EditorRegion[]
+	{
+		const waiting = this.staged.newRegions().map((region) => (((open !== undefined) && (region.id === open.id)) ? open : region));
+		const order: EditorRegion[] = [];
 
 		while (waiting.length > 0)
 		{
-			// The area editor's parent choices leave out an area's own descendants, so there is always one
-			const index = Math.max(0, waiting.findIndex((area) => !waiting.some((other) => (other.id === area.parentAreaId))));
+			// A region's parents leave out what is below it, so there is always one
+			const index = Math.max(0, waiting.findIndex((region) => !region.parents.some((parent) => waiting.some((other) => (other.id === parent.id)))));
 
 			order.push(...waiting.splice(index, 1));
 		}
@@ -1500,28 +2278,55 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Takes a new area as saved: everything that named it by the ID it had on the page names its saved ID
+	 * The areas added since the tab was last saved, each after the new area it is inside, so it can name
+	 * that area's saved ID
 	 *
-	 * @param areaId The ID it had on the page
+	 * @param settings The area editor's settings, for the area open, whose parents the form may have changed
+	 * @return The areas
+	 */
+	private creationOrder(settings: AreaSettings | undefined): EditorArea[]
+	{
+		const waiting = this.staged.newAreas().map((area) => (((area.id === this.area?.id) && settings) ? { ...area, parents: settings.parents } : area));
+		const order: EditorArea[] = [];
+
+		while (waiting.length > 0)
+		{
+			// The area editor's parent choices leave out an area's own descendants, so there is always one
+			const index = Math.max(0, waiting.findIndex((area) => !area.parents.some((parent) => waiting.some((other) => (other.id === parent.id)))));
+
+			order.push(...waiting.splice(index, 1));
+		}
+
+		return(order);
+	}
+
+	/**
+	 * Takes a new region or area as saved: everything that named it by the ID it had on the page names its
+	 * saved ID
+	 *
+	 * @param place The region or area, by the ID it had on the page
 	 * @param savedId The ID the server saved it with
 	 */
-	private areaCreated(areaId: string, savedId: string): void
+	private placeCreated(place: PlaceRef, savedId: string): void
 	{
-		this.staged.markCreated(areaId, savedId);
-		this.areaEditor.resolveIds(new Map([[areaId, savedId]]));
+		this.staged.markPlaceCreated(place, savedId);
+		this.parents.replaceId(place.id, savedId);
 
-		this.parent.replaceValue(areaId, savedId);
-
-		if (this.area?.id === areaId)
+		if (place.kind === 'area')
 		{
-			this.area = { ...this.area, id: savedId };
-			this.onAreaChanged(savedId);
+			this.areaEditor.resolveIds(new Map([[place.id, savedId]]));
+
+			if (this.area?.id === place.id)
+			{
+				this.area = { ...this.area, id: savedId };
+				this.onPlaceChanged({ kind: 'area', id: savedId });
+			}
 		}
 	}
 
 	/**
 	 * Shows the tab afresh once it has saved: the list, or the area editor with the area as saved. The
-	 * list of areas is loaded again first, since saving added and deleted areas
+	 * list of regions and areas is loaded again first, since saving added and deleted them
 	 *
 	 * @param universe The universe
 	 * @param version The tab's openVersion when saving started; when another area or the list has opened since, it is left alone
@@ -1537,13 +2342,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 
 		if (!area)
 		{
-			await this.showList();
+			await this.showListView();
 			return;
 		}
 
 		try
 		{
-			await this.loadAreas(universe);
+			[area] = await Promise.all([
+				this.api.getArea(universe.id, area.id),
+				this.loadAreas(universe)
+			]);
 		}
 		catch
 		{
@@ -1557,24 +2365,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * An area's name, for messages
-	 *
-	 * @param areaId The area's ID
-	 * @return Its name, or an empty string when it isn't known
-	 */
-	private nameOf(areaId: string): string
-	{
-		return(this.allAreas().find((area) => (area.id === areaId))?.name ?? '');
-	}
-
-	/**
 	 * Deletes the area open when the tab is saved, after asking, and goes back to the list; or, for an
 	 * area that will be deleted, keeps it after all. A new area is deleted immediately, since it was
-	 * never saved
+	 * never saved. The areas inside it take its parents, and deleting it waits while that leaves one of
+	 * them with a problem
 	 */
 	private toggleDelete(): void
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 		const area = this.area;
 
 		if (!universe || !area)
@@ -1589,6 +2387,28 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
+		// What deleting it leaves, as the server will check it
+		const world = this.world();
+		const children = new PlaceGraph(world.regions, world.areas).descendantsOf({ kind: 'area', id: area.id });
+
+		this.staged.delete(area.id);
+
+		const after = resolveAreaSettings(this.world()).problems.filter((problem) => problemPlaces(problem).some((place) => children.some((child) => samePlace(child, place))));
+
+		this.staged.undoDelete(area.id);
+
+		if (after.length > 0)
+		{
+			showMessage(this.error, t({
+				id: 'editor.area.deleteLeavesProblems',
+				defaultMessage: 'Deleting this area would leave the areas inside it, which take its parents in its place, with problems: {problems}',
+				description: 'Shown in the area editor in place of deleting the area, when the areas inside it would be left without a setting or with different values from above; {problems} lists the problems'
+			}, {
+				problems: formatList(after.map((problem) => describeProblem(problem, this.names(), this.tileList, universe.ruleset)), 'conjunction')
+			}));
+			return;
+		}
+
 		const question = (isNewAreaId(area.id)
 			? t({
 				id: 'editor.area.confirmDeleteNew',
@@ -1598,8 +2418,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 				area: area.name
 			})
 			: t({
-				id: 'editor.area.confirmDelete',
-				defaultMessage: 'Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas.',
+				id: 'editor.area.confirmDeleteInRegions',
+				defaultMessage: 'Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place.',
 				description: 'Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name'
 			}, {
 				area: area.name
@@ -1611,38 +2431,110 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		}
 
 		this.staged.delete(area.id);
-		void this.showList();
+		void this.showListView();
 	}
 
 	/**
-	 * The tile a new area uses by default, as the server picks it (DEFAULT_AREA_TILE_KEYS)
+	 * Fills a dialog's Inside field with what a new region or area can go inside
 	 *
-	 * @param universe The universe
-	 * @param indoors Whether the area is indoors
-	 * @return The tile's ID, or undefined when the universe has no such tile
+	 * @param field The field
+	 * @param kind Whether the new one is a region or an area
 	 */
-	private defaultTileFor(universe: EditableUniverse, indoors: boolean): number | undefined
+	private fillInsideChoices(field: SearchSelect, kind: 'region' | 'area'): void
 	{
-		const keys = DEFAULT_AREA_TILE_KEYS[universe.ruleset];
-		const key = (indoors ? keys.indoors : keys.outdoors);
+		const universe = this.universeOpen;
+		const world = this.world();
+		const names = this.names();
+		const graph = new PlaceGraph(world.regions, world.areas);
+		const candidates: PlaceRef[] = [
+			...world.regions.map((region): PlaceRef => ({ kind: 'region', id: region.id })),
+			...((kind === 'area') ? world.areas.map((area): PlaceRef => ({ kind: 'area', id: area.id })) : [])
+		];
+		const topLevel = ((kind === 'region') && (universe !== undefined) && editsEveryPlace(universe.role));
 
-		return(this.tiles.find((tile) => (tile.key === key))?.id);
+		field.setChoices([
+			{
+				value: '',
+				name: (topLevel
+					? t({
+						id: 'editor.regionAdd.topLevel',
+						defaultMessage: 'Nothing (a top-level region)',
+						description: 'Choice in the Add Region dialog\'s Inside field for a region inside no other'
+					})
+					: '')
+			},
+			...candidates
+				.filter((candidate) => ((graph.depths().get(placeKey(candidate)) ?? 1) < 10) && this.canEditPlace(candidate))
+				.map((candidate) => ({
+					value: placeKey(candidate),
+					name: names(candidate),
+					detail: (formatList(graph.parentsOf(candidate).map(names), 'conjunction') || undefined)
+				}))
+				.sort((first, second) => first.name.localeCompare(second.name))
+		]);
+		field.value = '';
+	}
+
+	/**
+	 * Opens the Add Area dialog, with what the new area can go inside
+	 */
+	private openAddDialog(): void
+	{
+		this.addForm.reset();
+		showMessage(this.addError, undefined);
+		clearFieldErrors(this.addForm);
+		this.addSubmit.disabled = false;
+		this.fillInsideChoices(this.addParent, 'area');
+		this.addDialog.showModal();
+		this.addChanges.markSaved();
+		this.addName.focus();
+	}
+
+	/**
+	 * Opens the Add Region dialog, with what the new region can go inside
+	 */
+	private openRegionDialog(): void
+	{
+		this.regionForm.reset();
+		showMessage(this.regionError, undefined);
+		clearFieldErrors(this.regionForm);
+		this.fillInsideChoices(this.regionParent, 'region');
+		this.regionDialog.showModal();
+		this.regionChanges.markSaved();
+		this.regionName.focus();
+	}
+
+	/**
+	 * The place a dialog's Inside field chose
+	 *
+	 * @param field The field
+	 * @return The place, or undefined for none
+	 */
+	private chosenInside(field: SearchSelect): PlaceRef | undefined
+	{
+		const value = field.value;
+
+		if (value === '')
+		{
+			return(undefined);
+		}
+
+		return({
+			kind: (value.startsWith('region:') ? 'region' : 'area'),
+			id: value.slice(value.indexOf(':') + 1)
+		});
 	}
 
 	/**
 	 * Adds the area the Add Area dialog describes, to be saved with the tab, and opens it in the area
-	 * editor. It takes the settings the server gives a new area
+	 * editor. Its settings inherit, but for being disabled once the universe is past in_the_beginning, as
+	 * the server makes a new area
 	 */
 	private async addArea(): Promise<void>
 	{
-		const universe = this.universe;
+		const universe = this.universeOpen;
 		const name = this.addName.value.trim();
-		const indoors = this.addIndoors.checked;
-		const failed = {
-			id: 'editor.areaAdd.failed',
-			defaultMessage: 'Could not add the area.',
-			description: 'Shown in the Add Area dialog when the area couldn\'t be made'
-		};
+		const inside = this.chosenInside(this.addParent);
 
 		if (!universe)
 		{
@@ -1655,38 +2547,21 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
-		this.addSubmit.disabled = true;
-		showMessage(this.addError, undefined);
-
-		try
+		if (inside === undefined)
 		{
-			await this.loadTiles(universe);
-		}
-		catch (error)
-		{
-			showMessage(this.addError, describeEditorError(error, failed));
-			this.addSubmit.disabled = false;
-			return;
-		}
-
-		const defaultTileId = this.defaultTileFor(universe, indoors);
-
-		if (defaultTileId === undefined)
-		{
-			showMessage(this.addError, t(failed));
-			this.addSubmit.disabled = false;
+			showMessage(this.addError, t({
+				id: 'editor.areaAdd.needsParent',
+				defaultMessage: 'Choose the region or area the new area goes inside.',
+				description: 'Shown in the Add Area dialog when nothing was chosen for the new area to go inside'
+			}));
 			return;
 		}
 
 		const area = this.staged.create({
 			name,
-			parentAreaId: null,
-			enabled: (universe.stage === 'in_the_beginning'),
-			indoors,
-			lightLevel: 'lit',
-			defaultTileId,
-			passageOfTime: 'inherit',
-			faerieMorning: null,
+			parents: [inside],
+			...BLANK_SETTINGS,
+			enabled: ((universe.stage === 'in_the_beginning') ? null : false),
 			loopsEastWest: false,
 			loopsNorthSouth: false
 		});
@@ -1694,5 +2569,58 @@ export class AreasTab implements SavableTab, FollowsOtherSaves
 		this.addChanges.markSaved();
 		this.addDialog.close();
 		await this.openArea(area.id);
+	}
+
+	/**
+	 * Adds the region the Add Region dialog describes, to be saved with the tab, and opens it in the region
+	 * editor
+	 */
+	private addRegion(): void
+	{
+		const universe = this.universeOpen;
+		const name = this.regionName.value.trim();
+		const inside = this.chosenInside(this.regionParent);
+		const lower = name.toLowerCase();
+
+		if (!universe)
+		{
+			return;
+		}
+
+		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
+		{
+			reportFieldError(this.regionName, t(formMessages.invalidText));
+			return;
+		}
+
+		if (this.regions().some((region) => (region.name.toLowerCase() === lower)))
+		{
+			reportFieldError(this.regionName, t({
+				id: 'editor.regionAdd.nameTaken',
+				defaultMessage: 'Another region is already named that.',
+				description: 'Shown under the name field of the Add Region dialog or region editor when another region has the name, not counting capitals'
+			}));
+			return;
+		}
+
+		if ((inside === undefined) && !editsEveryPlace(universe.role))
+		{
+			showMessage(this.regionError, t({
+				id: 'editor.regionAdd.needsParent',
+				defaultMessage: 'Choose the region the new region goes inside.',
+				description: 'Shown in the Add Region dialog to a builder who chose nothing for the new region to go inside: builders add regions only inside the regions they\'re assigned'
+			}));
+			return;
+		}
+
+		const region = this.staged.createRegion({
+			name,
+			parents: ((inside === undefined) ? [] : [inside]),
+			...BLANK_SETTINGS
+		});
+
+		this.regionChanges.markSaved();
+		this.regionDialog.close();
+		this.open({ kind: 'region', id: region.id });
 	}
 }

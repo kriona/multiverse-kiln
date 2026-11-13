@@ -20,7 +20,7 @@ function legendLines(name: string): string[]
 	const area = {
 		id: 'area-1',
 		name,
-		defaultTileId: 7,
+		resolved: { defaultTileId: 7 },
 		bounds: {
 			minColumn: 0,
 			maxColumn: 1,

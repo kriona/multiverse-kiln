@@ -597,7 +597,8 @@ fieldset
 
 	&.indoor-outdoor
 	{
-		max-width: 25ch;
+		align-self: flex-start;
+		max-width: 100%;
 	}
 }
 
@@ -835,9 +836,180 @@ form > .changed-since,
 
 #area-list-view,
 #area-form,
-#area-children
+#area-children,
+#region-editor-view
 {
 	max-width: $editor-panel-width;
+}
+
+.place-add-buttons
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+// The tree indents what is inside each region or area under it, with the button showing or hiding it
+// before its name. A region's contents have a line down their left, under the middle of the region's
+// button; an area's have the same space with the line left out, so both indent alike. Each list starts
+// 8px below its row, but reaches up behind the row's button with a negative margin, padded back down, so
+// the line comes out of the bottom of the button. The row's buttons are painted over the list's border
+.place-tree
+{
+	ul
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin: -29px 0 0 16px;
+		padding: 37px 0 0 7px;
+		border-left: 1px dashed transparent;
+		list-style: none;
+	}
+
+	.place-region-contents
+	{
+		border-left-color: $region-text;
+	}
+}
+
+.place-row
+{
+	display: flex;
+	align-items: center;
+	gap: 8px;
+
+	.universe-item
+	{
+		flex: 1;
+	}
+}
+
+.place-toggle,
+.place-toggle-space
+{
+	flex: none;
+	box-sizing: border-box;
+	width: 32px;
+}
+
+.place-toggle
+{
+	padding: 2px 0;
+}
+
+.place-region strong
+{
+	color: $region-text;
+	font-style: italic;
+}
+
+.place-parent-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 4px 0;
+	padding: 0;
+	list-style: none;
+
+	li
+	{
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	button
+	{
+		padding: 2px 8px;
+	}
+}
+
+.place-parents .combobox-field
+{
+	max-width: 24em;
+}
+
+// What keeps a region's or area's changes from saving, under its settings
+.place-problems
+{
+	padding: 8px 12px;
+	border: 1px solid $notice-border;
+	border-radius: 4px;
+	background: $notice-background;
+	color: $notice-text;
+
+	p
+	{
+		margin: 0 0 4px;
+	}
+
+	ul
+	{
+		margin: 0;
+		padding-left: 20px;
+	}
+}
+
+.region-assignments .combobox-field
+{
+	max-width: 24em;
+}
+
+// Each region and area losing a default tile, with what it gets instead and the areas it gave the tile to
+.tile-replace-fields
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+
+	&[hidden]
+	{
+		display: none;
+	}
+
+	> p
+	{
+		margin: 0;
+	}
+}
+
+.tile-replace-places
+{
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-height: 50vh;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+}
+
+.tile-replace-place
+{
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+
+	p
+	{
+		margin: 0;
+	}
+}
+
+.region-delete-group
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	p
+	{
+		margin: 0;
+	}
 }
 
 #area-children h3

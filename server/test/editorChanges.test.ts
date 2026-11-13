@@ -1,13 +1,13 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { DEFAULT_SITE_SETTINGS, MAX_AREA_LINKS, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, MAX_AREA_LINKS, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, TILE_GRAPHICS_PATH, emptyMoney, type AreaLinkListPayload, type EditableUniverse, type EditorChange, type ItemListPayload, type PlaceRef, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../src/db/adminClient.js';
 import { createAreaLink } from '../src/db/areaRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { createArea, createUniverse, logIn, saveAll, saveChanges, send, solidPng, type Editor } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveAll, saveChanges, send, solidPng, worldRegionId, type Editor } from './editorRequests.js';
 import { allowedTestOrigin } from './setup.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
@@ -75,10 +75,11 @@ describe('Saving editor changes', () =>
 
 		assert.ok(lobbyAreaId);
 
+		const worldId = await worldRegionId(ada, universeId);
 		const ids = await saveAll(ada, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },
-			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', defaultTileId: 'new:lava' } },
-			{ kind: 'createArea', ref: 'new:grotto', area: { name: 'Grotto', parentAreaId: 'new:cave' } },
+			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', defaultTileId: 'new:lava', parents: [{ kind: 'region', id: worldId }] } },
+			{ kind: 'createArea', ref: 'new:grotto', area: { name: 'Grotto', parents: [{ kind: 'area', id: 'new:cave' }] } },
 			{ kind: 'editCells', areaId: lobbyAreaId, changes: [[0, 0, 'new:lava']] },
 			{ kind: 'saveLink', areaId: lobbyAreaId, column: 1, row: 0, target: { targetAreaId: 'new:cave', targetColumn: 0, targetRow: 0, mode: 'automatic', requiresWholeGroup: false } }
 		]);
@@ -89,13 +90,13 @@ describe('Saving editor changes', () =>
 		assert.strictEqual(typeof caveId, 'string');
 
 		const cave = (await send<{ defaultTileId: number }>(ada, 'GET', `/${universeId}/areas/${caveId}`)).body;
-		const grotto = (await send<{ parentAreaId: string }>(ada, 'GET', `/${universeId}/areas/${ids['new:grotto']}`)).body;
+		const grotto = (await send<{ parents: PlaceRef[] }>(ada, 'GET', `/${universeId}/areas/${ids['new:grotto']}`)).body;
 		const usage = (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).body;
 		const links = (await send<AreaLinkListPayload>(ada, 'GET', `/${universeId}/areas/${lobbyAreaId}/links`)).body;
 
 		assert.strictEqual(cave.defaultTileId, tileId);
-		assert.strictEqual(grotto.parentAreaId, caveId);
-		assert.deepStrictEqual(usage.areas.map((area) => area.name).sort(), ['Cave', 'Lobby']);
+		assert.deepStrictEqual(grotto.parents, [{ kind: 'area', id: caveId }]);
+		assert.deepStrictEqual(usage.areas.map((area) => area.name), ['Lobby']);
 		assert.deepStrictEqual(links.links.map((link) => link.targetAreaId), [caveId]);
 	});
 
@@ -165,7 +166,7 @@ describe('Saving editor changes', () =>
 		await saveSiteSettings({ ...DEFAULT_SITE_SETTINGS, areasPerUniverse: 3 }, adminDb);
 		await createArea(ada, universeId, { name: 'Cave' });
 
-		const refused = await saveChanges(ada, universeId, [{ kind: 'createArea', ref: 'new:mine', area: { name: 'Mine' } }]);
+		const refused = await saveChanges(ada, universeId, [{ kind: 'createArea', ref: 'new:mine', area: { name: 'Mine', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId) }] } }]);
 
 		assert.strictEqual(refused.status, 409);
 		assert.strictEqual(refused.body.error.id, 'error.areaLimit');
@@ -224,6 +225,7 @@ describe('Saving editor changes', () =>
 		const builder = await logIn('Bob');
 
 		await setUniverseRole(universeId, builder.playerId, 'builder');
+		await saveAll(ada, universeId, [{ kind: 'saveEditor', playerId: builder.playerId, settings: { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: true, canEditMobs: false } } }]);
 
 		const refused = await saveChanges(builder, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },

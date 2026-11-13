@@ -356,8 +356,13 @@ function withAnswer(change: EditorChange, impact: ChangeImpact, answer: string):
 			return({ ...change, settings: { ...change.settings, keepPlaying: (answer === 'keep') } });
 		case 'saveItem':
 			return({ ...change, whenDisabled: ((answer === 'remove') ? 'remove' : 'keep') });
+		case 'updateRegion':
+		case 'deleteRegion':
 		case 'updateArea':
-			return({ ...change, moveTo: ((answer === 'parent') ? 'parent' : 'start') });
+		case 'deleteArea':
+			return((impact.kind === 'area')
+				? { ...change, moveTo: { ...change.moveTo, [impact.id]: ((answer === 'parent') ? 'parent' : 'start') } }
+				: change);
 		case 'universe':
 			return({ ...change, largerGroups: groupAnswer(answer) });
 		default:

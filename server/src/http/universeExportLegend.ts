@@ -165,7 +165,7 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 		...areas.map((area) => row([
 			`\`${fileName(area.file)}\``,
 			markdownText(area.name),
-			(tileNames.get(area.defaultTileId) ?? String(area.defaultTileId)),
+			(tileNames.get(area.resolved.defaultTileId) ?? String(area.resolved.defaultTileId)),
 			cellText(translator.format(messages.extent, { ...area.bounds }))
 		]))
 	];

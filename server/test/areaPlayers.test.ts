@@ -29,7 +29,7 @@ function loadedArea(areaId: string): LoadedArea
 			name: 'Field',
 			enabled: true,
 			indoors: false,
-			passageOfTime: 'inherit'
+			passageOfTime: 'flows_normally'
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },

@@ -3,19 +3,21 @@
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { type AreaEvacuation, canEditWorld, DEFAULT_AREA_TILE_KEYS, DEFAULT_TILE_CELL, isInBounds, isNewRef, MAX_AREA_LINKS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type Ruleset, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_TILE_CELL, editsEveryPlace, isInBounds, isNewRef, MAX_AREA_LINKS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type AreaEvacuations, type AreaNode, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type PlaceRef, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { findDefaultTileIds, findTileKind, loadUniverseTiles } from '../db/tileRepo.js';
+import { loadUniverseTiles } from '../db/tileRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, updateAreaSettings } from '../db/areaRepo.js';
+import { listRegions } from '../db/regionRepo.js';
+import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor, type AreaInTree, type LinkInto } from '../logic/disabling.js';
-import { chunksOfChanges, wouldCreateCycle } from '../logic/areaEdits.js';
+import { chunksOfChanges } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import { loadAreaContext, requireRole, universeContextOf, areaContextOf } from './editorAccess.js';
 import { ChangeRefusal, recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
+import { checkOwnSettings, faerieMorningMismatchMessage, requireParentChangesWithin, resolveParents } from './editorPlaces.js';
 import { chunkRange } from './editorPayloads.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
 
@@ -48,11 +50,7 @@ export function timeSettingsProblem(settings: { passageOfTime: string; faerieMor
 
 	if (faerie !== (settings.faerieMorning !== null))
 	{
-		return({
-			id: 'error.faerieMorningMismatch',
-			defaultMessage: 'Where morning is must be chosen when, and only when, the passage of time is faerie.',
-			description: 'Why time settings were refused: "where is morning?" was given without faerie time, or left out with it'
-		});
+		return(faerieMorningMismatchMessage);
 	}
 
 	if (faerie && ((settings.loopsEastWest === true) || (settings.loopsNorthSouth === true)))
@@ -108,6 +106,7 @@ async function listAreasRoute(request: Request, response: Response): Promise<voi
 {
 	const { universe, version } = universeContextOf(request);
 	const payload: AreaListPayload = {
+		regions: await listRegions(version),
 		areas: await listAreas(version),
 		lobbyAreaId: universe.lobbyAreaId,
 		startingAreaId: universe.startingAreaId,
@@ -173,7 +172,8 @@ async function getLinks(request: Request, response: Response): Promise<void>
  *
  * @param context The save
  * @param ref The area's ID, or the ref of one made earlier in the save
- * @return The area, as the changes before this one left it; a missing area is refused
+ * @return The area, as the changes before this one left it; a missing area is refused, and so is one
+ * outside a builder's assignments
  */
 async function areaOf(context: ChangeContext, ref: StringRef): Promise<EditorArea>
 {
@@ -184,29 +184,49 @@ async function areaOf(context: ChangeContext, ref: StringRef): Promise<EditorAre
 		refuse(404, errorMessages.noSuchArea);
 	}
 
+	await context.places.requireWithin({ kind: 'area', id: found.area.id });
+
 	return(found.area);
 }
 
 /**
- * Area settings in a save with the things they name, as saved
+ * An area of the version a change names, as the changes before it left it
+ *
+ * @param context The save
+ * @param ref The area's ID, or the ref of one made earlier in the save
+ * @return The area; a missing area is refused
+ */
+async function areaNodeOf(context: ChangeContext, ref: StringRef): Promise<AreaNode>
+{
+	const model = await context.places.load();
+	const area = model.area(resolveStringRef(context, ref));
+
+	if (!area)
+	{
+		refuse(404, errorMessages.noSuchArea);
+	}
+
+	return(area);
+}
+
+/**
+ * An area's own settings in a save with the default tile it names, as saved
  *
  * @param context The save
  * @param update The settings
- * @return The settings, naming the default tile and parent by their IDs
+ * @return The settings, naming the default tile by its ID, without the parents
  */
-function resolveAreaUpdate(context: ChangeContext, update: AreaChangeUpdate): AreaSettingsUpdate
+function resolveAreaUpdate(context: ChangeContext, { defaultTileId, parents: _parents, ...rest }: AreaChangeUpdate): Omit<AreaSettingsUpdate, 'parents'>
 {
-	const { defaultTileId, parentAreaId, ...rest } = update;
-
 	return({
 		...rest,
-		...((defaultTileId === undefined) ? {} : { defaultTileId: resolveNumberRef(context, defaultTileId) }),
-		...((parentAreaId === undefined) ? {} : { parentAreaId: ((parentAreaId === null) ? null : resolveStringRef(context, parentAreaId)) })
+		...((defaultTileId === undefined) ? {} : { defaultTileId: ((defaultTileId === null) ? null : resolveNumberRef(context, defaultTileId)) })
 	});
 }
 
 /**
- * Adds an area to the universe. Settings left out take their defaults (see NewAreaRequest)
+ * Adds an area to the universe, inside the parents it names. Settings left out take their defaults (see
+ * NewAreaRequest); its settings are worked out once every change is saved
  *
  * @param context The save
  * @param ref The area's ref
@@ -216,21 +236,21 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 {
 	const { universe, version, transaction } = context;
 	const resolved = resolveAreaUpdate(context, area);
-	const indoors = (resolved.indoors ?? false);
-	const settings: AreaSettings = {
+	const parents = await resolveParents(context, 'area', area.parents);
+	const settings: Omit<AreaSettings, 'parents'> = {
 		name: area.name,
-		parentAreaId: (resolved.parentAreaId ?? null),
-		enabled: (resolved.enabled ?? (universe.stage === 'in_the_beginning')),
-		indoors,
-		lightLevel: (resolved.lightLevel ?? 'lit'),
-		defaultTileId: (resolved.defaultTileId ?? await defaultAreaTileId(universe.ruleset, indoors, transaction)),
-		passageOfTime: (resolved.passageOfTime ?? 'inherit'),
+		enabled: ((resolved.enabled !== undefined) ? resolved.enabled : ((universe.stage === 'in_the_beginning') ? null : false)),
+		indoors: (resolved.indoors ?? null),
+		lightLevel: (resolved.lightLevel ?? null),
+		defaultTileId: (resolved.defaultTileId ?? null),
+		passageOfTime: (resolved.passageOfTime ?? null),
 		faerieMorning: (resolved.faerieMorning ?? null),
 		loopsEastWest: (resolved.loopsEastWest ?? false),
 		loopsNorthSouth: (resolved.loopsNorthSouth ?? false)
 	};
 
-	await checkAreaSettings(context, undefined, settings);
+	await context.places.requireWithin(...parents);
+	await checkOwnSettings(context, settings);
 
 	const { areasPerUniverse } = await findSiteSettings(transaction);
 
@@ -241,52 +261,78 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 		});
 	}
 
-	recordRef(context, ref, await createArea({
+	const placeholder = await context.places.placeholderSettings();
+	const areaId = await createArea({
 		...settings,
 		universeId: version.universeId,
 		draft: version.draft,
+		resolved: placeholder,
 		bounds: NEW_AREA_BOUNDS
-	}, transaction));
+	}, transaction);
+
+	await setAreaParents(areaId, parents, transaction);
+	(await context.places.load()).setArea({ ...settings, id: areaId, parents });
+	context.places.noteStored(areaId, placeholder);
+	context.places.touch();
+	recordRef(context, ref, areaId);
 }
 
 /**
- * Changes an area's settings. Once the save has saved every change, an area other than the lobby's that
- * it disables sends the characters in it where moveTo says, those playing and those saved there by their
- * group (see editorDisablings.ts)
+ * Changes an area's settings or parents. Once the save has saved every change, each area other than
+ * the lobby's that it leaves disabled sends the characters in it where moveTo says, those playing and
+ * those saved there by their group (see editorDisablings.ts)
  *
  * @param context The save
  * @param areaId The area
  * @param update The settings to change
- * @param moveTo Where disabling the area sends the characters in it
+ * @param moveTo Where disabling the areas it disables sends the characters in them, by area
  */
-export async function updateAreaChange(context: ChangeContext, areaId: StringRef, update: AreaChangeUpdate, moveTo: AreaEvacuation): Promise<void>
+export async function updateAreaChange(context: ChangeContext, areaId: StringRef, update: AreaChangeUpdate, moveTo: AreaEvacuations): Promise<void>
 {
-	const area = await areaOf(context, areaId);
+	const { universe, transaction } = context;
+	const area = await areaNodeOf(context, areaId);
+	const place: PlaceRef = { kind: 'area', id: area.id };
 	const resolved = resolveAreaUpdate(context, update);
+	const parents = ((update.parents === undefined) ? area.parents : await resolveParents(context, 'area', update.parents, area.id));
+	const updated: AreaNode = { ...area, ...resolved, parents };
 
-	await checkAreaSettings(context, area.id, { ...area, ...resolved });
-	await updateAreaSettings(area.id, resolved, context.transaction);
-	context.published.push({ kind: 'area', areaId: area.id });
+	await context.places.requireWithin(place);
+	await requireParentChangesWithin(context, place, area.parents, parents);
+	await checkOwnSettings(context, updated);
 
-	// The areas inside it may inherit its passage of time
-	if ((resolved.passageOfTime !== undefined) || (resolved.faerieMorning !== undefined) || (resolved.parentAreaId !== undefined))
+	if (area.id === universe.lobbyAreaId)
 	{
-		context.published.push({ kind: 'time', universeId: context.universe.id });
-	}
+		const lobbyProblem = lobbyTimeProblem(universe, updated);
 
-	if (resolved.enabled !== undefined)
-	{
-		context.disablings.area(area.id, area.enabled, (resolved.enabled ? undefined : moveTo));
-	}
-
-	// Players aren't told about links to disabled areas, so the areas with links leading here are read again
-	if ((resolved.enabled !== undefined) && (resolved.enabled !== area.enabled))
-	{
-		for (const linkingAreaId of await listAreasLinkingTo(area.id, context.transaction))
+		if (lobbyProblem !== undefined)
 		{
-			context.published.push({ kind: 'area', areaId: linkingAreaId });
+			refuse(400, lobbyProblem);
 		}
 	}
+
+	// The database refuses an area that loops with faerie time stored for it, though the save may yet
+	// change its time, so the stored time is set aside until its settings are worked out again
+	const stored = context.places.storedOf(area.id);
+
+	if ((updated.loopsEastWest || updated.loopsNorthSouth) && (stored?.passageOfTime === 'faerie'))
+	{
+		const setAside = { ...stored, passageOfTime: null, faerieMorning: null };
+
+		await storeResolvedSettings(new Map([[area.id, setAside]]), transaction);
+		context.places.noteStored(area.id, setAside);
+	}
+
+	await updateAreaSettings(area.id, resolved, transaction);
+
+	if (update.parents !== undefined)
+	{
+		await setAreaParents(area.id, parents, transaction);
+	}
+
+	(await context.places.load()).setArea(updated);
+	context.places.touch();
+	context.disablings.areas(moveTo);
+	context.published.push({ kind: 'area', areaId: area.id });
 }
 
 /**
@@ -324,15 +370,17 @@ export async function parentPlace(transaction: Executor, areas: ReadonlyMap<stri
 }
 
 /**
- * Deletes an area, unless it is the universe's lobby or starting area
+ * Deletes an area, unless it is the universe's lobby or starting area. The areas inside it take its
+ * parents in its place, beside their other parents
  *
  * @param context The save
  * @param areaId The area
+ * @param moveTo Where the characters in the areas inside it go when their new parents disable them, by area
  */
-export async function deleteAreaChange(context: ChangeContext, areaId: StringRef): Promise<void>
+export async function deleteAreaChange(context: ChangeContext, areaId: StringRef, moveTo: AreaEvacuations): Promise<void>
 {
-	const { universe, version } = context;
-	const area = await areaOf(context, areaId);
+	const { universe, version, transaction } = context;
+	const area = await areaNodeOf(context, areaId);
 
 	if ((area.id === universe.lobbyAreaId) || (area.id === universe.startingAreaId))
 	{
@@ -343,10 +391,21 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 		});
 	}
 
-	// The links leading here go with it, so the areas they're on are read again
-	const linkingAreaIds = await listAreasLinkingTo(area.id, context.transaction);
+	await context.places.requireWithin({ kind: 'area', id: area.id });
+	await context.places.requireLinksWithin(area.id);
 
-	await deleteArea(area.id, context.transaction);
+	// The links leading here go with it, so the areas they're on are read again
+	const linkingAreaIds = await listAreasLinkingTo(area.id, transaction);
+
+	for (const child of (await context.places.load()).deleteArea(area.id))
+	{
+		await setAreaParents(child.id, child.parents, transaction);
+		context.published.push({ kind: 'area', areaId: child.id });
+	}
+
+	context.places.touch();
+	context.disablings.areas(moveTo);
+	await deleteArea(area.id, transaction);
 	await deleteUniverseTextOf(version, 'area', area.id, context.transaction);
 	context.published.push({ kind: 'deleted', areaId: area.id });
 
@@ -457,6 +516,9 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 	const area = await areaOf(context, areaId);
 	const targetAreaId = resolveStringRef(context, target.targetAreaId);
 
+	await context.places.requireWithin({ kind: 'area', id: targetAreaId });
+	await requireLinkTargetWithin(context, area.id, column, row);
+
 	if (targetAreaId === area.id)
 	{
 		refuse(400, {
@@ -530,6 +592,8 @@ export async function deleteLinkChange(context: ChangeContext, areaId: StringRef
 {
 	const area = await areaOf(context, areaId);
 
+	await requireLinkTargetWithin(context, area.id, column, row);
+
 	if (!(await deleteAreaLink(area.id, column, row, context.transaction)))
 	{
 		refuse(404, {
@@ -543,75 +607,25 @@ export async function deleteLinkChange(context: ChangeContext, areaId: StringRef
 }
 
 /**
- * The tile a new area uses by default
- *
- * @param ruleset The universe's ruleset
- * @param indoors Whether the area is indoors
- * @param executor The save's transaction
- * @return The tile's ID
- */
-async function defaultAreaTileId(ruleset: Ruleset, indoors: boolean, executor: Executor): Promise<number>
-{
-	const keys = DEFAULT_AREA_TILE_KEYS[ruleset];
-	const key = (indoors ? keys.indoors : keys.outdoors);
-	const tileId = (await findDefaultTileIds(ruleset, executor)).get(key);
-
-	if (tileId === undefined)
-	{
-		throw new Error(`The ${ruleset} default tile "${key}" is missing`);
-	}
-
-	return(tileId);
-}
-
-/**
- * Refuses an area's settings with a time that doesn't fit, a parent that isn't an area of the universe
- * or is inside the area, or a default tile the universe can't use
+ * Refuses a builder's replacing or deleting the link on a cell when it leads outside their assignments,
+ * which only creators delete
  *
  * @param context The save
- * @param areaId The area's ID, or undefined for an area being created
- * @param settings The settings the area would have
+ * @param areaId The area's ID
+ * @param column The cell's column
+ * @param row The cell's row
  */
-async function checkAreaSettings(context: ChangeContext, areaId: string | undefined, settings: AreaSettings): Promise<void>
+async function requireLinkTargetWithin(context: ChangeContext, areaId: string, column: number, row: number): Promise<void>
 {
-	const { universe, version, transaction } = context;
-	const timeProblem = (timeSettingsProblem(settings)
-		?? ((areaId === universe.lobbyAreaId) ? lobbyTimeProblem(universe, settings) : undefined));
-
-	if (timeProblem !== undefined)
+	if (editsEveryPlace(context.role))
 	{
-		refuse(400, timeProblem);
+		return;
 	}
 
-	if (settings.parentAreaId !== null)
+	const link = (await listAreaLinks(areaId, context.transaction)).find((each) => ((each.column === column) && (each.row === row)));
+
+	if (link)
 	{
-		const parents = new Map((await listAreas(version, transaction)).map((area) => [area.id, area.parentAreaId]));
-
-		if (!parents.has(settings.parentAreaId))
-		{
-			refuse(400, {
-				id: 'error.parentNotInUniverse',
-				defaultMessage: 'The parent area must be an area of this universe.',
-				description: 'Why an area\'s settings were refused: the area chosen to hold it doesn\'t exist'
-			});
-		}
-
-		if ((areaId !== undefined) && wouldCreateCycle(parents, areaId, settings.parentAreaId))
-		{
-			refuse(400, {
-				id: 'error.areaInsideItself',
-				defaultMessage: 'An area can\'t be inside itself.',
-				description: 'Why an area\'s settings were refused: the parent chosen is the area itself or an area inside it'
-			});
-		}
-	}
-
-	if (await findTileKind(version, universe.ruleset, settings.defaultTileId, transaction) === undefined)
-	{
-		refuse(400, {
-			id: 'error.unusableDefaultTile',
-			defaultMessage: 'The default tile must be a tile this universe can use.',
-			description: 'Why an area\'s settings were refused: the default tile was deleted, perhaps by another editor'
-		});
+		await context.places.requireWithin({ kind: 'area', id: link.targetAreaId });
 	}
 }

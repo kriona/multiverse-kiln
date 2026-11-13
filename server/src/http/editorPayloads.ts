@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, hasLinkLikeText, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type AreaBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { AREA_EVACUATIONS, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, hasLinkLikeText, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, MAX_PLACE_PARENTS, MAX_REGION_BUILDERS, MAX_REGION_NAME_LENGTH, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type AreaBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -281,8 +281,6 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	stage: z.enum(UNIVERSE_STAGES).optional(),
 	requireTwoFactor: z.boolean().optional(),
 	requireBuilderDraft: z.boolean().optional(),
-	passageOfTime: z.enum(PASSAGES_OF_TIME).optional(),
-	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
 	displayTime: z.enum(DISPLAY_TIMES).optional(),
 	lobbyPassageOfTime: z.enum(LOBBY_PASSAGES_OF_TIME).optional(),
 	lobbyDayHours: z.number().int().min(MIN_LOBBY_DAY_HOURS).max(MAX_LOBBY_DAY_HOURS).optional(),
@@ -577,21 +575,57 @@ const areaLinkTarget = z.object({
 }) satisfies z.ZodType<AreaLinkTarget>;
 
 /**
- * The area settings a save may create an area with or change, whose default tile and parent may be
+ * A region's or area's parent, by its ID or the ref of one made earlier in the same save
+ */
+const placeRef = z.object({
+	kind: z.enum(['region', 'area']),
+	id: stringRef
+});
+
+/**
+ * The parents a region or area may have: most many regions can name, and each at most once is checked as
+ * the change is saved
+ */
+const placeParents = z.array(placeRef).max(MAX_PLACE_PARENTS);
+
+/**
+ * The settings regions and areas share, each null for inherit, whose default tile may be made earlier
+ * in the same save
+ */
+const placeSettingFields = {
+	enabled: z.boolean().nullable().optional(),
+	indoors: z.boolean().nullable().optional(),
+	lightLevel: z.enum(AREA_LIGHT_LEVELS).nullable().optional(),
+	defaultTileId: numberRef.nullable().optional(),
+	passageOfTime: z.enum(PASSAGES_OF_TIME).nullable().optional(),
+	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional()
+};
+
+/**
+ * The area settings a save may create an area with or change, whose default tile and parents may be
  * made earlier in the same save
  */
 const areaChangeFields = {
 	name: displayText(MAX_AREA_NAME_LENGTH).optional(),
-	parentAreaId: stringRef.nullable().optional(),
-	enabled: z.boolean().optional(),
-	indoors: z.boolean().optional(),
-	lightLevel: z.enum(AREA_LIGHT_LEVELS).optional(),
-	defaultTileId: numberRef.optional(),
-	passageOfTime: z.enum(AREA_PASSAGES_OF_TIME).optional(),
-	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	parents: placeParents.optional(),
+	...placeSettingFields,
 	loopsEastWest: z.boolean().optional(),
 	loopsNorthSouth: z.boolean().optional()
 };
+
+/**
+ * The region settings a save may create a region with or change
+ */
+const regionChangeFields = {
+	name: displayText(MAX_REGION_NAME_LENGTH).optional(),
+	parents: placeParents.optional(),
+	...placeSettingFields
+};
+
+/**
+ * Where the characters in the areas a change disables go, by area
+ */
+const areaEvacuations = z.record(stringRef, z.enum(AREA_EVACUATIONS));
 
 /**
  * The changes to one list of things a save can make: create, save and remove
@@ -624,15 +658,22 @@ function listChanges<const Name extends string, Settings extends z.ZodType, cons
 }
 
 /**
- * An editor's role and languages: a translator needs at least one language, and other roles have none
+ * An editor's role, languages and permissions: a translator needs at least one language, and other
+ * roles have none; only a builder is given permissions
  */
 const editorRoleSettings = z.object({
 	role: z.enum(UNIVERSE_ROLES),
 	languages: z.array(languageTag)
 		.max(MAX_TRANSLATOR_LANGUAGES)
-		.transform((languages) => [...new Set(languages)])
+		.transform((languages) => [...new Set(languages)]),
+	permissions: z.object({
+		canEditTiles: z.boolean(),
+		canEditItems: z.boolean(),
+		canEditMobs: z.boolean()
+	}).optional()
 })
-	.refine((settings) => ((settings.role === 'translator') === (settings.languages.length > 0)), 'A translator needs languages, and other roles have none') satisfies z.ZodType<EditorRoleSettings>;
+	.refine((settings) => ((settings.role === 'translator') === (settings.languages.length > 0)), 'A translator needs languages, and other roles have none')
+	.refine((settings) => ((settings.role === 'builder') || (settings.permissions === undefined) || !Object.values(settings.permissions).some((given) => given)), 'Only a builder is given permissions') satisfies z.ZodType<EditorRoleSettings>;
 
 /**
  * Query parameters of GET /:universeId/editors/search: at least MIN_PLAYER_SEARCH_LENGTH characters
@@ -740,11 +781,46 @@ export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', 
 	...listChanges('Theme', themeSettings),
 	...listChanges('DifficultyLevel', difficultyLevelSettings),
 	z.object({
+		kind: z.literal('createRegion'),
+		ref: newRef,
+		region: z.object({
+			...regionChangeFields,
+			name: displayText(MAX_REGION_NAME_LENGTH),
+			parents: placeParents,
+			enabled: z.boolean().nullable(),
+			indoors: z.boolean().nullable(),
+			lightLevel: z.enum(AREA_LIGHT_LEVELS).nullable(),
+			defaultTileId: numberRef.nullable(),
+			passageOfTime: z.enum(PASSAGES_OF_TIME).nullable(),
+			faerieMorning: z.enum(FAERIE_MORNINGS).nullable()
+		})
+	}),
+	z.object({
+		kind: z.literal('updateRegion'),
+		regionId: stringRef,
+		update: z.object(regionChangeFields),
+		loaded: loadedSettings,
+		moveTo: areaEvacuations.optional()
+	}),
+	z.object({
+		kind: z.literal('deleteRegion'),
+		regionId: stringRef,
+		moveTo: areaEvacuations.optional()
+	}),
+	z.object({
+		kind: z.literal('assignBuilders'),
+		regionId: stringRef,
+		builderIds: z.array(z.uuid())
+			.max(MAX_REGION_BUILDERS)
+			.transform((builderIds) => [...new Set(builderIds)])
+	}),
+	z.object({
 		kind: z.literal('createArea'),
 		ref: newRef,
 		area: z.object({
 			...areaChangeFields,
-			name: displayText(MAX_AREA_NAME_LENGTH)
+			name: displayText(MAX_AREA_NAME_LENGTH),
+			parents: placeParents
 		})
 	}),
 	z.object({
@@ -752,11 +828,12 @@ export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', 
 		areaId: stringRef,
 		update: z.object(areaChangeFields),
 		loaded: loadedSettings,
-		moveTo: z.enum(AREA_EVACUATIONS).optional()
+		moveTo: areaEvacuations.optional()
 	}),
 	z.object({
 		kind: z.literal('deleteArea'),
-		areaId: stringRef
+		areaId: stringRef,
+		moveTo: areaEvacuations.optional()
 	}),
 	z.object({
 		kind: z.literal('resizeArea'),

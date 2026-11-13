@@ -11,7 +11,7 @@ import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
-import { deleteArea, editCells, resizeArea, updateAreaSettings } from '../src/db/areaRepo.js';
+import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
@@ -22,7 +22,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, addArea,defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, addArea,defaultClassId, defaultRaceId, defaultTileId, setWorkedOut, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -523,7 +523,7 @@ describe('LobbyRoom', () =>
 
 			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
 			{
-				await updateAreaSettings(squareAreaId, { enabled: false });
+				await setWorkedOut(squareAreaId, { enabled: false });
 				areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 				await waitUntil(() => !room.state.hasArea);
 			});
@@ -888,7 +888,7 @@ describe('LobbyRoom', () =>
 			const room = lobbyOf(ada);
 
 			await ada.inbox.take(ServerMessageType.Area);
-			await updateAreaSettings(squareAreaId, { enabled: false });
+			await setWorkedOut(squareAreaId, { enabled: false });
 			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 			await waitUntil(() => !room.state.hasArea);
 			assert.strictEqual(room.state.players.size, 0);
@@ -899,7 +899,7 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(grace.room.state.hasArea, false);
 			assert.ok(room.state.members.has(grace.playerId));
 
-			await updateAreaSettings(squareAreaId, { enabled: true });
+			await setWorkedOut(squareAreaId, { enabled: true });
 			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
 			await waitUntil(() => room.state.hasArea);

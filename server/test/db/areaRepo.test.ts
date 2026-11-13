@@ -1,17 +1,36 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, tileIdAt, VOID_CELL, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
-import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea } from './fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea, testRegionId } from './fixtures.js';
+
+/**
+ * The settings addArea() works out for a grass area, with some of them changed
+ *
+ * @param changes The settings to change
+ * @return The settings
+ */
+async function workedOut(changes: Partial<ResolvedAreaSettings>): Promise<ResolvedAreaSettings>
+{
+	return({
+		enabled: true,
+		indoors: false,
+		lightLevel: null,
+		defaultTileId: await defaultTileId('grass'),
+		passageOfTime: 'flows_normally',
+		faerieMorning: null,
+		...changes
+	});
+}
 
 /**
  * A chunk of default cells with its first cell set
@@ -40,7 +59,7 @@ describe('areaRepo', () =>
 			const loaded = await loadArea(areaId);
 
 			assert.ok(loaded);
-			assert.deepStrictEqual(loaded.area, { id: areaId, universeId, parentAreaId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'inherit' });
+			assert.deepStrictEqual(loaded.area, { id: areaId, universeId, parentAreaId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'flows_normally' });
 			assert.deepStrictEqual(loaded.bounds, { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 });
 			assert.strictEqual(loaded.defaultTileId, tileIds.get('grass'));
 			assert.strictEqual(loaded.loopsEastWest, false);
@@ -75,29 +94,26 @@ describe('areaRepo', () =>
 			assert.deepStrictEqual([...(loaded?.disabledTargetIds ?? [])], []);
 			assert.deepStrictEqual(await listAreasLinkingTo(insideId), [areaId]);
 
-			await updateAreaSettings(insideId, { enabled: false });
+			await storeResolvedSettings(new Map([[insideId, await workedOut({ enabled: false })]]));
 			assert.deepStrictEqual([...((await loadArea(areaId))?.disabledTargetIds ?? [])], [insideId]);
 		});
 
-		it('follows inherit through the parent areas to the universe\'s passage of time', async () =>
+		it('plays the settings worked out for the area, not its own', async () =>
 		{
 			const universeId = await addUniverse();
-			const worldId = await addArea(universeId, 'World');
-			const regionId = await addArea(universeId, 'Region');
 			const townId = await addArea(universeId, 'Town');
-
-			await updateAreaSettings(regionId, { parentAreaId: worldId });
-			await updateAreaSettings(townId, { parentAreaId: regionId });
 
 			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'flows_normally' });
 
-			await updateAreaSettings(worldId, { passageOfTime: 'faerie', faerieMorning: 'north' });
-
+			await storeResolvedSettings(new Map([[townId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'north' })]]));
 			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'faerie', morning: 'north' });
 
-			await updateAreaSettings(regionId, { passageOfTime: 'always_dusk' });
+			await updateAreaSettings(townId, { passageOfTime: 'always_dusk', indoors: true });
 
-			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'always_dusk' });
+			const loaded = await loadArea(townId);
+
+			assert.deepStrictEqual(loaded?.time, { passage: 'faerie', morning: 'north' });
+			assert.strictEqual(loaded.area.indoors, false);
 		});
 
 		it('gives the lobby\'s area the universe\'s lobby time', async () =>
@@ -163,15 +179,23 @@ describe('areaRepo', () =>
 				area: {
 					id: areaId,
 					name: 'Village',
-					parentAreaId: null,
-					enabled: true,
-					indoors: false,
-					lightLevel: 'lit',
-					defaultTileId: grass,
-					passageOfTime: 'inherit',
+					parents: [{ kind: 'region', id: await testRegionId(universeId) }],
+					enabled: null,
+					indoors: null,
+					lightLevel: null,
+					defaultTileId: null,
+					passageOfTime: null,
 					faerieMorning: null,
 					loopsEastWest: false,
 					loopsNorthSouth: false,
+					resolved: {
+						enabled: true,
+						indoors: false,
+						lightLevel: null,
+						defaultTileId: grass,
+						passageOfTime: 'flows_normally',
+						faerieMorning: null
+					},
 					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
 				}
 			});
@@ -408,17 +432,19 @@ describe('areaRepo', () =>
 
 	describe('updateAreaSettings and deleteArea', () =>
 	{
-		it('changes settings, and deleting an area leaves its children at the top level', async () =>
+		it('changes settings and parents, keeping the parents in the order they were added', async () =>
 		{
 			const universeId = await addUniverse();
+			const regionId = await testRegionId(universeId);
 			const parentId = await addArea(universeId, 'Kingdom');
 			const childId = await addArea(universeId, 'Castle');
 
-			await updateAreaSettings(childId, { parentAreaId: parentId, name: 'Royal Castle', passageOfTime: 'faerie', faerieMorning: 'east' });
+			await updateAreaSettings(childId, { name: 'Royal Castle', passageOfTime: 'faerie', faerieMorning: 'east' });
+			await setAreaParents(childId, [{ kind: 'region', id: regionId }, { kind: 'area', id: parentId }]);
 
 			let child = (await findEditorArea(childId))?.area;
 
-			assert.strictEqual(child?.parentAreaId, parentId);
+			assert.deepStrictEqual(child?.parents, [{ kind: 'region', id: regionId }, { kind: 'area', id: parentId }]);
 			assert.strictEqual(child.name, 'Royal Castle');
 			assert.strictEqual(child.faerieMorning, 'east');
 
@@ -427,14 +453,15 @@ describe('areaRepo', () =>
 			child = (await findEditorArea(childId))?.area;
 
 			assert.strictEqual(await findEditorArea(parentId), undefined);
-			assert.strictEqual(child?.parentAreaId, null);
+			assert.deepStrictEqual(child?.parents, [{ kind: 'region', id: regionId }]);
 		});
 
-		it('is refused by the database for a faerie area that loops', async () =>
+		it('is refused by the database for an area that loops with faerie time worked out for it', async () =>
 		{
 			const areaId = await addArea(await addUniverse());
 
-			await assert.rejects(updateAreaSettings(areaId, { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: true }));
+			await updateAreaSettings(areaId, { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: true });
+			await assert.rejects(storeResolvedSettings(new Map([[areaId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'east' })]])));
 		});
 	});
 

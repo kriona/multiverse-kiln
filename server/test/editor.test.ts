@@ -9,11 +9,11 @@ import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { createPlayer } from '../src/db/playerRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
-import { setUniverseRole } from '../src/db/universeEditorRepo.js';
+import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
 import { addCharacter, defaultTileId } from './db/fixtures.js';
 import { allowedTestOrigin } from './setup.js';
-import { createArea, createUniverse, logIn, saveChange, send, solidPng, type Editor, type SaveAnswer } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveChange, saveChanges, send, solidPng, worldRegionId, type Editor, type SaveAnswer } from './editorRequests.js';
 import { logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { turnOnTwoFactor } from './twoFactorAccounts.js';
@@ -262,6 +262,13 @@ describe('World editor API', () =>
 
 				await setUniverseRole(universeId, player.playerId, role);
 
+				// Builders edit tiles with the permission to
+				if (role === 'builder')
+				{
+					assert.strictEqual((await saveChange(player, universeId, { kind: 'createTile', ref: 'new:lava', settings: lava })).status, 403, role);
+					await setUniverseAccess(universeId, player.playerId, { role, languages: [], permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false } });
+				}
+
 				assert.strictEqual((await send(player, 'GET', `/${universeId}`)).status, 200, role);
 				assert.strictEqual((await saveChange(player, universeId, { kind: 'createTile', ref: 'new:lava', settings: lava })).status, tileStatus, role);
 				assert.strictEqual((await updateUniverse(player, universeId, { name: 'Mine Now' })).status, settingsStatus, role);
@@ -343,7 +350,9 @@ describe('World editor API', () =>
 			const lobby = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${universe.lobbyAreaId}`)).body;
 
 			assert.deepStrictEqual(lobby.bounds, NEW_AREA_BOUNDS);
-			assert.strictEqual(lobby.defaultTileId, await defaultTileId('grass'));
+			assert.strictEqual(lobby.resolved.defaultTileId, await defaultTileId('grass'));
+			assert.deepStrictEqual(areas.regions.map((region) => [region.name, region.defaultTileId]), [['World', await defaultTileId('grass')]]);
+			assert.deepStrictEqual(lobby.parents, [{ kind: 'region', id: areas.regions[0].id }]);
 		});
 
 		it('lists the player\'s universes', async () =>
@@ -482,28 +491,17 @@ describe('World editor API', () =>
 			assert.strictEqual((await updateUniverse(ada, universeId, { name: 'St. Kilnhaven: The Return' })).status, 200);
 		});
 
-		it('changes the settings, keeping faerie time and its morning together', async () =>
+		it('changes the settings', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const path = `/${universeId}`;
 
-			assert.strictEqual((await updateUniverse(ada, universeId, { passageOfTime: 'faerie' })).status, 400);
-			assert.strictEqual((await updateUniverse(ada, universeId, { faerieMorning: 'east' })).status, 400);
-			assert.strictEqual((await updateUniverse(ada, universeId, { passageOfTime: 'faerie', faerieMorning: 'east', longDescription: '# Welcome\n\nA **small** town.', stage: 'prologue' })).status, 200);
+			assert.strictEqual((await updateUniverse(ada, universeId, { longDescription: '# Welcome\n\nA **small** town.', stage: 'prologue' })).status, 200);
 
-			let universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
+			const universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
 
-			assert.strictEqual(universe.passageOfTime, 'faerie');
-			assert.strictEqual(universe.faerieMorning, 'east');
 			assert.strictEqual(universe.longDescription, '# Welcome\n\nA **small** town.');
 			assert.strictEqual(universe.stage, 'prologue');
-
-			assert.strictEqual((await updateUniverse(ada, universeId, { passageOfTime: 'always_noon' })).status, 400);
-			assert.strictEqual((await updateUniverse(ada, universeId, { passageOfTime: 'always_noon', faerieMorning: null })).status, 200);
-
-			universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
-
-			assert.strictEqual(universe.faerieMorning, null);
 		});
 
 		it('changes the lobby\'s time, keeping faerie time off a lobby whose area loops', async () =>
@@ -896,7 +894,7 @@ describe('World editor API', () =>
 
 			const usage = (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).body;
 
-			assert.deepStrictEqual(usage.areas.map((area) => area.id).sort(), [lobbyAreaId, meadowId].sort());
+			assert.deepStrictEqual(usage.areas.map((area) => area.id), [lobbyAreaId]);
 
 			for (const replaceWith of [tileId, theirTileId, 'abc'])
 			{
@@ -914,7 +912,12 @@ describe('World editor API', () =>
 
 			try
 			{
-				assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId, grassId)).status, 200);
+				// The meadow sets the tile as its own default tile, which a change before deleting it replaces
+				assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId, grassId)).status, 409);
+				assert.strictEqual((await saveChanges(ada, universeId, [
+					{ kind: 'updateArea', areaId: meadowId, update: { defaultTileId: grassId } },
+					{ kind: 'removeTile', id: tileId, replaceWith: grassId }
+				])).status, 200);
 			}
 			finally
 			{
@@ -1140,7 +1143,7 @@ describe('World editor API', () =>
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, type: 'lightsaber' })).status, 400);
 		});
 
-		it('lets builders change items, but not beta testers', async () =>
+		it('lets builders with the permission change items, but not beta testers', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const grace = await logIn('Grace');
@@ -1149,6 +1152,9 @@ describe('World editor API', () =>
 			assert.strictEqual((await createIn(grace, universeId, 'Item', torch)).status, 403);
 
 			await setUniverseRole(universeId, grace.playerId, 'builder');
+			assert.strictEqual((await createIn(grace, universeId, 'Item', torch)).status, 403);
+
+			await setUniverseAccess(universeId, grace.playerId, { role: 'builder', languages: [], permissions: { canEditTiles: false, canEditItems: true, canEditMobs: false } });
 			assert.strictEqual((await createIn(grace, universeId, 'Item', torch)).status, 200);
 		});
 	});
@@ -1483,27 +1489,43 @@ describe('World editor API', () =>
 		it('creates an area with its defaults', async () =>
 		{
 			const universeId = await createUniverse(ada);
+			const worldId = await worldRegionId(ada, universeId);
 			const outsideId = await createArea(ada, universeId);
-			const insideId = await createArea(ada, universeId, { name: 'Cellar', indoors: true, parentAreaId: outsideId });
+			const insideId = await createArea(ada, universeId, { name: 'Cellar', indoors: true, defaultTileId: await defaultTileId('wood_floor'), parents: [{ kind: 'area', id: outsideId }] });
 			const outside = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${outsideId}`)).body;
 			const inside = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${insideId}`)).body;
 
 			assert.deepStrictEqual(outside, {
 				id: outsideId,
 				name: 'Meadow',
-				parentAreaId: null,
-				enabled: true,
-				indoors: false,
-				lightLevel: 'lit',
-				defaultTileId: await defaultTileId('grass'),
-				passageOfTime: 'inherit',
+				parents: [{ kind: 'region', id: worldId }],
+				enabled: null,
+				indoors: null,
+				lightLevel: null,
+				defaultTileId: null,
+				passageOfTime: null,
 				faerieMorning: null,
 				loopsEastWest: false,
 				loopsNorthSouth: false,
+				resolved: {
+					enabled: true,
+					indoors: false,
+					lightLevel: null,
+					defaultTileId: await defaultTileId('grass'),
+					passageOfTime: 'flows_normally',
+					faerieMorning: null
+				},
 				bounds: NEW_AREA_BOUNDS
 			});
-			assert.strictEqual(inside.defaultTileId, await defaultTileId('wood_floor'));
-			assert.strictEqual(inside.parentAreaId, outsideId);
+			assert.deepStrictEqual(inside.resolved, {
+				enabled: true,
+				indoors: true,
+				lightLevel: 'lit',
+				defaultTileId: await defaultTileId('wood_floor'),
+				passageOfTime: 'flows_normally',
+				faerieMorning: null
+			});
+			assert.deepStrictEqual(inside.parents, [{ kind: 'area', id: outsideId }]);
 		});
 
 		it('starts new areas disabled once the universe is past in_the_beginning', async () =>
@@ -1522,13 +1544,13 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const worldId = await createArea(ada, universeId, { name: 'World' });
-			const cityId = await createArea(ada, universeId, { name: 'City', parentAreaId: worldId });
+			const cityId = await createArea(ada, universeId, { name: 'City', parents: [{ kind: 'area', id: worldId }] });
 			const elsewhereId = await createArea(ada, otherId, { name: 'Elsewhere' });
 
-			assert.strictEqual((await updateArea(ada, universeId, worldId, { parentAreaId: cityId })).status, 400);
-			assert.strictEqual((await updateArea(ada, universeId, worldId, { parentAreaId: worldId })).status, 400);
-			assert.strictEqual((await updateArea(ada, universeId, worldId, { parentAreaId: elsewhereId })).status, 400);
-			assert.strictEqual((await saveChange(ada, universeId, { kind: 'createArea', ref: 'new:lost', area: { name: 'Lost', parentAreaId: elsewhereId } })).status, 400);
+			assert.strictEqual((await updateArea(ada, universeId, worldId, { parents: [{ kind: 'area', id: cityId }] })).status, 409);
+			assert.strictEqual((await updateArea(ada, universeId, worldId, { parents: [{ kind: 'area', id: worldId }] })).status, 400);
+			assert.strictEqual((await updateArea(ada, universeId, worldId, { parents: [{ kind: 'area', id: elsewhereId }] })).status, 400);
+			assert.strictEqual((await saveChange(ada, universeId, { kind: 'createArea', ref: 'new:lost', area: { name: 'Lost', parents: [{ kind: 'area', id: elsewhereId }] } })).status, 400);
 		});
 
 		it('refuses faerie time on a looping area, and a default tile of another universe', async () =>
@@ -1538,7 +1560,7 @@ describe('World editor API', () =>
 			const areaId = await createArea(ada, universeId, { loopsEastWest: true });
 			const theirTileId = (await createIn(ada, otherId, 'Tile', lava)).body.id;
 
-			assert.strictEqual((await updateArea(ada, universeId, areaId, { passageOfTime: 'faerie', faerieMorning: 'east' })).status, 400);
+			assert.strictEqual((await updateArea(ada, universeId, areaId, { passageOfTime: 'faerie', faerieMorning: 'east' })).status, 409);
 			assert.strictEqual((await updateArea(ada, universeId, areaId, { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: false })).status, 200);
 			assert.strictEqual((await updateArea(ada, universeId, areaId, { defaultTileId: theirTileId })).status, 400);
 		});
@@ -1546,7 +1568,7 @@ describe('World editor API', () =>
 		it('changes an area\'s light level', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const areaId = await createArea(ada, universeId, { name: 'Cellar', indoors: true });
+			const areaId = await createArea(ada, universeId, { name: 'Cellar', indoors: true, defaultTileId: await defaultTileId('wood_floor') });
 			const path = `/${universeId}/areas/${areaId}`;
 
 			assert.strictEqual((await updateArea(ada, universeId, areaId, { lightLevel: 'dim' })).status, 400);
@@ -1650,7 +1672,7 @@ describe('World editor API', () =>
 		{
 			const universeId = await createUniverse(ada);
 			const outsideId = await createArea(ada, universeId, { name: 'Outside' });
-			const insideId = await createArea(ada, universeId, { name: 'Inside', indoors: true });
+			const insideId = await createArea(ada, universeId, { name: 'Inside', indoors: true, defaultTileId: await defaultTileId('wood_floor') });
 			const target = { targetAreaId: insideId, targetColumn: 1, targetRow: 2, mode: 'automatic', requiresWholeGroup: true };
 			const path = `/${universeId}/areas/${outsideId}/links`;
 
@@ -1750,21 +1772,22 @@ describe('World editor API', () =>
 			]);
 		});
 
-		it('tells the rooms when a passage of time changes, which other areas may inherit', async () =>
+		it('tells the rooms when a passage of time changes, and each area whose settings a region changes', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const areaId = await createArea(ada, universeId);
+			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 
 			await updateUniverse(ada, universeId, { name: 'Renamed Universe' });
-			await updateUniverse(ada, universeId, { passageOfTime: 'always_dusk' });
 			await updateUniverse(ada, universeId, { lobbyPassageOfTime: 'always_noon' });
 			await updateArea(ada, universeId, areaId, { passageOfTime: 'always_dawn' });
+			await saveChange(ada, universeId, { kind: 'updateRegion', regionId: await worldRegionId(ada, universeId), update: { passageOfTime: 'always_dusk' } });
 
+			// The lobby's area takes the Lobby tab's time, so only the starting area changes with the region
 			assert.deepStrictEqual(published, [
 				{ kind: 'time', universeId },
-				{ kind: 'time', universeId },
 				{ kind: 'area', areaId },
-				{ kind: 'time', universeId }
+				{ kind: 'area', areaId: universe.startingAreaId }
 			]);
 		});
 	});

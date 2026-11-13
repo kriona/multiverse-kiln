@@ -1299,8 +1299,8 @@
 		"defaultMessage": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}",
 		"description": "Above the area's cells in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes"
 	},
-	"editor.area.confirmDelete": {
-		"defaultMessage": "Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas.",
+	"editor.area.confirmDeleteInRegions": {
+		"defaultMessage": "Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place.",
 		"description": "Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name"
 	},
 	"editor.area.confirmDeleteLinks": {
@@ -1318,6 +1318,10 @@
 	"editor.area.delete": {
 		"defaultMessage": "Delete Area",
 		"description": "Button that deletes the area being edited when the Areas tab is saved"
+	},
+	"editor.area.deleteLeavesProblems": {
+		"defaultMessage": "Deleting this area would leave the areas inside it, which take its parents in its place, with problems: {problems}",
+		"description": "Shown in the area editor in place of deleting the area, when the areas inside it would be left without a setting or with different values from above; {problems} lists the problems"
 	},
 	"editor.area.draw": {
 		"defaultMessage": "Draw",
@@ -1387,10 +1391,6 @@
 		"defaultMessage": "Light level",
 		"description": "Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
-	"editor.area.lightLevelHint": {
-		"defaultMessage": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.",
-		"description": "Explains the light level field of an indoor area"
-	},
 	"editor.area.links": {
 		"defaultMessage": "Links",
 		"description": "Area editor tool that adds and changes links to other areas"
@@ -1423,9 +1423,9 @@
 		"defaultMessage": "Loops north-south",
 		"description": "Checkbox for an area that wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
-	"editor.area.noParent": {
-		"defaultMessage": "None (a top-level area)",
-		"description": "Choice of parent area for an area that isn't inside another, also shown in the empty Parent area field, where typing finds an area by name"
+	"editor.area.needsParent": {
+		"defaultMessage": "An area must be inside at least one region or area.",
+		"description": "Shown in the area editor when its parents have all been removed, which keeps it from saving"
 	},
 	"editor.area.openFailed": {
 		"defaultMessage": "Could not open the area.",
@@ -1433,11 +1433,7 @@
 	},
 	"editor.area.parent": {
 		"defaultMessage": "Parent area",
-		"description": "Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor's Audit tab"
-	},
-	"editor.area.parentDisabled": {
-		"defaultMessage": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled.",
-		"description": "Warns that players can't reach the area; {areas} lists the areas it is inside that are disabled, and {count} is how many"
+		"description": "Names the area an area was inside, in the list of what a save changed, on the editor's Audit tab, for saves made before regions"
 	},
 	"editor.area.redo": {
 		"defaultMessage": "Redo",
@@ -1483,9 +1479,13 @@
 		"defaultMessage": "🌃Void",
 		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
-	"editor.areaAdd.failed": {
-		"defaultMessage": "Could not add the area.",
-		"description": "Shown in the Add Area dialog when the area couldn't be made"
+	"editor.areaAdd.hint": {
+		"defaultMessage": "The new area inherits its settings from what it's inside until you set its own.",
+		"description": "Explains the Add Area dialog: a new area's settings start as inherited from what it is inside"
+	},
+	"editor.areaAdd.needsParent": {
+		"defaultMessage": "Choose the region or area the new area goes inside.",
+		"description": "Shown in the Add Area dialog when nothing was chosen for the new area to go inside"
 	},
 	"editor.areaAdd.submit": {
 		"defaultMessage": "Add",
@@ -1567,14 +1567,6 @@
 		"defaultMessage": "Could not delete {area}.",
 		"description": "Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved"
 	},
-	"editor.areas.heading": {
-		"defaultMessage": "Areas",
-		"description": "Heading of the list of the universe's areas"
-	},
-	"editor.areas.indoorsTag": {
-		"defaultMessage": "indoors",
-		"description": "Under an area in the list of areas, for an area that is indoors"
-	},
 	"editor.areas.listFailed": {
 		"defaultMessage": "Could not list the areas.",
 		"description": "Shown on the Areas tab when the areas couldn't be loaded"
@@ -1586,10 +1578,6 @@
 	"editor.areas.none": {
 		"defaultMessage": "There are no areas yet.",
 		"description": "Shown instead of the list of areas when the universe has none"
-	},
-	"editor.areas.outdoorsTag": {
-		"defaultMessage": "outdoors",
-		"description": "Under an area in the list of areas, for an area that is outdoors"
 	},
 	"editor.areas.startingAreaTag": {
 		"defaultMessage": "starting area",
@@ -1646,6 +1634,10 @@
 	"editor.audit.detail.race": {
 		"defaultMessage": "{action, select, added {Added race {name}} changed {Changed race {name}} restored {Restored race {name} to its default} other {Deleted race {name}}}",
 		"description": "In the editor's Audit tab's list of what a save changed: a race (such as elf or dwarf) added, changed, given back the ruleset's settings for it, or deleted. {name} is its name. A change is followed by a line for each setting it changed"
+	},
+	"editor.audit.detail.region": {
+		"defaultMessage": "{action, select, added {Added region {name}} changed {Changed region {name}} other {Deleted region {name}}}",
+		"description": "In the editor's Audit tab's list of what a save changed: a region (which groups areas and holds settings they inherit) added, changed or deleted. {name} is its name. An addition or change is followed by a line for each setting it set"
 	},
 	"editor.audit.detail.ruleset": {
 		"defaultMessage": "Changed the ruleset",
@@ -1751,9 +1743,21 @@
 		"defaultMessage": "{time}, morning: {morning}",
 		"description": "The value of a passage of time setting in the editor's Audit tab's list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
 	},
+	"editor.audit.value.inherit": {
+		"defaultMessage": "inherit",
+		"description": "The value of a region's or area's setting a save left to the regions and areas above it, in the editor's Audit tab's list of what a save changed, e.g. \"Default tile: inherit\""
+	},
 	"editor.audit.value.itemQuantity": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "One item in the value of a starting equipment setting, in the editor's Audit tab's list of what a save changed: the item's name, with how many when there is more than one, e.g. \"Arrow x20\""
+	},
+	"editor.audit.value.items": {
+		"defaultMessage": "items",
+		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
+	},
+	"editor.audit.value.mobs": {
+		"defaultMessage": "mobs",
+		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.audit.value.no": {
 		"defaultMessage": "no",
@@ -1770,6 +1774,10 @@
 	"editor.audit.value.raceArea": {
 		"defaultMessage": "{race}: {place}",
 		"description": "One race in the value of a class's Starting area by race setting, in the editor's Audit tab's list of what a save changed: {race} is the race's name and {place} where the class's members of that race start, e.g. \"Elf: Meadow at 3, 4\""
+	},
+	"editor.audit.value.tiles": {
+		"defaultMessage": "tiles",
+		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.audit.value.yes": {
 		"defaultMessage": "yes",
@@ -2255,6 +2263,22 @@
 		"defaultMessage": "Add Editor",
 		"description": "Title of the dialog on the editor's Editors tab for giving a player a role in the universe"
 	},
+	"editor.editors.builderDetails": {
+		"defaultMessage": "Also edits: {permissions}. Regions: {regions}",
+		"description": "On the editor's Editors tab, in a builder's row: {permissions} lists what they may edit besides their regions (tiles, items, mobs), or says none, and {regions} lists the regions they are assigned, or says none"
+	},
+	"editor.editors.canEditItems": {
+		"defaultMessage": "Can edit items",
+		"description": "Checkbox in the dialog on the editor's Editors tab letting a builder edit the universe's items"
+	},
+	"editor.editors.canEditMobs": {
+		"defaultMessage": "Can edit mobs",
+		"description": "Checkbox in the dialog on the editor's Editors tab letting a builder edit the universe's mobs, once there are any"
+	},
+	"editor.editors.canEditTiles": {
+		"defaultMessage": "Can edit tiles",
+		"description": "Checkbox in the dialog on the editor's Editors tab letting a builder edit the universe's tiles and uploaded tilesets"
+	},
 	"editor.editors.caption": {
 		"defaultMessage": "Editors",
 		"description": "Name of the table on the editor's Editors tab listing the players with a role in the universe, read out by screen readers"
@@ -2270,6 +2294,10 @@
 	"editor.editors.editTitle": {
 		"defaultMessage": "Edit {username}",
 		"description": "Title of the dialog on the editor's Editors tab for changing an editor's role; {username} is their username"
+	},
+	"editor.editors.items": {
+		"defaultMessage": "items",
+		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's items"
 	},
 	"editor.editors.languages": {
 		"defaultMessage": "Languages",
@@ -2310,6 +2338,22 @@
 	"editor.editors.listFailed": {
 		"defaultMessage": "Could not list the editors.",
 		"description": "Shown on the editor's Editors tab when the universe's editors couldn't be loaded"
+	},
+	"editor.editors.mobs": {
+		"defaultMessage": "mobs",
+		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's mobs"
+	},
+	"editor.editors.none": {
+		"defaultMessage": "none",
+		"description": "On the editor's Editors tab, in a builder's row: they may edit nothing besides their regions, or are assigned no regions"
+	},
+	"editor.editors.permissions": {
+		"defaultMessage": "Permissions",
+		"description": "Heading of the checkboxes in the dialog on the editor's Editors tab for what a builder may edit besides the areas and regions they are assigned; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.editors.permissionsHint": {
+		"defaultMessage": "Builders edit the regions and areas inside the regions they're assigned to, which are assigned in the region editor, and these besides.",
+		"description": "Under the builder permissions in the dialog on the editor's Editors tab"
 	},
 	"editor.editors.player": {
 		"defaultMessage": "Player",
@@ -2354,6 +2398,10 @@
 	"editor.editors.settingsSaveFailed": {
 		"defaultMessage": "Could not save whether editors need two-factor authentication.",
 		"description": "Shown on the editor's Editors tab when the server refused the setting that requires the universe's editors to have two-factor authentication on, followed by why; nothing was saved"
+	},
+	"editor.editors.tiles": {
+		"defaultMessage": "tiles",
+		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's tiles"
 	},
 	"editor.editors.undoRemove": {
 		"defaultMessage": "Undo Remove",
@@ -2727,6 +2775,142 @@
 		"defaultMessage": "Passage of time",
 		"description": "Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
+	"editor.place.addParent": {
+		"defaultMessage": "Add Parent",
+		"description": "Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"
+	},
+	"editor.place.conflict": {
+		"defaultMessage": "{area}: {setting} is {values}",
+		"description": "A problem keeping a save, shown by the region and area editors: the regions or areas an area inherits a setting from give it different values; {area} is the area, {setting} the setting, and {values} the values with where each comes from, joined, e.g. \"Market District: passage of time is Always noon in Capitol City but Always dusk in Bea's areas\""
+	},
+	"editor.place.disabledBy": {
+		"defaultMessage": "Disabled while {places} {count, plural, one {is} other {are}} disabled, above it.",
+		"description": "Shown under the Enabled choice of a region or area while something above it is disabled, which disables it too; {places} names the disabled regions and areas, and {count} is how many"
+	},
+	"editor.place.faerieLoops": {
+		"defaultMessage": "{area}: its passage of time is faerie, so it can't loop",
+		"description": "A problem keeping a save, shown by the region and area editors: an area that loops takes faerie time from above it; {area} is the area"
+	},
+	"editor.place.faerieTime": {
+		"defaultMessage": "{time}, morning: {morning}",
+		"description": "A passage of time in the region and area editors, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
+	},
+	"editor.place.inherit": {
+		"defaultMessage": "Inherit ({value}, from {places})",
+		"description": "The choice for a region's or area's setting that takes its value from the regions and areas above it, showing what it takes: {value} is the value, such as Always noon, and {places} the regions or areas it comes from, e.g. \"Inherit (Always noon, from Capitol City)\""
+	},
+	"editor.place.inheritConflict": {
+		"defaultMessage": "Inherit (different in {places})",
+		"description": "The choice for a region's or area's setting that takes its value from above, when the regions or areas at the nearest level above give different values; {places} names them"
+	},
+	"editor.place.inheritMissing": {
+		"defaultMessage": "Inherit (nothing above sets it)",
+		"description": "The choice for a region's or area's setting that takes its value from above, when no region or area above it sets one"
+	},
+	"editor.place.inheritPlain": {
+		"defaultMessage": "Inherit",
+		"description": "The choice for a region's or area's setting that takes its value from the regions and areas above it, when there is nothing to show of what it takes"
+	},
+	"editor.place.insideItself": {
+		"defaultMessage": "{place} is inside itself",
+		"description": "A problem keeping a save, shown by the region and area editors: following a region's or area's parents up leads back to it; {place} is its name"
+	},
+	"editor.place.missing": {
+		"defaultMessage": "{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} other {a passage of time}}",
+		"description": "A problem keeping a save, shown by the region and area editors: no region or area above an area sets one of its settings, and it doesn't set it itself; {area} is the area and {setting} which setting"
+	},
+	"editor.place.noRegion": {
+		"defaultMessage": "{area} isn't in any region",
+		"description": "A problem keeping a save, shown by the region and area editors: every area must be in a region, directly or through the area it is inside; {area} is the area"
+	},
+	"editor.place.notSet": {
+		"defaultMessage": "Not set",
+		"description": "The choice for a setting a top-level region leaves to the regions and areas below it, which have nothing above them to inherit from, in the region editor"
+	},
+	"editor.place.off": {
+		"defaultMessage": "Off",
+		"description": "Choice for a region or area that is disabled, disabling everything below it"
+	},
+	"editor.place.on": {
+		"defaultMessage": "On",
+		"description": "Choice for a region or area that is enabled. It sets nothing: the region or area is still disabled while something above it is"
+	},
+	"editor.place.parents": {
+		"defaultMessage": "Parents",
+		"description": "Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab's table listing them; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.place.problemsHeading": {
+		"defaultMessage": "These keep your changes from saving:",
+		"description": "Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them"
+	},
+	"editor.place.removeParent": {
+		"defaultMessage": "Remove",
+		"description": "Button beside one of a region's or area's parents in its editor, which takes it out of that parent"
+	},
+	"editor.place.removeParentLabel": {
+		"defaultMessage": "Remove {parent}",
+		"description": "Name of the button that takes a region or area out of one of its parents, for screen readers; {parent} is the parent's name"
+	},
+	"editor.place.settingName": {
+		"defaultMessage": "{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} other {passage of time}}",
+		"description": "A setting of a region or area, named in the middle of a sentence about a problem with it, e.g. \"nothing above it sets a default tile\"; {setting} is which one"
+	},
+	"editor.place.tooDeep": {
+		"defaultMessage": "{place} is nested more than ten levels deep",
+		"description": "A problem keeping a save, shown by the region and area editors: regions and areas nest at most ten levels deep along their longest path; {place} is the region or area past the tenth level"
+	},
+	"editor.place.valueIn": {
+		"defaultMessage": "{value} in {place}",
+		"description": "One of the different values regions or areas give a setting, in a problem the editor shows, e.g. \"Always noon in Capitol City\""
+	},
+	"editor.placeAdd.inside": {
+		"defaultMessage": "Inside",
+		"description": "Label of the field in the Add Area and Add Region dialogs for the region (or, for an area, the area) the new one goes inside; typing part of a name finds it"
+	},
+	"editor.places.area": {
+		"defaultMessage": "Area",
+		"description": "Says a row of the Areas tab's table is an area, in its column for whether each is a region or an area"
+	},
+	"editor.places.collapse": {
+		"defaultMessage": "Collapse {name}",
+		"description": "Name of the button that hides what is inside a region or area in the Areas tab's tree, for screen readers; {name} is its name"
+	},
+	"editor.places.expand": {
+		"defaultMessage": "Expand {name}",
+		"description": "Name of the button that shows what is inside a region or area in the Areas tab's tree, for screen readers; {name} is its name"
+	},
+	"editor.places.heading": {
+		"defaultMessage": "Regions and Areas",
+		"description": "Heading of the editor's Areas tab, listing the universe's regions (which group areas) and areas"
+	},
+	"editor.places.kind": {
+		"defaultMessage": "Region or area",
+		"description": "Heading of the column of the Areas tab's table saying whether each row is a region or an area"
+	},
+	"editor.places.region": {
+		"defaultMessage": "Region",
+		"description": "Says a row of the Areas tab's table is a region, which groups areas, in its column for whether each is a region or an area"
+	},
+	"editor.places.searchLabel": {
+		"defaultMessage": "Search regions and areas by name",
+		"description": "Name of the field on the Areas tab that narrows the regions and areas down by name, for screen readers"
+	},
+	"editor.places.table": {
+		"defaultMessage": "Table",
+		"description": "Choice on the Areas tab that shows the regions and areas as a table, one row each"
+	},
+	"editor.places.tags": {
+		"defaultMessage": "Tags",
+		"description": "Heading of the column of the Areas tab's table that says of each region or area whether it is the lobby's or the starting area, disabled, new or deleted when saved, or open in another editor's window"
+	},
+	"editor.places.tree": {
+		"defaultMessage": "Tree",
+		"description": "Choice on the Areas tab that shows the regions and areas as a tree, each listed under the regions and areas it is inside"
+	},
+	"editor.places.view": {
+		"defaultMessage": "Show as",
+		"description": "Heading of the choice on the Areas tab between showing the regions and areas as a tree, each inside its parents, or as a table"
+	},
 	"editor.presence.area": {
 		"defaultMessage": "{tab} - {area}",
 		"description": "In the bar at the bottom of the universe's editor, where another editor's window is: {tab} is the tab's name, such as Areas, and {area} the name of the area it shows"
@@ -2830,6 +3014,138 @@
 	"editor.races.modifier": {
 		"defaultMessage": "{ability} {modifier, number, ::sign-always}",
 		"description": "One ability modifier in a race's summary on the editor's Characters tab, e.g. Dexterity +2; {ability} is the ability's name"
+	},
+	"editor.region.assignBuilder": {
+		"defaultMessage": "Assign a builder",
+		"description": "Shown in the empty field under a region's assigned builders, where typing part of a builder's name lists the universe's builders, to assign one"
+	},
+	"editor.region.assignments": {
+		"defaultMessage": "Assigned builders",
+		"description": "Heading of the builders assigned to a region in the region editor, who can edit everything inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.region.assignmentsHint": {
+		"defaultMessage": "Builders edit only the regions and areas inside the regions they're assigned to. Only creators assign them.",
+		"description": "Explains the builders assigned to a region in the region editor"
+	},
+	"editor.region.contents": {
+		"defaultMessage": "Inside this region",
+		"description": "Heading of the list of the regions and areas inside the region being edited"
+	},
+	"editor.region.delete": {
+		"defaultMessage": "Delete Region",
+		"description": "Button in the region editor that deletes the region when the Areas tab is saved, after asking what happens to what is in it; also the Delete Region dialog's button"
+	},
+	"editor.region.draftAssignments": {
+		"defaultMessage": "Builders can be assigned to this region once the draft is applied.",
+		"description": "Shown in the region editor for a region added in the universe's draft, in place of assigning builders, which belongs to the live universe"
+	},
+	"editor.region.empty": {
+		"defaultMessage": "Nothing is inside this region yet.",
+		"description": "Shown in the region editor in place of the list of what is inside the region, when nothing is"
+	},
+	"editor.region.hint": {
+		"defaultMessage": "A region groups areas. The regions and areas inside it inherit the settings it sets, and builders assigned to it can edit everything inside it.",
+		"description": "Explains the region editor: what a region is and does"
+	},
+	"editor.region.noBuilders": {
+		"defaultMessage": "No builders are assigned to this region.",
+		"description": "Shown in the region editor in place of the list of builders assigned to the region, when it has none"
+	},
+	"editor.region.saveFailed": {
+		"defaultMessage": "Could not save the region.",
+		"description": "Shown in the region editor when the server refused its settings, parents or builders, followed by why; nothing was saved"
+	},
+	"editor.region.warningsHeading": {
+		"defaultMessage": "Different values from above, which the areas in this region must settle:",
+		"description": "Heads the list of settings a region inherits different values for from the regions above it, in the region editor. They don't keep it from saving: only areas are checked, and an area below it may set its own value or find one nearer"
+	},
+	"editor.regionAdd.nameTaken": {
+		"defaultMessage": "Another region is already named that.",
+		"description": "Shown under the name field of the Add Region dialog or region editor when another region has the name, not counting capitals"
+	},
+	"editor.regionAdd.needsParent": {
+		"defaultMessage": "Choose the region the new region goes inside.",
+		"description": "Shown in the Add Region dialog to a builder who chose nothing for the new region to go inside: builders add regions only inside the regions they're assigned"
+	},
+	"editor.regionAdd.submit": {
+		"defaultMessage": "Add",
+		"description": "Button that makes the new region"
+	},
+	"editor.regionAdd.title": {
+		"defaultMessage": "Add Region",
+		"description": "Title of the dialog for making a new region, which groups areas"
+	},
+	"editor.regionAdd.topLevel": {
+		"defaultMessage": "Nothing (a top-level region)",
+		"description": "Choice in the Add Region dialog's Inside field for a region inside no other"
+	},
+	"editor.regionDelete.addParent": {
+		"defaultMessage": "Also put them in",
+		"description": "Choice in the Delete Region dialog that adds the region chosen beside it as a parent of the regions and areas with other parents"
+	},
+	"editor.regionDelete.addTo": {
+		"defaultMessage": "Region to also put them in",
+		"description": "Name of the choice of the region the Delete Region dialog adds as a parent, for screen readers"
+	},
+	"editor.regionDelete.confirmDeleteAll": {
+		"defaultMessage": "Delete {region} and {places}, with everything inside them, when the Areas tab is saved?",
+		"description": "First of two questions before the Delete Region dialog deletes what the region holds; {region} is the region and {places} lists what goes with it"
+	},
+	"editor.regionDelete.confirmDeleteAllAgain": {
+		"defaultMessage": "Are you sure? Their cells, links and translations will be deleted for good once the Areas tab is saved.",
+		"description": "Second of two questions before the Delete Region dialog deletes what the region holds"
+	},
+	"editor.regionDelete.deleteAll": {
+		"defaultMessage": "Delete them, with everything inside them",
+		"description": "Choice in the Delete Region dialog that deletes the regions and areas whose only parent is the deleted region, with everything inside them"
+	},
+	"editor.regionDelete.leave": {
+		"defaultMessage": "Leave them in their other parents",
+		"description": "Choice in the Delete Region dialog that leaves the regions and areas with other parents in those parents"
+	},
+	"editor.regionDelete.move": {
+		"defaultMessage": "Move them to",
+		"description": "Choice in the Delete Region dialog that moves the regions and areas whose only parent is the deleted region into the region chosen beside it"
+	},
+	"editor.regionDelete.moveTo": {
+		"defaultMessage": "Region to move them to",
+		"description": "Name of the choice of the region the Delete Region dialog moves things into, for screen readers"
+	},
+	"editor.regionDelete.onlyChoice": {
+		"defaultMessage": "What happens to them",
+		"description": "Name of the choice in the Delete Region dialog of what happens to the regions and areas whose only parent is the region being deleted, for screen readers"
+	},
+	"editor.regionDelete.onlyIntro": {
+		"defaultMessage": "{count, plural, one {This is inside nothing but {region}:} other {These are inside nothing but {region}:}}",
+		"description": "Heads the list, in the Delete Region dialog, of the regions and areas whose only parent is the region being deleted; {region} is its name and {count} how many"
+	},
+	"editor.regionDelete.problems": {
+		"defaultMessage": "Deleting it this way would leave problems: {problems}",
+		"description": "Shown in the Delete Region dialog when the choices would leave areas without a setting or with different values from above, which keeps it from going on; {problems} lists them"
+	},
+	"editor.regionDelete.sharedChoice": {
+		"defaultMessage": "What happens to them",
+		"description": "Name of the choice in the Delete Region dialog of what happens to the regions and areas with other parents besides the region being deleted, for screen readers"
+	},
+	"editor.regionDelete.sharedIntro": {
+		"defaultMessage": "{count, plural, one {This is also inside other regions or areas:} other {These are also inside other regions or areas:}}",
+		"description": "Heads the list, in the Delete Region dialog, of the regions and areas inside the region being deleted that have other parents too; {count} is how many"
+	},
+	"editor.regionDelete.title": {
+		"defaultMessage": "Delete {region}",
+		"description": "Title of the dialog deleting a region; {region} is its name"
+	},
+	"editor.regionDelete.topLevel": {
+		"defaultMessage": "nothing (top-level regions)",
+		"description": "Choice of the region the Delete Region dialog moves things into, for making the regions in it top-level; an area must be inside a region, so it is refused for areas"
+	},
+	"editor.regions.add": {
+		"defaultMessage": "Add Region",
+		"description": "Button on the Areas tab that opens the dialog for making a new region, which groups areas and holds settings they inherit"
+	},
+	"editor.regions.saveFailed": {
+		"defaultMessage": "Could not save the regions.",
+		"description": "Shown on the Areas tab when the server refused a change to its regions, followed by why; nothing was saved"
 	},
 	"editor.resize.cutOffWarning": {
 		"defaultMessage": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the area is saved. Resize anyway?",
@@ -3395,6 +3711,78 @@
 		"defaultMessage": "Delete Tileset Image",
 		"description": "Title of the dialog that asks before deleting an uploaded tileset (a picture tiles can be drawn with)"
 	},
+	"editor.tileReplace.all": {
+		"defaultMessage": "Replace All With",
+		"description": "Label of the list in the dialog replacing a default tile that chooses one tile for every region and area listed at once"
+	},
+	"editor.tileReplace.areas": {
+		"defaultMessage": "Its areas with the tile:",
+		"description": "Under a region or area in the dialog replacing a default tile, before the areas that take the tile from it, each a link"
+	},
+	"editor.tileReplace.belowKeeper": {
+		"defaultMessage": "It inherits the tile from a region or area that keeps it for its other areas. Inherit leaves it to take what is above it once the tile no longer suits it.",
+		"description": "Under an area in the dialog replacing a default tile, when the tile is no longer for its kind, but the place it inherits the tile from keeps it for areas of the other kind"
+	},
+	"editor.tileReplace.cantApply": {
+		"defaultMessage": "These choices can't be applied; see what is listed above.",
+		"description": "Shown in the dialog replacing a default tile when Apply is pressed while it lists places outside the builder's assignments, or problems the choices would leave"
+	},
+	"editor.tileReplace.choose": {
+		"defaultMessage": "Choose a tile",
+		"description": "First choice in the lists of the dialog replacing a default tile, before one is chosen"
+	},
+	"editor.tileReplace.chooseEach": {
+		"defaultMessage": "Choose a tile each region and area can take, or Inherit where it is offered.",
+		"description": "Shown in the dialog replacing a default tile when Apply is pressed while a region or area has nothing chosen, or a tile that isn't for its areas"
+	},
+	"editor.tileReplace.count": {
+		"defaultMessage": "{chosen} / {total} chosen",
+		"description": "In the dialog replacing a default tile: how many of the regions and areas listed have a choice that can go on, out of how many there are"
+	},
+	"editor.tileReplace.deleteIntro": {
+		"defaultMessage": "\"{tile}\" is the default tile of these regions and areas. Choose what each gets instead; nothing changes until the Tilesets tab is saved.",
+		"description": "Opens the dialog replacing a default tile, when the tile is being deleted; {tile} is its name"
+	},
+	"editor.tileReplace.inheritEach": {
+		"defaultMessage": "Inherit ({tiles})",
+		"description": "The choice in the dialog replacing a default tile that takes what is above a region, when the areas it served would get different tiles; {tiles} lists each tile with its area, e.g. \"Grass for Field and Sand for Beach\""
+	},
+	"editor.tileReplace.inheritValue": {
+		"defaultMessage": "{tile} for {area}",
+		"description": "One area and the default tile it would inherit, in the Inherit choice of the dialog replacing a default tile; {tile} is the tile and {area} the area"
+	},
+	"editor.tileReplace.loadFailed": {
+		"defaultMessage": "Could not find out which regions and areas take the tile as their default tile.",
+		"description": "Shown in the dialog replacing a default tile when the regions and areas couldn't be loaded"
+	},
+	"editor.tileReplace.noAreas": {
+		"defaultMessage": "No area takes it from here.",
+		"description": "Under a region or area in the dialog replacing a default tile that sets the tile but gives it to no area"
+	},
+	"editor.tileReplace.outside": {
+		"defaultMessage": "These are outside the regions you're assigned, so a creator has to change them:",
+		"description": "Heading in the dialog replacing a default tile, over the regions and areas listed that are outside the regions assigned to the builder, so only a creator can change them"
+	},
+	"editor.tileReplace.place": {
+		"defaultMessage": "{kind, select, region {Region {name}} other {Area {name}}}",
+		"description": "Names a region or area in the dialog replacing a default tile, over its list of what it gets instead; {name} is its name"
+	},
+	"editor.tileReplace.problems": {
+		"defaultMessage": "These choices would leave problems:",
+		"description": "Heading in the dialog replacing a default tile, over the problems the choices made would leave areas with, which keep it from going on"
+	},
+	"editor.tileReplace.title": {
+		"defaultMessage": "Replace Default Tile",
+		"description": "Title of the dialog that asks what regions and areas get as their default tile instead of a tile being deleted, or no longer for indoors or outdoors"
+	},
+	"editor.tileReplace.uncheckIntro": {
+		"defaultMessage": "\"{tile}\" is the default tile of {indoors, select, true {indoor} other {outdoor}} areas. Choose what these regions and areas get instead; nothing changes until the Tilesets tab is saved.",
+		"description": "Opens the dialog replacing a default tile, when the tile is no longer for indoor (or outdoor) areas but is the default tile of some; {tile} is its name and {indoors} whether it is indoor areas"
+	},
+	"editor.tileReplace.unsuited": {
+		"defaultMessage": "This tile isn't for {areas}. Choose another.",
+		"description": "Warning under a region or area in the dialog replacing a default tile, when the tile chosen for it isn't for the kind (indoors or outdoors) of areas it would become the default tile of; {areas} lists them"
+	},
 	"editor.tiles.add": {
 		"defaultMessage": "Add Tile",
 		"description": "Button that opens the dialog for making a new tile"
@@ -3426,6 +3814,10 @@
 	"editor.tiles.percent": {
 		"defaultMessage": "{cost, number, percent}",
 		"description": "A tile's vision cost as a percentage, e.g. 50%. Change only for a language whose percentages the number format gets wrong"
+	},
+	"editor.tiles.placeTileFailed": {
+		"defaultMessage": "Could not change the default tile of the regions and areas that took the tile \"{name}\".",
+		"description": "Shown on the Tilesets tab when the server refused to give regions or areas another default tile in place of a tile being deleted or no longer for indoors or outdoors, followed by why; {name} is the tile's name. Nothing was saved"
 	},
 	"editor.tiles.searchLabel": {
 		"defaultMessage": "Search tiles by name",
@@ -4375,10 +4767,6 @@
 		"defaultMessage": "They are already one of the site's admins.",
 		"description": "Why a player couldn't be made one of the site's admins on the Admins admin page: they are one, perhaps because another admin added them a moment ago"
 	},
-	"error.areaInsideItself": {
-		"defaultMessage": "An area can't be inside itself.",
-		"description": "Why an area's settings were refused: the parent chosen is the area itself or an area inside it"
-	},
 	"error.areaLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
 		"description": "Why a new area wasn't made, or a file couldn't be imported into a universe's draft: the universe would have more areas than the site allows; {max} is the most it can have"
@@ -4386,6 +4774,18 @@
 	"error.areaLinkLimit": {
 		"defaultMessage": "An area can have at most {max, plural, one {# link} other {# links}}.",
 		"description": "Why an area link wasn't added: the area has as many links on its cells as allowed. A link takes characters who step on its cell to another area"
+	},
+	"error.areaParents": {
+		"defaultMessage": "An area must be in at least one region or area, and inside at most one area.",
+		"description": "Why an area's parents were refused: every area has at least one parent (a region it is in, or an area it is inside), and at most one of them is an area"
+	},
+	"error.assignNonBuilder": {
+		"defaultMessage": "Only the universe's builders can be assigned to regions.",
+		"description": "Why builders couldn't be assigned to a region: one of the players chosen isn't a builder of the universe, perhaps because another editor changed their role"
+	},
+	"error.assignedRegionLocked": {
+		"defaultMessage": "Only the universe's creators can move or delete a region you're assigned to.",
+		"description": "Why the world editor couldn't save a builder's change: builders can rename the regions they are assigned to and change their settings, but changing their parents or deleting them is for creators"
 	},
 	"error.auth.adminKeepsTwoFactor": {
 		"defaultMessage": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first.",
@@ -4595,6 +4995,10 @@
 		"defaultMessage": "The universe already has a draft. Apply it or discard it before starting another.",
 		"description": "Why a draft of the universe couldn't be started (see Universe versions): it has one already, perhaps started by another editor"
 	},
+	"error.draftRegionAssignment": {
+		"defaultMessage": "Builders can be assigned to a region the draft added once the draft is applied.",
+		"description": "Why builders couldn't be assigned to a region: assignments belong to the universe rather than its draft, so they name live regions, and this region only exists in the draft so far"
+	},
 	"error.editorNeedsTwoFactor": {
 		"defaultMessage": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.",
 		"description": "Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn't; {universe} is the universe's name. Buttons to turn it on, leave the universe and go back to Home follow"
@@ -4803,6 +5207,10 @@
 		"defaultMessage": "The race doesn't exist.",
 		"description": "Why a request about a race (such as elf or dwarf) failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchRegion": {
+		"defaultMessage": "The region doesn't exist.",
+		"description": "Why a change to a region failed: it was deleted, perhaps by another editor"
+	},
 	"error.noSuchReplacementTile": {
 		"defaultMessage": "The tile chosen to replace it doesn't exist.",
 		"description": "Why a tile couldn't be deleted: the tile chosen to paint the areas with in its place isn't one of the universe's tiles, perhaps because it was deleted"
@@ -4859,9 +5267,21 @@
 		"defaultMessage": "Changes aren't allowed from this website.",
 		"description": "Why an editor change was refused: it came from a page on another website"
 	},
+	"error.outsideAssignments": {
+		"defaultMessage": "That region or area isn't within the regions you're assigned to, so you can't change it.",
+		"description": "Why the world editor couldn't save a builder's change: builders only edit the regions and areas below the regions a creator assigned them to, and the change touches one outside them (a move, a parent or a link needs both ends within them)"
+	},
 	"error.parentNotInUniverse": {
-		"defaultMessage": "The parent area must be an area of this universe.",
-		"description": "Why an area's settings were refused: the area chosen to hold it doesn't exist"
+		"defaultMessage": "A parent must be a region or area of this universe.",
+		"description": "Why a region's or area's parents were refused: one of the regions or areas chosen to hold it doesn't exist, perhaps deleted by another editor"
+	},
+	"error.placeInsideItself": {
+		"defaultMessage": "A region or area can't be inside itself.",
+		"description": "Why a region's or area's parents were refused: one of the parents chosen is the region or area itself"
+	},
+	"error.placeProblems": {
+		"defaultMessage": "Some areas would be left without a value for a setting, or with different values from the regions above them, or regions and areas would be nested wrongly.",
+		"description": "Why the world editor couldn't save: every area works out its settings (indoors or outdoors, light level, default tile, passage of time) from the regions and areas above it, and the changes leave some with none, or with two different values from places at the same level; the editor lists each problem on the Areas tab"
 	},
 	"error.profile.locale": {
 		"defaultMessage": "Choose a language from the list.",
@@ -4898,6 +5318,14 @@
 	"error.raceUnavailable": {
 		"defaultMessage": "That race can't be chosen any more. Choose another.",
 		"description": "Why a new character wasn't made: the race chosen was deleted or disabled while the player was making the character"
+	},
+	"error.regionLimit": {
+		"defaultMessage": "A universe can have at most {max, plural, one {# region} other {# regions}}.",
+		"description": "Why a new region wasn't made: the universe has as many regions as the site allows (as many as areas); {max} is the most it can have"
+	},
+	"error.regionNameTaken": {
+		"defaultMessage": "Another region is already named {name}.",
+		"description": "Why a region's name was refused: region names are unique within a universe, not counting capitals; {name} is the name"
 	},
 	"error.requireTwoFactorWithout": {
 		"defaultMessage": "Turn on two-factor authentication for your own account before requiring it of the universe's editors.",
@@ -4960,8 +5388,8 @@
 		"description": "Why an uploaded tileset was refused: the picture is the wrong size for the layout chosen for it (15 tiles for ground, or 47 for walls); {width} and {height} are the size it must be, in pixels"
 	},
 	"error.tileInUse": {
-		"defaultMessage": "An area uses this tile, so it can't be deleted.",
-		"description": "Why a tile couldn't be deleted: some area is painted with it"
+		"defaultMessage": "An area is painted with this tile, or a region or area sets it as its default tile, so it can't be deleted.",
+		"description": "Why a tile couldn't be deleted: some area is painted with it, or some region or area still chooses it as the tile its ground is made of"
 	},
 	"error.tileLimit": {
 		"defaultMessage": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
@@ -5029,7 +5457,7 @@
 	},
 	"error.unusableDefaultTile": {
 		"defaultMessage": "The default tile must be a tile this universe can use.",
-		"description": "Why an area's settings were refused: the default tile was deleted, perhaps by another editor"
+		"description": "Why a region's or area's settings were refused: the default tile was deleted, perhaps by another editor"
 	},
 	"error.unusableStartingArea": {
 		"defaultMessage": "The starting area must be an area of this universe other than the lobby.",
@@ -8086,6 +8514,10 @@
 	"universe.time.real_time": {
 		"defaultMessage": "real time",
 		"description": "Passage of time for a universe's lobby, where the time of day follows the real clock, with a day as long as the universe chooses"
+	},
+	"universe.worldRegionName": {
+		"defaultMessage": "World",
+		"description": "Name given to the region holding the areas of a new universe, which sets the settings they inherit; its creator can change it. Regions are only seen in the world editor"
 	},
 	"universePage.edit": {
 		"defaultMessage": "Edit Universe",

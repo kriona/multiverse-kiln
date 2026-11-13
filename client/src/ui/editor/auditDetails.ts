@@ -286,7 +286,22 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	parentArea: {
 		id: 'editor.area.parent',
 		defaultMessage: 'Parent area',
-		description: 'Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Names the area an area was inside, in the list of what a save changed, on the editor\'s Audit tab, for saves made before regions'
+	},
+	parents: {
+		id: 'editor.place.parents',
+		defaultMessage: 'Parents',
+		description: 'Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab\'s table listing them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	assignments: {
+		id: 'editor.region.assignments',
+		defaultMessage: 'Assigned builders',
+		description: 'Heading of the builders assigned to a region in the region editor, who can edit everything inside it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	permissions: {
+		id: 'editor.editors.permissions',
+		defaultMessage: 'Permissions',
+		description: 'Heading of the checkboxes in the dialog on the editor\'s Editors tab for what a builder may edit besides the areas and regions they are assigned; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	indoorsOrOutdoors: {
 		id: 'form.indoorsOrOutdoors',
@@ -370,6 +385,11 @@ const AUDIT_DETAILS: Readonly<Record<AuditSubject, MessageDescriptor>> = defineM
 		defaultMessage: '{action, select, added {Added difficulty level {name}} changed {Changed difficulty level {name}} other {Deleted difficulty level {name}}}',
 		description: 'In the editor\'s Audit tab\'s list of what a save changed: a difficulty level added, changed or deleted. {name} is its name. A change is followed by a line for each setting it changed'
 	},
+	region: {
+		id: 'editor.audit.detail.region',
+		defaultMessage: '{action, select, added {Added region {name}} changed {Changed region {name}} other {Deleted region {name}}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: a region (which groups areas and holds settings they inherit) added, changed or deleted. {name} is its name. An addition or change is followed by a line for each setting it set'
+	},
 	area: {
 		id: 'editor.audit.detail.area',
 		defaultMessage: '{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized area {name}} other {Deleted area {name}}}',
@@ -425,6 +445,26 @@ const VALUE_MESSAGES = defineMessages({
 		id: 'editor.audit.value.no',
 		defaultMessage: 'no',
 		description: 'The value of a checkbox setting a save turned off, in the editor\'s Audit tab\'s list of what a save changed, e.g. "Track ammunition (no)"'
+	},
+	inherit: {
+		id: 'editor.audit.value.inherit',
+		defaultMessage: 'inherit',
+		description: 'The value of a region\'s or area\'s setting a save left to the regions and areas above it, in the editor\'s Audit tab\'s list of what a save changed, e.g. "Default tile: inherit"'
+	},
+	tiles: {
+		id: 'editor.audit.value.tiles',
+		defaultMessage: 'tiles',
+		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
+	},
+	items: {
+		id: 'editor.audit.value.items',
+		defaultMessage: 'items',
+		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
+	},
+	mobs: {
+		id: 'editor.audit.value.mobs',
+		defaultMessage: 'mobs',
+		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
 	},
 	none: {
 		id: 'editor.audit.value.none',
@@ -537,7 +577,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(t(UNIVERSE_STAGE_NAMES[change.value]));
 		case 'passageOfTime':
 		case 'lobbyPassageOfTime':
-			return(describePassageOfTime(change.value));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : describePassageOfTime(change.value)));
 		case 'displayTime':
 			return(t(DISPLAY_TIME_NAMES[change.value]));
 		case 'startingMoney':
@@ -610,12 +650,23 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(t(PF1E_CASTING_STYLE_NAMES[change.value]));
 		case 'parentArea':
 			return((change.value ?? t(VALUE_MESSAGES.none)));
+		case 'parents':
+		case 'assignments':
+			return(listOrNone(change.value));
+		case 'permissions':
+			return(listOrNone([
+				...(change.value.canEditTiles ? [t(VALUE_MESSAGES.tiles)] : []),
+				...(change.value.canEditItems ? [t(VALUE_MESSAGES.items)] : []),
+				...(change.value.canEditMobs ? [t(VALUE_MESSAGES.mobs)] : [])
+			]));
 		case 'indoorsOrOutdoors':
-			return(t(AUDIT_FIELD_NAMES[(change.value ? 'indoors' : 'outdoors')]));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AUDIT_FIELD_NAMES[(change.value ? 'indoors' : 'outdoors')])));
 		case 'lightLevel':
-			return(t(AREA_LIGHT_LEVEL_NAMES[change.value]));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AREA_LIGHT_LEVEL_NAMES[change.value])));
 		case 'defaultTile':
-			return(tileName(change.value, ruleset));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : tileName(change.value, ruleset)));
+		case 'enabled':
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t((change.value ? VALUE_MESSAGES.yes : VALUE_MESSAGES.no))));
 		case 'lobbyDayHours':
 		case 'groupSize':
 		case 'customPointBuyBudget':
@@ -635,7 +686,6 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'tracksAmmo':
 		case 'indoors':
 		case 'outdoors':
-		case 'enabled':
 		case 'keepPlaying':
 		case 'floatingBonus':
 		case 'lightSensitivity':

@@ -30,7 +30,7 @@ import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universe
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
 import { AreaCache, toLinkCells, type ActiveArea } from './areaCache.js';
-import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
+import { AREA_MESSAGE_OPTIONS, CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -1086,7 +1086,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				links: toLinkCells(area.loaded, (link) => revealed.has(`${link.column},${link.row}`))
 			};
 
-			client.send(GameServerMessageType.CellsSeen, payload);
+			client.send(GameServerMessageType.CellsSeen, payload, AREA_MESSAGE_OPTIONS);
 		}
 	}
 

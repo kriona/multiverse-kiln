@@ -2,7 +2,7 @@
  * Universes: the only module that reads or writes the universes table
  */
 import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
-import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
+import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinAbbreviationColumns, fromCoinColumns, fromCoinNameColumns, toCoinAbbreviationColumns, toCoinColumns, toCoinNameColumns } from './coinColumns.js';
@@ -142,7 +142,6 @@ export interface UniverseRecord
 	shortDescription: string;
 	stage: UniverseStage;
 	ruleset: Ruleset;
-	passageOfTime: PassageOfTime;
 
 	/**
 	 * Undefined until the universe's areas exist, and while it has no lobby area
@@ -188,7 +187,7 @@ export interface UniverseRecord
  * What a new universe needs. Its slug comes from its name, and its lobby and starting areas are set
  * once they exist (setUniverseAreas)
  */
-export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset' | 'passageOfTime'>;
+export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset'>;
 
 /**
  * Adds a universe, with the default difficulty levels
@@ -261,7 +260,6 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		shortDescription: row.shortDescription,
 		stage: row.stage,
 		ruleset: row.ruleset,
-		passageOfTime: row.passageOfTime,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
 		lobbyColumn: row.lobbyColumn,
 		lobbyRow: row.lobbyRow,
@@ -354,8 +352,6 @@ function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 		longDescription: table.longDescription,
 		sourceLanguage: table.sourceLanguage,
 		translationLanguages: table.translationLanguages,
-		passageOfTime: table.passageOfTime,
-		faerieMorning: table.faerieMorning,
 		displayTime: table.displayTime,
 		lobbyPassageOfTime: table.lobbyPassageOfTime,
 		lobbyDayHours: table.lobbyDayHours,

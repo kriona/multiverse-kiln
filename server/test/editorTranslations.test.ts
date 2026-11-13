@@ -8,7 +8,7 @@ import { listTranslations } from '../src/db/universeTextRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { hashSourceText } from '../src/http/editorTranslations.js';
 import { UniverseTextTranslator } from '../src/http/universeTextTranslator.js';
-import { createArea, createUniverse, logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveAll, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
 /**
@@ -303,7 +303,7 @@ describe('Translations tab', () =>
 
 		await saveAll(ada, universeId, [{ kind: 'startDraft' }]);
 
-		const added = await send<SaveChangesPayload>(ada, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave' } }] } });
+		const added = await send<SaveChangesPayload>(ada, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId, 'draft') }] } }] } });
 
 		assert.strictEqual(added.status, 200, JSON.stringify(added.body));
 

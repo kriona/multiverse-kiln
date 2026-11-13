@@ -3,7 +3,7 @@
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { z } from 'zod';
-import { defineMessages, EDITOR_VERSION_PARAM, UNIVERSE_VERSIONS, editorAccessOf, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorRole, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { defineMessages, EDITOR_VERSION_PARAM, UNIVERSE_VERSIONS, editorAccessOf, type BuilderPermissions, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorRole, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { isActiveServerAdmin } from '../db/serverAdminRepo.js';
@@ -43,6 +43,11 @@ export interface UniverseContext
 	 * The languages the player may translate into, as a translator
 	 */
 	languages: readonly string[];
+
+	/**
+	 * The player's permissions as a builder
+	 */
+	permissions?: Readonly<BuilderPermissions>;
 
 	/**
 	 * Whether the player is a server admin with 2FA on, who may save while the universe is disabled
@@ -192,6 +197,7 @@ export async function loadUniverseContext(request: Request, response: Response, 
 				version,
 				role: access.role,
 				languages: access.languages,
+				permissions: access.permissions,
 				serverAdmin,
 				twoFactor
 			});

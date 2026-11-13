@@ -35,7 +35,6 @@ describe('universeRepo', () =>
 			shortDescription: 'A small town.',
 			stage: 'in_the_beginning',
 			ruleset: 'pf1e',
-			passageOfTime: 'flows_normally',
 			lobbyAreaId: undefined,
 			lobbyColumn: 0,
 			lobbyRow: 0,

@@ -11,7 +11,7 @@ import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
-import { createAreaLink, deleteArea, updateAreaSettings } from '../src/db/areaRepo.js';
+import { createAreaLink, deleteArea } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
@@ -26,7 +26,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { KeptChatLog } from '../src/rooms/keptChat.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, setWorkedOut, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -722,7 +722,7 @@ describe('GameRoom', () =>
 	{
 		it(`passes no game time as players walk in an area whose time is ${settings.passageOfTime}`, async () =>
 		{
-			await updateAreaSettings(universe.fieldAreaId, settings);
+			await setWorkedOut(universe.fieldAreaId, settings);
 
 			const room = await createGameRoom();
 			const client = await joinAsNewPlayer(room);
@@ -742,7 +742,7 @@ describe('GameRoom', () =>
 
 	it('shows every member in the area to the whole group, however far apart, and gives each their race\'s darkvision', async () =>
 	{
-		await updateAreaSettings(universe.fieldAreaId, { passageOfTime: 'always_midnight', faerieMorning: null });
+		await setWorkedOut(universe.fieldAreaId, { passageOfTime: 'always_midnight', faerieMorning: null });
 
 		const room = await createGameRoom();
 		const ada = await joinFromBrowser(room, browserIdA, 'Ada');
@@ -764,7 +764,7 @@ describe('GameRoom', () =>
 
 	it('sends only the cells the group has seen, each as it is first seen, and remembers them after everyone has left', async () =>
 	{
-		await updateAreaSettings(universe.fieldAreaId, { passageOfTime: 'always_noon', faerieMorning: null });
+		await setWorkedOut(universe.fieldAreaId, { passageOfTime: 'always_noon', faerieMorning: null });
 
 		const room = await createGameRoom();
 		const window = await joinFromBrowser(room, browserIdA, 'Ada');

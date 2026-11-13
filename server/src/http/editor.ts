@@ -6,7 +6,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDismissedNotices, findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
@@ -19,10 +19,11 @@ import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInAreas } from '../db/areaRepo.js';
+import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInAreas, setAreaParents } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
-import { isSameVersion, type UniverseVersion } from '../db/universeVersions.js';
+import { isSameVersion, liveVersion, type UniverseVersion } from '../db/universeVersions.js';
+import { createRegion, listAssignedRegionIds } from '../db/regionRepo.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { addAuditRoutes } from './editorAudit.js';
 import { addCharacterListRoutes } from './editorCharacters.js';
@@ -38,7 +39,7 @@ import { addTranslationRoutes } from './editorTranslations.js';
 import { addDifficultyLevelRoutes } from './editorDifficultyLevels.js';
 import { addEditorListRoutes } from './editorEditors.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
-import { addAreaRoutes, lobbyTimeProblem, timeSettingsProblem } from './editorAreas.js';
+import { addAreaRoutes, lobbyTimeProblem } from './editorAreas.js';
 import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { addUniverseDeletionRoutes } from './universeDeletion.js';
 import { addUniverseExportRoutes } from './universeExport.js';
@@ -264,11 +265,30 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			throw new Error(`The ${ruleset} default tile "${tileKey}" is missing`);
 		}
 
-		const area = {
-			universeId: createdId,
+		// Every area is in a region, which sets what the areas inherit
+		const regionId = await createRegion(liveVersion(createdId), {
+			name: universeTranslator.format({
+				id: 'universe.worldRegionName',
+				defaultMessage: 'World',
+				description: 'Name given to the region holding the areas of a new universe, which sets the settings they inherit; its creator can change it. Regions are only seen in the world editor'
+			}),
+			enabled: null,
+			indoors: false,
+			lightLevel: 'lit',
+			defaultTileId,
+			passageOfTime: 'flows_normally',
+			faerieMorning: null
+		}, transaction);
+		const resolved: ResolvedAreaSettings = {
 			enabled: true,
 			indoors: false,
+			lightLevel: null,
 			defaultTileId,
+			passageOfTime: 'flows_normally',
+			faerieMorning: null
+		};
+		const area = {
+			universeId: createdId,
 			bounds: NEW_AREA_BOUNDS
 		};
 		const lobbyAreaName = universeTranslator.format({
@@ -281,8 +301,20 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			defaultMessage: 'Starting Area',
 			description: 'Name given to the area characters of a new universe start in, which its creator can change'
 		});
-		const lobbyAreaId = await createArea({ ...area, name: lobbyAreaName }, transaction);
-		const startingAreaId = await createArea({ ...area, name: startingAreaName }, transaction);
+		const lobbyAreaId = await createArea({
+			...area,
+			name: lobbyAreaName,
+			resolved: {
+				...resolved,
+				passageOfTime: null
+			}
+		}, transaction);
+		const startingAreaId = await createArea({ ...area, name: startingAreaName, resolved }, transaction);
+
+		for (const areaId of [lobbyAreaId, startingAreaId])
+		{
+			await setAreaParents(areaId, [{ kind: 'region', id: regionId }], transaction);
+		}
 
 		await setUniverseAreas(createdId, lobbyAreaId, startingAreaId, transaction);
 		await addDefaultStartingItems(createdId, ruleset, transaction);
@@ -311,15 +343,18 @@ async function createUniverseRoute(request: Request, response: Response): Promis
  */
 async function getUniverse(request: Request, response: Response): Promise<void>
 {
-	const { playerId, universe, version, role, languages, serverAdmin, twoFactor } = universeContextOf(request);
-	const [translationCounts, dismissedNotices] = await Promise.all([
+	const { playerId, universe, version, role, languages, permissions, serverAdmin, twoFactor } = universeContextOf(request);
+	const [translationCounts, dismissedNotices, assignedRegionIds] = await Promise.all([
 		countTranslations(version),
-		findDismissedNotices(playerId)
+		findDismissedNotices(playerId),
+		((role === 'builder') ? listAssignedRegionIds(version, playerId) : [])
 	]);
 	const payload: EditableUniverse = {
 		...universe,
 		role,
 		languages: [...languages],
+		permissions: { ...(permissions ?? NO_BUILDER_PERMISSIONS) },
+		assignedRegionIds,
 		playerId,
 		serverAdmin,
 		twoFactor,
@@ -368,12 +403,18 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		checkLobbyArea(context, lobbyArea?.version);
 	}
 
-	const problem = (timeSettingsProblem({ ...universe, ...update })
-		?? lobbyTimeProblem({ ...universe, ...update }, lobbyArea?.area));
+	const problem = lobbyTimeProblem({ ...universe, ...update }, lobbyArea?.area);
 
 	if (problem !== undefined)
 	{
 		refuse(400, problem);
+	}
+
+	// The lobby's area takes the Lobby tab's passage of time, and the area it leaves its own again
+	if (lobbyAreaId !== universe.lobbyAreaId)
+	{
+		await context.places.load();
+		context.places.touch();
 	}
 
 	const { startingAreaId, startingItems } = update;
@@ -405,7 +446,7 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		}
 	}
 
-	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['passageOfTime', 'faerieMorning', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
+	const timeKeys: (keyof UniverseSettingsUpdate)[] = ['displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning'];
 
 	if (timeKeys.some((key) => (update[key] !== undefined)))
 	{
@@ -595,6 +636,7 @@ export async function createTileChange(context: ChangeContext, ref: NewRef, sett
 	}
 
 	recordRef(context, ref, await createCustomTile(version, universe.ruleset, { ...tile, name }, transaction));
+	await context.places.refreshTiles(false);
 	context.published.push({ kind: 'tiles', universeId: universe.id });
 }
 
@@ -637,6 +679,8 @@ export async function saveTileChange(context: ChangeContext, id: NumberRef, sett
 		await updateCustomTile(version, tileId, { ...tile, name }, transaction);
 	}
 
+	// The kinds of area a tile is for decide which areas it can be the default tile of
+	await context.places.refreshTiles(true);
 	context.published.push({ kind: 'tiles', universeId: universe.id });
 }
 
@@ -728,6 +772,7 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	{
 		await restoreDefaultTile(version, tileId, transaction);
 		await deleteUniverseTextOf(version, 'tile', tileId, transaction);
+		await context.places.refreshTiles(true);
 		context.published.push({ kind: 'tiles', universeId: universe.id });
 		return;
 	}
@@ -742,12 +787,16 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	// Painting waits for the universe's lock too, so the tile can't come into use before it is deleted
 	const changedAreas = ((replacementId === undefined) ? [] : await replaceTileInAreas(version, tileId, replacementId, transaction));
 
+	// The save's changes before this one give the regions and areas setting it as their default tile
+	// another, and the areas inheriting it are worked out again without it
+	await context.places.withoutTile(tileId);
+
 	if (await isTileInUse(version, tileId, transaction))
 	{
 		refuse(409, {
 			id: 'error.tileInUse',
-			defaultMessage: 'An area uses this tile, so it can\'t be deleted.',
-			description: 'Why a tile couldn\'t be deleted: some area is painted with it'
+			defaultMessage: 'An area is painted with this tile, or a region or area sets it as its default tile, so it can\'t be deleted.',
+			description: 'Why a tile couldn\'t be deleted: some area is painted with it, or some region or area still chooses it as the tile its ground is made of'
 		});
 	}
 

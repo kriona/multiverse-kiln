@@ -43,6 +43,15 @@ const CHUNK_KEEP_RADIUS = CHUNK_SIZE * 3;
  */
 const MAX_QUEUED_MOVES = 8;
 
+/**
+ * How the area, its chunks and the cells the group sees in it are sent: after the next state patch, all
+ * of them, so they reach the window in the order they were made. An area a player arrives in must follow
+ * the patch with their position in it, and a window drops chunks and cells of an area it isn't drawing,
+ * so anything about the new area sent at once would arrive before the area and be lost. The area sent
+ * to a client as it joins is the exception (see sendArea)
+ */
+export const AREA_MESSAGE_OPTIONS = Object.freeze({ afterNextPatch: true });
+
 const standingStill: MovePayload = { x: 0, y: 0 };
 
 /**
@@ -424,7 +433,7 @@ export class AreaPlayers
 
 		this.sessions.add(client.sessionId, playerId);
 		this.clients.set(client.sessionId, client);
-		this.attach(client, playerId);
+		this.attach(client, playerId, true);
 
 		return(isNewPlayer);
 	}
@@ -452,7 +461,7 @@ export class AreaPlayers
 			this.sessions.move(client.sessionId, playerId);
 		}
 
-		this.attach(client, playerId);
+		this.attach(client, playerId, false);
 
 		return(true);
 	}
@@ -550,7 +559,7 @@ export class AreaPlayers
 		{
 			for (const client of this.getClients(playerId))
 			{
-				this.greet(client, playerId);
+				this.greet(client, playerId, false);
 			}
 		}
 	}
@@ -594,11 +603,12 @@ export class AreaPlayers
 	 *
 	 * @param client The client, already recorded as controlling the player
 	 * @param playerId The player
+	 * @param joining Whether the client has just joined
 	 */
-	private attach(client: Client, playerId: string): void
+	private attach(client: Client, playerId: string, joining: boolean): void
 	{
 		this.refreshViews();
-		this.greet(client, playerId);
+		this.greet(client, playerId, joining);
 	}
 
 	/**
@@ -606,8 +616,9 @@ export class AreaPlayers
 	 *
 	 * @param client The client
 	 * @param playerId The player
+	 * @param joining Whether the client has just joined, so the area is sent at once (see sendArea)
 	 */
-	private greet(client: Client, playerId: string): void
+	private greet(client: Client, playerId: string, joining: boolean): void
 	{
 		const area = this.areaOf(playerId);
 		const welcome: WelcomePayload = { playerId };
@@ -616,7 +627,7 @@ export class AreaPlayers
 
 		if (area)
 		{
-			this.sendArea(playerId, area, [client]);
+			this.sendArea(playerId, area, [client], joining);
 		}
 	}
 
@@ -1271,21 +1282,21 @@ export class AreaPlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.refreshViews();
-
-		// The area follows the patch with the player's position in it, so the window draws the area
-		// around where they arrive rather than where they were
-		this.sendArea(playerId, target, this.getClients(playerId), true);
+		this.sendArea(playerId, target, this.getClients(playerId));
 	}
 
 	/**
-	 * Sends a player's clients an area, with the loaded chunks near the player, and remembers those as sent
+	 * Sends a player's clients an area, with the loaded chunks near the player, and remembers those as
+	 * sent. It follows the next state patch, so the window draws the area around where the player is in it
 	 *
 	 * @param playerId The player's ID
 	 * @param area The area they are in
 	 * @param clients The clients to send it to
-	 * @param afterNextPatch Whether to send it after the next state patch rather than at once
+	 * @param atOnce Whether to send it at once rather than after the next state patch: only to a client
+	 * that has just joined, which has nothing about the area waiting to be sent and waits for the area
+	 * before listening for the messages the room sends after it, such as the chat history
 	 */
-	private sendArea(playerId: string, area: ActiveArea, clients: Client[], afterNextPatch = false): void
+	private sendArea(playerId: string, area: ActiveArea, clients: Client[], atOnce = false): void
 	{
 		const near = this.loadedChunksNear(playerId, area);
 		const payload = toAreaPayload(area, near, this.vision.memory);
@@ -1294,7 +1305,7 @@ export class AreaPlayers
 
 		for (const client of clients)
 		{
-			client.send(ServerMessageType.Area, payload, { afterNextPatch });
+			client.send(ServerMessageType.Area, payload, (atOnce ? undefined : AREA_MESSAGE_OPTIONS));
 		}
 	}
 
@@ -1357,7 +1368,7 @@ export class AreaPlayers
 
 		for (const client of this.getClients(playerId))
 		{
-			client.send(ServerMessageType.Chunks, payload);
+			client.send(ServerMessageType.Chunks, payload, AREA_MESSAGE_OPTIONS);
 		}
 	}
 

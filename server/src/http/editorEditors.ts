@@ -9,6 +9,7 @@ import { canManageEditors, canViewUniverse, defineMessages, MAX_PLAYER_SEARCH_RE
 import { keyedHash } from '../auth/keyedHashes.js';
 import { MAX_ROLE_EMAILS_PER_PLAYER_DAY, MAX_ROLE_EMAILS_PER_UNIVERSE_PLAYER_DAY, takeAttempt } from '../auth/rateLimits.js';
 import { findEmailRecipient, findPlayer, findPlayerByUsername } from '../db/playerRepo.js';
+import { deleteBuilderAssignments, listAssignmentsByBuilder } from '../db/regionRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { countUniverseCreators, findUniverseAccess, listUniverseEditors, removeUniverseEditor, searchPlayersToAdd, setUniverseAccess } from '../db/universeEditorRepo.js';
 import { sendEmailInBackground } from '../email/mailer.js';
@@ -54,7 +55,8 @@ export function addEditorListRoutes(router: express.Router): void
  */
 async function listEditors(request: Request, response: Response): Promise<void>
 {
-	const payload: UniverseEditorListPayload = { editors: await listUniverseEditors(universeContextOf(request).universe.id) };
+	const universeId = universeContextOf(request).universe.id;
+	const payload: UniverseEditorListPayload = { editors: await listUniverseEditors(universeId, undefined, await listAssignmentsByBuilder(universeId)) };
 
 	response.json(payload);
 }
@@ -134,6 +136,13 @@ export async function saveEditorChange(context: ChangeContext, playerId: string,
 	}
 
 	await setUniverseAccess(universe.id, playerId, settings, transaction);
+
+	// Only builders are assigned regions
+	if (settings.role !== 'builder')
+	{
+		await deleteBuilderAssignments(universe.id, playerId, transaction);
+	}
+
 	context.editorRoles.set(playerId, settings.role);
 }
 

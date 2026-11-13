@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditTilesOpen, canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, mergeTileChanges, placeKey, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type PlaceTileChange, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -9,12 +9,14 @@ import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { tileName } from '../tileNames';
 import { editorMessages } from './editorMessages';
-import { newRef, numberRef, type EditorSave, type SavedIds } from './editorSave';
+import { newRef, numberRef, type EditorSave, type SavedIds, type SaveRefusal } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
+import { isNewPlace } from './stagedAreas';
 import { TileDialog } from './TileDialog';
 import type { StagedUpload } from './TileGraphicDialog';
+import type { TilePlaces } from './TileReplaceDialog';
 import { showTileSwatch, type ShownUpload } from './tileSwatches';
 
 /**
@@ -133,6 +135,18 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	 */
 	private readonly replacements = new Map<number, number>();
 
+	/**
+	 * The default tiles regions and areas get in place of a tile, by the tile's ID, until the tab is
+	 * saved: for the kinds unchecked, and for its deletion (see Replacing a default tile in
+	 * STRUCTURE-OVERVIEW.md). Each is sent before the tile's change
+	 */
+	private readonly placeTiles = new Map<number, Record<'kinds' | 'deleted', readonly PlaceTileChange[]>>();
+
+	/**
+	 * The regions and areas, from the Areas tab
+	 */
+	private places: TilePlaces | undefined;
+
 	private universe: EditableUniverse | undefined;
 
 	/**
@@ -204,6 +218,19 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 				{
 					this.replacements.set(tileId, replacementId);
 				}
+			},
+			places: () => this.places,
+			kindTileChanges: (tileId) => (this.placeTiles.get(tileId)?.kinds ?? []),
+			setKindTileChanges: (tileId, changes, kinds) =>
+			{
+				const saved = this.known.get(tileId);
+				const restored = ((saved !== undefined) && (!saved.indoors || kinds.indoors) && (!saved.outdoors || kinds.outdoors));
+
+				this.setPlaceTiles(tileId, 'kinds', (restored ? [] : changes));
+			},
+			setDeleteTileChanges: (tileId, changes) =>
+			{
+				this.setPlaceTiles(tileId, 'deleted', (changes ?? []));
 			}
 		});
 
@@ -286,6 +313,67 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
+	 * Gives the tab the regions and areas, which the dialog replacing a default tile works from
+	 *
+	 * @param places The Areas tab's regions and areas
+	 */
+	setPlaces(places: TilePlaces): void
+	{
+		this.places = places;
+	}
+
+	/**
+	 * Keeps the default tiles regions and areas get in place of a tile, for its kinds unchecked or its
+	 * deletion
+	 *
+	 * @param tileId The tile
+	 * @param reason Which of the tile's changes they go with
+	 * @param changes The changes; none drops them
+	 */
+	private setPlaceTiles(tileId: number, reason: 'kinds' | 'deleted', changes: readonly PlaceTileChange[]): void
+	{
+		const entry = {
+			kinds: [],
+			deleted: [],
+			...this.placeTiles.get(tileId),
+			[reason]: changes
+		};
+
+		if ((entry.kinds.length === 0) && (entry.deleted.length === 0))
+		{
+			this.placeTiles.delete(tileId);
+		}
+		else
+		{
+			this.placeTiles.set(tileId, entry);
+		}
+	}
+
+	/**
+	 * The default tiles regions and areas get in place of a tile, which the Areas tab shows and saves
+	 * with the places it adds
+	 *
+	 * @return Each place's change, by placeKey(), with the tile it replaces
+	 */
+	defaultTileChanges(): ReadonlyMap<string, { from: number; to: number | null }>
+	{
+		const changes = new Map<string, { from: number; to: number | null }>();
+
+		for (const [tileId, entry] of this.placeTiles)
+		{
+			for (const change of mergeTileChanges(entry.kinds, entry.deleted))
+			{
+				changes.set(placeKey(change.place), {
+					from: tileId,
+					to: change.defaultTileId
+				});
+			}
+		}
+
+		return(changes);
+	}
+
+	/**
 	 * Lists a universe's tiles from the first page by name, with no filters
 	 *
 	 * @param universe The universe
@@ -302,6 +390,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		this.uploadsToDelete.clear();
 		this.uploadedIds.clear();
 		this.replacements.clear();
+		this.placeTiles.clear();
 		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
 		this.passableFilter.value = '';
@@ -310,7 +399,7 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();
-		this.addButton.hidden = !canEditWorldOpen(universe);
+		this.addButton.hidden = !canEditTilesOpen(universe);
 		this.savedUploads = [];
 		void this.refresh();
 		void this.loadUploads(universe);
@@ -416,11 +505,11 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	/**
 	 * Whether the player may change the tiles
 	 *
-	 * @return True for a creator or builder, in a version they may change
+	 * @return True for a creator, or a builder who may edit tiles, in a version they may change
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canEditWorldOpen(this.universe));
+		return((this.universe !== undefined) && canEditTilesOpen(this.universe));
 	}
 
 	/**
@@ -464,6 +553,9 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 				const tile = this.tileWithChanges(change.id);
 
 				showMessage(this.error, describeRefusedChange(change, refusal, (tile ? tileName(tile, universe.ruleset) : ''), !tile?.custom));
+			}, (change) =>
+			{
+				this.collectPlaceTiles(save, change);
 			}),
 			deletions: this.uploadsToDelete.list()
 		};
@@ -494,6 +586,51 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
+	 * Adds the default tiles regions and areas get in place of a tile, before the tile's change: the
+	 * server works the areas' settings out again as the tile is deleted, so they must have another first.
+	 * Places the Areas tab adds take theirs when it adds them
+	 *
+	 * @param save The save
+	 * @param change The tile's change
+	 */
+	private collectPlaceTiles(save: EditorSave, change: StagedChange<TileSettings>): void
+	{
+		const entry = this.placeTiles.get(change.id);
+
+		if (!entry || (change.kind === 'create'))
+		{
+			return;
+		}
+
+		const fallback = {
+			id: 'editor.tiles.placeTileFailed',
+			defaultMessage: 'Could not change the default tile of the regions and areas that took the tile "{name}".',
+			description: 'Shown on the Tilesets tab when the server refused to give regions or areas another default tile in place of a tile being deleted or no longer for indoors or outdoors, followed by why; {name} is the tile\'s name. Nothing was saved'
+		};
+		const tile = this.tileWithChanges(change.id);
+		const onRefused = (refusal: SaveRefusal): void =>
+		{
+			showMessage(this.error, describeEditorError(refusal.error, fallback, {
+				name: ((tile && this.universe) ? tileName(tile, this.universe.ruleset) : '')
+			}));
+		};
+
+		for (const { place, defaultTileId } of mergeTileChanges(entry.kinds, entry.deleted))
+		{
+			const update = { defaultTileId: ((defaultTileId === null) ? null : numberRef('tile', defaultTileId)) };
+
+			if (isNewPlace(place))
+			{
+				continue;
+			}
+
+			save.add(((place.kind === 'region')
+				? { kind: 'updateRegion', regionId: place.id, update }
+				: { kind: 'updateArea', areaId: place.id, update }), onRefused);
+		}
+	}
+
+	/**
 	 * The change a save sends for a change to a tile, naming tiles and tilesets not saved yet by their refs
 	 *
 	 * @param change The change
@@ -517,7 +654,8 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Takes the changes as saved, and loads the tiles and tilesets afresh
+	 * Takes the changes as saved, and loads the tiles and tilesets afresh, and the regions and areas the
+	 * save gave other default tiles
 	 *
 	 * @param ids The IDs the save gave the tiles and tilesets it made
 	 */
@@ -526,6 +664,8 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 		const universe = this.universe;
 		const { uploads, tiles, deletions } = this.collected;
 		const savedTileId = (id: number): number | undefined => ids.number(newRef('tile', id));
+		// Matches what collectPlaceTiles() sent
+		const placesChanged = tiles.some((change) => ((change.kind !== 'create') && this.placeTiles.has(change.id)));
 
 		this.collected = { uploads: [], tiles: [], deletions: [] };
 
@@ -547,6 +687,8 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			{
 				this.replacements.delete(change.id);
 			}
+
+			this.placeTiles.delete(change.id);
 		}
 
 		for (const [tileId, replacementId] of this.replacements)
@@ -563,7 +705,11 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 
 		if (universe)
 		{
-			await Promise.all([this.refresh(), this.loadUploads(universe)]);
+			await Promise.all([
+				this.refresh(),
+				this.loadUploads(universe),
+				(placesChanged ? this.places?.placesSaved() : undefined)
+			]);
 		}
 	}
 
