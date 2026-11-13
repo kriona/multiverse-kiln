@@ -18,7 +18,8 @@ const BLANK: PlaceSettings = {
 	lightLevel: null,
 	defaultTileId: null,
 	passageOfTime: null,
-	faerieMorning: null
+	faerieMorning: null,
+	fogOfWar: null
 };
 
 /**
@@ -154,7 +155,7 @@ describe('Regions', () =>
 		]);
 
 		assert.strictEqual(missing.status, 409);
-		assert.deepStrictEqual((missing.body as SaveRefusedPayload).placeProblems?.map((each) => ((each.kind === 'missing') ? each.setting : each.kind)), ['indoors', 'defaultTileId', 'passageOfTime']);
+		assert.deepStrictEqual((missing.body as SaveRefusedPayload).placeProblems?.map((each) => ((each.kind === 'missing') ? each.setting : each.kind)), ['indoors', 'defaultTileId', 'passageOfTime', 'fogOfWar']);
 
 		const ids = await saveAll(ada, universeId, [
 			newRegion('blank', 'Blank', []),
@@ -183,7 +184,8 @@ describe('Regions', () =>
 			lightLevel: 'dark',
 			defaultTileId: await defaultTileId('wood_floor'),
 			passageOfTime: 'flows_normally',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		});
 
 		await saveAll(ada, universeId, [{ kind: 'updateRegion', regionId: worldId, update: { passageOfTime: 'always_noon' } }]);
@@ -306,7 +308,7 @@ describe('Regions', () =>
 		const woodId = await defaultTileId('wood_floor');
 		const ids = await saveAll(ada, universeId, [
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, indoors: true } },
-			newRegion('meadows', 'Meadows', [], { indoors: false, lightLevel: 'lit', defaultTileId: 'new:moss', passageOfTime: 'flows_normally' }),
+			newRegion('meadows', 'Meadows', [], { indoors: false, lightLevel: 'lit', defaultTileId: 'new:moss', passageOfTime: 'flows_normally', fogOfWar: true }),
 			newArea('field', 'Field', [inRegion('new:meadows')]),
 			newRegion('both', 'Both', [worldId], { defaultTileId: 'new:moss' }),
 			newArea('lawn', 'Lawn', [inRegion('new:both')]),

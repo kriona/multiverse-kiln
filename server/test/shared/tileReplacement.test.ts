@@ -25,7 +25,8 @@ const BLANK: PlaceSettings = {
 	lightLevel: null,
 	defaultTileId: null,
 	passageOfTime: null,
-	faerieMorning: null
+	faerieMorning: null,
+	fogOfWar: null
 };
 
 /**
@@ -87,7 +88,8 @@ function world(regions: PlaceNode[], areas: AreaNode[]): PlaceWorld
 const TOP = region('Top', [], {
 	indoors: false,
 	lightLevel: 'lit',
-	passageOfTime: 'flows_normally'
+	passageOfTime: 'flows_normally',
+	fogOfWar: true
 });
 
 describe('Replacing a default tile', function()

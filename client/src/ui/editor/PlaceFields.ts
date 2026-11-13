@@ -3,7 +3,7 @@ import { AREA_LIGHT_LEVEL_NAMES, AREA_LIGHT_LEVELS, canPaintTile, FAERIE_MORNING
 import { formatList, t } from '../../localization';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
-import { inheritLabel, type PlaceNames } from './places';
+import { FOG_OF_WAR_NAMES, inheritLabel, type PlaceNames } from './places';
 
 /**
  * What the fields show beside a region's or area's own settings: what each inherits, the tiles it can
@@ -48,8 +48,8 @@ export interface InheritedView
 
 /**
  * The settings regions and areas share, in the region or area editor: enabled, indoors or outdoors,
- * light level, default tile and passage of time with where morning is, each with a choice to inherit
- * that shows what it inherits and from where
+ * light level, default tile, passage of time with where morning is, and fog of war, each with a choice
+ * to inherit that shows what it inherits and from where
  */
 export class PlaceFields
 {
@@ -65,6 +65,7 @@ export class PlaceFields
 	private readonly time: HTMLSelectElement;
 	private readonly faerieField: HTMLElement;
 	private readonly faerie: HTMLSelectElement;
+	private readonly fogOfWar: HTMLSelectElement;
 
 	/**
 	 * What was last shown of what the place inherits, to label the inherit choices with
@@ -89,10 +90,11 @@ export class PlaceFields
 		this.time = getElement(`${prefix}-time`, HTMLSelectElement);
 		this.faerieField = getElement(`${prefix}-faerie-field`, HTMLElement);
 		this.faerie = getElement(`${prefix}-faerie`, HTMLSelectElement);
+		this.fogOfWar = getElement(`${prefix}-fog`, HTMLSelectElement);
 
 		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
 
-		for (const field of [this.enabled, this.kindInherit, this.outdoors, this.indoors, this.lightLevel, this.defaultTile, this.time, this.faerie])
+		for (const field of [this.enabled, this.kindInherit, this.outdoors, this.indoors, this.lightLevel, this.defaultTile, this.time, this.faerie, this.fogOfWar])
 		{
 			field.addEventListener('change', () =>
 			{
@@ -119,6 +121,7 @@ export class PlaceFields
 		this.lightLevel.value = (settings.lightLevel ?? '');
 		this.time.value = (settings.passageOfTime ?? '');
 		this.faerie.value = (settings.faerieMorning ?? FAERIE_MORNINGS[0]);
+		this.fogOfWar.value = fogOfWarValue(settings.fogOfWar);
 		this.fillDefaultTiles(settings.defaultTileId);
 		this.updateFields();
 	}
@@ -154,7 +157,8 @@ export class PlaceFields
 			lightLevel: ((this.lightLevel.value === '') ? null : this.lightLevel.value as AreaLightLevel),
 			defaultTileId: ((this.defaultTile.value === '') ? null : Number(this.defaultTile.value)),
 			passageOfTime,
-			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null)
+			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
+			fogOfWar: ((this.fogOfWar.value === '') ? null : (this.fogOfWar.value === 'on'))
 		});
 	}
 
@@ -211,6 +215,8 @@ export class PlaceFields
 		this.lightLevel.value = (settings.lightLevel ?? '');
 		setOptions(this.time, [{ value: '', label: label('passageOfTime') }, ...namedOptions(PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES)]);
 		this.time.value = (settings.passageOfTime ?? '');
+		setOptions(this.fogOfWar, [{ value: '', label: label('fogOfWar') }, ...namedOptions(['on', 'off'] as const, FOG_OF_WAR_NAMES)]);
+		this.fogOfWar.value = fogOfWarValue(settings.fogOfWar);
 
 		const disabledBy = view.inherited.enabled.disabledBy;
 
@@ -306,4 +312,15 @@ export class PlaceFields
 
 		return((this.view !== undefined) && (resolvedValue(this.view.inherited.passageOfTime)?.passageOfTime === 'faerie'));
 	}
+}
+
+/**
+ * The fog of war select's value for a place's own setting
+ *
+ * @param fogOfWar The setting, null for inherit
+ * @return '' for inherit, 'on' or 'off'
+ */
+function fogOfWarValue(fogOfWar: boolean | null): string
+{
+	return(((fogOfWar === null) ? '' : (fogOfWar ? 'on' : 'off')));
 }

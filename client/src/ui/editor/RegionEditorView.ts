@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, loadedFor, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, loadedFor, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -356,7 +356,7 @@ export class RegionEditorView
 		this.parents.setChoices(this.host.parentChoices(override.place, 'region', override));
 
 		// A region's own conflicting inheritance only warns: an area below it may settle it
-		const conflicts = (['indoors', 'lightLevel', 'defaultTileId', 'passageOfTime'] as const).flatMap((setting) =>
+		const conflicts = INHERITED_SETTINGS.flatMap((setting) =>
 		{
 			const found = view.resolved[setting];
 
@@ -521,7 +521,8 @@ export class RegionEditorView
 				lightLevel: region.lightLevel,
 				defaultTileId: defaultTileRef(region.defaultTileId),
 				passageOfTime: region.passageOfTime,
-				faerieMorning: region.faerieMorning
+				faerieMorning: region.faerieMorning,
+				fogOfWar: region.fogOfWar
 			};
 
 			save.add({

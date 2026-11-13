@@ -301,7 +301,8 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 			lightLevel: (region.lightLevel ?? null),
 			defaultTileId: ((region.defaultTile === undefined) ? null : requireTile(tileIds, region.defaultTile)),
 			passageOfTime: (region.passageOfTime ?? null),
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: (region.fogOfWar ?? null)
 		}, executor);
 
 		await setRegionParents(regionId, region.parents.map((parent) => requireRegion(regionIds, parent)), executor);
@@ -318,7 +319,8 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 		lightLevel: null,
 		defaultTileId: requireTile(tileIds, 'grass'),
 		passageOfTime: null,
-		faerieMorning: null
+		faerieMorning: null,
+		fogOfWar: true
 	};
 
 	for (const area of sampleAreas)

@@ -28,7 +28,8 @@ export function placeSettingsOf(row: PlaceSettings): PlaceSettings
 		lightLevel: row.lightLevel,
 		defaultTileId: row.defaultTileId,
 		passageOfTime: row.passageOfTime,
-		faerieMorning: row.faerieMorning
+		faerieMorning: row.faerieMorning,
+		fogOfWar: row.fogOfWar
 	});
 }
 

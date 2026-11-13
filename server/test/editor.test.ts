@@ -531,17 +531,6 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.lobbyDayHours, 6);
 		});
 
-		it('gives the lobby no vision cost until it is turned off', async () =>
-		{
-			const universeId = await createUniverse(ada);
-			const path = `/${universeId}`;
-
-			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.lobbyNoVisionCost, true);
-			assert.strictEqual((await updateUniverse(ada, universeId, { lobbyNoVisionCost: 'no' })).status, 400);
-			assert.strictEqual((await updateUniverse(ada, universeId, { lobbyNoVisionCost: false })).status, 200);
-			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', path)).body.lobbyNoVisionCost, false);
-		});
-
 		it('shows the time precisely until another way is chosen', async () =>
 		{
 			const universeId = await createUniverse(ada);
@@ -1505,6 +1494,7 @@ describe('World editor API', () =>
 				defaultTileId: null,
 				passageOfTime: null,
 				faerieMorning: null,
+				fogOfWar: null,
 				loopsEastWest: false,
 				loopsNorthSouth: false,
 				resolved: {
@@ -1513,7 +1503,8 @@ describe('World editor API', () =>
 					lightLevel: null,
 					defaultTileId: await defaultTileId('grass'),
 					passageOfTime: 'flows_normally',
-					faerieMorning: null
+					faerieMorning: null,
+					fogOfWar: true
 				},
 				bounds: NEW_AREA_BOUNDS
 			});
@@ -1523,7 +1514,8 @@ describe('World editor API', () =>
 				lightLevel: 'lit',
 				defaultTileId: await defaultTileId('wood_floor'),
 				passageOfTime: 'flows_normally',
-				faerieMorning: null
+				faerieMorning: null,
+				fogOfWar: true
 			});
 			assert.deepStrictEqual(inside.parents, [{ kind: 'area', id: outsideId }]);
 		});

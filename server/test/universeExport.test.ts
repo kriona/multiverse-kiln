@@ -356,6 +356,7 @@ describe('an exported area\'s file', () =>
 			defaultTileId: LARGEST_TILE_ID,
 			passageOfTime: longest(PASSAGES_OF_TIME),
 			faerieMorning: longest(FAERIE_MORNINGS),
+			fogOfWar: false,
 			loopsEastWest: false,
 			loopsNorthSouth: false,
 			resolved: {
@@ -364,7 +365,8 @@ describe('an exported area\'s file', () =>
 				lightLevel: longest(AREA_LIGHT_LEVELS),
 				defaultTileId: LARGEST_TILE_ID,
 				passageOfTime: longest(PASSAGES_OF_TIME),
-				faerieMorning: longest(FAERIE_MORNINGS)
+				faerieMorning: longest(FAERIE_MORNINGS),
+				fogOfWar: false
 			},
 			bounds: {
 				minColumn: -(width - 1),

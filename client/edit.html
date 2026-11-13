@@ -267,11 +267,6 @@
 									Where is morning?
 									<select id="lobby-faerie"></select>
 								</label>
-								<label class="checkbox" data-message="editor.lobby.noVisionCost" data-translation-context="Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost; also names the setting in the list of what a save changed, on the editor's Audit tab">
-									<input id="lobby-no-vision-cost" type="checkbox" />
-									No vision cost in the lobby
-								</label>
-								<p class="hint" data-message="editor.lobby.noVisionCostHint" data-translation-context="Explains the lobby's no vision cost checkbox on the editor's Lobby tab">Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day.</p>
 								<p id="lobby-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
@@ -548,6 +543,11 @@
 										<select id="area-faerie"></select>
 									</label>
 									<p id="area-lobby-time-hint" class="hint" data-message="editor.area.lobbyTime" data-translation-context="Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets" hidden>The lobby's passage of time is set on the Lobby tab.</p>
+									<label data-message="editor.place.fogOfWar" data-translation-context="Label of the field for whether a region's or area's players see only what is in their sight, with what they haven't seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Fog of war
+										<select id="area-fog" aria-describedby="area-fog-hint"></select>
+									</label>
+									<p id="area-fog-hint" class="hint" data-message="editor.place.fogOfWarHint" data-translation-context="Explains the Fog of war field in the region and area editors">Without fog of war, players see everything near them and everyone in the area, at any time of day, and nothing is recorded as explored.</p>
 									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-loops-east-west" type="checkbox" />
 										Loops east-west
@@ -675,6 +675,11 @@
 										Where is morning?
 										<select id="region-faerie"></select>
 									</label>
+									<label data-message="editor.place.fogOfWar" data-translation-context="Label of the field for whether a region's or area's players see only what is in their sight, with what they haven't seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Fog of war
+										<select id="region-fog" aria-describedby="region-fog-hint"></select>
+									</label>
+									<p id="region-fog-hint" class="hint" data-message="editor.place.fogOfWarHint" data-translation-context="Explains the Fog of war field in the region and area editors">Without fog of war, players see everything near them and everyone in the area, at any time of day, and nothing is recorded as explored.</p>
 									<div id="region-warnings" class="place-problems" hidden>
 										<p data-message="editor.region.warningsHeading" data-translation-context="Heads the list of settings a region inherits different values for from the regions above it, in the region editor. They don't keep it from saving: only areas are checked, and an area below it may set its own value or find one nearer">Different values from above, which the areas in this region must settle:</p>
 										<ul id="region-warning-list"></ul>

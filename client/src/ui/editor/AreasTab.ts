@@ -45,7 +45,8 @@ const BLANK_SETTINGS: PlaceSettings = {
 	lightLevel: null,
 	defaultTileId: null,
 	passageOfTime: null,
-	faerieMorning: null
+	faerieMorning: null,
+	fogOfWar: null
 };
 
 /**
@@ -1103,6 +1104,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			defaultTileId: area.defaultTileId,
 			passageOfTime: area.passageOfTime,
 			faerieMorning: area.faerieMorning,
+			fogOfWar: area.fogOfWar,
 			loopsEastWest: area.loopsEastWest,
 			loopsNorthSouth: area.loopsNorthSouth
 		});
@@ -1948,7 +1950,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 					lightLevel: region.lightLevel,
 					defaultTileId: this.defaultTileRef({ kind: 'region', id: region.id }, region.defaultTileId),
 					passageOfTime: region.passageOfTime,
-					faerieMorning: region.faerieMorning
+					faerieMorning: region.faerieMorning,
+					fogOfWar: region.fogOfWar
 				}
 			}, onRefused(regionFallback));
 		}
@@ -1990,6 +1993,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 					defaultTileId: this.defaultTileRef({ kind: 'area', id: newArea.id }, fields.defaultTileId),
 					passageOfTime: fields.passageOfTime,
 					faerieMorning: fields.faerieMorning,
+					fogOfWar: fields.fogOfWar,
 					loopsEastWest: fields.loopsEastWest,
 					loopsNorthSouth: fields.loopsNorthSouth
 				}

@@ -72,10 +72,10 @@ export interface LoadedArea
 	lightLevel: AreaLightLevel | null;
 
 	/**
-	 * Whether everyone sees DAY_VISION_SQUARES whatever the time of day: the lobby's area while its
-	 * universe gives it no vision cost, when its tiles have none either
+	 * Whether what is out of the players' sight is hidden from them. Without it, everyone sees everything
+	 * near them and everyone in the area, and a group records none of it as explored
 	 */
-	fullVision: boolean;
+	fogOfWar: boolean;
 
 	bounds: AreaBounds;
 
@@ -139,7 +139,7 @@ export async function createArea(area: NewArea, executor: Executor = db): Promis
  * @param resolved The settings
  * @return The column values
  */
-function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inferInsert, 'resolvedEnabled' | 'resolvedIndoors' | 'resolvedLightLevel' | 'resolvedDefaultTileId' | 'resolvedPassageOfTime' | 'resolvedFaerieMorning'>
+function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inferInsert, 'resolvedEnabled' | 'resolvedIndoors' | 'resolvedLightLevel' | 'resolvedDefaultTileId' | 'resolvedPassageOfTime' | 'resolvedFaerieMorning' | 'resolvedFogOfWar'>
 {
 	return({
 		resolvedEnabled: resolved.enabled,
@@ -147,7 +147,8 @@ function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inf
 		resolvedLightLevel: resolved.lightLevel,
 		resolvedDefaultTileId: resolved.defaultTileId,
 		resolvedPassageOfTime: resolved.passageOfTime,
-		resolvedFaerieMorning: resolved.faerieMorning
+		resolvedFaerieMorning: resolved.faerieMorning,
+		resolvedFogOfWar: resolved.fogOfWar
 	});
 }
 
@@ -165,7 +166,8 @@ function resolvedOf(row: typeof areas.$inferSelect): ResolvedAreaSettings
 		lightLevel: row.resolvedLightLevel,
 		defaultTileId: row.resolvedDefaultTileId,
 		passageOfTime: row.resolvedPassageOfTime,
-		faerieMorning: row.resolvedFaerieMorning
+		faerieMorning: row.resolvedFaerieMorning,
+		fogOfWar: row.resolvedFogOfWar
 	});
 }
 
@@ -214,8 +216,7 @@ export async function createAreaLink(link: NewAreaLink, executor: Executor = db)
 /**
  * Loads one of a universe's live areas with everything needed to play in it except its cells, which
  * an area up to MAX_AREA_SIDE across has too many of to load at once: load them a piece at a time with
- * loadChunks. A lobby has full vision and its tiles no vision cost when its universe's lobbyNoVisionCost
- * is set
+ * loadChunks
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
@@ -232,8 +233,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 				lobbyAreaId: universes.lobbyAreaId,
 				lobbyPassageOfTime: universes.lobbyPassageOfTime,
 				lobbyDayHours: universes.lobbyDayHours,
-				lobbyFaerieMorning: universes.lobbyFaerieMorning,
-				lobbyNoVisionCost: universes.lobbyNoVisionCost
+				lobbyFaerieMorning: universes.lobbyFaerieMorning
 			}
 		})
 		.from(areas)
@@ -263,11 +263,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		.map(({ link }) => link.targetAreaId));
 
 	const isLobby = (area.id === universe.lobbyAreaId);
-	const fullVision = (isLobby && universe.lobbyNoVisionCost);
-	const universeTiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
-	const tiles = (fullVision
-		? universeTiles.map((tile) => ({ ...tile, visionCost: 0 }))
-		: universeTiles);
+	const tiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
 
 	return({
 		area: {
@@ -289,7 +285,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			: areaTimeOf(area.resolvedPassageOfTime, area.resolvedFaerieMorning)),
 		displayTime: universe.displayTime,
 		lightLevel: area.resolvedLightLevel,
-		fullVision,
+		fogOfWar: area.resolvedFogOfWar,
 		bounds: boundsOf(area),
 		defaultTileId: area.resolvedDefaultTileId,
 		loopsEastWest: area.loopsEastWest,

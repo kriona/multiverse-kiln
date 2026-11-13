@@ -23,11 +23,12 @@ const BLANK: PlaceSettings = {
 	lightLevel: null,
 	defaultTileId: null,
 	passageOfTime: null,
-	faerieMorning: null
+	faerieMorning: null,
+	fogOfWar: null
 };
 
 /**
- * Settings that leave nothing to inherit: outdoors, lit, grass, flowing normally
+ * Settings that leave nothing to inherit: outdoors, lit, grass, flowing normally, with fog of war
  */
 const FULL: PlaceSettings = {
 	enabled: null,
@@ -35,7 +36,8 @@ const FULL: PlaceSettings = {
 	lightLevel: 'lit',
 	defaultTileId: GRASS,
 	passageOfTime: 'flows_normally',
-	faerieMorning: null
+	faerieMorning: null,
+	fogOfWar: true
 };
 
 /**
@@ -119,7 +121,8 @@ describe('Working out area settings', () =>
 			lightLevel: null,
 			defaultTileId: GRASS,
 			passageOfTime: 'flows_normally',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		});
 		assert.deepStrictEqual(resolveArea(places, 'Kingdom').indoors, { kind: 'inherited', value: false, from: [{ kind: 'region', id: 'Planet' }] });
 	});
@@ -136,8 +139,42 @@ describe('Working out area settings', () =>
 			lightLevel: 'lit',
 			defaultTileId: WOOD_FLOOR,
 			passageOfTime: 'always_noon',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		});
+	});
+
+	it('works out fog of war like the other settings: its own, inherited, conflicting or missing', () =>
+	{
+		const regions = [
+			region('Planet', [], FULL),
+			region('Lobby', [], { ...FULL, fogOfWar: false }),
+			region('Blank', [], { ...FULL, fogOfWar: null })
+		];
+		const places = world(regions, [
+			area('Square', ['Lobby']),
+			area('Kingdom', ['Planet']),
+			area('Clearing', ['Planet'], { fogOfWar: false }),
+			area('Border', ['Planet', 'Lobby']),
+			area('Nowhere', ['Blank'])
+		]);
+		const result = resolveAreaSettings(places);
+
+		assert.strictEqual(result.stored.get('Square')?.fogOfWar, false);
+		assert.strictEqual(result.stored.get('Kingdom')?.fogOfWar, true);
+		assert.deepStrictEqual(resolveArea(places, 'Clearing').fogOfWar, { kind: 'own', value: false });
+		assert.deepStrictEqual(result.problems, [
+			{
+				kind: 'conflict',
+				areaId: 'Border',
+				setting: 'fogOfWar',
+				values: [
+					{ place: { kind: 'region', id: 'Planet' }, value: true },
+					{ place: { kind: 'region', id: 'Lobby' }, value: false }
+				]
+			},
+			{ kind: 'missing', areaId: 'Nowhere', setting: 'fogOfWar' }
+		]);
 	});
 
 	it('finds a conflict between parents whatever their order', () =>
@@ -230,7 +267,8 @@ describe('Working out area settings', () =>
 			lightLevel: 'dark',
 			defaultTileId: WOOD_FLOOR,
 			passageOfTime: 'flows_normally',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		});
 	});
 

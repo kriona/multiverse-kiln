@@ -321,10 +321,10 @@ export interface AreaPayload
 	lightLevel: AreaLightLevel | null;
 
 	/**
-	 * Whether everyone sees DAY_VISION_SQUARES whatever the time of day: a lobby whose universe gives it
-	 * no vision cost, whose tiles have none either
+	 * Whether what is out of sight is hidden. Without it, every cell of the chunks sent is in sight, every
+	 * player in the area is seen, and the chunks come whole, with nothing recorded as explored
 	 */
-	fullVision: boolean;
+	fogOfWar: boolean;
 
 	bounds: AreaBounds;
 	loopsEastWest: boolean;
@@ -338,8 +338,8 @@ export interface AreaPayload
 	tiles: AreaTile[];
 
 	/**
-	 * In a group's room, every cell the group hasn't seen holds UNSEEN_CELL, and links on them are left
-	 * out; they arrive as GameServerMessageType.CellsSeen once the group sees them
+	 * In a group's room, every cell the group hasn't seen holds UNSEEN_CELL in an area with fog of war,
+	 * and links on them are left out; they arrive as GameServerMessageType.CellsSeen once the group sees them
 	 */
 	chunks: AreaChunk[];
 

@@ -655,6 +655,10 @@
 		"defaultMessage": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}",
 		"description": "Read out by screen readers when other players go out of view in the area or leave; {players} is a list of their names"
 	},
+	"area.announce.noFog": {
+		"defaultMessage": "Nothing near you is hidden here.",
+		"description": "Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day, in an area without fog of war: they see everything near them and everyone in the area, whatever the time of day or the tiles"
+	},
 	"area.announce.partOfDay": {
 		"defaultMessage": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}",
 		"description": "Read out by screen readers as the time of day changes where the player is: dawn begins, full daylight comes, dusk begins, or night comes"
@@ -2739,14 +2743,6 @@
 		"defaultMessage": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}",
 		"description": "Shown on the editor's Lobby tab when the lobby has no area to walk around: {reason} is \"disabled\" when its area is disabled, and otherwise it has no area"
 	},
-	"editor.lobby.noVisionCost": {
-		"defaultMessage": "No vision cost in the lobby",
-		"description": "Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost; also names the setting in the list of what a save changed, on the editor's Audit tab"
-	},
-	"editor.lobby.noVisionCostHint": {
-		"defaultMessage": "Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day.",
-		"description": "Explains the lobby's no vision cost checkbox on the editor's Lobby tab"
-	},
 	"editor.lobby.saveFailed": {
 		"defaultMessage": "Could not save the lobby's settings.",
 		"description": "Shown on the Lobby tab when the server refused its settings, followed by why; nothing was saved"
@@ -2795,6 +2791,22 @@
 		"defaultMessage": "{time}, morning: {morning}",
 		"description": "A passage of time in the region and area editors, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
 	},
+	"editor.place.fogOfWar": {
+		"defaultMessage": "Fog of war",
+		"description": "Label of the field for whether a region's or area's players see only what is in their sight, with what they haven't seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.place.fogOfWarHint": {
+		"defaultMessage": "Without fog of war, players see everything near them and everyone in the area, at any time of day, and nothing is recorded as explored.",
+		"description": "Explains the Fog of war field in the region and area editors"
+	},
+	"editor.place.fogOfWarOff": {
+		"defaultMessage": "Off",
+		"description": "Fog of war turned off for a region or area: players see everything near them and everyone in the area, at any time of day. A choice in the region and area editors' Fog of war field, and its value in what a setting inherits and on the editor's Audit tab"
+	},
+	"editor.place.fogOfWarOn": {
+		"defaultMessage": "On",
+		"description": "Fog of war turned on for a region or area: players see only what is in their sight, and what they haven't seen is hidden. A choice in the region and area editors' Fog of war field, and its value in what a setting inherits and on the editor's Audit tab"
+	},
 	"editor.place.inherit": {
 		"defaultMessage": "Inherit ({value}, from {places})",
 		"description": "The choice for a region's or area's setting that takes its value from the regions and areas above it, showing what it takes: {value} is the value, such as Always noon, and {places} the regions or areas it comes from, e.g. \"Inherit (Always noon, from Capitol City)\""
@@ -2816,7 +2828,7 @@
 		"description": "A problem keeping a save, shown by the region and area editors: following a region's or area's parents up leads back to it; {place} is its name"
 	},
 	"editor.place.missing": {
-		"defaultMessage": "{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} other {a passage of time}}",
+		"defaultMessage": "{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} fogOfWar {whether it has fog of war} other {a passage of time}}",
 		"description": "A problem keeping a save, shown by the region and area editors: no region or area above an area sets one of its settings, and it doesn't set it itself; {area} is the area and {setting} which setting"
 	},
 	"editor.place.noRegion": {
@@ -2852,7 +2864,7 @@
 		"description": "Name of the button that takes a region or area out of one of its parents, for screen readers; {parent} is the parent's name"
 	},
 	"editor.place.settingName": {
-		"defaultMessage": "{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} other {passage of time}}",
+		"defaultMessage": "{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} fogOfWar {fog of war} other {passage of time}}",
 		"description": "A setting of a region or area, named in the middle of a sentence about a problem with it, e.g. \"nothing above it sets a default tile\"; {setting} is which one"
 	},
 	"editor.place.tooDeep": {

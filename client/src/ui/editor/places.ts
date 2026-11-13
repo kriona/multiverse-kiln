@@ -3,7 +3,7 @@
  * world it works their settings out from, staged changes included, and how a worked-out setting and a
  * problem read
  */
-import { AREA_LIGHT_LEVEL_NAMES, FAERIE_MORNING_NAMES, PASSAGE_OF_TIME_NAMES, placeKey, type AreaLightLevel, type EditorTile, type FaerieMorning, type InheritedSetting, type InheritedValues, type PassageOfTime, type PlaceProblem, type PlaceRef, type Ruleset, type SettingResolution } from '@multiverse-kiln/shared';
+import { AREA_LIGHT_LEVEL_NAMES, defineMessages, FAERIE_MORNING_NAMES, PASSAGE_OF_TIME_NAMES, placeKey, type AreaLightLevel, type EditorTile, type FaerieMorning, type InheritedSetting, type InheritedValues, type MessageDescriptor, type PassageOfTime, type PlaceProblem, type PlaceRef, type Ruleset, type SettingResolution } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { tileName } from '../tileNames';
@@ -12,6 +12,23 @@ import { tileName } from '../tileNames';
  * Names a region or area by its key (placeKey()), for describing them
  */
 export type PlaceNames = (place: PlaceRef) => string;
+
+/**
+ * Each value of fog of war: the region and area editors' choices for it, what a setting set to inherit
+ * shows it inherits, and the value on the Audit tab
+ */
+export const FOG_OF_WAR_NAMES: Record<'on' | 'off', MessageDescriptor> = defineMessages({
+	on: {
+		id: 'editor.place.fogOfWarOn',
+		defaultMessage: 'On',
+		description: 'Fog of war turned on for a region or area: players see only what is in their sight, and what they haven\'t seen is hidden. A choice in the region and area editors\' Fog of war field, and its value in what a setting inherits and on the editor\'s Audit tab'
+	},
+	off: {
+		id: 'editor.place.fogOfWarOff',
+		defaultMessage: 'Off',
+		description: 'Fog of war turned off for a region or area: players see everything near them and everyone in the area, at any time of day. A choice in the region and area editors\' Fog of war field, and its value in what a setting inherits and on the editor\'s Audit tab'
+	}
+});
 
 /**
  * How the value of an inherited setting reads
@@ -49,6 +66,9 @@ export function describeValue<Setting extends InheritedSetting>(setting: Setting
 
 			return(((tile === undefined) ? String(tileId) : tileName(tile, ruleset)));
 		}
+
+		case 'fogOfWar':
+			return(t(FOG_OF_WAR_NAMES[value ? 'on' : 'off']));
 
 		default:
 		{
@@ -155,7 +175,7 @@ function settingInSentence(setting: InheritedSetting): string
 {
 	return(t({
 		id: 'editor.place.settingName',
-		defaultMessage: '{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} other {passage of time}}',
+		defaultMessage: '{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} fogOfWar {fog of war} other {passage of time}}',
 		description: 'A setting of a region or area, named in the middle of a sentence about a problem with it, e.g. "nothing above it sets a default tile"; {setting} is which one'
 	}, {
 		setting
@@ -200,7 +220,7 @@ export function describeProblem(problem: PlaceProblem, names: PlaceNames, tiles:
 		case 'missing':
 			return(t({
 				id: 'editor.place.missing',
-				defaultMessage: '{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} other {a passage of time}}',
+				defaultMessage: '{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} fogOfWar {whether it has fog of war} other {a passage of time}}',
 				description: 'A problem keeping a save, shown by the region and area editors: no region or area above an area sets one of its settings, and it doesn\'t set it itself; {area} is the area and {setting} which setting'
 			}, {
 				area: names({ kind: 'area', id: problem.areaId }),

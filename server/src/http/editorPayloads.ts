@@ -285,7 +285,6 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	lobbyPassageOfTime: z.enum(LOBBY_PASSAGES_OF_TIME).optional(),
 	lobbyDayHours: z.number().int().min(MIN_LOBBY_DAY_HOURS).max(MAX_LOBBY_DAY_HOURS).optional(),
 	lobbyFaerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
-	lobbyNoVisionCost: z.boolean().optional(),
 	lobbyAreaId: z.uuid().nullable().optional(),
 	lobbyColumn: cellCoordinate.optional(),
 	lobbyRow: cellCoordinate.optional(),
@@ -598,7 +597,8 @@ const placeSettingFields = {
 	lightLevel: z.enum(AREA_LIGHT_LEVELS).nullable().optional(),
 	defaultTileId: numberRef.nullable().optional(),
 	passageOfTime: z.enum(PASSAGES_OF_TIME).nullable().optional(),
-	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional()
+	faerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	fogOfWar: z.boolean().nullable().optional()
 };
 
 /**
@@ -792,7 +792,8 @@ export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', 
 			lightLevel: z.enum(AREA_LIGHT_LEVELS).nullable(),
 			defaultTileId: numberRef.nullable(),
 			passageOfTime: z.enum(PASSAGES_OF_TIME).nullable(),
-			faerieMorning: z.enum(FAERIE_MORNINGS).nullable()
+			faerieMorning: z.enum(FAERIE_MORNINGS).nullable(),
+			fogOfWar: z.boolean().nullable()
 		})
 	}),
 	z.object({

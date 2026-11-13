@@ -95,6 +95,7 @@ export async function createRegionChange(context: ChangeContext, ref: NewRef, re
 		defaultTileId: null,
 		passageOfTime: null,
 		faerieMorning: null,
+		fogOfWar: null,
 		...resolveRegionUpdate(context, region),
 		name: region.name
 	};

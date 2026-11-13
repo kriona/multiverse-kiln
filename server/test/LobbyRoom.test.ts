@@ -438,8 +438,8 @@ describe('LobbyRoom', () =>
 			const forest = area.tiles.find((tile) => (tile.key === 'forest'));
 
 			assert.strictEqual(area.ruleset, 'pf1e');
-			assert.strictEqual(area.fullVision, true, 'the lobby sees as far as by day unless the universe gives it a vision cost');
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, impassable: false, visionCost: 0 },'the lobby has no vision cost unless the universe gives it one');
+			assert.strictEqual(area.fogOfWar, true);
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, impassable: false, visionCost: 50 });
 			assert.strictEqual(area.tiles.find((tile) => (tile.key === 'mountains'))?.impassable, true, 'mountains can\'t be entered, so the client draws their peaks over players');
 			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
@@ -609,7 +609,7 @@ describe('LobbyRoom', () =>
 
 		it('shows each window only the players its character can see, not past mountains or beyond their sight', async () =>
 		{
-			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -646,6 +646,22 @@ describe('LobbyRoom', () =>
 
 			placeOnCell(playerOf(grace), 12, 10);
 			await waitUntil(() => ada.room.state.players.has(grace.playerId));
+		});
+
+		it('shows everyone in an area without fog of war, past mountains and at night', async () =>
+		{
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_midnight', lobbyFaerieMorning: null });
+			await setWorkedOut(universe.squareAreaId, { fogOfWar: false });
+
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).fogOfWar, false);
+
+			// The mountains at (12, 3) stand between them, and Grace is far past Ada's sight at night
+			placeOnCell(playerOf(ada), 13, 3);
+			placeOnCell(playerOf(grace), 31, 17);
+			await waitUntil(() => ada.room.state.players.has(grace.playerId) && grace.room.state.players.has(ada.playerId));
 		});
 
 		it('lists a player as here whichever area they are in', async () =>
@@ -1379,19 +1395,15 @@ describe('LobbyRoom', () =>
 			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, graphic: 'grass', uploadedGraphic: null, impassable: false, visionCost: 0 });
 		});
 
-		it('sends the lobby again with its tiles\' vision costs once the universe gives it them', async () =>
+		it('sends the lobby again without fog of war once its area turns it off', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
-			const forest = await defaultTileId('forest');
 
-			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyNoVisionCost: false });
-			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).fogOfWar, true);
+			await setWorkedOut(universe.squareAreaId, { fogOfWar: false });
+			areaChanges.publish({ kind: 'area', areaId: universe.squareAreaId });
 
-			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-
-			assert.strictEqual(area.tiles.find((tile) => (tile.id === forest))?.visionCost, 50);
-			assert.strictEqual(area.fullVision, false);
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).fogOfWar, false);
 		});
 
 		it('ignores changes to areas it hasn\'t loaded', async () =>

@@ -58,9 +58,9 @@ const ITEM_FIELDS = ['name', 'type', 'enabled'] as const;
 const OPTION_FIELDS = ['name', 'enabled', 'keepPlaying', 'rules', 'startingMoney', 'startingColumn', 'startingRow'] as const;
 const THEME_FIELDS = ['name', 'enabled', 'rules'] as const;
 const LEVEL_FIELDS = ['name', 'isDefault', 'mobScale', 'permadeath'] as const;
-const REGION_FIELDS = ['name', 'enabled', 'indoors', 'lightLevel', 'passageOfTime', 'faerieMorning'] as const;
+const REGION_FIELDS = ['name', 'enabled', 'indoors', 'lightLevel', 'passageOfTime', 'faerieMorning', 'fogOfWar'] as const;
 const AREA_FIELDS = [...REGION_FIELDS, 'loopsEastWest', 'loopsNorthSouth'] as const;
-const UNIVERSE_FIELDS = ['shortDescription', 'longDescription', 'sourceLanguage', 'translationLanguages', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyNoVisionCost', 'groupSize', 'startingMoney', 'coinNames', 'coinAbbreviations', 'startingColumn', 'startingRow'] as const;
+const UNIVERSE_FIELDS = ['shortDescription', 'longDescription', 'sourceLanguage', 'translationLanguages', 'displayTime', 'lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'groupSize', 'startingMoney', 'coinNames', 'coinAbbreviations', 'startingColumn', 'startingRow'] as const;
 
 /**
  * The parts of an export that come together: an export holding one of them holds all of them

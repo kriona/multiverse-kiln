@@ -792,6 +792,28 @@ describe('GameRoom', () =>
 		assert.strictEqual(chunks[0].cells[cellIndexInChunk(31, 17)], UNSEEN_CELL);
 	});
 
+	it('sends every cell of an area without fog of war, and records none of it as seen', async () =>
+	{
+		await setWorkedOut(universe.fieldAreaId, { passageOfTime: 'always_noon', faerieMorning: null, fogOfWar: false });
+
+		const room = await createGameRoom();
+		const window = await joinFromBrowser(room, browserIdA, 'Ada');
+		const area = await window.area;
+
+		assert.strictEqual(area.fogOfWar, false);
+		assert.ok(area.chunks.every((chunk) => !chunk.cells.includes(UNSEEN_CELL)), 'nothing is hidden');
+
+		placeOnCell(room.state.players.get(playerIdOf(room, window.client)) as Player, 3, 3);
+
+		for (let i = 0; i < 3; i++)
+		{
+			await room.waitForNextTimestep();
+		}
+
+		assert.strictEqual(window.cellsSeen.size, 0);
+		assert.strictEqual((room as unknown as { seen: SeenCells }).seen.has(universe.fieldAreaId, 3, 3), false);
+	});
+
 	it('keeps the newer copy of a chunk when saves of the seen cells overlap', async () =>
 	{
 		const room = await createGameRoom() as unknown as { seen: SeenCells; saveSeen(): Promise<void> };

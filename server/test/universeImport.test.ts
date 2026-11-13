@@ -403,7 +403,7 @@ describe('importing a universe', () =>
 
 		await saveAll(ada, kilnhavenId, [
 			{ kind: 'addEditor', username: 'Bea', settings: { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false } } },
-			{ kind: 'createRegion', ref: 'new:capitol', region: { name: 'Capitol City', parents: [{ kind: 'region', id: worldId }], enabled: null, indoors: null, lightLevel: null, defaultTileId: null, passageOfTime: 'always_noon', faerieMorning: null } },
+			{ kind: 'createRegion', ref: 'new:capitol', region: { name: 'Capitol City', parents: [{ kind: 'region', id: worldId }], enabled: null, indoors: null, lightLevel: null, defaultTileId: null, passageOfTime: 'always_noon', faerieMorning: null, fogOfWar: false } },
 			{ kind: 'createArea', ref: 'new:market', area: { name: 'Market', parents: [{ kind: 'region', id: 'new:capitol' }] } },
 			{ kind: 'createArea', ref: 'new:stall', area: { name: 'Stall', parents: [{ kind: 'area', id: 'new:market' }, { kind: 'region', id: worldId }] } },
 			{ kind: 'assignBuilders', regionId: 'new:capitol', builderIds: [bea.playerId] }
@@ -417,6 +417,7 @@ describe('importing a universe', () =>
 		assert.deepStrictEqual(exported.regions?.map((region) => region.name), ['Capitol City', 'World']);
 		assert.deepStrictEqual(capitol.parents, [{ kind: 'region', id: worldId }]);
 		assert.strictEqual(capitol.passageOfTime, 'always_noon');
+		assert.strictEqual(capitol.fogOfWar, false);
 		assert.deepStrictEqual(exported.areas.find((area) => (area.name === 'Stall'))?.parents, [{ kind: 'area', id: market.id }, { kind: 'region', id: worldId }]);
 		assert.deepStrictEqual(exported.manifest.editors?.find((editor) => (editor.username === 'Bea')), {
 			username: 'Bea',
@@ -441,6 +442,7 @@ describe('importing a universe', () =>
 		assert.deepStrictEqual(importedCapitol.parents, [{ kind: 'region', id: importedWorld.id }]);
 		assert.deepStrictEqual(importedMarket.parents, [{ kind: 'region', id: importedCapitol.id }]);
 		assert.strictEqual(importedMarket.resolved.passageOfTime, 'always_noon');
+		assert.strictEqual(importedMarket.resolved.fogOfWar, false);
 		assert.deepStrictEqual(draft.areas.find((area) => (area.name === 'Stall'))?.parents, [{ kind: 'area', id: importedMarket.id }, { kind: 'region', id: importedWorld.id }]);
 	});
 

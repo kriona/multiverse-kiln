@@ -254,7 +254,8 @@ export async function testRegionId(universeId: string): Promise<string>
 		lightLevel: 'lit',
 		defaultTileId: await defaultTileId('grass'),
 		passageOfTime: 'flows_normally',
-		faerieMorning: null
+		faerieMorning: null,
+		fogOfWar: true
 	}));
 }
 
@@ -315,7 +316,8 @@ export async function addArea(universeId: string, name: string = 'Test Area', op
 			lightLevel: (indoors ? 'lit' : null),
 			defaultTileId: tileId,
 			passageOfTime: 'flows_normally',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		},
 		bounds: (options.bounds ?? { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 })
 	});

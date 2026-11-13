@@ -1014,13 +1014,19 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	/**
 	 * Marks what each member in play sees as seen by the group, working it out again only for those
 	 * who have moved to another cell or whose sight has changed since the last tick, and only for the
-	 * cells the group hasn't seen yet
+	 * cells the group hasn't seen yet. Nothing is recorded in an area without fog of war
 	 */
 	private explore(): void
 	{
 		for (const { playerId, area, cell, budget } of this.areaPlayers.sights())
 		{
 			const areaId = area.loaded.area.id;
+
+			if (!area.loaded.fogOfWar)
+			{
+				this.lastSights.delete(playerId);
+				continue;
+			}
 
 			// A tenth of a square, as the light changes around dawn and dusk, makes too little difference to look again
 			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)}`;

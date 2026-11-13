@@ -409,11 +409,6 @@ export interface UniverseSettings
 	lobbyFaerieMorning: FaerieMorning | null;
 
 	/**
-	 * Whether every tile in the lobby is seen past as if it had no vision cost
-	 */
-	lobbyNoVisionCost: boolean;
-
-	/**
 	 * The area players walk around in the lobby: one of the universe's areas other than a starting area
 	 * (the universe's, a race's or a class's). While it is null or disabled, the lobby has no area, and
 	 * its players only chat and choose their characters
@@ -888,7 +883,6 @@ export const AUDIT_FIELDS = [
 	'displayTime',
 	'lobbyPassageOfTime',
 	'lobbyDayHours',
-	'lobbyNoVisionCost',
 	'lobbyArea',
 	'groupSize',
 	'startingMoney',
@@ -937,6 +931,7 @@ export const AUDIT_FIELDS = [
 	'indoorsOrOutdoors',
 	'lightLevel',
 	'defaultTile',
+	'fogOfWar',
 	'loopsEastWest',
 	'loopsNorthSouth'
 ] as const;
@@ -997,7 +992,6 @@ export interface AuditFieldValues
 	displayTime: DisplayTime;
 	lobbyPassageOfTime: AuditPassageOfTime;
 	lobbyDayHours: number;
-	lobbyNoVisionCost: boolean;
 
 	/**
 	 * Null when the universe has no lobby area
@@ -1103,6 +1097,7 @@ export interface AuditFieldValues
 	indoorsOrOutdoors: boolean | null;
 	lightLevel: AreaLightLevel | null;
 	defaultTile: OptionName | null;
+	fogOfWar: boolean | null;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
 }

@@ -356,7 +356,6 @@ function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 		lobbyPassageOfTime: table.lobbyPassageOfTime,
 		lobbyDayHours: table.lobbyDayHours,
 		lobbyFaerieMorning: table.lobbyFaerieMorning,
-		lobbyNoVisionCost: table.lobbyNoVisionCost,
 		lobbyAreaId: table.lobbyAreaId,
 		lobbyColumn: table.lobbyColumn,
 		lobbyRow: table.lobbyRow,

@@ -28,7 +28,6 @@ export class LobbyTab implements SavableTab
 	private readonly dayHoursHint = getElement('lobby-day-hours-hint', HTMLElement);
 	private readonly faerieField = getElement('lobby-faerie-field', HTMLElement);
 	private readonly faerie = getElement('lobby-faerie', HTMLSelectElement);
-	private readonly noVisionCost = getElement('lobby-no-vision-cost', HTMLInputElement);
 	private readonly error = getElement('lobby-error', HTMLElement);
 
 	/**
@@ -142,7 +141,6 @@ export class LobbyTab implements SavableTab
 		this.time.value = universe.lobbyPassageOfTime;
 		this.dayHours.value = String(universe.lobbyDayHours);
 		this.faerie.value = (universe.lobbyFaerieMorning ?? FAERIE_MORNINGS[0]);
-		this.noVisionCost.checked = universe.lobbyNoVisionCost;
 		this.showTimeFields();
 		this.fields.disabled = !this.canSave();
 		showMessage(this.error, undefined);
@@ -269,13 +267,12 @@ export class LobbyTab implements SavableTab
 			return(false);
 		}
 
-		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyAreaId' | 'lobbyColumn' | 'lobbyRow' | 'lobbyPassageOfTime' | 'lobbyFaerieMorning' | 'lobbyNoVisionCost'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyAreaId' | 'lobbyColumn' | 'lobbyRow' | 'lobbyPassageOfTime' | 'lobbyFaerieMorning'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
 			lobbyAreaId: this.area.value,
 			lobbyColumn: this.area.cell.column,
 			lobbyRow: this.area.cell.row,
 			lobbyPassageOfTime,
 			lobbyFaerieMorning: ((lobbyPassageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
-			lobbyNoVisionCost: this.noVisionCost.checked,
 			// A day length typed while another passage of time is chosen isn't kept
 			...((lobbyPassageOfTime === 'real_time') ? { lobbyDayHours } : {})
 		};

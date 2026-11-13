@@ -133,7 +133,8 @@ export class SavePlaces
 			lightLevel: null,
 			defaultTileId: [...model.world().tileKinds.keys()][0],
 			passageOfTime: null,
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		});
 	}
 
@@ -543,5 +544,6 @@ function sameSettings(first: ResolvedAreaSettings, second: ResolvedAreaSettings)
 		&& (first.lightLevel === second.lightLevel)
 		&& (first.defaultTileId === second.defaultTileId)
 		&& (first.passageOfTime === second.passageOfTime)
-		&& (first.faerieMorning === second.faerieMorning));
+		&& (first.faerieMorning === second.faerieMorning)
+		&& (first.fogOfWar === second.fogOfWar));
 }

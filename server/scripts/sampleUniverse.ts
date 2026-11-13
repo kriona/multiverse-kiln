@@ -41,6 +41,7 @@ export interface SampleRegion
 	defaultTile?: string;
 
 	passageOfTime?: PassageOfTime;
+	fogOfWar?: boolean;
 }
 
 /**
@@ -149,7 +150,8 @@ export const sampleRegions: SampleRegion[] = [
 		key: 'lobby',
 		name: 'Lobby',
 		parents: [],
-		indoors: false
+		indoors: false,
+		fogOfWar: false
 	},
 	{
 		key: 'planet',
@@ -158,7 +160,8 @@ export const sampleRegions: SampleRegion[] = [
 		indoors: false,
 		lightLevel: 'lit',
 		defaultTile: 'grass',
-		passageOfTime: 'flows_normally'
+		passageOfTime: 'flows_normally',
+		fogOfWar: true
 	},
 	{
 		key: 'capitol-city',

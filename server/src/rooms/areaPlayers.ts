@@ -1551,7 +1551,8 @@ export class AreaPlayers
 
 	/**
 	 * The players a player sees: themselves, and those in their area who aren't ghosts and are in sight
-	 * of them or, in a room whose vision is shared, are members of the group or in sight of one there
+	 * of them or, in a room whose vision is shared, are members of the group or in sight of one there.
+	 * In an area without fog of war, everyone there who isn't a ghost
 	 *
 	 * @param playerId The player's ID
 	 * @param nowMilliseconds The real time, for areas whose time of day follows it
@@ -1568,6 +1569,17 @@ export class AreaPlayers
 		}
 
 		const others = this.playersIn(area.loaded.area.id).filter((otherId) => ((otherId !== playerId) && !this.isGhost(otherId)));
+
+		if (!area.loaded.fogOfWar)
+		{
+			for (const otherId of others)
+			{
+				seen.add(otherId);
+			}
+
+			return(seen);
+		}
+
 		const lookers = (this.vision.shared ? [playerId, ...others] : [playerId]);
 		const sights = lookers
 			.map((lookerId) => this.sightOf(lookerId, area, nowMilliseconds))
@@ -1608,7 +1620,7 @@ export class AreaPlayers
 
 		return({
 			cell,
-			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player, area.loaded.fullVision)
+			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player)
 		});
 	}
 

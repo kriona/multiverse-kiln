@@ -28,6 +28,7 @@ async function workedOut(changes: Partial<ResolvedAreaSettings>): Promise<Resolv
 		defaultTileId: await defaultTileId('grass'),
 		passageOfTime: 'flows_normally',
 		faerieMorning: null,
+		fogOfWar: true,
 		...changes
 	});
 }
@@ -186,6 +187,7 @@ describe('areaRepo', () =>
 					defaultTileId: null,
 					passageOfTime: null,
 					faerieMorning: null,
+					fogOfWar: null,
 					loopsEastWest: false,
 					loopsNorthSouth: false,
 					resolved: {
@@ -194,7 +196,8 @@ describe('areaRepo', () =>
 						lightLevel: null,
 						defaultTileId: grass,
 						passageOfTime: 'flows_normally',
-						faerieMorning: null
+						faerieMorning: null,
+						fogOfWar: true
 					},
 					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
 				}

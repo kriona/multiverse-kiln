@@ -65,12 +65,18 @@ export interface PlaceSettings
 	 * Set exactly when passageOfTime is faerie
 	 */
 	faerieMorning: FaerieMorning | null;
+
+	/**
+	 * Whether what is out of the players' sight is hidden from them; without it they see everything near
+	 * them and everyone in the area, and nothing is recorded as explored
+	 */
+	fogOfWar: boolean | null;
 }
 
 /**
  * Every setting inherit leaves to what is above, besides enabled, which works as a gate instead
  */
-export const INHERITED_SETTINGS = ['indoors', 'lightLevel', 'defaultTileId', 'passageOfTime'] as const;
+export const INHERITED_SETTINGS = ['indoors', 'lightLevel', 'defaultTileId', 'passageOfTime', 'fogOfWar'] as const;
 
 export type InheritedSetting = typeof INHERITED_SETTINGS[number];
 
@@ -92,6 +98,7 @@ export interface InheritedValues
 	lightLevel: AreaLightLevel;
 	defaultTileId: number;
 	passageOfTime: PassageSetting;
+	fogOfWar: boolean;
 }
 
 /**
@@ -153,6 +160,8 @@ export interface ResolvedAreaSettings
 	 * Set exactly when passageOfTime is faerie
 	 */
 	faerieMorning: FaerieMorning | null;
+
+	fogOfWar: boolean;
 }
 
 /**
@@ -586,7 +595,8 @@ export function resolvePlace(graph: PlaceGraph, place: PlaceRef, tileKinds: Read
 		defaultTileId: resolveSetting(graph, node, levels, tileOf, (first, second) => (first === second)),
 		passageOfTime: (((place.kind === 'area') && (place.id === lobbyAreaId))
 			? { kind: 'ignored' }
-			: resolveSetting(graph, node, levels, passageOf, samePassage))
+			: resolveSetting(graph, node, levels, passageOf, samePassage)),
+		fogOfWar: resolveSetting(graph, node, levels, (each) => each.fogOfWar, (first, second) => (first === second))
 	});
 }
 
@@ -729,8 +739,9 @@ export function storedAreaSettings(resolution: PlaceResolution): ResolvedAreaSet
 	const lightLevel = resolvedValue(resolution.lightLevel);
 	const defaultTileId = resolvedValue(resolution.defaultTileId);
 	const passage = resolvedValue(resolution.passageOfTime);
+	const fogOfWar = resolvedValue(resolution.fogOfWar);
 
-	if ((indoors === undefined) || (defaultTileId === undefined) || (indoors && (lightLevel === undefined)) || ((passage === undefined) && (resolution.passageOfTime.kind !== 'ignored')))
+	if ((indoors === undefined) || (defaultTileId === undefined) || (fogOfWar === undefined) || (indoors && (lightLevel === undefined)) || ((passage === undefined) && (resolution.passageOfTime.kind !== 'ignored')))
 	{
 		return(undefined);
 	}
@@ -741,7 +752,8 @@ export function storedAreaSettings(resolution: PlaceResolution): ResolvedAreaSet
 		lightLevel: (indoors ? (lightLevel ?? null) : null),
 		defaultTileId,
 		passageOfTime: (passage?.passageOfTime ?? null),
-		faerieMorning: (passage?.faerieMorning ?? null)
+		faerieMorning: (passage?.faerieMorning ?? null),
+		fogOfWar
 	});
 }
 

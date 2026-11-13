@@ -548,7 +548,8 @@ export interface AreaMemory
 
 /**
  * What a client is told about an area: its settings, tiles and some of its chunks, and where its
- * links are but not where they lead. In a group's room, only what the group has seen of the area
+ * links are but not where they lead. In a group's room, only what the group has seen of an area with fog
+ * of war
  *
  * @param area The area
  * @param chunkKeys The loaded chunks to include, by chunkKey(); chunks that are all the default tile
@@ -559,6 +560,7 @@ export interface AreaMemory
 export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, memory?: AreaMemory): AreaPayload
 {
 	const { loaded } = area;
+	const hiding = memoryFor(area, memory);
 
 	return({
 		areaId: loaded.area.id,
@@ -568,7 +570,7 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 		time: loaded.time,
 		displayTime: loaded.displayTime,
 		lightLevel: loaded.lightLevel,
-		fullVision: loaded.fullVision,
+		fogOfWar: loaded.fogOfWar,
 		bounds: loaded.bounds,
 		loopsEastWest: loaded.loopsEastWest,
 		loopsNorthSouth: loaded.loopsNorthSouth,
@@ -586,8 +588,21 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 		})),
 		chunks: toChunkUpdates(area, chunkKeys, memory)
 			.filter((chunk): chunk is AreaChunk => (chunk.cells !== null)),
-		links: toLinkCells(loaded, (link) => (memory?.has(loaded.area.id, link.column, link.row) ?? true))
+		links: toLinkCells(loaded, (link) => (hiding?.has(loaded.area.id, link.column, link.row) ?? true))
 	});
+}
+
+/**
+ * What hides an area's cells from a group's clients: what the group has seen, in an area with fog of
+ * war. Without fog of war, players see everything near them, so nothing is hidden
+ *
+ * @param area The area
+ * @param memory What the group has seen, in a group's room
+ * @return The memory, or undefined when nothing is hidden
+ */
+function memoryFor(area: ActiveArea, memory: AreaMemory | undefined): AreaMemory | undefined
+{
+	return((area.loaded.fogOfWar ? memory : undefined));
 }
 
 /**
@@ -614,18 +629,20 @@ export function toLinkCells(loaded: LoadedArea, include: (link: AreaLink) => boo
  *
  * @param area The area
  * @param chunkKeys The chunks, by chunkKey()
- * @param memory What the group has seen, in a group's room
+ * @param memory What the group has seen, in a group's room, which hides the rest of an area with fog of war
  * @return Each chunk, with null cells when it is all the default tile (and all seen)
  */
 export function toChunkUpdates(area: ActiveArea, chunkKeys: Iterable<string>, memory?: AreaMemory): AreaChunkUpdate[]
 {
+	const hiding = memoryFor(area, memory);
+
 	return([...chunkKeys].map((key) =>
 	{
 		const cells = (area.chunks.get(key) ?? null);
 
 		return({
 			...parseChunkKey(key),
-			cells: (memory ? memory.mask(area.loaded.area.id, key, cells) : (cells ? [...cells] : null))
+			cells: (hiding ? hiding.mask(area.loaded.area.id, key, cells) : (cells ? [...cells] : null))
 		});
 	}));
 }

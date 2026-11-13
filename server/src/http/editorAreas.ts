@@ -245,6 +245,7 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 		defaultTileId: (resolved.defaultTileId ?? null),
 		passageOfTime: (resolved.passageOfTime ?? null),
 		faerieMorning: (resolved.faerieMorning ?? null),
+		fogOfWar: (resolved.fogOfWar ?? null),
 		loopsEastWest: (resolved.loopsEastWest ?? false),
 		loopsNorthSouth: (resolved.loopsNorthSouth ?? false)
 	};

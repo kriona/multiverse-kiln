@@ -277,7 +277,8 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			lightLevel: 'lit',
 			defaultTileId,
 			passageOfTime: 'flows_normally',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		}, transaction);
 		const resolved: ResolvedAreaSettings = {
 			enabled: true,
@@ -285,7 +286,8 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			lightLevel: null,
 			defaultTileId,
 			passageOfTime: 'flows_normally',
-			faerieMorning: null
+			faerieMorning: null,
+			fogOfWar: true
 		};
 		const area = {
 			universeId: createdId,
@@ -301,12 +303,15 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			defaultMessage: 'Starting Area',
 			description: 'Name given to the area characters of a new universe start in, which its creator can change'
 		});
+		// Nothing near the lobby's players is hidden from them
 		const lobbyAreaId = await createArea({
 			...area,
 			name: lobbyAreaName,
+			fogOfWar: false,
 			resolved: {
 				...resolved,
-				passageOfTime: null
+				passageOfTime: null,
+				fogOfWar: false
 			}
 		}, transaction);
 		const startingAreaId = await createArea({ ...area, name: startingAreaName, resolved }, transaction);
@@ -451,11 +456,6 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	if (timeKeys.some((key) => (update[key] !== undefined)))
 	{
 		context.published.push({ kind: 'time', universeId: universe.id });
-	}
-	// Rooms read the universe's areas again for either change, so one is enough
-	else if (update.lobbyNoVisionCost !== undefined)
-	{
-		context.published.push({ kind: 'tiles', universeId: universe.id });
 	}
 
 	const lobbyMoved = ((lobbyAreaId !== universe.lobbyAreaId) || ((update.lobbyColumn ?? universe.lobbyColumn) !== universe.lobbyColumn) || ((update.lobbyRow ?? universe.lobbyRow) !== universe.lobbyRow));

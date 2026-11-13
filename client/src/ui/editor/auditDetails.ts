@@ -7,6 +7,7 @@ import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
+import { FOG_OF_WAR_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
 /**
@@ -72,11 +73,6 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.audit.field.lobbyDayHours',
 		defaultMessage: 'Length of a lobby day',
 		description: 'Names the setting for how many real hours a day in the lobby lasts, in the list of what a save changed on the editor\'s Audit tab'
-	},
-	lobbyNoVisionCost: {
-		id: 'editor.lobby.noVisionCost',
-		defaultMessage: 'No vision cost in the lobby',
-		description: 'Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	groupSize: {
 		id: 'editor.characters.groupSize',
@@ -317,6 +313,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.area.defaultTile',
 		defaultMessage: 'Default tile',
 		description: 'Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	fogOfWar: {
+		id: 'editor.place.fogOfWar',
+		defaultMessage: 'Fog of war',
+		description: 'Label of the field for whether a region\'s or area\'s players see only what is in their sight, with what they haven\'t seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	loopsEastWest: {
 		id: 'editor.area.loopsEastWest',
@@ -665,6 +666,8 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AREA_LIGHT_LEVEL_NAMES[change.value])));
 		case 'defaultTile':
 			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : tileName(change.value, ruleset)));
+		case 'fogOfWar':
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(FOG_OF_WAR_NAMES[(change.value ? 'on' : 'off')])));
 		case 'enabled':
 			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t((change.value ? VALUE_MESSAGES.yes : VALUE_MESSAGES.no))));
 		case 'lobbyDayHours':
@@ -680,7 +683,6 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(new Intl.NumberFormat(currentLocale()).format(change.value));
 		case 'requireBuilderDraft':
 		case 'requireTwoFactor':
-		case 'lobbyNoVisionCost':
 		case 'needsSleep':
 		case 'coinsHaveWeight':
 		case 'tracksAmmo':

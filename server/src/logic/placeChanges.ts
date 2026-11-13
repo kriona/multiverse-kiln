@@ -121,7 +121,8 @@ function blankNode(id: string): Omit<AreaNode, 'name' | 'parents' | 'loopsEastWe
 		lightLevel: null,
 		defaultTileId: null,
 		passageOfTime: null,
-		faerieMorning: null
+		faerieMorning: null,
+		fogOfWar: null
 	});
 }
 

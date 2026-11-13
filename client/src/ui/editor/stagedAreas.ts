@@ -44,7 +44,8 @@ const UNKNOWN_SETTINGS: ResolvedAreaSettings = {
 	lightLevel: null,
 	defaultTileId: 0,
 	passageOfTime: null,
-	faerieMorning: null
+	faerieMorning: null,
+	fogOfWar: true
 };
 
 /**

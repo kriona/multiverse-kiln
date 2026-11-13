@@ -313,11 +313,6 @@ function universeVersionColumns()
 		lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
 
 		/**
-		 * Whether the lobby's tiles are seen past as if none had a vision cost
-		 */
-		lobbyNoVisionCost: boolean('lobby_no_vision_cost').notNull().default(true),
-
-		/**
 		 * Where characters start unless their race or class says otherwise
 		 */
 		startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
@@ -1180,7 +1175,12 @@ function placeSettingsColumns()
 		/**
 		 * Set exactly when passageOfTime is faerie
 		 */
-		faerieMorning: faerieMorning('faerie_morning')
+		faerieMorning: faerieMorning('faerie_morning'),
+
+		/**
+		 * Whether what is out of the players' sight is hidden from them
+		 */
+		fogOfWar: boolean('fog_of_war')
 	});
 }
 
@@ -1286,7 +1286,7 @@ export const areas = pgTable('areas', {
 	 * the editor's previews read (resolveAreaSettings() in shared/src/regions.ts). Every save that changes
 	 * areas, regions, parents or tiles' kinds stores them, and refuses a conflict or a missing value. The
 	 * light level is null exactly when the area is outdoors, and the passage of time for the lobby's
-	 * area, which takes the Lobby tab's
+	 * area, which takes the Lobby tab's. With fog of war off, players see everything near them
 	 */
 	resolvedEnabled: boolean('resolved_enabled').notNull(),
 	resolvedIndoors: boolean('resolved_indoors').notNull(),
@@ -1294,6 +1294,7 @@ export const areas = pgTable('areas', {
 	resolvedDefaultTileId: integer('resolved_default_tile_id').notNull().references(() => tiles.id),
 	resolvedPassageOfTime: passageOfTime('resolved_passage_of_time'),
 	resolvedFaerieMorning: faerieMorning('resolved_faerie_morning'),
+	resolvedFogOfWar: boolean('resolved_fog_of_war').notNull(),
 
 	minColumn: integer('min_column').notNull(),
 	minRow: integer('min_row').notNull(),

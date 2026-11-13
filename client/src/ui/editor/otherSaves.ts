@@ -458,8 +458,8 @@ export const SETTINGS_FORMS: Readonly<Record<SettingsForm, { fields: ReadonlySet
 		keys: ['name', 'shortDescription', 'longDescription', 'stage', 'requireBuilderDraft', 'displayTime']
 	},
 	lobby: {
-		fields: new Set(['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyNoVisionCost', 'lobbyArea']),
-		keys: ['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyNoVisionCost', 'lobbyAreaId', 'lobbyColumn', 'lobbyRow']
+		fields: new Set(['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyArea']),
+		keys: ['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyAreaId', 'lobbyColumn', 'lobbyRow']
 	},
 	coins: {
 		fields: new Set(['coinNames', 'coinAbbreviations']),

@@ -103,6 +103,7 @@ const NEW_PLACE = {
 	defaultTileId: null,
 	passageOfTime: null,
 	faerieMorning: null,
+	fogOfWar: null,
 	parents: []
 };
 

@@ -87,7 +87,7 @@ export interface VisionArea
 	loopsNorthSouth: boolean;
 
 	/**
-	 * Whether every cell's vision cost is 0, as in a lobby with no vision cost, so a cell is seen
+	 * Whether every cell's vision cost is 0, as in an area whose tiles have none, so a cell is seen
 	 * whenever it is near enough and no line to it needs walking
 	 */
 	clear: boolean;
@@ -188,18 +188,12 @@ export const PLAIN_SIGHT: Readonly<Sight> = {
  *
  * @param light How light it is where the character is, from 0 in the dark to 1 in full daylight (see areaLight)
  * @param sight The character's darkvision and light sensitivity
- * @param fullVision Whether the area ignores the light (AreaPayload.fullVision)
  * @return The vision budget: NIGHT_VISION_SQUARES in the dark up to DAY_VISION_SQUARES in full
  * daylight, never under the darkvision's squares, and with light sensitivity down to
- * LIGHT_SENSITIVE_VISION_SHARE of that in full daylight; always DAY_VISION_SQUARES with full vision
+ * LIGHT_SENSITIVE_VISION_SHARE of that in full daylight
  */
-export function visionBudget(light: number, sight: Sight, fullVision: boolean): number
+export function visionBudget(light: number, sight: Sight): number
 {
-	if (fullVision)
-	{
-		return(DAY_VISION_SQUARES);
-	}
-
 	const budget = Math.max(NIGHT_VISION_SQUARES + ((DAY_VISION_SQUARES - NIGHT_VISION_SQUARES) * light), sight.darkvision);
 
 	return((sight.lightSensitivity ? budget * (1 - ((1 - LIGHT_SENSITIVE_VISION_SHARE) * light)) : budget));

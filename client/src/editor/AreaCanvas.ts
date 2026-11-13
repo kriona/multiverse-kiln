@@ -409,7 +409,7 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		time: { passage: 'always_noon' },
 		displayTime: 'none',
 		lightLevel: null,
-		fullVision: false,
+		fogOfWar: false,
 		bounds: area.bounds,
 		loopsEastWest: area.loopsEastWest,
 		loopsNorthSouth: area.loopsNorthSouth,

@@ -485,7 +485,7 @@ export class AreaScene extends Phaser.Scene
 	 * Draws fog over the cells around the player that nobody they see with can see: the player alone in
 	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Looks
 	 * from where each is drawn (drawnCellOf), and draws again only when that, how far they see or the
-	 * area's cells change
+	 * area's cells change. An area without fog of war is in sight wherever it is drawn
 	 */
 	private updateFog(): void
 	{
@@ -493,6 +493,21 @@ export class AreaScene extends Phaser.Scene
 
 		if (!own || !this.fog)
 		{
+			return;
+		}
+
+		if (!this.area.fogOfWar)
+		{
+			const center = this.drawnCellOf(this.ownPlayerId, own);
+			const key = [this.area.areaId, this.chunkRevision, center.column, center.row].join(';');
+
+			if (key !== this.fogKey)
+			{
+				this.fogKey = key;
+				this.sightCells = new Map();
+				this.drawFog(center, undefined);
+			}
+
 			return;
 		}
 
@@ -506,7 +521,7 @@ export class AreaScene extends Phaser.Scene
 
 				sights.push({
 					cell,
-					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player, this.area.fullVision)
+					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player)
 				});
 			}
 		});
@@ -558,9 +573,9 @@ export class AreaScene extends Phaser.Scene
 	 * lobby too
 	 *
 	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, outside the area
-	 * @param visible The cells in sight, by visionKey()
+	 * @param visible The cells in sight, by visionKey(), or undefined when every cell of the area is
 	 */
-	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
+	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string> | undefined): void
 	{
 		const left = center.column - Math.floor(FOG_COLUMNS / 2);
 		const top = center.row - Math.floor(FOG_ROWS / 2);
@@ -568,7 +583,7 @@ export class AreaScene extends Phaser.Scene
 		{
 			const cell = this.areaCellAt(left + column, top + row);
 
-			return((cell === undefined) || !visible.has(visionKey(cell.column, cell.row)));
+			return((cell === undefined) || ((visible !== undefined) && !visible.has(visionKey(cell.column, cell.row))));
 		};
 
 		this.fog?.draw(left, top, isFogged);
@@ -1167,7 +1182,7 @@ export class AreaScene extends Phaser.Scene
 			tileName: (tile ? (this.text?.tileName(tile, this.area.ruleset) ?? tileName(tile, this.area.ruleset)) : undefined),
 			secondOfDay: seconds,
 			displayTime: this.area.displayTime,
-			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own, this.area.fullVision))
+			sightSquares: (this.area.fogOfWar ? Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own)) : undefined)
 		}, others);
 	}
 
