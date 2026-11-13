@@ -3,6 +3,7 @@ import { MAX_PASSWORD_LENGTH } from '@multiverse-kiln/shared';
 import { currentLocale, formatList, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
+import { BotCheck } from './botCheck';
 import { ChangeTracker } from './changeTracker';
 import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
@@ -32,6 +33,7 @@ export class TwoFactorConfirmDialog
 	private readonly emailCodeInput = getElement('two-factor-confirm-email-code', HTMLInputElement);
 	private readonly code = getElement('two-factor-confirm-code', HTMLInputElement);
 	private readonly error = getElement('two-factor-confirm-error', HTMLElement);
+	private readonly botCheck = new BotCheck(this.error);
 	private readonly sendButton = getElement('two-factor-confirm-send', HTMLButtonElement);
 	private readonly offButton = getElement('two-factor-confirm-off', HTMLButtonElement);
 	private readonly codesButton = getElement('two-factor-confirm-codes', HTMLButtonElement);
@@ -200,17 +202,18 @@ export class TwoFactorConfirmDialog
 
 			if (sending)
 			{
-				await this.emailCode.send();
+				await this.emailCode.send(this.botCheck);
 				this.showButtons();
 			}
 			else if (this.change === 'turnOff')
 			{
 				await this.emailCode.check();
-				await this.api.disableTwoFactor({
+				await this.botCheck.send((botCheckToken) => this.api.disableTwoFactor({
 					password,
 					code: this.code.value,
-					locale: currentLocale()
-				});
+					locale: currentLocale(),
+					botCheckToken
+				}));
 				this.tracker.markSaved();
 				this.dialog.close();
 				this.turnedOff();
@@ -219,11 +222,12 @@ export class TwoFactorConfirmDialog
 			{
 				await this.emailCode.check();
 
-				const codes = await this.api.replaceRecoveryCodes({
+				const codes = await this.botCheck.send((botCheckToken) => this.api.replaceRecoveryCodes({
 					password,
 					code: this.code.value,
-					locale: currentLocale()
-				});
+					locale: currentLocale(),
+					botCheckToken
+				}));
 
 				this.tracker.markSaved();
 				this.dialog.close();

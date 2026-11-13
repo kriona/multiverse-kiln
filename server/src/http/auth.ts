@@ -18,14 +18,14 @@ import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
 import { checkPwnedPassword } from '../auth/pwnedPasswords.js';
 import { hasKnownBrowserCookie, knownBrowserHash } from '../auth/knownBrowsers.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, lockRateLimitSubjects, takeAttempt } from '../auth/rateLimits.js';
+import { MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, takeAttempt, takeCodeSend } from '../auth/rateLimits.js';
 import { endSession, giveSession, resolveSession, startSession, type SessionIdentity, type StartedSession } from '../auth/sessions.js';
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
 import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient, type LocalLogin } from '../db/playerRepo.js';
 import { deletePlayerPendingProviderLogins, lockPendingProviderLogin } from '../db/providerLoginRepo.js';
-import { findRateLimitTimes, recordRateLimitEvent } from '../db/rateLimitRepo.js';
+import { recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions } from '../db/sessionRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -33,11 +33,12 @@ import { deletePlayerPendingTwoFactorLogins, deleteTrustedBrowsers, hasTwoFactor
 import { accountCreatedEmail, accountExistsEmail, emailChangedEmail, emailCodeEmail, passwordChangedEmail } from '../email/authEmails.js';
 import { sendEmailInBackground, type EmailContent } from '../email/mailer.js';
 import { needsLoginEmailCode } from '../logic/dormantLogins.js';
-import { CONTINUATION_LIFETIME_MS, DAY_MS, decideEmailCodeSend, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
+import { CONTINUATION_LIFETIME_MS, emailCodeFromBytes, emailCodeState, EMAIL_CODE_LENGTH, MAX_GUESSES_PER_NETWORK_HOUR, normalizeEmailCode } from '../logic/emailCodes.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
 import { addAccountDeletionRoutes } from './accountDeletion.js';
-import { accountPasswordLimits, authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { botCheckRefusal, confirmBotChecks, readBotCheck, recordBotCheckEvents, takeAccountPasswordTry, takePasswordTry, type RequestBotCheck } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
@@ -286,48 +287,40 @@ async function confirmedChangeToken(request: Request, playerId: string, now: Dat
 }
 
 /**
- * Counts an email code about to be sent against the network's limit and the address's (decideEmailCodeSend()),
- * locking both until the transaction ends
+ * Counts an email code about to be sent against the network's limit and the address's, with its bot check
+ * (takeCodeSend() in rateLimits.ts), locking both until the transaction ends
  *
- * @param networkHash The keyed hash of the network asking (clientNetworkHash())
- * @param addressHash The keyed hash of the address the code goes to
- * @param now The time now
+ * @param request The request
  * @param response The response, which gets a Retry-After header when a limit is reached
+ * @param check The request's bot check (readBotCheck()), or undefined for a dormant account's login code,
+ * which is never checked on its own
+ * @param addressHash The keyed hash of the address the code goes to
+ * @param ownerId The account with the address, if one, for the check's auth events
+ * @param now The time now
  * @param executor A transaction, which must be committed even when the code can't be sent, so the attempt counts
  * @return Why the code can't be sent, or undefined when it can
  */
-async function takeCodeSend(networkHash: ReturnType<typeof clientNetworkHash>, addressHash: Buffer, now: Date, response: Response, executor: Executor): Promise<AuthRefusal | undefined>
+async function takeCodeSendTry(request: Request, response: Response, check: RequestBotCheck | undefined, addressHash: Buffer, ownerId: string | null, now: Date, executor: Executor): Promise<AuthRefusal | undefined>
 {
-	// Both at once, in the order logins lock the same network and address
-	await lockRateLimitSubjects([networkHash, addressHash], executor);
+	const state = (check?.state ?? {
+		available: false,
+		passed: false,
+		checkEveryRequest: false
+	});
+	const decision = await takeCodeSend(clientNetworkHash(request), addressHash, state, now, executor);
+	const asked = (decision.kind === 'checkNeeded');
 
-	const network = await takeAttempt([
-		{
-			kind: 'networkCodeRequest',
-			subjectHash: networkHash,
-			limit: MAX_EMAIL_CODES_PER_NETWORK_HOUR
-		}
-	], now, executor);
-
-	if (!network.allowed)
+	if (check && (asked || (check.tokenOutcome === 'passed') || (check.tokenOutcome === 'failed')))
 	{
-		return(tooManyAttempts(network, now, response));
+		await recordBotCheckEvents(request, check, asked, ownerId, now, executor);
 	}
 
-	const send = decideEmailCodeSend({
-		sentAt: await findRateLimitTimes('addressCodeSent', addressHash, new Date(now.getTime() - HOUR_MS), executor),
-		wrongGuessesAt: await findRateLimitTimes('addressWrongGuess', addressHash, new Date(now.getTime() - DAY_MS), executor)
-	}, now);
-
-	if (!send.allowed)
+	if (decision.kind === 'refused')
 	{
-		return(tooManyAttempts(send, now, response));
+		return(tooManyAttempts(decision, now, response));
 	}
 
-	// Counted whatever is sent, so the limits don't depend on whether the address has an account
-	await recordRateLimitEvent('addressCodeSent', addressHash, now, executor);
-
-	return(undefined);
+	return(((check && asked) ? botCheckRefusal(check) : undefined));
 }
 
 /**
@@ -378,31 +371,18 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 	const { email, password, rememberMe, locale: emailLocale } = body.data;
 	const now = new Date();
 
-	// A browser that has logged in to the account counts its own tries, so others' guesses at the address can't lock it out
+	// A browser that has logged in to the account counts its own tries, so others' guesses at the address can't lock it out,
+	// and is never asked for a bot check. Others are past the soft limits (takePasswordTry())
 	const ownerId = (hasKnownBrowserCookie(request) ? await findPlayerIdByEmail(email) : undefined);
 	const browserHash = ((ownerId !== undefined) ? knownBrowserHash(request, ownerId, now) : undefined);
-	const attempt = await inTransaction((executor) => takeAttempt([
-		{
-			kind: 'networkLoginAttempt',
-			subjectHash: clientNetworkHash(request),
-			limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
-		},
-		((browserHash !== undefined)
-			? {
-				kind: 'browserLoginAttempt',
-				subjectHash: browserHash,
-				limit: MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR
-			}
-			: {
-				kind: 'addressLoginAttempt',
-				subjectHash: hashAddress(email),
-				limit: MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR
-			})
-	], now, executor));
+	const refusal = await takePasswordTry(request, response, ((browserHash !== undefined) ? 'knownBrowser' : 'login'), {
+		addressHash: hashAddress(email),
+		browserHash
+	}, async (executor) => ((await findPlayerIdByEmail(email, executor)) ?? null), now);
 
-	if (!attempt.allowed)
+	if (refusal)
 	{
-		sendRefusal(response, tooManyAttempts(attempt, now, response));
+		sendRefusal(response, refusal);
 		return;
 	}
 
@@ -510,7 +490,7 @@ async function sendLoginEmailCode(request: Request, response: Response, login: L
 {
 	// The address the player typed, which the code is checked with, hashes the same as the stored one
 	const addressHash = hashAddress(login.email);
-	const refusal = await takeCodeSend(clientNetworkHash(request), addressHash, now, response, executor);
+	const refusal = await takeCodeSendTry(request, response, undefined, addressHash, login.id, now, executor);
 
 	if (refusal)
 	{
@@ -607,9 +587,14 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 	const now = new Date();
 	const addressHash = hashAddress(email);
 	const networkHash = clientNetworkHash(request);
+	const check = await readBotCheck(request, 'email-code', true, now);
+
+	await confirmBotChecks(check, async () => ((await takeCodeSend(networkHash, addressHash, check.state, now, undefined)).kind === 'checkNeeded'), now);
+
 	const outcome = await inTransaction(async (executor): Promise<CodeOutcome> =>
 	{
-		const refusal = await takeCodeSend(networkHash, addressHash, now, response, executor);
+		const ownerId = await findPlayerIdByEmail(email, executor);
+		const refusal = await takeCodeSendTry(request, response, check, addressHash, (ownerId ?? null), now, executor);
 
 		if (refusal)
 		{
@@ -619,7 +604,6 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 			});
 		}
 
-		const ownerId = await findPlayerIdByEmail(email, executor);
 		let playerId: string | null;
 
 		if (purpose === 'register')
@@ -1324,11 +1308,11 @@ async function passwordChangeRoute(request: Request, response: Response): Promis
 
 	const now = new Date();
 	const email = await findPlayerEmail(session.playerId);
-	const attempt = await inTransaction((executor) => takeAttempt(accountPasswordLimits(request, email), now, executor));
+	const refusal = await takeAccountPasswordTry(request, response, session.playerId, email, now);
 
-	if (!attempt.allowed)
+	if (refusal)
 	{
-		sendRefusal(response, tooManyAttempts(attempt, now, response));
+		sendRefusal(response, refusal);
 		return;
 	}
 

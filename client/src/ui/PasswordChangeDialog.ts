@@ -3,6 +3,7 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '@multiverse-kiln/share
 import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
+import { BotCheck } from './botCheck';
 import { ChangeTracker } from './changeTracker';
 import { getElement, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
@@ -22,6 +23,7 @@ export class PasswordChangeDialog
 	private readonly error = getElement('password-dialog-error', HTMLElement);
 	private readonly submitButton = getElement('password-dialog-submit', HTMLButtonElement);
 	private readonly tracker = new ChangeTracker({ root: this.form });
+	private readonly botCheck = new BotCheck(this.error);
 
 	/**
 	 * @param api The auth routes
@@ -89,11 +91,12 @@ export class PasswordChangeDialog
 
 		try
 		{
-			await this.api.changePassword({
+			await this.botCheck.send((botCheckToken) => this.api.changePassword({
 				currentPassword: this.current.value,
 				newPassword: this.next.value,
-				locale: currentLocale()
-			});
+				locale: currentLocale(),
+				botCheckToken
+			}));
 			this.tracker.markSaved();
 			this.dialog.close();
 			showToast(t({

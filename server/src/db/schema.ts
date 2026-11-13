@@ -1645,6 +1645,11 @@ export const siteSettings = pgTable('site_settings', {
 	characterDeletionDays: integer('character_deletion_days').notNull().default(DEFAULT_SITE_SETTINGS.characterDeletionDays),
 
 	/**
+	 * Whether every login and email code request needs a bot check, while the site is under attack
+	 */
+	botCheckEveryRequest: boolean('bot_check_every_request').notNull().default(DEFAULT_SITE_SETTINGS.botCheckEveryRequest),
+
+	/**
 	 * Links to the site's own pages on social sites (SITE_SOCIAL_SITES), which every page's footer
 	 * links to
 	 */
@@ -1955,10 +1960,12 @@ export const emailCodes = pgTable('email_codes', {
  * What a rate limit counts: codes sent to an address and wrong guesses for it, the codes asked for and
  * guesses made from a network, login attempts for an address and from a network, authenticator or
  * recovery codes tried for an account and its wrong authenticator codes, login attempts from a browser
- * that has logged in to an account, usernames checked from a network, and emails telling an account it
- * was given a role in a universe, in any universe and in each one
+ * that has logged in to an account, usernames checked from a network, emails telling an account it
+ * was given a role in a universe, in any universe and in each one, and the requests made past an
+ * address's limits with a passed bot check: login tries, codes sent past its hourly limit, and codes
+ * sent while wrong guesses block its codes (server/src/logic/botChecks.ts)
  */
-export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck', 'accountWrongAuthenticatorCode', 'accountRoleEmail', 'universeAccountRoleEmail'] as const;
+export const RATE_LIMIT_KINDS = ['addressCodeSent', 'addressWrongGuess', 'networkCodeRequest', 'networkGuess', 'addressLoginAttempt', 'networkLoginAttempt', 'accountTwoFactorAttempt', 'browserLoginAttempt', 'networkUsernameCheck', 'accountWrongAuthenticatorCode', 'accountRoleEmail', 'universeAccountRoleEmail', 'addressCheckedLoginAttempt', 'addressCheckedCodeSent', 'addressCheckedCodeWhileBlocked'] as const;
 export const rateLimitKind = pgEnum('rate_limit_kind', RATE_LIMIT_KINDS);
 
 /**
@@ -1986,7 +1993,7 @@ export const rateLimitEvents = pgTable('rate_limit_events', {
 /**
  * What happened in an auth event
  */
-export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged', 'providerLinked', 'twoFactorEnabled', 'twoFactorDisabled', 'twoFactorFailed', 'recoveryCodeUsed', 'recoveryCodesReplaced', 'browserTrusted', 'trustedBrowsersForgotten'] as const;
+export const AUTH_EVENT_KINDS = ['registered', 'loggedIn', 'loginFailed', 'loggedOut', 'passwordReset', 'passwordChanged', 'passwordRehashed', 'emailChanged', 'providerLinked', 'twoFactorEnabled', 'twoFactorDisabled', 'twoFactorFailed', 'recoveryCodeUsed', 'recoveryCodesReplaced', 'browserTrusted', 'trustedBrowsersForgotten', 'botCheckAsked', 'botCheckPassed', 'botCheckFailed'] as const;
 export const authEventKind = pgEnum('auth_event_kind', AUTH_EVENT_KINDS);
 
 /**
@@ -2018,12 +2025,13 @@ export const authEvents = pgTable('auth_events', {
 /**
  * What a server admin did in an admin event
  */
-export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled', 'universeDeleted'] as const;
+export const ADMIN_EVENT_KINDS = ['adminAdded', 'adminRemoved', 'universeDisabled', 'universeEnabled', 'universeDeleted', 'botCheckEveryRequestOn', 'botCheckEveryRequestOff'] as const;
 export const adminEventKind = pgEnum('admin_event_kind', ADMIN_EVENT_KINDS);
 
 /**
  * A record of what server admins do as admins: adding and removing admins, disabling and enabling
- * universes, and deleting universes as admins (deletesUniverseAsAdmin()). Their saves in the world editor
+ * universes, deleting universes as admins (deletesUniverseAsAdmin()), and turning on and off the setting
+ * that asks for a bot check at every login and email code (SiteSettings.botCheckEveryRequest). Their saves in the world editor
  * are in universe_edits, with every other save. Kept after the accounts and universes it names are
  * deleted, which empties their columns
  */

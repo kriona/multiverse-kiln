@@ -7,6 +7,7 @@ import { announceLogin } from './network/sessionBroadcast';
 import { readNextPage, readPageParameter, rememberLoginAddress, TWO_FACTOR_SETUP_PAGE_URL } from './pages';
 import { forgetPlayerValues } from './rememberedValues';
 import { announce } from './ui/announcer';
+import { BotCheck } from './ui/botCheck';
 import { resetCodeInput } from './ui/codeInputs';
 import { getElement, setPageTitle, showMessage, showScreen, type ScreenName } from './ui/dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './ui/fieldErrors';
@@ -148,6 +149,15 @@ export class LoginPage
 	private readonly twoFactorTrustField = getElement('two-factor-trust-field', HTMLElement);
 	private readonly twoFactorTrust = getElement('two-factor-trust', HTMLInputElement);
 	private readonly twoFactorForm = findForm('two-factor', { twoFactorCode: this.twoFactorCode });
+
+	/**
+	 * The bot checks of the forms that log in with a password or send an email code, shown above each
+	 * form's error line when the server asks for one
+	 */
+	private readonly loginCheck = new BotCheck(this.loginForm.error);
+	private readonly emailCheck = new BotCheck(this.emailForm.error);
+	private readonly codeCheck = new BotCheck(this.codeForm.error);
+	private readonly providerLinkCheck = new BotCheck(this.providerLinkForm.error);
 
 	private readonly twoFactorSetupDialog: TwoFactorSetupDialog;
 	private readonly recoveryCodesDialog = new RecoveryCodesDialog();
@@ -436,6 +446,12 @@ export class LoginPage
 	 */
 	private show(screen: ScreenName, form: PageForm): void
 	{
+		// A check left waiting on the screen being left stops
+		for (const check of [this.loginCheck, this.emailCheck, this.codeCheck, this.providerLinkCheck])
+		{
+			check.cancel();
+		}
+
 		clearFieldErrors(form.form);
 		showMessage(form.error, undefined);
 		showScreen(screen);
@@ -528,22 +544,24 @@ export class LoginPage
 	 */
 	private async logIn(): Promise<void>
 	{
-		await this.goOnFromLogin(await this.sendLogin());
+		await this.goOnFromLogin(await this.sendLogin(this.loginCheck));
 	}
 
 	/**
 	 * Sends the address and password typed to log in
 	 *
+	 * @param check The bot check of the form sending it
 	 * @return What the server answered
 	 */
-	private async sendLogin(): Promise<LoginPayload['outcome']>
+	private async sendLogin(check: BotCheck): Promise<LoginPayload['outcome']>
 	{
-		return(this.api.logIn({
+		return(await check.send((botCheckToken) => this.api.logIn({
 			email: this.loginEmail.value.trim(),
 			password: this.loginPassword.value,
 			rememberMe: this.loginRemember.checked,
-			locale: currentLocale()
-		}));
+			locale: currentLocale(),
+			botCheckToken
+		})));
 	}
 
 	/**
@@ -836,11 +854,12 @@ export class LoginPage
 	 */
 	private async linkWithPassword(): Promise<void>
 	{
-		await this.finishOrSetUpTwoFactor(await this.api.linkProvider({
+		await this.finishOrSetUpTwoFactor(await this.providerLinkCheck.send((botCheckToken) => this.api.linkProvider({
 			password: this.providerLinkPassword.value,
 			locale: currentLocale(),
-			twoFactorCode: (this.providerLinkTwoFactorField.hidden ? null : this.providerLinkTwoFactorCode.value)
-		}));
+			twoFactorCode: (this.providerLinkTwoFactorField.hidden ? null : this.providerLinkTwoFactorCode.value),
+			botCheckToken
+		})));
 	}
 
 	/**
@@ -860,11 +879,12 @@ export class LoginPage
 
 		try
 		{
-			await this.api.sendCode({
+			await this.providerLinkCheck.send((botCheckToken) => this.api.sendCode({
 				purpose: 'linkLogin',
 				email: link.email,
-				locale: currentLocale()
-			});
+				locale: currentLocale(),
+				botCheckToken
+			}));
 			this.purpose = 'linkLogin';
 			this.email = link.email;
 			this.askForCode();
@@ -932,11 +952,12 @@ export class LoginPage
 	{
 		const email = this.emailAddress.value.trim();
 
-		await this.api.sendCode({
+		await this.emailCheck.send((botCheckToken) => this.api.sendCode({
 			purpose: this.purpose,
 			email,
-			locale: currentLocale()
-		});
+			locale: currentLocale(),
+			botCheckToken
+		}));
 
 		this.email = email;
 		this.askForCode();
@@ -1007,7 +1028,7 @@ export class LoginPage
 			if (this.purpose === 'confirmLogin')
 			{
 				// Only logging in sends this code, so the password is given again
-				const outcome = await this.sendLogin();
+				const outcome = await this.sendLogin(this.codeCheck);
 
 				if (outcome !== 'confirmEmail')
 				{
@@ -1017,11 +1038,12 @@ export class LoginPage
 			}
 			else
 			{
-				await this.api.sendCode({
+				await this.codeCheck.send((botCheckToken) => this.api.sendCode({
 					purpose: this.purpose,
 					email: this.email,
-					locale: currentLocale()
-				});
+					locale: currentLocale(),
+					botCheckToken
+				}));
 			}
 
 			resetCodeInput(this.codeInput);
@@ -1056,7 +1078,7 @@ export class LoginPage
 
 		if (this.purpose === 'confirmLogin')
 		{
-			await this.goOnFromLogin(await this.sendLogin());
+			await this.goOnFromLogin(await this.sendLogin(this.codeCheck));
 		}
 		else if (this.purpose === 'register')
 		{

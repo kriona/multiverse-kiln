@@ -1,14 +1,16 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE,PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
+import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_ROLE, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_SESSION_PATH, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, MAX_ADMIN_ROWS_PER_PAGE, MAX_AREAS_PER_UNIVERSE, MAX_CHARACTER_DELETION_DAYS, MAX_CHARACTERS_PER_UNIVERSE, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_UNIVERSES_PER_CREATOR, MIN_AREAS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE,PROFILE_PATH, PUBLIC_SITE_SETTINGS_PATH, SITE_SETTINGS_PATH, UNIVERSES_PATH, type AdminPlayerListPayload, type AdminSessionListPayload, type AdminSiteSettingsPayload, type AdminUniverseListPayload, type EditableUniverse, type EditableUniverseListPayload, type ErrorPayload, type OwnProfilePayload, type PlayerSearchPayload, type ServerAdminListPayload, type SessionPayload, type SiteSettings, type UniverseListPayload } from '@multiverse-kiln/shared';
 
+import { setBotCheckVerifier } from '../src/auth/turnstile.js';
 import { adminDb } from '../src/db/adminClient.js';
 import { findPlayerAdminEvents, findUniverseAdminEvents } from '../src/db/adminEventRepo.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer, saveLastLogin } from '../src/db/playerRepo.js';
 import { addProviderLogin } from '../src/db/providerLoginRepo.js';
 import { addServerAdmin, isServerAdmin } from '../src/db/serverAdminRepo.js';
+import { findSiteSettings, saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
 import { findUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { findDisabledReason, isUniverseDeletionPrevented, setUniverseDisabled } from '../src/db/universeRepo.js';
@@ -28,6 +30,7 @@ const closed: SiteSettings = {
 	areasPerUniverse: 40,
 	charactersPerUniverse: 6,
 	characterDeletionDays: 0,
+	botCheckEveryRequest: false,
 	socials: {
 		...DEFAULT_SITE_SETTINGS.socials,
 		discord: 'https://discord.gg/example',
@@ -35,6 +38,20 @@ const closed: SiteSettings = {
 	},
 	privacyContact: 'privacy@example.com'
 };
+
+/**
+ * Settings as GET SITE_SETTINGS_PATH answers them on a server without bot checks configured
+ *
+ * @param settings The settings
+ * @return The answer
+ */
+function unconfigured(settings: SiteSettings): AdminSiteSettingsPayload
+{
+	return({
+		...settings,
+		botChecksConfigured: false
+	});
+}
 
 /**
  * The closed settings with one social site's link replaced
@@ -224,13 +241,13 @@ describe('Site settings', () =>
 		assert.strictEqual(response.status, 200);
 		assert.strictEqual(response.headers.get('cache-control'), 'no-store');
 		assert.strictEqual(response.headers.get('x-content-type-options'), 'nosniff');
-		assert.deepStrictEqual(await response.json(), DEFAULT_SITE_SETTINGS);
+		assert.deepStrictEqual(await response.json(), unconfigured(DEFAULT_SITE_SETTINGS));
 	});
 
 	it('saves settings from an allowed origin, and shows the public ones to anyone', async () =>
 	{
 		assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { browser: admin, body: closed, origin: allowedTestOrigin })).status, 204);
-		assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), closed);
+		assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), unconfigured(closed));
 
 		const publicResponse = await send('GET', PUBLIC_SITE_SETTINGS_PATH);
 
@@ -242,10 +259,58 @@ describe('Site settings', () =>
 		});
 	});
 
+	it('turns the bot check at every request on and off while checks are configured, recording each change', async () =>
+	{
+		setBotCheckVerifier({
+			siteKey: 'site-key-for-tests',
+			available: () => true,
+			reachedRecently: () => true,
+			confirmAvailable: () => Promise.resolve(true),
+			verify: () => Promise.resolve('failed')
+		});
+
+		try
+		{
+			const on = {
+				...closed,
+				botCheckEveryRequest: true
+			};
+
+			assert.strictEqual((await send('GET', SITE_SETTINGS_PATH, { browser: admin }).then((response) => response.json()) as AdminSiteSettingsPayload).botChecksConfigured, true);
+
+			for (const settings of [on, on, closed])
+			{
+				assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { browser: admin, body: settings, origin: allowedTestOrigin })).status, 204);
+				assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), {
+					...settings,
+					botChecksConfigured: true
+				});
+			}
+
+			assert.deepStrictEqual((await findPlayerAdminEvents(admin.playerId)).map((event) => event.kind), ['botCheckEveryRequestOn', 'botCheckEveryRequestOff']);
+		}
+		finally
+		{
+			setBotCheckVerifier(undefined);
+		}
+	});
+
+	it('keeps the bot check at every request as it was while checks aren\'t configured', async () =>
+	{
+		await saveSiteSettings({
+			...closed,
+			botCheckEveryRequest: true
+		}, adminDb);
+
+		assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { browser: admin, body: closed, origin: allowedTestOrigin })).status, 204);
+		assert.strictEqual((await findSiteSettings()).botCheckEveryRequest, true);
+		assert.deepStrictEqual(await findPlayerAdminEvents(admin.playerId), []);
+	});
+
 	it('refuses changes from other origins', async () =>
 	{
 		assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { browser: admin, body: closed, origin: 'https://evil.example' })).status, 403);
-		assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), DEFAULT_SITE_SETTINGS);
+		assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), unconfigured(DEFAULT_SITE_SETTINGS));
 	});
 
 	it('refuses settings that aren\'t valid', async () =>
@@ -268,6 +333,9 @@ describe('Site settings', () =>
 			{ ...closed, characterDeletionDays: MAX_CHARACTER_DELETION_DAYS + 1 },
 			{ ...closed, characterDeletionDays: 1.5 },
 			{ ...closed, universeCreationEnabled: 'no' },
+			{ ...closed, botCheckEveryRequest: 'yes' },
+			{ ...closed, botCheckEveryRequest: undefined },
+			{ ...closed, botChecksConfigured: true },
 			{ ...closed, extra: 1 },
 			{ ...closed, socials: undefined },
 			withSocial('discord', 'http://discord.gg/example'),
@@ -295,7 +363,7 @@ describe('Site settings', () =>
 		}
 
 		assert.strictEqual((await send('PUT', SITE_SETTINGS_PATH, { browser: admin, rawBody: '{' })).status, 400);
-		assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), DEFAULT_SITE_SETTINGS);
+		assert.deepStrictEqual(await (await send('GET', SITE_SETTINGS_PATH, { browser: admin })).json(), unconfigured(DEFAULT_SITE_SETTINGS));
 	});
 });
 

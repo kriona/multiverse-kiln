@@ -5,6 +5,7 @@ import type { AdminApi } from '../../network/adminApi';
 import { authFieldOf, type AuthApi } from '../../network/authApi';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { HOME_PAGE_URL, keepHomeNotice } from '../../pages';
+import { BotCheck } from '../botCheck';
 import { abandonUnsavedWork } from '../changeTracker';
 import { resetCodeInput } from '../codeInputs';
 import { getElement, showMessage } from '../dom';
@@ -67,6 +68,7 @@ export class UniverseDeleteSection
 	private readonly codeField = getElement('universe-delete-code-field', HTMLElement);
 	private readonly code = getElement('universe-delete-code', HTMLInputElement);
 	private readonly confirmError = getElement('universe-delete-confirm-error', HTMLElement);
+	private readonly botCheck = new BotCheck(this.confirmError);
 	private readonly sendButton = getElement('universe-delete-send', HTMLButtonElement);
 	private readonly confirmButton = getElement('universe-delete-confirm-submit', HTMLButtonElement);
 	private readonly emailCode: TwoFactorEmailCode;
@@ -431,7 +433,7 @@ export class UniverseDeleteSection
 		{
 			if (sending)
 			{
-				await this.emailCode.send();
+				await this.emailCode.send(this.botCheck);
 				this.showButtons();
 				return;
 			}
@@ -445,14 +447,15 @@ export class UniverseDeleteSection
 				locale: currentLocale()
 			};
 
-			if (deletion.asAdmin)
-			{
-				await this.adminApi.deleteUniverse(universe.id, request);
-			}
-			else
-			{
-				await this.api.deleteUniverse(universe.id, request);
-			}
+			await this.botCheck.send((botCheckToken) => (deletion.asAdmin
+				? this.adminApi.deleteUniverse(universe.id, {
+					...request,
+					botCheckToken
+				})
+				: this.api.deleteUniverse(universe.id, {
+					...request,
+					botCheckToken
+				})));
 
 			this.deleted(universe.name);
 			return;

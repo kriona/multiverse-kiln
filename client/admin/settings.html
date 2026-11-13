@@ -76,6 +76,15 @@
 									<input id="site-social-youtube" type="url" autocomplete="off" spellcheck="false" placeholder="https://www.youtube.com/@..." aria-describedby="site-socials-hint" />
 								</label>
 							</section>
+							<section class="panel form" aria-labelledby="admin-logins-heading">
+								<h2 id="admin-logins-heading" data-message="admin.logins" data-translation-context="Heading of the site settings about logging in, such as bot checks">Logins</h2>
+								<label class="checkbox" data-message="admin.botCheckEveryRequest" data-translation-context="Checkbox on the site settings page: every login with a password and every emailed code asks the browser to pass a bot check (Cloudflare Turnstile) first, for while the site is under attack">
+									<input id="site-bot-check-every-request" type="checkbox" aria-describedby="site-bot-check-hint site-bot-check-unconfigured" />
+									Ask for a bot check at every login and emailed code
+								</label>
+								<p id="site-bot-check-hint" class="hint" data-message="admin.botCheckEveryRequestHint" data-translation-context="Under the bot check checkbox on the site settings page">For while the site is under attack. Without it, a bot check is only asked for after many tries for one address or from one network. Browsers that have logged in to the account, and players giving their password again while logged in, are only asked then.</p>
+								<p id="site-bot-check-unconfigured" class="hint" data-message="admin.botChecksUnconfigured" data-translation-context="Under the bot check checkbox on the site settings page, which is turned off and can't be changed, when the server has no Cloudflare Turnstile keys in its settings" hidden>Bot checks are off: the server has no Cloudflare Turnstile keys. Set them in the server's settings to turn bot checks on.</p>
+							</section>
 							<section class="panel form" aria-labelledby="admin-privacy-heading">
 								<h2 id="admin-privacy-heading" data-message="admin.privacy" data-translation-context="Heading of the site settings for the privacy policy">Privacy policy</h2>
 								<label data-message="admin.privacyContact" data-translation-context="Label of the field on the site settings page for the email address the privacy policy tells players to write to">

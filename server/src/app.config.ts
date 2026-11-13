@@ -13,6 +13,7 @@ import { startGroupChatNotices } from './rooms/groupChatNotices.js';
 import { LobbyRoom } from './rooms/LobbyRoom.js';
 import { SessionRoom } from './rooms/SessionRoom.js';
 import { createTransport } from './transport.js';
+import { botCheckVerifier } from './auth/turnstile.js';
 import { startAuthSweep } from './authSweep.js';
 import { startCharacterSweep } from './characterSweep.js';
 import { startUniverseEditSweep } from './universeEditSweep.js';
@@ -47,6 +48,10 @@ siteUrl();
 
 // Where clients' addresses come from, for limits per network; startup fails if the settings are invalid
 clientAddressSource();
+
+// Bot checks' keys; startup fails if only one of TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY is set, or a
+// test secret key is set without dev tools on (see auth/turnstile.ts)
+botCheckVerifier();
 
 const server = defineServer({
 

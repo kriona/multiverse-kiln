@@ -11,6 +11,7 @@ const closed: SiteSettings = {
 	areasPerUniverse: 40,
 	charactersPerUniverse: 6,
 	characterDeletionDays: 0,
+	botCheckEveryRequest: true,
 	socials: {
 		discord: 'https://discord.gg/example',
 		facebook: 'https://www.facebook.com/example',

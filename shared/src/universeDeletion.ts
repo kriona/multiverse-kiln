@@ -11,6 +11,7 @@
  * Both deleting routes answer 400, 403 or 429 with the field at fault when the password or a code is
  * wrong, as deleting an account does
  */
+import type { BotCheckRequest } from './botChecks.js';
 import { defineMessages, type MessageDescriptor } from './localization.js';
 
 /**
@@ -77,7 +78,7 @@ export interface UniverseDeletionPayload
 /**
  * Body of POST EDITOR_UNIVERSES_PATH/:universeId/deletion and POST ADMIN_UNIVERSES_PATH/:universeId/deletion
  */
-export interface UniverseDeleteRequest
+export interface UniverseDeleteRequest extends BotCheckRequest
 {
 	/**
 	 * The player's password, or null for an account without one

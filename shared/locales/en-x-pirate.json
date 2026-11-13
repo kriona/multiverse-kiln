@@ -127,6 +127,18 @@
 		"message": "The Captain's Quarters",
 		"source": "Site Admin"
 	},
+	"admin.botCheckEveryRequest": {
+		"message": "Ask fer a bot check at every boardin' an' every coded letter",
+		"source": "Ask for a bot check at every login and emailed code"
+	},
+	"admin.botCheckEveryRequestHint": {
+		"message": "Fer when the ship be under attack. Without it, a bot check be asked fer only after many tries fer one address or from one port. Spyglasses that have come aboard the account, an' sailors givin' their password again while aboard, be only asked then.",
+		"source": "For while the site is under attack. Without it, a bot check is only asked for after many tries for one address or from one network. Browsers that have logged in to the account, and players giving their password again while logged in, are only asked then."
+	},
+	"admin.botChecksUnconfigured": {
+		"message": "Bot checks be off: the server has no Cloudflare Turnstile keys. Set them in the server's settings to turn bot checks on.",
+		"source": "Bot checks are off: the server has no Cloudflare Turnstile keys. Set them in the server's settings to turn bot checks on."
+	},
 	"admin.characterDeletionDays": {
 		"message": "Days 'twixt last rites and Davy Jones",
 		"source": "Days between last rites and deletion"
@@ -178,6 +190,10 @@
 	"admin.loadFailed": {
 		"message": "Couldn't haul up the captain's orders.",
 		"source": "Could not load the site settings."
+	},
+	"admin.logins": {
+		"message": "Boardin'",
+		"source": "Logins"
 	},
 	"admin.matches": {
 		"message": "{total, plural, =0 {Not a soul matches} one {# match} other {# matches}}",
@@ -714,6 +730,38 @@
 	"area.takeLink": {
 		"message": "Press E to go through",
 		"source": "Press E to go through"
+	},
+	"botCheck.checking": {
+		"message": "Checkin' ye ain't a bot. This usually takes a few seconds an' needs naught from ye.",
+		"source": "Checking that you aren't a bot. This usually takes a few seconds and needs nothing from you."
+	},
+	"botCheck.couldNotLoad": {
+		"message": "The bot check (Cloudflare Turnstile) couldn't load, mayhap 'cause an ad blocker or firewall blocks it. Try again in another spyglass or from another port.",
+		"source": "The bot check (Cloudflare Turnstile) couldn't load, perhaps because an ad blocker or firewall blocks it. Try again in another browser or on another network."
+	},
+	"botCheck.expired": {
+		"message": "The bot check went stale. Try it again.",
+		"source": "The bot check expired. Try it again."
+	},
+	"botCheck.failed": {
+		"message": "The bot check didn't pass muster. Try it again.",
+		"source": "The bot check didn't pass. Try it again."
+	},
+	"botCheck.needsYou": {
+		"message": "The bot check needs ye: do what it asks, such as tickin' its box.",
+		"source": "The bot check needs you: follow what it asks, such as ticking its box."
+	},
+	"botCheck.passed": {
+		"message": "Check passed. Sendin'...",
+		"source": "Check passed. Sending..."
+	},
+	"botCheck.timedOut": {
+		"message": "The bot check weren't finished in time. Try it again.",
+		"source": "The bot check wasn't finished in time. Try it again."
+	},
+	"botCheck.tryAgain": {
+		"message": "Try the check again",
+		"source": "Try the check again"
 	},
 	"character.back": {
 		"message": "Astern",
@@ -4391,6 +4439,10 @@
 		"message": "The ship's officers must keep two-factor authentication raised. To lower it, have another officer strip ye of yer rank first.",
 		"source": "The site's admins must keep two-factor authentication on. To turn it off, ask another admin to remove you from the site's admins first."
 	},
+	"error.auth.botCheckNeeded": {
+		"message": "Show ye ain't a bot to carry on.",
+		"source": "Show that you aren't a bot to continue."
+	},
 	"error.auth.deleteUniverseNeedsTwoFactor": {
 		"message": "{universe} demands her officers raise two-factor authentication, so she can only be scuttled with yer account while ye have it raised. Make another o' her crew her captain, or raise two-factor authentication.",
 		"source": "{universe} requires its editors to have two-factor authentication on, so it can only be deleted with your account while you have it on. Make another of its editors its creator, or turn on two-factor authentication."
@@ -6902,6 +6954,14 @@
 	"privacy.services": {
 		"message": "Services we use",
 		"source": "Services we use"
+	},
+	"privacy.servicesBotChecks": {
+		"message": "If there have been many boardin' tries or coded letters fer yer address or from yer port, we may ask yer spyglass to show it ain't a bot with {service}. Only then does the page load it from Cloudflare, which learns yer IP address, yer spyglass's details an' that ye were on this ship, under {policy}. Most sailors never see one.",
+		"source": "If there have been many login tries or emailed codes for your address or from your network, we may ask your browser to show it isn't a bot with {service}. Only then does the page load it from Cloudflare, which learns your IP address, your browser's details and that you were on this site, under {policy}. Most players never see one."
+	},
+	"privacy.servicesBotChecksPolicy": {
+		"message": "its own articles o' secrecy",
+		"source": "its own privacy policy"
 	},
 	"privacy.servicesHosting": {
 		"message": "Companies that harbor our database, game server an' uploaded files, an' that carry our letters. They handle yer information only on our orders, an' may stow it in another country than yers.",

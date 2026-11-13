@@ -24,7 +24,8 @@ export type AdminEvent =
 	| { kind: 'adminAdded' | 'adminRemoved'; adminId: string | null; playerId: string | null; occurredAt: Date }
 	| { kind: 'universeDisabled'; adminId: string | null; universeId: string | null; reason: string; preventsDeletion: boolean; occurredAt: Date }
 	| { kind: 'universeEnabled'; adminId: string | null; universeId: string | null; occurredAt: Date }
-	| { kind: 'universeDeleted'; adminId: string | null; universeId: string | null; universeName: string; occurredAt: Date };
+	| { kind: 'universeDeleted'; adminId: string | null; universeId: string | null; universeName: string; occurredAt: Date }
+	| { kind: 'botCheckEveryRequestOn' | 'botCheckEveryRequestOff'; adminId: string | null; occurredAt: Date };
 
 /**
  * Records what a server admin did

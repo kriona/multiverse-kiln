@@ -22,7 +22,7 @@ import { AUTH_PROVIDER_CALLBACK_PATH, AUTH_PROVIDER_LINK_PATH, AUTH_PROVIDER_REG
 import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword } from '../auth/passwords.js';
 import { enabledProviders, providerClient, ProviderLoginError, type ProviderUser } from '../auth/providers.js';
-import { MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
+import { MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
 import { giveSession, resolveSession, startSession, type StartedSession } from '../auth/sessions.js';
 import { createToken, hashToken } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
@@ -35,6 +35,7 @@ import { sendEmailInBackground } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS } from '../logic/emailCodes.js';
 import { displayText } from '../rooms/payloads.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { takePasswordTry } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
@@ -817,22 +818,12 @@ async function linkRoute(request: Request, response: Response): Promise<void>
 
 	if (password !== null)
 	{
-		const attempt = await inTransaction((executor) => takeAttempt([
-			{
-				kind: 'networkLoginAttempt',
-				subjectHash: clientNetworkHash(request),
-				limit: MAX_LOGIN_ATTEMPTS_PER_NETWORK_HOUR
-			},
-			{
-				kind: 'addressLoginAttempt',
-				subjectHash: hashAddress(pending.email),
-				limit: MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR
-			}
-		], now, executor));
+		// A login with the password, so it is limited and checked as one
+		const refusal = await takePasswordTry(request, response, 'login', { addressHash: hashAddress(pending.email) }, pending.playerId, now);
 
-		if (!attempt.allowed)
+		if (refusal)
 		{
-			sendRefusal(response, tooManyAttempts(attempt, now, response));
+			sendRefusal(response, refusal);
 			return;
 		}
 

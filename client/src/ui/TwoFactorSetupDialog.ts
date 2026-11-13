@@ -4,6 +4,7 @@ import { currentLocale, t } from '../localization';
 import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import { announce } from './announcer';
+import { BotCheck } from './botCheck';
 import { ChangeTracker } from './changeTracker';
 import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
@@ -41,6 +42,7 @@ export class TwoFactorSetupDialog
 	private readonly copyStatus = getElement('two-factor-dialog-copy-status', HTMLElement);
 	private readonly code = getElement('two-factor-dialog-code', HTMLInputElement);
 	private readonly error = getElement('two-factor-dialog-error', HTMLElement);
+	private readonly botCheck = new BotCheck(this.error);
 	private readonly continueButton = getElement('two-factor-dialog-continue', HTMLButtonElement);
 	private readonly enableButton = getElement('two-factor-dialog-enable', HTMLButtonElement);
 	private readonly cancelButton = getElement('two-factor-dialog-cancel', HTMLButtonElement);
@@ -215,7 +217,7 @@ export class TwoFactorSetupDialog
 		{
 			if (sending)
 			{
-				await this.emailCode.send();
+				await this.emailCode.send(this.botCheck);
 				this.continueButton.hidden = false;
 			}
 			else if (this.scanStep.hidden)
@@ -270,9 +272,10 @@ export class TwoFactorSetupDialog
 	{
 		await this.emailCode.check();
 
-		const setup = await this.api.setUpTwoFactor({
-			password: (this.emailCode.asked ? null : this.password.value)
-		});
+		const setup = await this.botCheck.send((botCheckToken) => this.api.setUpTwoFactor({
+			password: (this.emailCode.asked ? null : this.password.value),
+			botCheckToken
+		}));
 
 		this.showSecretOf(setup);
 		this.password.value = '';

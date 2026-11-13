@@ -41,7 +41,8 @@ import { CONTINUATION_LIFETIME_MS, DAY_MS, decideLimit, MAX_GUESSES_PER_NETWORK_
 import { connectedSessions } from '../players/connectedSessions.js';
 import { twoFactorChanges } from '../players/twoFactorChanges.js';
 import { encodeBase32, formatRecoveryCode, matchTotpCode, MAX_TWO_FACTOR_ATTEMPTS_PER_ACCOUNT_HOUR, MAX_WRONG_AUTHENTICATOR_CODES_PER_ACCOUNT_DAY, MAX_WRONG_TWO_FACTOR_CODES_PER_LOGIN, readTwoFactorCode, RECOVERY_CODE_LENGTH, recoveryCodeFromBytes, TOTP_SECRET_BYTES, totpStep, totpUri, TWO_FACTOR_SETUP_LIFETIME_MS, WRONG_AUTHENTICATOR_CODES_BEFORE_WARNING } from '../logic/twoFactor.js';
-import { accountPasswordLimits, authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { authMessages, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { takeAccountPasswordTry } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, readCookie, setCookie, TRUSTED_BROWSER_COOKIE, TWO_FACTOR_LOGIN_COOKIE } from './cookies.js';
 import { errorMessages, sendInvalidRequest } from './errors.js';
@@ -551,7 +552,8 @@ export async function requireSession(request: Request, response: Response): Prom
 /**
  * Checks the logged-in account's password, which changing its 2FA, linking a provider login from the
  * profile or deleting the account asks for again. Tries
- * count against the login limits of the network and of the account's address
+ * count against the login limits of the network and of the account's address, with a bot check past
+ * their soft limits (takeAccountPasswordTry())
  *
  * @param request The request
  * @param response The response, which gets a Retry-After header when there were too many tries
@@ -562,12 +564,11 @@ export async function requireSession(request: Request, response: Response): Prom
  */
 export async function checkAccountPassword(request: Request, response: Response, playerId: string, typed: string, now: Date): Promise<AuthRefusal | undefined>
 {
-	const email = await findPlayerEmail(playerId);
-	const attempt = await inTransaction((executor) => takeAttempt(accountPasswordLimits(request, email), now, executor));
+	const refusal = await takeAccountPasswordTry(request, response, playerId, await findPlayerEmail(playerId), now);
 
-	if (!attempt.allowed)
+	if (refusal)
 	{
-		return(tooManyAttempts(attempt, now, response));
+		return(refusal);
 	}
 
 	const passwordHash = await findPasswordHash(playerId);

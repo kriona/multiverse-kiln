@@ -5,6 +5,7 @@ import { authFieldOf, type AuthApi } from '../network/authApi';
 import { describeEditorError, EditorApiError } from '../network/editorApi';
 import type { ProfileApi } from '../network/profileApi';
 import { announce } from './announcer';
+import { BotCheck } from './botCheck';
 import { resetCodeInput } from './codeInputs';
 import { getElement, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
@@ -48,6 +49,7 @@ export class AccountDeleteDialog
 	private readonly usernameField = getElement('account-delete-username-field', HTMLElement);
 	private readonly username = getElement('account-delete-username', HTMLInputElement);
 	private readonly confirmError = getElement('account-delete-confirm-error', HTMLElement);
+	private readonly botCheck = new BotCheck(this.confirmError);
 	private readonly confirmButton = getElement('account-delete-confirm-submit', HTMLButtonElement);
 	private readonly mistakeButton = getElement('account-delete-confirm-cancel', HTMLButtonElement);
 
@@ -311,11 +313,12 @@ export class AccountDeleteDialog
 
 		try
 		{
-			await this.authApi.sendCode({
+			await this.botCheck.send((botCheckToken) => this.authApi.sendCode({
 				purpose: 'deleteAccount',
 				email,
-				locale: currentLocale()
-			});
+				locale: currentLocale(),
+				botCheckToken
+			}));
 			this.codeSent = true;
 			this.emailCodeIntro.textContent = t({
 				id: 'profile.deleteCodeSent',
@@ -490,13 +493,14 @@ export class AccountDeleteDialog
 				this.emailCode.disabled = true;
 			}
 
-			await this.authApi.deleteAccount({
+			await this.botCheck.send((botCheckToken) => this.authApi.deleteAccount({
 				password: (deletion.hasPassword ? this.password.value : null),
 				twoFactorCode: (deletion.twoFactor ? this.code.value : null),
 				username: (deletion.hasPassword ? null : this.username.value),
 				universes: this.decisions,
-				locale: currentLocale()
-			});
+				locale: currentLocale(),
+				botCheckToken
+			}));
 			this.confirmDialog.close();
 			this.deleted();
 			return;
