@@ -1676,9 +1676,9 @@ export class AreaEditor
 		}
 
 		const cells = new AreaCells(area.bounds);
-		const range = cells.chunkRange;
+		const loader = new ChunkLoader((range) => this.source.loadChunks(area.id, range), cells, () => undefined, () => undefined);
 
-		cells.load(range, (await this.source.loadChunks(area.id, range)).chunks);
+		await loader.loadAll();
 
 		return(cells);
 	}
