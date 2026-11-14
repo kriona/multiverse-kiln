@@ -10,33 +10,28 @@ import { PlaceGraph, placeKey, resolveAreaSettings, samePlace, type AreaNode, ty
  */
 export class PlaceModel
 {
-	private readonly regions: Map<string, PlaceNode>;
-	private readonly areas: Map<string, AreaNode>;
+	private readonly places: PlaceGraph;
 	private readonly tileKinds: Map<number, TileUsedFor>;
 	private lobbyRegionId: string | null;
-	private cachedGraph: PlaceGraph | undefined;
 
 	/**
 	 * @param world The version as it is saved
 	 */
 	constructor(world: PlaceWorld)
 	{
-		this.regions = new Map(world.regions.map((region) => [region.id, region]));
-		this.areas = new Map(world.areas.map((area) => [area.id, area]));
+		this.places = new PlaceGraph(world.regions, world.areas);
 		this.tileKinds = new Map(world.tileKinds);
 		this.lobbyRegionId = world.lobbyRegionId;
 	}
 
 	/**
-	 * The regions and areas as the changes so far left them, indexed
+	 * The regions and areas as the changes so far left them, indexed. Later changes update it in place
 	 *
 	 * @return The graph
 	 */
 	graph(): PlaceGraph
 	{
-		this.cachedGraph ??= new PlaceGraph([...this.regions.values()], [...this.areas.values()]);
-
-		return(this.cachedGraph);
+		return(this.places);
 	}
 
 	/**
@@ -47,8 +42,8 @@ export class PlaceModel
 	world(): PlaceWorld
 	{
 		return({
-			regions: [...this.regions.values()],
-			areas: [...this.areas.values()],
+			regions: [...this.places.regions.values()],
+			areas: [...this.places.areas.values()],
 			tileKinds: this.tileKinds,
 			lobbyRegionId: this.lobbyRegionId
 		});
@@ -72,7 +67,7 @@ export class PlaceModel
 	 */
 	region(regionId: string): PlaceNode | undefined
 	{
-		return(this.regions.get(regionId));
+		return(this.places.regions.get(regionId));
 	}
 
 	/**
@@ -83,7 +78,7 @@ export class PlaceModel
 	 */
 	area(areaId: string): AreaNode | undefined
 	{
-		return(this.areas.get(areaId));
+		return(this.places.areas.get(areaId));
 	}
 
 	/**
@@ -93,7 +88,7 @@ export class PlaceModel
 	 */
 	allRegions(): PlaceNode[]
 	{
-		return([...this.regions.values()]);
+		return([...this.places.regions.values()]);
 	}
 
 	/**
@@ -103,7 +98,7 @@ export class PlaceModel
 	 */
 	allAreas(): AreaNode[]
 	{
-		return([...this.areas.values()]);
+		return([...this.places.areas.values()]);
 	}
 
 	/**
@@ -113,8 +108,7 @@ export class PlaceModel
 	 */
 	setRegion(region: PlaceNode): void
 	{
-		this.regions.set(region.id, region);
-		this.cachedGraph = undefined;
+		this.places.setRegion(region);
 	}
 
 	/**
@@ -124,8 +118,7 @@ export class PlaceModel
 	 */
 	setArea(area: AreaNode): void
 	{
-		this.areas.set(area.id, area);
-		this.cachedGraph = undefined;
+		this.places.setArea(area);
 	}
 
 	/**
@@ -137,9 +130,9 @@ export class PlaceModel
 	deleteRegion(regionId: string): PlaceRef[]
 	{
 		const removed: PlaceRef = { kind: 'region', id: regionId };
-		const children = this.graph().childrenOf(removed);
+		const children = [...this.places.childrenOf(removed)];
 
-		this.regions.delete(regionId);
+		this.places.deletePlace(removed);
 		this.dropParent(children, removed);
 
 		return(children);
@@ -154,13 +147,13 @@ export class PlaceModel
 	deleteArea(areaId: string): AreaNode[]
 	{
 		const removed: PlaceRef = { kind: 'area', id: areaId };
-		const area = this.areas.get(areaId);
+		const area = this.places.areas.get(areaId);
 		const inherited = (area?.parents ?? []);
 		const moved: AreaNode[] = [];
 
-		for (const child of this.graph().childrenOf(removed))
+		for (const child of [...this.places.childrenOf(removed)])
 		{
-			const node = this.areas.get(child.id);
+			const node = this.places.areas.get(child.id);
 
 			if ((child.kind !== 'area') || !node)
 			{
@@ -181,12 +174,11 @@ export class PlaceModel
 
 			const updated = { ...node, parents };
 
-			this.areas.set(child.id, updated);
+			this.places.setArea(updated);
 			moved.push(updated);
 		}
 
-		this.areas.delete(areaId);
-		this.cachedGraph = undefined;
+		this.places.deletePlace(removed);
 
 		return(moved);
 	}
@@ -241,24 +233,22 @@ export class PlaceModel
 		{
 			if (place.kind === 'region')
 			{
-				const node = this.regions.get(place.id);
+				const node = this.places.regions.get(place.id);
 
 				if (node)
 				{
-					this.regions.set(place.id, { ...node, parents: node.parents.filter((each) => !samePlace(each, parent)) });
+					this.places.setRegion({ ...node, parents: node.parents.filter((each) => !samePlace(each, parent)) });
 				}
 			}
 			else
 			{
-				const node = this.areas.get(place.id);
+				const node = this.places.areas.get(place.id);
 
 				if (node)
 				{
-					this.areas.set(place.id, { ...node, parents: node.parents.filter((each) => !samePlace(each, parent)) });
+					this.places.setArea({ ...node, parents: node.parents.filter((each) => !samePlace(each, parent)) });
 				}
 			}
 		}
-
-		this.cachedGraph = undefined;
 	}
 }

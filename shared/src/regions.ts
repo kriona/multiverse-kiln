@@ -318,7 +318,20 @@ export class PlaceGraph
 {
 	readonly regions: ReadonlyMap<string, PlaceNode>;
 	readonly areas: ReadonlyMap<string, AreaNode>;
+	private readonly regionNodes: Map<string, PlaceNode>;
+	private readonly areaNodes: Map<string, AreaNode>;
 	private readonly children = new Map<string, PlaceRef[]>();
+
+	/**
+	 * Where each region and area comes in the order the graph was given them, places added later
+	 * coming after, so children lists keep that order as the graph changes
+	 */
+	private readonly order = {
+		region: new Map<string, number>(),
+		area: new Map<string, number>()
+	};
+
+	private nextOrder = 0;
 
 	/**
 	 * @param regions The regions
@@ -326,13 +339,20 @@ export class PlaceGraph
 	 */
 	constructor(regions: readonly PlaceNode[], areas: readonly AreaNode[])
 	{
-		this.regions = new Map(regions.map((region) => [region.id, region]));
-		this.areas = new Map(areas.map((area) => [area.id, area]));
+		this.regionNodes = new Map(regions.map((region) => [region.id, region]));
+		this.areaNodes = new Map(areas.map((area) => [area.id, area]));
+		this.regions = this.regionNodes;
+		this.areas = this.areaNodes;
 
 		for (const [kind, nodes] of [['region', regions], ['area', areas]] as const)
 		{
 			for (const node of nodes)
 			{
+				if (!this.order[kind].has(node.id))
+				{
+					this.order[kind].set(node.id, this.nextOrder++);
+				}
+
 				for (const parent of node.parents)
 				{
 					const key = placeKey(parent);
@@ -343,6 +363,57 @@ export class PlaceGraph
 				}
 			}
 		}
+	}
+
+	/**
+	 * Adds a region, or replaces one with new settings and parents, answering from then on as a graph
+	 * built with it would
+	 *
+	 * @param region The region
+	 */
+	setRegion(region: PlaceNode): void
+	{
+		this.setNode('region', region, this.regionNodes);
+	}
+
+	/**
+	 * Adds an area, or replaces one with new settings and parents, answering from then on as a graph built
+	 * with it would
+	 *
+	 * @param area The area
+	 */
+	setArea(area: AreaNode): void
+	{
+		this.setNode('area', area, this.areaNodes);
+	}
+
+	/**
+	 * Takes a region or area out, answering from then on as a graph built without it would. Places naming
+	 * it as a parent stay its children
+	 *
+	 * @param place The place
+	 */
+	deletePlace(place: PlaceRef): void
+	{
+		const node = this.node(place);
+
+		if (!node)
+		{
+			return;
+		}
+
+		this.leaveParents(place, node.parents);
+
+		if (place.kind === 'region')
+		{
+			this.regionNodes.delete(place.id);
+		}
+		else
+		{
+			this.areaNodes.delete(place.id);
+		}
+
+		this.order[place.kind].delete(place.id);
 	}
 
 	/**
@@ -371,7 +442,8 @@ export class PlaceGraph
 	 * The regions and areas directly inside a place
 	 *
 	 * @param place The place
-	 * @return Its children, regions in the order given then areas
+	 * @return Its children, regions in the order given then areas. The list is the graph's own, which
+	 * changes as the graph does
 	 */
 	childrenOf(place: PlaceRef): PlaceRef[]
 	{
@@ -563,6 +635,112 @@ export class PlaceGraph
 			...[...this.regions.keys()].map((id): PlaceRef => ({ kind: 'region', id })),
 			...[...this.areas.keys()].map((id): PlaceRef => ({ kind: 'area', id }))
 		]);
+	}
+
+	/**
+	 * Adds or replaces a region or area, moving it from its old parents' children to its new parents'
+	 *
+	 * @param kind Whether it is a region or an area
+	 * @param node The region or area
+	 * @param nodes The graph's regions or areas, by ID
+	 */
+	private setNode<Node extends PlaceNode>(kind: PlaceKind, node: Node, nodes: Map<string, Node>): void
+	{
+		const place: PlaceRef = { kind, id: node.id };
+		const old = nodes.get(node.id);
+
+		if (old)
+		{
+			this.leaveParents(place, old.parents);
+		}
+		else
+		{
+			this.order[kind].set(node.id, this.nextOrder++);
+		}
+
+		nodes.set(node.id, node);
+
+		for (const parent of node.parents)
+		{
+			const key = placeKey(parent);
+			const list = this.children.get(key);
+
+			if (list)
+			{
+				list.splice(this.childIndex(list, place), 0, place);
+			}
+			else
+			{
+				this.children.set(key, [place]);
+			}
+		}
+	}
+
+	/**
+	 * Takes a place out of its parents' children
+	 *
+	 * @param place The place
+	 * @param parents Its parents
+	 */
+	private leaveParents(place: PlaceRef, parents: readonly PlaceRef[]): void
+	{
+		for (const parent of parents)
+		{
+			const key = placeKey(parent);
+			const list = this.children.get(key);
+
+			if (!list)
+			{
+				continue;
+			}
+
+			const start = this.childIndex(list, place);
+			let end = start;
+
+			while ((end < list.length) && samePlace(list[end], place))
+			{
+				end++;
+			}
+
+			list.splice(start, (end - start));
+
+			if (list.length === 0)
+			{
+				this.children.delete(key);
+			}
+		}
+	}
+
+	/**
+	 * Where a place comes in a children list, which is in order with regions before areas: the index of
+	 * its first entry, or of where it would go
+	 *
+	 * @param list The children
+	 * @param place The place
+	 * @return The index
+	 */
+	private childIndex(list: readonly PlaceRef[], place: PlaceRef): number
+	{
+		const rank = (each: PlaceRef): number => (((each.kind === 'region') ? 0 : this.nextOrder) + (this.order[each.kind].get(each.id) ?? 0));
+		const target = rank(place);
+		let low = 0;
+		let high = list.length;
+
+		while (low < high)
+		{
+			const middle = ((low + high) >> 1);
+
+			if (rank(list[middle]) < target)
+			{
+				low = (middle + 1);
+			}
+			else
+			{
+				high = middle;
+			}
+		}
+
+		return(low);
 	}
 
 	/**

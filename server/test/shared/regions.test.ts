@@ -449,6 +449,51 @@ describe('Working out area settings', () =>
 	});
 });
 
+describe('Changing a place graph in place', () =>
+{
+	it('answers as a graph built from the same places does', () =>
+	{
+		const graph = new PlaceGraph([region('Planet'), region('Bea'), region('Capitol', ['Planet', 'Bea'])], [area('Shop', ['Capitol']), area('Cellar', ['area:Shop']), area('Field', ['Planet', 'Bea']), area('Barn', ['Planet'])]);
+		const ids = ['Planet', 'Bea', 'Capitol', 'Moon', 'Shop', 'Cellar', 'Field', 'Barn', 'Crater', 'Ghost'];
+		const places = ids.flatMap((id): PlaceRef[] => [{ kind: 'region', id }, { kind: 'area', id }]);
+		const steps: [string, () => void][] = [
+			['moving an area before its siblings', () => graph.setArea(area('Barn', ['Bea']))],
+			['adding a region', () => graph.setRegion(region('Moon', ['Planet']))],
+			['adding an area inside a region and an area', () => graph.setArea(area('Crater', ['Moon', 'area:Field']))],
+			['renaming an area', () => graph.setArea({ ...area('Field', ['Planet', 'Bea']), name: 'Meadow' })],
+			['moving a region', () => graph.setRegion(region('Capitol', ['Moon']))],
+			['naming a parent that does not exist', () => graph.setArea(area('Shop', ['Capitol', 'Ghost']))],
+			['naming a parent twice', () => graph.setArea(area('Barn', ['Bea', 'Bea', 'Planet']))],
+			['deleting a region with places inside it', () => graph.deletePlace({ kind: 'region', id: 'Moon' })],
+			['deleting an area', () => graph.deletePlace({ kind: 'area', id: 'Field' })],
+			['adding a deleted area again', () => graph.setArea(area('Field', ['Planet']))],
+			['adding the deleted region again', () => graph.setRegion(region('Moon', []))],
+			['putting a region inside itself', () => graph.setRegion(region('Planet', ['Capitol']))]
+		];
+
+		for (const [step, change] of steps)
+		{
+			change();
+
+			const fresh = new PlaceGraph([...graph.regions.values()], [...graph.areas.values()]);
+
+			for (const place of places)
+			{
+				const where = `${place.kind} ${place.id} after ${step}`;
+
+				assert.deepStrictEqual(graph.node(place), fresh.node(place), where);
+				assert.deepStrictEqual(graph.parentsOf(place), fresh.parentsOf(place), where);
+				assert.deepStrictEqual(graph.childrenOf(place), fresh.childrenOf(place), where);
+				assert.deepStrictEqual(graph.ancestorsOf(place), fresh.ancestorsOf(place), where);
+				assert.deepStrictEqual(graph.descendantsOf(place), fresh.descendantsOf(place), where);
+			}
+		}
+
+		assert.deepStrictEqual(graph.childrenOf({ kind: 'region', id: 'Moon' }), [{ kind: 'region', id: 'Capitol' }, { kind: 'area', id: 'Crater' }]);
+		assert.deepStrictEqual(graph.childrenOf({ kind: 'region', id: 'Planet' }), [{ kind: 'area', id: 'Barn' }, { kind: 'area', id: 'Field' }]);
+	});
+});
+
 describe('The lobby region\'s edge', () =>
 {
 	const places = world([
