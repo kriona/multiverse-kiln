@@ -488,6 +488,13 @@ export class AreaEditor
 			this.pickStatus.textContent = '';
 		});
 
+		// Phaser cancels the browser's default for a press on the cells, which would focus them. Without
+		// focus, the field used last keeps the keys, and Ctrl+Z and the cells' own keys don't reach them
+		this.canvasElement.addEventListener('pointerdown', () =>
+		{
+			this.focusCells();
+		});
+
 		this.setFullPage(false);
 
 		document.addEventListener('keydown', this.onKeyDown);
@@ -1378,6 +1385,7 @@ export class AreaEditor
 
 		this.canvas.scene?.setLinks(linksInArea(open, this.currentLinks(open.area.id, open.links)));
 		this.showHoveredCell();
+		this.pickStatus.textContent = '';
 		this.unsavedChanged();
 	}
 
@@ -2196,6 +2204,7 @@ export class AreaEditor
 		{
 			this.canvas.scene?.refreshChunks(open.cells.apply(changes));
 			this.showHoveredCell();
+			this.pickStatus.textContent = '';
 		}
 	}
 
@@ -2337,7 +2346,8 @@ export class AreaEditor
 	/**
 	 * Chooses a cell's tile in the Tile list, whatever the tool, without changing the cell; a cell holding
 	 * the area's default tile chooses it. When the list doesn't offer the tile, the status line under the
-	 * cells says why and the list is left as it was
+	 * cells says why and the list is left as it was. What the status line says stays until the area next
+	 * changes
 	 *
 	 * @param column The cell's column
 	 * @param row The cell's row
@@ -2504,6 +2514,8 @@ export class AreaEditor
 	 */
 	private applyStep(changes: EditStep['changes'], previous: EditStep['changes'], bounds?: AreaBounds, carried?: { areaId: string; bounds: AreaBounds }[]): void
 	{
+		this.pickStatus.textContent = '';
+
 		if (this.open && (changes.length > 0))
 		{
 			this.canvas.scene?.refreshChunks(this.open.cells.apply(changes));

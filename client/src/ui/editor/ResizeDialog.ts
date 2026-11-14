@@ -251,7 +251,6 @@ export class ResizeDialog
 			const changed = ((original !== undefined) && (field.valueAsNumber !== original));
 
 			field.classList.toggle('changed', changed);
-			was.hidden = !changed;
 			was.textContent = (changed
 				? t({
 					id: 'editor.resize.was',
@@ -307,14 +306,14 @@ export class ResizeDialog
 
 		showMessage(this.carried, ((carried.length === 0)
 			? undefined
-			: t({
+			: `⚠️ ${t({
 				id: 'editor.resize.carried',
-				defaultMessage: '{count, plural, one {{areas} is resized too.} other {{areas} are resized too.}} This keeps the touching sides of the areas in its row and column the same length.',
-				description: 'In the dialog for changing an area\'s size, when the area has neighboring areas (walked across without links): the other areas in its row (when it gets taller or shorter) or column (wider or narrower) change size with it. {areas} lists their names and {count} how many'
+				defaultMessage: '{count, plural, one {{areas} will be resized too.} other {{areas} will be resized too.}} This keeps the touching sides of the areas in its row and column the same length.',
+				description: 'Warning in the dialog for changing an area\'s size, when the area has neighboring areas (walked across without links): the other areas in its row (when it gets taller or shorter) or column (wider or narrower) will change size with it once the dialog resizes the area. Shown in a box that stands out, after a warning sign, ⚠️. {areas} lists their names and {count} how many'
 			}, {
 				areas: formatList(carried, 'conjunction'),
 				count: carried.length
-			})));
+			})}`));
 		this.confirmedBounds = undefined;
 		setButtonText(this.submit, t({
 			id: 'editor.resize.submit',

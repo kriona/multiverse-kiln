@@ -3368,8 +3368,8 @@
 		"source": "Could not save the regions."
 	},
 	"editor.resize.carried": {
-		"message": "{count, plural, one {{areas} be resized too.} other {{areas} be resized too.}} This keeps the touchin' sides o' the areas in its row an' column the same length.",
-		"source": "{count, plural, one {{areas} is resized too.} other {{areas} are resized too.}} This keeps the touching sides of the areas in its row and column the same length."
+		"message": "{count, plural, one {{areas} shall be resized too.} other {{areas} shall be resized too.}} This keeps the touchin' sides o' the areas in its row an' column the same length.",
+		"source": "{count, plural, one {{areas} will be resized too.} other {{areas} will be resized too.}} This keeps the touching sides of the areas in its row and column the same length."
 	},
 	"editor.resize.cutOffWarning": {
 		"message": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the area is stowed. Resize anyway?",

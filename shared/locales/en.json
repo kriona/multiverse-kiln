@@ -3456,8 +3456,8 @@
 		"description": "Shown on the Areas tab when the server refused a change to its regions, followed by why; nothing was saved"
 	},
 	"editor.resize.carried": {
-		"defaultMessage": "{count, plural, one {{areas} is resized too.} other {{areas} are resized too.}} This keeps the touching sides of the areas in its row and column the same length.",
-		"description": "In the dialog for changing an area's size, when the area has neighboring areas (walked across without links): the other areas in its row (when it gets taller or shorter) or column (wider or narrower) change size with it. {areas} lists their names and {count} how many"
+		"defaultMessage": "{count, plural, one {{areas} will be resized too.} other {{areas} will be resized too.}} This keeps the touching sides of the areas in its row and column the same length.",
+		"description": "Warning in the dialog for changing an area's size, when the area has neighboring areas (walked across without links): the other areas in its row (when it gets taller or shorter) or column (wider or narrower) will change size with it once the dialog resizes the area. Shown in a box that stands out, after a warning sign, ⚠️. {areas} lists their names and {count} how many"
 	},
 	"editor.resize.cutOffWarning": {
 		"defaultMessage": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the area is saved. Resize anyway?",

@@ -1403,6 +1403,12 @@ html:has(.area-cells-editor.full-page) body
 	}
 }
 
+// The form's gap spaces it from what is around it
+.resize-carried
+{
+	margin: 0;
+}
+
 .resize-grid
 {
 	display: grid;
@@ -1436,8 +1442,10 @@ html:has(.area-cells-editor.full-page) body
 		}
 	}
 
+	// Empty until its field changes, keeping its line so that filling it doesn't move the dialog
 	.resize-was
 	{
+		min-height: 1lh;
 		color: $changed;
 		@include small-text;
 	}
