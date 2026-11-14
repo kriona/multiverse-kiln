@@ -28,8 +28,9 @@ const ARROW_STEPS: Record<string, BrushCell> = {
  *
  * The canvas's element can be focused, and then the keyboard works the area with a cursor: the arrow
  * keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints, fills from or picks its cell
- * as a click does, holding Space while moving keeps painting as a drag does, + and - zoom, and Home
- * goes back to the center cell. Each cell the cursor moves onto is read out to screen readers
+ * as a click does, holding Space while moving keeps painting as a drag does, P picks its cell's tile as a
+ * middle click does, + and - zoom, and Home goes back to the center cell. Each cell the cursor moves onto
+ * is read out to screen readers
  */
 export class AreaCanvas
 {
@@ -229,7 +230,7 @@ export class AreaCanvas
 	};
 
 	/**
-	 * Moves the cursor, uses the tool on its cell, zooms or goes back to the center cell
+	 * Moves the cursor, uses the tool on its cell, picks its cell's tile, zooms or goes back to the center cell
 	 *
 	 * @param event The key press on the area
 	 */
@@ -266,6 +267,10 @@ export class AreaCanvas
 		else if (event.key === 'Home')
 		{
 			this.moveCursor({ column: 0, row: 0 });
+		}
+		else if (event.key.toLowerCase() === 'p')
+		{
+			this.host?.pickTile(cursor.column, cursor.row);
 		}
 		else
 		{

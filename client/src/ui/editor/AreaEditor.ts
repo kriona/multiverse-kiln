@@ -146,6 +146,7 @@ export class AreaEditor
 	private readonly fullPageButton = getElement('area-full-page', HTMLButtonElement);
 	private readonly cursor = getElement('area-cursor', HTMLElement);
 	private readonly saveStatus = getElement('area-save-status', HTMLElement);
+	private readonly pickStatus = getElement('area-pick-status', HTMLElement);
 	private readonly error = getElement('area-cells-error', HTMLElement);
 	private readonly canvasElement = getElement('area-canvas', HTMLElement);
 	private readonly canvas = new AreaCanvas(this.canvasElement, VIEW_WIDTH, VIEW_HEIGHT);
@@ -234,6 +235,11 @@ export class AreaEditor
 	private deletedTiles: ReadonlyMap<number, number | undefined> = new Map();
 
 	/**
+	 * Whether the Tile list offers the tiles for indoor areas, following the area editor's choice before it is saved
+	 */
+	private listedIndoors = false;
+
+	/**
 	 * Changes every time an area is opened, so data that arrives for an earlier one is ignored
 	 */
 	private openVersion = 0;
@@ -274,6 +280,12 @@ export class AreaEditor
 		this.fullPageButton.addEventListener('click', () =>
 		{
 			this.setFullPage(!this.fullPage);
+		});
+
+		// What the last pick said no longer goes with the tile chosen
+		this.tile.addEventListener('change', () =>
+		{
+			this.pickStatus.textContent = '';
 		});
 
 		this.setFullPage(false);
@@ -325,6 +337,16 @@ export class AreaEditor
 		});
 
 		addKeyHelp({
+			scope: this.tools,
+			keys: () => 'P',
+			description: () => t({
+				id: 'editor.area.keys.pickTileDescription',
+				defaultMessage: 'Choose the cursor\'s cell\'s tile in the Tile list',
+				description: 'In the list of keyboard shortcuts, what the P key does on the area editor\'s cells'
+			})
+		});
+
+		addKeyHelp({
 			scope: this.canvasElement,
 			keys: () => '+ / -',
 			description: () => t({
@@ -371,6 +393,12 @@ export class AreaEditor
 		this.deletedTiles = deletedTiles;
 		this.fillTiles(universe, area, tiles, sameArea);
 		this.tools.hidden = !editable;
+
+		if (!sameArea)
+		{
+			this.pickStatus.textContent = '';
+		}
+
 		showMessage(this.error, undefined);
 
 		let links: EditorAreaLink[];
@@ -433,6 +461,7 @@ export class AreaEditor
 		this.stagedLinks.clear();
 		this.paintedByOthers.clear();
 		this.paintedHere.clear();
+		this.pickStatus.textContent = '';
 		this.canvas.stop();
 		this.unsavedChanged();
 	}
@@ -1119,6 +1148,10 @@ export class AreaEditor
 			{
 				void this.fill(column, row);
 			},
+			pickTile: (column, row) =>
+			{
+				this.pickTile(column, row);
+			},
 			pick: (column, row) =>
 			{
 				this.openLinkDialog(column, row);
@@ -1371,6 +1404,78 @@ export class AreaEditor
 		{
 			this.filling = false;
 		}
+	}
+
+	/**
+	 * Chooses a cell's tile in the Tile list, whatever the tool, without changing the cell; a cell holding
+	 * the area's default tile chooses it. When the list doesn't offer the tile, the status line under the
+	 * cells says why and the list is left as it was
+	 *
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 */
+	private pickTile(column: number, row: number): void
+	{
+		const open = this.open;
+
+		if (!open?.editable || !isInBounds(open.cells.bounds, column, row))
+		{
+			return;
+		}
+
+		const value = open.cells.valueAt(column, row);
+
+		if (value === undefined)
+		{
+			this.pickStatus.textContent = t({
+				id: 'editor.area.pickLoading',
+				defaultMessage: 'That part of the area is still loading, so its tile can\'t be chosen yet.',
+				description: 'Under the area editor\'s cells, after a middle click or P on a cell whose part of the area hasn\'t loaded yet, so its tile wasn\'t chosen in the Tile list'
+			});
+			return;
+		}
+
+		const tileId = ((value === DEFAULT_TILE_CELL) ? open.area.resolved.defaultTileId : value);
+		const choice = ((value === VOID_CELL) ? UNEXPLORED_CHOICE : String(tileId));
+		const option = [...this.tile.options].find((candidate) => (candidate.value === choice));
+
+		if (option)
+		{
+			this.tile.value = choice;
+			this.pickStatus.textContent = t({
+				id: 'editor.area.picked',
+				defaultMessage: 'Chose {tile} in the Tile list.',
+				description: 'Under the area editor\'s cells, after a middle click or P on a cell chose its tile as the tile to paint with; {tile} is the tile as the Tile list names it'
+			}, {
+				tile: option.text
+			});
+			return;
+		}
+
+		const tile = open.tiles.find((candidate) => (candidate.id === tileId));
+		let reason = 'unknown';
+
+		if (tile && this.deletedTiles.has(tile.id))
+		{
+			reason = 'deleted';
+		}
+		else if (tile && !tile.enabled)
+		{
+			reason = 'disabled';
+		}
+		else if (tile)
+		{
+			reason = (this.listedIndoors ? 'indoors' : 'outdoors');
+		}
+
+		this.pickStatus.textContent = t({
+			id: 'editor.area.pickUnavailable',
+			defaultMessage: '{reason, select, deleted {{tile} will be deleted when the Tilesets tab is saved, so it can\'t be chosen to paint with.} disabled {{tile} is disabled, so it can\'t be chosen to paint with.} indoors {{tile} isn\'t used in indoor areas, so it can\'t be chosen to paint with here.} outdoors {{tile} isn\'t used in outdoor areas, so it can\'t be chosen to paint with here.} other {This cell\'s tile can\'t be chosen to paint with.}}',
+			description: 'Under the area editor\'s cells, after a middle click or P on a cell whose tile the Tile list doesn\'t offer, so it wasn\'t chosen; {tile} is the tile\'s name and {reason} why: deleted (the Tilesets tab will delete it), disabled (turned off on the Tilesets tab), indoors or outdoors (the tile isn\'t used in that kind of area, which the area is), or other (a tile the editor doesn\'t know)'
+		}, {
+			reason,
+			tile: (tile ? tileName(tile, open.universe.ruleset) : '')
+		});
 	}
 
 	/**
@@ -1647,7 +1752,7 @@ export class AreaEditor
 
 		this.deletedTiles = deletedTiles;
 		this.open = { ...open, tiles };
-		this.fillTiles(open.universe, { ...open.area, indoors }, tiles, true);
+		this.fillTiles(open.universe, { ...open.area, resolved: { ...open.area.resolved, indoors } }, tiles, true);
 		await this.startScene(camera);
 	}
 
@@ -1663,6 +1768,8 @@ export class AreaEditor
 	private fillTiles(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], keepChoice: boolean): void
 	{
 		const chosen = (keepChoice ? this.tile.value : String(area.resolved.defaultTileId));
+
+		this.listedIndoors = area.resolved.indoors;
 		const paintable = tiles
 			.filter((tile) => ((canPaintTile(tile, area.resolved.indoors) && !this.deletedTiles.has(tile.id)) || (tile.id === area.resolved.defaultTileId)))
 			.map((tile) => ({

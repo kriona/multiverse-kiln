@@ -33,6 +33,12 @@ const WHEEL_LINE_PIXELS = 16;
 const WHEEL_PAN_SCALE = 0.25;
 
 /**
+ * How far the pointer may move, in screen pixels, between pressing and letting go of the middle button
+ * for it to count as a click, which picks the cell's tile, rather than a pan
+ */
+const MIDDLE_CLICK_DISTANCE = 4;
+
+/**
  * How far beyond the view, in cells, chunks are asked for, so they are there before they scroll in
  */
 const LOAD_MARGIN = CHUNK_SIZE;
@@ -120,6 +126,11 @@ export interface AreaEditorHost
 	fill: (column: number, row: number) => void;
 
 	/**
+	 * A cell is clicked with the middle button, whatever the mode, to choose its tile to paint with
+	 */
+	pickTile: (column: number, row: number) => void;
+
+	/**
 	 * A cell is clicked in pick mode
 	 */
 	pick: (column: number, row: number) => void;
@@ -182,7 +193,8 @@ export interface AreaEditorSceneData
  * Shows an area's cells for editing: the same grid as gameplay, with the area's edges, its center cell,
  * its links and the brush outlined on top
  *
- * Left clicks paint, fill or pick cells (see PointerMode); dragging with the right or middle button pans,
+ * Left clicks paint, fill or pick cells (see PointerMode), and a middle click picks a cell's tile to paint
+ * with; dragging with the right or middle button pans,
  * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. AreaCanvas
  * does the same from the keyboard with a cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
@@ -263,6 +275,12 @@ export class AreaEditorScene extends Phaser.Scene
 	} | undefined;
 
 	/**
+	 * Whether the pan under way started with the middle button, which picks the cell's tile when it is let
+	 * go without having moved the area
+	 */
+	private middlePan = false;
+
+	/**
 	 * The chunk range last reported to the host, as a string, so it is only reported when it changes
 	 */
 	private lastViewKey = '';
@@ -307,6 +325,7 @@ export class AreaEditorScene extends Phaser.Scene
 		this.pointerOver = false;
 		this.lastDab = undefined;
 		this.panStart = undefined;
+		this.middlePan = false;
 		this.lastViewKey = '';
 	}
 
@@ -585,6 +604,7 @@ export class AreaEditorScene extends Phaser.Scene
 				scrollX: camera.scrollX,
 				scrollY: camera.scrollY
 			};
+			this.middlePan = pointer.middleButtonDown();
 			return;
 		}
 
@@ -649,11 +669,23 @@ export class AreaEditorScene extends Phaser.Scene
 	};
 
 	/**
-	 * Ends a stroke or a pan
+	 * Ends a stroke or a pan. A middle click, letting go where the button was pressed, picks the cell's tile
+	 *
+	 * @param pointer The pointer
 	 */
-	private readonly onPointerUp = (): void =>
+	private readonly onPointerUp = (pointer: Phaser.Input.Pointer): void =>
 	{
+		const pan = this.panStart;
+
+		if (pan && this.middlePan && (Math.hypot(pointer.x - pan.x, pointer.y - pan.y) <= MIDDLE_CLICK_DISTANCE))
+		{
+			const cell = this.cellUnder(pointer);
+
+			this.host.pickTile(cell.column, cell.row);
+		}
+
 		this.panStart = undefined;
+		this.middlePan = false;
 		this.finishStroke();
 	};
 

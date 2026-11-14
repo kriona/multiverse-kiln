@@ -1368,12 +1368,12 @@
 		"source": "Cells"
 	},
 	"editor.area.help": {
-		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Flood tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Passages tool, click a cell to add or change its passage.",
-		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link."
+		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to take up its tile in the Tile list. With the Flood tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link."
 	},
 	"editor.area.keyboardHelp": {
-		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, floods from the cell with the Flood tool, or opens the cell's passage with the Passages tool; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
-		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
+		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, floods from the cell with the Flood tool, or opens the cell's passage with the Passages tool; hold Space while steerin' to keep paintin'. P takes up the cell's tile in the Tile list. + and - zoom, and Home sails back to the center cell.",
+		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. P chooses the cell's tile in the Tile list. + and - zoom, and Home goes back to the center cell."
 	},
 	"editor.area.keys.cursor": {
 		"message": "Arrow keys",
@@ -1398,6 +1398,10 @@
 	"editor.area.keys.paintDescription": {
 		"message": "Paint the cursor's cell, flood from it with the Flood tool, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
 		"source": "Paint the cursor's cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting"
+	},
+	"editor.area.keys.pickTileDescription": {
+		"message": "Take up the cursor's cell's tile in the Tile list",
+		"source": "Choose the cursor's cell's tile in the Tile list"
 	},
 	"editor.area.keys.redo": {
 		"message": "Paint or resize again what ye took back",
@@ -1462,6 +1466,18 @@
 	"editor.area.parent": {
 		"message": "Mother area",
 		"source": "Parent area"
+	},
+	"editor.area.pickLoading": {
+		"message": "That stretch o' the area be still haulin' in, so its tile can't be taken up yet.",
+		"source": "That part of the area is still loading, so its tile can't be chosen yet."
+	},
+	"editor.area.pickUnavailable": {
+		"message": "{reason, select, deleted {{tile} walks the plank when the Tilesets tab be stowed, so it can't be taken up to paint with.} disabled {{tile} be laid up, so it can't be taken up to paint with.} indoors {{tile} ain't used below decks, so it can't be taken up to paint with here.} outdoors {{tile} ain't used on deck, so it can't be taken up to paint with here.} other {This cell's tile can't be taken up to paint with.}}",
+		"source": "{reason, select, deleted {{tile} will be deleted when the Tilesets tab is saved, so it can't be chosen to paint with.} disabled {{tile} is disabled, so it can't be chosen to paint with.} indoors {{tile} isn't used in indoor areas, so it can't be chosen to paint with here.} outdoors {{tile} isn't used in outdoor areas, so it can't be chosen to paint with here.} other {This cell's tile can't be chosen to paint with.}}"
+	},
+	"editor.area.picked": {
+		"message": "Took up {tile} in the Tile list.",
+		"source": "Chose {tile} in the Tile list."
 	},
 	"editor.area.redo": {
 		"message": "Redo",
