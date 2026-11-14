@@ -4,6 +4,7 @@ import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionAre
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
+import { heldAreaMessages } from '../network/heldAreaMessages';
 import type { AreaConnection, AreaRoom, GameRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
@@ -467,6 +468,21 @@ export class AreaScene extends Phaser.Scene
 			this.receiveCellsSeen(payload);
 		}));
 
+		// The areas around the area, and chunks, that arrived before the scene listened for them
+		const held = heldAreaMessages(this.room);
+
+		for (const message of held.take())
+		{
+			if (message.type === ServerMessageType.NeighborAreas)
+			{
+				this.receiveNeighbors(message.payload);
+			}
+			else
+			{
+				this.receiveChunks(message.payload);
+			}
+		}
+
 		if (this.input.keyboard)
 		{
 			this.movementKeys = new MovementKeys(this.input.keyboard);
@@ -528,6 +544,7 @@ export class AreaScene extends Phaser.Scene
 				unbind();
 			}
 
+			held.stopListening();
 			this.announcer.stop();
 
 			for (const playerId of [...this.players.keys()])

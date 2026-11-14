@@ -1,6 +1,6 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { areaLight, canSee, CHUNK_SIZE, isInBounds, Player, secondOfDay, ServerMessageType, visionBudget, windowsAcrossSeams, type AreaCellRef, type AreaCellWindow, type AreaPayload, type AreaTime, type ChunksPayload, type MovePayload, type NeighborAreasPayload, type Sight, type WelcomePayload } from '@multiverse-kiln/shared';
+import { areaLight, canSee, CHUNK_SIZE, isInBounds, NEIGHBOR_SIDES, Player, secondOfDay, ServerMessageType, visionBudget, windowsAcrossSeams, type AreaCellRef, type AreaCellWindow, type AreaPayload, type AreaTime, type ChunksPayload, type MovePayload, type NeighborAreasPayload, type NeighborSide, type Sight, type WelcomePayload } from '@multiverse-kiln/shared';
 
 import { chunksIn, chunksNear, type ChunkAreaShape } from '../logic/chunkArea.js';
 import { stepSeconds } from '../logic/gameClock.js';
@@ -379,9 +379,76 @@ export class AreaPlayers
 	{
 		const areaId = area.loaded.area.id;
 
-		await this.areas.loadChunks(areaId, chunksNear([near], CHUNK_LOAD_RADIUS, chunkShapeOf(area)));
+		await this.loadAround(area, near);
 
 		return(((this.areas.get(areaId) === area) ? area : undefined));
+	}
+
+	/**
+	 * Loads an area's chunks near a cell, with the areas across its seams near the cell, the areas at
+	 * their corners, and their chunks near it. A player placed there is then sent every area around them
+	 * with their own, rather than each a chunk refresh or two later
+	 *
+	 * @param area The area
+	 * @param near The cell
+	 */
+	private async loadAround(area: ActiveArea, near: Cell): Promise<void>
+	{
+		await Promise.all([
+			this.areas.loadChunks(area.loaded.area.id, chunksNear([near], CHUNK_LOAD_RADIUS, chunkShapeOf(area))),
+			this.loadSeamsNear(area, near)
+		]);
+	}
+
+	/**
+	 * Loads the areas across an area's seams within CHUNK_LOAD_RADIUS of a cell, the areas at their
+	 * corners near it, and their chunks near it. One that can't be loaded is left to refreshChunks(),
+	 * which loads it again and says why it can't
+	 *
+	 * @param area The area
+	 * @param near The cell
+	 */
+	private async loadSeamsNear(area: ActiveArea, near: Cell): Promise<void>
+	{
+		if (!area.seams)
+		{
+			return;
+		}
+
+		const { bounds, sides } = area.loaded;
+		const reaches: Record<NeighborSide, boolean> = {
+			north: ((near.row - bounds.minRow) < CHUNK_LOAD_RADIUS),
+			east: ((bounds.maxColumn - near.column) < CHUNK_LOAD_RADIUS),
+			south: ((bounds.maxRow - near.row) < CHUNK_LOAD_RADIUS),
+			west: ((near.column - bounds.minColumn) < CHUNK_LOAD_RADIUS)
+		};
+		const across = (side: NeighborSide): readonly NeighborSide[] => (((side === 'north') || (side === 'south')) ? ['east', 'west'] : ['north', 'south']);
+		const nearSides = NEIGHBOR_SIDES.filter((side) => reaches[side]);
+
+		try
+		{
+			// A corner is the neighbor of a side, so the sides load first
+			const sideAreas = await Promise.all(nearSides.map(async (side) => ({ side, area: ((sides[side] === null) ? undefined : await this.areas.load(sides[side])) })));
+			const cornerIds = new Set(sideAreas.flatMap(({ side, area: sideArea }) => across(side)
+				.filter((corner) => reaches[corner])
+				.map((corner) => sideArea?.loaded.sides[corner] ?? null)
+				.filter((cornerId) => (cornerId !== null))));
+
+			await Promise.all([...cornerIds].map((cornerId) => this.areas.load(cornerId)));
+
+			const chunks = new Map<string, Set<string>>();
+
+			for (const window of this.windowsNear(area, near, CHUNK_LOAD_RADIUS))
+			{
+				chunks.set(window.areaId, new Set([...(chunks.get(window.areaId) ?? []), ...chunksIn(window.bounds)]));
+			}
+
+			await Promise.all([...chunks].map(([areaId, keys]) => this.areas.loadChunks(areaId, keys)));
+		}
+		catch (error)
+		{
+			console.error(`Could not load the areas around area ${area.loaded.area.id}:`, error);
+		}
 	}
 
 	/**
@@ -1511,7 +1578,7 @@ export class AreaPlayers
 			{
 				if (target)
 				{
-					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkShapeOf(target)));
+					await this.loadAround(target, targetCell);
 				}
 
 				this.arrive(playerId, link, this.areas.get(link.targetAreaId), intoDisabled);
