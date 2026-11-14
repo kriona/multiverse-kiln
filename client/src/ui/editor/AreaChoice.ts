@@ -51,6 +51,11 @@ export class AreaChoice
 	private areaNames: ReadonlyMap<string, string> = new Map();
 
 	/**
+	 * The lobby region the lobby's starting square is chosen below, when it isn't the one saved
+	 */
+	private lobbyRegionId: string | null | undefined;
+
+	/**
 	 * @param areaSelect The dialog for choosing an area
 	 * @param elements The choice's parts of the page
 	 * @param describeNone What happens without an area, e.g. "Town (the universe's)", for when none is chosen
@@ -66,9 +71,7 @@ export class AreaChoice
 
 		elements.clear.addEventListener('click', () =>
 		{
-			this.areaId = null;
-			this.startingCell = MIDDLE_CELL;
-			this.render();
+			this.clear();
 			elements.choose.focus();
 			this.onChange(null);
 		});
@@ -124,6 +127,27 @@ export class AreaChoice
 	}
 
 	/**
+	 * Chooses the lobby's starting square below another lobby region than the one saved, such as one the
+	 * Lobby tab has chosen
+	 *
+	 * @param regionId The region, or null for none
+	 */
+	setLobbyRegion(regionId: string | null): void
+	{
+		this.lobbyRegionId = regionId;
+	}
+
+	/**
+	 * Takes the area and square away, without calling onChange
+	 */
+	clear(): void
+	{
+		this.areaId = null;
+		this.startingCell = MIDDLE_CELL;
+		this.render();
+	}
+
+	/**
 	 * Lets the area be chosen and cleared, or not
 	 *
 	 * @param enabled Whether it can be
@@ -160,7 +184,7 @@ export class AreaChoice
 			return;
 		}
 
-		const selection = await this.areaSelect.open(this.universe, this.areaId, this.startingCell, this.purpose);
+		const selection = await this.areaSelect.open(this.universe, this.areaId, this.startingCell, this.purpose, this.lobbyRegionId);
 
 		this.elements.choose.focus();
 

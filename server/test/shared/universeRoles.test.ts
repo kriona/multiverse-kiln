@@ -120,7 +120,7 @@ describe('Universe roles (shared)', () =>
 
 	it('names a check for every kind of change', () =>
 	{
-		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'translate', 'markNoTranslation', 'startDraft', 'manageVersions'].includes(check)));
+		assert.ok(Object.values(EDITOR_CHANGE_CHECKS).every((check) => ['manageEditors', 'editSettings', 'editWorld', 'editTiles', 'editItems', 'translate', 'markNoTranslation', 'startDraft', 'manageVersions'].includes(check)));
 	});
 
 	it('lets creators, builders and the site admin role start the draft, and only creators and the site admin role apply and discard it', () =>

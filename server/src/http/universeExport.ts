@@ -9,7 +9,7 @@
  */
 import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
-import { canExportUniverse, cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, DEFAULT_TILE_CELL, defineMessages, MAX_LOCALE_LENGTH, SOURCE_LOCALE, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type EditableUniverseDetails, type EditorArea, type EditorAreaLink, type ExportedLiveIds, type ExportedTranslations, type ExportedTile, type ExportedTileGraphic, type ExportedTilesets, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
+import { canExportUniverse, cellIndexInChunk, CHUNK_SIZE, chunkCoordinate, DEFAULT_TILE_CELL, defineMessages, MAX_LOCALE_LENGTH, SOURCE_LOCALE, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_REGIONS, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, universeExportContents, universeExportAreaPath, universeExportFileName, universeExportTilesetPath, type EditableUniverseDetails, type EditorArea, type EditorAreaLink, type ExportedLiveIds, type ExportedRegion, type ExportedTranslations, type ExportedTile, type ExportedTileGraphic, type ExportedTilesets, type UniverseExport, type UniverseExportContents, type UniverseSettings, type UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { zipArchive, zipFile, type ZipFile } from '../archives/zip.js';
 import { listEditorAreas, listVersionAreaLinks, loadChunks } from '../db/areaRepo.js';
@@ -19,6 +19,7 @@ import { listDifficultyLevels } from '../db/difficultyRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { findPlayer } from '../db/playerRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { listRegions } from '../db/regionRepo.js';
 import { loadRulesetSettings } from '../db/rulesetRepo.js';
 import { loadEditorThemes } from '../db/themeRepo.js';
 import { listTileGraphicFiles } from '../db/tileGraphicRepo.js';
@@ -259,6 +260,7 @@ function liveIdsOf(origins: DraftOrigins): ExportedLiveIds
 		tileGraphics: Object.fromEntries(origins.tileGraphics),
 		tiles: Object.fromEntries(origins.tiles),
 		items: Object.fromEntries(origins.items),
+		regions: Object.fromEntries(origins.regions),
 		areas: Object.fromEntries(origins.areas),
 		races: Object.fromEntries(origins.races),
 		classes: Object.fromEntries(origins.classes),
@@ -288,10 +290,17 @@ async function readSettings(snapshot: ExportSnapshot, universe: EditableUniverse
 	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_RACES, [jsonText(await loadEditorRaces(version, ruleset, executor))]));
 	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_CLASSES, [jsonText(await loadEditorClasses(version, ruleset, executor))]));
 	manifest.themes = await loadEditorThemes(version, ruleset, executor);
-	manifest.editors = (await listUniverseEditors(universe.id, executor)).map(({ username, role, languages }) => ({
+	// Each builder's regions by the version's IDs: the draft's copies of the live regions they're assigned
+	const regionList = await listRegions(version, executor);
+
+	manifest.editors = (await listUniverseEditors(universe.id, executor)).map(({ playerId, username, role, languages, permissions }) => ({
 		username,
 		role,
-		languages
+		languages,
+		permissions,
+		regions: regionList
+			.filter((region) => region.builderIds.includes(playerId))
+			.map((region) => region.id)
 	}));
 }
 
@@ -312,13 +321,11 @@ function universeSettingsOf(universe: EditableUniverseDetails): UniverseSettings
 		stage: universe.stage,
 		requireTwoFactor: universe.requireTwoFactor,
 		requireBuilderDraft: universe.requireBuilderDraft,
-		passageOfTime: universe.passageOfTime,
-		faerieMorning: universe.faerieMorning,
 		displayTime: universe.displayTime,
 		lobbyPassageOfTime: universe.lobbyPassageOfTime,
 		lobbyDayHours: universe.lobbyDayHours,
 		lobbyFaerieMorning: universe.lobbyFaerieMorning,
-		lobbyNoVisionCost: universe.lobbyNoVisionCost,
+		lobbyRegionId: universe.lobbyRegionId,
 		lobbyAreaId: universe.lobbyAreaId,
 		lobbyColumn: universe.lobbyColumn,
 		lobbyRow: universe.lobbyRow,
@@ -381,6 +388,10 @@ async function readWorld(snapshot: ExportSnapshot, universe: EditableUniverseDet
 		tiles
 	};
 	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_ITEMS, [jsonText(await loadEditorItems(version, ruleset, executor))]));
+
+	const regions = (await listRegions(version, executor)).map(({ builderIds: _builderIds, ...region }): ExportedRegion => region);
+
+	snapshot.files.push(await zipFile(UNIVERSE_EXPORT_REGIONS, [jsonText(regions)]));
 
 	const areas = await listEditorAreas(version, executor);
 

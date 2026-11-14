@@ -21,12 +21,14 @@ describe('tile graphics (shared)', () =>
 			});
 		});
 
-		it('puts no corners first and all 4 last', () =>
+		it('lays the frames out as the jess::codes template does', () =>
 		{
-			assert.strictEqual(dualGridFrame(0), 0);
-			assert.strictEqual(dualGridFrame(15), 15);
-			assert.strictEqual(dualGridFrame(1 | 8), 5);
-			assert.strictEqual(dualGridFrame(4 | 8), 4);
+			assert.strictEqual(dualGridFrame(0), 12);
+			assert.strictEqual(dualGridFrame(15), 6);
+			assert.strictEqual(dualGridFrame(4), 0);
+			assert.strictEqual(dualGridFrame(1), 15);
+			assert.strictEqual(dualGridFrame(1 | 8), 4);
+			assert.strictEqual(dualGridFrame(4 | 8), 3);
 		});
 	});
 

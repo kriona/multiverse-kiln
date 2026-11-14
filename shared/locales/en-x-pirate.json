@@ -655,6 +655,10 @@
 		"message": "{count, plural, one {{players} slips out o' sight.} other {{players} slip out o' sight.}}",
 		"source": "{count, plural, one {{players} goes out of view.} other {{players} go out of view.}}"
 	},
+	"area.announce.noFog": {
+		"message": "No fog hides aught near ye here.",
+		"source": "Nothing near you is hidden here."
+	},
 	"area.announce.partOfDay": {
 		"message": "{part, select, dawn {First light breaks.} day {The sun be high.} dusk {Dusk be fallin'.} other {Night falls o'er the sea.}}",
 		"source": "{part, select, dawn {Dawn breaks.} day {The sun is up.} dusk {Dusk falls.} other {Night falls.}}"
@@ -1243,6 +1247,10 @@
 		"message": "Ye no longer hold a rank in this universe, so yer changes can't be stowed.",
 		"source": "You no longer have a role in this universe, so your changes can't be saved."
 	},
+	"editor.area.addNeighbor": {
+		"message": "Add a Neighbor",
+		"source": "Add Neighbor"
+	},
 	"editor.area.areaDefault": {
 		"message": "{tile} (the usual)",
 		"source": "{tile} (default)"
@@ -1291,6 +1299,14 @@
 		"message": "Couldn't stow the area's cells.",
 		"source": "Could not save the area's cells."
 	},
+	"editor.area.chooseNeighbor": {
+		"message": "Pick",
+		"source": "Choose"
+	},
+	"editor.area.chooseNeighborHint": {
+		"message": "Pick the area to moor {side, select, north {north} east {east} south {south} other {west}} o' {area}. It also be moored alongside the other areas next to that spot.",
+		"source": "Choose the area to put {side, select, north {north} east {east} south {south} other {west}} of {area}. It also becomes a neighbor of the other areas next to that spot."
+	},
 	"editor.area.claimed": {
 		"message": "{count, plural, one {{names} be workin' this area too. Ye can still tinker with it; cells the other hand daubs will be shown to ye (crossed ones too).} other {{names} be workin' this area too. Ye can still tinker with it; cells the other hands daub will be shown to ye (crossed ones too).}}",
 		"source": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}"
@@ -1299,17 +1315,21 @@
 		"message": "Areas in this one's hold",
 		"source": "Areas inside this one"
 	},
-	"editor.area.confirmDelete": {
-		"message": "Scuttle {area} and every passage into it when the Areas tab be stowed? Areas inside it be cast adrift as top-level areas.",
-		"source": "Delete {area} and every link into it when the Areas tab is saved? Areas inside it become top-level areas."
+	"editor.area.confirmDeleteInRegions": {
+		"message": "Scuttle {area} and every passage into it when the Areas tab be stowed? The areas in its hold take its mothers in its place.",
+		"source": "Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place."
 	},
 	"editor.area.confirmDeleteLinks": {
-		"message": "Stowin' the smaller area scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
-		"source": "Saving the smaller area deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
+		"message": "Shrinkin' {area} scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
+		"source": "Making {area} smaller deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
 	},
 	"editor.area.confirmDeleteNew": {
 		"message": "Scuttle {area}? It ain't been stowed yet, so its settings, daubin' and passages be lost to the deep.",
 		"source": "Delete {area}? It hasn't been saved, so its settings, painting and links will be lost."
+	},
+	"editor.area.confirmDeleteWithNeighbors": {
+		"message": "Scuttle {area} an' every passage into it when the Areas tab be saved? The areas inside it take its mothers in its place. {count, plural, one {Its neighbor {neighbors} will be left} other {Its neighbors {neighbors} will be left}} at the world's edge where it lay.",
+		"source": "Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place. {count, plural, one {Its neighbor {neighbors} will have} other {Its neighbors {neighbors} will have}} an edge where it was."
 	},
 	"editor.area.defaultTile": {
 		"message": "Usual tile",
@@ -1319,13 +1339,49 @@
 		"message": "Scuttle Area",
 		"source": "Delete Area"
 	},
+	"editor.area.deleteLeavesProblems": {
+		"message": "Scuttlin' this area would leave the areas in its hold, which take its mothers in its place, in troubled waters: {problems}",
+		"source": "Deleting this area would leave the areas inside it, which take its parents in its place, with problems: {problems}"
+	},
 	"editor.area.draw": {
 		"message": "Paint",
 		"source": "Draw"
 	},
+	"editor.area.edgeButton": {
+		"message": "{direction, select, north {Nor'ard: {area}} northEast {Nor'east: {area}} east {East'ard: {area}} southEast {Sou'east: {area}} south {Sou'ard: {area}} southWest {Sou'west: {area}} west {West'ard: {area}} other {Nor'west: {area}}}",
+		"source": "{direction, select, north {North: {area}} northEast {Northeast: {area}} east {East: {area}} southEast {Southeast: {area}} south {South: {area}} southWest {Southwest: {area}} west {West: {area}} other {Northwest: {area}}}"
+	},
+	"editor.area.edgeDirection": {
+		"message": "{direction, select, north {Nor'ard} northEast {Nor'east} east {East'ard} southEast {Sou'east} south {Sou'ard} southWest {Sou'west} west {West'ard} other {Nor'west}}",
+		"source": "{direction, select, north {North} northEast {Northeast} east {East} southEast {Southeast} south {South} southWest {Southwest} west {West} other {Northwest}}"
+	},
 	"editor.area.exitFullPage": {
 		"message": "Furl the Page Back",
 		"source": "Exit Full Page"
+	},
+	"editor.area.fill": {
+		"message": "Flood",
+		"source": "Fill"
+	},
+	"editor.area.fillConfirm": {
+		"message": "This flood paints {count, plural, one {# cell} other {# cells}}. Flood 'em?",
+		"source": "This fill paints {count, plural, one {# cell} other {# cells}}. Fill them?"
+	},
+	"editor.area.fillConfirmButton": {
+		"message": "Flood",
+		"source": "Fill"
+	},
+	"editor.area.fillConfirmTitle": {
+		"message": "Flood the Cells",
+		"source": "Fill Cells"
+	},
+	"editor.area.fillSameTile": {
+		"message": "That cell already holds that tile, matey.",
+		"source": "The cell already holds that tile."
+	},
+	"editor.area.filled": {
+		"message": "{count, plural, one {Flooded # cell.} other {Flooded # cells.}}",
+		"source": "{count, plural, one {Filled # cell.} other {Filled # cells.}}"
 	},
 	"editor.area.fullPage": {
 		"message": "Unfurl Full Page",
@@ -1336,12 +1392,12 @@
 		"source": "Cells"
 	},
 	"editor.area.help": {
-		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
-		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
+		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to take up its tile in the Tile list. With the Flood tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link."
 	},
 	"editor.area.keyboardHelp": {
-		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Passages tool opens the cell's passage; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
-		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
+		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, floods from the cell with the Flood tool, or opens the cell's passage with the Passages tool; hold Space while steerin' to keep paintin'. P takes up the cell's tile in the Tile list. + and - zoom, and Home sails back to the center cell.",
+		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. P chooses the cell's tile in the Tile list. + and - zoom, and Home goes back to the center cell."
 	},
 	"editor.area.keys.cursor": {
 		"message": "Arrow keys",
@@ -1364,8 +1420,12 @@
 		"source": "Space / Enter"
 	},
 	"editor.area.keys.paintDescription": {
-		"message": "Paint the cursor's cell, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
-		"source": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting"
+		"message": "Paint the cursor's cell, flood from it with the Flood tool, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'. On a neighborin' area, sail into it",
+		"source": "Paint the cursor's cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting. On a neighboring area, open it"
+	},
+	"editor.area.keys.pickTileDescription": {
+		"message": "Take up the cursor's cell's tile in the Tile list",
+		"source": "Choose the cursor's cell's tile in the Tile list"
 	},
 	"editor.area.keys.redo": {
 		"message": "Paint or resize again what ye took back",
@@ -1387,17 +1447,13 @@
 		"message": "Lantern light",
 		"source": "Light level"
 	},
-	"editor.area.lightLevelHint": {
-		"message": "A lantern-lit place be bright as broad daylight at any hour, an' a pitch-dark one black as night. Places above decks follow the sun.",
-		"source": "A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day."
-	},
 	"editor.area.links": {
 		"message": "Passages",
 		"source": "Links"
 	},
 	"editor.area.linksKept": {
-		"message": "The passages were kept, so the area weren't made smaller.",
-		"source": "The links were kept, so the area wasn't made smaller."
+		"message": "The passages were kept, so {area} weren't made smaller.",
+		"source": "The links were kept, so {area} wasn't made smaller."
 	},
 	"editor.area.loadFailed": {
 		"message": "Couldn't haul up the area's cells.",
@@ -1408,12 +1464,24 @@
 		"source": "Could not load the links."
 	},
 	"editor.area.lobbyNotice": {
-		"message": "This area be the game's tavern.",
-		"source": "This area is the game's lobby."
+		"message": "This area be part o' the game's tavern.",
+		"source": "This area is part of the game's lobby."
 	},
 	"editor.area.lobbyTime": {
 		"message": "How the hours pass in the tavern be set on the Lobby tab.",
 		"source": "The lobby's passage of time is set on the Lobby tab."
+	},
+	"editor.area.loopHalf": {
+		"message": "Its {axis, select, eastWest {row} other {column}} o' neighbors don't wrap {axis, select, eastWest {east-west} other {north-south}}. Only one o' its ends be ticked. Tick both this area an' {area} at the far end.",
+		"source": "Its {axis, select, eastWest {row} other {column}} of neighbors doesn't loop {axis, select, eastWest {east-west} other {north-south}}. Only one of its ends is checked. Check both this area and {area} at the other end."
+	},
+	"editor.area.loopMisaligned": {
+		"message": "Its {axis, select, eastWest {row} other {column}} o' neighbors an' the one alongside it with {areas} don't both wrap {axis, select, eastWest {east-west} other {north-south}}. Sailin' where they meet lands ye in different waters dependin' on the course ye take. Make all {axis, select, eastWest {rows} other {columns}} alongside each other wrap.",
+		"source": "Its {axis, select, eastWest {row} other {column}} of neighbors and the one beside it with {areas} don't both loop {axis, select, eastWest {east-west} other {north-south}}. Walking where they meet reaches different areas depending on the route taken. Make all {axis, select, eastWest {rows} other {columns}} side by side loop."
+	},
+	"editor.area.loopNotHere": {
+		"message": "{place, select, ring {Its {axis, select, eastWest {row} other {column}} o' neighbors comes round to meet itself. It always wraps {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east an' west} other {north an' south}}. Only the areas at the ends o' its {axis, select, eastWest {row} other {column}} say whether it wraps.}}",
+		"source": "{place, select, ring {Its {axis, select, eastWest {row} other {column}} of neighbors joins back onto itself. It always loops {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east and west} other {north and south}}. Only the areas at the ends of its {axis, select, eastWest {row} other {column}} decide whether it loops.}}"
 	},
 	"editor.area.loopsEastWest": {
 		"message": "Wraps east-west",
@@ -1423,25 +1491,81 @@
 		"message": "Wraps north-south",
 		"source": "Loops north-south"
 	},
-	"editor.area.noParent": {
-		"message": "None (a top-level area)",
-		"source": "None (a top-level area)"
+	"editor.area.needsParent": {
+		"message": "An area must sail inside at least one sea or area.",
+		"source": "An area must be inside at least one region or area."
+	},
+	"editor.area.neighborAddSide": {
+		"message": "Which side to moor a neighbor on",
+		"source": "Side to add a neighbor on"
+	},
+	"editor.area.neighborButton": {
+		"message": "{action} ({side, select, north {nor'ard} east {east'ard} south {sou'ard} other {west'ard}})",
+		"source": "{action} ({side, select, north {north} east {east} south {south} other {west}})"
+	},
+	"editor.area.neighborCell": {
+		"message": "{area}: {cell}",
+		"source": "{area}: {cell}"
+	},
+	"editor.area.neighborRefusal": {
+		"message": "{reason, select, itself {This very area} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already be moored to another on that side} size {A side touchin' here be a different length} lobby {On the far side o' the tavern's edge} assignments {Outside the seas ye be charged with} other {It wouldn't fit the rest o' the grid}}",
+		"source": "{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby's edge} assignments {Outside the regions you're assigned} other {It wouldn't fit the rest of the grid}}"
+	},
+	"editor.area.neighborRemoved": {
+		"message": "{area} be cast off, no longer a neighbor.",
+		"source": "{area} is no longer a neighbor."
+	},
+	"editor.area.neighborSide": {
+		"message": "{side, select, north {Nor'ard} east {East'ard} south {Sou'ard} other {West'ard}}",
+		"source": "{side, select, north {North} east {East} south {South} other {West}}"
+	},
+	"editor.area.neighbors": {
+		"message": "Neighbors",
+		"source": "Neighbors"
+	},
+	"editor.area.neighborsSaveFailed": {
+		"message": "Couldn't stow the neighborin' areas.",
+		"source": "Could not save the neighboring areas."
+	},
+	"editor.area.neighborsTooSmall": {
+		"message": "An area must be at least {cells, number} cells each way to have neighbors. Make it bigger with Change Size first.",
+		"source": "An area must be at least {cells, number} cells each way to have neighbors. Make it larger with Edit Size first."
+	},
+	"editor.area.noNeighbor": {
+		"message": "Open sea",
+		"source": "None"
 	},
 	"editor.area.openFailed": {
 		"message": "Couldn't open the area.",
 		"source": "Could not open the area."
 	},
+	"editor.area.overallMap": {
+		"message": "See the Whole Chart",
+		"source": "See Overall Map"
+	},
 	"editor.area.parent": {
 		"message": "Mother area",
 		"source": "Parent area"
 	},
-	"editor.area.parentDisabled": {
-		"message": "This area be inside {areas}, which {count, plural, one {be} other {be}} closed to all hands.",
-		"source": "This area is inside {areas}, which {count, plural, one {is} other {are}} disabled."
+	"editor.area.pickLoading": {
+		"message": "That stretch o' the area be still haulin' in, so its tile can't be taken up yet.",
+		"source": "That part of the area is still loading, so its tile can't be chosen yet."
+	},
+	"editor.area.pickUnavailable": {
+		"message": "{reason, select, deleted {{tile} walks the plank when the Tilesets tab be stowed, so it can't be taken up to paint with.} disabled {{tile} be laid up, so it can't be taken up to paint with.} indoors {{tile} ain't used below decks, so it can't be taken up to paint with here.} outdoors {{tile} ain't used on deck, so it can't be taken up to paint with here.} other {This cell's tile can't be taken up to paint with.}}",
+		"source": "{reason, select, deleted {{tile} will be deleted when the Tilesets tab is saved, so it can't be chosen to paint with.} disabled {{tile} is disabled, so it can't be chosen to paint with.} indoors {{tile} isn't used in indoor areas, so it can't be chosen to paint with here.} outdoors {{tile} isn't used in outdoor areas, so it can't be chosen to paint with here.} other {This cell's tile can't be chosen to paint with.}}"
+	},
+	"editor.area.picked": {
+		"message": "Took up {tile} in the Tile list.",
+		"source": "Chose {tile} in the Tile list."
 	},
 	"editor.area.redo": {
 		"message": "Redo",
 		"source": "Redo"
+	},
+	"editor.area.removeNeighbor": {
+		"message": "Cast Off",
+		"source": "Remove"
 	},
 	"editor.area.resize": {
 		"message": "Change Size",
@@ -1452,8 +1576,8 @@
 		"source": "Could not save the area."
 	},
 	"editor.area.size": {
-		"message": "The area be {height, number} tall by {width, number} wide.",
-		"source": "The area is {height, number} tall x {width, number} wide."
+		"message": "({width, number}x{height, number})",
+		"source": "({width, number}x{height, number})"
 	},
 	"editor.area.tile": {
 		"message": "Tile",
@@ -1471,6 +1595,10 @@
 		"message": "Undo",
 		"source": "Undo"
 	},
+	"editor.area.unexplored": {
+		"message": "📜Uncharted Waters",
+		"source": "📜Unexplored"
+	},
 	"editor.area.unknownTile": {
 		"message": "mystery tile",
 		"source": "unknown tile"
@@ -1479,13 +1607,13 @@
 		"message": "Area changes not stowed yet",
 		"source": "Area changes not saved yet"
 	},
-	"editor.area.void": {
-		"message": "⚓Davy Jones' Locker",
-		"source": "🌃Void"
+	"editor.areaAdd.hint": {
+		"message": "The new area takes what's handed down from what it sails in, till ye set its own.",
+		"source": "The new area inherits its settings from what it's inside until you set its own."
 	},
-	"editor.areaAdd.failed": {
-		"message": "Couldn't add the area.",
-		"source": "Could not add the area."
+	"editor.areaAdd.needsParent": {
+		"message": "Pick the sea or area the new area sails inside.",
+		"source": "Choose the region or area the new area goes inside."
 	},
 	"editor.areaAdd.submit": {
 		"message": "Add",
@@ -1515,9 +1643,9 @@
 		"message": "Couldn't haul up the areas.",
 		"source": "Could not load the areas."
 	},
-	"editor.areaSelect.lobbyHint": {
-		"message": "A home port can't be a tavern.",
-		"source": "A starting area can't be a lobby."
+	"editor.areaSelect.lobbyAreasHint": {
+		"message": "Only the areas below the tavern's sea be listed.",
+		"source": "Only the areas below the lobby region are listed."
 	},
 	"editor.areaSelect.none": {
 		"message": "No areas be matchin'.",
@@ -1534,6 +1662,10 @@
 	"editor.areaSelect.results": {
 		"message": "Areas",
 		"source": "Areas"
+	},
+	"editor.areaSelect.startingHint": {
+		"message": "The areas below the tavern's sea ain't listed: no hand sets sail from the tavern.",
+		"source": "The areas below the lobby region aren't listed: characters can't start in the lobby."
 	},
 	"editor.areaSelect.searchLabel": {
 		"message": "Search areas by name",
@@ -1563,17 +1695,13 @@
 		"message": "Couldn't scuttle {area}.",
 		"source": "Could not delete {area}."
 	},
-	"editor.areas.heading": {
-		"message": "Areas",
-		"source": "Areas"
-	},
 	"editor.areas.claimedTag": {
 		"message": "{count, plural, one {{names} be workin' it} other {{names} be workin' it}}",
 		"source": "{count, plural, one {{names} is editing} other {{names} are editing}}"
 	},
-	"editor.areas.indoorsTag": {
-		"message": "below decks",
-		"source": "indoors"
+	"editor.areas.keptSaveFailed": {
+		"message": "Couldn't stow {area}.",
+		"source": "Could not save {area}."
 	},
 	"editor.areas.listFailed": {
 		"message": "Couldn't list the areas.",
@@ -1587,13 +1715,13 @@
 		"message": "There be no areas yet.",
 		"source": "There are no areas yet."
 	},
-	"editor.areas.outdoorsTag": {
-		"message": "topside",
-		"source": "outdoors"
-	},
 	"editor.areas.startingAreaTag": {
 		"message": "home port",
 		"source": "starting area"
+	},
+	"editor.areas.unsavedTag": {
+		"message": "not yet stowed",
+		"source": "unsaved changes"
 	},
 	"editor.audit.caption": {
 		"message": "Stowin's",
@@ -1642,6 +1770,10 @@
 	"editor.audit.detail.race": {
 		"message": "{action, select, added {Took on race {name}} changed {Altered race {name}} restored {Set race {name} back t' its old ways} other {Scuttled race {name}}}",
 		"source": "{action, select, added {Added race {name}} changed {Changed race {name}} restored {Restored race {name} to its default} other {Deleted race {name}}}"
+	},
+	"editor.audit.detail.region": {
+		"message": "{action, select, added {Charted sea {name}} changed {Altered sea {name}} other {Scuttled sea {name}}}",
+		"source": "{action, select, added {Added region {name}} changed {Changed region {name}} other {Deleted region {name}}}"
 	},
 	"editor.audit.detail.ruleset": {
 		"message": "Altered the ship's articles",
@@ -1699,6 +1831,14 @@
 		"message": "Tavern's passage o' time",
 		"source": "Lobby's passage of time"
 	},
+	"editor.audit.field.lobbySquare": {
+		"message": "Tavern's moorin' spot",
+		"source": "Lobby's starting square"
+	},
+	"editor.audit.field.neighbor": {
+		"message": "Neighbor",
+		"source": "Neighbor"
+	},
 	"editor.audit.field.startingArea": {
 		"message": "Home port",
 		"source": "Starting area"
@@ -1751,9 +1891,25 @@
 		"message": "{time}, mornin' be {morning}",
 		"source": "{time}, morning: {morning}"
 	},
+	"editor.audit.value.inherit": {
+		"message": "handed down",
+		"source": "inherit"
+	},
 	"editor.audit.value.itemQuantity": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
+	},
+	"editor.audit.value.items": {
+		"message": "booty",
+		"source": "items"
+	},
+	"editor.audit.value.mobs": {
+		"message": "scallywags",
+		"source": "mobs"
+	},
+	"editor.audit.value.neighbor": {
+		"message": "{side, select, north {Nor'ard} east {East'ard} south {Sou'ard} other {West'ard}}: {area}",
+		"source": "{side, select, north {North} east {East} south {South} other {West}}: {area}"
 	},
 	"editor.audit.value.no": {
 		"message": "nay",
@@ -1770,6 +1926,10 @@
 	"editor.audit.value.raceArea": {
 		"message": "{race}: {place}",
 		"source": "{race}: {place}"
+	},
+	"editor.audit.value.tiles": {
+		"message": "tiles",
+		"source": "tiles"
 	},
 	"editor.audit.value.yes": {
 		"message": "aye",
@@ -2255,6 +2415,22 @@
 		"message": "Sign On a Hand",
 		"source": "Add Editor"
 	},
+	"editor.editors.alsoEdits": {
+		"message": "Also works on: {permissions}",
+		"source": "Also edits: {permissions}"
+	},
+	"editor.editors.canEditItems": {
+		"message": "Can tinker with booty",
+		"source": "Can edit items"
+	},
+	"editor.editors.canEditMobs": {
+		"message": "Can tinker with scallywags",
+		"source": "Can edit mobs"
+	},
+	"editor.editors.canEditTiles": {
+		"message": "Can tinker with tiles",
+		"source": "Can edit tiles"
+	},
 	"editor.editors.caption": {
 		"message": "Officers",
 		"source": "Editors"
@@ -2270,6 +2446,10 @@
 	"editor.editors.editTitle": {
 		"message": "Reassign {username}",
 		"source": "Edit {username}"
+	},
+	"editor.editors.items": {
+		"message": "booty",
+		"source": "items"
 	},
 	"editor.editors.languages": {
 		"message": "Tongues",
@@ -2311,6 +2491,22 @@
 		"message": "Couldn't muster the crew list.",
 		"source": "Could not list the editors."
 	},
+	"editor.editors.mobs": {
+		"message": "scallywags",
+		"source": "mobs"
+	},
+	"editor.editors.none": {
+		"message": "nothin'",
+		"source": "none"
+	},
+	"editor.editors.permissions": {
+		"message": "Leave to tinker",
+		"source": "Permissions"
+	},
+	"editor.editors.permissionsHint": {
+		"message": "Shipwrights work on the seas an' areas inside the seas they be posted to, which be posted in the sea editor, an' these besides.",
+		"source": "Builders edit the regions and areas inside the regions they're assigned to, which are assigned in the region editor, and these besides."
+	},
 	"editor.editors.player": {
 		"message": "Sailor",
 		"source": "Player"
@@ -2318,6 +2514,10 @@
 	"editor.editors.playerHint": {
 		"message": "Type the user's name, or @ and their username, then pick them from the list.",
 		"source": "Type the user's name, or @ and their username, then choose them from the list."
+	},
+	"editor.editors.regions": {
+		"message": "Seas: {regions}",
+		"source": "Regions: {regions}"
 	},
 	"editor.editors.remove": {
 		"message": "Put Ashore",
@@ -2354,6 +2554,14 @@
 	"editor.editors.settingsSaveFailed": {
 		"message": "Couldn't stow whether officers must raise two-factor authentication.",
 		"source": "Could not save whether editors need two-factor authentication."
+	},
+	"editor.editors.tiles": {
+		"message": "tiles",
+		"source": "tiles"
+	},
+	"editor.editors.translatorLanguages": {
+		"message": "Tongues: {languages}",
+		"source": "Languages: {languages}"
 	},
 	"editor.editors.undoRemove": {
 		"message": "Keep Aboard",
@@ -2430,6 +2638,14 @@
 	"editor.impact.keepPlaying": {
 		"message": "Let 'em keep sailin'; only new hands can't choose it",
 		"source": "Let them keep playing; only new characters can't choose it"
+	},
+	"editor.impact.lobbyArea": {
+		"message": "Puttin' {name} in the tavern: {count, plural, one {# hand of a crew be in it} other {# hands o' crews be in it}}",
+		"source": "Putting {name} in the lobby: {count, plural, one {# character in a group is in it} other {# characters in groups are in it}}"
+	},
+	"editor.impact.lobbyToStart": {
+		"message": "Send 'em back to where their crews set sail",
+		"source": "Move them back to where their groups start"
 	},
 	"editor.impact.preventPlaying": {
 		"message": "Keep 'em ashore till it be open again",
@@ -2647,25 +2863,13 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
-	"editor.lobby.area": {
-		"message": "Tavern area",
-		"source": "Lobby area"
-	},
-	"editor.lobby.areaChoice": {
-		"message": "Tavern area: {area}",
-		"source": "Lobby area: {area}"
-	},
-	"editor.lobby.areaHint": {
-		"message": "The area to use as the game's tavern, fer scallywags between crews.",
-		"source": "The area to use as the game's lobby for players between groups."
-	},
 	"editor.lobby.chooseArea": {
 		"message": "Choose Area",
 		"source": "Choose Area"
 	},
-	"editor.lobby.clearArea": {
-		"message": "No Tavern Area",
-		"source": "No Lobby Area"
+	"editor.lobby.clearSquare": {
+		"message": "No Mooring Spot",
+		"source": "No Starting Square"
 	},
 	"editor.lobby.dayHours": {
 		"message": "How swift?",
@@ -2679,33 +2883,77 @@
 		"message": "Edit the tavern's area",
 		"source": "Edit the lobby's area"
 	},
-	"editor.lobby.explanation": {
-		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. Its area be one o' the universe's areas, edited on the Areas tab like any other.",
-		"source": "The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other."
+	"editor.lobby.editRegion": {
+		"message": "Edit the tavern's sea",
+		"source": "Edit the lobby region"
 	},
-	"editor.lobby.noArea": {
+	"editor.lobby.explanation": {
+		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. Its areas be the areas below the tavern's sea, edited on the Areas tab like any other, an' no passage joins 'em to the rest o' the world.",
+		"source": "The lobby is where everyone in the universe meets before joining a group. Its areas are the areas below the lobby region, edited on the Areas tab like any other, and nothing connects them to the rest of the world."
+	},
+	"editor.lobby.noAreaHint": {
+		"message": "{reason, select, noRegion {Without a tavern sea, scallywags only jaw an' pick their hands.} disabled {The area o' the tavern's moorin' spot be disabled, so scallywags only jaw an' pick their hands.} other {Without a moorin' spot, scallywags only jaw an' pick their hands.}}",
+		"source": "{reason, select, noRegion {Without a lobby region, players only chat and choose their characters.} disabled {The area of the lobby's starting square is disabled, so players only chat and choose their characters.} other {Without a starting square, players only chat and choose their characters.}}"
+	},
+	"editor.lobby.noRegion": {
+		"message": "No Tavern Sea",
+		"source": "No Lobby Region"
+	},
+	"editor.lobby.noSquare": {
 		"message": "None",
 		"source": "None"
 	},
-	"editor.lobby.noAreaHint": {
-		"message": "{reason, select, disabled {The tavern's area be disabled, so scallywags only jaw an' pick their hands.} other {Without a tavern area, scallywags only jaw an' pick their hands.}}",
-		"source": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}"
+	"editor.lobby.region": {
+		"message": "Tavern sea",
+		"source": "Lobby region"
 	},
-	"editor.lobby.noVisionCost": {
-		"message": "No spyglass cost in the tavern",
-		"source": "No vision cost in the lobby"
+	"editor.lobby.regionHint": {
+		"message": "Scallywags roam every area below it, however deep. A sea with a home port below it, or with passages leadin' out of it, can't be the tavern's sea.",
+		"source": "Players walk every area below it, at any depth. A region with a starting area below it, or with links leading out of it, can't be the lobby region."
 	},
-	"editor.lobby.noVisionCostHint": {
-		"message": "Tiles don't block nor shorten anyone's view in the tavern, regardless of the tile's vision cost. A soul can spy as far as in broad daylight at any hour.",
-		"source": "Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day."
+	"editor.lobby.regionLeftOut": {
+		"message": "{region} ({reason, select, starting {hands set sail from an area below it} neighbors {its areas be moored to neighbors outside it} other {passages lead out of it}})",
+		"source": "{region} ({reason, select, starting {characters start in an area below it} neighbors {its areas have neighbors outside it} other {links lead out of it}})"
 	},
 	"editor.lobby.saveFailed": {
 		"message": "Couldn't stow the tavern's settings.",
 		"source": "Could not save the lobby's settings."
 	},
+	"editor.lobby.squareChoice": {
+		"message": "Moorin' spot: {area}",
+		"source": "Starting square: {area}"
+	},
+	"editor.lobby.squareHint": {
+		"message": "Where scallywags drop anchor in the tavern: a square in one o' the areas below the tavern's sea.",
+		"source": "Where players start in the lobby: a square in one of the areas below the lobby region."
+	},
 	"editor.lobby.timeHint": {
-		"message": "Nothin' ye do in the tavern takes any time, so its hours pass by this 'stead o' the universe's way.",
-		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
+		"message": "Nothin' ye do in the tavern takes any time, so the hours in every area below the tavern's sea pass by this 'stead o' their own way.",
+		"source": "Actions take no time in the lobby, so the time of day in every area below the lobby region follows this instead of their own passage of time."
+	},
+	"editor.neighborAdd.added": {
+		"message": "Charted {area} {side, select, north {north} east {east} south {south} other {west}} o' this area.",
+		"source": "Added {area} {side, select, north {north} east {east} south {south} other {west}} of this area."
+	},
+	"editor.neighborAdd.hint": {
+		"message": "The new area lies {side, select, north {north} east {east} south {south} other {west}} o' {area}. It be in the same seas an' areas, has the same settings, an' be painted with its default tile. It be stowed with the rest o' yer changes.",
+		"source": "The new area goes {side, select, north {north} east {east} south {south} other {west}} of {area}. It's in the same regions and areas, has the same settings, and is painted with its default tile. It's saved with the rest of your changes."
+	},
+	"editor.neighborAdd.outsideAssignments": {
+		"message": "An area next to that spot be outside the seas ye be charged with. A new area can't be moored there.",
+		"source": "An area next to that spot is outside the regions you're assigned. A new area can't be added there."
+	},
+	"editor.neighborAdd.refused": {
+		"message": "{reason, select, tooSmall {This area must be at least {cells, number} cells each way to have neighbors.} taken {An area next to that spot already has a neighbor moored there.} size {The areas next to that spot have sides o' different lengths.} other {A new area there wouldn't fit the rest o' the grid.}}",
+		"source": "{reason, select, tooSmall {This area must be at least {cells, number} cells each way to have neighbors.} taken {An area next to that spot already has a neighbor there.} size {The areas next to that spot have sides of different lengths.} other {A new area there wouldn't fit the rest of the grid.}}"
+	},
+	"editor.neighborAdd.submit": {
+		"message": "Add",
+		"source": "Add"
+	},
+	"editor.neighborAdd.title": {
+		"message": "Add a Neighbor",
+		"source": "Add Neighbor"
 	},
 	"editor.notes": {
 		"message": "Scribblings",
@@ -2719,6 +2967,58 @@
 		"message": "Hands already aboard keep sailin' while it be closed",
 		"source": "Existing characters keep playing while disabled"
 	},
+	"editor.overallMap.areaLoops": {
+		"message": "{place}. Wraps {loops}",
+		"source": "{place}. Loops {loops}"
+	},
+	"editor.overallMap.areaMisaligned": {
+		"message": "{place}. Beware: it don't wrap like the areas alongside it",
+		"source": "{place}. Warning: doesn't loop like the areas beside it"
+	},
+	"editor.overallMap.direction": {
+		"message": "{count, plural, one {# area {direction, select, north {nor'ard} east {east'ard} south {sou'ard} other {west'ard}}} other {# areas {direction, select, north {nor'ard} east {east'ard} south {sou'ard} other {west'ard}}}}",
+		"source": "{count, plural, one {# area {direction, select, north {north} east {east} south {south} other {west}}} other {# areas {direction, select, north {north} east {east} south {south} other {west}}}}"
+	},
+	"editor.overallMap.hint": {
+		"message": "Every area be drawn next to its neighbors, an' the one ye have open be marked. To chart an area, click it, or sail to it with the arrow keys an' press Enter.",
+		"source": "Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter."
+	},
+	"editor.overallMap.loop": {
+		"message": "{side, select, north {north} east {east} south {south} other {west}} round to {target}",
+		"source": "{side, select, north {north} east {east} south {south} other {west}} to {target}"
+	},
+	"editor.overallMap.loops": {
+		"message": "The arrows mark edges that wrap round the world. Sail off one an' ye come back ashore at the far end o' its row or column.",
+		"source": "The arrows mark edges that loop. Walking off one brings you back at the other end of its row or column."
+	},
+	"editor.overallMap.misaligned": {
+		"message": "The areas marked wi' a warnin' sign be in rows or columns alongside each other where some wrap an' others don't. Sailin' where they meet lands ye in different waters dependin' on the course ye take. Make all rows or columns alongside each other wrap.",
+		"source": "The areas marked with a warning sign are in rows or columns side by side where some loop and others don't. Walking where they meet reaches different areas depending on the route taken. Make all rows or columns side by side loop."
+	},
+	"editor.overallMap.openArea": {
+		"message": "{area} (open)",
+		"source": "{area} (open)"
+	},
+	"editor.overallMap.openPlace": {
+		"message": "{area}, the area ye have open",
+		"source": "{area}, the open area"
+	},
+	"editor.overallMap.place": {
+		"message": "{area}, {place} o' the area ye have open",
+		"source": "{area}, {place} of the open area"
+	},
+	"editor.overallMap.seam": {
+		"message": "the {side, select, north {north} east {east} south {south} other {west}} side o' {area} meets {neighbor}",
+		"source": "the {side, select, north {north} east {east} south {south} other {west}} side of {area} joins {neighbor}"
+	},
+	"editor.overallMap.seams": {
+		"message": "The dashed lines mark where areas drawn apart be neighbors: {joins}.",
+		"source": "The dashed lines mark where areas drawn apart are neighbors: {joins}."
+	},
+	"editor.overallMap.title": {
+		"message": "The Whole Chart",
+		"source": "Overall Map"
+	},
 	"editor.pageTitle": {
 		"message": "Edit {universe}",
 		"source": "Edit {universe}"
@@ -2726,6 +3026,198 @@
 	"editor.passageOfTime": {
 		"message": "How the hours pass",
 		"source": "Passage of time"
+	},
+	"editor.place.addParent": {
+		"message": "Add Mother",
+		"source": "Add Parent"
+	},
+	"editor.place.conflict": {
+		"message": "{area}: {setting} be {values}",
+		"source": "{area}: {setting} is {values}"
+	},
+	"editor.place.disabledBy": {
+		"message": "Closed to all hands while {places} {count, plural, one {be} other {be}} closed, above it.",
+		"source": "Disabled while {places} {count, plural, one {is} other {are}} disabled, above it."
+	},
+	"editor.place.faerieLoops": {
+		"message": "{area}: its hours pass the faerie way, so it can't loop",
+		"source": "{area}: its passage of time is faerie, so it can't loop"
+	},
+	"editor.place.faerieTime": {
+		"message": "{time}, mornin': {morning}",
+		"source": "{time}, morning: {morning}"
+	},
+	"editor.place.fogOfWar": {
+		"message": "Sea fog",
+		"source": "Fog of war"
+	},
+	"editor.place.fogOfWarHint": {
+		"message": "Without the sea fog, hands spy everythin' near 'em and every soul in the area, at any hour, and nothin' be marked on the chart as explored.",
+		"source": "Without fog of war, players see everything near them and everyone in the area, at any time of day, and nothing is recorded as explored."
+	},
+	"editor.place.fogOfWarOff": {
+		"message": "Clear skies",
+		"source": "Off"
+	},
+	"editor.place.fogOfWarOn": {
+		"message": "Rolled in",
+		"source": "On"
+	},
+	"editor.place.inherit": {
+		"message": "Handed down ({value}, from {places})",
+		"source": "Inherit ({value}, from {places})"
+	},
+	"editor.place.inheritConflict": {
+		"message": "Handed down (squabblin' in {places})",
+		"source": "Inherit (different in {places})"
+	},
+	"editor.place.inheritMissing": {
+		"message": "Handed down (nothin' above sets it)",
+		"source": "Inherit (nothing above sets it)"
+	},
+	"editor.place.inheritPlain": {
+		"message": "Handed down",
+		"source": "Inherit"
+	},
+	"editor.place.insideItself": {
+		"message": "{place} be inside its own hold",
+		"source": "{place} is inside itself"
+	},
+	"editor.place.lobbyFaerieLoops": {
+		"message": "{area}: the tavern's hours pass the faerie way, so it can't loop",
+		"source": "{area}: the lobby's passage of time is faerie, so it can't loop"
+	},
+	"editor.place.lobbyLink": {
+		"message": "{area} has a passage to {target}, across the edge o' the tavern",
+		"source": "{area} has a link to {target}, across the edge of the lobby"
+	},
+	"editor.place.lobbyNeighbor": {
+		"message": "{area}: its neighbor {target} be on the far side o' the tavern's edge",
+		"source": "{area}: its neighbor {target} is on the other side of the lobby's edge"
+	},
+	"editor.place.lobbyParentRefused": {
+		"message": "{reason, select, starting {in the tavern, where no hand sets sail} other {in the tavern, an' passages here lead out of it}}",
+		"source": "{reason, select, starting {in the lobby, where characters can't start} other {in the lobby, and links here lead out of it}}"
+	},
+	"editor.place.lobbySquareOutside": {
+		"message": "{area}: the tavern's moorin' spot be here, so it must stay part o' the tavern",
+		"source": "{area}: the lobby's starting square is here, so it must stay part of the lobby"
+	},
+	"editor.place.lobbyStartingArea": {
+		"message": "{area}: hands set sail from here, so it can't be part o' the tavern",
+		"source": "{area}: characters start here, so it can't be part of the lobby"
+	},
+	"editor.place.missing": {
+		"message": "{area}: nothin' above it sets {setting, select, indoors {whether it be below decks or topside} lightLevel {its lantern light} defaultTileId {a usual tile} fogOfWar {whether the sea fog rolls in} other {how the hours pass}}",
+		"source": "{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} fogOfWar {whether it has fog of war} other {a passage of time}}"
+	},
+	"editor.place.neighborGrid": {
+		"message": "{area}: sailin' {first, select, north {north} east {east} south {south} other {west}} then {second, select, north {north} east {east} south {south} other {west}} reaches {firstReached}, but sailin' {second, select, north {north} east {east} south {south} other {west}} then {first, select, north {north} east {east} south {south} other {west}} reaches {secondReached}",
+		"source": "{area}: going {first, select, north {north} east {east} south {south} other {west}} then {second, select, north {north} east {east} south {south} other {west}} reaches {firstReached}, but going {second, select, north {north} east {east} south {south} other {west}} then {first, select, north {north} east {east} south {south} other {west}} reaches {secondReached}"
+	},
+	"editor.place.neighborOneWay": {
+		"message": "{area}: {neighbor} be its {side, select, north {north} east {east} south {south} other {west}} neighbor, but not t'other way around",
+		"source": "{area}: {neighbor} is its {side, select, north {north} east {east} south {south} other {west}} neighbor, but not the other way around"
+	},
+	"editor.place.neighborSides": {
+		"message": "{area}: its {side, select, north {north} east {east} south {south} other {west}} side ain't the same length as the side o' {neighbor} next to it",
+		"source": "{area}: its {side, select, north {north} east {east} south {south} other {west}} side isn't the same length as the side of {neighbor} next to it"
+	},
+	"editor.place.neighborTooSmall": {
+		"message": "{area}: an area moored to neighbors must be at least {cells, number} cells each way",
+		"source": "{area}: an area with neighbors must be at least {cells, number} cells each way"
+	},
+	"editor.place.noRegion": {
+		"message": "{area} sails in no sea",
+		"source": "{area} isn't in any region"
+	},
+	"editor.place.notSet": {
+		"message": "Not set",
+		"source": "Not set"
+	},
+	"editor.place.off": {
+		"message": "Closed",
+		"source": "Off"
+	},
+	"editor.place.on": {
+		"message": "Open",
+		"source": "On"
+	},
+	"editor.place.parents": {
+		"message": "Mothers",
+		"source": "Parents"
+	},
+	"editor.place.problemsHeading": {
+		"message": "These troubles keep yer changes from bein' stowed:",
+		"source": "These keep your changes from saving:"
+	},
+	"editor.place.removeParent": {
+		"message": "Cast off",
+		"source": "Remove"
+	},
+	"editor.place.removeParentLabel": {
+		"message": "Cast off {parent}",
+		"source": "Remove {parent}"
+	},
+	"editor.place.settingName": {
+		"message": "{setting, select, indoors {below decks or topside} lightLevel {lantern light} defaultTileId {usual tile} fogOfWar {sea fog} other {how the hours pass}}",
+		"source": "{setting, select, indoors {indoors or outdoors} lightLevel {light level} defaultTileId {default tile} fogOfWar {fog of war} other {passage of time}}"
+	},
+	"editor.place.tooDeep": {
+		"message": "{place} be stowed more than ten holds deep",
+		"source": "{place} is nested more than ten levels deep"
+	},
+	"editor.place.valueIn": {
+		"message": "{value} in {place}",
+		"source": "{value} in {place}"
+	},
+	"editor.placeAdd.inside": {
+		"message": "Sails inside",
+		"source": "Inside"
+	},
+	"editor.places.area": {
+		"message": "Area",
+		"source": "Area"
+	},
+	"editor.places.collapse": {
+		"message": "Furl {name}",
+		"source": "Collapse {name}"
+	},
+	"editor.places.expand": {
+		"message": "Unfurl {name}",
+		"source": "Expand {name}"
+	},
+	"editor.places.heading": {
+		"message": "Seas an' Areas",
+		"source": "Regions and Areas"
+	},
+	"editor.places.kind": {
+		"message": "Sea or area",
+		"source": "Region or area"
+	},
+	"editor.places.region": {
+		"message": "Sea",
+		"source": "Region"
+	},
+	"editor.places.searchLabel": {
+		"message": "Search seas an' areas by name",
+		"source": "Search regions and areas by name"
+	},
+	"editor.places.table": {
+		"message": "Ledger",
+		"source": "Table"
+	},
+	"editor.places.tags": {
+		"message": "Markings",
+		"source": "Tags"
+	},
+	"editor.places.tree": {
+		"message": "Riggin'",
+		"source": "Tree"
+	},
+	"editor.places.view": {
+		"message": "Show as",
+		"source": "Show as"
 	},
 	"editor.presence.area": {
 		"message": "{tab} - {area}",
@@ -2742,6 +3234,150 @@
 	"editor.presence.label": {
 		"message": "Also aboard:",
 		"source": "Also here:"
+	},
+	"editor.region.assignBuilder": {
+		"message": "Post a shipwright",
+		"source": "Assign a builder"
+	},
+	"editor.region.assignments": {
+		"message": "Posted shipwrights",
+		"source": "Assigned builders"
+	},
+	"editor.region.assignmentsHint": {
+		"message": "Shipwrights work only on the seas an' areas inside the seas they be posted to. Only captains post 'em.",
+		"source": "Builders edit only the regions and areas inside the regions they're assigned to. Only creators assign them."
+	},
+	"editor.region.contents": {
+		"message": "In this sea",
+		"source": "Inside this region"
+	},
+	"editor.region.delete": {
+		"message": "Scuttle Sea",
+		"source": "Delete Region"
+	},
+	"editor.region.draftAssignments": {
+		"message": "Shipwrights can be posted to this sea once the draft be launched.",
+		"source": "Builders can be assigned to this region once the draft is applied."
+	},
+	"editor.region.empty": {
+		"message": "Nothin' sails in this sea yet.",
+		"source": "Nothing is inside this region yet."
+	},
+	"editor.region.hint": {
+		"message": "A sea gathers areas. The seas an' areas in it take what it sets as handed down, an' shipwrights posted to it can work on all that sails in it.",
+		"source": "A region groups areas. The regions and areas inside it inherit the settings it sets, and builders assigned to it can edit everything inside it."
+	},
+	"editor.region.lobbyNotice": {
+		"message": "This sea be the game's tavern.",
+		"source": "This region is the game's lobby."
+	},
+	"editor.region.noBuilders": {
+		"message": "No shipwrights be posted to this sea.",
+		"source": "No builders are assigned to this region."
+	},
+	"editor.region.saveFailed": {
+		"message": "Couldn't stow the sea.",
+		"source": "Could not save the region."
+	},
+	"editor.region.warningsHeading": {
+		"message": "Squabblin' values from above, which the areas in this sea must settle:",
+		"source": "Different values from above, which the areas in this region must settle:"
+	},
+	"editor.regionAdd.nameTaken": {
+		"message": "Another sea already goes by that name.",
+		"source": "Another region is already named that."
+	},
+	"editor.regionAdd.needsParent": {
+		"message": "Pick the sea the new sea sails inside.",
+		"source": "Choose the region the new region goes inside."
+	},
+	"editor.regionAdd.submit": {
+		"message": "Chart",
+		"source": "Add"
+	},
+	"editor.regionAdd.title": {
+		"message": "Chart a Sea",
+		"source": "Add Region"
+	},
+	"editor.regionAdd.topLevel": {
+		"message": "Nothin' (an open sea)",
+		"source": "Nothing (a top-level region)"
+	},
+	"editor.regionDelete.addParent": {
+		"message": "Also put 'em in",
+		"source": "Also put them in"
+	},
+	"editor.regionDelete.addTo": {
+		"message": "Sea to also put 'em in",
+		"source": "Region to also put them in"
+	},
+	"editor.regionDelete.confirmDeleteAll": {
+		"message": "Scuttle {region} an' {places}, with all that sails in 'em, when the Areas tab be stowed?",
+		"source": "Delete {region} and {places}, with everything inside them, when the Areas tab is saved?"
+	},
+	"editor.regionDelete.confirmDeleteAllAgain": {
+		"message": "Be ye sure? Their cells, passages an' translations go to the depths for good once the Areas tab be stowed.",
+		"source": "Are you sure? Their cells, links and translations will be deleted for good once the Areas tab is saved."
+	},
+	"editor.regionDelete.deleteAll": {
+		"message": "Scuttle 'em, with all that sails in 'em",
+		"source": "Delete them, with everything inside them"
+	},
+	"editor.regionDelete.leave": {
+		"message": "Leave 'em with their other mothers",
+		"source": "Leave them in their other parents"
+	},
+	"editor.regionDelete.lobby": {
+		"message": "This be the tavern's sea. Once it's scuttled, the universe has no tavern to roam till another sea be chosen on the Lobby tab.",
+		"source": "This is the lobby region. Once it's deleted, the universe has no lobby to walk in until another region is chosen on the Lobby tab."
+	},
+	"editor.regionDelete.move": {
+		"message": "Sail 'em to",
+		"source": "Move them to"
+	},
+	"editor.regionDelete.moveTo": {
+		"message": "Sea to sail 'em to",
+		"source": "Region to move them to"
+	},
+	"editor.regionDelete.onlyChoice": {
+		"message": "What becomes o' them",
+		"source": "What happens to them"
+	},
+	"editor.regionDelete.onlyIntro": {
+		"message": "{count, plural, one {This sails in nothin' but {region}:} other {These sail in nothin' but {region}:}}",
+		"source": "{count, plural, one {This is inside nothing but {region}:} other {These are inside nothing but {region}:}}"
+	},
+	"editor.regionDelete.problems": {
+		"message": "Scuttlin' it this way would leave troubles: {problems}",
+		"source": "Deleting it this way would leave problems: {problems}"
+	},
+	"editor.regionDelete.sharedChoice": {
+		"message": "What becomes o' them",
+		"source": "What happens to them"
+	},
+	"editor.regionDelete.sharedIntro": {
+		"message": "{count, plural, one {This also sails in other seas or areas:} other {These also sail in other seas or areas:}}",
+		"source": "{count, plural, one {This is also inside other regions or areas:} other {These are also inside other regions or areas:}}"
+	},
+	"editor.regionDelete.title": {
+		"message": "Scuttle {region}",
+		"source": "Delete {region}"
+	},
+	"editor.regionDelete.topLevel": {
+		"message": "nothin' (open seas)",
+		"source": "nothing (top-level regions)"
+	},
+	"editor.regions.add": {
+		"message": "Chart a Sea",
+		"source": "Add Region"
+	},
+	"editor.regions.saveFailed": {
+		"message": "Couldn't stow the seas.",
+		"source": "Could not save the regions."
+	},
+	"editor.resize.carried": {
+		"message": "{count, plural, one {{areas} shall be resized too.} other {{areas} shall be resized too.}} This keeps the touchin' sides o' the areas in its row an' column the same length.",
+		"source": "{count, plural, one {{areas} will be resized too.} other {{areas} will be resized too.}} This keeps the touching sides of the areas in its row and column the same length."
 	},
 	"editor.resize.cutOffWarning": {
 		"message": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# passage} other {# passages}}. Undo brings the cells back, but the passages be scuttled when the area is stowed. Resize anyway?",
@@ -2803,9 +3439,17 @@
 		"message": "Change Size",
 		"source": "Edit Size"
 	},
+	"editor.resize.tooSmallForNeighbors": {
+		"message": "An area with neighbors must be at least {min, number} cells every which way.",
+		"source": "An area with neighbors must be at least {min, number} cells in each direction."
+	},
 	"editor.resize.total": {
 		"message": "{height, number} tall by {width, number} wide",
 		"source": "{height, number} tall x {width, number} wide"
+	},
+	"editor.resize.was": {
+		"message": "once {cells, number}",
+		"source": "was {cells, number}"
 	},
 	"editor.resize.west": {
 		"message": "West",
@@ -3395,6 +4039,78 @@
 		"message": "Scuttle Tileset Paintin'",
 		"source": "Delete Tileset Image"
 	},
+	"editor.tileReplace.all": {
+		"message": "Swap 'Em All For",
+		"source": "Replace All With"
+	},
+	"editor.tileReplace.areas": {
+		"message": "Its areas with the tile:",
+		"source": "Its areas with the tile:"
+	},
+	"editor.tileReplace.belowKeeper": {
+		"message": "It be handed the tile by a sea or area that keeps it for its other areas. Handed down leaves it to take what's above once the tile no longer suits it.",
+		"source": "It inherits the tile from a region or area that keeps it for its other areas. Inherit leaves it to take what is above it once the tile no longer suits it."
+	},
+	"editor.tileReplace.cantApply": {
+		"message": "These choices can't be made so; see what be listed above.",
+		"source": "These choices can't be applied; see what is listed above."
+	},
+	"editor.tileReplace.choose": {
+		"message": "Pick a tile",
+		"source": "Choose a tile"
+	},
+	"editor.tileReplace.chooseEach": {
+		"message": "Pick a tile each sea an' area can take, or Handed down where it be offered.",
+		"source": "Choose a tile each region and area can take, or Inherit where it is offered."
+	},
+	"editor.tileReplace.count": {
+		"message": "{chosen} / {total} picked",
+		"source": "{chosen} / {total} chosen"
+	},
+	"editor.tileReplace.deleteIntro": {
+		"message": "\"{tile}\" be the usual tile o' these seas an' areas. Pick what each gets instead; nothin' changes till the Tilesets tab be stowed.",
+		"source": "\"{tile}\" is the default tile of these regions and areas. Choose what each gets instead; nothing changes until the Tilesets tab is saved."
+	},
+	"editor.tileReplace.inheritEach": {
+		"message": "Handed down ({tiles})",
+		"source": "Inherit ({tiles})"
+	},
+	"editor.tileReplace.inheritValue": {
+		"message": "{tile} for {area}",
+		"source": "{tile} for {area}"
+	},
+	"editor.tileReplace.loadFailed": {
+		"message": "Couldn't find out which seas an' areas make the tile their usual tile.",
+		"source": "Could not find out which regions and areas take the tile as their default tile."
+	},
+	"editor.tileReplace.noAreas": {
+		"message": "No area takes it from here.",
+		"source": "No area takes it from here."
+	},
+	"editor.tileReplace.outside": {
+		"message": "These lie outside the seas ye be posted to, so a captain has to change 'em:",
+		"source": "These are outside the regions you're assigned, so a creator has to change them:"
+	},
+	"editor.tileReplace.place": {
+		"message": "{kind, select, region {Sea {name}} other {Area {name}}}",
+		"source": "{kind, select, region {Region {name}} other {Area {name}}}"
+	},
+	"editor.tileReplace.problems": {
+		"message": "These choices would leave troubles:",
+		"source": "These choices would leave problems:"
+	},
+	"editor.tileReplace.title": {
+		"message": "Swap the Usual Tile",
+		"source": "Replace Default Tile"
+	},
+	"editor.tileReplace.uncheckIntro": {
+		"message": "\"{tile}\" be the usual tile o' {indoors, select, true {below-decks} other {topside}} areas. Pick what these seas an' areas get instead; nothin' changes till the Tilesets tab be stowed.",
+		"source": "\"{tile}\" is the default tile of {indoors, select, true {indoor} other {outdoor}} areas. Choose what these regions and areas get instead; nothing changes until the Tilesets tab is saved."
+	},
+	"editor.tileReplace.unsuited": {
+		"message": "This tile ain't fit fer {areas}. Pick another.",
+		"source": "This tile isn't for {areas}. Choose another."
+	},
 	"editor.tiles.add": {
 		"message": "Add Tile",
 		"source": "Add Tile"
@@ -3426,6 +4142,10 @@
 	"editor.tiles.percent": {
 		"message": "{cost, number, percent}",
 		"source": "{cost, number, percent}"
+	},
+	"editor.tiles.placeTileFailed": {
+		"message": "Couldn't change the usual tile o' the seas an' areas that took the tile \"{name}\".",
+		"source": "Could not change the default tile of the regions and areas that took the tile \"{name}\"."
 	},
 	"editor.tiles.searchLabel": {
 		"message": "Search tiles by name",
@@ -4375,9 +5095,17 @@
 		"message": "They already be one o' the ship's officers.",
 		"source": "They are already one of the site's admins."
 	},
-	"error.areaInsideItself": {
-		"message": "An area can't be inside its own hold.",
-		"source": "An area can't be inside itself."
+	"error.areaParents": {
+		"message": "An area must sail in at least one sea or area, an' inside no more than one area.",
+		"source": "An area must be in at least one region or area, and inside at most one area."
+	},
+	"error.assignNonBuilder": {
+		"message": "Only the universe's shipwrights can be posted to seas.",
+		"source": "Only the universe's builders can be assigned to regions."
+	},
+	"error.assignedRegionLocked": {
+		"message": "Only the universe's captains can move or scuttle a sea ye be posted to.",
+		"source": "Only the universe's creators can move or delete a region you're assigned to."
 	},
 	"error.areaLimit": {
 		"message": "A universe can have at most {max, plural, one {# area} other {# areas}}.",
@@ -4595,6 +5323,10 @@
 		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
 		"source": "The universe already has a draft. Apply it or discard it before starting another."
 	},
+	"error.draftRegionAssignment": {
+		"message": "Shipwrights can be posted to a sea the draft charted once the draft be launched.",
+		"source": "Builders can be assigned to a region the draft added once the draft is applied."
+	},
 	"error.editorNeedsTwoFactor": {
 		"message": "{universe} demands her officers raise two-factor authentication. Raise it to open the universe in the editor.",
 		"source": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor."
@@ -4602,10 +5334,6 @@
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
-	},
-	"error.faerieLobbyCantLoop": {
-		"message": "The tavern's hours can't pass the faerie way while its area loops.",
-		"source": "The lobby's passage of time can't be faerie while its area loops."
 	},
 	"error.faerieMorningMismatch": {
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
@@ -4719,13 +5447,17 @@
 		"message": "A passage must sail to another area.",
 		"source": "A link must go to another area."
 	},
-	"error.lobbyIsStartingArea": {
-		"message": "Hands set sail from this area, so it can't be the tavern. Pick another area, or first change where the universe's, folks' an' callin's hands set sail from.",
-		"source": "Characters start in this area, so it can't be the lobby. Choose another area, or first change where the universe's, races' and classes' characters start."
+	"error.lobbyProblems": {
+		"message": "The tavern's areas would be joined to the rest o' the world, or the tavern couldn't be roamed.",
+		"source": "The lobby's areas would be connected to the rest of the world, or the lobby couldn't be walked in."
 	},
 	"error.logInFirst": {
 		"message": "Come aboard first.",
 		"source": "Log in first."
+	},
+	"error.neighborProblems": {
+		"message": "The neighborin' areas wouldn't fit together.",
+		"source": "The neighboring areas wouldn't fit together."
 	},
 	"error.noEnabledClass": {
 		"message": "A universe needs at least one callin' open to all hands, so new crew have one to take up.",
@@ -4787,6 +5519,10 @@
 		"message": "The tavern must be one o' this universe's areas.",
 		"source": "The lobby must be one of this universe's areas."
 	},
+	"error.noSuchLobbyRegion": {
+		"message": "The tavern's sea must be one o' this universe's seas.",
+		"source": "The lobby region must be one of this universe's regions."
+	},
 	"error.noSuchPlayer": {
 		"message": "No sailor goes by that username.",
 		"source": "No player has that username."
@@ -4802,6 +5538,10 @@
 	"error.noSuchRace": {
 		"message": "Those folk be lost at sea.",
 		"source": "The race doesn't exist."
+	},
+	"error.noSuchRegion": {
+		"message": "That sea ain't on any chart.",
+		"source": "The region doesn't exist."
 	},
 	"error.noSuchReplacementTile": {
 		"message": "The tile picked to paint over it be lost at sea.",
@@ -4859,9 +5599,25 @@
 		"message": "No changes from that port.",
 		"source": "Changes aren't allowed from this website."
 	},
+	"error.ownNeighbor": {
+		"message": "An area can't be moored to itself. To sail off one edge an' come back on t'other, make it wrap.",
+		"source": "An area can't be its own neighbor. To walk off one edge and come back on the other, make it loop."
+	},
 	"error.parentNotInUniverse": {
-		"message": "The mother area must be an area of this universe.",
-		"source": "The parent area must be an area of this universe."
+		"message": "A mother must be a sea or area of this universe.",
+		"source": "A parent must be a region or area of this universe."
+	},
+	"error.outsideAssignments": {
+		"message": "That sea or area lies outside the seas ye be posted to, so ye can't change it.",
+		"source": "That region or area isn't within the regions you're assigned to, so you can't change it."
+	},
+	"error.placeInsideItself": {
+		"message": "A sea or area can't be inside its own hold.",
+		"source": "A region or area can't be inside itself."
+	},
+	"error.placeProblems": {
+		"message": "Some areas would be left without a value fer a settin', or with squabblin' values from the seas above 'em, or seas an' areas would be stowed all wrong.",
+		"source": "Some areas would be left without a value for a setting, or with different values from the regions above them, or regions and areas would be nested wrongly."
 	},
 	"error.profile.locale": {
 		"message": "Choose a tongue from the list.",
@@ -4898,6 +5654,14 @@
 	"error.raceUnavailable": {
 		"message": "Those folk be off the books now. Choose another.",
 		"source": "That race can't be chosen any more. Choose another."
+	},
+	"error.regionLimit": {
+		"message": "A universe can chart no more than {max, plural, one {# sea} other {# seas}}.",
+		"source": "A universe can have at most {max, plural, one {# region} other {# regions}}."
+	},
+	"error.regionNameTaken": {
+		"message": "Another sea already goes by {name}.",
+		"source": "Another region is already named {name}."
 	},
 	"error.requireTwoFactorWithout": {
 		"message": "Raise two-factor authentication on yer own account before demandin' it o' the universe's officers.",
@@ -4960,8 +5724,8 @@
 		"source": "A tileset in this layout must be {width, number} by {height, number} pixels."
 	},
 	"error.tileInUse": {
-		"message": "An area uses this tile, so it can't be scuttled.",
-		"source": "An area uses this tile, so it can't be deleted."
+		"message": "An area be painted with this tile, or a sea or area makes it its usual tile, so it can't be scuttled.",
+		"source": "An area is painted with this tile, or a region or area sets it as its default tile, so it can't be deleted."
 	},
 	"error.tileLimit": {
 		"message": "A universe can have at most {max, plural, one {# tile} other {# tiles}} of its own.",
@@ -5123,13 +5887,13 @@
 		"message": "{universe}: area cells",
 		"source": "{universe}: area cells"
 	},
-	"export.legend.values": {
-		"message": "Each cell holds the number o' a tile in the Tiles table below, {defaultCell, number} fer the area's default tile (which the Areas table names), or {voidCell, number} fer nothin' at all: the void, drawn black, which no hand can enter.",
-		"source": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {voidCell, number} for nothing at all: void, drawn black, which no one can enter."
+	"export.legend.unexploredCell": {
+		"message": "Uncharted waters (naught)",
+		"source": "Unexplored (nothing)"
 	},
-	"export.legend.voidCell": {
-		"message": "The void (naught)",
-		"source": "Void (nothing)"
+	"export.legend.values": {
+		"message": "Each cell holds the number o' a tile in the Tiles table below, {defaultCell, number} fer the area's default tile (which the Areas table names), or {unexploredCell, number} fer nothin' at all: uncharted waters, drawn as a blank sea chart, which no hand can enter.",
+		"source": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {unexploredCell, number} for nothing at all: unexplored, drawn as blank map paper, which no one can enter."
 	},
 	"filter.any": {
 		"message": "Any",
@@ -5627,6 +6391,10 @@
 		"message": "GNU Affero General Public License",
 		"source": "GNU Affero General Public License"
 	},
+	"license.alegreyaLicense": {
+		"message": "Alegreya's articles",
+		"source": "Alegreya's license"
+	},
 	"license.artwork": {
 		"message": "Flag an' tile charts",
 		"source": "Logo and tilesets"
@@ -5655,6 +6423,14 @@
 		"message": "What's in the hold",
 		"source": "Contents"
 	},
+	"license.fonts": {
+		"message": "Letterin'",
+		"source": "Fonts"
+	},
+	"license.fontsCredit": {
+		"message": "The words be writ in {nunito}, copyright {nunitoCopyright}, an' the headings in {alegreya}, copyright {alegreyaCopyright}. Both be used under the {license}, whose full text sails with each font's files ({nunitoLicense}, {alegreyaLicense}).",
+		"source": "Text is set in {nunito}, copyright {nunitoCopyright}, and headings in {alegreya}, copyright {alegreyaCopyright}. Both are used under the {license}, whose full text comes with each font's files ({nunitoLicense}, {alegreyaLicense})."
+	},
 	"license.game": {
 		"message": "Ye ol' Game Engine",
 		"source": "The Game Engine"
@@ -5670,6 +6446,10 @@
 	"license.icons": {
 		"message": "Sigils",
 		"source": "Icons"
+	},
+	"license.nunitoLicense": {
+		"message": "Nunito's articles",
+		"source": "Nunito's license"
 	},
 	"license.openGameContent": {
 		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}.",
@@ -7967,6 +8747,10 @@
 		"message": "Tavern",
 		"source": "Lobby"
 	},
+	"universe.lobbyRegionName": {
+		"message": "Tavern Waters",
+		"source": "Lobby"
+	},
 	"universe.role.admin": {
 		"message": "ship's officer",
 		"source": "site admin"
@@ -8086,6 +8870,10 @@
 	"universe.time.real_time": {
 		"message": "by the real clock",
 		"source": "real time"
+	},
+	"universe.worldRegionName": {
+		"message": "The Seven Seas",
+		"source": "World"
 	},
 	"universePage.edit": {
 		"message": "Refit Universe",

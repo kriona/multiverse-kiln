@@ -40,10 +40,11 @@
 }
 
 
-// The headings of Home's lists, and of the message shown in their place
+// The headings of Home's lists, and of the message shown in their place. They shrink with the window, from the
+// h1 size on a wide screen to the h2 size on a phone
 .home-body h2
 {
-	font-size: 22pt;
+	font-size: clamp(var(--font-size-h2), 1.2rem + 1.5vw, var(--font-size-h1));
 	text-align: center;
 }
 
@@ -51,7 +52,7 @@
 .universe-item h3
 {
 	margin: 0;
-	font-size: 16pt;
+	font-size: var(--font-size-h3);
 	color: $accent-text;
 }
 
@@ -132,7 +133,7 @@
 .chat-here
 {
 	margin: 0 0 8px;
-	font-size: 14px;
+	@include small-text;
 	color: $text-dim;
 	overflow-wrap: anywhere;
 }
@@ -232,7 +233,7 @@
 .character-leaving
 {
 	margin-inline-start: auto;
-	font-size: 12px;
+	@include small-text;
 	color: $error;
 }
 
@@ -240,13 +241,13 @@
 {
 	flex-shrink: 0;
 	padding: 4px 8px;
-	font-size: 12px;
+	@include small-text;
 }
 
 .character-playing
 {
 	margin-inline-start: auto;
-	font-size: 12px;
+	@include small-text;
 	color: $accent;
 }
 
@@ -270,7 +271,7 @@
 .character-group
 {
 	margin-inline-start: auto;
-	font-size: 12px;
+	@include small-text;
 	color: $text-muted;
 }
 
@@ -334,7 +335,7 @@
 .member-more
 {
 	margin: 8px 0 0;
-	font-size: 12px;
+	@include small-text;
 	color: $text-faint;
 }
 

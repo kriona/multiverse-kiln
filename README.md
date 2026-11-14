@@ -189,9 +189,9 @@ The object storage is [SeaweedFS](https://github.com/seaweedfs/seaweedfs), which
 
 [Mailpit](https://mailpit.axllent.org/) catches every email the server sends, such as login codes, so none reaches a real inbox. Read them in its web inbox at http://127.0.0.1:8025.
 
-The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a town square lobby with a cottage and cellar to walk into, and a crossroads for groups to start in. Running it again replaces Kilnhaven and leaves everything else alone, so run it after changing the sample areas. It refuses to run with `NODE_ENV=production`.
+The seed script (`server/scripts/seed.ts`) adds Kilnhaven, a sample universe drawn in `server/scripts/sampleUniverse.ts`: a city lobby, and a kingdom for groups to start in, with a market district, a shop and a cellar to walk into. Running it again replaces Kilnhaven's world (its regions, areas, tiles and draft) and leaves everything else alone, its characters, groups and editors included, so run it after changing the sample areas. Groups and characters saved in an area that was replaced start over in the starting area. It refuses to run with `NODE_ENV=production`.
 
-Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_username` makes the account with that username its creator. Register the account first; the script won't create one. Replacing Kilnhaven also removes its editors, so pass `--creator` every time you seed.
+Nobody can open Kilnhaven in the world editor unless you name its creator: `npm run db:seed -w server -- --creator your_username` makes the account with that username its creator. Register the account first; the script won't create one.
 
 Postgres listens on `127.0.0.1:5432` (only reachable from your machine) and keeps its data in a Docker volume, so it survives restarts. It keeps running in the background until you run `docker compose stop`.
 

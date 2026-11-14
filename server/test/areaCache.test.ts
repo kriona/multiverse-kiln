@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, NO_NEIGHBORS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { SeenCells } from '../src/logic/seenCells.js';
@@ -26,19 +26,22 @@ function loadedArea(): LoadedArea
 			name: 'Field',
 			enabled: true,
 			indoors: false,
-			passageOfTime: 'inherit'
+			passageOfTime: 'flows_normally',
+			lobby: false
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },
 		displayTime: 'precise',
 		lightLevel: null,
-		fullVision: false,
+		fogOfWar: true,
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: GRASS,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
+		neighbors: { ...NO_NEIGHBORS },
+		sides: { ...NO_NEIGHBORS },
 		links: [],
-		disabledTargetIds: new Set(),
+		closedTargetIds: new Set(),
 		tiles: [
 			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, graphic: 'grass', uploadedGraphic: null, visionCost: 0, walkSeconds: 10 },
 			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x008800, graphic: null, uploadedGraphic: null, visionCost: 50, walkSeconds: 20 }
@@ -456,7 +459,7 @@ describe('AreaCache', () =>
 			loaded: {
 				...loadedArea.loaded,
 				links: [{ ...link, targetAreaId: 'open', column: 0, row: 0 }, { ...link, targetAreaId: 'closed', column: 1, row: 0 }],
-				disabledTargetIds: new Set(['closed'])
+				closedTargetIds: new Set(['closed'])
 			}
 		};
 

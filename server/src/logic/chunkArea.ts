@@ -49,6 +49,27 @@ export function chunksNear(cells: readonly Cell[], radius: number, shape: ChunkA
 }
 
 /**
+ * The chunks holding the cells of a rectangle
+ *
+ * @param bounds The cells, inclusive at both ends
+ * @return The chunks' keys (see chunkKey)
+ */
+export function chunksIn(bounds: AreaBounds): Set<string>
+{
+	const keys = new Set<string>();
+
+	for (const chunkRow of chunkRange(bounds.minRow, bounds.maxRow))
+	{
+		for (const chunkColumn of chunkRange(bounds.minColumn, bounds.maxColumn))
+		{
+			keys.add(chunkKey(chunkColumn, chunkRow));
+		}
+	}
+
+	return(keys);
+}
+
+/**
  * The chunk columns (or rows) holding the cells within a distance of a cell along one axis
  *
  * @param center The cell's column or row

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { IMPASSABLE_WALK_SECONDS, type EditorTile, type EditorArea, type AreaBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
+import { hasNeighbors, IMPASSABLE_WALK_SECONDS, isInBounds, NO_NEIGHBORS, type EditorTile, type EditorArea, type AreaBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { sleepGameLoop, wakeGameLoop } from '../rendering/gameLoop';
 import { startScene } from '../rendering/sceneStart';
@@ -26,10 +26,11 @@ const ARROW_STEPS: Record<string, BrushCell> = {
  * A canvas showing an area's cells in the area editor scene: one Phaser game, created the first time an
  * area is shown, running a fresh start of the scene for each area
  *
- * The canvas's element can be focused, and then the keyboard works the area with a cursor: the arrow
- * keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints or picks its cell
- * as a click does, holding Space while moving keeps painting as a drag does, + and - zoom, and Home
- * goes back to the center cell. Each cell the cursor moves onto is read out to screen readers
+ * The canvas's element can be focused, and then the keyboard works the area with a cursor, which starts
+ * in the middle of the view: the arrow keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints, fills from or picks its cell
+ * as a click does, holding Space while moving keeps painting as a drag does, P picks its cell's tile as a
+ * middle click does, + and - zoom, and Home goes back to the center cell. Each cell the cursor moves onto
+ * is read out to screen readers
  */
 export class AreaCanvas
 {
@@ -37,6 +38,11 @@ export class AreaCanvas
 	private current?: AreaEditorScene;
 	private host?: AreaEditorHost;
 	private bounds?: AreaBounds;
+
+	/**
+	 * The cells of the neighbors shown past the area's edges, which the keyboard's cursor can move onto
+	 */
+	private previews: readonly AreaBounds[] = [];
 
 	/**
 	 * Whether the wheel pans the area instead of scrolling the page (see setWheelPans)
@@ -94,6 +100,7 @@ export class AreaCanvas
 		this.current = undefined;
 		this.host = host;
 		this.bounds = bounds;
+		this.previews = [];
 
 		if (this.cursor && ((this.cursor.column < bounds.minColumn) || (this.cursor.column > bounds.maxColumn) || (this.cursor.row < bounds.minRow) || (this.cursor.row > bounds.maxRow)))
 		{
@@ -164,6 +171,28 @@ export class AreaCanvas
 	}
 
 	/**
+	 * Sets the cells of the neighbors shown past the area's edges, which the keyboard's cursor can move
+	 * onto, though nothing there can be changed
+	 *
+	 * @param previews Each neighbor's cells shown, in the area's columns and rows
+	 */
+	setPreviews(previews: readonly AreaBounds[]): void
+	{
+		this.previews = previews;
+	}
+
+	/**
+	 * Whether a cell is one of the neighbors' shown past the area's edges
+	 *
+	 * @param cell The cell
+	 * @return True when it is
+	 */
+	isPreviewCell(cell: BrushCell): boolean
+	{
+		return(this.previews.some((preview) => isInBounds(preview, cell.column, cell.row)));
+	}
+
+	/**
 	 * Makes the wheel pan the area instead of scrolling the page, for an area that fills the window, or
 	 * scroll the page again
 	 *
@@ -221,15 +250,34 @@ export class AreaCanvas
 	}
 
 	/**
-	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the center cell
+	 * Moves the keyboard's cursor to the same place in another area, whose cells line up with the area's
+	 * moved by an offset, for when the view carries over to it
+	 *
+	 * @param columnOffset How many columns the other area's cells are moved to line up with the area's
+	 * @param rowOffset How many rows they are moved
+	 */
+	shiftCursor(columnOffset: number, rowOffset: number): void
+	{
+		if (this.cursor)
+		{
+			this.cursor = {
+				column: this.cursor.column - columnOffset,
+				row: this.cursor.row - rowOffset
+			};
+		}
+	}
+
+	/**
+	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the cell in the middle
+	 * of the view, so focus doesn't move the view
 	 */
 	private readonly onFocus = (): void =>
 	{
-		this.moveCursor((this.cursor ?? { column: 0, row: 0 }));
+		this.moveCursor((this.cursor ?? this.current?.middleCell() ?? { column: 0, row: 0 }));
 	};
 
 	/**
-	 * Moves the cursor, uses the tool on its cell, zooms or goes back to the center cell
+	 * Moves the cursor, uses the tool on its cell, picks its cell's tile, zooms or goes back to the center cell
 	 *
 	 * @param event The key press on the area
 	 */
@@ -266,6 +314,10 @@ export class AreaCanvas
 		else if (event.key === 'Home')
 		{
 			this.moveCursor({ column: 0, row: 0 });
+		}
+		else if (event.key.toLowerCase() === 'p')
+		{
+			this.host?.pickTile(cursor.column, cursor.row);
 		}
 		else
 		{
@@ -304,8 +356,8 @@ export class AreaCanvas
 	};
 
 	/**
-	 * Moves the keyboard's cursor to a cell, kept inside the area, painting the cells on the way while
-	 * Space is held, and reads out where it is
+	 * Moves the keyboard's cursor to a cell, kept inside the area or the neighbors shown past its edges,
+	 * painting the cells on the way while Space is held, and reads out where it is
 	 *
 	 * @param target The cell
 	 */
@@ -320,10 +372,16 @@ export class AreaCanvas
 		}
 
 		const previous = this.cursor;
-		const cell = {
-			column: Phaser.Math.Clamp(target.column, bounds.minColumn, bounds.maxColumn),
-			row: Phaser.Math.Clamp(target.row, bounds.minRow, bounds.maxRow)
-		};
+
+		// Past everything shown, the cursor stays inside the part it was in
+		const inside = (isInBounds(bounds, target.column, target.row) || this.isPreviewCell(target));
+		const keptIn = ((previous === undefined) ? bounds : (this.previews.find((preview) => isInBounds(preview, previous.column, previous.row)) ?? bounds));
+		const cell = (inside
+			? target
+			: {
+				column: Phaser.Math.Clamp(target.column, keptIn.minColumn, keptIn.maxColumn),
+				row: Phaser.Math.Clamp(target.row, keptIn.minRow, keptIn.maxRow)
+			});
 
 		this.cursor = cell;
 		this.current?.showCursor(cell);
@@ -341,7 +399,8 @@ export class AreaCanvas
 	}
 
 	/**
-	 * Does what a click on the cursor's cell does: paints it or picks it
+	 * Does what a click on the cursor's cell does: paints it, fills from it or picks it, or opens the
+	 * neighbor shown past the area's edge there
 	 *
 	 * @param cell The cursor's cell
 	 * @param hold Whether to keep painting as the cursor moves, until stopPainting()
@@ -351,6 +410,13 @@ export class AreaCanvas
 		const host = this.host;
 		const mode = host?.pointerMode();
 
+		// A neighbor opens whether or not the area can be changed
+		if (host && this.isPreviewCell(cell) && this.bounds && !isInBounds(this.bounds, cell.column, cell.row))
+		{
+			host.openNeighbor(cell);
+			return;
+		}
+
 		if (!host || (mode === 'none'))
 		{
 			return;
@@ -359,6 +425,13 @@ export class AreaCanvas
 		if (mode === 'pick')
 		{
 			host.pick(cell.column, cell.row);
+			return;
+		}
+
+		// The fill says what it painted once it's done, which may wait for the area's chunks to load
+		if (mode === 'fill')
+		{
+			host.fill(cell.column, cell.row);
 			return;
 		}
 
@@ -404,16 +477,18 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		areaId: area.id,
 		name: area.name,
 		ruleset,
-		indoors: area.indoors,
+		indoors: area.resolved.indoors,
 		// The editor draws the area in daylight
 		time: { passage: 'always_noon' },
 		displayTime: 'none',
 		lightLevel: null,
-		fullVision: false,
+		fogOfWar: false,
 		bounds: area.bounds,
-		loopsEastWest: area.loopsEastWest,
-		loopsNorthSouth: area.loopsNorthSouth,
-		defaultTileId: area.defaultTileId,
+		// An area with neighbors shows them past its edges instead of its own far side
+		loopsEastWest: (area.loopsEastWest && !hasNeighbors(area.neighbors)),
+		loopsNorthSouth: (area.loopsNorthSouth && !hasNeighbors(area.neighbors)),
+		sides: { ...NO_NEIGHBORS },
+		defaultTileId: area.resolved.defaultTileId,
 		tiles: tiles.map((tile) => ({
 			id: tile.id,
 			key: tile.key,

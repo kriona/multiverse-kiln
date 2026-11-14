@@ -3,7 +3,7 @@
  * universes and areas a test starts from
  */
 import assert from 'assert';
-import { EDITOR_UNIVERSES_PATH, TILE_GRAPHIC_SIZES, type CreatedPayload, type EditorChange, type NewRef, type Ruleset, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, TILE_GRAPHIC_SIZES, type AreaListPayload, type CreatedPayload, type EditorChange, type NewRef, type Ruleset, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
@@ -148,7 +148,40 @@ export async function createUniverse(editor: Editor, name: string = 'Kilnhaven',
 }
 
 /**
- * Creates an area through the API
+ * The region a new universe holds its starting area in, World, from the API: the top-level region that
+ * isn't its lobby region
+ *
+ * @param editor A browser that may list the universe's areas
+ * @param universeId The universe's ID
+ * @param version The version, live unless told otherwise
+ * @return The region's ID
+ */
+export async function worldRegionId(editor: Editor, universeId: string, version: 'live' | 'draft' = 'live'): Promise<string>
+{
+	const response = await send<AreaListPayload>(editor, 'GET', `/${universeId}/areas${((version === 'draft') ? '?version=draft' : '')}`);
+	const world = response.body.regions.find((region) => ((region.parents.length === 0) && (region.id !== response.body.lobbyRegionId)));
+
+	assert.ok(world, JSON.stringify(response.body));
+
+	return(world.id);
+}
+
+/**
+ * Assigns builders to a universe's World region through the API, so they can edit its areas
+ *
+ * @param creator A browser of one of the universe's creators
+ * @param universeId The universe's ID
+ * @param builderIds The builders' player IDs
+ */
+export async function assignToWorld(creator: Editor, universeId: string, builderIds: string[]): Promise<void>
+{
+	const response = await saveChange(creator, universeId, { kind: 'assignBuilders', regionId: await worldRegionId(creator, universeId), builderIds });
+
+	assert.strictEqual(response.status, 200, JSON.stringify(response.body));
+}
+
+/**
+ * Creates an area through the API, in the universe's World region unless its parents are given
  *
  * @param editor The browser creating it
  * @param universeId The universe's ID
@@ -157,7 +190,8 @@ export async function createUniverse(editor: Editor, name: string = 'Kilnhaven',
  */
 export async function createArea(editor: Editor, universeId: string, settings: Record<string, unknown> = {}): Promise<string>
 {
-	const response = await saveChange<string>(editor, universeId, { kind: 'createArea', ref: 'new:area', area: { name: 'Meadow', ...settings } });
+	const parents = (settings.parents ?? [{ kind: 'region', id: await worldRegionId(editor, universeId) }]);
+	const response = await saveChange<string>(editor, universeId, { kind: 'createArea', ref: 'new:area', area: { name: 'Meadow', ...settings, parents } });
 
 	assert.strictEqual(response.status, 200, JSON.stringify(response.body));
 

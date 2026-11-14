@@ -476,6 +476,12 @@ export class SaveBar
 			const owner = save.refuse(data.changeIndex, {
 				error,
 				resizeConflict: data.resizeConflict,
+				placeProblems: ((data.placeProblems === undefined)
+					? undefined
+					: {
+						problems: data.placeProblems,
+						names: (data.placeNames ?? {})
+					}),
 				retry: () =>
 				{
 					// Once this save has finished

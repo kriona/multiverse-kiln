@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, isInBounds, NEIGHBOR_PREVIEW_CELLS, parseChunkKey, VOID_CELL, type AreaBounds, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
 import { outlineRuns, type OutlineRun } from '../editor/cellOutlines';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import type { CellMaskShader } from '../rendering/CellMaskShader';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
+import { createUnexploredPaper, preloadUnexploredPaper } from '../rendering/UnexploredPaper';
 
 /**
  * Key the scene is registered under in each editor's game
@@ -31,6 +33,12 @@ const WHEEL_LINE_PIXELS = 16;
 const WHEEL_PAN_SCALE = 0.25;
 
 /**
+ * How far the pointer may move, in screen pixels, between pressing and letting go of the middle button
+ * for it to count as a click, which picks the cell's tile, rather than a pan
+ */
+const MIDDLE_CLICK_DISTANCE = 4;
+
+/**
  * How far beyond the view, in cells, chunks are asked for, so they are there before they scroll in
  */
 const LOAD_MARGIN = CHUNK_SIZE;
@@ -40,6 +48,12 @@ const BOUNDS_COLOR = 0xffffff;
 const CENTER_COLOR = 0xffffff;
 
 const BRUSH_COLOR = 0xffeb3b;
+
+/**
+ * Depth of the paper over Unexplored cells (VOID_CELL): over the tiles and the grid's lines, under the
+ * outlines
+ */
+const PAPER_DEPTH = 0.5;
 
 const LINK_COLORS: Record<AreaLinkMode, number> = {
 	automatic: 0xff9800,
@@ -57,6 +71,40 @@ export interface LinkMarker
 }
 
 /**
+ * A neighboring area shown past an edge of the area being edited, dimmed and read-only (see Neighboring
+ * areas in STRUCTURE-OVERVIEW.md)
+ */
+export interface NeighborPreview
+{
+	/**
+	 * The neighbor, with bounds holding only the cells shown, in its own columns and rows
+	 */
+	area: AreaPayload;
+
+	/**
+	 * Its loaded chunks, by chunkKey(); the host changes them and calls refreshPreview
+	 */
+	chunks: ReadonlyMap<string, readonly number[]>;
+
+	/**
+	 * How far its cells are moved to line up with the area's: its cell at column c, row r is shown at
+	 * column c + columnOffset, row r + rowOffset
+	 */
+	columnOffset: number;
+	rowOffset: number;
+}
+
+/**
+ * How dark the neighbors shown past the area's edges are made, so they read as not part of it
+ */
+const PREVIEW_DIM_ALPHA = 0.45;
+
+/**
+ * Depth of the darkening over the neighbors shown: over their tiles and grid lines, under the paper
+ */
+const PREVIEW_DIM_DEPTH = 0.3;
+
+/**
  * A cell the editor highlights, such as a link's chosen destination
  */
 export interface CellHighlight
@@ -70,10 +118,11 @@ export interface CellHighlight
  * What a click on the area does
  *
  * - paint: the draw tool paints, and dragging keeps painting
+ * - fill: the fill tool fills from the cell clicked
  * - pick: the cell clicked is chosen, e.g. for a link
  * - none: the area can only be looked around
  */
-export type PointerMode = 'paint' | 'pick' | 'none';
+export type PointerMode = 'paint' | 'fill' | 'pick' | 'none';
 
 /**
  * Whoever shows the scene: what clicks do, and what the scene tells it
@@ -106,6 +155,16 @@ export interface AreaEditorHost
 	paintEnd: () => void;
 
 	/**
+	 * A cell is clicked in fill mode
+	 */
+	fill: (column: number, row: number) => void;
+
+	/**
+	 * A cell is clicked with the middle button, whatever the mode, to choose its tile to paint with
+	 */
+	pickTile: (column: number, row: number) => void;
+
+	/**
 	 * A cell is clicked in pick mode
 	 */
 	pick: (column: number, row: number) => void;
@@ -119,6 +178,12 @@ export interface AreaEditorHost
 	 * A cell and what it holds in words, read out when the keyboard's cursor moves onto it
 	 */
 	describe: (cell: BrushCell) => string;
+
+	/**
+	 * A click on a neighbor shown past the area's edge, or Space or Enter on the keyboard's cursor there,
+	 * to open the neighbor's editor
+	 */
+	openNeighbor: (cell: BrushCell) => void;
 
 	/**
 	 * The chunks in or near the view have changed, so any not yet loaded should be
@@ -168,7 +233,8 @@ export interface AreaEditorSceneData
  * Shows an area's cells for editing: the same grid as gameplay, with the area's edges, its center cell,
  * its links and the brush outlined on top
  *
- * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
+ * Left clicks paint, fill or pick cells (see PointerMode), and a middle click picks a cell's tile to paint
+ * with; dragging with the right or middle button pans,
  * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. AreaCanvas
  * does the same from the keyboard with a cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
@@ -183,6 +249,34 @@ export class AreaEditorScene extends Phaser.Scene
 	private areaRenderer?: AreaRenderer;
 	private overlay?: Phaser.GameObjects.Graphics;
 	private links: LinkMarker[] = [];
+
+	/**
+	 * The paper drawn over the Unexplored cells, as the game draws the parts of an area a group hasn't explored
+	 */
+	private paper?: CellMaskShader;
+
+	/**
+	 * Whether each cell is Unexplored, row by row from the top left of the area grown by the cells shown of
+	 * its neighbors and a ring of cells around them (paperBounds()). The cells past the area that aren't a
+	 * neighbor's are always Unexplored, and the paper carries the ring on past it, so everything outside
+	 * the area and its neighbors is drawn as unexplored, as the game draws past an area's edges
+	 */
+	private unexplored = new Uint8Array(0);
+
+	/**
+	 * The neighboring areas shown past the area's edges, each with what draws it
+	 */
+	private previews: { preview: NeighborPreview; renderer: AreaRenderer; dim: Phaser.GameObjects.Rectangle }[] = [];
+
+	/**
+	 * Whether the Unexplored cells have changed since the paper was last drawn
+	 */
+	private paperChanged = false;
+
+	/**
+	 * The part of the world the paper is drawn over, kept from frame to frame
+	 */
+	private readonly paperArea = new Phaser.Geom.Rectangle();
 
 	/**
 	 * The highlighted cells' outlines, drawn apart from the overlay, which is drawn again every frame:
@@ -212,6 +306,11 @@ export class AreaEditorScene extends Phaser.Scene
 	private pointerOver = false;
 
 	/**
+	 * Whether the hovered cell is the keyboard's cursor rather than the cell under the pointer
+	 */
+	private keyboardCursor = false;
+
+	/**
 	 * The last cell dabbed in the stroke being painted, or undefined when no stroke is under way
 	 */
 	private lastDab: BrushCell | undefined;
@@ -225,6 +324,12 @@ export class AreaEditorScene extends Phaser.Scene
 		scrollX: number;
 		scrollY: number
 	} | undefined;
+
+	/**
+	 * Whether the pan under way started with the middle button, which picks the cell's tile when it is let
+	 * go without having moved the area
+	 */
+	private middlePan = false;
 
 	/**
 	 * The chunk range last reported to the host, as a string, so it is only reported when it changes
@@ -261,22 +366,29 @@ export class AreaEditorScene extends Phaser.Scene
 		this.areaRenderer = undefined;
 		this.overlay = undefined;
 		this.links = [];
+		this.paper = undefined;
+		this.unexplored = new Uint8Array(0);
+		this.previews = [];
+		this.paperChanged = false;
 		this.highlightOverlay = undefined;
 		this.highlightRuns = [];
 		this.highlightZoom = 0;
 		this.hovered = undefined;
 		this.pointerOver = false;
+		this.keyboardCursor = false;
 		this.lastDab = undefined;
 		this.panStart = undefined;
+		this.middlePan = false;
 		this.lastViewKey = '';
 	}
 
 	/**
-	 * Loads the tile graphics the area is drawn with
+	 * Loads the tile graphics the area is drawn with, and the paper Unexplored cells are drawn with
 	 */
 	preload(): void
 	{
 		preloadTileGraphics(this);
+		preloadUnexploredPaper(this);
 	}
 
 	/**
@@ -284,7 +396,24 @@ export class AreaEditorScene extends Phaser.Scene
 	 */
 	create(): void
 	{
+		const { bounds } = this.area;
+		const paper = this.paperBounds();
+		const paperColumns = (paper.maxColumn - paper.minColumn) + 1;
+		const paperRows = (paper.maxRow - paper.minRow) + 1;
+
 		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks);
+		this.paper = createUnexploredPaper(this, paperColumns, paperRows, PAPER_DEPTH);
+		this.unexplored = new Uint8Array(paperColumns * paperRows).fill(1);
+
+		for (let row = bounds.minRow; row <= bounds.maxRow; row++)
+		{
+			const start = ((row - paper.minRow) * paperColumns) + (bounds.minColumn - paper.minColumn);
+
+			this.unexplored.fill(0, start, start + (bounds.maxColumn - bounds.minColumn) + 1);
+		}
+
+		this.paperChanged = true;
+		this.markUnexplored(this.chunks.keys());
 
 		// Added first, so the brush is outlined over the highlights
 		this.highlightOverlay = this.add.graphics().setDepth(1);
@@ -333,6 +462,7 @@ export class AreaEditorScene extends Phaser.Scene
 			this.input.removeAllListeners();
 			this.areaRenderer?.destroy();
 			this.areaRenderer = undefined;
+			this.clearPreviews();
 		});
 
 		this.onReady(this);
@@ -346,7 +476,14 @@ export class AreaEditorScene extends Phaser.Scene
 		const view = this.cameras.main.worldView;
 
 		this.areaRenderer?.update(view);
+
+		for (const { renderer } of this.previews)
+		{
+			renderer.update(view);
+		}
+
 		this.reportView(view);
+		this.drawPaper(view);
 		this.drawOverlay();
 
 		if (this.highlightZoom !== this.cameras.main.zoom)
@@ -362,7 +499,206 @@ export class AreaEditorScene extends Phaser.Scene
 	 */
 	refreshChunks(chunkKeys: Iterable<string>): void
 	{
-		this.areaRenderer?.refreshChunks(chunkKeys);
+		const keys = [...chunkKeys];
+
+		this.areaRenderer?.refreshChunks(keys);
+		this.markUnexplored(keys);
+	}
+
+	/**
+	 * Notes which cells of some chunks are Unexplored, for the paper to be drawn again when any changed
+	 *
+	 * @param chunkKeys The chunks, by chunkKey()
+	 */
+	private markUnexplored(chunkKeys: Iterable<string>): void
+	{
+		this.markCells(this.chunks, this.area.bounds, 0, 0, chunkKeys);
+	}
+
+	/**
+	 * Notes which cells of some chunks of an area shown are Unexplored
+	 *
+	 * @param chunks The area's chunks, by chunkKey()
+	 * @param bounds The cells of it shown, in its own columns and rows
+	 * @param columnOffset How many columns its cells are moved to line up with the area being edited
+	 * @param rowOffset How many rows
+	 * @param chunkKeys The chunks, by chunkKey()
+	 */
+	private markCells(chunks: ReadonlyMap<string, readonly number[]>, bounds: AreaBounds, columnOffset: number, rowOffset: number, chunkKeys: Iterable<string>): void
+	{
+		const paper = this.paperBounds();
+		const columns = (paper.maxColumn - paper.minColumn) + 1;
+
+		for (const key of chunkKeys)
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(key);
+			const cells = chunks.get(key);
+
+			for (let index = 0; index < (CHUNK_SIZE * CHUNK_SIZE); index++)
+			{
+				const column = (chunkColumn * CHUNK_SIZE) + (index % CHUNK_SIZE);
+				const row = (chunkRow * CHUNK_SIZE) + Math.floor(index / CHUNK_SIZE);
+				const shownColumn = column + columnOffset;
+				const shownRow = row + rowOffset;
+
+				if (!isInBounds(bounds, column, row) || !isInBounds(paper, shownColumn, shownRow))
+				{
+					continue;
+				}
+
+				const cell = ((shownRow - paper.minRow) * columns) + (shownColumn - paper.minColumn);
+				const unexplored = ((cells?.[index] === VOID_CELL) ? 1 : 0);
+
+				if (this.unexplored[cell] !== unexplored)
+				{
+					this.unexplored[cell] = unexplored;
+					this.paperChanged = true;
+				}
+			}
+		}
+	}
+
+	/**
+	 * The cells the paper's Unexplored cells are noted for: the area, the cells of its neighbors shown past
+	 * its edges, and a ring of cells around them
+	 *
+	 * @return The cells, inclusive at both ends
+	 */
+	private paperBounds(): AreaBounds
+	{
+		const { bounds } = this.area;
+		const margin = NEIGHBOR_PREVIEW_CELLS + 1;
+
+		return({
+			minColumn: bounds.minColumn - margin,
+			minRow: bounds.minRow - margin,
+			maxColumn: bounds.maxColumn + margin,
+			maxRow: bounds.maxRow + margin
+		});
+	}
+
+	/**
+	 * Shows neighboring areas past the area's edges, dimmed, in place of those shown before
+	 *
+	 * @param previews The neighbors and where they line up
+	 */
+	setPreviews(previews: readonly NeighborPreview[]): void
+	{
+		const paper = this.paperBounds();
+		const columns = (paper.maxColumn - paper.minColumn) + 1;
+
+		// The cells the neighbors shown before covered are past the area's edges again
+		for (const { preview } of this.previews)
+		{
+			const { bounds } = preview.area;
+
+			for (let row = bounds.minRow + preview.rowOffset; row <= (bounds.maxRow + preview.rowOffset); row++)
+			{
+				for (let column = bounds.minColumn + preview.columnOffset; column <= (bounds.maxColumn + preview.columnOffset); column++)
+				{
+					if (isInBounds(paper, column, row))
+					{
+						this.unexplored[((row - paper.minRow) * columns) + (column - paper.minColumn)] = 1;
+					}
+				}
+			}
+		}
+
+		this.clearPreviews();
+		this.paperChanged = true;
+
+		for (const preview of previews)
+		{
+			const { bounds } = preview.area;
+			const x = (bounds.minColumn + preview.columnOffset) * GRID_CELL_SIZE;
+			const y = (bounds.minRow + preview.rowOffset) * GRID_CELL_SIZE;
+			const width = ((bounds.maxColumn - bounds.minColumn) + 1) * GRID_CELL_SIZE;
+			const height = ((bounds.maxRow - bounds.minRow) + 1) * GRID_CELL_SIZE;
+
+			this.previews.push({
+				preview,
+				renderer: new AreaRenderer(this, preview.area, preview.chunks, { x: preview.columnOffset * GRID_CELL_SIZE, y: preview.rowOffset * GRID_CELL_SIZE }),
+				dim: this.add.rectangle(x, y, width, height, 0x000000)
+					.setOrigin(0, 0)
+					.setDepth(PREVIEW_DIM_DEPTH)
+					.setAlpha(PREVIEW_DIM_ALPHA)
+			});
+
+			for (let row = bounds.minRow + preview.rowOffset; row <= (bounds.maxRow + preview.rowOffset); row++)
+			{
+				for (let column = bounds.minColumn + preview.columnOffset; column <= (bounds.maxColumn + preview.columnOffset); column++)
+				{
+					if (isInBounds(paper, column, row))
+					{
+						this.unexplored[((row - paper.minRow) * columns) + (column - paper.minColumn)] = 0;
+					}
+				}
+			}
+
+			this.markCells(preview.chunks, bounds, preview.columnOffset, preview.rowOffset, preview.chunks.keys());
+		}
+	}
+
+	/**
+	 * Redraws the chunks of a neighboring area shown that the host has loaded
+	 *
+	 * @param areaId The neighbor's ID
+	 * @param chunkKeys The chunks, by chunkKey()
+	 */
+	refreshPreview(areaId: string, chunkKeys: Iterable<string>): void
+	{
+		const keys = [...chunkKeys];
+
+		for (const { preview, renderer } of this.previews)
+		{
+			if (preview.area.areaId === areaId)
+			{
+				renderer.refreshChunks(keys);
+				this.markCells(preview.chunks, preview.area.bounds, preview.columnOffset, preview.rowOffset, keys);
+			}
+		}
+	}
+
+	/**
+	 * Removes the neighboring areas shown
+	 */
+	private clearPreviews(): void
+	{
+		for (const { renderer, dim } of this.previews)
+		{
+			renderer.destroy();
+			dim.destroy();
+		}
+
+		this.previews = [];
+	}
+
+	/**
+	 * Draws the paper over the camera's view, with the Unexplored cells under it again once they have changed
+	 *
+	 * The camera works out its view as it renders, after update(), so the view is where the camera was last
+	 * frame. The paper reaches a whole view past it on every side, so a pan never shows a strip without it;
+	 * what is off the screen costs nothing to draw
+	 *
+	 * @param view The camera's view of the world
+	 */
+	private drawPaper(view: Phaser.Geom.Rectangle): void
+	{
+		if (!this.paper)
+		{
+			return;
+		}
+
+		if (this.paperChanged)
+		{
+			const paper = this.paperBounds();
+			const columns = (paper.maxColumn - paper.minColumn) + 1;
+
+			this.paperChanged = false;
+			this.paper.draw(paper.minColumn, paper.minRow, (column, row) => (this.unexplored[(row * columns) + column] === 1));
+		}
+
+		this.paper.cover(this.paperArea.setTo(view.x - view.width, view.y - view.height, view.width * 3, view.height * 3));
 	}
 
 	/**
@@ -403,6 +739,44 @@ export class AreaEditorScene extends Phaser.Scene
 	}
 
 	/**
+	 * The cell in the middle of the camera's view
+	 *
+	 * @return The cell
+	 */
+	middleCell(): BrushCell
+	{
+		// The camera zooms around the middle of its view, which is half its size past its scroll
+		const camera = this.cameras.main;
+
+		return({
+			column: Math.floor((camera.scrollX + (camera.width / 2)) / GRID_CELL_SIZE),
+			row: Math.floor((camera.scrollY + (camera.height / 2)) / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
+	 * The cells the camera's view reaches, in whole or in part
+	 *
+	 * @return Their bounds
+	 */
+	viewCells(): AreaBounds
+	{
+		// The camera zooms around the middle of its view, which is half its size past its scroll
+		const camera = this.cameras.main;
+		const width = camera.width / camera.zoom;
+		const height = camera.height / camera.zoom;
+		const left = camera.scrollX + ((camera.width - width) / 2);
+		const top = camera.scrollY + ((camera.height - height) / 2);
+
+		return({
+			minColumn: Math.floor(left / GRID_CELL_SIZE),
+			minRow: Math.floor(top / GRID_CELL_SIZE),
+			maxColumn: Math.floor((left + width) / GRID_CELL_SIZE),
+			maxRow: Math.floor((top + height) / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
 	 * Moves the camera to a cell
 	 *
 	 * @param column The cell's column
@@ -426,6 +800,7 @@ export class AreaEditorScene extends Phaser.Scene
 		const y = (cell.row + 0.5) * GRID_CELL_SIZE;
 
 		this.hovered = cell;
+		this.keyboardCursor = true;
 
 		if ((x < (view.x + GRID_CELL_SIZE)) || (x > (view.right - GRID_CELL_SIZE)) || (y < (view.y + GRID_CELL_SIZE)) || (y > (view.bottom - GRID_CELL_SIZE)))
 		{
@@ -446,7 +821,8 @@ export class AreaEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Starts painting, picking or panning
+	 * Starts painting, fills, picks or starts panning; a click on a neighbor shown past the area's edge
+	 * opens the neighbor
 	 *
 	 * @param pointer The pointer
 	 */
@@ -462,15 +838,24 @@ export class AreaEditorScene extends Phaser.Scene
 				scrollX: camera.scrollX,
 				scrollY: camera.scrollY
 			};
+			this.middlePan = pointer.middleButtonDown();
 			return;
 		}
 
 		const cell = this.cellUnder(pointer);
 		const mode = this.host.pointerMode();
 
-		if (mode === 'pick')
+		if (this.isPreviewCell(cell))
+		{
+			this.host.openNeighbor(cell);
+		}
+		else if (mode === 'pick')
 		{
 			this.host.pick(cell.column, cell.row);
+		}
+		else if (mode === 'fill')
+		{
+			this.host.fill(cell.column, cell.row);
 		}
 		else if (mode === 'paint')
 		{
@@ -490,6 +875,10 @@ export class AreaEditorScene extends Phaser.Scene
 		const cell = this.cellUnder(pointer);
 
 		this.pointerOver = true;
+		this.keyboardCursor = false;
+
+		// A neighbor shown past the edge opens when clicked, like a link; empty leaves the stylesheet's crosshair
+		this.game.canvas.style.cursor = ((this.isPreviewCell(cell) && !this.lastDab && !this.panStart) ? 'pointer' : '');
 
 		if (this.panStart)
 		{
@@ -522,11 +911,23 @@ export class AreaEditorScene extends Phaser.Scene
 	};
 
 	/**
-	 * Ends a stroke or a pan
+	 * Ends a stroke or a pan. A middle click, letting go where the button was pressed, picks the cell's tile
+	 *
+	 * @param pointer The pointer
 	 */
-	private readonly onPointerUp = (): void =>
+	private readonly onPointerUp = (pointer: Phaser.Input.Pointer): void =>
 	{
+		const pan = this.panStart;
+
+		if (pan && this.middlePan && (Math.hypot(pointer.x - pan.x, pointer.y - pan.y) <= MIDDLE_CLICK_DISTANCE))
+		{
+			const cell = this.cellUnder(pointer);
+
+			this.host.pickTile(cell.column, cell.row);
+		}
+
 		this.panStart = undefined;
+		this.middlePan = false;
 		this.finishStroke();
 	};
 
@@ -537,8 +938,20 @@ export class AreaEditorScene extends Phaser.Scene
 	{
 		this.pointerOver = false;
 		this.hovered = undefined;
+		this.game.canvas.style.cursor = '';
 		this.host.hover(undefined);
 	};
+
+	/**
+	 * Whether a cell is one of a neighbor shown past the area's edges, rather than the area's own
+	 *
+	 * @param cell The cell
+	 * @return True when it is
+	 */
+	private isPreviewCell(cell: BrushCell): boolean
+	{
+		return(!isInBounds(this.area.bounds, cell.column, cell.row) && this.previews.some(({ preview }) => isInBounds(preview.area.bounds, cell.column - preview.columnOffset, cell.row - preview.rowOffset)));
+	}
 
 	/**
 	 * Finds where the mouse is on the canvas when the page scrolls under it, which moves the canvas
@@ -746,6 +1159,52 @@ export class AreaEditorScene extends Phaser.Scene
 	}
 
 	/**
+	 * Draws the area's edges, each carried on across the neighbors shown past its corners, so the seams
+	 * between a side neighbor and a corner area show as well
+	 *
+	 * @param overlay What the outlines are drawn on, with its line style set
+	 */
+	private drawEdges(overlay: Phaser.GameObjects.Graphics): void
+	{
+		const { bounds } = this.area;
+
+		// The area and the neighbors shown past its edges, each where it is drawn
+		const shapes: AreaBounds[] = [
+			bounds,
+			...this.previews.map(({ preview }) => ({
+				minColumn: preview.area.bounds.minColumn + preview.columnOffset,
+				minRow: preview.area.bounds.minRow + preview.rowOffset,
+				maxColumn: preview.area.bounds.maxColumn + preview.columnOffset,
+				maxRow: preview.area.bounds.maxRow + preview.rowOffset
+			}))
+		];
+
+		for (const row of [bounds.minRow, bounds.maxRow + 1])
+		{
+			const spans = shapes
+				.filter((shape) => ((shape.minRow === row) || ((shape.maxRow + 1) === row)))
+				.map((shape): [number, number] => [shape.minColumn, shape.maxColumn + 1]);
+
+			for (const [start, end] of mergeSpans(spans))
+			{
+				overlay.lineBetween(start * GRID_CELL_SIZE, row * GRID_CELL_SIZE, end * GRID_CELL_SIZE, row * GRID_CELL_SIZE);
+			}
+		}
+
+		for (const column of [bounds.minColumn, bounds.maxColumn + 1])
+		{
+			const spans = shapes
+				.filter((shape) => ((shape.minColumn === column) || ((shape.maxColumn + 1) === column)))
+				.map((shape): [number, number] => [shape.minRow, shape.maxRow + 1]);
+
+			for (const [start, end] of mergeSpans(spans))
+			{
+				overlay.lineBetween(column * GRID_CELL_SIZE, start * GRID_CELL_SIZE, column * GRID_CELL_SIZE, end * GRID_CELL_SIZE);
+			}
+		}
+	}
+
+	/**
 	 * Outlines the area's edges, its center cell, its links and the brush
 	 */
 	private drawOverlay(): void
@@ -759,11 +1218,10 @@ export class AreaEditorScene extends Phaser.Scene
 
 		// Lines stay the same width on screen however far the camera zooms
 		const line = 2 / this.cameras.main.zoom;
-		const { bounds } = this.area;
 
 		overlay.clear();
 		overlay.lineStyle(line, BOUNDS_COLOR, 0.8);
-		overlay.strokeRect(bounds.minColumn * GRID_CELL_SIZE, bounds.minRow * GRID_CELL_SIZE, ((bounds.maxColumn - bounds.minColumn) + 1) * GRID_CELL_SIZE, ((bounds.maxRow - bounds.minRow) + 1) * GRID_CELL_SIZE);
+		this.drawEdges(overlay);
 		overlay.lineStyle(line, CENTER_COLOR, 0.5);
 		overlay.strokeRect(0, 0, GRID_CELL_SIZE, GRID_CELL_SIZE);
 
@@ -777,7 +1235,17 @@ export class AreaEditorScene extends Phaser.Scene
 
 		const mode = this.host.pointerMode();
 
-		if (this.hovered && (mode !== 'none'))
+		// A neighbor shown past the edge isn't painted, so the pointer over it shows no brush, and the
+		// keyboard's cursor there is one cell
+		if (this.hovered && this.isPreviewCell(this.hovered))
+		{
+			if (this.keyboardCursor)
+			{
+				overlay.lineStyle(line, BRUSH_COLOR, 1);
+				overlay.strokeRect(this.hovered.column * GRID_CELL_SIZE, this.hovered.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
+			}
+		}
+		else if (this.hovered && (mode !== 'none'))
 		{
 			const { size, shape } = ((mode === 'paint') ? this.host.brush() : { size: 1, shape: 'square' as const });
 			const origin = brushOrigin(this.hovered.column, this.hovered.row, size);
@@ -795,4 +1263,31 @@ export class AreaEditorScene extends Phaser.Scene
 			}
 		}
 	}
+}
+
+/**
+ * Joins stretches along a line that overlap or touch into one
+ *
+ * @param spans Each stretch's start and end
+ * @return The joined stretches, in order
+ */
+function mergeSpans(spans: readonly [number, number][]): [number, number][]
+{
+	const merged: [number, number][] = [];
+
+	for (const [start, end] of [...spans].sort((first, second) => (first[0] - second[0])))
+	{
+		const last = merged[merged.length - 1];
+
+		if (last && (start <= last[1]))
+		{
+			last[1] = Math.max(last[1], end);
+		}
+		else
+		{
+			merged.push([start, end]);
+		}
+	}
+
+	return(merged);
 }

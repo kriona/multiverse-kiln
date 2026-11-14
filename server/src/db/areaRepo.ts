@@ -2,14 +2,15 @@
  * Areas, their cells and their links: the only module that reads or writes the areas, area_chunks and
  * area_links tables
  */
-import { and, asc, between, count, eq, gt, inArray, lt, ne, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, between, count, eq, gt, inArray, lt, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { ancestorAreas, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, lobbyAreaTime, resolveAreaTime, type AreaTime, type DisplayTime,type PassageOfTimeSetting, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaPassageOfTime, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, hasNeighbors, isInBounds, lobbyAreaTime, NO_NEIGHBORS, oppositeSide, seamSides, type AreaNeighbors, type GridArea, type NeighborSide, type AreaLinkEnd, type AreaTime,type DisplayTime, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaSettingsUpdate, type FaerieMorning, type PassageOfTime, type PlaceRef, type PlaceSettings, type PlaceWorld, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/areaEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
 import { db, type Executor } from './client.js';
-import { areaChunks, universes, universeDrafts, areaLinks, areas, races, classes, classRaceAreas } from './schema.js';
+import { isRegionDefaultTile, listRegions, placeSettingsOf } from './regionRepo.js';
+import { areaChunks, universes, universeDrafts, areaLinks, areas, areaRegions, races, classes, classRaceAreas } from './schema.js';
 import { loadUniverseTiles, type TileRecord } from './tileRepo.js';
 import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
 
@@ -25,7 +26,7 @@ export const GROUND_LAYER = 0;
 const CHUNK_BATCH_SIZE = 128;
 
 /**
- * An area as the rest of the server sees it
+ * An area as the rest of the server sees it, with the settings worked out for it
  */
 export interface AreaRecord
 {
@@ -35,7 +36,17 @@ export interface AreaRecord
 	name: string;
 	enabled: boolean;
 	indoors: boolean;
-	passageOfTime: AreaPassageOfTime;
+
+	/**
+	 * null for a lobby area, which takes the Lobby tab's
+	 */
+	passageOfTime: PassageOfTime | null;
+
+	/**
+	 * Whether it is a lobby area, below the lobby region: only the lobby walks it, and the lobby walks
+	 * nothing else
+	 */
+	lobby: boolean;
 }
 
 /**
@@ -51,8 +62,8 @@ export interface LoadedArea
 	ruleset: Ruleset;
 
 	/**
-	 * How its time of day is worked out: its passage of time with inherit followed up to the universe's,
-	 * or the universe's lobby time for the lobby's area
+	 * How its time of day is worked out: its passage of time as worked out from its regions and areas,
+	 * or the universe's lobby time for a lobby area
 	 */
 	time: AreaTime;
 
@@ -67,10 +78,10 @@ export interface LoadedArea
 	lightLevel: AreaLightLevel | null;
 
 	/**
-	 * Whether everyone sees DAY_VISION_SQUARES whatever the time of day: the lobby's area while its
-	 * universe gives it no vision cost, when its tiles have none either
+	 * Whether what is out of the players' sight is hidden from them. Without it, everyone sees everything
+	 * near them and everyone in the area, and a group records none of it as explored
 	 */
-	fullVision: boolean;
+	fogOfWar: boolean;
 
 	bounds: AreaBounds;
 
@@ -81,13 +92,27 @@ export interface LoadedArea
 
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
+
+	/**
+	 * Its neighbor on each side (see Neighboring areas in STRUCTURE-OVERVIEW.md)
+	 */
+	neighbors: AreaNeighbors;
+
+	/**
+	 * Where walking off each side leads, for an area with neighbors (seamSides()): its neighbor, or the
+	 * far end of a row or column that loops, which may be the area itself. All null without neighbors,
+	 * whose looping follows loopsEastWest and loopsNorthSouth alone
+	 */
+	sides: AreaNeighbors;
+
 	links: AreaLink[];
 
 	/**
-	 * The disabled areas the links lead to, as they were when the area was loaded. Nobody can go through
-	 * those links, so clients aren't told about them
+	 * The areas the links lead to that nobody can go to, as they were when the area was loaded: disabled
+	 * areas, and areas on the other side of the lobby region's edge. Nobody can go through those links,
+	 * so clients aren't told about them
 	 */
-	disabledTargetIds: ReadonlySet<string>;
+	closedTargetIds: ReadonlySet<string>;
 
 	/**
 	 * Every tile the area can use, for drawing it and for its walk seconds
@@ -96,9 +121,10 @@ export interface LoadedArea
 }
 
 /**
- * What a new area needs
+ * What a new area needs: its own settings, each left out inheriting, the settings worked out for it, and
+ * its bounds. Its parents are given with setAreaParents()
  */
-export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'draft' | 'parentAreaId' | 'name' | 'enabled' | 'indoors' | 'lightLevel' | 'defaultTileId' | 'loopsEastWest' | 'loopsNorthSouth' | 'passageOfTime' | 'faerieMorning'> & { bounds: AreaBounds };
+export type NewArea = Pick<typeof areas.$inferInsert, 'universeId' | 'draft' | 'name' | 'loopsEastWest' | 'loopsNorthSouth'> & Partial<PlaceSettings> & { resolved: ResolvedAreaSettings; bounds: AreaBounds };
 
 /**
  * What a new area link needs
@@ -114,13 +140,57 @@ export type NewAreaLink = AreaLink & { areaId: string };
  */
 export async function createArea(area: NewArea, executor: Executor = db): Promise<string>
 {
-	const { bounds, ...values } = area;
+	const { bounds, resolved, ...values } = area;
 	const [created] = await executor
 		.insert(areas)
-		.values({ ...values, ...bounds })
+		.values({
+			...values,
+			...resolvedColumns(resolved),
+			...bounds
+		})
 		.returning({ id: areas.id });
 
 	return(created.id);
+}
+
+/**
+ * The columns holding an area's worked-out settings
+ *
+ * @param resolved The settings
+ * @return The column values
+ */
+function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inferInsert, 'resolvedEnabled' | 'resolvedIndoors' | 'resolvedLightLevel' | 'resolvedDefaultTileId' | 'resolvedPassageOfTime' | 'resolvedFaerieMorning' | 'resolvedFogOfWar' | 'resolvedLobby'>
+{
+	return({
+		resolvedEnabled: resolved.enabled,
+		resolvedIndoors: resolved.indoors,
+		resolvedLightLevel: resolved.lightLevel,
+		resolvedDefaultTileId: resolved.defaultTileId,
+		resolvedPassageOfTime: resolved.passageOfTime,
+		resolvedFaerieMorning: resolved.faerieMorning,
+		resolvedFogOfWar: resolved.fogOfWar,
+		resolvedLobby: resolved.lobby
+	});
+}
+
+/**
+ * An area's worked-out settings from its row
+ *
+ * @param row The row
+ * @return The settings
+ */
+function resolvedOf(row: typeof areas.$inferSelect): ResolvedAreaSettings
+{
+	return({
+		enabled: row.resolvedEnabled,
+		indoors: row.resolvedIndoors,
+		lightLevel: row.resolvedLightLevel,
+		defaultTileId: row.resolvedDefaultTileId,
+		passageOfTime: row.resolvedPassageOfTime,
+		faerieMorning: row.resolvedFaerieMorning,
+		fogOfWar: row.resolvedFogOfWar,
+		lobby: row.resolvedLobby
+	});
 }
 
 /**
@@ -168,8 +238,7 @@ export async function createAreaLink(link: NewAreaLink, executor: Executor = db)
 /**
  * Loads one of a universe's live areas with everything needed to play in it except its cells, which
  * an area up to MAX_AREA_SIDE across has too many of to load at once: load them a piece at a time with
- * loadChunks. A lobby has full vision and its tiles no vision cost when its universe's lobbyNoVisionCost
- * is set
+ * loadChunks
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
@@ -182,14 +251,10 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			area: areas,
 			ruleset: universes.ruleset,
 			universe: {
-				passageOfTime: universes.passageOfTime,
-				faerieMorning: universes.faerieMorning,
 				displayTime: universes.displayTime,
-				lobbyAreaId: universes.lobbyAreaId,
 				lobbyPassageOfTime: universes.lobbyPassageOfTime,
 				lobbyDayHours: universes.lobbyDayHours,
-				lobbyFaerieMorning: universes.lobbyFaerieMorning,
-				lobbyNoVisionCost: universes.lobbyNoVisionCost
+				lobbyFaerieMorning: universes.lobbyFaerieMorning
 			}
 		})
 		.from(areas)
@@ -209,21 +274,21 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 	const linkRows = await executor
 		.select({
 			link: areaLinks,
-			targetEnabled: areas.enabled
+			targetEnabled: areas.resolvedEnabled,
+			targetLobby: areas.resolvedLobby
 		})
 		.from(areaLinks)
 		.innerJoin(areas, eq(areas.id, areaLinks.targetAreaId))
 		.where(eq(areaLinks.areaId, areaId));
-	const disabledTargetIds = new Set(linkRows
-		.filter(({ targetEnabled }) => !targetEnabled)
+	const closedTargetIds = new Set(linkRows
+		.filter(({ targetEnabled, targetLobby }) => (!targetEnabled || (targetLobby !== area.resolvedLobby)))
 		.map(({ link }) => link.targetAreaId));
 
-	const isLobby = (area.id === universe.lobbyAreaId);
-	const fullVision = (isLobby && universe.lobbyNoVisionCost);
-	const universeTiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
-	const tiles = (fullVision
-		? universeTiles.map((tile) => ({ ...tile, visionCost: 0 }))
-		: universeTiles);
+	const tiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
+	const neighbors = neighborsOf(area);
+
+	// Where a row or column of neighbors loops depends on its ends, so the whole grid is read
+	const sides = (hasNeighbors(neighbors) ? seamSides(await loadNeighborGrid(liveVersion(area.universeId), executor), area.id) : { ...NO_NEIGHBORS });
 
 	return({
 		area: {
@@ -231,25 +296,28 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			universeId: area.universeId,
 			parentAreaId: area.parentAreaId ?? undefined,
 			name: area.name,
-			enabled: area.enabled,
-			indoors: area.indoors,
-			passageOfTime: area.passageOfTime
+			enabled: area.resolvedEnabled,
+			indoors: area.resolvedIndoors,
+			passageOfTime: area.resolvedPassageOfTime,
+			lobby: area.resolvedLobby
 		},
 		ruleset,
-		time: (isLobby
+		time: (area.resolvedLobby
 			? lobbyAreaTime({
 				passageOfTime: universe.lobbyPassageOfTime,
 				faerieMorning: universe.lobbyFaerieMorning,
 				dayHours: universe.lobbyDayHours
 			})
-			: resolveAreaTime(await loadTimeChain(area, executor), universe)),
+			: areaTimeOf(area.resolvedPassageOfTime, area.resolvedFaerieMorning)),
 		displayTime: universe.displayTime,
-		lightLevel: (area.indoors ? area.lightLevel : null),
-		fullVision,
+		lightLevel: area.resolvedLightLevel,
+		fogOfWar: area.resolvedFogOfWar,
 		bounds: boundsOf(area),
-		defaultTileId: area.defaultTileId,
+		defaultTileId: area.resolvedDefaultTileId,
 		loopsEastWest: area.loopsEastWest,
 		loopsNorthSouth: area.loopsNorthSouth,
+		neighbors,
+		sides,
 		links: linkRows.map(({ link }) => ({
 			column: link.column,
 			row: link.row,
@@ -259,40 +327,26 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			mode: link.mode,
 			requiresWholeGroup: link.requiresWholeGroup
 		})),
-		disabledTargetIds,
+		closedTargetIds,
 		tiles
 	});
 }
 
 /**
- * The passage of time settings resolveAreaTime() follows for an area: its own, then its parent's, and
- * so on up to its top-level area, stopping at the first that doesn't inherit
+ * How an area's time of day is worked out from its stored passage of time
  *
- * @param area The area's row
- * @param executor The database, or a transaction
- * @return The settings, the area's first
+ * @param passageOfTime The passage of time worked out for it, null only for a lobby area
+ * @param faerieMorning Where morning is, for faerie
+ * @return The time
  */
-async function loadTimeChain(area: typeof areas.$inferSelect, executor: Executor): Promise<PassageOfTimeSetting<AreaPassageOfTime>[]>
+function areaTimeOf(passageOfTime: PassageOfTime | null, faerieMorning: FaerieMorning | null): AreaTime
 {
-	if ((area.passageOfTime !== 'inherit') || (area.parentAreaId === null))
+	if ((passageOfTime === 'faerie') && (faerieMorning !== null))
 	{
-		return([area]);
+		return({ passage: 'faerie', morning: faerieMorning });
 	}
 
-	const rows = await executor
-		.select({
-			id: areas.id,
-			parentAreaId: areas.parentAreaId,
-			passageOfTime: areas.passageOfTime,
-			faerieMorning: areas.faerieMorning
-		})
-		.from(areas)
-		.where(inVersion(areas, {
-			universeId: area.universeId,
-			draft: area.draft
-		}));
-
-	return([area, ...ancestorAreas(rows, area.id)]);
+	return({ passage: (((passageOfTime === null) || (passageOfTime === 'faerie')) ? 'flows_normally' : passageOfTime) });
 }
 
 /**
@@ -315,12 +369,14 @@ export async function findEditorArea(areaId: string, executor: Executor = db): P
 		return(undefined);
 	}
 
+	const parents = await loadAreaParents([row], executor);
+
 	return({
 		version: {
 			universeId: row.universeId,
 			draft: row.draft
 		},
-		area: editorAreaOf(row)
+		area: editorAreaOf(row, (parents.get(row.id) ?? []))
 	});
 }
 
@@ -338,31 +394,135 @@ export async function listEditorAreas(version: UniverseVersion, executor: Execut
 		.from(areas)
 		.where(inVersion(areas, version))
 		.orderBy(areas.name, areas.id);
+	const parents = await loadAreaParents(rows, executor);
 
-	return(rows.map(editorAreaOf));
+	return(rows.map((row) => editorAreaOf(row, (parents.get(row.id) ?? []))));
+}
+
+/**
+ * The parents of areas, the regions they are in and the area they are inside, in the order they were added
+ *
+ * @param rows The areas' rows
+ * @param executor The database, or a transaction
+ * @return Each area's parents, by area ID
+ */
+async function loadAreaParents(rows: readonly Pick<typeof areas.$inferSelect, 'id' | 'parentAreaId' | 'parentAreaAddedAt'>[], executor: Executor): Promise<Map<string, PlaceRef[]>>
+{
+	if (rows.length === 0)
+	{
+		return(new Map());
+	}
+
+	const regionRows = await executor
+		.select()
+		.from(areaRegions)
+		.where(inArray(areaRegions.areaId, rows.map((row) => row.id)));
+	const parents = new Map<string, { place: PlaceRef; addedAt: number }[]>();
+	const add = (areaId: string, place: PlaceRef, addedAt: Date | null): void =>
+	{
+		const list = (parents.get(areaId) ?? []);
+
+		list.push({ place, addedAt: (addedAt?.getTime() ?? 0) });
+		parents.set(areaId, list);
+	};
+
+	for (const row of regionRows)
+	{
+		add(row.areaId, { kind: 'region', id: row.regionId }, row.addedAt);
+	}
+
+	for (const row of rows)
+	{
+		if (row.parentAreaId !== null)
+		{
+			add(row.id, { kind: 'area', id: row.parentAreaId }, row.parentAreaAddedAt);
+		}
+	}
+
+	return(new Map([...parents].map(([areaId, list]) => [areaId, list
+		.sort((first, second) => ((first.addedAt - second.addedAt) || first.place.id.localeCompare(second.place.id)))
+		.map(({ place }) => place)])));
 }
 
 /**
  * An area's row as the editor shows it
  *
  * @param row The row
+ * @param parents Its parents, in order
  * @return The area
  */
-function editorAreaOf(row: typeof areas.$inferSelect): EditorArea
+function editorAreaOf(row: typeof areas.$inferSelect, parents: PlaceRef[]): EditorArea
+{
+	return(summaryOf(row, parents));
+}
+
+/**
+ * An area's neighbor on each side, from its row
+ *
+ * @param row The row
+ * @return The neighbors
+ */
+function neighborsOf(row: Pick<typeof areas.$inferSelect, 'northAreaId' | 'eastAreaId' | 'southAreaId' | 'westAreaId'>): AreaNeighbors
+{
+	return({
+		north: row.northAreaId,
+		east: row.eastAreaId,
+		south: row.southAreaId,
+		west: row.westAreaId
+	});
+}
+
+/**
+ * The column holding an area's neighbor on a side
+ *
+ * @param side The side
+ * @return The column
+ */
+function neighborColumn(side: NeighborSide): typeof areas.northAreaId | typeof areas.eastAreaId | typeof areas.southAreaId | typeof areas.westAreaId
+{
+	switch (side)
+	{
+		case 'north':
+			return(areas.northAreaId);
+		case 'east':
+			return(areas.eastAreaId);
+		case 'south':
+			return(areas.southAreaId);
+		default:
+			return(areas.westAreaId);
+	}
+}
+
+/**
+ * The property of an area's row holding its neighbor on a side
+ *
+ * @param side The side
+ * @return The property's name
+ */
+function neighborKey(side: NeighborSide): 'northAreaId' | 'eastAreaId' | 'southAreaId' | 'westAreaId'
+{
+	return(`${side}AreaId`);
+}
+
+/**
+ * An area's row as the Areas tab lists it
+ *
+ * @param row The row
+ * @param parents Its parents, in order
+ * @return The area
+ */
+function summaryOf(row: typeof areas.$inferSelect, parents: PlaceRef[]): EditorAreaSummary
 {
 	return({
 		id: row.id,
 		name: row.name,
-		parentAreaId: row.parentAreaId,
-		enabled: row.enabled,
-		indoors: row.indoors,
-		lightLevel: row.lightLevel,
-		defaultTileId: row.defaultTileId,
-		passageOfTime: row.passageOfTime,
-		faerieMorning: row.faerieMorning,
+		parents,
+		...placeSettingsOf(row),
 		loopsEastWest: row.loopsEastWest,
 		loopsNorthSouth: row.loopsNorthSouth,
-		bounds: boundsOf(row)
+		resolved: resolvedOf(row),
+		bounds: boundsOf(row),
+		neighbors: neighborsOf(row)
 	});
 }
 
@@ -375,17 +535,215 @@ function editorAreaOf(row: typeof areas.$inferSelect): EditorArea
  */
 export async function listAreas(version: UniverseVersion, executor: Executor = db): Promise<EditorAreaSummary[]>
 {
-	return(executor
-		.select({
-			id: areas.id,
-			name: areas.name,
-			parentAreaId: areas.parentAreaId,
-			enabled: areas.enabled,
-			indoors: areas.indoors
-		})
+	const rows = await executor
+		.select()
 		.from(areas)
 		.where(inVersion(areas, version))
-		.orderBy(areas.name, areas.id));
+		.orderBy(areas.name, areas.id);
+	const parents = await loadAreaParents(rows, executor);
+
+	return(rows.map((row) => summaryOf(row, (parents.get(row.id) ?? []))));
+}
+
+/**
+ * A version's regions and areas with their own settings and parents, the kinds of the tiles it can use
+ * and its lobby region, for working out the areas' settings, with the settings each area has stored
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param lobbyRegionId The version's lobby region
+ * @param executor The database, or a transaction
+ * @return The world, and each area's stored settings by ID
+ */
+export async function loadPlaceWorld(version: UniverseVersion, ruleset: Ruleset, lobbyRegionId: string | null, executor: Executor = db): Promise<{ world: PlaceWorld; stored: Map<string, ResolvedAreaSettings> }>
+{
+	const regionList = await listRegions(version, executor);
+	const areaList = await listAreas(version, executor);
+	const tiles = await loadUniverseTiles(version, ruleset, executor);
+
+	return({
+		world: {
+			regions: regionList.map(({ builderIds: _builderIds, ...region }) => region),
+			areas: areaList.map(({ resolved: _resolved, ...area }) => area),
+			tileKinds: new Map(tiles.map((tile) => [tile.id, { indoors: tile.indoors, outdoors: tile.outdoors }])),
+			lobbyRegionId
+		},
+		stored: new Map(areaList.map((area) => [area.id, area.resolved]))
+	});
+}
+
+/**
+ * Stores the settings worked out for areas
+ *
+ * @param settings The settings, by area ID
+ * @param executor The database, or a transaction
+ */
+export async function storeResolvedSettings(settings: ReadonlyMap<string, ResolvedAreaSettings>, executor: Executor = db): Promise<void>
+{
+	for (const [areaId, resolved] of settings)
+	{
+		await executor
+			.update(areas)
+			.set(resolvedColumns(resolved))
+			.where(eq(areas.id, areaId));
+	}
+}
+
+/**
+ * Every area of a version as the grid of neighbors sees it
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The areas, by ID
+ */
+export async function loadNeighborGrid(version: UniverseVersion, executor: Executor = db): Promise<Map<string, GridArea>>
+{
+	const rows = await executor
+		.select({
+			id: areas.id,
+			minColumn: areas.minColumn,
+			minRow: areas.minRow,
+			maxColumn: areas.maxColumn,
+			maxRow: areas.maxRow,
+			loopsEastWest: areas.loopsEastWest,
+			loopsNorthSouth: areas.loopsNorthSouth,
+			northAreaId: areas.northAreaId,
+			eastAreaId: areas.eastAreaId,
+			southAreaId: areas.southAreaId,
+			westAreaId: areas.westAreaId
+		})
+		.from(areas)
+		.where(inVersion(areas, version));
+
+	return(new Map(rows.map((row) => [row.id, {
+		id: row.id,
+		bounds: boundsOf(row),
+		neighbors: neighborsOf(row),
+		loopsEastWest: row.loopsEastWest,
+		loopsNorthSouth: row.loopsNorthSouth
+	}])));
+}
+
+/**
+ * Makes an area another's neighbor on a side, both ways, or with null makes its neighbor there no longer
+ * one. The areas either had on those sides before lose them. Both areas must be of the same version
+ *
+ * @param areaId The area's ID
+ * @param side The side
+ * @param neighborId The neighbor's ID, or null for none
+ * @param executor A transaction
+ * @return The areas whose neighbors changed, the area included
+ */
+export async function setAreaNeighbor(areaId: string, side: NeighborSide, neighborId: string | null, executor: Executor): Promise<string[]>
+{
+	const facing = oppositeSide(side);
+	const rows = await executor
+		.select()
+		.from(areas)
+		.where(inArray(areas.id, ((neighborId === null) ? [areaId] : [areaId, neighborId])));
+	const area = rows.find((row) => (row.id === areaId));
+	const neighbor = rows.find((row) => (row.id === neighborId));
+
+	if (!area)
+	{
+		return([]);
+	}
+
+	const changed = new Set<string>();
+	const clear = async (id: string, clearedSide: NeighborSide, expected: string): Promise<void> =>
+	{
+		const cleared = await executor
+			.update(areas)
+			.set({ [neighborKey(clearedSide)]: null })
+			.where(and(
+				eq(areas.id, id),
+				eq(neighborColumn(clearedSide), expected)
+			))
+			.returning({ id: areas.id });
+
+		if (cleared.length > 0)
+		{
+			changed.add(id);
+		}
+	};
+	const previous = area[neighborKey(side)];
+
+	if ((previous !== null) && (previous !== neighborId))
+	{
+		await clear(previous, facing, areaId);
+		await clear(areaId, side, previous);
+	}
+
+	if ((neighborId === null) || !neighbor)
+	{
+		return([...changed]);
+	}
+
+	const neighborPrevious = neighbor[neighborKey(facing)];
+
+	if ((neighborPrevious !== null) && (neighborPrevious !== areaId))
+	{
+		await clear(neighborPrevious, side, neighborId);
+	}
+
+	if (previous !== neighborId)
+	{
+		await executor
+			.update(areas)
+			.set({ [neighborKey(side)]: neighborId })
+			.where(eq(areas.id, areaId));
+		changed.add(areaId);
+	}
+
+	if (neighborPrevious !== areaId)
+	{
+		await executor
+			.update(areas)
+			.set({ [neighborKey(facing)]: areaId })
+			.where(eq(areas.id, neighborId));
+		changed.add(neighborId);
+	}
+
+	return([...changed]);
+}
+
+/**
+ * Gives an area its parents: the area it is inside, if any, and the regions it is in. Those it has keep
+ * when they were added, and new ones are added after them in the order given
+ *
+ * @param areaId The area's ID
+ * @param parents Its parents, of its version, at most one of them an area
+ * @param executor The database, or a transaction
+ */
+export async function setAreaParents(areaId: string, parents: readonly PlaceRef[], executor: Executor = db): Promise<void>
+{
+	const parentAreaId = (parents.find((parent) => (parent.kind === 'area'))?.id ?? null);
+	const regionIds = parents
+		.filter((parent) => (parent.kind === 'region'))
+		.map((parent) => parent.id);
+
+	await executor
+		.update(areas)
+		.set({
+			parentAreaId,
+			parentAreaAddedAt: ((parentAreaId === null) ? null : sql`CASE WHEN ${areas.parentAreaId} IS NOT DISTINCT FROM ${parentAreaId} THEN ${areas.parentAreaAddedAt} ELSE clock_timestamp() END`)
+		})
+		.where(eq(areas.id, areaId));
+	await executor
+		.delete(areaRegions)
+		.where(and(
+			eq(areaRegions.areaId, areaId),
+			...((regionIds.length === 0) ? [] : [notInArray(areaRegions.regionId, regionIds)])
+		));
+
+	// One row at a time, so each new region's clock_timestamp() comes after the one before
+	for (const regionId of regionIds)
+	{
+		await executor
+			.insert(areaRegions)
+			.values({ areaId, regionId })
+			.onConflictDoNothing();
+	}
 }
 
 /**
@@ -436,16 +794,16 @@ export async function countAreas(version: UniverseVersion, executor: Executor = 
 }
 
 /**
- * Changes some of an area's settings
+ * Changes some of an area's own settings; its parents change with setAreaParents()
  *
  * The database refuses a faerie passage of time without a faerie morning, a faerie morning without
- * faerie time, and a faerie area that loops
+ * faerie time, and an area that loops whose worked-out passage of time is faerie
  *
  * @param areaId The area's ID
  * @param update The settings to change
  * @param executor The database, or a transaction
  */
-export async function updateAreaSettings(areaId: string, update: AreaSettingsUpdate, executor: Executor = db): Promise<void>
+export async function updateAreaSettings(areaId: string, update: Omit<AreaSettingsUpdate, 'parents'>, executor: Executor = db): Promise<void>
 {
 	if (Object.keys(update).length === 0)
 	{
@@ -459,8 +817,8 @@ export async function updateAreaSettings(areaId: string, update: AreaSettingsUpd
 }
 
 /**
- * Deletes an area with its cells and its links, and the links into it from other areas. Its child areas
- * become top-level areas
+ * Deletes an area with its cells and its links, and the links into it from other areas. Give the areas
+ * inside it other parents first (setAreaParents()), or they are left inside none
  *
  * @param areaId The area's ID
  * @param executor The database, or a transaction
@@ -838,8 +1196,31 @@ export async function listVersionAreaLinks(version: UniverseVersion, executor: E
 }
 
 /**
+ * Where every link of a universe is and the area it leads to, for keeping the lobby areas apart from the
+ * rest of the world
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The links, by area, then row, then column
+ */
+export async function listLinkEnds(version: UniverseVersion, executor: Executor = db): Promise<AreaLinkEnd[]>
+{
+	return(executor
+		.select({
+			areaId: areaLinks.areaId,
+			column: areaLinks.column,
+			row: areaLinks.row,
+			targetAreaId: areaLinks.targetAreaId
+		})
+		.from(areaLinks)
+		.innerJoin(areas, eq(areas.id, areaLinks.areaId))
+		.where(inVersion(areas, version))
+		.orderBy(areaLinks.areaId, areaLinks.row, areaLinks.column));
+}
+
+/**
  * Every area of a universe that is a starting area: the universe's, its races' and classes', and its
- * classes' for each race. None of them may be the lobby's area
+ * classes' for each race. None of them may be a lobby area
  *
  * @param version The universe's live version or draft
  * @param executor The database, or a transaction
@@ -975,7 +1356,7 @@ export async function deleteAreaLink(areaId: string, column: number, row: number
 }
 
 /**
- * The areas of a universe that use a tile, as their default tile or in a cell
+ * The areas of a universe whose cells are painted with a tile
  *
  * @param version The universe's live version or draft
  * @param tileId The tile's ID
@@ -992,17 +1373,15 @@ export async function findAreasUsingTile(version: UniverseVersion, tileId: numbe
 		.from(areas)
 		.where(and(
 			inVersion(areas, version),
-			or(
-				eq(areas.defaultTileId, tileId),
-				sql`EXISTS (SELECT 1 FROM ${areaChunks} WHERE ${areaChunks.areaId} = ${areas.id} AND ${tileId} = ANY(${areaChunks.cells}))`
-			)
+			sql`EXISTS (SELECT 1 FROM ${areaChunks} WHERE ${areaChunks.areaId} = ${areas.id} AND ${tileId} = ANY(${areaChunks.cells}))`
 		))
 		.orderBy(asc(areas.name)));
 }
 
 /**
- * Paints every use of a tile in a universe's areas with another tile: the cells holding it, and the areas
- * whose default tile it is. Lock the universe first, so painting can't use the tile meanwhile
+ * Paints every cell of a universe's areas holding a tile with another tile. Lock the universe first, so
+ * painting can't use the tile meanwhile. The regions and areas that set it as their default tile are
+ * given another by the save's other changes
  *
  * @param version The universe's live version or draft
  * @param tileId The tile to replace
@@ -1030,24 +1409,13 @@ export async function replaceTileInAreas(version: UniverseVersion, tileId: numbe
 		.returning({
 			areaId: areaChunks.areaId
 		});
-	const redefaulted = await executor
-		.update(areas)
-		.set({
-			defaultTileId: replacementId
-		})
-		.where(and(
-			inVersion(areas, version),
-			eq(areas.defaultTileId, tileId)
-		))
-		.returning({
-			id: areas.id
-		});
 
-	return([...new Set([...repainted.map((chunk) => chunk.areaId), ...redefaulted.map((area) => area.id)])]);
+	return([...new Set(repainted.map((chunk) => chunk.areaId))]);
 }
 
 /**
- * Whether any area of a universe uses a tile, as its default tile or in a cell
+ * Whether any region or area of a universe uses a tile: as its own default tile, an area's worked-out
+ * default tile, or in a cell
  *
  * @param version The universe's live version or draft
  * @param tileId The tile's ID
@@ -1063,11 +1431,14 @@ export async function isTileInUse(version: UniverseVersion, tileId: number, exec
 		.from(areas)
 		.where(and(
 			inVersion(areas, version),
-			eq(areas.defaultTileId, tileId)
+			or(
+				eq(areas.defaultTileId, tileId),
+				eq(areas.resolvedDefaultTileId, tileId)
+			)
 		))
 		.limit(1);
 
-	if (asDefault)
+	if (asDefault || await isRegionDefaultTile(version, tileId, executor))
 	{
 		return(true);
 	}

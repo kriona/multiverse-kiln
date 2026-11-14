@@ -55,7 +55,7 @@ export interface LinkDialogTarget
 	link: EditorAreaLink | undefined;
 
 	/**
-	 * Every area of the universe
+	 * The areas the link can lead to: those on its area's side of the lobby region's edge
 	 */
 	areas: readonly EditorAreaSummary[];
 
@@ -356,6 +356,9 @@ export class LinkDialog
 			paintStart: () => undefined,
 			paint: () => undefined,
 			paintEnd: () => undefined,
+			fill: () => undefined,
+			pickTile: () => undefined,
+			openNeighbor: () => undefined,
 			hover: () => undefined,
 			describe: (cell) =>
 			{
@@ -369,7 +372,7 @@ export class LinkDialog
 
 				return(describeCell({
 					cells: preview.cells,
-					defaultTileId: preview.area.defaultTileId,
+					defaultTileId: preview.area.resolved.defaultTileId,
 					tiles: target.tiles,
 					links: preview.links,
 					ruleset: target.ruleset

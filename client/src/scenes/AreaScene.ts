@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionArea, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionArea } from '@multiverse-kiln/shared';
+import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionArea, GameServerMessageType, GRID_CELL_SIZE, hasNeighbors, isInBounds, locateCell, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, seamSlots, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, VOID_CELL, type AreaBounds, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type NeighborAreasPayload, type Player, type AreaPayload, type SeamLookup, type SeamSlot, type VisionArea } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
+import { heldAreaMessages } from '../network/heldAreaMessages';
 import type { AreaConnection, AreaRoom, GameRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import { bodyFontFamily } from '../rendering/canvasFonts';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 import type { CellMaskShader } from '../rendering/CellMaskShader';
 import { createRoundedFog } from '../rendering/RoundedFog';
@@ -94,6 +96,23 @@ const GLARE_ALPHA = NIGHT_ALPHA;
 const NIGHT_DEPTH = 0.5;
 
 /**
+ * The player's area's place among the places around it (placeKeyOf())
+ */
+const PLAYER_PLACE = '0,0';
+
+/**
+ * Names one of the places around the player's area, as seamSlots() gives them, or the area's own
+ *
+ * @param columns Which way the place is from the area, -1, 0 or 1 east-west
+ * @param rows Which way it is north-south
+ * @return The key
+ */
+function placeKeyOf(columns: number, rows: number): string
+{
+	return(`${columns},${rows}`);
+}
+
+/**
  * Depth of the glare, drawn over the cells in sight: over the area, the players and what overhangs them,
  * under the paper, which is drawn rather than seen and so isn't dazzling
  */
@@ -135,11 +154,20 @@ const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
  */
 const PAPER_DEPTH = 0.4;
 
-const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
-	fontFamily: 'sans-serif',
-	fontSize: '12px',
-	color: '#ffffff'
-};
+/**
+ * The style of the text drawn over the area, such as players' names, in the body font (AreaView waits for it
+ * to load before starting the scene)
+ *
+ * @return The style
+ */
+function textStyle(): Phaser.Types.GameObjects.Text.TextStyle
+{
+	return({
+		fontFamily: bodyFontFamily(),
+		fontSize: '12px',
+		color: '#ffffff'
+	});
+}
 
 /**
  * Whether the element with focus needs the keys that move the player: a text field takes letters, and a
@@ -173,6 +201,56 @@ export interface AreaSceneData
 	 * changed, or undefined to show the names the room sends
 	 */
 	text: UniverseText | undefined;
+}
+
+/**
+ * An area's cells as vision sees them, from the chunks received so far
+ *
+ * @param area The area as the room sent it
+ * @param chunks Its chunks, by chunkKey(), which vision reads as they change
+ * @return The area as vision sees it
+ */
+function visionOf(area: AreaPayload, chunks: ReadonlyMap<string, readonly number[]>): VisionArea
+{
+	return(createVisionArea(
+		{
+			bounds: area.bounds,
+			defaultTileId: area.defaultTileId,
+			chunks
+		},
+		area.loopsEastWest,
+		area.loopsNorthSouth,
+		new Map(area.tiles.map((tile) => [tile.id, tile.visionCost]))
+	));
+}
+
+/**
+ * An area across a seam from the player's area, as the room sent it (see Neighboring areas in
+ * STRUCTURE-OVERVIEW.md)
+ */
+interface NeighborArea
+{
+	payload: AreaPayload;
+
+	/**
+	 * Its chunks received so far that aren't all the default tile, by chunkKey(); its renderers draw from it
+	 */
+	chunks: Map<string, number[]>;
+
+	/**
+	 * Its cells as vision sees them, from the chunks received so far
+	 */
+	vision: VisionArea;
+}
+
+/**
+ * An area drawn beside the player's, across a seam: the area, where it is drawn, and how dark it is
+ */
+interface DrawnNeighbor
+{
+	slot: SeamSlot;
+	renderer: AreaRenderer;
+	night: Phaser.GameObjects.Rectangle;
 }
 
 /**
@@ -282,6 +360,40 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private chunkRevision = 0;
 
+	/**
+	 * The areas across the seams of the player's area that the room has sent, by area ID
+	 */
+	private neighbors = new Map<string, NeighborArea>();
+
+	/**
+	 * The neighboring areas drawn around the player's area, each where its cells line up with the area's
+	 */
+	private drawnNeighbors: DrawnNeighbor[] = [];
+
+	/**
+	 * Where the cells of the player's area are drawn in the world, in cells. It moves on as the player
+	 * crosses a seam into a neighbor, so the world they walk stays where it was and the camera carries on
+	 */
+	private origin = { column: 0, row: 0 };
+
+	/**
+	 * Darkens the player's area by its own light, when it has neighbors, which each darken by theirs
+	 */
+	private areaNight?: Phaser.GameObjects.Rectangle;
+
+	/**
+	 * Darkens the cells around the view where no area lies, when the player's area has neighbors, each by
+	 * the light of an area drawn beside them (see emptyLightPlace()), by the place around the player's area
+	 * that area is drawn in (placeKeyOf()); drawn again with the fog
+	 */
+	private emptyNights = new Map<string, Phaser.GameObjects.Graphics>();
+
+	/**
+	 * How dark each area drawn is, by the place around the player's area it is drawn in (placeKeyOf()), as
+	 * the light was last worked out, for darkening where no area lies
+	 */
+	private placeNightAlphas = new Map<string, number>();
+
 	constructor()
 	{
 		super(AREA_SCENE_KEY);
@@ -314,6 +426,12 @@ export class AreaScene extends Phaser.Scene
 		this.paper = undefined;
 		this.fogKey = '';
 		this.sightCells = new Map();
+		this.neighbors = new Map();
+		this.drawnNeighbors = [];
+		this.origin = { column: 0, row: 0 };
+		this.areaNight = undefined;
+		this.emptyNights = new Map();
+		this.placeNightAlphas = new Map();
 	}
 
 	/**
@@ -340,13 +458,32 @@ export class AreaScene extends Phaser.Scene
 			// The area the player is already in comes again when an editor changes it; the player hasn't moved area
 			const sameArea = (area.areaId === this.area.areaId);
 
-			this.enterArea(area);
+			// Walking across a seam carries on where the neighbor was drawn, rather than starting afresh
+			const crossed = (sameArea ? undefined : this.crossingInto(area.areaId));
+
+			if (crossed)
+			{
+				this.crossInto(area, crossed);
+			}
+			else
+			{
+				this.enterArea(area);
+			}
 
 			if (!sameArea)
 			{
-				this.placeOwnPlayer();
+				if (!crossed)
+				{
+					this.placeOwnPlayer();
+				}
+
 				this.announcer.enteredArea(this.areaName(area));
 			}
+		}));
+
+		this.unbinds.push(this.room.onMessage(ServerMessageType.NeighborAreas, (payload: NeighborAreasPayload) =>
+		{
+			this.receiveNeighbors(payload);
 		}));
 
 		// Names are looked up when they are read out, so the next one read is in the new text
@@ -366,6 +503,21 @@ export class AreaScene extends Phaser.Scene
 			this.receiveCellsSeen(payload);
 		}));
 
+		// The areas around the area, and chunks, that arrived before the scene listened for them
+		const held = heldAreaMessages(this.room);
+
+		for (const message of held.take())
+		{
+			if (message.type === ServerMessageType.NeighborAreas)
+			{
+				this.receiveNeighbors(message.payload);
+			}
+			else
+			{
+				this.receiveChunks(message.payload);
+			}
+		}
+
 		if (this.input.keyboard)
 		{
 			this.movementKeys = new MovementKeys(this.input.keyboard);
@@ -378,7 +530,7 @@ export class AreaScene extends Phaser.Scene
 			description: 'Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language'
 		});
 
-		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
+		this.linkPrompt = this.add.text(0, 0, prompt, textStyle()).setOrigin(0.5, 0).setDepth(2).setVisible(false);
 		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR)
 			.setOrigin(0, 0)
 			.setScrollFactor(0)
@@ -424,6 +576,7 @@ export class AreaScene extends Phaser.Scene
 				unbind();
 			}
 
+			held.stopListening();
 			this.announcer.stop();
 
 			for (const playerId of [...this.players.keys()])
@@ -433,6 +586,16 @@ export class AreaScene extends Phaser.Scene
 
 			this.areaRenderer?.destroy();
 			this.areaRenderer = undefined;
+			this.clearNeighbors();
+			this.areaNight?.destroy();
+			this.areaNight = undefined;
+
+			for (const graphics of this.emptyNights.values())
+			{
+				graphics.destroy();
+			}
+
+			this.emptyNights.clear();
 			this.fog?.destroy();
 			this.fog = undefined;
 			this.glare?.destroy();
@@ -476,6 +639,11 @@ export class AreaScene extends Phaser.Scene
 		}
 
 		this.areaRenderer?.update(this.cameras.main.worldView);
+
+		for (const drawn of this.drawnNeighbors)
+		{
+			drawn.renderer.update(this.cameras.main.worldView);
+		}
 		this.updateLinkPrompt(own);
 		this.updateDaylight();
 		this.updateFog();
@@ -485,7 +653,7 @@ export class AreaScene extends Phaser.Scene
 	 * Draws fog over the cells around the player that nobody they see with can see: the player alone in
 	 * a lobby, and in a group's room every member in the area, who are all the players it shows. Looks
 	 * from where each is drawn (drawnCellOf), and draws again only when that, how far they see or the
-	 * area's cells change
+	 * area's cells change. An area without fog of war is in sight wherever it is drawn
 	 */
 	private updateFog(): void
 	{
@@ -496,17 +664,39 @@ export class AreaScene extends Phaser.Scene
 			return;
 		}
 
+		// An area with neighbors looks across its seams, whatever its own fog of war
+		if (!this.area.fogOfWar && !this.hasSeams())
+		{
+			const center = this.drawnCellOf(this.ownPlayerId, own);
+			const key = [this.area.areaId, this.chunkRevision, center.column, center.row].join(';');
+
+			if (key !== this.fogKey)
+			{
+				this.fogKey = key;
+				this.sightCells = new Map();
+				this.drawFog(center, undefined);
+			}
+
+			return;
+		}
+
 		const sights: { cell: { column: number; row: number }; budget: number }[] = [];
 
 		this.room.state.players.forEach((player, playerId) =>
 		{
 			if ((playerId === this.ownPlayerId) || (this.sharesVision && !player.ghost))
 			{
-				const cell = this.drawnCellOf(playerId, player);
+				// Looked at from the player's area, and lit by the player's own
+				const drawn = this.drawnCellOf(playerId, player);
+				const cell = {
+					column: drawn.column - this.origin.column,
+					row: drawn.row - this.origin.row
+				};
+				const area = this.payloadOf(player.areaId);
 
 				sights.push({
 					cell,
-					budget: visionBudget(areaLight(this.area.lightLevel, this.secondOfDayAt(cell)), player, this.area.fullVision)
+					budget: visionBudget(areaLight(area.lightLevel, this.secondOfDayIn(area, this.cellOf(player))), player)
 				});
 			}
 		});
@@ -553,14 +743,15 @@ export class AreaScene extends Phaser.Scene
 
 	/**
 	 * Draws fog over the cells around the view's center that aren't visible, the glare over those that
-	 * are, and paper over those the group has never seen. A cell that has just come into sight keeps its
+	 * are, and paper over those the group has never seen and those holding nothing at all (VOID_CELL),
+	 * which editors call Unexplored. A cell that has just come into sight keeps its
 	 * paper until its tile arrives. Past an edge of the area that doesn't loop is drawn as never seen, in a
 	 * lobby too
 	 *
 	 * @param center The cell the player is drawn in, which the camera follows; past a looping edge, outside the area
-	 * @param visible The cells in sight, by visionKey()
+	 * @param visible The cells in sight, by visionKey(), or undefined when every cell of the area is
 	 */
-	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string>): void
+	private drawFog(center: { column: number; row: number }, visible: ReadonlySet<string> | undefined): void
 	{
 		const left = center.column - Math.floor(FOG_COLUMNS / 2);
 		const top = center.row - Math.floor(FOG_ROWS / 2);
@@ -568,7 +759,13 @@ export class AreaScene extends Phaser.Scene
 		{
 			const cell = this.areaCellAt(left + column, top + row);
 
-			return((cell === undefined) || !visible.has(visionKey(cell.column, cell.row)));
+			// A cell is in sight wherever it is drawn when neither its area nor the player's has fog of war
+			if ((cell === undefined) || (!this.area.fogOfWar && !this.payloadOf(cell.areaId).fogOfWar))
+			{
+				return(cell === undefined);
+			}
+
+			return((visible !== undefined) && !visible.has(cell.key));
 		};
 
 		this.fog?.draw(left, top, isFogged);
@@ -586,27 +783,174 @@ export class AreaScene extends Phaser.Scene
 		{
 			const cell = this.areaCellAt(left + column, top + row);
 
-			return((cell === undefined) || this.isUnseen(cell.column, cell.row));
+			return((cell === undefined) || this.isUnexplored(cell.areaId, cell.column, cell.row));
 		});
+
+		this.drawEmptyNight(left, top);
 	}
 
 	/**
-	 * The cell of the area drawn at a place in the world: past a looping edge the area carries on from the
-	 * far side, drawn next to the player
+	 * Draws the darkening over the cells of the fog's block where no area lies, row by row in runs of
+	 * cells that take the same area's light, when the player's area has neighbors. Without neighbors the
+	 * night over the whole view darkens them
+	 *
+	 * @param left The block's first column, in world cells
+	 * @param top The block's first row, in world cells
+	 */
+	private drawEmptyNight(left: number, top: number): void
+	{
+		for (const graphics of this.emptyNights.values())
+		{
+			graphics.clear();
+		}
+
+		if (!this.hasSeams())
+		{
+			return;
+		}
+
+		const places = new Set([PLAYER_PLACE, ...this.drawnNeighbors.map(({ slot }) => placeKeyOf(slot.columns, slot.rows))]);
+
+		for (let row = 0; row < FOG_ROWS; row++)
+		{
+			let runStart = 0;
+			let runPlace: string | undefined;
+
+			for (let column = 0; column <= FOG_COLUMNS; column++)
+			{
+				const empty = ((column < FOG_COLUMNS) && (this.areaCellAt(left + column, top + row) === undefined));
+				const place = (empty ? this.emptyLightPlace(left + column, top + row, places) : undefined);
+
+				if (place === runPlace)
+				{
+					continue;
+				}
+
+				if (runPlace !== undefined)
+				{
+					this.emptyNightFor(runPlace)
+						.fillStyle(NIGHT_COLOR, 1)
+						.fillRect((left + runStart) * GRID_CELL_SIZE, (top + row) * GRID_CELL_SIZE, (column - runStart) * GRID_CELL_SIZE, GRID_CELL_SIZE);
+				}
+
+				runStart = column;
+				runPlace = place;
+			}
+		}
+	}
+
+	/**
+	 * The place around the player's area whose area lights a cell where no area lies: of the places beside
+	 * the cell's, the first holding an area, looking north, south, west then east, so an empty corner
+	 * between a dark area and a lit one takes a neighbor's light rather than the player's. The order stays
+	 * the same wherever the player stands, so the corner keeps the same light as they cross into the areas
+	 * around it. A place with none beside it takes the player's area's light
+	 *
+	 * @param column The cell's column in the world
+	 * @param row The cell's row in the world
+	 * @param places The places that hold an area drawn (placeKeyOf())
+	 * @return The place
+	 */
+	private emptyLightPlace(column: number, row: number, places: ReadonlySet<string>): string
+	{
+		const { bounds } = this.area;
+		const localColumn = column - this.origin.column;
+		const localRow = row - this.origin.row;
+		const columns = ((localColumn < bounds.minColumn) ? -1 : ((localColumn > bounds.maxColumn) ? 1 : 0));
+		const rows = ((localRow < bounds.minRow) ? -1 : ((localRow > bounds.maxRow) ? 1 : 0));
+		const beside = [
+			placeKeyOf(columns, rows - 1),
+			placeKeyOf(columns, rows + 1),
+			placeKeyOf(columns - 1, rows),
+			placeKeyOf(columns + 1, rows)
+		];
+
+		return(beside.find((place) => places.has(place)) ?? PLAYER_PLACE);
+	}
+
+	/**
+	 * The darkening over the cells where no area lies that take their light from a place's area, made the
+	 * first time it is needed
+	 *
+	 * @param place The place (placeKeyOf())
+	 * @return The darkening
+	 */
+	private emptyNightFor(place: string): Phaser.GameObjects.Graphics
+	{
+		let graphics = this.emptyNights.get(place);
+
+		if (!graphics)
+		{
+			graphics = this.add.graphics()
+				.setDepth(NIGHT_DEPTH)
+				.setAlpha(this.placeNightAlphas.get(place) ?? 0);
+			this.emptyNights.set(place, graphics);
+		}
+
+		return(graphics);
+	}
+
+	/**
+	 * The cell drawn at a place in the world: of the player's area, carrying on from the far side past a
+	 * looping edge, drawn next to the player, or of a neighboring area across a seam
 	 *
 	 * @param column The column in the world
 	 * @param row The row in the world
-	 * @return The cell in the area, or undefined past an edge that doesn't loop
+	 * @return The cell in the area it is in, with the key vision gives it from the player's area
+	 * (visionKey()), or undefined past an edge
 	 */
-	private areaCellAt(column: number, row: number): { column: number; row: number } | undefined
+	private areaCellAt(column: number, row: number): { areaId: string; column: number; row: number; key: string } | undefined
 	{
 		const { bounds } = this.area;
+		const localColumn = column - this.origin.column;
+		const localRow = row - this.origin.row;
 		const width = (bounds.maxColumn - bounds.minColumn) + 1;
 		const height = (bounds.maxRow - bounds.minRow) + 1;
-		const areaColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(column - bounds.minColumn, width) : column);
-		const areaRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(row - bounds.minRow, height) : row);
+		const areaColumn = (this.area.loopsEastWest ? bounds.minColumn + positiveModulo(localColumn - bounds.minColumn, width) : localColumn);
+		const areaRow = (this.area.loopsNorthSouth ? bounds.minRow + positiveModulo(localRow - bounds.minRow, height) : localRow);
 
-		return((isInBounds(bounds, areaColumn, areaRow) ? { column: areaColumn, row: areaRow } : undefined));
+		if (isInBounds(bounds, areaColumn, areaRow))
+		{
+			return({ areaId: this.area.areaId, column: areaColumn, row: areaRow, key: visionKey(areaColumn, areaRow) });
+		}
+
+		const found = (this.hasSeams() ? locateCell(this.seamLookup, this.area.areaId, localColumn, localRow) : undefined);
+
+		return(found && { ...found, key: visionKey(localColumn, localRow) });
+	}
+
+	/**
+	 * Whether the player's area has neighbors, whose cells are drawn past its edges
+	 *
+	 * @return True when walking off any of its sides leads somewhere
+	 */
+	private hasSeams(): boolean
+	{
+		return(hasNeighbors(this.area.sides));
+	}
+
+	/**
+	 * Finds the player's area and the neighboring areas the room has sent, for following cells across seams
+	 *
+	 * @param areaId The area's ID
+	 * @return The area, or undefined for one not sent, which is an edge
+	 */
+	private readonly seamLookup: SeamLookup = (areaId) =>
+	{
+		const payload = ((areaId === this.area.areaId) ? this.area : this.neighbors.get(areaId)?.payload);
+
+		return(payload && { id: areaId, bounds: payload.bounds, sides: payload.sides });
+	};
+
+	/**
+	 * An area the scene draws: the player's, or a neighboring one
+	 *
+	 * @param areaId The area's ID
+	 * @return The area as the room sent it; the player's for one the scene doesn't know
+	 */
+	private payloadOf(areaId: string): AreaPayload
+	{
+		return(this.neighbors.get(areaId)?.payload ?? this.area);
 	}
 
 	/**
@@ -640,15 +984,20 @@ export class AreaScene extends Phaser.Scene
 	}
 
 	/**
-	 * Whether a cell's tile hasn't been sent because the group hasn't seen it, in a group's room
+	 * Whether a cell is drawn as unexplored paper: its tile hasn't been sent because the group hasn't seen
+	 * it, in a group's room, or it holds nothing at all
 	 *
+	 * @param areaId The area the cell is in: the player's, or a neighboring one
 	 * @param column The cell's column, in the area
 	 * @param row The cell's row, in the area
-	 * @return True when it holds UNSEEN_CELL
+	 * @return True when it holds UNSEEN_CELL or VOID_CELL
 	 */
-	private isUnseen(column: number, row: number): boolean
+	private isUnexplored(areaId: string, column: number, row: number): boolean
 	{
-		return(this.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)))?.[cellIndexInChunk(column, row)] === UNSEEN_CELL);
+		const chunks = ((areaId === this.area.areaId) ? this.chunks : this.neighbors.get(areaId)?.chunks);
+		const value = chunks?.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)))?.[cellIndexInChunk(column, row)];
+
+		return((value === UNSEEN_CELL) || (value === VOID_CELL));
 	}
 
 	/**
@@ -685,8 +1034,44 @@ export class AreaScene extends Phaser.Scene
 		const light = areaLight(this.area.lightLevel, seconds);
 		const outdoors = (this.area.lightLevel === null);
 		const darkAdapted = ((own.darkvision > 0) && own.lightSensitivity);
+		const nightAlpha = (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA);
 
-		this.night?.setAlpha((1 - light) * (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA));
+		// With neighbors, each area is darkened by its own light, so a dark cave beside a sunlit field shows as
+		// one, and where no area lies is darkened by the light of an area beside it
+		if (this.areaNight)
+		{
+			const alphas = new Map([[PLAYER_PLACE, (1 - light) * nightAlpha]]);
+
+			this.night?.setAlpha(0);
+			this.areaNight.setAlpha((1 - light) * nightAlpha);
+
+			for (const { slot, night } of this.drawnNeighbors)
+			{
+				// The neighbor's cell nearest the player, for a faerie area whose time changes across it
+				const neighbor = this.payloadOf(slot.areaId);
+				const ownCell = this.cellOf(own);
+				const nearest = {
+					column: Math.min(Math.max(ownCell.column - slot.columnOffset, neighbor.bounds.minColumn), neighbor.bounds.maxColumn),
+					row: Math.min(Math.max(ownCell.row - slot.rowOffset, neighbor.bounds.minRow), neighbor.bounds.maxRow)
+				};
+				const alpha = (1 - areaLight(neighbor.lightLevel, this.secondOfDayIn(neighbor, nearest))) * nightAlpha;
+
+				night.setAlpha(alpha);
+				alphas.set(placeKeyOf(slot.columns, slot.rows), alpha);
+			}
+
+			this.placeNightAlphas = alphas;
+
+			for (const [place, graphics] of this.emptyNights)
+			{
+				graphics.setAlpha(alphas.get(place) ?? 0);
+			}
+		}
+		else
+		{
+			this.night?.setAlpha((1 - light) * nightAlpha);
+		}
+
 		const glareAlpha = ((darkAdapted && outdoors) ? light * GLARE_ALPHA : 0);
 		const glaring = (glareAlpha > 0);
 
@@ -712,10 +1097,22 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private secondOfDayAt(cell: { column: number; row: number }): number
 	{
+		return(this.secondOfDayIn(this.area, cell));
+	}
+
+	/**
+	 * The time of day at a cell of an area the scene draws, by that area's passage of time
+	 *
+	 * @param area The area: the player's, or a neighboring one
+	 * @param cell The cell, in the area
+	 * @return Seconds since midnight
+	 */
+	private secondOfDayIn(area: AreaPayload, cell: { column: number; row: number }): number
+	{
 		// A lobby has no clock: its time of day never flows with the players' actions
 		const clock = (this.room.state.clock as number | undefined) ?? 0;
 
-		return(secondOfDay(this.area.time, clock, Date.now(), cell, this.area.bounds));
+		return(secondOfDay(area.time, clock, Date.now(), cell, area.bounds));
 	}
 
 	/**
@@ -725,32 +1122,246 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private enterArea(area: AreaPayload): void
 	{
+		// The room sends the areas around it again after it
+		this.neighbors.clear();
+		this.showArea(area, new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells])));
+	}
+
+	/**
+	 * Draws an area as the player's, with the neighboring areas the scene knows around it
+	 *
+	 * @param area The area
+	 * @param chunks Its chunks, by chunkKey()
+	 */
+	private showArea(area: AreaPayload, chunks: Map<string, number[]>): void
+	{
 		this.area = area;
-		this.chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
-		this.manualLinks =new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
-		this.visionArea = createVisionArea(
-			{
-				bounds: area.bounds,
-				defaultTileId: area.defaultTileId,
-				chunks: this.chunks
-			},
-			area.loopsEastWest,
-			area.loopsNorthSouth,
-			new Map(area.tiles.map((tile) => [tile.id, tile.visionCost]))
-		);
+		this.chunks = chunks;
+		this.manualLinks = new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
+
+		const vision = visionOf(area, this.chunks);
+
+		// An area with neighbors sees across its seams into theirs
+		this.visionArea = (hasNeighbors(area.sides)
+			? {
+				...vision,
+				clear: false,
+				beyond: (column, row) =>
+				{
+					const found = locateCell(this.seamLookup, area.areaId, column, row);
+					const across = ((found?.areaId === area.areaId) ? vision : ((found === undefined) ? undefined : this.neighbors.get(found.areaId)?.vision));
+
+					return(((found && across) ? across.visionCost(found.column, found.row) : undefined));
+				}
+			}
+			: vision);
 		this.chunkRevision++;
-		this.areaRenderer?.destroy();
-		this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+		this.drawArea();
 
 		// Tiles with uploaded graphics are drawn in their colors until the graphics arrive
 		void loadUploadedTileGraphics(this, area.tiles).then((loaded) =>
 		{
 			if (loaded && (this.area === area) && this.areaRenderer && this.scene.isActive())
 			{
-				this.areaRenderer.destroy();
-				this.areaRenderer = new AreaRenderer(this, area, this.chunks);
+				this.drawArea();
 			}
 		});
+	}
+
+	/**
+	 * Draws the player's area and the neighboring areas around it afresh, where the origin puts them, each
+	 * with a darkening of its own when the area has neighbors
+	 */
+	private drawArea(): void
+	{
+		const { bounds } = this.area;
+
+		this.areaRenderer?.destroy();
+		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks, this.worldOffset(0, 0));
+		this.areaNight?.destroy();
+		this.areaNight = (this.hasSeams() ? this.nightOver(bounds, 0, 0) : undefined);
+		this.drawNeighbors();
+	}
+
+	/**
+	 * Draws the neighboring areas the scene knows around the player's area, in place of those drawn before
+	 */
+	private drawNeighbors(): void
+	{
+		this.clearNeighbors();
+
+		if (!this.hasSeams())
+		{
+			return;
+		}
+
+		for (const slot of seamSlots(this.seamLookup, this.area.areaId))
+		{
+			const neighbor = ((slot.areaId === this.area.areaId) ? { payload: this.area, chunks: this.chunks } : this.neighbors.get(slot.areaId));
+
+			if (!neighbor)
+			{
+				continue;
+			}
+
+			// Each place draws the area once, its own loops left to the places around it
+			const payload: AreaPayload = { ...neighbor.payload, loopsEastWest: false, loopsNorthSouth: false };
+
+			this.drawnNeighbors.push({
+				slot,
+				renderer: new AreaRenderer(this, payload, neighbor.chunks, this.worldOffset(slot.columnOffset, slot.rowOffset)),
+				night: this.nightOver(payload.bounds, slot.columnOffset, slot.rowOffset)
+			});
+		}
+	}
+
+	/**
+	 * Removes the neighboring areas drawn
+	 */
+	private clearNeighbors(): void
+	{
+		for (const { renderer, night } of this.drawnNeighbors)
+		{
+			renderer.destroy();
+			night.destroy();
+		}
+
+		this.drawnNeighbors = [];
+	}
+
+	/**
+	 * Where an area's cells are drawn in the world, in world units: those of the player's area at the
+	 * origin, and those of a neighboring area moved to line up with it
+	 *
+	 * @param columnOffset How many columns the area is moved from the player's area
+	 * @param rowOffset How many rows
+	 * @return The offset
+	 */
+	private worldOffset(columnOffset: number, rowOffset: number): { x: number; y: number }
+	{
+		return({
+			x: (this.origin.column + columnOffset) * GRID_CELL_SIZE,
+			y: (this.origin.row + rowOffset) * GRID_CELL_SIZE
+		});
+	}
+
+	/**
+	 * A darkening over an area drawn in the world, faded by updateDaylight()
+	 *
+	 * @param bounds The area's bounds
+	 * @param columnOffset How many columns it is moved from the player's area
+	 * @param rowOffset How many rows
+	 * @return The darkening
+	 */
+	private nightOver(bounds: AreaBounds, columnOffset: number, rowOffset: number): Phaser.GameObjects.Rectangle
+	{
+		const offset = this.worldOffset(columnOffset, rowOffset);
+
+		return(this.add.rectangle((bounds.minColumn * GRID_CELL_SIZE) + offset.x, (bounds.minRow * GRID_CELL_SIZE) + offset.y, ((bounds.maxColumn - bounds.minColumn) + 1) * GRID_CELL_SIZE, ((bounds.maxRow - bounds.minRow) + 1) * GRID_CELL_SIZE, NIGHT_COLOR)
+			.setOrigin(0, 0)
+			.setDepth(NIGHT_DEPTH)
+			.setAlpha(0));
+	}
+
+	/**
+	 * Whether the area the room says the player is now in is one drawn across a seam, which they have
+	 * walked into
+	 *
+	 * @param areaId The area's ID
+	 * @return Where it is drawn nearest the player, or undefined when it isn't drawn beside the area
+	 */
+	private crossingInto(areaId: string): SeamSlot | undefined
+	{
+		const own = this.players.get(this.ownPlayerId)?.lastPosition;
+		const slots = this.drawnNeighbors
+			.map((drawn) => drawn.slot)
+			.filter((slot) => (slot.areaId === areaId));
+
+		if (!own || (slots.length === 0))
+		{
+			return(slots[0]);
+		}
+
+		const distance = (slot: SeamSlot): number =>
+		{
+			const bounds = this.payloadOf(slot.areaId).bounds;
+			const offset = this.worldOffset(slot.columnOffset, slot.rowOffset);
+			const centerX = ((((bounds.minColumn + bounds.maxColumn) + 1) / 2) * GRID_CELL_SIZE) + offset.x;
+			const centerY = ((((bounds.minRow + bounds.maxRow) + 1) / 2) * GRID_CELL_SIZE) + offset.y;
+
+			return(Math.hypot(centerX - own.x, centerY - own.y));
+		};
+
+		return(slots.reduce((nearest, slot) => ((distance(slot) < distance(nearest)) ? slot : nearest)));
+	}
+
+	/**
+	 * Makes the area the player has walked into across a seam their area, drawn where it was: the area they
+	 * left becomes one of its neighbors, and the room sends the rest after
+	 *
+	 * @param area The area they walked into
+	 * @param slot Where it was drawn
+	 */
+	private crossInto(area: AreaPayload, slot: SeamSlot): void
+	{
+		const left = this.area;
+
+		this.neighbors.set(left.areaId, {
+			payload: left,
+			chunks: this.chunks,
+			vision: visionOf(left, this.chunks)
+		});
+
+		const known = this.neighbors.get(area.areaId)?.chunks;
+		const chunks = (known ?? new Map<string, number[]>());
+
+		for (const chunk of area.chunks)
+		{
+			chunks.set(chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells);
+		}
+
+		this.neighbors.delete(area.areaId);
+		this.origin = {
+			column: this.origin.column + slot.columnOffset,
+			row: this.origin.row + slot.rowOffset
+		};
+		this.showArea(area, chunks);
+	}
+
+	/**
+	 * Takes in the areas across the seams of the player's area, with their chunks near the player, and
+	 * draws them beside it
+	 *
+	 * @param payload The areas
+	 */
+	private receiveNeighbors(payload: NeighborAreasPayload): void
+	{
+		if (payload.areaId !== this.area.areaId)
+		{
+			return;
+		}
+
+		for (const area of payload.areas)
+		{
+			const chunks = new Map(area.chunks.map((chunk) => [chunkKey(chunk.chunkColumn, chunk.chunkRow), chunk.cells]));
+
+			this.neighbors.set(area.areaId, {
+				payload: area,
+				chunks,
+				vision: visionOf(area, chunks)
+			});
+
+			void loadUploadedTileGraphics(this, area.tiles).then((loaded) =>
+			{
+				if (loaded && (this.neighbors.get(area.areaId)?.payload === area) && this.scene.isActive())
+				{
+					this.drawNeighbors();
+				}
+			});
+		}
+
+		this.chunkRevision++;
+		this.drawNeighbors();
 	}
 
 	/**
@@ -760,8 +1371,11 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private receiveChunks(payload: ChunksPayload): void
 	{
-		// Chunks of an area the player has since left
-		if (payload.areaId !== this.area.areaId)
+		const own = (payload.areaId === this.area.areaId);
+		const chunks = (own ? this.chunks : this.neighbors.get(payload.areaId)?.chunks);
+
+		// Chunks of an area the player has since left, or no longer sees across a seam
+		if (!chunks)
 		{
 			return;
 		}
@@ -774,18 +1388,37 @@ export class AreaScene extends Phaser.Scene
 
 			if (chunk.cells)
 			{
-				this.chunks.set(key, chunk.cells);
+				chunks.set(key, chunk.cells);
 			}
 			else
 			{
-				this.chunks.delete(key);
+				chunks.delete(key);
 			}
 
 			keys.push(key);
 		}
 
 		this.chunkRevision++;
-		this.areaRenderer?.refreshChunks(keys);
+		this.renderersOf(payload.areaId).forEach((renderer) =>
+		{
+			renderer.refreshChunks(keys);
+		});
+	}
+
+	/**
+	 * The renderers drawing an area: the player's area's, and each place it is drawn across a seam
+	 *
+	 * @param areaId The area's ID
+	 * @return The renderers
+	 */
+	private renderersOf(areaId: string): AreaRenderer[]
+	{
+		return([
+			...(((areaId === this.area.areaId) && this.areaRenderer) ? [this.areaRenderer] : []),
+			...this.drawnNeighbors
+				.filter((drawn) => (drawn.slot.areaId === areaId))
+				.map((drawn) => drawn.renderer)
+		]);
 	}
 
 	/**
@@ -796,7 +1429,10 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private receiveCellsSeen(payload: CellsSeenPayload): void
 	{
-		if (payload.areaId !== this.area.areaId)
+		const own = (payload.areaId === this.area.areaId);
+		const chunks = (own ? this.chunks : this.neighbors.get(payload.areaId)?.chunks);
+
+		if (!chunks)
 		{
 			return;
 		}
@@ -805,7 +1441,7 @@ export class AreaScene extends Phaser.Scene
 
 		for (const cell of payload.cells)
 		{
-			const chunk = this.chunks.get(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row)));
+			const chunk = chunks.get(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row)));
 
 			if (chunk)
 			{
@@ -814,7 +1450,8 @@ export class AreaScene extends Phaser.Scene
 			}
 		}
 
-		for (const link of payload.links)
+		// Links matter only where the player stands
+		for (const link of (own ? payload.links : []))
 		{
 			if (link.mode === 'manual')
 			{
@@ -823,7 +1460,10 @@ export class AreaScene extends Phaser.Scene
 		}
 
 		this.chunkRevision++;
-		this.areaRenderer?.refreshCells(changed);
+		this.renderersOf(payload.areaId).forEach((renderer) =>
+		{
+			renderer.refreshCells(changed);
+		});
 	}
 
 	/**
@@ -860,9 +1500,11 @@ export class AreaScene extends Phaser.Scene
 
 		if (state)
 		{
+			const position = this.worldPosition(state);
+
 			this.trackPosition(own, state);
-			own.shape.setPosition(state.x, state.y);
-			own.label.setPosition(state.x, state.y - PLAYER_RADIUS - NAME_OFFSET);
+			own.shape.setPosition(position.x, position.y);
+			own.label.setPosition(position.x, position.y - PLAYER_RADIUS - NAME_OFFSET);
 
 			// The camera moves to the player as the frame renders, after update() has drawn the area around
 			// its view; moving it now draws the area where they arrived, not where they were
@@ -883,9 +1525,13 @@ export class AreaScene extends Phaser.Scene
 			const isOwn = (playerId === this.ownPlayerId);
 			const shape = this.add.circle(player.x, player.y, PLAYER_RADIUS, (isOwn ? OWN_PLAYER_COLOR : OTHER_PLAYER_COLOR))
 				.setStrokeStyle((isOwn ? OWN_PLAYER_OUTLINE_WIDTH : PLAYER_OUTLINE_WIDTH), (isOwn ? OWN_PLAYER_OUTLINE_COLOR : PLAYER_OUTLINE_COLOR));
+			const start = this.worldPosition(player);
+
+			shape.setPosition(start.x, start.y);
+
 			const rendered: RenderedPlayer = {
 				shape,
-				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, '', TEXT_STYLE).setOrigin(0.5, 1).setDepth(1),
+				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, '', textStyle()).setOrigin(0.5, 1).setDepth(1),
 				positions: new PositionBuffer(PATCH_INTERVAL_MS),
 				lastPosition: undefined,
 				stopListening: () => undefined
@@ -954,10 +1600,57 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private trackPosition(rendered: RenderedPlayer, player: Player): void
 	{
-		const position = (rendered.lastPosition ? this.nearestTo(player, rendered.lastPosition) : { x: player.x, y: player.y });
+		const world = this.worldPosition(player, rendered.lastPosition);
+		const position = (rendered.lastPosition ? this.nearestTo(world, rendered.lastPosition) : world);
 
 		rendered.lastPosition = position;
 		rendered.positions.push(performance.now(), position.x, position.y);
+	}
+
+	/**
+	 * Where a player is in the world: in the player's area, past its origin, or in a neighboring area,
+	 * where that area is drawn across the seam (nearest a position, when it is drawn in more than one place)
+	 *
+	 * @param player The player's synced state
+	 * @param near The position to be near, such as where the player was last drawn
+	 * @return The position in world units
+	 */
+	private worldPosition(player: Player, near?: Point): Point
+	{
+		const own = this.worldOffset(0, 0);
+		const inOwn = {
+			x: player.x + own.x,
+			y: player.y + own.y
+		};
+
+		if ((player.areaId === this.area.areaId) || (player.areaId === ''))
+		{
+			return(inOwn);
+		}
+
+		const reference = (near ?? this.players.get(this.ownPlayerId)?.lastPosition ?? inOwn);
+		let nearest: Point | undefined;
+
+		for (const { slot } of this.drawnNeighbors)
+		{
+			if (slot.areaId !== player.areaId)
+			{
+				continue;
+			}
+
+			const offset = this.worldOffset(slot.columnOffset, slot.rowOffset);
+			const candidate = {
+				x: player.x + offset.x,
+				y: player.y + offset.y
+			};
+
+			if (!nearest || (Math.hypot(candidate.x - reference.x, candidate.y - reference.y) < Math.hypot(nearest.x - reference.x, nearest.y - reference.y)))
+			{
+				nearest = candidate;
+			}
+		}
+
+		return(nearest ?? inOwn);
 	}
 
 	/**
@@ -969,7 +1662,8 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private nearestTo(position: Point, reference: Point): Point
 	{
-		if (!this.areaRenderer)
+		// An area with neighbors loops only through its seams, where its far side is drawn as a neighbor
+		if (!this.areaRenderer || this.hasSeams())
 		{
 			return(position);
 		}
@@ -1145,17 +1839,19 @@ export class AreaScene extends Phaser.Scene
 		const tile = this.area.tiles.find((candidate) => (candidate.id === tileId));
 		const seconds = this.secondOfDayAt({ column, row });
 		const others: SeenPlayer[] = [];
+		const ownWorld = this.worldPosition(own);
 
+		// Players across a seam are counted from where they are drawn beside the area
 		this.room.state.players.forEach((player, playerId) =>
 		{
 			if (playerId !== this.ownPlayerId)
 			{
-				const nearest = this.nearestTo(player, own);
+				const nearest = this.nearestTo(this.worldPosition(player, ownWorld), ownWorld);
 
 				others.push({
 					name: player.name,
-					columns: Math.floor(nearest.x / GRID_CELL_SIZE) - column,
-					rows: Math.floor(nearest.y / GRID_CELL_SIZE) - row
+					columns: Math.floor(nearest.x / GRID_CELL_SIZE) - Math.floor(ownWorld.x / GRID_CELL_SIZE),
+					rows: Math.floor(nearest.y / GRID_CELL_SIZE) - Math.floor(ownWorld.y / GRID_CELL_SIZE)
 				});
 			}
 		});
@@ -1167,7 +1863,7 @@ export class AreaScene extends Phaser.Scene
 			tileName: (tile ? (this.text?.tileName(tile, this.area.ruleset) ?? tileName(tile, this.area.ruleset)) : undefined),
 			secondOfDay: seconds,
 			displayTime: this.area.displayTime,
-			sightSquares: Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own, this.area.fullVision))
+			sightSquares: (this.area.fogOfWar ? Math.floor(visionBudget(areaLight(this.area.lightLevel, seconds), own)) : undefined)
 		}, others);
 	}
 

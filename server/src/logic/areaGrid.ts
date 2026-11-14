@@ -3,7 +3,7 @@
  *
  * Pure functions: no Colyseus, database, network or timers (CLAUDE.md architecture rule 4)
  */
-import { chunkCoordinate, chunkKey, defaultWalkSeconds, IMPASSABLE_WALK_SECONDS, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, defaultWalkSeconds, IMPASSABLE_WALK_SECONDS, isInBounds, tileIdAt, type AreaLinkMode, type AreaTiles } from '@multiverse-kiln/shared';
 
 import type { Cell, Grid } from './movement.js';
 
@@ -61,22 +61,33 @@ export interface AreaLayout
  * be entered, so a player waits at the edge of a chunk until it arrives. Stepping onto an automatic
  * link ends the step there, so the room can take the player through it
  *
+ * For an area with neighbors, a cell outside the bounds takes its walk seconds from the neighbor across
+ * the seam, and stepping onto it ends the step there, so the room can move the player into the neighbor
+ *
  * @param layout The area's layout
  * @param cellSize Width and height of a cell in world units
+ * @param beyond For an area with neighbors, the walk seconds of a cell outside the bounds, in the
+ * neighboring area across the seam, or undefined for one past an edge
  * @return The grid
  */
-export function createAreaGrid(layout: AreaLayout, cellSize: number): Grid
+export function createAreaGrid(layout: AreaLayout, cellSize: number, beyond?: (cell: Cell) => number | undefined): Grid
 {
 	const automaticLinks = new Set(layout.links.filter((link) => (link.mode === 'automatic')).map((link) => linkKey(link)));
+	const { bounds } = layout.tiles;
 
 	return({
 		cellSize,
-		bounds: layout.tiles.bounds,
+		bounds,
 		loopsEastWest: layout.loopsEastWest,
 		loopsNorthSouth: layout.loopsNorthSouth,
 		fullSpeedWalkSeconds: defaultWalkSeconds(layout.indoors),
 		walkSeconds: (cell) =>
 		{
+			if (!isInBounds(bounds, cell.column, cell.row))
+			{
+				return(beyond?.(cell) ?? IMPASSABLE_WALK_SECONDS);
+			}
+
 			if (layout.loadedChunks && !layout.loadedChunks.has(chunkKey(chunkCoordinate(cell.column), chunkCoordinate(cell.row))))
 			{
 				return(IMPASSABLE_WALK_SECONDS);
@@ -86,7 +97,12 @@ export function createAreaGrid(layout: AreaLayout, cellSize: number): Grid
 
 			return(((tileId === undefined) ? IMPASSABLE_WALK_SECONDS : (layout.tileWalkSeconds.get(tileId) ?? IMPASSABLE_WALK_SECONDS)));
 		},
-		endsMovement: (cell) => automaticLinks.has(linkKey(cell))
+		endsMovement: (cell) => (automaticLinks.has(linkKey(cell)) || !isInBounds(bounds, cell.column, cell.row)),
+		...((beyond === undefined)
+			? {}
+			: {
+				crossesSeam: (cell: Cell) => (!isInBounds(bounds, cell.column, cell.row) && (beyond(cell) !== undefined))
+			})
 	});
 }
 

@@ -1,11 +1,11 @@
 import type { Client } from 'colyseus';
 import { StateView, type MapSchema } from '@colyseus/schema';
-import { areaLight, canSee, CHUNK_SIZE, Player, secondOfDay, ServerMessageType, visionBudget, type AreaTime, type ChunksPayload, type MovePayload, type Sight, type WelcomePayload } from '@multiverse-kiln/shared';
+import { areaLight, canSee, CHUNK_SIZE, isInBounds, NEIGHBOR_SIDES, Player, secondOfDay, ServerMessageType, visionBudget, windowsAcrossSeams, type AreaCellRef, type AreaCellWindow, type AreaPayload, type AreaTime, type ChunksPayload, type MovePayload, type NeighborAreasPayload, type NeighborSide, type Sight, type WelcomePayload } from '@multiverse-kiln/shared';
 
-import { chunksNear, type ChunkAreaShape } from '../logic/chunkArea.js';
+import { chunksIn, chunksNear, type ChunkAreaShape } from '../logic/chunkArea.js';
 import { stepSeconds } from '../logic/gameClock.js';
-import { cellAt, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, wrapCell, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
-import { CellOccupancy } from '../logic/occupancy.js';
+import { cellAt, cellCenter, findFreeCell, NO_PRESS, occupiedCells, stepOnGrid, wrapCell, type Cell, type DirectionPress, type GridStep, type IsCellFree, type Position } from '../logic/movement.js';
+import { AreaOccupancy, type PlacedCell } from '../logic/occupancy.js';
 import { linkAt, type AreaLink } from '../logic/areaGrid.js';
 import { isGroupTogether } from '../logic/groupLinks.js';
 import type { AreaChange } from '../world/areaChanges.js';
@@ -42,6 +42,15 @@ const CHUNK_KEEP_RADIUS = CHUNK_SIZE * 3;
  * Most Move inputs kept per player between ticks
  */
 const MAX_QUEUED_MOVES = 8;
+
+/**
+ * How the area, its chunks and the cells the group sees in it are sent: after the next state patch, all
+ * of them, so they reach the window in the order they were made. An area a player arrives in must follow
+ * the patch with their position in it, and a window drops chunks and cells of an area it isn't drawing,
+ * so anything about the new area sent at once would arrive before the area and be lost. The area sent
+ * to a client as it joins is the exception (see sendArea)
+ */
+export const AREA_MESSAGE_OPTIONS = Object.freeze({ afterNextPatch: true });
 
 const standingStill: MovePayload = { x: 0, y: 0 };
 
@@ -89,6 +98,25 @@ export interface RoomVision
 	 * the links on them
 	 */
 	memory?: AreaMemory;
+}
+
+/**
+ * Which areas a room's players walk: a lobby walks only the lobby areas (those below the lobby region),
+ * and a group's room only the others, so a link or evacuation across the lobby region's edge takes no one
+ */
+export interface RoomSide
+{
+	/**
+	 * Whether the room is a lobby
+	 */
+	lobby: boolean;
+
+	/**
+	 * Where players go when the area they are in is deleted or leaves the room's side of the edge
+	 *
+	 * @return The place, or undefined when there is nowhere to go
+	 */
+	fallback(): PlayerPosition | undefined;
 }
 
 /**
@@ -165,15 +193,18 @@ export interface PlayerSight
  * Players stay in the room until the room removes them (remove()), so a lobby removes a player once
  * their last client has left, and a group's room keeps every character of a player who has any window
  * in it. A room holds every area its players are in; a client sees, through its StateView, only the
- * players in its own player's area that its player can see (see RoomVision and canSee), and no other
- * player's ghost; what each client sees is brought up to date every tick. Stepping onto an automatic area
- * link, or asking to take the manual link the player stands on, sends the player to the link's target
- * cell once that area has loaded; a link that requires the whole group sends every member (see
- * WholeGroupLinks). The room calls update() from its simulation tick and refreshChunks() every
+ * players in its own player's area, or near it across a seam with a neighboring area, that its player
+ * can see (see RoomVision and canSee), and no other player's ghost; what each client sees is brought up
+ * to date every tick. Stepping onto an automatic area link, or asking to take the manual link the player
+ * stands on, sends the player to the link's target cell once that area has loaded; a link that requires
+ * the whole group sends every member (see WholeGroupLinks). Stepping past an area's edge across a seam
+ * moves the player into the neighbor there, as walking within an area does (see Neighboring areas in
+ * STRUCTURE-OVERVIEW.md). The room calls update() from its simulation tick and refreshChunks() every
  * CHUNK_REFRESH_INTERVAL_MS
  *
- * Only the chunks of each area near its players are loaded, and each player is sent the chunks
- * near them as they move. Changes the world editor makes (applyChange) reach the players immediately
+ * Only the chunks of each area near its players are loaded, and each player is sent the chunks near them
+ * as they move, of their area and of the neighbors across its seams, which are loaded too. Changes the
+ * world editor makes (applyChange) reach the players immediately
  */
 export class AreaPlayers
 {
@@ -229,6 +260,12 @@ export class AreaPlayers
 	private readonly sentChunks = new Map<string, Set<string>>();
 
 	/**
+	 * The areas across the seams of their area each player's clients have been sent since their area was,
+	 * with the chunks of each sent, by area ID then chunkKey()
+	 */
+	private readonly sentNeighbors = new Map<string, Map<string, Set<string>>>();
+
+	/**
 	 * Told of each step a player other than a ghost finishes (see onWalk)
 	 */
 	private walkListener?: WalkListener;
@@ -247,12 +284,15 @@ export class AreaPlayers
 	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param areas The room's areas
-	 * @param fallbackAreaId The area players go to when the area they are in is deleted
+	 * @param side Which side of the lobby region's edge the room's players walk, and where they go when
+	 * their area is deleted or leaves that side
 	 * @param vision How the room's players see
 	 * @param wholeGroupLinks How links that require the whole group work, in a group's room
 	 */
-	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined, private readonly vision: RoomVision, private readonly wholeGroupLinks?: WholeGroupLinks)
+	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly side: RoomSide, private readonly vision: RoomVision, private readonly wholeGroupLinks?: WholeGroupLinks)
 	{
+		// A seam into a disabled area, or across the lobby region's edge, is an edge
+		areas.setSeamFilter((loaded) => (loaded.area.enabled && (loaded.area.lobby === side.lobby)));
 	}
 
 	/**
@@ -266,8 +306,8 @@ export class AreaPlayers
 	}
 
 	/**
-	 * The clients of the players in an area who have been sent a chunk of it, for telling them
-	 * about cells of it
+	 * The clients of the players who have been sent a chunk of an area, in it or across a seam from it,
+	 * for telling them about cells of it
 	 *
 	 * @param areaId The area's ID
 	 * @param key The chunk, by chunkKey()
@@ -275,9 +315,25 @@ export class AreaPlayers
 	 */
 	clientsSentChunk(areaId: string, key: string): Client[]
 	{
-		return(this.playersIn(areaId)
-			.filter((playerId) => (this.sentChunks.get(playerId)?.has(key) ?? false))
-			.flatMap((playerId) => this.getClients(playerId)));
+		const inArea = this.playersIn(areaId).filter((playerId) => (this.sentChunks.get(playerId)?.has(key) ?? false));
+		const across = [...this.sentNeighbors]
+			.filter(([, areas]) => (areas.get(areaId)?.has(key) ?? false))
+			.map(([playerId]) => playerId);
+
+		return([...new Set([...inArea, ...across])].flatMap((playerId) => this.getClients(playerId)));
+	}
+
+	/**
+	 * The area and cell a cell past an area's edges is in, across its seams with the areas loaded
+	 *
+	 * @param areaId The area the cell is counted from
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return The cell, or undefined past an edge
+	 */
+	locate(areaId: string, column: number, row: number): AreaCellRef | undefined
+	{
+		return(this.areas.locate(areaId, column, row));
 	}
 
 	/**
@@ -323,9 +379,76 @@ export class AreaPlayers
 	{
 		const areaId = area.loaded.area.id;
 
-		await this.areas.loadChunks(areaId, chunksNear([near], CHUNK_LOAD_RADIUS, chunkShapeOf(area)));
+		await this.loadAround(area, near);
 
 		return(((this.areas.get(areaId) === area) ? area : undefined));
+	}
+
+	/**
+	 * Loads an area's chunks near a cell, with the areas across its seams near the cell, the areas at
+	 * their corners, and their chunks near it. A player placed there is then sent every area around them
+	 * with their own, rather than each a chunk refresh or two later
+	 *
+	 * @param area The area
+	 * @param near The cell
+	 */
+	private async loadAround(area: ActiveArea, near: Cell): Promise<void>
+	{
+		await Promise.all([
+			this.areas.loadChunks(area.loaded.area.id, chunksNear([near], CHUNK_LOAD_RADIUS, chunkShapeOf(area))),
+			this.loadSeamsNear(area, near)
+		]);
+	}
+
+	/**
+	 * Loads the areas across an area's seams within CHUNK_LOAD_RADIUS of a cell, the areas at their
+	 * corners near it, and their chunks near it. One that can't be loaded is left to refreshChunks(),
+	 * which loads it again and says why it can't
+	 *
+	 * @param area The area
+	 * @param near The cell
+	 */
+	private async loadSeamsNear(area: ActiveArea, near: Cell): Promise<void>
+	{
+		if (!area.seams)
+		{
+			return;
+		}
+
+		const { bounds, sides } = area.loaded;
+		const reaches: Record<NeighborSide, boolean> = {
+			north: ((near.row - bounds.minRow) < CHUNK_LOAD_RADIUS),
+			east: ((bounds.maxColumn - near.column) < CHUNK_LOAD_RADIUS),
+			south: ((bounds.maxRow - near.row) < CHUNK_LOAD_RADIUS),
+			west: ((near.column - bounds.minColumn) < CHUNK_LOAD_RADIUS)
+		};
+		const across = (side: NeighborSide): readonly NeighborSide[] => (((side === 'north') || (side === 'south')) ? ['east', 'west'] : ['north', 'south']);
+		const nearSides = NEIGHBOR_SIDES.filter((side) => reaches[side]);
+
+		try
+		{
+			// A corner is the neighbor of a side, so the sides load first
+			const sideAreas = await Promise.all(nearSides.map(async (side) => ({ side, area: ((sides[side] === null) ? undefined : await this.areas.load(sides[side])) })));
+			const cornerIds = new Set(sideAreas.flatMap(({ side, area: sideArea }) => across(side)
+				.filter((corner) => reaches[corner])
+				.map((corner) => sideArea?.loaded.sides[corner] ?? null)
+				.filter((cornerId) => (cornerId !== null))));
+
+			await Promise.all([...cornerIds].map((cornerId) => this.areas.load(cornerId)));
+
+			const chunks = new Map<string, Set<string>>();
+
+			for (const window of this.windowsNear(area, near, CHUNK_LOAD_RADIUS))
+			{
+				chunks.set(window.areaId, new Set([...(chunks.get(window.areaId) ?? []), ...chunksIn(window.bounds)]));
+			}
+
+			await Promise.all([...chunks].map(([areaId, keys]) => this.areas.loadChunks(areaId, keys)));
+		}
+		catch (error)
+		{
+			console.error(`Could not load the areas around area ${area.loaded.area.id}:`, error);
+		}
 	}
 
 	/**
@@ -353,11 +476,11 @@ export class AreaPlayers
 	 * @param appearance How they show
 	 * @param area Where they start, as prepareStart() returned it
 	 * @param near The cell to start nearest
-	 * @param occupancy The cells the area's players hold, when placing several players at once: the
-	 * player's cell is added to it. Without it, the area's occupancy is worked out from its players
+	 * @param occupancy The cells the room's players hold, when placing several players at once: the
+	 * player's cell is added to it. Without it, the occupancy is worked out from the players
 	 * @return Whether the player was placed
 	 */
-	private place(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell, occupancy?: CellOccupancy): boolean
+	private place(playerId: string, appearance: Appearance, area: ActiveArea, near: Cell, occupancy?: AreaOccupancy): boolean
 	{
 		if (this.players.has(playerId))
 		{
@@ -365,7 +488,7 @@ export class AreaPlayers
 		}
 
 		// Added before it has a cell, so the search below knows whether the player is a ghost
-		const player = new Player({ x: 0, y: 0, name: appearance.name, ghost: appearance.ghost, darkvision: appearance.darkvision, lightSensitivity: appearance.lightSensitivity });
+		const player = new Player({ areaId: area.loaded.area.id, x: 0, y: 0, name: appearance.name, ghost: appearance.ghost, darkvision: appearance.darkvision, lightSensitivity: appearance.lightSensitivity });
 
 		this.players.set(playerId, player);
 
@@ -385,14 +508,14 @@ export class AreaPlayers
 		{
 			occupancy.hold(
 				playerId,
-				occupiedCells(
+				this.placedCells(area, occupiedCells(
 					{
 						x: player.x,
 						y: player.y,
 						step: undefined
 					},
 					area.grid
-				)
+				))
 			);
 		}
 
@@ -424,7 +547,7 @@ export class AreaPlayers
 
 		this.sessions.add(client.sessionId, playerId);
 		this.clients.set(client.sessionId, client);
-		this.attach(client, playerId);
+		this.attach(client, playerId, true);
 
 		return(isNewPlayer);
 	}
@@ -452,7 +575,7 @@ export class AreaPlayers
 			this.sessions.move(client.sessionId, playerId);
 		}
 
-		this.attach(client, playerId);
+		this.attach(client, playerId, false);
 
 		return(true);
 	}
@@ -499,6 +622,7 @@ export class AreaPlayers
 		this.presses.delete(playerId);
 		this.travelling.delete(playerId);
 		this.sentChunks.delete(playerId);
+		this.sentNeighbors.delete(playerId);
 	}
 
 	/**
@@ -519,6 +643,7 @@ export class AreaPlayers
 		this.presses.clear();
 		this.travelling.clear();
 		this.sentChunks.clear();
+		this.sentNeighbors.clear();
 	}
 
 	/**
@@ -537,7 +662,7 @@ export class AreaPlayers
 
 		// The area holds only the players placed here, so one occupancy, added to as each is placed,
 		// serves every search, and the views are refreshed once they are all in
-		const occupancy = new CellOccupancy();
+		const occupancy = new AreaOccupancy();
 
 		for (const playerId of playerIds)
 		{
@@ -550,7 +675,7 @@ export class AreaPlayers
 		{
 			for (const client of this.getClients(playerId))
 			{
-				this.greet(client, playerId);
+				this.greet(client, playerId, false);
 			}
 		}
 	}
@@ -594,11 +719,12 @@ export class AreaPlayers
 	 *
 	 * @param client The client, already recorded as controlling the player
 	 * @param playerId The player
+	 * @param joining Whether the client has just joined
 	 */
-	private attach(client: Client, playerId: string): void
+	private attach(client: Client, playerId: string, joining: boolean): void
 	{
 		this.refreshViews();
-		this.greet(client, playerId);
+		this.greet(client, playerId, joining);
 	}
 
 	/**
@@ -606,8 +732,9 @@ export class AreaPlayers
 	 *
 	 * @param client The client
 	 * @param playerId The player
+	 * @param joining Whether the client has just joined, so the area is sent at once (see sendArea)
 	 */
-	private greet(client: Client, playerId: string): void
+	private greet(client: Client, playerId: string, joining: boolean): void
 	{
 		const area = this.areaOf(playerId);
 		const welcome: WelcomePayload = { playerId };
@@ -616,7 +743,7 @@ export class AreaPlayers
 
 		if (area)
 		{
-			this.sendArea(playerId, area, [client]);
+			this.sendArea(playerId, area, [client], joining);
 		}
 	}
 
@@ -703,7 +830,7 @@ export class AreaPlayers
 
 		if (link?.mode === 'manual')
 		{
-			this.takeLinkFrom(playerId, link);
+			this.takeLinkFrom(playerId, link, area);
 		}
 	}
 
@@ -804,10 +931,10 @@ export class AreaPlayers
 	 */
 	update(deltaSeconds: number): void
 	{
-		const occupancies = new Map<string, CellOccupancy>();
-
 		// Players move one at a time, each seeing the cells the players before it have just taken or freed.
 		// When two want the same cell, the one earlier in the map gets it
+		const occupancy = this.occupancyOf();
+
 		for (const [playerId, player] of this.players)
 		{
 			for (const move of this.moveInputs.drain(playerId))
@@ -815,20 +942,11 @@ export class AreaPlayers
 				this.heldDirections.set(playerId, move);
 			}
 
-			const areaId = this.areaIds.get(playerId);
 			const area = this.areaOf(playerId);
 
-			if ((areaId === undefined) || !area || this.travelling.has(playerId))
+			if (!area || this.travelling.has(playerId))
 			{
 				continue;
-			}
-
-			let occupancy = occupancies.get(areaId);
-
-			if (!occupancy)
-			{
-				occupancy = this.occupancyOf(areaId);
-				occupancies.set(areaId, occupancy);
 			}
 
 			const mover = stepOnGrid(
@@ -841,7 +959,7 @@ export class AreaPlayers
 				this.heldDirections.get(playerId) ?? standingStill,
 				deltaSeconds,
 				area.grid,
-				(player.ghost ? anyCell : occupancy.isFreeFor(playerId))
+				(player.ghost ? anyCell : this.isFreeIn(occupancy, playerId, area))
 			);
 
 			player.x = mover.x;
@@ -859,23 +977,95 @@ export class AreaPlayers
 
 			if (!player.ghost)
 			{
-				occupancy.hold(playerId, occupiedCells(mover, area.grid));
-
 				for (const step of mover.finishedSteps)
 				{
-					this.walkListener?.(playerId, stepSeconds(step, area.grid.walkSeconds(wrapCell(step.to, area.grid)), area.grid.fullSpeedWalkSeconds),area.loaded.time);
+					const into = wrapCell(step.to, area.grid);
+					const stepArea = (isInBounds(area.loaded.bounds, into.column, into.row) ? area : (this.areaAcross(area, into) ?? area));
+
+					this.walkListener?.(playerId, stepSeconds(step, area.grid.walkSeconds(into), area.grid.fullSpeedWalkSeconds), stepArea.loaded.time);
 				}
 			}
 
-			const link = ((mover.stoppedAt && !this.locked) ? linkAt(area.layout, mover.stoppedAt) : undefined);
+			// A step across a seam ends past the area's edge, in the neighbor the player now moves into
+			const current = ((!mover.step && area.seams) ? this.crossSeam(playerId, player, area) : area);
+
+			if (!player.ghost)
+			{
+				occupancy.hold(playerId, this.placedCells(current, occupiedCells({ x: player.x, y: player.y, step: this.steps.get(playerId) }, current.grid)));
+			}
+
+			const link = ((mover.stoppedAt && !this.locked && (current === area)) ? linkAt(area.layout, mover.stoppedAt) : undefined);
 
 			if (link)
 			{
-				this.takeLinkFrom(playerId, link);
+				this.takeLinkFrom(playerId, link, area);
 			}
 		}
 
 		this.refreshViews();
+	}
+
+	/**
+	 * The area a cell past an area's edges is in, across its seams
+	 *
+	 * @param area The area
+	 * @param cell The cell
+	 * @return The area, or undefined past an edge
+	 */
+	private areaAcross(area: ActiveArea, cell: Cell): ActiveArea | undefined
+	{
+		const found = this.areas.locate(area.loaded.area.id, cell.column, cell.row);
+
+		return(((found === undefined) ? undefined : this.areas.get(found.areaId)));
+	}
+
+	/**
+	 * Moves a player who has just stepped past their area's edge across a seam into the neighbor, onto the
+	 * same cell counted in the neighbor's columns and rows, as walking within an area: their press carries
+	 * on, and their clients are sent the neighbor as their area. A player past an edge that no longer leads
+	 * anywhere goes back onto the nearest free cell of their area
+	 *
+	 * @param playerId The player's ID
+	 * @param player The player
+	 * @param area The area they were in
+	 * @return The area they are in now
+	 */
+	private crossSeam(playerId: string, player: Player, area: ActiveArea): ActiveArea
+	{
+		const cell = {
+			column: Math.floor(player.x / area.grid.cellSize),
+			row: Math.floor(player.y / area.grid.cellSize)
+		};
+
+		if (isInBounds(area.loaded.bounds, cell.column, cell.row))
+		{
+			return(area);
+		}
+
+		const found = this.areas.locate(area.loaded.area.id, cell.column, cell.row);
+		const target = ((found === undefined) ? undefined : this.areas.get(found.areaId));
+
+		if (!found || !target)
+		{
+			const position = this.findArrivalCell(playerId, area, cellAt(player, area.grid));
+
+			if (position)
+			{
+				player.x = position.x;
+				player.y = position.y;
+			}
+
+			return(area);
+		}
+
+		const center = cellCenter(found, target.grid);
+
+		this.putInArea(playerId, target.loaded.area.id);
+		player.x = center.x;
+		player.y = center.y;
+		this.sendArea(playerId, target, this.getClients(playerId));
+
+		return(target);
 	}
 
 	/**
@@ -887,39 +1077,170 @@ export class AreaPlayers
 	refreshChunks(): void
 	{
 		this.areas.forgetIdle(this.areasInUse());
+		this.loadSeamAreas();
+
+		// The chunks to keep and load in each area: those near its players, and those near the players
+		// across its seams
+		const keep = new Map<string, Set<string>>();
+		const load = new Map<string, Set<string>>();
+		const add = (chunks: Map<string, Set<string>>, areaId: string, keys: Iterable<string>): void =>
+		{
+			const found = (chunks.get(areaId) ?? new Set<string>());
+
+			for (const key of keys)
+			{
+				found.add(key);
+			}
+
+			chunks.set(areaId, found);
+		};
 
 		for (const area of this.areas.all())
 		{
 			const areaId = area.loaded.area.id;
-			const playerIds = this.playersIn(areaId).filter((playerId) => !this.travelling.has(playerId));
-			const cells = playerIds
+			const cells = this.playersIn(areaId)
+				.filter((playerId) => !this.travelling.has(playerId))
 				.map((playerId) => this.cellOf(playerId, area))
 				.filter((cell) => (cell !== undefined));
 			const chunkShape = chunkShapeOf(area);
 
-			this.areas.dropChunks(areaId, chunksNear(cells, CHUNK_KEEP_RADIUS, chunkShape));
+			add(keep, areaId, chunksNear(cells, CHUNK_KEEP_RADIUS, chunkShape));
+			add(load, areaId, chunksNear(cells, CHUNK_LOAD_RADIUS, chunkShape));
 
-			for (const playerId of playerIds)
+			for (const cell of (area.seams ? cells : []))
+			{
+				for (const window of this.windowsNear(area, cell, CHUNK_KEEP_RADIUS))
+				{
+					add(keep, window.areaId, chunksIn(window.bounds));
+				}
+
+				for (const window of this.windowsNear(area, cell, CHUNK_LOAD_RADIUS))
+				{
+					add(load, window.areaId, chunksIn(window.bounds));
+				}
+			}
+		}
+
+		for (const area of this.areas.all())
+		{
+			this.areas.dropChunks(area.loaded.area.id, (keep.get(area.loaded.area.id) ?? new Set()));
+		}
+
+		for (const [playerId, areaId] of this.areaIds)
+		{
+			const area = this.areas.get(areaId);
+
+			if (area && !this.travelling.has(playerId))
 			{
 				this.sendNearbyChunks(playerId, area);
 			}
+		}
 
-			this.areas.loadChunks(areaId, chunksNear(cells, CHUNK_LOAD_RADIUS, chunkShape)).then((loaded) =>
+		for (const [areaId, keys] of load)
+		{
+			this.areas.loadChunks(areaId, keys).then((loaded) =>
 			{
-				const current = this.areas.get(areaId);
-
-				if ((loaded.length > 0) && current)
+				if (loaded.length > 0)
 				{
-					for (const playerId of this.playersIn(areaId))
-					{
-						this.sendNearbyChunks(playerId, current);
-					}
+					this.sendChunksNear(areaId);
 				}
 			}, (error: unknown) =>
 			{
 				console.error(`Could not load chunks of area ${areaId}:`, error);
 			});
 		}
+	}
+
+	/**
+	 * Sends the chunks that have just loaded of an area to the players near them: those in it, and those
+	 * across its seams
+	 *
+	 * @param areaId The area's ID
+	 */
+	private sendChunksNear(areaId: string): void
+	{
+		for (const [playerId, playerAreaId] of this.areaIds)
+		{
+			const area = this.areas.get(playerAreaId);
+
+			if (area && !this.travelling.has(playerId) && ((playerAreaId === areaId) || area.seams))
+			{
+				this.sendNearbyChunks(playerId, area);
+			}
+		}
+	}
+
+	/**
+	 * Starts loading the areas across the seams of the areas players are in, and those at their corners,
+	 * so players can walk, see and be seen across them. Until one has loaded, its seam is an edge
+	 */
+	private loadSeamAreas(): void
+	{
+		for (const areaId of this.seamAreaIds())
+		{
+			if (!this.areas.get(areaId))
+			{
+				this.areas.load(areaId).catch((error: unknown) =>
+				{
+					console.error(`Could not load the neighboring area ${areaId}:`, error);
+				});
+			}
+		}
+	}
+
+	/**
+	 * The areas across the seams of the areas players are in, and across theirs, which hold the corners
+	 *
+	 * @return Their IDs
+	 */
+	private seamAreaIds(): Set<string>
+	{
+		const found = new Set<string>();
+
+		for (const areaId of this.playerIdsByArea.keys())
+		{
+			const area = this.areas.get(areaId);
+
+			if (!area?.seams)
+			{
+				continue;
+			}
+
+			for (const sideId of Object.values(area.loaded.sides))
+			{
+				if (sideId === null)
+				{
+					continue;
+				}
+
+				found.add(sideId);
+
+				for (const cornerId of Object.values(this.areas.get(sideId)?.loaded.sides ?? {}))
+				{
+					if (cornerId !== null)
+					{
+						found.add(cornerId);
+					}
+				}
+			}
+		}
+
+		return(found);
+	}
+
+	/**
+	 * The cells of the areas across an area's seams within a distance of one of its cells
+	 *
+	 * @param area The area
+	 * @param cell The cell
+	 * @param radius How many cells either side to reach
+	 * @return The cells of each area within reach, in its own columns and rows
+	 */
+	private windowsNear(area: ActiveArea, cell: Cell, radius: number): AreaCellWindow[]
+	{
+		const areaId = area.loaded.area.id;
+
+		return(windowsAcrossSeams((id) => ((id === areaId) ? { id, bounds: area.loaded.bounds, sides: area.loaded.sides } : this.areas.seamArea(id)), this.areas.slots(areaId), areaId, cell.column, cell.row, radius));
 	}
 
 	/**
@@ -1018,12 +1339,24 @@ export class AreaPlayers
 				this.sendChunks(playerId, area, resend);
 			}
 		}
+
+		for (const [playerId, neighbors] of this.sentNeighbors)
+		{
+			const sent = neighbors.get(areaId);
+			const resend = changed.filter((key) => (sent?.has(key) ?? false));
+
+			if (sent && (resend.length > 0))
+			{
+				this.sendChunks(playerId, area, resend, sent);
+			}
+		}
 	}
 
 	/**
 	 * Reads an area again after its settings, bounds, links or tiles changed. Players its new bounds no
 	 * longer hold are moved onto the nearest free cell inside them, and everyone in it is sent the area
-	 * again. Players in an area that has been deleted go to the fallback area
+	 * again. Players in an area that has been deleted, or has left the room's side of the lobby region's
+	 * edge, go to the fallback place
 	 *
 	 * @param areaId The area's ID
 	 * @param keepChunks Whether only the tiles changed, so the loaded chunks are still right
@@ -1048,7 +1381,19 @@ export class AreaPlayers
 		const area = await this.areas.reload(areaId, keepChunks);
 		const playerIds = this.playersIn(areaId).filter((playerId) => !this.travelling.has(playerId));
 
-		if (!area)
+		// The players who see it across a seam are sent their own area again, with the areas around it as
+		// they now are: one disabled or deleted is an edge, drawn as nothing
+		for (const [playerId, neighbors] of this.sentNeighbors)
+		{
+			const playerArea = this.areaOf(playerId);
+
+			if (neighbors.has(areaId) && playerArea && (playerArea.loaded.area.id !== areaId) && !this.travelling.has(playerId))
+			{
+				this.sendArea(playerId, playerArea, this.getClients(playerId));
+			}
+		}
+
+		if (!area || (area.loaded.area.lobby !== this.side.lobby))
 		{
 			this.sendToFallback(playerIds);
 			return;
@@ -1140,15 +1485,16 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Sends players to the center of the fallback area, for when their area has been deleted
+	 * Sends players to the fallback place, for when their area has been deleted or has left the room's
+	 * side of the lobby region's edge
 	 *
 	 * @param playerIds The players
 	 */
 	private sendToFallback(playerIds: string[]): void
 	{
-		const fallbackAreaId = this.fallbackAreaId();
+		const fallback = this.side.fallback();
 
-		if (fallbackAreaId === undefined)
+		if (fallback === undefined)
 		{
 			return;
 		}
@@ -1158,9 +1504,9 @@ export class AreaPlayers
 			this.travel(playerId, {
 				column: 0,
 				row: 0,
-				targetAreaId: fallbackAreaId,
-				targetColumn: 0,
-				targetRow: 0,
+				targetAreaId: fallback.areaId,
+				targetColumn: fallback.column,
+				targetRow: fallback.row,
 				mode: 'automatic',
 				requiresWholeGroup: false
 			});
@@ -1169,13 +1515,20 @@ export class AreaPlayers
 
 	/**
 	 * Sends a player through a link they stand on. A link that requires the whole group sends every
-	 * member of the group with them, or nobody while the group isn't together
+	 * member of the group with them, or nobody while the group isn't together. A link nobody can go
+	 * through, to a disabled area or across the lobby region's edge, takes nobody
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link
+	 * @param area The area the link is in
 	 */
-	private takeLinkFrom(playerId: string, link: AreaLink): void
+	private takeLinkFrom(playerId: string, link: AreaLink, area: ActiveArea): void
 	{
+		if (area.loaded.closedTargetIds.has(link.targetAreaId))
+		{
+			return;
+		}
+
 		if (!link.requiresWholeGroup || !this.wholeGroupLinks)
 		{
 			this.travel(playerId, link);
@@ -1225,7 +1578,7 @@ export class AreaPlayers
 			{
 				if (target)
 				{
-					await this.areas.loadChunks(target.loaded.area.id, chunksNear([targetCell], CHUNK_LOAD_RADIUS, chunkShapeOf(target)));
+					await this.loadAround(target, targetCell);
 				}
 
 				this.arrive(playerId, link, this.areas.get(link.targetAreaId), intoDisabled);
@@ -1238,7 +1591,8 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Moves a travelling player into the area their link leads to, on the free cell nearest its target
+	 * Moves a travelling player into the area their link leads to, on the free cell nearest its target.
+	 * Nobody arrives in an area across the lobby region's edge from the room's side
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link they took
@@ -1255,7 +1609,7 @@ export class AreaPlayers
 
 		const player = this.players.get(playerId);
 
-		if (!player || !target || (!target.loaded.area.enabled && !intoDisabled))
+		if (!player || !target || (!target.loaded.area.enabled && !intoDisabled) || (target.loaded.area.lobby !== this.side.lobby))
 		{
 			return;
 		}
@@ -1271,36 +1625,40 @@ export class AreaPlayers
 		player.x = position.x;
 		player.y = position.y;
 		this.refreshViews();
-
-		// The area follows the patch with the player's position in it, so the window draws the area
-		// around where they arrive rather than where they were
-		this.sendArea(playerId, target, this.getClients(playerId), true);
+		this.sendArea(playerId, target, this.getClients(playerId));
 	}
 
 	/**
-	 * Sends a player's clients an area, with the loaded chunks near the player, and remembers those as sent
+	 * Sends a player's clients an area, with the loaded chunks near the player, and remembers those as
+	 * sent. It follows the next state patch, so the window draws the area around where the player is in it
 	 *
 	 * @param playerId The player's ID
 	 * @param area The area they are in
 	 * @param clients The clients to send it to
-	 * @param afterNextPatch Whether to send it after the next state patch rather than at once
+	 * @param atOnce Whether to send it at once rather than after the next state patch: only to a client
+	 * that has just joined, which has nothing about the area waiting to be sent and waits for the area
+	 * before listening for the messages the room sends after it, such as the chat history
 	 */
-	private sendArea(playerId: string, area: ActiveArea, clients: Client[], afterNextPatch = false): void
+	private sendArea(playerId: string, area: ActiveArea, clients: Client[], atOnce = false): void
 	{
 		const near = this.loadedChunksNear(playerId, area);
 		const payload = toAreaPayload(area, near, this.vision.memory);
 
 		this.sentChunks.set(playerId, new Set(near));
+		this.sentNeighbors.set(playerId, new Map());
 
 		for (const client of clients)
 		{
-			client.send(ServerMessageType.Area, payload, { afterNextPatch });
+			client.send(ServerMessageType.Area, payload, (atOnce ? undefined : AREA_MESSAGE_OPTIONS));
 		}
+
+		this.sendNearbyNeighbors(playerId, area, clients, atOnce);
 	}
 
 	/**
-	 * Sends a player the loaded chunks near them they haven't been sent, and forgets having sent the ones
-	 * they have moved away from, so those are sent again (with any changes) when the player comes back
+	 * Sends a player the loaded chunks near them they haven't been sent, of their area and of the areas
+	 * across its seams, and forgets having sent the ones they have moved away from, so those are sent again
+	 * (with any changes) when the player comes back
 	 *
 	 * @param playerId The player's ID
 	 * @param area The area they are in
@@ -1331,18 +1689,123 @@ export class AreaPlayers
 		{
 			this.sendChunks(playerId, area, fresh);
 		}
+
+		if (area.seams)
+		{
+			this.sendNearbyNeighbors(playerId, area, this.getClients(playerId), false);
+		}
+	}
+
+	/**
+	 * Sends a player the areas across their area's seams near them that they haven't been sent, with their
+	 * loaded chunks near the player, and the chunks near them of those already sent, forgetting having sent
+	 * the ones they have moved away from
+	 *
+	 * @param playerId The player's ID
+	 * @param area The area they are in
+	 * @param clients The clients to send them to
+	 * @param atOnce Whether to send new areas at once, as with the area itself (see sendArea)
+	 */
+	private sendNearbyNeighbors(playerId: string, area: ActiveArea, clients: Client[], atOnce: boolean): void
+	{
+		const cell = this.cellOf(playerId, area);
+		const neighbors = this.sentNeighbors.get(playerId);
+
+		if (!area.seams || !cell || !neighbors)
+		{
+			return;
+		}
+
+		const kept = new Map<string, Set<string>>();
+
+		for (const window of this.windowsNear(area, cell, CHUNK_KEEP_RADIUS))
+		{
+			kept.set(window.areaId, new Set([...(kept.get(window.areaId) ?? []), ...chunksIn(window.bounds)]));
+		}
+
+		for (const [neighborId, sent] of neighbors)
+		{
+			for (const key of [...sent])
+			{
+				if (!(kept.get(neighborId)?.has(key) ?? false))
+				{
+					sent.delete(key);
+				}
+			}
+		}
+
+		const fresh = new Map<string, Set<string>>();
+
+		for (const window of this.windowsNear(area, cell, CHUNK_LOAD_RADIUS))
+		{
+			const neighbor = this.areas.get(window.areaId);
+
+			if (!neighbor)
+			{
+				continue;
+			}
+
+			const keys = (fresh.get(window.areaId) ?? new Set<string>());
+
+			for (const key of chunksIn(window.bounds))
+			{
+				if (neighbor.loadedChunks.has(key) && !(neighbors.get(window.areaId)?.has(key) ?? false))
+				{
+					keys.add(key);
+				}
+			}
+
+			fresh.set(window.areaId, keys);
+		}
+
+		const added: AreaPayload[] = [];
+
+		for (const [neighborId, keys] of fresh)
+		{
+			const neighbor = this.areas.get(neighborId);
+
+			if (!neighbor)
+			{
+				continue;
+			}
+
+			if (!neighbors.has(neighborId))
+			{
+				neighbors.set(neighborId, new Set(keys));
+				added.push(toAreaPayload(neighbor, keys, this.vision.memory));
+			}
+			else if (keys.size > 0)
+			{
+				this.sendChunks(playerId, neighbor, [...keys], neighbors.get(neighborId));
+			}
+		}
+
+		if (added.length > 0)
+		{
+			const payload: NeighborAreasPayload = {
+				areaId: area.loaded.area.id,
+				areas: added
+			};
+
+			for (const client of clients)
+			{
+				client.send(ServerMessageType.NeighborAreas, payload, (atOnce ? undefined : AREA_MESSAGE_OPTIONS));
+			}
+		}
 	}
 
 	/**
 	 * Sends a player's clients some loaded chunks of their area, and remembers them as sent
 	 *
 	 * @param playerId The player's ID
-	 * @param area The area they are in
+	 * @param area The area the chunks are of: theirs, or one across its seams
 	 * @param chunkKeys The chunks, by chunkKey()
+	 * @param sentOf The chunks of the area the player has been sent, which this adds to; their own area's
+	 * by default
 	 */
-	private sendChunks(playerId: string, area: ActiveArea, chunkKeys: string[]): void
+	private sendChunks(playerId: string, area: ActiveArea, chunkKeys: string[], sentOf?: Set<string>): void
 	{
-		const sent = (this.sentChunks.get(playerId) ?? new Set<string>());
+		const sent = (sentOf ?? this.sentChunks.get(playerId) ?? new Set<string>());
 		const payload: ChunksPayload = {
 			areaId: area.loaded.area.id,
 			chunks: toChunkUpdates(area, chunkKeys, this.vision.memory)
@@ -1353,11 +1816,14 @@ export class AreaPlayers
 			sent.add(key);
 		}
 
-		this.sentChunks.set(playerId, sent);
+		if (sentOf === undefined)
+		{
+			this.sentChunks.set(playerId, sent);
+		}
 
 		for (const client of this.getClients(playerId))
 		{
-			client.send(ServerMessageType.Chunks, payload);
+			client.send(ServerMessageType.Chunks, payload, AREA_MESSAGE_OPTIONS);
 		}
 	}
 
@@ -1401,59 +1867,87 @@ export class AreaPlayers
 	 * @param playerId The player arriving, whose own cells count as free
 	 * @param area The area
 	 * @param near The cell to start from
-	 * @param occupancy The cells the area's players hold, worked out from them by default
+	 * @param occupancy The cells the room's players hold, worked out from them by default
 	 * @return The cell's center, or undefined when there is no free cell that near
 	 */
-	private findArrivalCell(playerId: string, area: ActiveArea, near: Cell, occupancy?: CellOccupancy): Position | undefined
+	private findArrivalCell(playerId: string, area: ActiveArea, near: Cell, occupancy?: AreaOccupancy): Position | undefined
 	{
 		const { minColumn, minRow, maxColumn, maxRow } = area.grid.bounds;
 		const searchDistance = Math.min(Math.max(maxColumn - minColumn, maxRow - minRow) + 1, CHUNK_LOAD_RADIUS);
-		const isCellFree = (this.isGhost(playerId) ? anyCell : (occupancy ?? this.occupancyOf(area.loaded.area.id, playerId)).isFreeFor(playerId));
+		const isCellFree = (this.isGhost(playerId) ? anyCell : this.isFreeIn((occupancy ?? this.occupancyOf(playerId)), playerId, area));
 
 		return(findFreeCell(near, area.grid, isCellFree, searchDistance));
 	}
 
 	/**
-	 * Works out which cells the players in an area hold right now; ghosts hold none
+	 * Works out which cells the room's players hold right now, each in the area it is in, across seams
+	 * included; ghosts hold none
 	 *
 	 * A cell has one holder, so a player standing where another is (such as a ghost becoming visible)
 	 * would hide the other's hold on it. Leaving that player out keeps the other's
 	 *
-	 * @param areaId The area's ID
 	 * @param exceptPlayerId A player whose cells to leave out
-	 * @return The area's occupancy
+	 * @return The occupancy
 	 */
-	private occupancyOf(areaId: string, exceptPlayerId?: string): CellOccupancy
+	private occupancyOf(exceptPlayerId?: string): AreaOccupancy
 	{
-		const occupancy = new CellOccupancy();
-		const area = this.areas.get(areaId);
+		const occupancy = new AreaOccupancy();
 
-		if (!area)
+		for (const [playerId, player] of this.players)
 		{
-			return(occupancy);
-		}
+			const area = this.areaOf(playerId);
 
-		for (const playerId of this.playersIn(areaId))
-		{
-			const player = this.players.get(playerId);
-
-			if (player && !player.ghost && (playerId !== exceptPlayerId))
+			if (area && !player.ghost && (playerId !== exceptPlayerId))
 			{
 				occupancy.hold(
 					playerId,
-					occupiedCells(
+					this.placedCells(area, occupiedCells(
 						{
 							x: player.x,
 							y: player.y,
 							step: this.steps.get(playerId)
 						},
 						area.grid
-					)
+					))
 				);
 			}
 		}
 
 		return(occupancy);
+	}
+
+	/**
+	 * Cells of an area, each placed in the area it is in: itself, or across a seam
+	 *
+	 * @param area The area
+	 * @param cells The cells, in its columns and rows
+	 * @return The cells, leaving out those past an edge
+	 */
+	private placedCells(area: ActiveArea, cells: readonly Cell[]): PlacedCell[]
+	{
+		return(cells
+			.map((cell) => this.areas.locate(area.loaded.area.id, cell.column, cell.row))
+			.filter((cell) => (cell !== undefined)));
+	}
+
+	/**
+	 * Checks cells of an area from one player's point of view, across seams too
+	 *
+	 * @param occupancy The cells the room's players hold
+	 * @param playerId The player's ID, whose own cells count as free
+	 * @param area The area the cells are counted in
+	 * @return A check for stepOnGrid and findFreeCell
+	 */
+	private isFreeIn(occupancy: AreaOccupancy, playerId: string, area: ActiveArea): IsCellFree
+	{
+		const areaId = area.loaded.area.id;
+
+		return((cell) =>
+		{
+			const found = this.areas.locate(areaId, cell.column, cell.row);
+
+			return((found === undefined) || occupancy.isFree(playerId, found));
+		});
 	}
 
 	/**
@@ -1539,8 +2033,10 @@ export class AreaPlayers
 	}
 
 	/**
-	 * The players a player sees: themselves, and those in their area who aren't ghosts and are in sight
-	 * of them or, in a room whose vision is shared, are members of the group or in sight of one there
+	 * The players a player sees: themselves, and those near them who aren't ghosts and are in sight of
+	 * them or, in a room whose vision is shared, are members of the group or in sight of one there. In an
+	 * area without fog of war, everyone there who isn't a ghost. Players across a seam from their area count
+	 * as near: seen without fog of war when neither area has it, and otherwise when in sight
 	 *
 	 * @param playerId The player's ID
 	 * @param nowMilliseconds The real time, for areas whose time of day follows it
@@ -1556,23 +2052,108 @@ export class AreaPlayers
 			return(seen);
 		}
 
-		const others = this.playersIn(area.loaded.area.id).filter((otherId) => ((otherId !== playerId) && !this.isGhost(otherId)));
-		const lookers = (this.vision.shared ? [playerId, ...others] : [playerId]);
+		const near = this.playersNear(area);
+		const others = near.filter((other) => ((other.playerId !== playerId) && !this.isGhost(other.playerId)));
+
+		if (!area.loaded.fogOfWar && !area.seams)
+		{
+			for (const other of others)
+			{
+				seen.add(other.playerId);
+			}
+
+			return(seen);
+		}
+
+		const viewer = near.find((each) => (each.playerId === playerId));
+		const lookers = [...(viewer ? [viewer] : []), ...(this.vision.shared ? others : [])];
+		const lookerIds = new Set(lookers.map((looker) => looker.playerId));
 		const sights = lookers
-			.map((lookerId) => this.sightOf(lookerId, area, nowMilliseconds))
+			.map((looker) =>
+			{
+				const sight = this.sightOf(looker.playerId, looker.area, nowMilliseconds);
+
+				return((sight === undefined) ? undefined : { cell: looker.cell, budget: sight.budget });
+			})
 			.filter((sight) => (sight !== undefined));
 
-		for (const otherId of others)
+		for (const other of others)
 		{
-			const cell = this.cellOf(otherId, area);
+			const fogless = (!area.loaded.fogOfWar && !other.area.loaded.fogOfWar);
 
-			if (lookers.includes(otherId) || (cell && sights.some((sight) => canSee(sight.cell, cell, sight.budget, area.vision))))
+			if (lookerIds.has(other.playerId) || fogless || sights.some((sight) => canSee(sight.cell, other.cell, sight.budget, area.vision)))
 			{
-				seen.add(otherId);
+				seen.add(other.playerId);
 			}
 		}
 
 		return(seen);
+	}
+
+	/**
+	 * The players in an area and across its seams near enough to be seen, each with their cell counted in
+	 * the area's columns and rows: past its edges for those across a seam
+	 *
+	 * @param area The area
+	 * @return The players, those in the area first
+	 */
+	private playersNear(area: ActiveArea): { playerId: string; area: ActiveArea; cell: Cell }[]
+	{
+		const areaId = area.loaded.area.id;
+		const near: { playerId: string; area: ActiveArea; cell: Cell }[] = [];
+		const { bounds } = area.loaded;
+
+		for (const playerId of this.playersIn(areaId))
+		{
+			const cell = this.cellOf(playerId, area);
+
+			if (cell)
+			{
+				near.push({ playerId, area, cell });
+			}
+		}
+
+		// Each player once, in the place around the area nearest it
+		const across = new Map<string, { playerId: string; area: ActiveArea; cell: Cell; distance: number }>();
+
+		for (const slot of this.areas.slots(areaId))
+		{
+			const other = this.areas.get(slot.areaId);
+
+			if (!other || (slot.areaId === areaId))
+			{
+				continue;
+			}
+
+			for (const playerId of this.playersIn(slot.areaId))
+			{
+				const own = this.cellOf(playerId, other);
+
+				if (!own)
+				{
+					continue;
+				}
+
+				const cell = {
+					column: own.column + slot.columnOffset,
+					row: own.row + slot.rowOffset
+				};
+				const distance = Math.max(bounds.minColumn - cell.column, cell.column - bounds.maxColumn, bounds.minRow - cell.row, cell.row - bounds.maxRow);
+				const known = across.get(playerId);
+
+				if ((distance <= CHUNK_LOAD_RADIUS) && (!known || (distance < known.distance)))
+				{
+					across.set(playerId, { playerId, area: other, cell, distance });
+				}
+			}
+		}
+
+		for (const { playerId, area: other, cell } of across.values())
+		{
+			near.push({ playerId, area: other, cell });
+		}
+
+		return(near);
 	}
 
 	/**
@@ -1597,7 +2178,7 @@ export class AreaPlayers
 
 		return({
 			cell,
-			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player, area.loaded.fullVision)
+			budget: visionBudget(areaLight(area.loaded.lightLevel, second), player)
 		});
 	}
 
@@ -1624,15 +2205,16 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Which areas players are in or on their way to, as they are now
+	 * Which areas players are in or on their way to, as they are now, and those across the seams of the
+	 * areas they are in
 	 *
 	 * @return Whether an area is one of them
 	 */
 	private areasInUse(): (areaId: string) => boolean
 	{
-		const destinations = new Set(this.travelling.values());
+		const used = new Set([...this.travelling.values(), ...this.seamAreaIds()]);
 
-		return((areaId) => (this.playerIdsByArea.has(areaId) || destinations.has(areaId)));
+		return((areaId) => (this.playerIdsByArea.has(areaId) || used.has(areaId)));
 	}
 
 	/**
@@ -1643,8 +2225,15 @@ export class AreaPlayers
 	 */
 	private putInArea(playerId: string, areaId: string): void
 	{
+		const player = this.players.get(playerId);
+
 		this.takeOutOfArea(playerId);
 		this.areaIds.set(playerId, areaId);
+
+		if (player)
+		{
+			player.areaId = areaId;
+		}
 
 		const playerIds = this.playerIdsByArea.get(areaId);
 

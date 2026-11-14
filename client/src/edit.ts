@@ -3,7 +3,7 @@ import { UNIVERSE_VERSIONS } from '@multiverse-kiln/shared';
 import { EditorPage } from './EditorPage';
 import { t } from './localization';
 import { startPage } from './pageStart';
-import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER, VERSION_PARAMETER } from './pages';
+import { HOME_PAGE_URL, readEditUniverseId, readPageParameter, TAB_PARAMETER, AREA_PARAMETER, REGION_PARAMETER, VERSION_PARAMETER } from './pages';
 import { startCodeInputs } from './ui/codeInputs';
 import { isEditorTab } from './ui/editor/EditorScreen';
 import { setPageTitle, showStatus } from './ui/dom';
@@ -37,8 +37,9 @@ async function start(): Promise<void>
 	{
 		new EditorPage(await server, universeId, {
 			tab: (isEditorTab(tab) ? tab : undefined),
-			areaId: readPageParameter(AREA_PARAMETER)
-		}, UNIVERSE_VERSIONS.find((version) => (version === readPageParameter(VERSION_PARAMETER))));
+			areaId: readPageParameter(AREA_PARAMETER),
+			regionId: readPageParameter(REGION_PARAMETER)
+		},UNIVERSE_VERSIONS.find((version) => (version === readPageParameter(VERSION_PARAMETER))));
 	}
 	catch (error)
 	{

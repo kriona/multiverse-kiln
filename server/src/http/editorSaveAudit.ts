@@ -4,9 +4,10 @@
  * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
  */
 import { isDeepStrictEqual } from 'util';
-import { AUDIT_FIELDS, chunkCoordinate, chunkKey, parseChunkKey, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { AUDIT_FIELDS, chunkCoordinate, chunkKey, oppositeSide, parseChunkKey, type AreaNeighbors, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type PlaceRef, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
+import { listRegions } from '../db/regionRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { listDifficultyLevels } from '../db/difficultyRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
@@ -41,6 +42,7 @@ const SHARED_FIELD_KEYS: ReadonlyMap<string, AuditField> = new Map([
 	['startingAreaId', 'startingArea'],
 	['startingColumn', 'startingArea'],
 	['startingRow', 'startingArea'],
+	['lobbyRegionId', 'lobbyRegion'],
 	['lobbyAreaId', 'lobbyArea'],
 	['lobbyColumn', 'lobbyArea'],
 	['lobbyRow', 'lobbyArea'],
@@ -55,7 +57,10 @@ const SHARED_FIELD_KEYS: ReadonlyMap<string, AuditField> = new Map([
 const SUBJECT_FIELD_KEYS: Partial<Record<AuditSubject, ReadonlyMap<string, AuditField>>> = {
 	area: new Map([
 		['indoors', 'indoorsOrOutdoors'],
-		['parentAreaId', 'parentArea'],
+		['defaultTileId', 'defaultTile']
+	]),
+	region: new Map([
+		['indoors', 'indoorsOrOutdoors'],
 		['defaultTileId', 'defaultTile']
 	]),
 	class: new Map([
@@ -71,7 +76,10 @@ const SUBJECT_FIELD_KEYS: Partial<Record<AuditSubject, ReadonlyMap<string, Audit
  */
 const MERGED_WITH: Partial<Record<AuditSubject, ReadonlyMap<AuditField, AuditField>>> = {
 	class: new Map([['raceAreas', 'startingArea']]),
-	editor: new Map([['languages', 'role']])
+	editor: new Map([
+		['languages', 'role'],
+		['permissions', 'role']
+	])
 };
 
 /**
@@ -84,6 +92,20 @@ const LIST_SUBJECTS: Readonly<Record<'createTile' | 'createItem' | 'createRace' 
 	createClass: 'class',
 	createTheme: 'theme',
 	createDifficultyLevel: 'difficultyLevel'
+};
+
+/**
+ * A new region's or area's settings before it is given any, so adding one lists only the settings it sets
+ */
+const NEW_PLACE = {
+	enabled: null,
+	indoors: null,
+	lightLevel: null,
+	defaultTileId: null,
+	passageOfTime: null,
+	faerieMorning: null,
+	fogOfWar: null,
+	parents: []
 };
 
 /**
@@ -257,18 +279,28 @@ function roleFields(settings: EditorRoleSettings): AuditFieldChange[]
 		fields.push({ field: 'languages', value: [...settings.languages] });
 	}
 
+	if ((settings.role === 'builder') && (settings.permissions !== undefined))
+	{
+		fields.push({ field: 'permissions', value: { ...settings.permissions } });
+	}
+
 	return(fields);
 }
 
 /**
  * A passage of time as the Audit tab shows it
  *
- * @param time The passage of time
+ * @param time The passage of time, or null for a region or area that inherits it
  * @param morning Where morning is in faerie time
- * @return The passage of time, with where morning is only when it is faerie
+ * @return The passage of time, with where morning is only when it is faerie, or null for inherit
  */
-function passageOf(time: unknown, morning: unknown): AuditPassageOfTime
+function passageOf(time: unknown, morning: unknown): AuditPassageOfTime | null
 {
+	if ((time === null) || (time === undefined))
+	{
+		return(null);
+	}
+
 	return({
 		time: time as AuditPassageOfTime['time'],
 		morning: ((time === 'faerie') ? ((morning ?? null) as AuditPassageOfTime['morning']) : null)
@@ -497,8 +529,52 @@ export class SaveAudit
 				return;
 			}
 
+			case 'createRegion':
+				this.add('region', 'added', { key: null, name: change.region.name }, 1, await this.changedFields('region', { ...NEW_PLACE, name: change.region.name }, change.region));
+				return;
+
+			case 'updateRegion':
+			{
+				const before = (await this.context.places.load()).region(resolveStringRef(this.context, change.regionId));
+
+				if (before)
+				{
+					this.addChanged('region', { key: null, name: (change.update.name ?? before.name) }, await this.changedFields('region', before, change.update));
+				}
+
+				return;
+			}
+
+			case 'deleteRegion':
+			{
+				const before = (await this.context.places.load()).region(resolveStringRef(this.context, change.regionId));
+
+				if (before)
+				{
+					this.add('region', 'deleted', { key: null, name: before.name });
+				}
+
+				return;
+			}
+
+			case 'assignBuilders':
+			{
+				const regionId = resolveStringRef(this.context, change.regionId);
+				const before = (await this.context.places.load()).region(regionId);
+				const assigned = (await listRegions(this.context.version, this.context.transaction)).find((region) => (region.id === regionId))?.builderIds;
+
+				if (before && !isDeepStrictEqual(new Set(assigned), new Set(change.builderIds)))
+				{
+					const usernames = await Promise.all(change.builderIds.map(async (playerId) => ((await this.editors.find(playerId))?.username ?? '')));
+
+					this.addChanged('region', { key: null, name: before.name }, [{ field: 'assignments', value: usernames }]);
+				}
+
+				return;
+			}
+
 			case 'createArea':
-				this.add('area', 'added', { key: null, name: change.area.name });
+				this.add('area', 'added', { key: null, name: change.area.name }, 1, await this.changedFields('area', { ...NEW_PLACE, name: change.area.name, loopsEastWest: false, loopsNorthSouth: false }, change.area));
 				return;
 
 			case 'updateArea':
@@ -521,6 +597,27 @@ export class SaveAudit
 				return(this.changeArea(change.areaId, 'area', 'deleted', 1));
 			case 'resizeArea':
 				return(this.changeArea(change.areaId, 'area', 'resized', 1));
+			case 'setNeighbor':
+			{
+				const areaId = resolveStringRef(this.context, change.areaId);
+				const before = await this.findArea(areaId);
+				const neighborId = ((change.neighborId === null) ? null : resolveStringRef(this.context, change.neighborId));
+				const neighbor = ((neighborId === null) ? undefined : await this.findArea(neighborId));
+				const neighbors = (before?.neighbors as AreaNeighbors | undefined);
+
+				if (before && neighbors && (neighbors[change.side] !== neighborId))
+				{
+					this.addChanged('area', { key: null, name: before.name }, [{ field: 'neighbor', value: { side: change.side, area: (neighbor?.name ?? null) } }]);
+					this.areas.set(areaId, { ...before, neighbors: { ...neighbors, [change.side]: neighborId } });
+
+					if (neighbor && (neighborId !== null))
+					{
+						this.areas.set(neighborId, { ...neighbor, neighbors: { ...(neighbor.neighbors as AreaNeighbors), [oppositeSide(change.side)]: areaId } });
+					}
+				}
+
+				return;
+			}
 			case 'editCells':
 			{
 				const areaId = resolveStringRef(this.context, change.areaId);
@@ -624,6 +721,12 @@ export class SaveAudit
 
 				return(area && { subject: 'area', target: { key: null, name: area.name }, id, saved: { ...area } });
 			}
+			case 'updateRegion':
+			{
+				const region = (await this.context.places.load()).region(String(id));
+
+				return(region && { subject: 'region', target: { key: null, name: region.name }, id, saved: { ...region } });
+			}
 		}
 	}
 
@@ -674,10 +777,15 @@ export class SaveAudit
 			case 'updateArea':
 			case 'deleteArea':
 			case 'resizeArea':
+			case 'setNeighbor':
 			case 'editCells':
 			case 'saveLink':
 			case 'deleteLink':
 				return(resolveStringRef(this.context, change.areaId));
+			case 'updateRegion':
+			case 'deleteRegion':
+			case 'assignBuilders':
+				return(resolveStringRef(this.context, change.regionId));
 			default:
 				return(null);
 		}
@@ -880,7 +988,15 @@ export class SaveAudit
 				return({ field, value: passageOf(after.passageOfTime, after.faerieMorning) });
 
 			case 'lobbyPassageOfTime':
-				return({ field, value: passageOf(after.lobbyPassageOfTime, after.lobbyFaerieMorning) });
+				return({ field, value: passageOf(after.lobbyPassageOfTime, after.lobbyFaerieMorning) as AuditPassageOfTime });
+
+			case 'parents':
+				return({
+					field,
+					value: await Promise.all((after.parents as PlaceRef[]).map(async (parent) => ((parent.kind === 'region')
+						? await this.regionName(resolveStringRef(this.context, parent.id))
+						: await this.areaName(resolveStringRef(this.context, parent.id)))))
+				});
 
 			case 'startingArea':
 			{
@@ -889,6 +1005,16 @@ export class SaveAudit
 				return({
 					field,
 					value: ((typeof areaId === 'string') ? await this.place(areaId, Number(after.startingColumn), Number(after.startingRow)) : null)
+				});
+			}
+
+			case 'lobbyRegion':
+			{
+				const regionId = after.lobbyRegionId;
+
+				return({
+					field,
+					value: ((typeof regionId === 'string') ? await this.regionName(regionId) : null)
 				});
 			}
 
@@ -945,7 +1071,10 @@ export class SaveAudit
 			}
 
 			case 'defaultTile':
-				return({ field, value: await this.nameIn(this.tiles, resolveNumberRef(this.context, after.defaultTileId as NumberRef)) });
+				return({
+					field,
+					value: ((after.defaultTileId === null) ? null : await this.nameIn(this.tiles, resolveNumberRef(this.context, after.defaultTileId as NumberRef)))
+				});
 
 			default:
 				// Every other field holds its setting's value as saved
@@ -979,6 +1108,17 @@ export class SaveAudit
 	private async areaName(areaId: string): Promise<string>
 	{
 		return((await this.findArea(areaId))?.name ?? '');
+	}
+
+	/**
+	 * A region's name, as it is before the change being described
+	 *
+	 * @param regionId The region's ID
+	 * @return Its name, or empty for a region the universe doesn't have
+	 */
+	private async regionName(regionId: string): Promise<string>
+	{
+		return((await this.context.places.load()).region(regionId)?.name ?? '');
 	}
 
 	/**

@@ -46,7 +46,7 @@ export type FlatSettings = Record<string, unknown>;
 /**
  * The kinds of change whose settings are merged with what is saved
  */
-export const MERGED_CHANGE_KINDS = ['saveEditor', 'universe', 'ruleset', 'saveTile', 'saveItem', 'saveRace', 'saveClass', 'saveTheme', 'saveDifficultyLevel', 'updateArea'] as const;
+export const MERGED_CHANGE_KINDS = ['saveEditor', 'universe', 'ruleset', 'saveTile', 'saveItem', 'saveRace', 'saveClass', 'saveTheme', 'saveDifficultyLevel', 'updateRegion', 'updateArea'] as const;
 
 export type MergedChange = Extract<EditorChange, { kind: typeof MERGED_CHANGE_KINDS[number] }>;
 
@@ -142,6 +142,7 @@ export function changeSettings(change: MergedChange): Record<string, unknown>
 	switch (change.kind)
 	{
 		case 'universe':
+		case 'updateRegion':
 		case 'updateArea':
 			return(change.update);
 		case 'ruleset':
@@ -164,6 +165,7 @@ export function withChangeSettings<Change extends MergedChange>(change: Change, 
 	switch (change.kind)
 	{
 		case 'universe':
+		case 'updateRegion':
 		case 'updateArea':
 			return({ ...change, update: settings, loaded });
 		case 'ruleset':

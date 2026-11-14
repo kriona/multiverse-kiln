@@ -38,17 +38,12 @@ export interface StartingReferences
 	 * Items characters would start with
 	 */
 	itemIds?: readonly number[];
-
-	/**
-	 * The lobby's area as the change leaves it, for a change that also moves the lobby; the universe's
-	 * lobby when left out
-	 */
-	lobbyAreaId?: string | null;
 }
 
 /**
- * Refuses starting settings that name an area that isn't one of the universe's or is its lobby, or an
- * item the universe can't use
+ * Refuses starting settings that name an area that isn't one of the universe's, or an item the universe
+ * can't use. A starting area below the lobby region is refused once the save's changes are made, so one
+ * save can move the lobby and the starting areas past each other
  *
  * @param context The save
  * @param references The areas and items the settings name
@@ -57,16 +52,17 @@ export async function checkStartingReferences(context: ChangeContext, references
 {
 	const { universe, version, transaction } = context;
 	const { areaIds = [], itemIds = [] } = references;
-	const lobbyAreaId = ((references.lobbyAreaId === undefined) ? universe.lobbyAreaId : references.lobbyAreaId);
 
 	if (areaIds.length > 0)
 	{
 		const foundAreaIds = await findAreaIdsIn(version, areaIds, transaction);
 
-		if (!areaIds.every((areaId) => (foundAreaIds.has(areaId) && (areaId !== lobbyAreaId))))
+		if (!areaIds.every((areaId) => foundAreaIds.has(areaId)))
 		{
 			refuse(400, startingMessages.unusableStartingArea);
 		}
+
+		context.places.checkLobby();
 	}
 
 	if (itemIds.length > 0)

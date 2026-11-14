@@ -102,7 +102,8 @@ const lobbyRooms = new OneRoomPerKey<LobbyRoom>('universe');
  * (ServerCloseCode.LoggedOut). A window that joins while its session
  * ends, or while who may play the universe changes, looks itself up again once it is listed
  * (JoinChanges), so the change reaches it too. Players start
- * in the universe's lobby area and can walk through its links into other areas (see AreaPlayers)
+ * on the lobby's starting square and can walk through links into the other lobby areas, those below the
+ * universe's lobby region, but never out of them (see AreaPlayers)
  *
  * Each player plays one of their characters in the universe who isn't in a group (those play in their
  * group's room), and can switch between them, passing over those whose race or class bars them
@@ -123,10 +124,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	private readonly areas = new AreaCache(loadArea, loadChunksAt);
 
 	/**
-	 * Players whose area is deleted go back to the lobby area. Each player sees only what they see
+	 * Players walk only the lobby areas, those below the lobby region, and go back to the lobby's starting
+	 * square when their area is deleted or leaves the lobby region. Each player sees only what they see
 	 * themselves, and the lobby has no clock
 	 */
-	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.lobbyAreaId, {
+	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, {
+		lobby: true,
+		fallback: () => ((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell })
+	}, {
 		shared: false,
 		clockSeconds: () => 0
 	});
@@ -461,14 +466,13 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 			return;
 		}
 
-		// Players in the lobby start in its area, at its starting cell. Without a lobby area, nobody is in an area
+		// Players leaving a lobby area go back to the lobby's starting square, never anywhere outside the
+		// lobby areas. Without a starting square, nobody is in an area
 		if (change.kind === 'evacuated')
 		{
-			const destination = (change.destination ?? ((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell }));
-
-			if (destination)
+			if (this.state.hasArea && (this.lobbyAreaId !== undefined) && (change.areaId !== this.lobbyAreaId))
 			{
-				this.areaPlayers.evacuate(change.areaId, destination);
+				this.areaPlayers.evacuate(change.areaId, { areaId: this.lobbyAreaId, ...this.lobbyCell });
 			}
 
 			return;
@@ -974,7 +978,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * The lobby's area, while the universe has one and it is enabled
+	 * The area of the lobby's starting square, while the universe has one and it is an enabled lobby area
 	 *
 	 * @return The area, loaded, or undefined when the lobby has no area
 	 */
@@ -982,7 +986,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	{
 		const area = ((this.lobbyAreaId === undefined) ? undefined : await this.areas.load(this.lobbyAreaId));
 
-		return((area?.loaded.area.enabled ?? false) ? area : undefined);
+		return(((area?.loaded.area.enabled ?? false) && (area?.loaded.area.lobby ?? false)) ? area : undefined);
 	}
 
 	/**

@@ -98,6 +98,7 @@ export type UniverseImportSignature = 'intact' | 'changed' | 'unconfirmed';
  */
 export interface UniverseImportCounts
 {
+	regions: number;
 	areas: number;
 	tileGraphics: number;
 

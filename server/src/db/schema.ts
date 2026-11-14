@@ -5,8 +5,8 @@
  * `npm run db:migrate -w server` to apply it. Never change the database by hand
  */
 import { sql, type SQL } from 'drizzle-orm';
-import { bigint, boolean, check, customType, doublePrecision, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, EDITOR_ROLES, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { bigint, boolean, check, customType, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, EDITOR_ROLES, MAX_REGION_NAME_LENGTH, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -15,7 +15,6 @@ export const universeRole = pgEnum('universe_role', UNIVERSE_ROLES);
 export const editorRole = pgEnum('editor_role', EDITOR_ROLES);
 export const ruleset = pgEnum('ruleset', RULESETS);
 export const passageOfTime = pgEnum('passage_of_time', PASSAGES_OF_TIME);
-export const areaPassageOfTime = pgEnum('area_passage_of_time', AREA_PASSAGES_OF_TIME);
 export const faerieMorning = pgEnum('faerie_morning', FAERIE_MORNINGS);
 export const lobbyPassageOfTime = pgEnum('lobby_passage_of_time', LOBBY_PASSAGES_OF_TIME);
 export const displayTime = pgEnum('display_time', DISPLAY_TIMES);
@@ -282,25 +281,25 @@ function universeVersionColumns()
 		 */
 		translationLanguages: text('translation_languages').array().notNull().default(sql`'{}'`),
 
-		passageOfTime: passageOfTime('passage_of_time').notNull().default('flows_normally'),
-
-		/**
-		 * Set when passageOfTime is faerie
-		 */
-		faerieMorning: faerieMorning('faerie_morning'),
-
 		/**
 		 * How players are shown the time of day
 		 */
 		displayTime: displayTime('display_time').notNull().default('precise'),
 
 		/**
-		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no area to walk around
+		 * The region whose areas players walk in the lobby (every area below it), or null for none. No
+		 * starting area is below it, and no link crosses its edge (checked by every save)
+		 */
+		lobbyRegionId: uuid('lobby_region_id').references((): AnyPgColumn => regions.id, { onDelete: 'set null' }),
+
+		/**
+		 * The area of the lobby's starting square, below the lobby region; while it is null or disabled, the
+		 * lobby has no area to walk around
 		 */
 		lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 		/**
-		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area
+		 * The cell of the lobby's starting square players start nearest; column 0, row 0 is the middle of a new area
 		 */
 		lobbyColumn: integer('lobby_column').notNull().default(0),
 		lobbyRow: integer('lobby_row').notNull().default(0),
@@ -319,11 +318,6 @@ function universeVersionColumns()
 		 * Set when lobbyPassageOfTime is faerie
 		 */
 		lobbyFaerieMorning: faerieMorning('lobby_faerie_morning'),
-
-		/**
-		 * Whether the lobby's tiles are seen past as if none had a vision cost
-		 */
-		lobbyNoVisionCost: boolean('lobby_no_vision_cost').notNull().default(true),
 
 		/**
 		 * Where characters start unless their race or class says otherwise
@@ -378,8 +372,8 @@ function universeVersionColumns()
 type UniverseVersionTable = Record<keyof ReturnType<typeof universeVersionColumns>, AnyPgColumn>;
 
 /**
- * The indexes and checks on the columns of universeVersionColumns(). The area columns are indexed for
- * deleting areas, which clears them
+ * The indexes and checks on the columns of universeVersionColumns(). The region and area columns are
+ * indexed for deleting regions and areas, which clears them
  *
  * @param tableName The table's name, which starts each constraint's name
  * @param table The table's columns
@@ -388,12 +382,12 @@ type UniverseVersionTable = Record<keyof ReturnType<typeof universeVersionColumn
 function universeVersionConstraints(tableName: string, table: UniverseVersionTable)
 {
 	return([
+		index(`${tableName}_lobby_region_id_index`).on(table.lobbyRegionId),
 		index(`${tableName}_lobby_area_id_index`).on(table.lobbyAreaId),
 		index(`${tableName}_starting_area_id_index`).on(table.startingAreaId),
 		check(`${tableName}_source_language_length`, sql`char_length(${table.sourceLanguage}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
 		check(`${tableName}_translation_languages_count`, sql`cardinality(${table.translationLanguages}) <= ${sql.raw(String(MAX_UNIVERSE_LANGUAGES))}`),
 		check(`${tableName}_translation_languages_not_source`, sql`NOT (${table.sourceLanguage} = ANY(${table.translationLanguages}))`),
-		check(`${tableName}_faerie_morning_set`, sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
 		check(`${tableName}_lobby_faerie_morning_set`, sql`(${table.lobbyPassageOfTime} = 'faerie') = (${table.lobbyFaerieMorning} IS NOT NULL)`),
 		check(`${tableName}_lobby_day_hours_range`, sql`${table.lobbyDayHours} BETWEEN ${sql.raw(String(MIN_LOBBY_DAY_HOURS))} AND ${sql.raw(String(MAX_LOBBY_DAY_HOURS))}`),
 		check(`${tableName}_group_size_range`, sql`${table.groupSize} BETWEEN ${sql.raw(String(MIN_GROUP_SIZE))} AND ${sql.raw(String(MAX_GROUP_PLAYERS))}`),
@@ -457,12 +451,22 @@ export const universeEditors = pgTable('universe_editors', {
 	 */
 	languages: text('languages').array().notNull().default(sql`'{}'`),
 
+	/**
+	 * What a builder may edit besides the areas and regions they are assigned (region_assignments):
+	 * tiles and uploaded tilesets, items, and mobs (stored, but nothing uses it yet). Never set for
+	 * another role
+	 */
+	canEditTiles: boolean('can_edit_tiles').notNull().default(false),
+	canEditItems: boolean('can_edit_items').notNull().default(false),
+	canEditMobs: boolean('can_edit_mobs').notNull().default(false),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.playerId] }),
 	index('universe_editors_player_id_index').on(table.playerId),
 	check('universe_editors_languages_count', sql`cardinality(${table.languages}) <= ${sql.raw(String(MAX_TRANSLATOR_LANGUAGES))}`),
-	check('universe_editors_languages_translator', sql`${table.role}::text = 'translator' OR cardinality(${table.languages}) = 0`)
+	check('universe_editors_languages_translator', sql`${table.role}::text = 'translator' OR cardinality(${table.languages}) = 0`),
+	check('universe_editors_permissions_builder', sql`${table.role}::text = 'builder' OR NOT (${table.canEditTiles} OR ${table.canEditItems} OR ${table.canEditMobs})`)
 ]);
 
 /**
@@ -1152,44 +1156,210 @@ export const classRaceAreas = pgTable('class_race_areas', {
  *
  * The area covers minColumn..maxColumn and minRow..maxRow, both inclusive, around column 0, row 0
  */
+/**
+ * The settings regions and areas share (see Regions in STRUCTURE-OVERVIEW.md), each null for inherit:
+ * what is below a region, and an area, inherits them from what is above it
+ *
+ * @return The column builders, for regions and areas
+ */
+function placeSettingsColumns()
+{
+	return({
+		/**
+		 * false disables everything below; true sets nothing, working as inherit does
+		 */
+		enabled: boolean('enabled'),
+
+		indoors: boolean('indoors'),
+
+		/**
+		 * How light an indoor area is at any time of day; kept while the place is outdoors, where it has no effect
+		 */
+		lightLevel: areaLightLevel('light_level'),
+
+		defaultTileId: integer('default_tile_id').references(() => tiles.id),
+		passageOfTime: passageOfTime('passage_of_time'),
+
+		/**
+		 * Set exactly when passageOfTime is faerie
+		 */
+		faerieMorning: faerieMorning('faerie_morning'),
+
+		/**
+		 * Whether what is out of the players' sight is hidden from them
+		 */
+		fogOfWar: boolean('fog_of_war')
+	});
+}
+
+/**
+ * Whether a faerie morning is set exactly when a passage of time is faerie
+ *
+ * @param passage The passage of time column, which may be null
+ * @param morning The faerie morning column
+ * @return The condition
+ */
+function faerieMorningSet(passage: AnyPgColumn, morning: AnyPgColumn): SQL
+{
+	return(sql`(${passage} IS NOT DISTINCT FROM 'faerie') = (${morning} IS NOT NULL)`);
+}
+
+/**
+ * Regions group areas without cells of their own, holding settings the areas in them inherit, and the
+ * builders assigned to them edit what is below them (see Regions in STRUCTURE-OVERVIEW.md). A region's
+ * parents are in region_parents; one with none is top-level
+ */
+export const regions = pgTable('regions', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
+	draft: draftColumn(),
+	originId: uuid('origin_id').references((): AnyPgColumn => regions.id, { onDelete: 'set null' }),
+
+	/**
+	 * Unique within the version, not counting case. Only seen in the editor, so it isn't universe text
+	 */
+	name: text('name').notNull(),
+
+	...placeSettingsColumns(),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	index('regions_universe_id_index').on(table.universeId),
+	index('regions_default_tile_id_index').on(table.defaultTileId),
+	uniqueIndex('regions_name_unique').on(table.universeId, table.draft, sql`lower(${table.name})`),
+	...originConstraints('regions', table),
+	check('regions_name_length', sql`char_length(${table.name}) BETWEEN 1 AND ${sql.raw(String(MAX_REGION_NAME_LENGTH))}`),
+	check('regions_faerie_morning_set', faerieMorningSet(table.passageOfTime, table.faerieMorning))
+]);
+
+/**
+ * The regions each region is inside, in the order they were added. Both are of the same version, and
+ * nothing is ever inside itself (checked by every save)
+ */
+export const regionParents = pgTable('region_parents', {
+	regionId: uuid('region_id').notNull().references(() => regions.id, { onDelete: 'cascade' }),
+	parentRegionId: uuid('parent_region_id').notNull().references(() => regions.id, { onDelete: 'cascade' }),
+
+	/**
+	 * When the parent was added, which orders the region's parents. The clock moves on within a
+	 * transaction, so parents added by one save keep the order they were added in
+	 */
+	addedAt: timestamp('added_at', { withTimezone: true }).notNull().default(sql`clock_timestamp()`)
+}, (table) => [
+	primaryKey({ columns: [table.regionId, table.parentRegionId] }),
+	index('region_parents_parent_region_id_index').on(table.parentRegionId),
+	check('region_parents_not_itself', sql`${table.regionId} <> ${table.parentRegionId}`)
+]);
+
+/**
+ * The builders assigned to each region, who edit what is below it. An assignment is the universe's
+ * rather than its version's, so it names the live region; a region the draft added can be assigned once
+ * the draft is applied
+ */
+export const regionAssignments = pgTable('region_assignments', {
+	regionId: uuid('region_id').notNull().references(() => regions.id, { onDelete: 'cascade' }),
+	universeId: uuid('universe_id').notNull(),
+	playerId: uuid('player_id').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+	primaryKey({ columns: [table.regionId, table.playerId] }),
+	foreignKey({
+		name: 'region_assignments_editor_fk',
+		columns: [table.universeId, table.playerId],
+		foreignColumns: [universeEditors.universeId, universeEditors.playerId]
+	}).onDelete('cascade'),
+	index('region_assignments_editor_index').on(table.universeId, table.playerId)
+]);
+
 export const areas = pgTable('areas', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	universeId: uuid('universe_id').notNull().references(() => universes.id, { onDelete: 'cascade' }),
 	draft: draftColumn(),
 	originId: uuid('origin_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
-	parentAreaId: uuid('parent_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
-	name: text('name').notNull(),
-	enabled: boolean('enabled').notNull().default(true),
-	indoors: boolean('indoors').notNull(),
 
 	/**
-	 * How light the area is at any time of day while it is indoors
+	 * The area it is inside, if any: one of its parents, beside the regions in area_regions
 	 */
-	lightLevel: areaLightLevel('light_level').notNull().default('lit'),
+	parentAreaId: uuid('parent_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
-	defaultTileId: integer('default_tile_id').notNull().references(() => tiles.id),
+	/**
+	 * When the parent area was added, which orders it among the area's parents
+	 */
+	parentAreaAddedAt: timestamp('parent_area_added_at', { withTimezone: true }),
+
+	name: text('name').notNull(),
+	...placeSettingsColumns(),
+
+	/**
+	 * The settings worked out for the area from its own and what is above it, which the rooms, the game and
+	 * the editor's previews read (resolveAreaSettings() in shared/src/regions.ts). Every save that changes
+	 * areas, regions, parents or tiles' kinds stores them, and refuses a conflict or a missing value. The
+	 * light level is null exactly when the area is outdoors, and the passage of time exactly for a lobby
+	 * area (one below the lobby region), which takes the Lobby tab's. With fog of war off, players see
+	 * everything near them
+	 */
+	resolvedEnabled: boolean('resolved_enabled').notNull(),
+	resolvedIndoors: boolean('resolved_indoors').notNull(),
+	resolvedLightLevel: areaLightLevel('resolved_light_level'),
+	resolvedDefaultTileId: integer('resolved_default_tile_id').notNull().references(() => tiles.id),
+	resolvedPassageOfTime: passageOfTime('resolved_passage_of_time'),
+	resolvedFaerieMorning: faerieMorning('resolved_faerie_morning'),
+	resolvedFogOfWar: boolean('resolved_fog_of_war').notNull(),
+	resolvedLobby: boolean('resolved_lobby').notNull(),
+
 	minColumn: integer('min_column').notNull(),
 	minRow: integer('min_row').notNull(),
 	maxColumn: integer('max_column').notNull(),
 	maxRow: integer('max_row').notNull(),
 	loopsEastWest: boolean('loops_east_west').notNull().default(false),
 	loopsNorthSouth: boolean('loops_north_south').notNull().default(false),
-	passageOfTime: areaPassageOfTime('passage_of_time').notNull().default('inherit'),
 
 	/**
-	 * Set when passageOfTime is faerie
+	 * The area's neighbor on each side, of the same version (see Neighboring areas in
+	 * STRUCTURE-OVERVIEW.md): always both ways, which every save that changes them keeps, along with the
+	 * rest of the grid's rules. Deleting an area leaves its neighbors with an edge
 	 */
-	faerieMorning: faerieMorning('faerie_morning'),
-
+	northAreaId: uuid('north_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	eastAreaId: uuid('east_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	southAreaId: uuid('south_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	westAreaId: uuid('west_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('areas_universe_id_index').on(table.universeId),
 	index('areas_parent_area_id_index').on(table.parentAreaId),
+	index('areas_north_area_id_index').on(table.northAreaId),
+	index('areas_east_area_id_index').on(table.eastAreaId),
+	index('areas_south_area_id_index').on(table.southAreaId),
+	index('areas_west_area_id_index').on(table.westAreaId),
 	index('areas_default_tile_id_index').on(table.defaultTileId),
+	index('areas_resolved_default_tile_id_index').on(table.resolvedDefaultTileId),
 	...originConstraints('areas', table),
 	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
-	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),	check('areas_faerie_morning_set', sql`(${table.passageOfTime} = 'faerie') = (${table.faerieMorning} IS NOT NULL)`),
-	check('areas_faerie_does_not_loop', sql`${table.passageOfTime} <> 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
+	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
+	check('areas_not_inside_itself', sql`${table.parentAreaId} <> ${table.id}`),
+	check('areas_not_own_neighbor', sql`${table.id} NOT IN (${table.northAreaId}, ${table.eastAreaId}, ${table.southAreaId}, ${table.westAreaId})`),
+	check('areas_faerie_morning_set', faerieMorningSet(table.passageOfTime, table.faerieMorning)),
+	check('areas_resolved_light_level_set', sql`(${table.resolvedLightLevel} IS NOT NULL) = ${table.resolvedIndoors}`),
+	check('areas_resolved_faerie_morning_set', faerieMorningSet(table.resolvedPassageOfTime, table.resolvedFaerieMorning)),
+	check('areas_resolved_passage_of_time_set', sql`(${table.resolvedPassageOfTime} IS NULL) = ${table.resolvedLobby}`),
+	check('areas_faerie_does_not_loop', sql`${table.resolvedPassageOfTime} IS DISTINCT FROM 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
+]);
+
+/**
+ * The regions each area is in directly, in the order they were added: its parents, beside its parent
+ * area. Every area is in at least one region, directly or through the area it is inside (checked by every
+ * save)
+ */
+export const areaRegions = pgTable('area_regions', {
+	areaId: uuid('area_id').notNull().references(() => areas.id, { onDelete: 'cascade' }),
+	regionId: uuid('region_id').notNull().references(() => regions.id, { onDelete: 'cascade' }),
+
+	/**
+	 * When the region was added, which orders the area's parents
+	 */
+	addedAt: timestamp('added_at', { withTimezone: true }).notNull().default(sql`clock_timestamp()`)
+}, (table) => [
+	primaryKey({ columns: [table.areaId, table.regionId] }),
+	index('area_regions_region_id_index').on(table.regionId)
 ]);
 
 /**

@@ -6,17 +6,18 @@
  * affects nobody, and something disabled more than once does what the last change chose, once. The
  * impact route (editorImpact.ts) warns about the same things, at the change whose choice is used
  */
-import type { AreaEvacuation, GroupSizeLowering, ItemDisabling } from '@multiverse-kiln/shared';
+import type { AreaEvacuation, AreaEvacuations, GroupSizeLowering, ItemDisabling } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
 import { deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
-import { areasById, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
+import { areasById, areasInTree, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
 import { groupChanges } from '../players/groupChanges.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import type { ChangeContext } from './editorChangeContext.js';
 import { parentPlace } from './editorAreas.js';
+import type { PlacesOutcome } from './editorPlaces.js';
 
 /**
  * Something a save enables or disables: whether it was enabled before the save, and what the last change
@@ -35,7 +36,11 @@ interface Noted<Choice>
 export class SaveDisablings
 {
 	private readonly items = new Map<number, Noted<ItemDisabling>>();
-	private readonly areas = new Map<string, Noted<AreaEvacuation>>();
+
+	/**
+	 * Where the characters in each area the save disables go, as the last change disabling it chose
+	 */
+	private readonly areaChoices = new Map<string, AreaEvacuation>();
 
 	/**
 	 * The group size before the save, and what the last change lowering it below that chose
@@ -55,15 +60,17 @@ export class SaveDisablings
 	}
 
 	/**
-	 * Notes a change to whether an area is enabled
+	 * Notes where a change to regions or areas chose to send the characters in the areas it disables.
+	 * Which areas the save disables is worked out once every change is made (SavePlaces.finish())
 	 *
-	 * @param areaId The area
-	 * @param wasEnabled Whether it is enabled before the change
-	 * @param moveTo Where the change chose to send the characters in it, when it disables it
+	 * @param moveTo Where they go, by area
 	 */
-	area(areaId: string, wasEnabled: boolean, moveTo?: AreaEvacuation): void
+	areas(moveTo: AreaEvacuations): void
 	{
-		note(this.areas, areaId, wasEnabled, moveTo);
+		for (const [areaId, choice] of Object.entries(moveTo))
+		{
+			this.areaChoices.set(areaId, choice);
+		}
 	}
 
 	/**
@@ -85,12 +92,14 @@ export class SaveDisablings
 
 	/**
 	 * Once every change is saved: takes disabled items from the characters carrying them, or gives back
-	 * those enabled again, moves the characters out of disabled areas and brings groups larger than a
-	 * lowered group size down to it, as the changes chose
+	 * those enabled again, moves the characters out of disabled areas and group characters out of areas
+	 * put below the lobby region, and brings groups larger than a lowered group size down to it, as the
+	 * changes chose
 	 *
 	 * @param context The save
+	 * @param places The areas the save disables, and those it puts below the lobby region
 	 */
-	async finish(context: ChangeContext): Promise<void>
+	async finish(context: ChangeContext, places: PlacesOutcome): Promise<void>
 	{
 		// The draft's characters are the live version's: applying the draft asks what happens to them
 		if (context.version.draft)
@@ -99,7 +108,8 @@ export class SaveDisablings
 		}
 
 		await this.finishItems(context);
-		await this.finishAreas(context);
+		await this.finishAreas(context, places.disabled);
+		await leaveLobbyAreas(context, places.enteredLobby);
 		await this.finishGroupSize(context);
 	}
 
@@ -142,13 +152,15 @@ export class SaveDisablings
 	}
 
 	/**
-	 * Moves the characters out of the areas the save disables, other than the lobby's
+	 * Moves the characters out of the areas the save disables. Lobby players in a lobby area go back to
+	 * the lobby's starting square, unless it is in that area, when the lobby has no area to walk in
 	 *
 	 * @param context The save
+	 * @param disabledAreaIds The areas the save found enabled and leaves disabled
 	 */
-	private async finishAreas(context: ChangeContext): Promise<void>
+	private async finishAreas(context: ChangeContext, disabledAreaIds: readonly string[]): Promise<void>
 	{
-		if (this.areas.size === 0)
+		if (disabledAreaIds.length === 0)
 		{
 			return;
 		}
@@ -156,22 +168,31 @@ export class SaveDisablings
 		const { universe, transaction } = context;
 
 		// An area the save deleted isn't listed
-		const areas = await listAreas(context.version, transaction);
-		const byId = areasById(areas);
+		const listed = await listAreas(context.version, transaction);
+		const lobbyAreaIds = new Set(listed
+			.filter((area) => area.resolved.lobby)
+			.map((area) => area.id));
+		const byId = areasById(areasInTree(listed));
 		const loadedLinks = new Map<string, readonly LinkInto[]>();
 
-		for (const area of areas)
+		for (const areaId of disabledAreaIds)
 		{
-			const noted = this.areas.get(area.id);
-
-			// The lobby's players are always in its area, and have nowhere else to start
-			if (noted?.wasEnabled && !area.enabled && (area.id !== universe.lobbyAreaId))
+			if (areaId === universe.lobbyAreaId)
 			{
-				const moveTo = (noted.choice ?? 'start');
-				const destination = ((moveTo === 'parent') ? await parentPlace(transaction, byId, area.id, loadedLinks) : null);
-
-				await evacuateArea(context, area.id, destination);
+				continue;
 			}
+
+			// Only the lobby walks a lobby area, and it sends its players back to its starting square
+			if (lobbyAreaIds.has(areaId))
+			{
+				context.published.push({ kind: 'evacuated', areaId, destination: null });
+				continue;
+			}
+
+			const moveTo = (this.areaChoices.get(areaId) ?? 'start');
+			const destination = ((moveTo === 'parent') ? await parentPlace(transaction, byId, areaId, loadedLinks) : null);
+
+			await evacuateArea(context, areaId, destination);
 		}
 	}
 
@@ -210,6 +231,21 @@ function note<Id, Choice>(noted: Map<Id, Noted<Choice>>, id: Id, wasEnabled: boo
 		wasEnabled: (earlier?.wasEnabled ?? wasEnabled),
 		choice: (choice ?? earlier?.choice)
 	});
+}
+
+/**
+ * Sends the group characters in areas the save puts below the lobby region back to where their groups
+ * start: only the lobby walks the lobby areas
+ *
+ * @param context The save
+ * @param areaIds The areas
+ */
+async function leaveLobbyAreas(context: ChangeContext, areaIds: readonly string[]): Promise<void>
+{
+	for (const areaId of areaIds)
+	{
+		await evacuateArea(context, areaId, null);
+	}
 }
 
 /**

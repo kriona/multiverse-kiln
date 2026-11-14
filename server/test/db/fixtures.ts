@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { sql } from 'drizzle-orm';
 
-import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type AreaBounds } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, type AreaBounds, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { createCharacter, type NewCharacter } from '../../src/db/characterRepo.js';
 import type { Executor } from '../../src/db/client.js';
@@ -12,8 +12,9 @@ import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { createUniverse, setUniverseAreas } from '../../src/db/universeRepo.js';
-import { createArea, createAreaLink, loadChunks, loadArea, saveGroundChunk } from '../../src/db/areaRepo.js';
+import { createUniverse, setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
+import { createArea, createAreaLink, findEditorArea, loadChunks, loadArea, saveGroundChunk, setAreaParents, storeResolvedSettings } from '../../src/db/areaRepo.js';
+import { createRegion, listRegions, setRegionAssignments } from '../../src/db/regionRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import type { AreaLayout } from '../../src/logic/areaGrid.js';
 
@@ -25,14 +26,15 @@ export interface PlayableUniverse
 	universeId: string;
 
 	/**
-	 * The lobby: 32 x 18 cells of grass from column 0, row 0, with forest at (10, 3) and mountains at
-	 * (12, 3). Stepping onto (5, 5) takes a player into the house
+	 * The area of the lobby's starting square, in the lobby region (testLobbyRegionId()): 32 x 18 cells of
+	 * grass from column 0, row 0, with forest at (10, 3) and mountains at (12, 3). Stepping onto (5, 5)
+	 * takes a player into the house
 	 */
 	squareAreaId: string;
 
 	/**
-	 * 10 x 6 cells of wood floor from column 0, row 0. A player arrives at (2, 2), and (2, 4) has a
-	 * manual link back out to (5, 6) in the square
+	 * A lobby area too: 10 x 6 cells of wood floor from column 0, row 0. A player arrives at (2, 2), and
+	 * (2, 4) has a manual link back out to (5, 6) in the square
 	 */
 	houseAreaId: string;
 
@@ -225,22 +227,175 @@ export async function addUniverse(name?: string): Promise<string>
 }
 
 /**
- * Adds an area to a universe: five columns by three rows of grass around the center, unless told otherwise
+ * The name of the region addArea() puts a universe's areas in
+ */
+export const TEST_REGION_NAME = 'Test Region';
+
+/**
+ * The region of a universe's live version that addArea() puts its areas in, added the first time: top-level,
+ * outdoors, lit, grass, with time flowing normally
+ *
+ * @param universeId The universe's ID
+ * @return The region's ID
+ */
+export async function testRegionId(universeId: string): Promise<string>
+{
+	const version = liveVersion(universeId);
+	const existing = (await listRegions(version)).find((region) => (region.name === TEST_REGION_NAME));
+
+	if (existing)
+	{
+		return(existing.id);
+	}
+
+	return(createRegion(version, {
+		name: TEST_REGION_NAME,
+		enabled: null,
+		indoors: false,
+		lightLevel: 'lit',
+		defaultTileId: await defaultTileId('grass'),
+		passageOfTime: 'flows_normally',
+		faerieMorning: null,
+		fogOfWar: true
+	}));
+}
+
+/**
+ * The name of the region addArea() puts a universe's lobby areas in, its lobby region
+ */
+export const TEST_LOBBY_REGION_NAME = 'Test Lobby';
+
+/**
+ * The region of a universe's live version that addArea() puts its lobby areas in, added the first time
+ * and made the universe's lobby region: top-level, outdoors, lit and grass, as the test region, with no
+ * passage of time of its own, since the Lobby tab sets the lobby's
+ *
+ * @param universeId The universe's ID
+ * @return The region's ID
+ */
+export async function testLobbyRegionId(universeId: string): Promise<string>
+{
+	const version = liveVersion(universeId);
+	const existing = (await listRegions(version)).find((region) => (region.name === TEST_LOBBY_REGION_NAME));
+
+	if (existing)
+	{
+		return(existing.id);
+	}
+
+	const regionId = await createRegion(version, {
+		name: TEST_LOBBY_REGION_NAME,
+		enabled: null,
+		indoors: false,
+		lightLevel: 'lit',
+		defaultTileId: await defaultTileId('grass'),
+		passageOfTime: null,
+		faerieMorning: null,
+		fogOfWar: true
+	});
+
+	await updateUniverseSettings(version, { lobbyRegionId: regionId });
+
+	return(regionId);
+}
+
+/**
+ * Takes a playable universe's square and house out of the lobby, into its test region, for tests that
+ * play groups in them: the universe is left without a lobby region or starting square, and the areas'
+ * worked-out settings are stored as a save would store them
+ *
+ * @param universe The universe, from addPlayableUniverse()
+ */
+export async function withoutLobby(universe: PlayableUniverse): Promise<void>
+{
+	const regionId = await testRegionId(universe.universeId);
+
+	await updateUniverseSettings(liveVersion(universe.universeId), {
+		lobbyRegionId: null,
+		lobbyAreaId: null,
+		lobbyColumn: 0,
+		lobbyRow: 0
+	});
+
+	for (const areaId of [universe.squareAreaId, universe.houseAreaId])
+	{
+		await setAreaParents(areaId, [{ kind: 'region', id: regionId }]);
+		await setWorkedOut(areaId, {
+			passageOfTime: 'flows_normally',
+			lobby: false
+		});
+	}
+}
+
+/**
+ * Changes some of the settings stored as worked out for an area, which the rooms play, as a save would
+ * once it works them out from the area's regions
+ *
+ * @param areaId The area's ID
+ * @param changes The settings to change
+ */
+export async function setWorkedOut(areaId: string, changes: Partial<ResolvedAreaSettings>): Promise<void>
+{
+	const found = await findEditorArea(areaId);
+
+	if (!found)
+	{
+		throw new Error(`No area ${areaId}`);
+	}
+
+	await storeResolvedSettings(new Map([[areaId, { ...found.area.resolved, ...changes }]]));
+}
+
+/**
+ * Assigns builders to a universe's test region (testRegionId()), so they can edit the areas addArea() adds
+ *
+ * @param universeId The universe's ID
+ * @param playerIds The builders' IDs, each already a builder of the universe
+ */
+export async function assignToTestRegion(universeId: string, playerIds: string[]): Promise<void>
+{
+	await setRegionAssignments(universeId, await testRegionId(universeId), playerIds);
+}
+
+/**
+ * Adds an area to a universe, in its test region (testRegionId()), or its test lobby region
+ * (testLobbyRegionId()) for a lobby area: five columns by three rows of grass around the center, unless
+ * told otherwise. A default tile or indoors given is the area's own setting
  *
  * @param universeId The universe's ID
  * @param name The area's name
- * @param options The area's bounds, default tile and whether it is indoors
+ * @param options The area's bounds, default tile, whether it is indoors and whether it is a lobby area
  * @return The area's ID
  */
-export async function addArea(universeId: string, name: string = 'Test Area', options: { bounds?: AreaBounds; tile?: string; indoors?: boolean } = {}): Promise<string>
+export async function addArea(universeId: string, name: string = 'Test Area', options: { bounds?: AreaBounds; tile?: string; indoors?: boolean; lobby?: boolean } = {}): Promise<string>
 {
-	return(createArea({
+	const indoors = (options.indoors ?? false);
+	const lobby = (options.lobby ?? false);
+	const tileId = await defaultTileId(options.tile ?? 'grass');
+	const regionId = await (lobby ? testLobbyRegionId(universeId) : testRegionId(universeId));
+	const areaId = await createArea({
 		universeId,
 		name,
-		indoors: (options.indoors ?? false),
-		defaultTileId: await defaultTileId(options.tile ?? 'grass'),
+		loopsEastWest: false,
+		loopsNorthSouth: false,
+		indoors: ((options.indoors === undefined) ? null : indoors),
+		defaultTileId: ((options.tile === undefined) ? null : tileId),
+		resolved: {
+			enabled: true,
+			indoors,
+			lightLevel: (indoors ? 'lit' : null),
+			defaultTileId: tileId,
+			passageOfTime: (lobby ? null : 'flows_normally'),
+			faerieMorning: null,
+			fogOfWar: true,
+			lobby
+		},
 		bounds: (options.bounds ?? { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 })
-	}));
+	});
+
+	await setAreaParents(areaId, [{ kind: 'region', id: regionId }]);
+
+	return(areaId);
 }
 
 /**
@@ -289,8 +444,8 @@ export async function addPlayableUniverse(): Promise<PlayableUniverse>
 {
 	const universeId = await createUniverse({ name: newUniverseName('Playable Universe'), ruleset: 'pf1e', stage: 'let_there_be_light' });
 	const wideBounds = { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 };
-	const squareAreaId = await addArea(universeId, 'Square', { bounds: wideBounds });
-	const houseAreaId = await addArea(universeId, 'House', { bounds: { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 5 }, tile: 'wood_floor', indoors: true });
+	const squareAreaId = await addArea(universeId, 'Square', { bounds: wideBounds, lobby: true });
+	const houseAreaId = await addArea(universeId, 'House', { bounds: { minColumn: 0, minRow: 0, maxColumn: 9, maxRow: 5 }, tile: 'wood_floor', indoors: true, lobby: true });
 	const fieldAreaId = await addArea(universeId, 'Field', { bounds: wideBounds });
 	const cells = new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL);
 
@@ -300,7 +455,11 @@ export async function addPlayableUniverse(): Promise<PlayableUniverse>
 
 	await createAreaLink({ areaId: squareAreaId, column: 5, row: 5, targetAreaId: houseAreaId, targetColumn: 2, targetRow: 2, mode: 'automatic', requiresWholeGroup: false });
 	await createAreaLink({ areaId: houseAreaId, column: 2, row: 4, targetAreaId: squareAreaId, targetColumn: 5, targetRow: 6, mode: 'manual', requiresWholeGroup: false });
-	await setUniverseAreas(universeId, squareAreaId, fieldAreaId);
+	await setUniverseAreas(universeId, {
+		lobbyRegionId: await testLobbyRegionId(universeId),
+		lobbyAreaId: squareAreaId,
+		startingAreaId: fieldAreaId
+	});
 
 	return({ universeId, squareAreaId, houseAreaId, fieldAreaId });
 }

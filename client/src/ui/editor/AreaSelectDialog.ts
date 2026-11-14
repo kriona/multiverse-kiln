@@ -1,4 +1,4 @@
-import { isInBounds, parentAreas, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
+import { isInBounds, lobbyAreaIds, parentAreas, PlaceGraph, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -9,6 +9,7 @@ import type { AreaEditorHost } from '../../scenes/AreaEditorScene';
 import { getElement, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
 import { areaEditorMessages } from './areaEditorMessages';
+import type { AreaSource } from './areaSource';
 import { describeCell } from './cellDescription';
 import { editorMessages } from './editorMessages';
 import type { StagedTiles } from './stagedChanges';
@@ -49,17 +50,27 @@ export interface AreaSelection
 
 /**
  * What an area is chosen for: where characters start (the universe's, a race's or a class's), or where
- * players start in the lobby. A starting area can't be the lobby's, so neither offers the other's areas
+ * players start in the lobby. A starting area can't be a lobby area, so neither offers the other's areas
  */
 export type AreaSelectPurpose = 'starting' | 'lobby';
+
+/**
+ * An area offered as another's neighbor (see Neighboring areas in STRUCTURE-OVERVIEW.md), and why it
+ * can't be chosen, when it can't
+ */
+export interface NeighborChoice
+{
+	area: EditorArea;
+	refusal: string | undefined;
+}
 
 /**
  * Selection: Area (see STRUCTURE-OVERVIEW.md): a dialog for choosing where characters start: one of the
  * universe's areas, found by typing part of its name, and the square of it they start on, chosen on a
  * preview of the area
  *
- * Choosing a starting area leaves out the lobby's area, and choosing the lobby's area leaves out the
- * starting areas
+ * Choosing a starting area leaves out the lobby areas, those below the lobby region, and choosing the
+ * lobby's starting square lists only them
  */
 export class AreaSelectDialog
 {
@@ -69,6 +80,15 @@ export class AreaSelectDialog
 	private readonly results = getElement('area-select-results', HTMLFieldSetElement);
 	private readonly none = getElement('area-select-none', HTMLElement);
 	private readonly lobbyHint = getElement('area-select-lobby-hint', HTMLElement);
+	private readonly startingHint = getElement('area-select-starting-hint', HTMLElement);
+	private readonly neighborHint = getElement('area-select-neighbor-hint', HTMLElement);
+	private readonly previewHelp = getElement('area-select-preview-help', HTMLElement);
+
+	/**
+	 * While choosing a neighbor: why each area that can't be one can't, by ID, and where the areas and
+	 * their chunks come from, the Areas tab's changes not yet saved included
+	 */
+	private neighborMode: { refusals: Map<string, string>; source: AreaSource } | undefined;
 	private readonly summary = getElement('area-select-summary', HTMLElement);
 	private readonly cellText = getElement('area-select-cell', HTMLElement);
 	private readonly error = getElement('area-select-error', HTMLElement);
@@ -174,21 +194,27 @@ export class AreaSelectDialog
 	 * @param areaId The area chosen now, which starts out chosen, if any
 	 * @param cell The square of that area chosen now
 	 * @param purpose What the area is chosen for, a starting area unless said otherwise
+	 * @param lobbyRegionId The lobby region, below which the lobby's areas are, when it isn't the one
+	 * saved, as when the Lobby tab has chosen another
 	 * @return The area and square chosen, or undefined when the dialog was closed without choosing
 	 */
-	async open(universe: EditableUniverse, areaId: string | null, cell: StartingCell, purpose: AreaSelectPurpose = 'starting'): Promise<AreaSelection | undefined>
+	async open(universe: EditableUniverse, areaId: string | null, cell: StartingCell, purpose: AreaSelectPurpose = 'starting', lobbyRegionId?: string | null): Promise<AreaSelection | undefined>
 	{
 		const version = ++this.version;
 
 		this.finish(undefined);
 		this.universe = universe;
 		this.areas = [];
+		this.neighborMode = undefined;
 		this.chosenAreaId = (areaId ?? undefined);
 		this.chosenCell = ((areaId === null) ? MIDDLE_CELL : cell);
 		this.search.value = '';
 		this.results.replaceChildren();
 		this.none.hidden = true;
 		this.lobbyHint.hidden = (purpose !== 'lobby');
+		this.startingHint.hidden = true;
+		this.neighborHint.hidden = true;
+		this.previewHelp.hidden = false;
 		this.summary.textContent = '';
 		this.cellText.textContent = '';
 		this.submit.disabled = true;
@@ -210,9 +236,10 @@ export class AreaSelectDialog
 
 			if (version === this.version)
 			{
-				const excluded = new Set((purpose === 'lobby') ? list.startingAreaIds : [list.lobbyAreaId]);
+				const inLobby = lobbyAreaIds(new PlaceGraph(list.regions, list.areas), ((lobbyRegionId === undefined) ? list.lobbyRegionId : lobbyRegionId));
 
-				this.areas = list.areas.filter((area) => !excluded.has(area.id));
+				this.areas = list.areas.filter((area) => (inLobby.has(area.id) === (purpose === 'lobby')));
+				this.startingHint.hidden = ((purpose === 'lobby') || (inLobby.size === 0));
 				this.tiles = this.stagedTiles.withChanges(tiles).tiles;
 				this.showResults();
 				void this.showPreview();
@@ -231,6 +258,46 @@ export class AreaSelectDialog
 		}
 
 		return(chosen);
+	}
+
+	/**
+	 * Opens the dialog to choose an area's neighbor on a side: the areas that can be listed, and those that
+	 * can't greyed out with why, each shown on the preview without choosing a square
+	 *
+	 * @param universe The universe
+	 * @param choices Every area to list, with why it can't be chosen when it can't
+	 * @param tiles The tiles the universe can use, with the Tilesets tab's changes, for the preview
+	 * @param source Where the areas and their chunks come from, the Areas tab's changes not yet saved included
+	 * @param hint What the dialog says it chooses, such as "Choose the area east of Town."
+	 * @return The area chosen, or undefined when the dialog was closed without choosing
+	 */
+	async openForNeighbor(universe: EditableUniverse, choices: readonly NeighborChoice[], tiles: readonly EditorTile[], source: AreaSource, hint: string): Promise<EditorArea | undefined>
+	{
+		const selection = this.open(universe, null, MIDDLE_CELL);
+
+		// The list and preview open() loads for a starting area give way to the neighbors given
+		this.version++;
+		this.neighborMode = {
+			refusals: new Map(choices
+				.filter((choice) => (choice.refusal !== undefined))
+				.map((choice) => [choice.area.id, choice.refusal ?? ''])),
+			source
+		};
+		this.areas = choices
+			.map((choice) => choice.area)
+			.sort((first, second) => first.name.localeCompare(second.name));
+		this.tiles = [...tiles];
+		this.neighborHint.textContent = hint;
+		this.neighborHint.hidden = false;
+		this.lobbyHint.hidden = true;
+		this.startingHint.hidden = true;
+		this.previewHelp.hidden = true;
+		showMessage(this.error, undefined);
+		this.showResults();
+
+		const chosen = await selection;
+
+		return(chosen?.area);
 	}
 
 	/**
@@ -292,15 +359,24 @@ export class AreaSelectDialog
 			}));
 		}
 
-		if (!area.enabled)
+		if (!area.resolved.enabled)
 		{
 			notes.push(t(editorMessages.disabled));
+		}
+
+		// An area that can't be a neighbor there is listed with why, and can't be chosen
+		const refusal = this.neighborMode?.refusals.get(area.id);
+
+		if (refusal !== undefined)
+		{
+			notes.push(refusal);
 		}
 
 		label.className = 'checkbox described-choice';
 		input.type = 'radio';
 		input.name = 'area-select';
 		input.value = area.id;
+		input.disabled = (refusal !== undefined);
 		input.checked = (area.id === this.chosenAreaId);
 		text.className = 'choice-text';
 		name.textContent = area.name;
@@ -340,10 +416,11 @@ export class AreaSelectDialog
 		}
 
 		let area: EditorArea;
+		const neighborMode = this.neighborMode;
 
 		try
 		{
-			area = await this.api.getArea(universe.id, areaId);
+			area = await (neighborMode ? neighborMode.source.getArea(areaId) : this.api.getArea(universe.id, areaId));
 		}
 		catch (error)
 		{
@@ -367,13 +444,13 @@ export class AreaSelectDialog
 			defaultMessage: '{indoors, select, true {Indoors} other {Outdoors}}, {height, number} tall by {width, number} wide',
 			description: 'In the dialog for choosing an area, describes the chosen area under its preview; {height} and {width} are its size in cells'
 		}, {
-			indoors: String(area.indoors),
+			indoors: String(area.resolved.indoors),
 			height: ((bounds.maxRow - bounds.minRow) + 1),
 			width: ((bounds.maxColumn - bounds.minColumn) + 1)
 		});
 
 		const cells = new AreaCells(bounds);
-		const loader = new ChunkLoader((range) => this.api.loadChunks(universe.id, area.id, range), cells, (chunkKeys) =>
+		const loader = new ChunkLoader((range) => (neighborMode ? neighborMode.source.loadChunks(area.id, range) : this.api.loadChunks(universe.id, area.id, range)), cells, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
@@ -388,7 +465,12 @@ export class AreaSelectDialog
 
 		if (this.preview?.area === area)
 		{
-			this.showCell();
+			// A neighbor has no square to choose
+			if (!neighborMode)
+			{
+				this.showCell();
+			}
+
 			scene.centerOnCell(this.chosenCell.column, this.chosenCell.row);
 		}
 	}
@@ -408,9 +490,12 @@ export class AreaSelectDialog
 			paintStart: () => undefined,
 			paint: () => undefined,
 			paintEnd: () => undefined,
+			fill: () => undefined,
+			pickTile: () => undefined,
+			openNeighbor: () => undefined,
 			pick: (column, row) =>
 			{
-				if (this.preview && isInBounds(this.preview.area.bounds, column, row))
+				if (this.preview && !this.neighborMode && isInBounds(this.preview.area.bounds, column, row))
 				{
 					this.chosenCell = { column, row };
 					this.showCell();
@@ -429,7 +514,7 @@ export class AreaSelectDialog
 
 				return(describeCell({
 					cells: preview.cells,
-					defaultTileId: preview.area.defaultTileId,
+					defaultTileId: preview.area.resolved.defaultTileId,
 					tiles: this.tiles,
 					links: [],
 					ruleset: universe.ruleset

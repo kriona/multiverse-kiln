@@ -25,11 +25,13 @@ import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates } from '../world/editorUpdates.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
 import { findEditorAccess, universeContextOf, type UniverseContext } from './editorAccess.js';
-import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, updateAreaChange } from './editorAreas.js';
+import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, setNeighborChange, updateAreaChange } from './editorAreas.js';
 import { ChangeRefusal, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 import { createClassChange, removeClassChange, saveClassChange } from './editorClasses.js';
 import { createDifficultyLevelChange, removeDifficultyLevelChange, saveDifficultyLevelChange } from './editorDifficultyLevels.js';
 import { SaveDisablings } from './editorDisablings.js';
+import { SavePlaces } from './editorPlaces.js';
+import { assignBuildersChange, createRegionChange, deleteRegionChange, updateRegionChange } from './editorRegions.js';
 import { addEditorChange, checkCreatorKept, emailAddedEditors, playersLosingAccess, removeEditorChange, saveEditorChange } from './editorEditors.js';
 import { createItemChange, removeItemChange, saveItemChange } from './editorItems.js';
 import { saveChangesRequest } from './editorPayloads.js';
@@ -120,7 +122,13 @@ function sendRefused(response: Response, changeIndex: number | null, refusal: Ch
 		error: localize(message, values),
 		changeIndex,
 		...((refusal.resizeConflict === undefined) ? {} : { resizeConflict: refusal.resizeConflict }),
-		...((refusal.conflicts === undefined) ? {} : { conflicts: refusal.conflicts })
+		...((refusal.conflicts === undefined) ? {} : { conflicts: refusal.conflicts }),
+		...((refusal.placeProblems === undefined)
+			? {}
+			: {
+				placeProblems: refusal.placeProblems.problems,
+				placeNames: refusal.placeProblems.names
+			})
 	};
 
 	response.status(status).json(payload);
@@ -358,6 +366,8 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				refuse(404, errorMessages.noSuchDraft);
 			}
 
+			// The places read the save as its changes leave it, once it is made below
+			const places = new SavePlaces(() => saving);
 			const saving: ChangeContext = {
 				playerId: base.playerId,
 				universe: (await findEditableUniverse(base.version, transaction) ?? base.universe),
@@ -371,9 +381,14 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				published: [],
 				onCommit: [],
 				disablings: new SaveDisablings(),
+				places,
 				deletedImages: [],
 				draftApplied: false
 			};
+
+			// The last change that touched the regions, areas, tiles' kinds, links, starting areas or the lobby,
+			// which a refusal of the settings they leave the areas with, or of the lobby's edge, names
+			let lastPlaceChange = -1;
 
 			const audit = new SaveAudit(saving);
 			const merge = new SaveMerge(saving, audit);
@@ -403,9 +418,17 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 					await settleUniverseText(saving);
 				}
 
+				const touches = places.touches;
+				const lobbyChecks = places.lobbyChecks;
+
 				await audit.describe(change);
 				await applyChange(saving, change);
 				applied.push(change);
+
+				if ((places.touches !== touches) || (places.lobbyChecks !== lobbyChecks))
+				{
+					lastPlaceChange = current;
+				}
 			}
 
 			await writeSavedTranslations(saving);
@@ -425,7 +448,8 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				}, undefined, merge.conflicts);
 			}
 
-			await saving.disablings.finish(saving);
+			current = lastPlaceChange;
+			await saving.disablings.finish(saving, await places.finish());
 			current = lastEditorChange;
 			await checkCreatorKept(saving);
 
@@ -664,14 +688,24 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			return(saveDifficultyLevelChange(context, change.id, change.settings));
 		case 'removeDifficultyLevel':
 			return(removeDifficultyLevelChange(context, change.id));
+		case 'createRegion':
+			return(createRegionChange(context, change.ref, change.region));
+		case 'updateRegion':
+			return(updateRegionChange(context, change.regionId, change.update, (change.moveTo ?? {})));
+		case 'deleteRegion':
+			return(deleteRegionChange(context, change.regionId, (change.moveTo ?? {})));
+		case 'assignBuilders':
+			return(assignBuildersChange(context, change.regionId, change.builderIds));
 		case 'createArea':
 			return(createAreaChange(context, change.ref, change.area));
 		case 'updateArea':
-			return(updateAreaChange(context, change.areaId, change.update, (change.moveTo ?? 'start')));
+			return(updateAreaChange(context, change.areaId, change.update, (change.moveTo ?? {})));
 		case 'deleteArea':
-			return(deleteAreaChange(context, change.areaId));
+			return(deleteAreaChange(context, change.areaId, (change.moveTo ?? {})));
 		case 'resizeArea':
 			return(resizeAreaChange(context, change.areaId, change.bounds, change.discard));
+		case 'setNeighbor':
+			return(setNeighborChange(context, change.areaId, change.side, change.neighborId));
 		case 'editCells':
 			return(editCellsChange(context, change.areaId, change.changes));
 		case 'saveLink':

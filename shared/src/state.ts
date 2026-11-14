@@ -15,6 +15,12 @@ import { schema, t, type SchemaType } from '@colyseus/schema';
  * player playing none is a ghost: only their own windows see them, and their name is empty
  */
 export const Player = schema({
+	/**
+	 * The area the player is in, whose cells x and y are counted in. A client draws a player in a
+	 * neighboring area across the seam from its own (see Neighboring areas in STRUCTURE-OVERVIEW.md)
+	 */
+	areaId: t.string(),
+
 	x: t.number(),
 	y: t.number(),
 	name: t.string(),
@@ -52,8 +58,9 @@ export type GroupMember = SchemaType<typeof GroupMember>;
  * Root state of a group's game room
  *
  * players holds each member who is present, keyed by character ID. A client sees only the players in
- * the same area as the character it controls: the server adds each one to the client's view (StateView)
- * as they enter the area and removes them as they leave it. members lists every member, present or not
+ * the same area as the character it controls, and those near it across a seam with a neighboring area:
+ * the server adds each one to the client's view (StateView) as they come near and removes them as they
+ * leave. members lists every member, present or not
  */
 export const GameState = schema({
 	players: t.map(Player).view(),
@@ -96,8 +103,8 @@ export type LobbyMember = SchemaType<typeof LobbyMember>;
 /**
  * Root state of a universe's lobby room
  *
- * players works as in GameState: a client sees only the players in its own player's area, and never
- * another player's ghost. members lists everyone in the lobby playing a character, whichever area they
+ * players works as in GameState: a client sees only the players in its own player's area or near it
+ * across a seam, and never another player's ghost. members lists everyone in the lobby playing a character, whichever area they
  * are in, and whether or not the lobby has an area
  */
 export const LobbyState = schema({

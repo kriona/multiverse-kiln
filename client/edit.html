@@ -100,14 +100,6 @@
 									Builders make their changes in a draft
 								</label>
 								<p id="universe-require-builder-draft-hint" class="hint" data-message="editor.universe.requireBuilderDraftHint" data-translation-context="Explains the checkbox on the editor's Universe tab, shown while the stage &quot;let there be light&quot; (open to everyone) is chosen, that requires builders to make their changes in the universe's draft, a copy players don't see until a creator applies it" hidden>While players can join, builders can start a draft and switch between it and the live version, but can only save changes to the draft. Players see their work once a creator applies the draft.</p>
-								<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
-									Passage of time
-									<select id="universe-time"></select>
-								</label>
-								<label id="universe-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of an area has morning, when the passage of time is faerie" hidden>
-									Where is morning?
-									<select id="universe-faerie"></select>
-								</label>
 								<label data-message="editor.displayTime" data-translation-context="Label of the field for how players are shown the time of day in a universe; also names the setting in the list of what a save changed, on the editor's Audit tab">
 									Display time
 									<select id="universe-display-time"></select>
@@ -146,8 +138,7 @@
 										<th scope="col" data-message="editor.editors.username" data-translation-context="Heading of the column of usernames on the editor's Editors tab">Username</th>
 										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</th>
 										<th scope="col" data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Role</th>
-										<th scope="col" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Languages</th>
-										<th scope="col" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</th>
+										<th scope="col" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</th>
 									</tr>
 								</thead>
 								<tbody id="editors-rows"></tbody>
@@ -248,16 +239,26 @@
 					</section>
 
 					<section id="editor-panel-lobby" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-lobby" hidden>
-						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other.</p>
+						<p data-message="editor.lobby.explanation" data-translation-context="Explains the lobby on the editor's Lobby tab">The lobby is where everyone in the universe meets before joining a group. Its areas are the areas below the lobby region, edited on the Areas tab like any other, and nothing connects them to the rest of the world.</p>
 						<form id="lobby-form" class="form">
-							<p data-message="editor.lobby.areaChoice" data-translation-context="Shows the area players walk around in the universe's lobby, on the editor's Lobby tab; {area} is the area's name and the square players start on, or that there is none">Lobby area: <strong id="lobby-area-name" data-argument="area"></strong></p>
+							<div class="form-group">
+								<label data-message="editor.lobby.region" data-translation-context="Label of the field on the editor's Lobby tab choosing the lobby region, the region whose areas players walk in the lobby; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									Lobby region
+									<select id="lobby-region" aria-describedby="lobby-region-hint"></select>
+								</label>
+								<p id="lobby-region-hint" class="hint" data-message="editor.lobby.regionHint" data-translation-context="Explains the lobby region on the editor's Lobby tab, under its field">Players walk every area below it, at any depth. A region with a starting area below it, or with links leading out of it, can't be the lobby region.</p>
+								<div class="area-buttons">
+									<button id="lobby-edit-region" type="button" data-message="editor.lobby.editRegion" data-translation-context="Button on the editor's Lobby tab that opens the lobby region in the region editor"><!-- icon ph:pencil-simple -->Edit the lobby region</button>
+								</div>
+							</div>
+							<p data-message="editor.lobby.squareChoice" data-translation-context="Shows where players start in the universe's lobby, on the editor's Lobby tab; {area} is the area's name and the square players start on, or that there is none">Starting square: <strong id="lobby-area-name" data-argument="area"></strong></p>
 							<div class="form-group lobby-area-details">
-								<p class="hint" data-message="editor.lobby.areaHint" data-translation-context="Explains the lobby's area on the editor's Lobby tab, under the area's name">The area to use as the game's lobby for players between groups.</p>
+								<p class="hint" data-message="editor.lobby.squareHint" data-translation-context="Explains the lobby's starting square on the editor's Lobby tab, under it">Where players start in the lobby: a square in one of the areas below the lobby region.</p>
 								<p id="lobby-no-area-hint" class="hint" hidden></p>
 								<div class="area-buttons">
-									<button id="lobby-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.lobby.chooseArea" data-translation-context="Button on the editor's Lobby tab that opens the dialog for choosing the area players walk around in the lobby, and the square they start on"><!-- icon ph:map-pin -->Choose Area</button>
-									<button id="lobby-area-clear" type="button" class="secondary" data-shortcut="Alt+O" data-message="editor.lobby.clearArea" data-translation-context="Button on the editor's Lobby tab that takes away the lobby's area, so the lobby has no area to walk around"><!-- icon ph:x -->No Lobby Area</button>
-									<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button that opens the lobby in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
+									<button id="lobby-area-choose" type="button" class="secondary" data-shortcut="Alt+C" data-message="editor.lobby.chooseArea" data-translation-context="Button on the editor's Lobby tab that opens the dialog for choosing the area below the lobby region players start in, and the square they start on"><!-- icon ph:map-pin -->Choose Area</button>
+									<button id="lobby-area-clear" type="button" class="secondary" data-shortcut="Alt+O" data-message="editor.lobby.clearSquare" data-translation-context="Button on the editor's Lobby tab that takes away the lobby's starting square, so the lobby has no area to walk around"><!-- icon ph:x -->No Starting Square</button>
+									<button id="lobby-edit-area" type="button" data-message="editor.lobby.editArea" data-translation-context="Button on the editor's Lobby tab that opens the area of the lobby's starting square in the area editor"><!-- icon ph:pencil-simple -->Edit the lobby's area</button>
 								</div>
 							</div>
 							<fieldset id="lobby-fields" class="plain">
@@ -265,7 +266,7 @@
 									Passage of time
 									<select id="lobby-time"></select>
 								</label>
-								<p class="hint" data-message="editor.lobby.timeHint" data-translation-context="Explains the lobby's passage of time on the editor's Lobby tab">Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time.</p>
+								<p class="hint" data-message="editor.lobby.timeHint" data-translation-context="Explains the lobby's passage of time on the editor's Lobby tab">Actions take no time in the lobby, so the time of day in every area below the lobby region follows this instead of their own passage of time.</p>
 								<label id="lobby-day-hours-field" data-message="editor.lobby.dayHours" data-translation-context="Label of the field for how many real hours a day in the lobby lasts, shown when the lobby's passage of time is real time">
 									How quickly?
 									<input id="lobby-day-hours" type="number" step="1" required />
@@ -275,11 +276,6 @@
 									Where is morning?
 									<select id="lobby-faerie"></select>
 								</label>
-								<label class="checkbox" data-message="editor.lobby.noVisionCost" data-translation-context="Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost; also names the setting in the list of what a save changed, on the editor's Audit tab">
-									<input id="lobby-no-vision-cost" type="checkbox" />
-									No vision cost in the lobby
-								</label>
-								<p class="hint" data-message="editor.lobby.noVisionCostHint" data-translation-context="Explains the lobby's no vision cost checkbox on the editor's Lobby tab">Tiles don't block or shorten anyone's view in the lobby, regardless of the tile's vision cost. Characters see as far as in full daylight at any time of day.</p>
 								<p id="lobby-error" class="form-error" role="alert" hidden></p>
 							</fieldset>
 						</form>
@@ -327,7 +323,7 @@
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="race-rows"></tbody>
@@ -346,7 +342,7 @@
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="class-rows"></tbody>
@@ -365,7 +361,7 @@
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
+										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 									</tr>
 								</thead>
 								<tbody id="theme-rows"></tbody>
@@ -461,10 +457,38 @@
 					<section id="editor-panel-areas" class="editor-panel editor-cards" role="tabpanel" aria-labelledby="editor-tab-areas" hidden>
 						<div id="area-list-view" class="panel">
 							<div class="panel-heading">
-								<h2 data-message="editor.areas.heading" data-translation-context="Heading of the list of the universe's areas">Areas</h2>
-								<button id="area-add" type="button" data-shortcut="Alt+N" data-message="editor.areas.add" data-translation-context="Button that opens the dialog for making a new area"><!-- icon ph:plus -->Add Area</button>
+								<h2 id="places-heading" data-message="editor.places.heading" data-translation-context="Heading of the editor's Areas tab, listing the universe's regions (which group areas) and areas">Regions and Areas</h2>
+								<div class="place-add-buttons">
+									<button id="region-add" type="button" data-shortcut="Alt+G" data-message="editor.regions.add" data-translation-context="Button on the Areas tab that opens the dialog for making a new region, which groups areas and holds settings they inherit"><!-- icon ph:plus -->Add Region</button>
+									<button id="area-add" type="button" data-shortcut="Alt+N" data-message="editor.areas.add" data-translation-context="Button that opens the dialog for making a new area"><!-- icon ph:plus -->Add Area</button>
+								</div>
 							</div>
-							<ul id="area-list" class="area-list"></ul>
+							<div class="filters place-filters">
+								<input id="place-search" type="search" placeholder="Search by name" aria-label="Search regions and areas by name" autocomplete="off" data-untracked data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.places.searchLabel" data-translation-context-aria-label="Name of the field on the Areas tab that narrows the regions and areas down by name, for screen readers" />
+								<fieldset class="choice">
+									<legend data-message="editor.places.view" data-translation-context="Heading of the choice on the Areas tab between showing the regions and areas as a tree, each inside its parents, or as a table">Show as</legend>
+									<label class="checkbox" data-message="editor.places.tree" data-translation-context="Choice on the Areas tab that shows the regions and areas as a tree, each listed under the regions and areas it is inside">
+										<input id="place-view-tree" name="place-view" type="radio" value="tree" data-untracked checked />
+										Tree
+									</label>
+									<label class="checkbox" data-message="editor.places.table" data-translation-context="Choice on the Areas tab that shows the regions and areas as a table, one row each">
+										<input id="place-view-table" name="place-view" type="radio" value="table" data-untracked />
+										Table
+									</label>
+								</fieldset>
+							</div>
+							<ul id="area-list" class="area-list place-tree"></ul>
+							<table id="place-table" class="item-table" aria-labelledby="places-heading" hidden>
+								<thead>
+									<tr>
+										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
+										<th scope="col" data-sort="kind"><button type="button" class="sort-button" data-message="editor.places.kind" data-translation-context="Heading of the column of the Areas tab's table saying whether each row is a region or an area">Region or area</button></th>
+										<th scope="col" data-message="editor.place.parents" data-translation-context="Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab's table listing them; also names the setting in the list of what a save changed, on the editor's Audit tab">Parents</th>
+										<th scope="col" data-message="editor.places.tags" data-translation-context="Heading of the column of the Areas tab's table that says of each region or area whether it is the lobby's or the starting area, disabled, new or deleted when saved, or open in another editor's window">Tags</th>
+									</tr>
+								</thead>
+								<tbody id="place-table-rows"></tbody>
+							</table>
 							<p id="area-empty" class="universe-empty" data-message="editor.areas.none" data-translation-context="Shown instead of the list of areas when the universe has none" hidden>There are no areas yet.</p>
 							<p id="area-list-error" class="form-error" role="alert" hidden></p>
 						</div>
@@ -474,29 +498,34 @@
 								<div class="area-editor-top">
 									<div class="area-back-buttons">
 										<button id="area-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
-										<button id="area-back-lobby" type="button" class="secondary" data-shortcut="Alt+Y" data-message="editor.area.backToLobby" data-translation-context="Button in the area editor, shown while the area is the lobby's, that closes the area editor and goes to the editor's Lobby tab" hidden><!-- icon ph:arrow-left -->Back to Lobby</button>
+										<button id="area-back-lobby" type="button" class="secondary" data-shortcut="Alt+Y" data-message="editor.area.backToLobby" data-translation-context="Button in the area editor, shown while the area is below the lobby region, and in the region editor, shown while the region is the lobby region, that closes the editor and goes to the editor's Lobby tab" hidden><!-- icon ph:arrow-left -->Back to Lobby</button>
 									</div>
 									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Name
 										<input id="area-name" required />
 									</label>
 								</div>
-								<p id="area-lobby-notice" class="lobby-notice" data-message="editor.area.lobbyNotice" data-translation-context="Shown prominently under the name in the area editor while the area is the one players walk around in the universe's lobby (chosen on the Lobby tab)" hidden>This area is the game's lobby.</p>
+								<p id="area-lobby-notice" class="lobby-notice" data-message="editor.area.lobbyNotice" data-translation-context="Shown prominently under the name in the area editor while the area is below the lobby region (chosen on the Lobby tab), so players walk it in the universe's lobby" hidden>This area is part of the game's lobby.</p>
 								<fieldset id="area-fields" class="plain">
-									<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
-										<input id="area-enabled" type="checkbox" />
-										Enabled
-									</label>
-									<p id="area-parent-disabled" class="hint" hidden></p>
-									<div class="field-label">
-										<span id="area-parent-label" data-message="editor.area.parent" data-translation-context="Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor's Audit tab">Parent area</span>
+									<div class="field-label place-parents">
+										<span id="area-parents-label" data-message="editor.place.parents" data-translation-context="Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab's table listing them; also names the setting in the list of what a save changed, on the editor's Audit tab">Parents</span>
+										<ul id="area-parent-list" class="place-parent-list" aria-labelledby="area-parents-label"></ul>
 										<div class="combobox-field">
-											<input id="area-parent" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="area-parent-options" aria-labelledby="area-parent-label" data-untracked />
-											<ul id="area-parent-options" class="combobox-options" role="listbox" aria-labelledby="area-parent-label" hidden></ul>
+											<input id="area-parent-add" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="area-parent-add-options" aria-label="Add Parent" data-untracked data-message-aria-label="editor.place.addParent" data-translation-context-aria-label="Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one" />
+											<ul id="area-parent-add-options" class="combobox-options" role="listbox" aria-label="Add Parent" hidden data-message-aria-label="editor.place.addParent" data-translation-context-aria-label="Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"></ul>
 										</div>
 									</div>
+									<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Enabled
+										<select id="area-enabled"></select>
+									</label>
+									<p id="area-disabled-by" class="hint" hidden></p>
 									<fieldset class="choice indoor-outdoor">
 										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab">Indoors or outdoors</legend>
+										<label class="checkbox">
+											<input id="area-kind-inherit" name="area-indoors" type="radio" value="inherit" />
+											<span id="area-kind-inherit-label"></span>
+										</label>
 										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
 											<input id="area-outdoors" name="area-indoors" type="radio" value="outdoors" />
 											Outdoors
@@ -506,24 +535,28 @@
 											Indoors
 										</label>
 									</fieldset>
-									<label id="area-light-field" data-message="editor.area.lightLevel" data-translation-context="Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab" hidden>
+									<label id="area-light-field" data-message="editor.area.lightLevel" data-translation-context="Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Light level
 										<select id="area-light"></select>
 									</label>
-									<p id="area-light-hint" class="hint" data-message="editor.area.lightLevelHint" data-translation-context="Explains the light level field of an indoor area" hidden>A lit area is as light as full daylight at any time of day, and a dark one as dark as night. Outdoor areas follow the time of day.</p>
 									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Default tile
 										<select id="area-default-tile"></select>
 									</label>
-									<label id="area-time-field" data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Passage of time
 										<select id="area-time"></select>
 									</label>
-									<p id="area-lobby-time-hint" class="hint" data-message="editor.area.lobbyTime" data-translation-context="Shown in the area editor for the lobby in place of its passage of time, which the Lobby tab sets" hidden>The lobby's passage of time is set on the Lobby tab.</p>
 									<label id="area-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of an area has morning, when the passage of time is faerie" hidden>
 										Where is morning?
 										<select id="area-faerie"></select>
 									</label>
+									<p id="area-lobby-time-hint" class="hint" data-message="editor.area.lobbyTime" data-translation-context="Shown in the area and region editors, for an area below the lobby region and for the lobby region and the regions below it, in place of their passage of time, which the Lobby tab sets" hidden>The lobby's passage of time is set on the Lobby tab.</p>
+									<label data-message="editor.place.fogOfWar" data-translation-context="Label of the field for whether a region's or area's players see only what is in their sight, with what they haven't seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Fog of war
+										<select id="area-fog" aria-describedby="area-fog-hint"></select>
+									</label>
+									<p id="area-fog-hint" class="hint" data-message="editor.place.fogOfWarHint" data-translation-context="Explains the Fog of war field in the region and area editors">Without fog of war, players see everything near them and everyone in the area, at any time of day, and nothing is recorded as explored.</p>
 									<label class="checkbox" data-message="editor.area.loopsEastWest" data-translation-context="Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										<input id="area-loops-east-west" type="checkbox" />
 										Loops east-west
@@ -533,7 +566,19 @@
 										Loops north-south
 									</label>
 									<p id="area-loops-hint" class="hint" data-message="error.faerieCantLoop" data-translation-context="Why an area can't both have faerie time and wrap around at its edges: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings" hidden>An area whose passage of time is faerie can't loop.</p>
-									<p id="area-size"></p>
+									<p id="area-loops-neighbors" class="hint" hidden></p>
+									<div class="field-label area-neighbors">
+										<span id="area-neighbors-label" data-message="editor.area.neighbors" data-translation-context="Heading of the area editor's list of the areas next to the area on each side, walked across without a link">Neighbors</span>
+										<p id="area-neighbors-hint" class="hint" hidden></p>
+										<ul id="area-neighbor-list" class="area-neighbor-list" aria-labelledby="area-neighbors-label"></ul>
+										<div class="form-buttons">
+											<button id="area-overall-map" type="button" class="secondary" data-shortcut="Alt+V" data-message="editor.area.overallMap" data-translation-context="Button in the area editor that opens a dialog drawing the whole grid of neighboring areas the area is in, zoomed out"><!-- icon ph:map-trifold -->See Overall Map</button>
+										</div>
+									</div>
+									<div id="area-problems" class="place-problems" hidden>
+										<p data-message="editor.place.problemsHeading" data-translation-context="Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them">These keep your changes from saving:</p>
+										<ul id="area-problem-list"></ul>
+									</div>
 									<p id="area-error" class="form-error" role="alert" hidden></p>
 									<div class="form-buttons">
 										<button id="area-delete" type="button" class="danger" aria-describedby="area-error"></button>
@@ -551,12 +596,16 @@
 												<input id="area-tool-draw" name="area-tool" type="radio" value="draw" data-shortcut="Alt+R" checked />
 												Draw
 											</label>
+											<label class="checkbox" data-message="editor.area.fill" data-translation-context="Area editor tool that paints a cell and every cell joined to it that holds the same tile">
+												<input id="area-tool-fill" name="area-tool" type="radio" value="fill" data-shortcut="Alt+I" />
+												Fill
+											</label>
 											<label class="checkbox" data-message="editor.area.links" data-translation-context="Area editor tool that adds and changes links to other areas">
 												<input id="area-tool-links" name="area-tool" type="radio" value="links" data-shortcut="Alt+L" />
 												Links
 											</label>
 										</fieldset>
-										<label data-message="editor.area.tile" data-translation-context="Label of the field for the tile the Draw tool paints">
+										<label data-message="editor.area.tile" data-translation-context="Label of the field for the tile the Draw and Fill tools paint">
 											Tile
 											<select id="area-tile" data-shortcut="Alt+T"></select>
 										</label>
@@ -570,23 +619,132 @@
 										</label>
 										<button id="area-undo" type="button" class="secondary" aria-keyshortcuts="Control+Z" data-message="editor.area.undo" data-translation-context="Button that takes back the last painting or change to the area's size"><!-- icon ph:arrow-counter-clockwise -->Undo</button>
 										<button id="area-redo" type="button" class="secondary" aria-keyshortcuts="Control+Y Control+Shift+Z" data-message="editor.area.redo" data-translation-context="Button that makes again the painting or change of size Undo took back"><!-- icon ph:arrow-clockwise -->Redo</button>
+										<span id="area-size" class="area-size"></span>
 										<button id="area-resize" type="button" class="secondary" data-shortcut="Alt+Z" data-message="editor.area.resize" data-translation-context="Button that opens the dialog for changing the area's size"><!-- icon ph:resize -->Edit Size</button>
 									</div>
 									<button id="area-full-page" type="button" class="secondary area-full-page" data-shortcut="Alt+P"></button>
 								</div>
-								<div id="area-canvas" class="area-canvas" tabindex="0" role="application" aria-label="Cells" aria-describedby="area-keyboard-help area-cells-error" data-shortcut="Alt+M" data-message-aria-label="editor.area.label" data-translation-context-aria-label="Name of the area's cells in the area editor, where they are painted, for screen readers">
-									<span id="area-cursor" class="area-cursor"></span>
+								<!-- The buttons on the edges come after the cells, so Tab reaches them next -->
+								<div class="area-canvas-frame">
+									<div id="area-canvas" class="area-canvas" tabindex="0" role="application" aria-label="Cells" aria-describedby="area-keyboard-help area-cells-error" data-shortcut="Alt+M" data-message-aria-label="editor.area.label" data-translation-context-aria-label="Name of the area's cells in the area editor, where they are painted, for screen readers">
+										<span id="area-cursor" class="area-cursor"></span>
+									</div>
+									<button id="area-edge-north-west" type="button" class="secondary area-edge area-edge-north-west" hidden></button>
+									<button id="area-edge-north" type="button" class="secondary area-edge area-edge-north" hidden></button>
+									<button id="area-edge-north-east" type="button" class="secondary area-edge area-edge-north-east" hidden></button>
+									<button id="area-edge-west" type="button" class="secondary area-edge area-edge-west" hidden></button>
+									<button id="area-edge-east" type="button" class="secondary area-edge area-edge-east" hidden></button>
+									<button id="area-edge-south-west" type="button" class="secondary area-edge area-edge-south-west" hidden></button>
+									<button id="area-edge-south" type="button" class="secondary area-edge area-edge-south" hidden></button>
+									<button id="area-edge-south-east" type="button" class="secondary area-edge area-edge-south-east" hidden></button>
 								</div>
 								<div class="area-status">
 									<span id="area-save-status" role="status"></span>
-								</div>
-								<p class="hint" data-message="editor.area.help" data-translation-context="Explains how to use the area editor's cells with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.</p>
-								<p id="area-keyboard-help" class="hint" data-message="editor.area.keyboardHelp" data-translation-context="Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language">With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.</p>
+									<span id="area-pick-status" role="status"></span>								</div>
+								<p class="hint" data-message="editor.area.help" data-translation-context="Explains how to use the area editor's cells with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.</p>
+								<p id="area-keyboard-help" class="hint" data-message="editor.area.keyboardHelp" data-translation-context="Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language">With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. P chooses the cell's tile in the Tile list. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="area-cells-error" class="form-error" role="alert" hidden></p>
 							</section>
 							<div id="area-children" class="panel" hidden>
 								<h3 data-message="editor.area.children" data-translation-context="Heading of the list of areas inside the area being edited">Areas inside this one</h3>
 								<ul id="area-child-list" class="area-list"></ul>
+							</div>
+						</div>
+						<div id="region-editor-view" class="editor-cards" hidden>
+							<form id="region-form" class="panel form">
+								<!-- Outside the fieldset, so disabling the fields leaves the back button working -->
+								<div class="area-editor-top">
+									<div class="area-back-buttons">
+										<button id="region-back" type="button" class="secondary" data-shortcut="Alt+B" data-message="editor.area.back" data-translation-context="Button that closes the area editor and goes back to the list of areas"><!-- icon ph:arrow-left -->Back to Areas</button>
+										<button id="region-back-lobby" type="button" class="secondary" data-shortcut="Alt+Y" data-message="editor.area.backToLobby" data-translation-context="Button in the area editor, shown while the area is below the lobby region, and in the region editor, shown while the region is the lobby region, that closes the editor and goes to the editor's Lobby tab" hidden><!-- icon ph:arrow-left -->Back to Lobby</button>
+									</div>
+									<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Name
+										<input id="region-name" required />
+									</label>
+								</div>
+								<p id="region-lobby-notice" class="lobby-notice" data-message="editor.region.lobbyNotice" data-translation-context="Shown prominently under the name in the region editor while the region is the lobby region (chosen on the Lobby tab), whose areas players walk in the universe's lobby" hidden>This region is the game's lobby.</p>
+								<p class="hint" data-message="editor.region.hint" data-translation-context="Explains the region editor: what a region is and does">A region groups areas. The regions and areas inside it inherit the settings it sets, and builders assigned to it can edit everything inside it.</p>
+								<fieldset id="region-fields" class="plain">
+									<div class="field-label place-parents">
+										<span id="region-parents-label" data-message="editor.place.parents" data-translation-context="Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab's table listing them; also names the setting in the list of what a save changed, on the editor's Audit tab">Parents</span>
+										<ul id="region-parent-list" class="place-parent-list" aria-labelledby="region-parents-label"></ul>
+										<div class="combobox-field">
+											<input id="region-parent-add" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="region-parent-add-options" aria-label="Add Parent" data-untracked data-message-aria-label="editor.place.addParent" data-translation-context-aria-label="Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one" />
+											<ul id="region-parent-add-options" class="combobox-options" role="listbox" aria-label="Add Parent" hidden data-message-aria-label="editor.place.addParent" data-translation-context-aria-label="Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"></ul>
+										</div>
+									</div>
+									<label data-message="form.enabled" data-translation-context="Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Enabled
+										<select id="region-enabled"></select>
+									</label>
+									<p id="region-disabled-by" class="hint" hidden></p>
+									<fieldset class="choice indoor-outdoor">
+										<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab">Indoors or outdoors</legend>
+										<label class="checkbox">
+											<input id="region-kind-inherit" name="region-indoors" type="radio" value="inherit" />
+											<span id="region-kind-inherit-label"></span>
+										</label>
+										<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
+											<input id="region-outdoors" name="region-indoors" type="radio" value="outdoors" />
+											Outdoors
+										</label>
+										<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
+											<input id="region-indoors" name="region-indoors" type="radio" value="indoors" />
+											Indoors
+										</label>
+									</fieldset>
+									<label id="region-light-field" data-message="editor.area.lightLevel" data-translation-context="Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Light level
+										<select id="region-light"></select>
+									</label>
+									<label data-message="editor.area.defaultTile" data-translation-context="Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Default tile
+										<select id="region-default-tile"></select>
+									</label>
+									<label data-message="editor.passageOfTime" data-translation-context="Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Passage of time
+										<select id="region-time"></select>
+									</label>
+									<label id="region-faerie-field" data-message="editor.faerieMorning" data-translation-context="Label of the field for which side of an area has morning, when the passage of time is faerie" hidden>
+										Where is morning?
+										<select id="region-faerie"></select>
+									</label>
+									<p id="region-lobby-time-hint" class="hint" data-message="editor.area.lobbyTime" data-translation-context="Shown in the area and region editors, for an area below the lobby region and for the lobby region and the regions below it, in place of their passage of time, which the Lobby tab sets" hidden>The lobby's passage of time is set on the Lobby tab.</p>
+									<label data-message="editor.place.fogOfWar" data-translation-context="Label of the field for whether a region's or area's players see only what is in their sight, with what they haven't seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor's Audit tab">
+										Fog of war
+										<select id="region-fog" aria-describedby="region-fog-hint"></select>
+									</label>
+									<p id="region-fog-hint" class="hint" data-message="editor.place.fogOfWarHint" data-translation-context="Explains the Fog of war field in the region and area editors">Without fog of war, players see everything near them and everyone in the area, at any time of day, and nothing is recorded as explored.</p>
+									<div id="region-warnings" class="place-problems" hidden>
+										<p data-message="editor.region.warningsHeading" data-translation-context="Heads the list of settings a region inherits different values for from the regions above it, in the region editor. They don't keep it from saving: only areas are checked, and an area below it may set its own value or find one nearer">Different values from above, which the areas in this region must settle:</p>
+										<ul id="region-warning-list"></ul>
+									</div>
+									<div id="region-problems" class="place-problems" hidden>
+										<p data-message="editor.place.problemsHeading" data-translation-context="Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them">These keep your changes from saving:</p>
+										<ul id="region-problem-list"></ul>
+									</div>
+								</fieldset>
+								<fieldset id="region-assignments" class="plain region-assignments">
+									<legend data-message="editor.region.assignments" data-translation-context="Heading of the builders assigned to a region in the region editor, who can edit everything inside it; also names the setting in the list of what a save changed, on the editor's Audit tab">Assigned builders</legend>
+									<p class="hint" data-message="editor.region.assignmentsHint" data-translation-context="Explains the builders assigned to a region in the region editor">Builders edit only the regions and areas inside the regions they're assigned to. Only creators assign them.</p>
+									<ul id="region-builder-list" class="place-parent-list"></ul>
+									<p id="region-builder-none" class="hint" data-message="editor.region.noBuilders" data-translation-context="Shown in the region editor in place of the list of builders assigned to the region, when it has none" hidden>No builders are assigned to this region.</p>
+									<p id="region-builder-draft" class="hint" data-message="editor.region.draftAssignments" data-translation-context="Shown in the region editor for a region added in the universe's draft, in place of assigning builders, which belongs to the live universe" hidden>Builders can be assigned to this region once the draft is applied.</p>
+									<div class="combobox-field">
+										<input id="region-builder-add" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="region-builder-add-options" aria-label="Assign a builder" placeholder="Assign a builder" data-untracked data-message-aria-label="editor.region.assignBuilder" data-translation-context-aria-label="Shown in the empty field under a region's assigned builders, where typing part of a builder's name lists the universe's builders, to assign one" data-message-placeholder="editor.region.assignBuilder" data-translation-context-placeholder="Shown in the empty field under a region's assigned builders, where typing part of a builder's name lists the universe's builders, to assign one" />
+										<ul id="region-builder-add-options" class="combobox-options" role="listbox" aria-label="Assign a builder" hidden data-message-aria-label="editor.region.assignBuilder" data-translation-context-aria-label="Shown in the empty field under a region's assigned builders, where typing part of a builder's name lists the universe's builders, to assign one"></ul>
+									</div>
+								</fieldset>
+								<p id="region-error" class="form-error" role="alert" hidden></p>
+								<div class="form-buttons">
+									<button id="region-delete" type="button" class="danger" aria-describedby="region-error"></button>
+								</div>
+							</form>
+							<div class="panel">
+								<h3 data-message="editor.region.contents" data-translation-context="Heading of the list of the regions and areas inside the region being edited">Inside this region</h3>
+								<ul id="region-child-list" class="area-list"></ul>
+								<p id="region-child-none" class="hint" data-message="editor.region.empty" data-translation-context="Shown in the region editor in place of the list of what is inside the region, when nothing is" hidden>Nothing is inside this region yet.</p>
 							</div>
 						</div>
 					</section>
@@ -624,7 +782,7 @@
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
 									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
 									<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
-									<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet">Notes</button></th>
+									<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 								</tr>
 							</thead>
 							<tbody id="item-rows"></tbody>
@@ -815,7 +973,7 @@
 								<legend data-message="editor.editors.role" data-translation-context="Heading of the column of roles (such as creator or builder) on the editor's Editors tab, and the label of the role field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Role</legend>
 							</fieldset>
 							<div id="editor-languages-field" class="field-label" hidden>
-								<span id="editor-languages-label" data-message="editor.editors.languages" data-translation-context="Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">Languages</span>
+								<span id="editor-languages-label" data-message="editor.editors.languages" data-translation-context="Label of the field in the dialog for an editor on the editor's Editors tab with the languages a translator may translate the universe into; also names the setting in the list of what a save changed, on the editor's Audit tab">Languages</span>
 								<ul id="editor-languages-chosen" class="chips" aria-labelledby="editor-languages-label" hidden></ul>
 								<div class="combobox-field">
 									<input id="editor-languages-search" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="editor-languages-options" aria-labelledby="editor-languages-label" aria-describedby="editor-languages-hint" data-untracked placeholder="Search languages" data-message-placeholder="editor.editors.languagesSearch" data-translation-context-placeholder="Shown in the empty search field for choosing the languages a translator may translate a universe into, in the dialog on the editor's Editors tab" />
@@ -823,6 +981,22 @@
 								</div>
 								<p id="editor-languages-hint" class="hint" data-message="editor.editors.languagesHint" data-translation-context="Under the languages field in the dialog on the editor's Editors tab, shown when the role chosen is translator">The languages they may translate the universe's text into.</p>
 							</div>
+							<fieldset id="editor-permissions-field" class="choice stacked" hidden>
+								<legend data-message="editor.editors.permissions" data-translation-context="Heading of the checkboxes in the dialog on the editor's Editors tab for what a builder may edit besides the areas and regions they are assigned; also names the setting in the list of what a save changed, on the editor's Audit tab">Permissions</legend>
+								<p class="hint" data-message="editor.editors.permissionsHint" data-translation-context="Under the builder permissions in the dialog on the editor's Editors tab">Builders edit the regions and areas inside the regions they're assigned to, which are assigned in the region editor, and these besides.</p>
+								<label class="checkbox" data-message="editor.editors.canEditTiles" data-translation-context="Checkbox in the dialog on the editor's Editors tab letting a builder edit the universe's tiles and uploaded tilesets">
+									<input id="editor-can-edit-tiles" type="checkbox" />
+									Can edit tiles
+								</label>
+								<label class="checkbox" data-message="editor.editors.canEditItems" data-translation-context="Checkbox in the dialog on the editor's Editors tab letting a builder edit the universe's items">
+									<input id="editor-can-edit-items" type="checkbox" />
+									Can edit items
+								</label>
+								<label class="checkbox" data-message="editor.editors.canEditMobs" data-translation-context="Checkbox in the dialog on the editor's Editors tab letting a builder edit the universe's mobs, once there are any">
+									<input id="editor-can-edit-mobs" type="checkbox" />
+									Can edit mobs
+								</label>
+							</fieldset>
 							<p id="editor-dialog-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
 								<button id="editor-remove" type="button" class="danger" aria-describedby="editor-dialog-error"></button>
@@ -1308,6 +1482,34 @@
 						</div>
 					</form>
 				</dialog>
+				<dialog id="tile-replace-dialog" class="panel dialog option-dialog" aria-labelledby="tile-replace-title" aria-describedby="tile-replace-intro">
+					<form id="tile-replace-form" class="form">
+						<h2 id="tile-replace-title" data-message="editor.tileReplace.title" data-translation-context="Title of the dialog that asks what regions and areas get as their default tile instead of a tile being deleted, or no longer for indoors or outdoors">Replace Default Tile</h2>
+						<p id="tile-replace-intro"></p>
+						<p id="tile-replace-status" class="hint" role="status"></p>
+						<div id="tile-replace-fields" class="tile-replace-fields" hidden>
+							<label data-message="editor.tileReplace.all" data-translation-context="Label of the list in the dialog replacing a default tile that chooses one tile for every region and area listed at once">
+								Replace All With
+								<select id="tile-replace-all"></select>
+							</label>
+							<p id="tile-replace-count" class="hint"></p>
+							<ul id="tile-replace-places" class="tile-replace-places"></ul>
+							<div id="tile-replace-outside" class="place-problems" hidden>
+								<p data-message="editor.tileReplace.outside" data-translation-context="Heading in the dialog replacing a default tile, over the regions and areas listed that are outside the regions assigned to the builder, so only a creator can change them">These are outside the regions you're assigned, so a creator has to change them:</p>
+								<ul id="tile-replace-outside-list"></ul>
+							</div>
+							<div id="tile-replace-problems" class="place-problems" hidden>
+								<p data-message="editor.tileReplace.problems" data-translation-context="Heading in the dialog replacing a default tile, over the problems the choices made would leave areas with, which keep it from going on">These choices would leave problems:</p>
+								<ul id="tile-replace-problem-list"></ul>
+							</div>
+						</div>
+						<p id="tile-replace-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="tile-replace-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="tile-replace-submit" type="submit" aria-describedby="tile-replace-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+						</div>
+					</form>
+				</dialog>
 				<dialog id="tile-graphic-dialog" class="panel dialog" aria-labelledby="tile-graphic-title">
 					<form id="tile-graphic-form" class="form">
 						<h2 id="tile-graphic-title" data-message="editor.tileGraphic.title" data-translation-context="Title of the dialog for uploading a tileset: a picture of a terrain that tiles can be drawn with">Upload Tileset Image</h2>
@@ -1354,17 +1556,14 @@
 							Name
 							<input id="area-add-name" required />
 						</label>
-						<fieldset class="choice indoor-outdoor">
-							<legend data-message="form.indoorsOrOutdoors" data-translation-context="Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab">Indoors or outdoors</legend>
-							<label class="checkbox" data-message="form.outdoors" data-translation-context="Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
-								<input id="area-add-outdoors" name="area-add-indoors" type="radio" value="outdoors" checked />
-								Outdoors
-							</label>
-							<label class="checkbox" data-message="form.indoors" data-translation-context="Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab">
-								<input id="area-add-indoors" name="area-add-indoors" type="radio" value="indoors" />
-								Indoors
-							</label>
-						</fieldset>
+						<div class="field-label">
+							<span id="area-add-parent-label" data-message="editor.placeAdd.inside" data-translation-context="Label of the field in the Add Area and Add Region dialogs for the region (or, for an area, the area) the new one goes inside; typing part of a name finds it">Inside</span>
+							<div class="combobox-field">
+								<input id="area-add-parent" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="area-add-parent-options" aria-labelledby="area-add-parent-label" />
+								<ul id="area-add-parent-options" class="combobox-options" role="listbox" aria-labelledby="area-add-parent-label" hidden></ul>
+							</div>
+						</div>
+						<p class="hint" data-message="editor.areaAdd.hint" data-translation-context="Explains the Add Area dialog: a new area's settings start as inherited from what it is inside">The new area inherits its settings from what it's inside until you set its own.</p>
 						<p id="area-add-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="area-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
@@ -1372,10 +1571,76 @@
 						</div>
 					</form>
 				</dialog>
+				<dialog id="region-add-dialog" class="panel dialog" aria-labelledby="region-add-title">
+					<form id="region-add-form" class="form">
+						<h2 id="region-add-title" data-message="editor.regionAdd.title" data-translation-context="Title of the dialog for making a new region, which groups areas">Add Region</h2>
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							Name
+							<input id="region-add-name" required />
+						</label>
+						<div class="field-label">
+							<span id="region-add-parent-label" data-message="editor.placeAdd.inside" data-translation-context="Label of the field in the Add Area and Add Region dialogs for the region (or, for an area, the area) the new one goes inside; typing part of a name finds it">Inside</span>
+							<div class="combobox-field">
+								<input id="region-add-parent" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="region-add-parent-options" aria-labelledby="region-add-parent-label" />
+								<ul id="region-add-parent-options" class="combobox-options" role="listbox" aria-labelledby="region-add-parent-label" hidden></ul>
+							</div>
+						</div>
+						<p id="region-add-error" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="region-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="region-add-submit" type="submit" aria-describedby="region-add-error" data-shortcut="Alt+A" data-message="editor.regionAdd.submit" data-translation-context="Button that makes the new region">Add</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="region-delete-dialog" class="panel dialog region-delete-dialog" aria-labelledby="region-delete-title">
+					<form id="region-delete-form" class="form">
+						<h2 id="region-delete-title"></h2>
+					<p id="region-delete-lobby" class="lobby-notice" data-message="editor.regionDelete.lobby" data-translation-context="Shown in the Delete Region dialog when the region being deleted is the lobby region, chosen on the Lobby tab" hidden>This is the lobby region. Once it's deleted, the universe has no lobby to walk in until another region is chosen on the Lobby tab.</p>
+						<section id="region-delete-only" class="region-delete-group" hidden>
+							<p id="region-delete-only-intro"></p>
+							<ul id="region-delete-only-list" class="place-parent-list"></ul>
+							<fieldset class="choice stacked">
+								<legend class="visually-hidden" data-message="editor.regionDelete.onlyChoice" data-translation-context="Name of the choice in the Delete Region dialog of what happens to the regions and areas whose only parent is the region being deleted, for screen readers">What happens to them</legend>
+								<label class="checkbox" data-message="editor.regionDelete.move" data-translation-context="Choice in the Delete Region dialog that moves the regions and areas whose only parent is the deleted region into the region chosen beside it">
+									<input id="region-delete-move" name="region-delete-only" type="radio" value="move" checked />
+									Move them to
+								</label>
+								<select id="region-delete-move-to" aria-label="Region to move them to" data-message-aria-label="editor.regionDelete.moveTo" data-translation-context-aria-label="Name of the choice of the region the Delete Region dialog moves things into, for screen readers"></select>
+								<label class="checkbox" data-message="editor.regionDelete.deleteAll" data-translation-context="Choice in the Delete Region dialog that deletes the regions and areas whose only parent is the deleted region, with everything inside them">
+									<input id="region-delete-all" name="region-delete-only" type="radio" value="delete" />
+									Delete them, with everything inside them
+								</label>
+							</fieldset>
+						</section>
+						<section id="region-delete-shared" class="region-delete-group" hidden>
+							<p id="region-delete-shared-intro"></p>
+							<ul id="region-delete-shared-list" class="place-parent-list"></ul>
+							<fieldset class="choice stacked">
+								<legend class="visually-hidden" data-message="editor.regionDelete.sharedChoice" data-translation-context="Name of the choice in the Delete Region dialog of what happens to the regions and areas with other parents besides the region being deleted, for screen readers">What happens to them</legend>
+								<label class="checkbox" data-message="editor.regionDelete.leave" data-translation-context="Choice in the Delete Region dialog that leaves the regions and areas with other parents in those parents">
+									<input id="region-delete-leave" name="region-delete-shared" type="radio" value="leave" checked />
+									Leave them in their other parents
+								</label>
+								<label class="checkbox" data-message="editor.regionDelete.addParent" data-translation-context="Choice in the Delete Region dialog that adds the region chosen beside it as a parent of the regions and areas with other parents">
+									<input id="region-delete-add" name="region-delete-shared" type="radio" value="add" />
+									Also put them in
+								</label>
+								<select id="region-delete-add-to" aria-label="Region to also put them in" data-message-aria-label="editor.regionDelete.addTo" data-translation-context-aria-label="Name of the choice of the region the Delete Region dialog adds as a parent, for screen readers"></select>
+							</fieldset>
+						</section>
+						<p id="region-delete-problems" class="form-error" role="alert" hidden></p>
+						<div class="dialog-buttons">
+							<button id="region-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="region-delete-submit" type="submit" class="danger" aria-describedby="region-delete-problems" data-message="editor.region.delete" data-translation-context="Button in the region editor that deletes the region when the Areas tab is saved, after asking what happens to what is in it; also the Delete Region dialog's button">Delete Region</button>
+						</div>
+					</form>
+				</dialog>
 				<dialog id="area-select-dialog" class="panel dialog area-select-dialog" aria-labelledby="area-select-title">
 					<form id="area-select-form" class="form">
 						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
-						<p id="area-select-lobby-hint" class="hint" data-message="editor.areaSelect.lobbyHint" data-translation-context="Shown in the dialog for choosing the lobby's area, which leaves out the areas characters start in" hidden>A starting area can't be a lobby.</p>
+						<p id="area-select-lobby-hint" class="hint" data-message="editor.areaSelect.lobbyAreasHint" data-translation-context="Shown in the dialog for choosing the area of the lobby's starting square, which lists only the areas below the lobby region" hidden>Only the areas below the lobby region are listed.</p>
+						<p id="area-select-starting-hint" class="hint" data-message="editor.areaSelect.startingHint" data-translation-context="Shown in the dialog for choosing where characters start, which leaves out the areas below the lobby region" hidden>The areas below the lobby region aren't listed: characters can't start in the lobby.</p>
+						<p id="area-select-neighbor-hint" class="hint" hidden></p>
 						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
@@ -1395,25 +1660,38 @@
 						<h2 id="resize-title" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing an area's size">Edit Size</h2>
 						<p class="hint" data-message="editor.resize.explanation" data-translation-context="Explains the four fields of the dialog for changing an area's size">How many cells the area reaches in each direction from its center cell (0, 0).</p>
 						<div class="resize-grid">
-							<label class="resize-north" data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the area reaches north of its center">
-								North
-								<input id="resize-north" type="number" min="0" step="1" required />
-							</label>
-							<label class="resize-west" data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the area reaches west of its center">
-								West
-								<input id="resize-west" type="number" min="0" step="1" required />
-							</label>
+							<div class="resize-side resize-north">
+								<label data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the area reaches north of its center">
+									North
+									<input id="resize-north" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-north-was" class="resize-was"></span>
+							</div>
+							<div class="resize-side resize-west">
+								<label data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the area reaches west of its center">
+									West
+									<input id="resize-west" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-west-was" class="resize-was"></span>
+							</div>
 							<span class="resize-center">0, 0</span>
-							<label class="resize-east" data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the area reaches east of its center">
-								East
-								<input id="resize-east" type="number" min="0" step="1" required />
-							</label>
-							<label class="resize-south" data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the area reaches south of its center">
-								South
-								<input id="resize-south" type="number" min="0" step="1" required />
-							</label>
+							<div class="resize-side resize-east">
+								<label data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the area reaches east of its center">
+									East
+									<input id="resize-east" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-east-was" class="resize-was"></span>
+							</div>
+							<div class="resize-side resize-south">
+								<label data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the area reaches south of its center">
+									South
+									<input id="resize-south" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-south-was" class="resize-was"></span>
+							</div>
 						</div>
 						<p id="resize-total"></p>
+						<p id="resize-carried" class="notice resize-carried" hidden></p>
 						<section class="form-group" aria-labelledby="resize-extend-title">
 							<h3 id="resize-extend-title" data-message="editor.resize.extendTitle" data-translation-context="Heading of the part of the dialog for changing an area's size with buttons that make the area bigger on one side">Extend Size</h3>
 							<div class="resize-grid resize-extend">
@@ -1433,6 +1711,31 @@
 							<button id="resize-submit" type="submit" aria-describedby="resize-warning" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the area to the size given">Resize</button>
 						</div>
 					</form>
+				</dialog>
+				<dialog id="neighbor-add-dialog" class="panel dialog" aria-labelledby="neighbor-add-title">
+					<form id="neighbor-add-form" class="form">
+						<h2 id="neighbor-add-title" data-message="editor.neighborAdd.title" data-translation-context="Title of the dialog in the area editor that adds a new area beside the area as its neighbor, walked across without a link">Add Neighbor</h2>
+						<p id="neighbor-add-hint" class="hint"></p>
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							Name
+							<input id="neighbor-add-name" required />
+						</label>
+						<div class="dialog-buttons">
+							<button id="neighbor-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="neighbor-add-submit" type="submit" data-shortcut="Alt+A" data-message="editor.neighborAdd.submit" data-translation-context="Button in the Add Neighbor dialog that adds the new area beside the area being edited">Add</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="overall-map-dialog" class="panel dialog overall-map-dialog" aria-labelledby="overall-map-title">
+					<h2 id="overall-map-title" data-message="editor.overallMap.title" data-translation-context="Title of the dialog drawing the whole grid of neighboring areas an area is in, zoomed out">Overall Map</h2>
+					<p class="hint" data-message="editor.overallMap.hint" data-translation-context="Explains the Overall Map dialog: each area of the grid of neighboring areas is drawn in its place, and opening one goes to its editor">Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter.</p>
+					<div id="overall-map" class="overall-map"></div>
+					<p id="overall-map-seams" class="hint" hidden></p>
+					<p id="overall-map-loops" class="hint" hidden></p>
+					<p id="overall-map-misaligned" class="notice overall-map-misaligned" hidden></p>
+					<div class="dialog-buttons">
+						<button id="overall-map-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
+					</div>
 				</dialog>
 				<dialog id="link-dialog" class="panel dialog link-dialog" aria-labelledby="link-title">
 					<form id="link-form" class="form">

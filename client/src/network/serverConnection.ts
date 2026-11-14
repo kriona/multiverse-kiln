@@ -4,6 +4,7 @@ import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NA
 import { wantedLanguages } from '../localization';
 import { leaveOnPageHide } from '../pageLifecycle';
 import { forgetPlayerValues, rememberPlayerSession } from '../rememberedValues';
+import { holdAreaMessages } from './heldAreaMessages';
 
 /**
  * How many universes Home asks for at a time
@@ -164,6 +165,9 @@ function waitForArrival(room: AreaRoom, hasArea: () => boolean): Promise<{ playe
 function waitForArrival(room: AreaRoom, hasArea: () => boolean = () => true): Promise<{ playerId: string; area: AreaPayload | undefined }>
 {
 	let stopListening: (() => void) | undefined;
+
+	// The areas around the player follow the area, before the scene drawing it listens for them
+	holdAreaMessages(room);
 	const welcome = new Promise<string>((resolve) =>
 	{
 		room.onMessage(ServerMessageType.Welcome, (payload: WelcomePayload) =>

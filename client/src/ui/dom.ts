@@ -97,6 +97,11 @@ export interface SelectOption
 {
 	value: string;
 	label: string;
+
+	/**
+	 * Whether the choice is listed but can't be chosen, its label saying why
+	 */
+	disabled?: boolean;
 }
 
 /**
@@ -107,7 +112,14 @@ export interface SelectOption
  */
 export function setOptions(select: HTMLSelectElement, options: readonly SelectOption[]): void
 {
-	select.replaceChildren(...options.map((option) => new Option(option.label, option.value)));
+	select.replaceChildren(...options.map((option) =>
+	{
+		const element = new Option(option.label, option.value);
+
+		element.disabled = (option.disabled ?? false);
+
+		return(element);
+	}));
 }
 
 /**
@@ -370,6 +382,31 @@ export function scrollToFragment(): void
 	}
 
 	document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+}
+
+/**
+ * Scrolls whatever scrolls an element, the page or an element around it, so the element's top is back
+ * where it was in the window
+ *
+ * @param element The element
+ * @param top Where its top was, in pixels from the window's top
+ */
+export function scrollBackTo(element: HTMLElement, top: number): void
+{
+	const change = element.getBoundingClientRect().top - top;
+	let scroller = element.parentElement;
+
+	if (change === 0)
+	{
+		return;
+	}
+
+	while (scroller && ((scroller.scrollHeight <= scroller.clientHeight) || !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)))
+	{
+		scroller = scroller.parentElement;
+	}
+
+	(scroller ?? document.scrollingElement)?.scrollBy({ top: change, behavior: 'instant' });
 }
 
 /**

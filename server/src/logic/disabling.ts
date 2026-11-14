@@ -2,6 +2,7 @@
  * Disabling things players are using (see STRUCTURE-OVERVIEW.md): who moves when an area is disabled,
  * who leaves a group when the group size is lowered, and how many characters a change affects
  */
+import type { PlaceRef } from '@multiverse-kiln/shared';
 
 /**
  * A cell of an area
@@ -31,6 +32,22 @@ export interface LinkInto
 	column: number;
 	row: number;
 	targetAreaId: string;
+}
+
+/**
+ * Areas as enabledAncestor() follows them: each with the area it is inside, past the regions it is in,
+ * and whether it is enabled as worked out from what is above it
+ *
+ * @param areas The areas, with their parents and worked-out settings
+ * @return The areas
+ */
+export function areasInTree(areas: readonly { id: string; parents: readonly PlaceRef[]; resolved: { enabled: boolean } }[]): AreaInTree[]
+{
+	return(areas.map((area) => ({
+		id: area.id,
+		parentAreaId: (area.parents.find((parent) => (parent.kind === 'area'))?.id ?? null),
+		enabled: area.resolved.enabled
+	})));
 }
 
 /**

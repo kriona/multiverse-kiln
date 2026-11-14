@@ -7,7 +7,7 @@ import { liveVersion } from '../src/db/universeVersions.js';
 import { saveChanges, type SaveOutcome } from '../src/http/editorChanges.js';
 import { saveChangesRequest } from '../src/http/editorPayloads.js';
 import { universeAccessChanges, type StageChange } from '../src/players/universeAccess.js';
-import { createUniverse, logIn, saveAll, send, type Editor } from './editorRequests.js';
+import { assignToWorld, createUniverse, logIn, saveAll, send, worldRegionId, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
 describe('Saving after another save took the universe\'s lock', () =>
@@ -96,7 +96,9 @@ describe('Saving after another save took the universe\'s lock', () =>
 	it('tells the rooms nothing of the stage when the save doesn\'t change it', async () =>
 	{
 		await setUniverseRole(universeId, grace.playerId, 'builder');
+		await assignToWorld(ada, universeId, [grace.playerId]);
 
+		const worldId = await worldRegionId(ada, universeId);
 		const stale = await readBeforeLock();
 		const stages: StageChange[] = [];
 
@@ -109,7 +111,7 @@ describe('Saving after another save took the universe\'s lock', () =>
 
 		try
 		{
-			const outcome = await saveFromStaleRead(stale, 'builder', [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave' } }]);
+			const outcome = await saveFromStaleRead(stale, 'builder', [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave', parents: [{ kind: 'region', id: worldId }] } }]);
 
 			assert.strictEqual(outcome.saved, true);
 		}
@@ -129,11 +131,12 @@ describe('Saving after another save took the universe\'s lock', () =>
 	{
 		await setUniverseRole(universeId, grace.playerId, 'builder');
 
+		const worldId = await worldRegionId(ada, universeId);
 		const stale = await readBeforeLock();
 
 		await saveAll(ada, universeId, [{ kind: 'removeEditor', playerId: grace.playerId }]);
 
-		const outcome = await saveFromStaleRead(stale, 'builder', [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave' } }]);
+		const outcome = await saveFromStaleRead(stale, 'builder', [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave', parents: [{ kind: 'region', id: worldId }] } }]);
 
 		assert.strictEqual(outcome.saved, false);
 		assert.strictEqual(outcome.refusal.refusal.status, 403);

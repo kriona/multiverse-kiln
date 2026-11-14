@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { LobbyState, PLAIN_SIGHT, type AreaChunk } from '@multiverse-kiln/shared';
+import { LobbyState, NO_NEIGHBORS, PLAIN_SIGHT, type AreaChunk, type AreaNeighbors } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { AREA_IDLE_MS, AreaCache } from '../src/rooms/areaCache.js';
@@ -29,19 +29,22 @@ function loadedArea(areaId: string): LoadedArea
 			name: 'Field',
 			enabled: true,
 			indoors: false,
-			passageOfTime: 'inherit'
+			passageOfTime: 'flows_normally',
+			lobby: false
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },
 		displayTime: 'precise',
 		lightLevel: null,
-		fullVision: false,
+		fogOfWar: true,
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: 1,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
+		neighbors: { ...NO_NEIGHBORS },
+		sides: { ...NO_NEIGHBORS },
 		links: [],
-		disabledTargetIds: new Set(),
+		closedTargetIds: new Set(),
 		tiles: [
 			{ id: 1, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, graphic: 'grass', uploadedGraphic: null, visionCost: 0, walkSeconds: 10 }
 		]
@@ -75,6 +78,11 @@ class FakeRoom
 	readonly disabledAreas = new Set<string>();
 
 	/**
+	 * The neighbors of the areas that have them, by area ID
+	 */
+	readonly neighbors = new Map<string, AreaNeighbors>();
+
+	/**
 	 * The cache's clock, in milliseconds
 	 */
 	time = 0;
@@ -87,8 +95,15 @@ class FakeRoom
 		(areaId) =>
 		{
 			const loaded = loadedArea(areaId);
+			const neighbors = this.neighbors.get(areaId);
 
 			loaded.area.enabled = !this.disabledAreas.has(areaId);
+
+			if (neighbors)
+			{
+				loaded.neighbors = { ...neighbors };
+				loaded.sides = { ...neighbors };
+			}
 			this.areaReads.push(areaId);
 
 			if (!this.holdAreaReads)
@@ -115,7 +130,7 @@ class FakeRoom
 		() => this.time
 	);
 
-	readonly players = new AreaPlayers(new LobbyState().players, this.cache, () => undefined, {
+	readonly players = new AreaPlayers(new LobbyState().players, this.cache, { lobby: false, fallback: () => undefined }, {
 		shared: false,
 		clockSeconds: () => 0
 	});
@@ -227,6 +242,50 @@ describe('AreaPlayers', () =>
 		await settle();
 
 		assert.strictEqual(room.players.getAreaId(PLAYER_ID), 'away');
+	});
+
+	describe('starting near the corner of four areas', () =>
+	{
+		/**
+		 * A room whose areas are a 2 x 2 grid: home and east on top, south below home, and corner below east
+		 *
+		 * @return The room
+		 */
+		function gridRoom(): FakeRoom
+		{
+			const room = new FakeRoom();
+
+			room.neighbors.set('home', { ...NO_NEIGHBORS, east: 'east', south: 'south' });
+			room.neighbors.set('east', { ...NO_NEIGHBORS, west: 'home', south: 'corner' });
+			room.neighbors.set('south', { ...NO_NEIGHBORS, north: 'home', east: 'corner' });
+			room.neighbors.set('corner', { ...NO_NEIGHBORS, north: 'east', west: 'south' });
+
+			return(room);
+		}
+
+		it('loads the three areas around the corner, and their chunks near it, before the player is placed', async () =>
+		{
+			const room = gridRoom();
+			const home = await room.cache.load('home');
+
+			assert.ok(home);
+			assert.ok(await room.players.prepareStart(home, { column: 99, row: 99 }));
+
+			for (const areaId of ['east', 'south', 'corner'])
+			{
+				assert.ok(((room.cache.get(areaId)?.loadedChunks.size ?? 0) > 0), areaId);
+			}
+		});
+
+		it('leaves the areas around it for later when the player starts far from its edges', async () =>
+		{
+			const room = gridRoom();
+			const home = await room.cache.load('home');
+
+			assert.ok(home);
+			assert.ok(await room.players.prepareStart(home, { column: 0, row: 0 }));
+			assert.deepStrictEqual(room.areaReads, ['home']);
+		});
 	});
 
 	for (const change of [{ kind: 'area', areaId: 'away' }, { kind: 'tiles', universeId: 'universe' }] as const)
