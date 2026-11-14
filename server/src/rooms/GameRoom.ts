@@ -223,7 +223,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private barred: BarredOptions = NOTHING_BARRED;
 
 	/**
-	 * Where each member last looked from and how far they saw (see explore), by character ID
+	 * Where each member last looked from, how far they saw and the areas' generation then (see explore),
+	 * by character ID
 	 */
 	private readonly lastSights = new Map<string, string>();
 
@@ -1076,12 +1077,16 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Marks what each member in play sees as seen by the group, working it out again only for those
-	 * who have moved to another cell or whose sight has changed since the last tick, and only for the
-	 * cells the group hasn't seen yet. Cells seen across a seam are marked in the neighboring area they
-	 * are in. Nothing is recorded in an area without fog of war
+	 * who have moved to another cell or whose sight has changed since the last tick, and for everyone
+	 * once the loaded areas change (AreaCache.generation()), as a neighbor loading or being enabled
+	 * changes what is seen across a seam. Only the cells the group hasn't seen yet are looked at. Cells
+	 * seen across a seam are marked in the neighboring area they are in. Nothing is recorded in an area
+	 * without fog of war
 	 */
 	private explore(): void
 	{
+		const generation = this.areas.generation();
+
 		for (const { playerId, area, cell, budget } of this.areaPlayers.sights())
 		{
 			const areaId = area.loaded.area.id;
@@ -1094,7 +1099,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			}
 
 			// A tenth of a square, as the light changes around dawn and dusk, makes too little difference to look again
-			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)}`;
+			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)};${generation}`;
 
 			if (this.lastSights.get(playerId) === key)
 			{

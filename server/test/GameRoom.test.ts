@@ -1932,5 +1932,28 @@ describe('GameRoom', () =>
 			saved.load(await loadSeenChunks(groupId));
 			assert.ok(saved.has(forest, -16, 0), 'the cell across the seam from where they stood');
 		});
+
+		it('records the cells across a seam as seen once the neighbor is enabled, while the player stands still', async () =>
+		{
+			await layOut(true);
+			await setWorkedOut(town, { passageOfTime: 'always_noon', faerieMorning: null });
+			await setWorkedOut(forest, { passageOfTime: 'always_noon', faerieMorning: null, enabled: false });
+
+			const room = await createGameRoom();
+			const seen = (room as unknown as { seen: SeenCells }).seen;
+
+			await standInTown(room, 13, 0);
+			await room.waitForNextTimestep();
+			assert.strictEqual(room.locate(town, square.maxColumn + 1, 0), undefined, 'Forest is an edge while disabled');
+			assert.strictEqual(seen.has(forest, -16, 0), false);
+
+			await setWorkedOut(forest, { enabled: true });
+			areaChanges.publish({ kind: 'area', areaId: forest });
+			await waitUntil(() => (room.locate(town, square.maxColumn + 1, 0) !== undefined));
+			await room.waitForNextTimestep();
+			await room.waitForNextTimestep();
+
+			assert.ok(seen.has(forest, -16, 0), 'the cell across the seam from where they stand');
+		});
 	});
 });

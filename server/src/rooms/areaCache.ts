@@ -109,6 +109,11 @@ export class AreaCache
 	private opensSeam: (loaded: LoadedArea) => boolean = (loaded) => loaded.area.enabled;
 
 	/**
+	 * How many times the loaded areas have changed (see generation())
+	 */
+	private changes = 0;
+
+	/**
 	 * @param loadArea Reads an area's settings, links and tiles
 	 * @param readChunks Reads some of an area's stored chunks
 	 * @param now The time in milliseconds, for how long areas have gone unused
@@ -127,6 +132,19 @@ export class AreaCache
 	setSeamFilter(opens: (loaded: LoadedArea) => boolean): void
 	{
 		this.opensSeam = opens;
+		this.changes++;
+	}
+
+	/**
+	 * A count that goes up whenever the loaded areas change: an area is loaded, read again or forgotten,
+	 * or the areas seams lead into are set. Where the seams lead, and so what a player sees across them,
+	 * changes only with it
+	 *
+	 * @return The count
+	 */
+	generation(): number
+	{
+		return(this.changes);
 	}
 
 	/**
@@ -515,6 +533,7 @@ export class AreaCache
 		const area = this.activate(loaded, (keepChunks ? before.chunks : new Map<string, number[]>()), (keepChunks ? before.loadedChunks : new Set<string>()));
 
 		this.areas.set(areaId, area);
+		this.changes++;
 
 		return(area);
 	}
@@ -526,7 +545,11 @@ export class AreaCache
 	 */
 	forget(areaId: string): void
 	{
-		this.areas.delete(areaId);
+		if (this.areas.delete(areaId))
+		{
+			this.changes++;
+		}
+
 		this.usedAt.delete(areaId);
 	}
 
@@ -567,6 +590,7 @@ export class AreaCache
 
 		this.areas.set(areaId, area);
 		this.usedAt.set(areaId, this.now());
+		this.changes++;
 
 		return(area);
 	}
