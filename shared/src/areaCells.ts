@@ -24,7 +24,8 @@ export const MAX_AREA_SIDE = 512;
 export const DEFAULT_TILE_CELL = 0;
 
 /**
- * Cell value meaning there is nothing there: drawn black, and nobody can enter it
+ * Cell value meaning there is nothing there, which editors call Unexplored: drawn as the map's unexplored
+ * paper, and nobody can enter it
  */
 export const VOID_CELL = -1;
 

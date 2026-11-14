@@ -51,8 +51,8 @@ const messages = defineMessages({
 	},
 	values: {
 		id: 'export.legend.values',
-		defaultMessage: 'Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area\'s default tile (which the Areas table names), or {voidCell, number} for nothing at all: void, drawn black, which no one can enter.',
-		description: 'Line of the legend file in a universe\'s exported zip file explaining the numbers in an area\'s cells; {defaultCell} and {voidCell} are the two numbers that aren\'t tiles'
+		defaultMessage: 'Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area\'s default tile (which the Areas table names), or {unexploredCell, number} for nothing at all: unexplored, drawn as blank map paper, which no one can enter.',
+		description: 'Line of the legend file in a universe\'s exported zip file explaining the numbers in an area\'s cells; {defaultCell} and {unexploredCell} are the two numbers that aren\'t tiles'
 	},
 	example: {
 		id: 'export.legend.example',
@@ -84,9 +84,9 @@ const messages = defineMessages({
 		defaultMessage: 'The area\'s default tile',
 		description: 'In the legend file\'s table of tiles in a universe\'s exported zip file: what the number 0 in an area\'s cells stands for'
 	},
-	voidCell: {
-		id: 'export.legend.voidCell',
-		defaultMessage: 'Void (nothing)',
+	unexploredCell: {
+		id: 'export.legend.unexploredCell',
+		defaultMessage: 'Unexplored (nothing)',
 		description: 'In the legend file\'s table of tiles in a universe\'s exported zip file: what the number -1 in an area\'s cells stands for, a cell with nothing on it'
 	},
 	areasHeading: {
@@ -145,7 +145,10 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 		`- ${translator.format(messages.rows)}`,
 		`- ${translator.format(messages.place)}`,
 		`- ${translator.format(messages.exactly)}`,
-		`- ${translator.format(messages.values, { defaultCell: DEFAULT_TILE_CELL, voidCell: VOID_CELL })}`,
+		`- ${translator.format(messages.values, {
+			defaultCell: DEFAULT_TILE_CELL,
+			unexploredCell: VOID_CELL
+		})}`,
 		`- ${translator.format(messages.example, { minColumn: -4, minRow: -2, column: -2, row: -1 })}`,
 		'',
 		`## ${translator.format(messages.tilesHeading)}`,
@@ -153,7 +156,7 @@ export function areaCellsLegend(universeName: string, ruleset: Ruleset, tiles: r
 		row([cellText(translator.format(messages.numberColumn)), cellText(translator.format(messages.tileColumn)), cellText(translator.format(messages.colorColumn))]),
 		row(['---:', '---', '---']),
 		row([String(DEFAULT_TILE_CELL), cellText(translator.format(messages.defaultTile)), '']),
-		row([String(VOID_CELL), cellText(translator.format(messages.voidCell)), '']),
+		row([String(VOID_CELL), cellText(translator.format(messages.unexploredCell)), '']),
 		...[...tiles]
 			.sort((a, b) => (a.id - b.id))
 			.map((tile) => row([String(tile.id), (tileNames.get(tile.id) ?? ''), `#${tile.color.toString(16).toUpperCase().padStart(6, '0')}`])),

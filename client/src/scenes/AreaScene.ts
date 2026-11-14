@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Callbacks } from '@colyseus/sdk';
-import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionArea, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionArea } from '@multiverse-kiln/shared';
+import { areaLight, cellIndexInChunk, chunkCoordinate, chunkKey, createVisionArea, GameServerMessageType, GRID_CELL_SIZE, isInBounds, MessageType, nearestCopy, partOfDay, PATCH_INTERVAL_MS, PLAYER_RADIUS, positiveModulo, secondOfDay, ServerMessageType, tileIdAt, UNSEEN_CELL, VIEW_COLUMNS, VIEW_HEIGHT, VIEW_ROWS, VIEW_WIDTH, visibleCells, visionBudget, visionKey, VOID_CELL, type CellsSeenPayload, type CellValue, type ChunksPayload, type MovePayload, type Player, type AreaPayload, type VisionArea } from '@multiverse-kiln/shared';
 
 import { MovementKeys } from '../input/MovementKeys';
 import { t } from '../localization';
@@ -568,7 +568,8 @@ export class AreaScene extends Phaser.Scene
 
 	/**
 	 * Draws fog over the cells around the view's center that aren't visible, the glare over those that
-	 * are, and paper over those the group has never seen. A cell that has just come into sight keeps its
+	 * are, and paper over those the group has never seen and those holding nothing at all (VOID_CELL),
+	 * which editors call Unexplored. A cell that has just come into sight keeps its
 	 * paper until its tile arrives. Past an edge of the area that doesn't loop is drawn as never seen, in a
 	 * lobby too
 	 *
@@ -601,7 +602,7 @@ export class AreaScene extends Phaser.Scene
 		{
 			const cell = this.areaCellAt(left + column, top + row);
 
-			return((cell === undefined) || this.isUnseen(cell.column, cell.row));
+			return((cell === undefined) || this.isUnexplored(cell.column, cell.row));
 		});
 	}
 
@@ -655,15 +656,18 @@ export class AreaScene extends Phaser.Scene
 	}
 
 	/**
-	 * Whether a cell's tile hasn't been sent because the group hasn't seen it, in a group's room
+	 * Whether a cell is drawn as unexplored paper: its tile hasn't been sent because the group hasn't seen
+	 * it, in a group's room, or it holds nothing at all
 	 *
 	 * @param column The cell's column, in the area
 	 * @param row The cell's row, in the area
-	 * @return True when it holds UNSEEN_CELL
+	 * @return True when it holds UNSEEN_CELL or VOID_CELL
 	 */
-	private isUnseen(column: number, row: number): boolean
+	private isUnexplored(column: number, row: number): boolean
 	{
-		return(this.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)))?.[cellIndexInChunk(column, row)] === UNSEEN_CELL);
+		const value = this.chunks.get(chunkKey(chunkCoordinate(column), chunkCoordinate(row)))?.[cellIndexInChunk(column, row)];
+
+		return((value === UNSEEN_CELL) || (value === VOID_CELL));
 	}
 
 	/**

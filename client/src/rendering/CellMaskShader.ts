@@ -22,6 +22,7 @@ precision mediump float;
 uniform sampler2D uMask;
 uniform vec2 uOrigin;
 uniform vec2 uSize;
+uniform vec2 uMaskOrigin;
 uniform vec2 uMaskSize;
 uniform float uCellSize;
 
@@ -72,14 +73,14 @@ float valueNoise(vec2 p)
 
 /**
  * How covered a point is, blending the mask smoothly between cell centers so the cells' squares round
- * into one shape
+ * into one shape. Past the mask's edge, its edge cells carry on
  *
  * @param world The point, in world pixels
  * @return 1 at the center of a covered cell, 0 at the center of an uncovered one
  */
 float coverage(vec2 world)
 {
-	vec2 p = ((world - uOrigin) / uCellSize) + 0.5;
+	vec2 p = ((world - uMaskOrigin) / uCellSize) + 0.5;
 	vec2 i = floor(p);
 	vec2 f = p - i;
 	f = f * f * (3.0 - 2.0 * f);
@@ -161,6 +162,11 @@ export class CellMaskShader
 	private readonly maskPixels: ImageData;
 
 	/**
+	 * Whether the shader is drawn over a part of the world cover() gave, rather than over the mask's cells
+	 */
+	private covering = false;
+
+	/**
 	 * Sets up the shader, hidden until draw() finds covered cells
 	 *
 	 * @param scene The scene, once the shader's textures have loaded
@@ -196,6 +202,9 @@ export class CellMaskShader
 
 		// coverage() smooths between cell centers itself from linearly filtered samples
 		this.mask.setFilter(Phaser.Textures.FilterMode.LINEAR);
+
+		// Past its edge the mask's edge cells carry on (see cover())
+		this.mask.setWrap(Phaser.Textures.WrapMode.CLAMP_TO_EDGE, Phaser.Textures.WrapMode.CLAMP_TO_EDGE);
 		this.maskPixels = this.mask.context.createImageData(columns, rows);
 
 		this.shader = scene.add.shader({
@@ -207,7 +216,8 @@ export class CellMaskShader
 				uMaskSize: [columns, rows],
 				uSize: [columns * GRID_CELL_SIZE, rows * GRID_CELL_SIZE],
 				uCellSize: GRID_CELL_SIZE,
-				uOrigin: [0, 0]
+				uOrigin: [0, 0],
+				uMaskOrigin: [0, 0]
 			}
 		}, 0, 0, columns * GRID_CELL_SIZE, rows * GRID_CELL_SIZE, [maskKey, ...(config.textures ?? [])])
 			.setOrigin(0, 0)
@@ -255,8 +265,30 @@ export class CellMaskShader
 		const x = left * GRID_CELL_SIZE;
 		const y = top * GRID_CELL_SIZE;
 
-		this.shader.setPosition(x, y);
-		this.shader.setUniform('uOrigin', [x, y]);
+		this.shader.setUniform('uMaskOrigin', [x, y]);
+
+		if (!this.covering)
+		{
+			this.shader.setPosition(x, y);
+			this.shader.setUniform('uOrigin', [x, y]);
+		}
+	}
+
+	/**
+	 * Draws the shader over a part of the world, such as the camera's view, rather than over the mask's
+	 * cells. Past the mask's edge its edge cells carry on, so a mask whose edge cells are covered covers
+	 * everything past it. Call it again whenever that part moves
+	 *
+	 * @param area The part of the world, in world pixels
+	 */
+	cover(area: Phaser.Geom.Rectangle): void
+	{
+		this.covering = true;
+		this.shader
+			.setPosition(area.x, area.y)
+			.setDisplaySize(area.width, area.height);
+		this.shader.setUniform('uOrigin', [area.x, area.y]);
+		this.shader.setUniform('uSize', [area.width, area.height]);
 	}
 
 	/**

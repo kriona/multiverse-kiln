@@ -15,7 +15,8 @@ const VOID_COLOR = 0x000000;
 const GRID_LINE_ALPHA = 0.2;
 
 /**
- * How far beyond the camera's view, in world units, pieces of the area are drawn, so they are ready before they scroll in
+ * How far beyond the camera's view, in world units, every piece of the area is drawn at once, so none is
+ * missing as it scrolls in
  */
 const DRAW_MARGIN = GRID_CELL_SIZE * 4;
 
@@ -25,11 +26,22 @@ const DRAW_MARGIN = GRID_CELL_SIZE * 4;
 const PIECE_SIZE = CHUNK_SIZE * GRID_CELL_SIZE;
 
 /**
- * How far beyond the camera's view, in world units, pieces already drawn are kept. Further out than
- * DRAW_MARGIN, so a view moving back and forth across the line where a piece is drawn doesn't drop it and
- * draw it again each time
+ * How far beyond the camera's view, in world units, pieces are drawn ahead of time, a few each frame within
+ * PREPARE_MILLISECONDS, so a view moving on finds them drawn rather than drawing a row of them in one frame
  */
-const KEEP_MARGIN = DRAW_MARGIN + (PIECE_SIZE / 2);
+const PREPARE_MARGIN = DRAW_MARGIN + PIECE_SIZE;
+
+/**
+ * How long each update may spend drawing pieces ahead of time, in milliseconds
+ */
+const PREPARE_MILLISECONDS = 4;
+
+/**
+ * How far beyond the camera's view, in world units, pieces already drawn are kept. Further out than
+ * PREPARE_MARGIN, so a view moving back and forth across the line where a piece is drawn doesn't drop it
+ * and draw it again each time
+ */
+const KEEP_MARGIN = PREPARE_MARGIN + (PIECE_SIZE / 2);
 
 /**
  * Half a cell: how far up and left of the cells the frames are drawn, each centered on a corner where 4 cells meet
@@ -181,7 +193,9 @@ interface Piece
  * Pieces are laid out in world units the way the camera sees them, and each one is filled from the
  * area's cells: on an area that loops, a piece past an edge is filled from the far side, so the area
  * carries on seamlessly. Past an edge that doesn't loop, the cells on the edge carry on under it and are
- * then cut off, so the area ends square. Pieces that fall out of view are dropped
+ * then cut off, so the area ends square. Pieces a little way past the view are drawn ahead of time, a few
+ * each frame, so panning doesn't draw a whole row of them at once, and pieces that fall out of view are
+ * dropped
  */
 export class AreaRenderer
 {
@@ -244,6 +258,11 @@ export class AreaRenderer
 	 * Whether a frame was wanted after the atlas had filled up, so the atlas must start over
 	 */
 	private atlasFull = false;
+
+	/**
+	 * Whether a piece drawn ahead of time found the atlas full, so no more are drawn ahead until it starts over
+	 */
+	private atlasFullAhead = false;
 
 	/**
 	 * The pieces drawn now, by chunkKey() of their position in world units divided by PIECE_SIZE
@@ -491,7 +510,9 @@ export class AreaRenderer
 	}
 
 	/**
-	 * Draws the pieces of the area within DRAW_MARGIN of a view, and drops those further out than KEEP_MARGIN
+	 * Draws the pieces of the area within DRAW_MARGIN of a view, then as many of those within PREPARE_MARGIN
+	 * as PREPARE_MILLISECONDS allows, nearest the view's center first, and drops those further out than
+	 * KEEP_MARGIN
 	 *
 	 * @param view The camera's view of the world
 	 */
@@ -500,20 +521,62 @@ export class AreaRenderer
 		const { bounds, loopsEastWest, loopsNorthSouth } = this.area;
 		const columns = this.pieceRange(view.x, view.right, DRAW_MARGIN, bounds.minColumn, bounds.maxColumn, loopsEastWest);
 		const rows = this.pieceRange(view.y, view.bottom, DRAW_MARGIN, bounds.minRow, bounds.maxRow, loopsNorthSouth);
+		const preparedColumns = this.pieceRange(view.x, view.right, PREPARE_MARGIN, bounds.minColumn, bounds.maxColumn, loopsEastWest);
+		const preparedRows = this.pieceRange(view.y, view.bottom, PREPARE_MARGIN, bounds.minRow, bounds.maxRow, loopsNorthSouth);
 		const keptColumns = this.pieceRange(view.x, view.right, KEEP_MARGIN, bounds.minColumn, bounds.maxColumn, loopsEastWest);
 		const keptRows = this.pieceRange(view.y, view.bottom, KEEP_MARGIN, bounds.minRow, bounds.maxRow, loopsNorthSouth);
+		const ahead: Array<{ column: number; row: number; distance: number }> = [];
 
-		for (let pieceRow = rows.first; pieceRow <= rows.last; pieceRow++)
+		for (let pieceRow = preparedRows.first; pieceRow <= preparedRows.last; pieceRow++)
 		{
-			for (let pieceColumn = columns.first; pieceColumn <= columns.last; pieceColumn++)
+			for (let pieceColumn = preparedColumns.first; pieceColumn <= preparedColumns.last; pieceColumn++)
 			{
-				const key = chunkKey(pieceColumn, pieceRow);
-
-				if (!this.pieces.has(key))
+				if (this.pieces.has(chunkKey(pieceColumn, pieceRow)))
 				{
-					this.pieces.set(key, this.drawPiece(pieceColumn, pieceRow));
+					continue;
+				}
+
+				const needed = ((pieceColumn >= columns.first) && (pieceColumn <= columns.last) && (pieceRow >= rows.first) && (pieceRow <= rows.last));
+
+				if (needed)
+				{
+					this.pieces.set(chunkKey(pieceColumn, pieceRow), this.drawPiece(pieceColumn, pieceRow));
+				}
+				else
+				{
+					ahead.push({
+						column: pieceColumn,
+						row: pieceRow,
+						distance: Math.hypot(((pieceColumn + 0.5) * PIECE_SIZE) - view.centerX, ((pieceRow + 0.5) * PIECE_SIZE) - view.centerY)
+					});
 				}
 			}
+		}
+
+		const started = performance.now();
+
+		ahead.sort((a, b) => (a.distance - b.distance));
+
+		for (const piece of ahead)
+		{
+			if (this.atlasFull || this.atlasFullAhead || ((performance.now() - started) >= PREPARE_MILLISECONDS))
+			{
+				break;
+			}
+
+			const drawn = this.drawPiece(piece.column, piece.row);
+
+			// The atlas has no room for the frames the pieces ahead need, so they wait until the view needs
+			// them, rather than starting the atlas over for pieces that can't be seen
+			if (this.atlasFull)
+			{
+				drawn.map.destroy();
+				this.atlasFull = false;
+				this.atlasFullAhead = true;
+				break;
+			}
+
+			this.pieces.set(chunkKey(piece.column, piece.row), drawn);
 		}
 
 		for (const [key, piece] of this.pieces)
@@ -579,6 +642,7 @@ export class AreaRenderer
 		this.frames.clear();
 		this.nextFrame = GRID_FRAME + 1;
 		this.atlasFull = false;
+		this.atlasFullAhead = false;
 		this.atlas.clear();
 		this.drawGridFrame();
 	}

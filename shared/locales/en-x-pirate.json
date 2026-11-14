@@ -1495,6 +1495,10 @@
 		"message": "Undo",
 		"source": "Undo"
 	},
+	"editor.area.unexplored": {
+		"message": "📜Uncharted Waters",
+		"source": "📜Unexplored"
+	},
 	"editor.area.unknownTile": {
 		"message": "mystery tile",
 		"source": "unknown tile"
@@ -1502,10 +1506,6 @@
 	"editor.area.unsaved": {
 		"message": "Area changes not stowed yet",
 		"source": "Area changes not saved yet"
-	},
-	"editor.area.void": {
-		"message": "⚓Davy Jones' Locker",
-		"source": "🌃Void"
 	},
 	"editor.areaAdd.hint": {
 		"message": "The new area takes what's handed down from what it sails in, till ye set its own.",
@@ -5591,13 +5591,13 @@
 		"message": "{universe}: area cells",
 		"source": "{universe}: area cells"
 	},
-	"export.legend.values": {
-		"message": "Each cell holds the number o' a tile in the Tiles table below, {defaultCell, number} fer the area's default tile (which the Areas table names), or {voidCell, number} fer nothin' at all: the void, drawn black, which no hand can enter.",
-		"source": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {voidCell, number} for nothing at all: void, drawn black, which no one can enter."
+	"export.legend.unexploredCell": {
+		"message": "Uncharted waters (naught)",
+		"source": "Unexplored (nothing)"
 	},
-	"export.legend.voidCell": {
-		"message": "The void (naught)",
-		"source": "Void (nothing)"
+	"export.legend.values": {
+		"message": "Each cell holds the number o' a tile in the Tiles table below, {defaultCell, number} fer the area's default tile (which the Areas table names), or {unexploredCell, number} fer nothin' at all: uncharted waters, drawn as a blank sea chart, which no hand can enter.",
+		"source": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {unexploredCell, number} for nothing at all: unexplored, drawn as blank map paper, which no one can enter."
 	},
 	"filter.any": {
 		"message": "Any",

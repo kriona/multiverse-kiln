@@ -209,7 +209,7 @@ describe('exporting a universe', () =>
 		assert.match(legend, /^# Kilnhaven: area cells$/m);
 		assert.ok(legend.includes(`| ${mossId} | Moss | #2A7A30 |`), legend);
 		assert.ok(legend.includes(`| ${defaultTiles.get('grass')} | Grass |`), legend);
-		assert.ok(legend.includes('| -1 | Void (nothing) |  |'), legend);
+		assert.ok(legend.includes('| -1 | Unexplored (nothing) |  |'), legend);
 		assert.ok(legend.includes(`| \`${caveId}.json\` | Cave | Grass | Columns -15 to 15, rows -8 to 8 |`), legend);
 		assert.deepStrictEqual(lobby.links, [{ column: 1, row: 0, targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true }]);
 

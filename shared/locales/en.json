@@ -1495,6 +1495,10 @@
 		"defaultMessage": "Undo",
 		"description": "Button that takes back the last painting or change to the area's size"
 	},
+	"editor.area.unexplored": {
+		"defaultMessage": "📜Unexplored",
+		"description": "A cell with nothing in it, drawn as blank map paper like the parts of an area players haven't explored, which can't be walked into; also a choice of what to paint"
+	},
 	"editor.area.unknownTile": {
 		"defaultMessage": "unknown tile",
 		"description": "What the cell under the pointer holds, when it is a tile the editor doesn't know"
@@ -1502,10 +1506,6 @@
 	"editor.area.unsaved": {
 		"defaultMessage": "Area changes not saved yet",
 		"description": "Shown under the area editor's cells while they have painting, a change of size or links that the editor's Save button hasn't stored yet"
-	},
-	"editor.area.void": {
-		"defaultMessage": "🌃Void",
-		"description": "A cell with nothing in it, drawn black, which can't be walked into; also a choice of what to paint"
 	},
 	"editor.areaAdd.hint": {
 		"defaultMessage": "The new area inherits its settings from what it's inside until you set its own.",
@@ -5591,13 +5591,13 @@
 		"defaultMessage": "{universe}: area cells",
 		"description": "Heading of the legend file in the areas folder of a universe's exported zip file, which explains the files holding each area's cells; {universe} is the universe's name"
 	},
-	"export.legend.values": {
-		"defaultMessage": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {voidCell, number} for nothing at all: void, drawn black, which no one can enter.",
-		"description": "Line of the legend file in a universe's exported zip file explaining the numbers in an area's cells; {defaultCell} and {voidCell} are the two numbers that aren't tiles"
-	},
-	"export.legend.voidCell": {
-		"defaultMessage": "Void (nothing)",
+	"export.legend.unexploredCell": {
+		"defaultMessage": "Unexplored (nothing)",
 		"description": "In the legend file's table of tiles in a universe's exported zip file: what the number -1 in an area's cells stands for, a cell with nothing on it"
+	},
+	"export.legend.values": {
+		"defaultMessage": "Each cell holds the number of a tile in the Tiles table below, {defaultCell, number} for the area's default tile (which the Areas table names), or {unexploredCell, number} for nothing at all: unexplored, drawn as blank map paper, which no one can enter.",
+		"description": "Line of the legend file in a universe's exported zip file explaining the numbers in an area's cells; {defaultCell} and {unexploredCell} are the two numbers that aren't tiles"
 	},
 	"filter.any": {
 		"defaultMessage": "Any",

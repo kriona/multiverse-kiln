@@ -53,9 +53,9 @@ const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages(
 });
 
 /**
- * Value of the tile choice for Void
+ * Value of the tile choice for Unexplored, which paints VOID_CELL
  */
-const VOID_CHOICE = 'void';
+const UNEXPLORED_CHOICE = 'unexplored';
 
 /**
  * The outline of the cells other editors painted while the area was open
@@ -125,7 +125,7 @@ interface Stroke
 
 /**
  * The cell editor in the area editor: the area's cells on the same grid as gameplay, a draw tool (a tile
- * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) and a fill tool with undo and redo, Edit
+ * or Unexplored, 1 to MAX_BRUSH_SIZE cells across, square or circle) and a fill tool with undo and redo, Edit
  * Size, and a tool for the area's links
  *
  * Painting, changes to the area's size and links show immediately and are kept until the editor's Save
@@ -1181,7 +1181,7 @@ export class AreaEditor
 	 */
 	private paintValue(): number
 	{
-		if (this.tile.value === VOID_CHOICE)
+		if (this.tile.value === UNEXPLORED_CHOICE)
 		{
 			return(VOID_CELL);
 		}
@@ -1653,7 +1653,7 @@ export class AreaEditor
 
 	/**
 	 * Lists the tiles to paint with: the area's enabled indoor or outdoor tiles but those the Tilesets tab
-	 * will delete, and its default tile, by name, then Void, and chooses the default tile
+	 * will delete, and its default tile, by name, then Unexplored, and chooses the default tile
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
@@ -1685,8 +1685,8 @@ export class AreaEditor
 					: name)
 			})),
 			{
-				value: VOID_CHOICE,
-				label: t(areaEditorMessages.void)
+				value: UNEXPLORED_CHOICE,
+				label: t(areaEditorMessages.unexplored)
 			}
 		]);
 

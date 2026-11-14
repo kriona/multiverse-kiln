@@ -19,10 +19,10 @@ export const areaEditorMessages = defineMessages({
 		defaultMessage: 'Space / Enter',
 		description: 'In the list of keyboard shortcuts, the names of the Space and Enter keys'
 	},
-	void: {
-		id: 'editor.area.void',
-		defaultMessage: '🌃Void',
-		description: 'A cell with nothing in it, drawn black, which can\'t be walked into; also a choice of what to paint'
+	unexplored: {
+		id: 'editor.area.unexplored',
+		defaultMessage: '📜Unexplored',
+		description: 'A cell with nothing in it, drawn as blank map paper like the parts of an area players haven\'t explored, which can\'t be walked into; also a choice of what to paint'
 	},
 	loadFailed: {
 		id: 'editor.area.loadFailed',

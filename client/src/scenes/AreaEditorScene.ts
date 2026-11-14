@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
-import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkCoordinate, GRID_CELL_SIZE, isInBounds, parseChunkKey, VOID_CELL, type ChunkRange, type AreaLinkMode, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { brushOrigin, cellsBetween, type BrushCell, type BrushShape } from '../editor/brush';
 import { outlineRuns, type OutlineRun } from '../editor/cellOutlines';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import type { CellMaskShader } from '../rendering/CellMaskShader';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
+import { createUnexploredPaper, preloadUnexploredPaper } from '../rendering/UnexploredPaper';
 
 /**
  * Key the scene is registered under in each editor's game
@@ -40,6 +42,12 @@ const BOUNDS_COLOR = 0xffffff;
 const CENTER_COLOR = 0xffffff;
 
 const BRUSH_COLOR = 0xffeb3b;
+
+/**
+ * Depth of the paper over Unexplored cells (VOID_CELL): over the tiles and the grid's lines, under the
+ * outlines
+ */
+const PAPER_DEPTH = 0.5;
 
 const LINK_COLORS: Record<AreaLinkMode, number> = {
 	automatic: 0xff9800,
@@ -191,6 +199,28 @@ export class AreaEditorScene extends Phaser.Scene
 	private links: LinkMarker[] = [];
 
 	/**
+	 * The paper drawn over the Unexplored cells, as the game draws the parts of an area a group hasn't explored
+	 */
+	private paper?: CellMaskShader;
+
+	/**
+	 * Whether each cell of the area is Unexplored, row by row from the top left of the area with a ring of
+	 * cells around it. The ring is always Unexplored, and the paper carries it on past the ring, so
+	 * everything outside the area is drawn as unexplored, as the game draws past an area's edges
+	 */
+	private unexplored = new Uint8Array(0);
+
+	/**
+	 * Whether the Unexplored cells have changed since the paper was last drawn
+	 */
+	private paperChanged = false;
+
+	/**
+	 * The part of the world the paper is drawn over, kept from frame to frame
+	 */
+	private readonly paperArea = new Phaser.Geom.Rectangle();
+
+	/**
 	 * The highlighted cells' outlines, drawn apart from the overlay, which is drawn again every frame:
 	 * there can be tens of thousands of them, as when another editor paints a large part of the area
 	 */
@@ -267,6 +297,9 @@ export class AreaEditorScene extends Phaser.Scene
 		this.areaRenderer = undefined;
 		this.overlay = undefined;
 		this.links = [];
+		this.paper = undefined;
+		this.unexplored = new Uint8Array(0);
+		this.paperChanged = false;
 		this.highlightOverlay = undefined;
 		this.highlightRuns = [];
 		this.highlightZoom = 0;
@@ -278,11 +311,12 @@ export class AreaEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Loads the tile graphics the area is drawn with
+	 * Loads the tile graphics the area is drawn with, and the paper Unexplored cells are drawn with
 	 */
 	preload(): void
 	{
 		preloadTileGraphics(this);
+		preloadUnexploredPaper(this);
 	}
 
 	/**
@@ -290,7 +324,21 @@ export class AreaEditorScene extends Phaser.Scene
 	 */
 	create(): void
 	{
+		const { bounds } = this.area;
+		const paperColumns = (bounds.maxColumn - bounds.minColumn) + 3;
+		const paperRows = (bounds.maxRow - bounds.minRow) + 3;
+
 		this.areaRenderer = new AreaRenderer(this, this.area, this.chunks);
+		this.paper = createUnexploredPaper(this, paperColumns, paperRows, PAPER_DEPTH);
+		this.unexplored = new Uint8Array(paperColumns * paperRows).fill(1);
+
+		for (let row = 1; row < (paperRows - 1); row++)
+		{
+			this.unexplored.fill(0, (row * paperColumns) + 1, ((row + 1) * paperColumns) - 1);
+		}
+
+		this.paperChanged = true;
+		this.markUnexplored(this.chunks.keys());
 
 		// Added first, so the brush is outlined over the highlights
 		this.highlightOverlay = this.add.graphics().setDepth(1);
@@ -353,6 +401,7 @@ export class AreaEditorScene extends Phaser.Scene
 
 		this.areaRenderer?.update(view);
 		this.reportView(view);
+		this.drawPaper(view);
 		this.drawOverlay();
 
 		if (this.highlightZoom !== this.cameras.main.zoom)
@@ -368,7 +417,75 @@ export class AreaEditorScene extends Phaser.Scene
 	 */
 	refreshChunks(chunkKeys: Iterable<string>): void
 	{
-		this.areaRenderer?.refreshChunks(chunkKeys);
+		const keys = [...chunkKeys];
+
+		this.areaRenderer?.refreshChunks(keys);
+		this.markUnexplored(keys);
+	}
+
+	/**
+	 * Notes which cells of some chunks are Unexplored, for the paper to be drawn again when any changed
+	 *
+	 * @param chunkKeys The chunks, by chunkKey()
+	 */
+	private markUnexplored(chunkKeys: Iterable<string>): void
+	{
+		const { bounds } = this.area;
+		const columns = (bounds.maxColumn - bounds.minColumn) + 3;
+
+		for (const key of chunkKeys)
+		{
+			const { chunkColumn, chunkRow } = parseChunkKey(key);
+			const cells = this.chunks.get(key);
+
+			for (let index = 0; index < (CHUNK_SIZE * CHUNK_SIZE); index++)
+			{
+				const column = (chunkColumn * CHUNK_SIZE) + (index % CHUNK_SIZE);
+				const row = (chunkRow * CHUNK_SIZE) + Math.floor(index / CHUNK_SIZE);
+
+				if (!isInBounds(bounds, column, row))
+				{
+					continue;
+				}
+
+				const cell = (((row - bounds.minRow) + 1) * columns) + ((column - bounds.minColumn) + 1);
+				const unexplored = ((cells?.[index] === VOID_CELL) ? 1 : 0);
+
+				if (this.unexplored[cell] !== unexplored)
+				{
+					this.unexplored[cell] = unexplored;
+					this.paperChanged = true;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Draws the paper over the camera's view, with the Unexplored cells under it again once they have changed
+	 *
+	 * The camera works out its view as it renders, after update(), so the view is where the camera was last
+	 * frame. The paper reaches a whole view past it on every side, so a pan never shows a strip without it;
+	 * what is off the screen costs nothing to draw
+	 *
+	 * @param view The camera's view of the world
+	 */
+	private drawPaper(view: Phaser.Geom.Rectangle): void
+	{
+		if (!this.paper)
+		{
+			return;
+		}
+
+		if (this.paperChanged)
+		{
+			const { bounds } = this.area;
+			const columns = (bounds.maxColumn - bounds.minColumn) + 3;
+
+			this.paperChanged = false;
+			this.paper.draw(bounds.minColumn - 1, bounds.minRow - 1, (column, row) => (this.unexplored[(row * columns) + column] === 1));
+		}
+
+		this.paper.cover(this.paperArea.setTo(view.x - view.width, view.y - view.height, view.width * 3, view.height * 3));
 	}
 
 	/**

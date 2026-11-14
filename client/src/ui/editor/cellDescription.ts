@@ -56,7 +56,7 @@ export function describeCell(described: DescribedArea, cell: BrushCell): string
 
 	if (value === VOID_CELL)
 	{
-		contents = t(areaEditorMessages.void);
+		contents = t(areaEditorMessages.unexplored);
 	}
 	else if (tileId === undefined)
 	{
