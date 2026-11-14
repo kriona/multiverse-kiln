@@ -1878,6 +1878,32 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
+	 * The regions the tab's changes keep, with the name and builders the region editor shows for the region
+	 * open, before they are saved
+	 *
+	 * @return The regions, or undefined while they haven't loaded for the universe open
+	 */
+	stagedRegions(): EditorRegion[] | undefined
+	{
+		if ((this.universeOpen === undefined) || (this.areasLoadedFor !== this.universeOpen))
+		{
+			return(undefined);
+		}
+
+		const shown = this.regionEditor.shownRegion();
+
+		return(this.regions()
+			.filter((region) => !this.staged.isPlaceDeleted({ kind: 'region', id: region.id }))
+			.map((region) => ((region.id === shown?.id)
+				? {
+					...region,
+					name: shown.name,
+					builderIds: [...shown.builderIds]
+				}
+				: region)));
+	}
+
+	/**
 	 * Every area of the universe as last loaded, then the areas added since the tab was last saved, with
 	 * the parents the tab's changes give them and the settings changed in the areas left with changes
 	 *

@@ -2415,9 +2415,9 @@
 		"message": "Sign On a Hand",
 		"source": "Add Editor"
 	},
-	"editor.editors.builderDetails": {
-		"message": "Also works on: {permissions}. Seas: {regions}",
-		"source": "Also edits: {permissions}. Regions: {regions}"
+	"editor.editors.alsoEdits": {
+		"message": "Also works on: {permissions}",
+		"source": "Also edits: {permissions}"
 	},
 	"editor.editors.canEditItems": {
 		"message": "Can tinker with booty",
@@ -2515,6 +2515,10 @@
 		"message": "Type the user's name, or @ and their username, then pick them from the list.",
 		"source": "Type the user's name, or @ and their username, then choose them from the list."
 	},
+	"editor.editors.regions": {
+		"message": "Seas: {regions}",
+		"source": "Regions: {regions}"
+	},
 	"editor.editors.remove": {
 		"message": "Put Ashore",
 		"source": "Remove Editor"
@@ -2554,6 +2558,10 @@
 	"editor.editors.tiles": {
 		"message": "tiles",
 		"source": "tiles"
+	},
+	"editor.editors.translatorLanguages": {
+		"message": "Tongues: {languages}",
+		"source": "Languages: {languages}"
 	},
 	"editor.editors.undoRemove": {
 		"message": "Keep Aboard",

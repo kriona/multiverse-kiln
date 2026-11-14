@@ -436,7 +436,8 @@ export class EditorScreen
 			left: () =>
 			{
 				this.ownChangeSaved = 'left';
-			}
+			},
+			stagedRegions: () => this.areasTab.stagedRegions()
 		});
 		this.editorsSettings = new EditorsSettingsSection((update) =>
 		{
@@ -470,6 +471,12 @@ export class EditorScreen
 
 			void this.areasTab.reloadTiles();
 			this.auditTab.reload();
+
+			// The Editors tab lists the regions each builder is assigned, which the Areas tab saves
+			if (saved.includes(this.savableTabs.areas))
+			{
+				this.editorsTab.regionsChanged();
+			}
 
 			// A save of the Translations tab loads its table itself
 			if (!saved.includes(this.savableTabs.translations))
@@ -996,6 +1003,11 @@ export class EditorScreen
 			void this.areasTab.reloadTiles();
 		}
 
+		if (saved.details.some((detail) => (detail.subject === 'region')))
+		{
+			this.editorsTab.regionsChanged();
+		}
+
 		void this.reloadSettings();
 		showSaveNotice(saved, universe.ruleset, kept, await this.areasTab.followPainting(save));
 	}
@@ -1437,6 +1449,11 @@ export class EditorScreen
 		if ((selected === 'lobby') && (this.place.tab !== 'lobby'))
 		{
 			this.lobbyTab.refreshAreas();
+		}
+
+		if ((selected === 'editors') && (this.place.tab !== 'editors'))
+		{
+			this.editorsTab.shown();
 		}
 
 		for (const name of EDITOR_TABS)

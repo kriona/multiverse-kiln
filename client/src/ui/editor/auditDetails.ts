@@ -152,7 +152,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	languages: {
 		id: 'editor.editors.languages',
 		defaultMessage: 'Languages',
-		description: 'Heading of the column on the editor\'s Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field in the dialog for an editor on the editor\'s Editors tab with the languages a translator may translate the universe into; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	indoors: {
 		id: 'form.indoors',

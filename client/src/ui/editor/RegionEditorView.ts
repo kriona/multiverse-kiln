@@ -183,6 +183,27 @@ export class RegionEditorView
 	}
 
 	/**
+	 * The region open, with the name and builders its form shows, which may not be saved yet
+	 *
+	 * @return The region's ID, name and builders, or undefined when no region is open
+	 */
+	shownRegion(): { id: string; name: string; builderIds: readonly string[] } | undefined
+	{
+		if (!this.region || this.view.hidden)
+		{
+			return(undefined);
+		}
+
+		const name = this.name.value.trim();
+
+		return({
+			id: this.region.id,
+			name: ((name === '') ? this.region.name : name),
+			builderIds: this.builderIds
+		});
+	}
+
+	/**
 	 * Hides the region editor, throwing its unsaved changes away
 	 */
 	hide(): void

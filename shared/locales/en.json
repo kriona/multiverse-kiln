@@ -2415,9 +2415,9 @@
 		"defaultMessage": "Add Editor",
 		"description": "Title of the dialog on the editor's Editors tab for giving a player a role in the universe"
 	},
-	"editor.editors.builderDetails": {
-		"defaultMessage": "Also edits: {permissions}. Regions: {regions}",
-		"description": "On the editor's Editors tab, in a builder's row: {permissions} lists what they may edit besides their regions (tiles, items, mobs), or says none, and {regions} lists the regions they are assigned, or says none"
+	"editor.editors.alsoEdits": {
+		"defaultMessage": "Also edits: {permissions}",
+		"description": "In the Notes column of the editor's Editors tab, in the row of a builder who may edit more than their regions: {permissions} lists what else they may edit (tiles, items, mobs)"
 	},
 	"editor.editors.canEditItems": {
 		"defaultMessage": "Can edit items",
@@ -2453,7 +2453,7 @@
 	},
 	"editor.editors.languages": {
 		"defaultMessage": "Languages",
-		"description": "Heading of the column on the editor's Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field in the dialog for an editor on the editor's Editors tab with the languages a translator may translate the universe into; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.editors.languagesHint": {
 		"defaultMessage": "The languages they may translate the universe's text into.",
@@ -2497,7 +2497,7 @@
 	},
 	"editor.editors.none": {
 		"defaultMessage": "none",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit nothing besides their regions, or are assigned no regions"
+		"description": "In the Notes column of the editor's Editors tab, in a builder's row, after \"Regions:\" when they are assigned no regions, so they may edit no areas"
 	},
 	"editor.editors.permissions": {
 		"defaultMessage": "Permissions",
@@ -2514,6 +2514,10 @@
 	"editor.editors.playerHint": {
 		"defaultMessage": "Type the user's name, or @ and their username, then choose them from the list.",
 		"description": "Under the field in the dialog for adding an editor on the editor's Editors tab that finds the player to add"
+	},
+	"editor.editors.regions": {
+		"defaultMessage": "Regions: {regions}",
+		"description": "In the Notes column of the editor's Editors tab, in a builder's row: {regions} lists the regions they are assigned, which they may edit, or says none"
 	},
 	"editor.editors.remove": {
 		"defaultMessage": "Remove Editor",
@@ -2555,6 +2559,10 @@
 		"defaultMessage": "tiles",
 		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's tiles"
 	},
+	"editor.editors.translatorLanguages": {
+		"defaultMessage": "Languages: {languages}",
+		"description": "In the Notes column of the editor's Editors tab, in a translator's row: {languages} lists the languages they may translate the universe into"
+	},
 	"editor.editors.undoRemove": {
 		"defaultMessage": "Undo Remove",
 		"description": "Button in the dialog on the editor's Editors tab for an editor who will lose their role when the tab is saved: keeps them instead"
@@ -2565,7 +2573,7 @@
 	},
 	"editor.editors.youTag": {
 		"defaultMessage": "you",
-		"description": "In the last column of the editor's Editors table, for the row of the player using the editor"
+		"description": "In the Notes column of the editor's Editors table, for the row of the player using the editor, on its own line after any other notes"
 	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
@@ -2949,7 +2957,7 @@
 	},
 	"editor.notes": {
 		"defaultMessage": "Notes",
-		"description": "Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet"
+		"description": "Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own"
 	},
 	"editor.openFailed": {
 		"defaultMessage": "Could not open the universe.",

@@ -48,6 +48,23 @@ export interface EditorsTabActions
 	 * save has taken its changes as saved
 	 */
 	left(): void;
+
+	/**
+	 * The universe's regions with the Areas tab's changes not yet saved, or undefined while the Areas tab
+	 * hasn't loaded them
+	 *
+	 * @return The regions' names and the builders assigned to each
+	 */
+	stagedRegions(): readonly AssignedRegion[] | undefined;
+}
+
+/**
+ * A region as builders' rows list it: its name, and the builders assigned to it
+ */
+interface AssignedRegion
+{
+	name: string;
+	builderIds: readonly string[];
 }
 
 /**
@@ -107,9 +124,10 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	private ownPlayerId: string | undefined;
 
 	/**
-	 * The names of the regions each builder is assigned, by player ID, for those who may load the regions
+	 * The regions as the tab last loaded them, for those who may load the regions, which builders' rows
+	 * list until the Areas tab has loaded them
 	 */
-	private regionNames = new Map<string, string[]>();
+	private loadedRegions: readonly AssignedRegion[] = [];
 
 	/**
 	 * Changes with every request for the list, so a list that arrives after a newer request is ignored
@@ -345,6 +363,27 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	}
 
 	/**
+	 * Loads the editors again after a save changed regions, so each builder's row lists their regions as
+	 * saved, keeping the changes made here
+	 */
+	regionsChanged(): void
+	{
+		void this.refresh();
+	}
+
+	/**
+	 * Draws the editors again as the tab shows, so builders' rows list the regions the Areas tab has
+	 * changed but not saved
+	 */
+	shown(): void
+	{
+		if (this.universe)
+		{
+			this.render();
+		}
+	}
+
+	/**
 	 * Loads the editors again after another window saved changes to them, keeping the changes made here
 	 * and marking the editors they and the save both changed
 	 *
@@ -507,9 +546,7 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 
 			if (version === this.requestVersion)
 			{
-				this.regionNames = new Map(editors.map((editor) => [editor.playerId, (regions ?? [])
-					.filter((region) => region.builderIds.includes(editor.playerId))
-					.map((region) => region.name)]));
+				this.loadedRegions = (regions ?? []);
 
 				const gone = this.followGone((playerId) => !editors.some((editor) => (editor.playerId === playerId)));
 
@@ -599,8 +636,8 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 
 	/**
 	 * One editor's row: their username (opening the editor dialog for a creator, and for the player's own
-	 * row, where they can leave; their profile otherwise), name, role and languages, and whether it is
-	 * the player's own
+	 * row, where they can leave; their profile otherwise), name, role, and notes: a translator's languages,
+	 * a builder's permissions and regions, and whether it is the player's own
 	 *
 	 * @param editor The editor, with the changes made since the last save
 	 * @param state How they differ from what is saved
@@ -612,15 +649,15 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 		const row = document.createElement('tr');
 		const opens = (manages || (editor.playerId === this.ownPlayerId));
 		const name = (opens ? document.createElement('button') : document.createElement('a'));
-		const languages = ((editor.role === 'builder') ? this.builderDetails(editor) : formatList(editor.languages.map((language) => languageName(language))));
-		const tag = ((editor.playerId === this.ownPlayerId)
-			? t({
-				id: 'editor.editors.youTag',
-				defaultMessage: 'you',
-				description: 'In the last column of the editor\'s Editors table, for the row of the player using the editor'
-			})
-			: '');
+		const notes = document.createElement('td');
 
+		notes.append(...this.notes(editor).map((note) =>
+		{
+			const line = document.createElement('div');
+
+			line.textContent = note;
+			return(line);
+		}));
 		name.textContent = editor.username;
 
 		if (name instanceof HTMLButtonElement)
@@ -651,7 +688,7 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 			name.append(note);
 		}
 
-		for (const content of [name, editor.displayName, createRoleName(editor.role), languages, tag])
+		for (const content of [name, editor.displayName, createRoleName(editor.role)])
 		{
 			const cell = document.createElement('td');
 
@@ -659,20 +696,62 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 			row.append(cell);
 		}
 
+		row.append(notes);
 		this.changedSince.mark(row.cells[0], editor.playerId, (state !== undefined));
 
 		return(row);
 	}
 
 	/**
-	 * What a builder's row says of them: what they may edit besides their regions, and the regions they
-	 * are assigned
+	 * What an editor's row notes of them, each shown on its own line: a translator's languages, what a
+	 * builder may edit besides their regions when there is something, and their regions for those who may
+	 * load the regions, then whether the row is the player's own
+	 *
+	 * @param editor The editor
+	 * @return The notes
+	 */
+	private notes(editor: UniverseEditorSummary): string[]
+	{
+		const notes: string[] = [];
+
+		if (editor.role === 'translator')
+		{
+			notes.push(t({
+				id: 'editor.editors.translatorLanguages',
+				defaultMessage: 'Languages: {languages}',
+				description: 'In the Notes column of the editor\'s Editors tab, in a translator\'s row: {languages} lists the languages they may translate the universe into'
+			}, {
+				languages: formatList(editor.languages.map((language) => languageName(language)), 'conjunction')
+			}));
+		}
+
+		if (editor.role === 'builder')
+		{
+			notes.push(...this.builderNotes(editor));
+		}
+
+		if (editor.playerId === this.ownPlayerId)
+		{
+			notes.push(t({
+				id: 'editor.editors.youTag',
+				defaultMessage: 'you',
+				description: 'In the Notes column of the editor\'s Editors table, for the row of the player using the editor, on its own line after any other notes'
+			}));
+		}
+
+		return(notes);
+	}
+
+	/**
+	 * What a builder's row notes of them: what they may edit besides their regions, when they may edit
+	 * anything, and the regions they are assigned, for those who may load the regions
 	 *
 	 * @param editor The builder
-	 * @return The text
+	 * @return The notes
 	 */
-	private builderDetails(editor: UniverseEditorSummary): string
+	private builderNotes(editor: UniverseEditorSummary): string[]
 	{
+		const notes: string[] = [];
 		const permissions = [
 			(editor.permissions.canEditTiles
 				? t({
@@ -696,16 +775,41 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 				})
 				: undefined)
 		].filter((each) => (each !== undefined));
-		const regions = (this.regionNames.get(editor.playerId) ?? []);
+		const universe = this.universe;
 
-		return(t({
-			id: 'editor.editors.builderDetails',
-			defaultMessage: 'Also edits: {permissions}. Regions: {regions}',
-			description: 'On the editor\'s Editors tab, in a builder\'s row: {permissions} lists what they may edit besides their regions (tiles, items, mobs), or says none, and {regions} lists the regions they are assigned, or says none'
-		}, {
-			permissions: ((permissions.length === 0) ? t(noneMessage) : formatList(permissions, 'conjunction')),
-			regions: ((regions.length === 0) ? t(noneMessage) : formatList(regions, 'conjunction'))
-		}));
+		if (permissions.length > 0)
+		{
+			notes.push(t({
+				id: 'editor.editors.alsoEdits',
+				defaultMessage: 'Also edits: {permissions}',
+				description: 'In the Notes column of the editor\'s Editors tab, in the row of a builder who may edit more than their regions: {permissions} lists what else they may edit (tiles, items, mobs)'
+			}, {
+				permissions: formatList(permissions, 'conjunction')
+			}));
+		}
+
+		if ((universe !== undefined) && canEditWorld(universe.role))
+		{
+			const regions = (this.actions.stagedRegions() ?? this.loadedRegions)
+				.filter((region) => region.builderIds.includes(editor.playerId))
+				.map((region) => region.name);
+
+			notes.push(t({
+				id: 'editor.editors.regions',
+				defaultMessage: 'Regions: {regions}',
+				description: 'In the Notes column of the editor\'s Editors tab, in a builder\'s row: {regions} lists the regions they are assigned, which they may edit, or says none'
+			}, {
+				regions: ((regions.length === 0)
+					? t({
+						id: 'editor.editors.none',
+						defaultMessage: 'none',
+						description: 'In the Notes column of the editor\'s Editors tab, in a builder\'s row, after "Regions:" when they are assigned no regions, so they may edit no areas'
+					})
+					: formatList(regions, 'conjunction'))
+			}));
+		}
+
+		return(notes);
 	}
 
 	/**
@@ -844,15 +948,6 @@ function editorChange(playerId: string, staged: StagedEditor): EditorChange | un
 
 	return({ kind: 'saveEditor', playerId, settings: staged.settings, loaded: staged.loaded });
 }
-
-/**
- * What a builder's row says when they may edit nothing besides their regions, or have no regions
- */
-const noneMessage = {
-	id: 'editor.editors.none',
-	defaultMessage: 'none',
-	description: 'On the editor\'s Editors tab, in a builder\'s row: they may edit nothing besides their regions, or are assigned no regions'
-};
 
 /**
  * Whether an editor's role, languages and permissions are as saved
