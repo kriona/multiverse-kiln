@@ -32,9 +32,10 @@ const MAX_AREAS_LOADING = 4;
 const LOOP_MARGIN = 24;
 
 /**
- * The color of Unexplored cells on the map: the paper of the game's unexplored cells
+ * The color of Unexplored cells on the map, as 0xRRGGBB like a tile's: the paper of the game's unexplored
+ * cells
  */
-const UNEXPLORED_COLOR = '#d8cfb8';
+const UNEXPLORED_COLOR = 0xd8cfb8;
 
 /**
  * What the map needs of each area it draws
@@ -430,7 +431,7 @@ export class OverallMapDialog
 		const height = (bounds.maxRow - bounds.minRow) + 1;
 		const canvas = document.createElement('canvas');
 		const context = canvas.getContext('2d');
-		const colors = new Map(source.tiles().map((tile) => [tile.id, `#${tile.color.toString(16).padStart(6, '0')}`]));
+		const colors = new Map(source.tiles().map((tile) => [tile.id, tile.color]));
 
 		canvas.width = width;
 		canvas.height = height;
@@ -440,18 +441,28 @@ export class OverallMapDialog
 			return;
 		}
 
+		// A pixel for each cell, its red, green, blue and alpha bytes in turn
+		const image = context.createImageData(width, height);
+		const pixels = image.data;
+		let index = 0;
+
 		for (let row = bounds.minRow; row <= bounds.maxRow; row++)
 		{
 			for (let column = bounds.minColumn; column <= bounds.maxColumn; column++)
 			{
 				const value = (cells.valueAt(column, row) ?? DEFAULT_TILE_CELL);
 				const tileId = ((value === DEFAULT_TILE_CELL) ? area.resolved.defaultTileId : value);
+				const color = ((value === VOID_CELL) ? UNEXPLORED_COLOR : (colors.get(tileId) ?? UNEXPLORED_COLOR));
 
-				context.fillStyle = ((value === VOID_CELL) ? UNEXPLORED_COLOR : (colors.get(tileId) ?? UNEXPLORED_COLOR));
-				context.fillRect(column - bounds.minColumn, row - bounds.minRow, 1, 1);
+				pixels[index] = ((color >> 16) & 0xff);
+				pixels[index + 1] = ((color >> 8) & 0xff);
+				pixels[index + 2] = (color & 0xff);
+				pixels[index + 3] = 0xff;
+				index += 4;
 			}
 		}
 
+		context.putImageData(image, 0, 0);
 		canvas.setAttribute('aria-hidden', 'true');
 		button.prepend(canvas);
 	}
