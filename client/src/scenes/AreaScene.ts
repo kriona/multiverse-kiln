@@ -353,6 +353,12 @@ export class AreaScene extends Phaser.Scene
 	 */
 	private areaNight?: Phaser.GameObjects.Rectangle;
 
+	/**
+	 * Darkens the cells around the view where no area lies, by the light of the player's area, when it has
+	 * neighbors; drawn again with the fog
+	 */
+	private emptyNight?: Phaser.GameObjects.Graphics;
+
 	constructor()
 	{
 		super(AREA_SCENE_KEY);
@@ -389,6 +395,7 @@ export class AreaScene extends Phaser.Scene
 		this.drawnNeighbors = [];
 		this.origin = { column: 0, row: 0 };
 		this.areaNight = undefined;
+		this.emptyNight = undefined;
 	}
 
 	/**
@@ -478,6 +485,9 @@ export class AreaScene extends Phaser.Scene
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
 			.setAlpha(0);
+		this.emptyNight = this.add.graphics()
+			.setDepth(NIGHT_DEPTH)
+			.setAlpha(0);
 		this.glare = createRoundedFog(this, 'rounded-glare', FOG_COLUMNS, FOG_ROWS, GLARE_DEPTH, GLARE_COLOR, 0);
 		this.fog = createRoundedFog(this, 'rounded-fog', FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
 		this.paper = createUnexploredPaper(this, FOG_COLUMNS, FOG_ROWS, PAPER_DEPTH);
@@ -530,6 +540,8 @@ export class AreaScene extends Phaser.Scene
 			this.clearNeighbors();
 			this.areaNight?.destroy();
 			this.areaNight = undefined;
+			this.emptyNight?.destroy();
+			this.emptyNight = undefined;
 			this.fog?.destroy();
 			this.fog = undefined;
 			this.glare?.destroy();
@@ -719,6 +731,53 @@ export class AreaScene extends Phaser.Scene
 
 			return((cell === undefined) || this.isUnexplored(cell.areaId, cell.column, cell.row));
 		});
+
+		this.drawEmptyNight(left, top);
+	}
+
+	/**
+	 * Draws the darkening over the cells of the fog's block where no area lies, row by row in runs of
+	 * cells, when the player's area has neighbors. Without neighbors the night over the whole view darkens
+	 * them
+	 *
+	 * @param left The block's first column, in world cells
+	 * @param top The block's first row, in world cells
+	 */
+	private drawEmptyNight(left: number, top: number): void
+	{
+		if (!this.emptyNight)
+		{
+			return;
+		}
+
+		this.emptyNight.clear();
+
+		if (!this.hasSeams())
+		{
+			return;
+		}
+
+		this.emptyNight.fillStyle(NIGHT_COLOR, 1);
+
+		for (let row = 0; row < FOG_ROWS; row++)
+		{
+			let runStart: number | undefined;
+
+			for (let column = 0; column <= FOG_COLUMNS; column++)
+			{
+				const empty = ((column < FOG_COLUMNS) && (this.areaCellAt(left + column, top + row) === undefined));
+
+				if (empty && (runStart === undefined))
+				{
+					runStart = column;
+				}
+				else if (!empty && (runStart !== undefined))
+				{
+					this.emptyNight.fillRect((left + runStart) * GRID_CELL_SIZE, (top + row) * GRID_CELL_SIZE, (column - runStart) * GRID_CELL_SIZE, GRID_CELL_SIZE);
+					runStart = undefined;
+				}
+			}
+		}
 	}
 
 	/**
@@ -867,11 +926,13 @@ export class AreaScene extends Phaser.Scene
 		const darkAdapted = ((own.darkvision > 0) && own.lightSensitivity);
 		const nightAlpha = (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA);
 
-		// With neighbors, each area is darkened by its own light, so a dark cave beside a sunlit field shows as one
+		// With neighbors, each area is darkened by its own light, so a dark cave beside a sunlit field shows as
+		// one, and where no area lies is darkened by the player's area's
 		if (this.areaNight)
 		{
 			this.night?.setAlpha(0);
 			this.areaNight.setAlpha((1 - light) * nightAlpha);
+			this.emptyNight?.setAlpha((1 - light) * nightAlpha);
 
 			for (const { slot, night } of this.drawnNeighbors)
 			{
