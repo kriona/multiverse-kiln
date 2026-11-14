@@ -48,10 +48,7 @@ async function regionOf(context: ChangeContext, ref: StringRef): Promise<PlaceNo
  */
 async function checkRegionName(context: ChangeContext, name: string, regionId: string | undefined): Promise<void>
 {
-	const lower = name.toLowerCase();
-	const taken = (await context.places.load()).allRegions().some((region) => ((region.id !== regionId) && (region.name.toLowerCase() === lower)));
-
-	if (taken)
+	if ((await context.places.load()).hasRegionNamed(name, regionId))
 	{
 		refuse(409, {
 			id: 'error.regionNameTaken',

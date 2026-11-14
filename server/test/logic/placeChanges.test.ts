@@ -210,4 +210,55 @@ describe('placeChanges', () =>
 			assert.ok((elapsedMs < 100), `Checking the changes took ${Math.round(elapsedMs)} ms`);
 		});
 	});
+
+	describe('region names', () =>
+	{
+		it('finds the regions with a name, not counting case, as the changes so far left them', () =>
+		{
+			const model = new PlaceModel(places);
+
+			assert.strictEqual(model.hasRegionNamed('planet', undefined), true);
+			assert.strictEqual(model.hasRegionNamed('PLANET', 'Planet'), false);
+			assert.strictEqual(model.hasRegionNamed('Mars', undefined), false);
+
+			model.setRegion({ ...region('Planet'), name: 'Mars' });
+			model.setRegion(region('Ghost'));
+
+			assert.strictEqual(model.hasRegionNamed('Planet', undefined), false);
+			assert.strictEqual(model.hasRegionNamed('mars', 'Moon'), true);
+			assert.strictEqual(model.hasRegionNamed('ghost', undefined), true);
+
+			model.deleteRegion('Planet');
+
+			assert.strictEqual(model.hasRegionNamed('Mars', undefined), false);
+		});
+
+		it('checks each name in time growing with the changes, not every region for every change', () =>
+		{
+			// Comparing the name with every region, this takes a few hundred milliseconds; looking it up, a
+			// few, so the limit leaves room for a slow machine
+			const model = new PlaceModel(world(Array.from({ length: 10000 }, (_, index) => region(`Region ${index}`)), []));
+			let taken = 0;
+			const start = performance.now();
+
+			for (let index = 0; index < 3000; index++)
+			{
+				const regionId = `Region ${index}`;
+				const name = `Renamed ${index}`;
+
+				if (model.hasRegionNamed(name, regionId))
+				{
+					taken++;
+				}
+
+				model.setRegion({ ...(model.region(regionId) as PlaceNode), name });
+			}
+
+			const elapsedMs = (performance.now() - start);
+
+			assert.strictEqual(taken, 0);
+			assert.strictEqual(model.hasRegionNamed('renamed 0', 'Region 1'), true);
+			assert.ok((elapsedMs < 100), `Checking the names took ${Math.round(elapsedMs)} ms`);
+		});
+	});
 });

@@ -210,6 +210,13 @@ describe('Regions', () =>
 		assert.strictEqual((await saveChanges(ada, universeId, [newRegion('other', 'world', [])])).status, 409);
 		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'updateRegion', regionId: String(ids['new:east']), update: { name: 'WORLD' } }])).status, 409);
 		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'updateRegion', regionId: String(ids['new:east']), update: { name: 'east' } }])).status, 200);
+
+		// A name an earlier change in the save gave up can be taken by a later one
+		assert.strictEqual((await saveChanges(ada, universeId, [
+			{ kind: 'updateRegion', regionId: String(ids['new:east']), update: { name: 'Far East' } },
+			newRegion('again', 'EAST', [])
+		])).status, 200);
+		assert.strictEqual((await saveChanges(ada, universeId, [newRegion('third', 'far east', [])])).status, 409);
 	});
 
 	it('refuses a region inside itself, directly or further down, or nested more than ten levels deep', async () =>

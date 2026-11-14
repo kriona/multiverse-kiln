@@ -15,6 +15,11 @@ export class PlaceModel
 	private lobbyRegionId: string | null;
 
 	/**
+	 * The IDs of the regions with each name, by the name in lower case
+	 */
+	private readonly regionIdsByName = new Map<string, Set<string>>();
+
+	/**
 	 * @param world The version as it is saved
 	 */
 	constructor(world: PlaceWorld)
@@ -22,6 +27,11 @@ export class PlaceModel
 		this.places = new PlaceGraph(world.regions, world.areas);
 		this.tileKinds = new Map(world.tileKinds);
 		this.lobbyRegionId = world.lobbyRegionId;
+
+		for (const region of world.regions)
+		{
+			this.addRegionName(region);
+		}
 	}
 
 	/**
@@ -118,7 +128,29 @@ export class PlaceModel
 	 */
 	setRegion(region: PlaceNode): void
 	{
+		const old = this.places.regions.get(region.id);
+
+		if (old)
+		{
+			this.removeRegionName(old);
+		}
+
 		this.places.setRegion(region);
+		this.addRegionName(region);
+	}
+
+	/**
+	 * Whether a region other than one has a name, not counting case
+	 *
+	 * @param name The name
+	 * @param regionId The region to leave out, or undefined for none
+	 * @return True when another region has it
+	 */
+	hasRegionNamed(name: string, regionId: string | undefined): boolean
+	{
+		const ids = this.regionIdsByName.get(name.toLowerCase());
+
+		return([...(ids ?? [])].some((id) => (id !== regionId)));
 	}
 
 	/**
@@ -141,6 +173,12 @@ export class PlaceModel
 	{
 		const removed: PlaceRef = { kind: 'region', id: regionId };
 		const children = [...this.places.childrenOf(removed)];
+		const node = this.places.regions.get(regionId);
+
+		if (node)
+		{
+			this.removeRegionName(node);
+		}
 
 		this.places.deletePlace(removed);
 		this.dropParent(children, removed);
@@ -229,6 +267,44 @@ export class PlaceModel
 	lobbyRegion(): string | null
 	{
 		return(this.lobbyRegionId);
+	}
+
+	/**
+	 * Adds a region to the regions with its name
+	 *
+	 * @param region The region
+	 */
+	private addRegionName(region: PlaceNode): void
+	{
+		const key = region.name.toLowerCase();
+		const ids = this.regionIdsByName.get(key);
+
+		if (ids)
+		{
+			ids.add(region.id);
+		}
+		else
+		{
+			this.regionIdsByName.set(key, new Set([region.id]));
+		}
+	}
+
+	/**
+	 * Takes a region from the regions with its name
+	 *
+	 * @param region The region, with the name it is listed under
+	 */
+	private removeRegionName(region: PlaceNode): void
+	{
+		const key = region.name.toLowerCase();
+		const ids = this.regionIdsByName.get(key);
+
+		ids?.delete(region.id);
+
+		if (ids?.size === 0)
+		{
+			this.regionIdsByName.delete(key);
+		}
 	}
 
 	/**
