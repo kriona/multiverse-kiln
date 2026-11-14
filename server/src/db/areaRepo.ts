@@ -573,20 +573,46 @@ export async function loadPlaceWorld(version: UniverseVersion, ruleset: Ruleset,
 }
 
 /**
- * Stores the settings worked out for areas
+ * Stores the settings worked out for areas, in one statement whatever their number
  *
  * @param settings The settings, by area ID
  * @param executor The database, or a transaction
  */
 export async function storeResolvedSettings(settings: ReadonlyMap<string, ResolvedAreaSettings>, executor: Executor = db): Promise<void>
 {
-	for (const [areaId, resolved] of settings)
+	if (settings.size === 0)
 	{
-		await executor
-			.update(areas)
-			.set(resolvedColumns(resolved))
-			.where(eq(areas.id, areaId));
+		return;
 	}
+
+	const ids = [...settings.keys()];
+	const list = [...settings.values()];
+	const worked = sql`unnest(
+		${sql.param(ids)}::uuid[],
+		${sql.param(list.map((resolved) => resolved.enabled))}::boolean[],
+		${sql.param(list.map((resolved) => resolved.indoors))}::boolean[],
+		${sql.param(list.map((resolved) => resolved.lightLevel))}::area_light_level[],
+		${sql.param(list.map((resolved) => resolved.defaultTileId))}::integer[],
+		${sql.param(list.map((resolved) => resolved.passageOfTime))}::passage_of_time[],
+		${sql.param(list.map((resolved) => resolved.faerieMorning))}::faerie_morning[],
+		${sql.param(list.map((resolved) => resolved.fogOfWar))}::boolean[],
+		${sql.param(list.map((resolved) => resolved.lobby))}::boolean[]
+	) AS worked (area_id, enabled, indoors, light_level, default_tile_id, passage_of_time, faerie_morning, fog_of_war, lobby)`;
+
+	await executor
+		.update(areas)
+		.set({
+			resolvedEnabled: sql`worked.enabled`,
+			resolvedIndoors: sql`worked.indoors`,
+			resolvedLightLevel: sql`worked.light_level`,
+			resolvedDefaultTileId: sql`worked.default_tile_id`,
+			resolvedPassageOfTime: sql`worked.passage_of_time`,
+			resolvedFaerieMorning: sql`worked.faerie_morning`,
+			resolvedFogOfWar: sql`worked.fog_of_war`,
+			resolvedLobby: sql`worked.lobby`
+		})
+		.from(worked)
+		.where(eq(areas.id, sql`worked.area_id`));
 }
 
 /**

@@ -2,6 +2,7 @@ import assert from 'assert';
 import { randomUUID } from 'crypto';
 import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, tileIdAt, VOID_CELL, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
+import { watchQueries } from '../../scripts/benchmarks/queries.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -480,6 +481,38 @@ describe('areaRepo', () =>
 
 			await updateAreaSettings(areaId, { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: true });
 			await assert.rejects(storeResolvedSettings(new Map([[areaId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'east' })]])));
+		});
+	});
+
+	describe('storeResolvedSettings', () =>
+	{
+		it('stores every area\'s settings in one statement, leaving other areas alone', async () =>
+		{
+			const universeId = await addUniverse();
+			const cellarId = await addArea(universeId, 'Cellar');
+			const gladeId = await addArea(universeId, 'Glade');
+			const hallId = await addArea(universeId, 'Hall');
+			const fieldId = await addArea(universeId, 'Field');
+			const settings = new Map([
+				[cellarId, await workedOut({ indoors: true, lightLevel: 'dark', defaultTileId: await defaultTileId('forest'), fogOfWar: false })],
+				[gladeId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'north' })],
+				[hallId, await workedOut({ enabled: false, passageOfTime: null, lobby: true })]
+			]);
+			const queries = watchQueries({ slowMs: 0 });
+
+			try
+			{
+				await storeResolvedSettings(settings);
+			}
+			finally
+			{
+				queries.restore();
+			}
+
+			const stored = new Map((await listAreas(liveVersion(universeId))).map((area) => [area.id, area.resolved]));
+
+			assert.deepStrictEqual(stored, new Map([...settings, [fieldId, await workedOut({})]]));
+			assert.strictEqual(queries.slowQueries.filter((query) => query.text.startsWith('update "areas"')).length, 1);
 		});
 	});
 
