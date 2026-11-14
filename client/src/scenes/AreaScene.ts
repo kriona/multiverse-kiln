@@ -95,6 +95,23 @@ const GLARE_ALPHA = NIGHT_ALPHA;
 const NIGHT_DEPTH = 0.5;
 
 /**
+ * The player's area's place among the places around it (placeKeyOf())
+ */
+const PLAYER_PLACE = '0,0';
+
+/**
+ * Names one of the places around the player's area, as seamSlots() gives them, or the area's own
+ *
+ * @param columns Which way the place is from the area, -1, 0 or 1 east-west
+ * @param rows Which way it is north-south
+ * @return The key
+ */
+function placeKeyOf(columns: number, rows: number): string
+{
+	return(`${columns},${rows}`);
+}
+
+/**
  * Depth of the glare, drawn over the cells in sight: over the area, the players and what overhangs them,
  * under the paper, which is drawn rather than seen and so isn't dazzling
  */
@@ -355,10 +372,17 @@ export class AreaScene extends Phaser.Scene
 	private areaNight?: Phaser.GameObjects.Rectangle;
 
 	/**
-	 * Darkens the cells around the view where no area lies, by the light of the player's area, when it has
-	 * neighbors; drawn again with the fog
+	 * Darkens the cells around the view where no area lies, when the player's area has neighbors, each by
+	 * the light of an area drawn beside them (see emptyLightPlace()), by the place around the player's area
+	 * that area is drawn in (placeKeyOf()); drawn again with the fog
 	 */
-	private emptyNight?: Phaser.GameObjects.Graphics;
+	private emptyNights = new Map<string, Phaser.GameObjects.Graphics>();
+
+	/**
+	 * How dark each area drawn is, by the place around the player's area it is drawn in (placeKeyOf()), as
+	 * the light was last worked out, for darkening where no area lies
+	 */
+	private placeNightAlphas = new Map<string, number>();
 
 	constructor()
 	{
@@ -396,7 +420,8 @@ export class AreaScene extends Phaser.Scene
 		this.drawnNeighbors = [];
 		this.origin = { column: 0, row: 0 };
 		this.areaNight = undefined;
-		this.emptyNight = undefined;
+		this.emptyNights = new Map();
+		this.placeNightAlphas = new Map();
 	}
 
 	/**
@@ -501,9 +526,6 @@ export class AreaScene extends Phaser.Scene
 			.setScrollFactor(0)
 			.setDepth(NIGHT_DEPTH)
 			.setAlpha(0);
-		this.emptyNight = this.add.graphics()
-			.setDepth(NIGHT_DEPTH)
-			.setAlpha(0);
 		this.glare = createRoundedFog(this, 'rounded-glare', FOG_COLUMNS, FOG_ROWS, GLARE_DEPTH, GLARE_COLOR, 0);
 		this.fog = createRoundedFog(this, 'rounded-fog', FOG_COLUMNS, FOG_ROWS, FOG_DEPTH, FOG_COLOR, FOG_ALPHA);
 		this.paper = createUnexploredPaper(this, FOG_COLUMNS, FOG_ROWS, PAPER_DEPTH);
@@ -557,8 +579,13 @@ export class AreaScene extends Phaser.Scene
 			this.clearNeighbors();
 			this.areaNight?.destroy();
 			this.areaNight = undefined;
-			this.emptyNight?.destroy();
-			this.emptyNight = undefined;
+
+			for (const graphics of this.emptyNights.values())
+			{
+				graphics.destroy();
+			}
+
+			this.emptyNights.clear();
 			this.fog?.destroy();
 			this.fog = undefined;
 			this.glare?.destroy();
@@ -754,47 +781,103 @@ export class AreaScene extends Phaser.Scene
 
 	/**
 	 * Draws the darkening over the cells of the fog's block where no area lies, row by row in runs of
-	 * cells, when the player's area has neighbors. Without neighbors the night over the whole view darkens
-	 * them
+	 * cells that take the same area's light, when the player's area has neighbors. Without neighbors the
+	 * night over the whole view darkens them
 	 *
 	 * @param left The block's first column, in world cells
 	 * @param top The block's first row, in world cells
 	 */
 	private drawEmptyNight(left: number, top: number): void
 	{
-		if (!this.emptyNight)
+		for (const graphics of this.emptyNights.values())
 		{
-			return;
+			graphics.clear();
 		}
-
-		this.emptyNight.clear();
 
 		if (!this.hasSeams())
 		{
 			return;
 		}
 
-		this.emptyNight.fillStyle(NIGHT_COLOR, 1);
+		const places = new Set([PLAYER_PLACE, ...this.drawnNeighbors.map(({ slot }) => placeKeyOf(slot.columns, slot.rows))]);
 
 		for (let row = 0; row < FOG_ROWS; row++)
 		{
-			let runStart: number | undefined;
+			let runStart = 0;
+			let runPlace: string | undefined;
 
 			for (let column = 0; column <= FOG_COLUMNS; column++)
 			{
 				const empty = ((column < FOG_COLUMNS) && (this.areaCellAt(left + column, top + row) === undefined));
+				const place = (empty ? this.emptyLightPlace(left + column, top + row, places) : undefined);
 
-				if (empty && (runStart === undefined))
+				if (place === runPlace)
 				{
-					runStart = column;
+					continue;
 				}
-				else if (!empty && (runStart !== undefined))
+
+				if (runPlace !== undefined)
 				{
-					this.emptyNight.fillRect((left + runStart) * GRID_CELL_SIZE, (top + row) * GRID_CELL_SIZE, (column - runStart) * GRID_CELL_SIZE, GRID_CELL_SIZE);
-					runStart = undefined;
+					this.emptyNightFor(runPlace)
+						.fillStyle(NIGHT_COLOR, 1)
+						.fillRect((left + runStart) * GRID_CELL_SIZE, (top + row) * GRID_CELL_SIZE, (column - runStart) * GRID_CELL_SIZE, GRID_CELL_SIZE);
 				}
+
+				runStart = column;
+				runPlace = place;
 			}
 		}
+	}
+
+	/**
+	 * The place around the player's area whose area lights a cell where no area lies: of the places beside
+	 * the cell's, the first holding an area, looking north, south, west then east, so an empty corner
+	 * between a dark area and a lit one takes a neighbor's light rather than the player's. The order stays
+	 * the same wherever the player stands, so the corner keeps the same light as they cross into the areas
+	 * around it. A place with none beside it takes the player's area's light
+	 *
+	 * @param column The cell's column in the world
+	 * @param row The cell's row in the world
+	 * @param places The places that hold an area drawn (placeKeyOf())
+	 * @return The place
+	 */
+	private emptyLightPlace(column: number, row: number, places: ReadonlySet<string>): string
+	{
+		const { bounds } = this.area;
+		const localColumn = column - this.origin.column;
+		const localRow = row - this.origin.row;
+		const columns = ((localColumn < bounds.minColumn) ? -1 : ((localColumn > bounds.maxColumn) ? 1 : 0));
+		const rows = ((localRow < bounds.minRow) ? -1 : ((localRow > bounds.maxRow) ? 1 : 0));
+		const beside = [
+			placeKeyOf(columns, rows - 1),
+			placeKeyOf(columns, rows + 1),
+			placeKeyOf(columns - 1, rows),
+			placeKeyOf(columns + 1, rows)
+		];
+
+		return(beside.find((place) => places.has(place)) ?? PLAYER_PLACE);
+	}
+
+	/**
+	 * The darkening over the cells where no area lies that take their light from a place's area, made the
+	 * first time it is needed
+	 *
+	 * @param place The place (placeKeyOf())
+	 * @return The darkening
+	 */
+	private emptyNightFor(place: string): Phaser.GameObjects.Graphics
+	{
+		let graphics = this.emptyNights.get(place);
+
+		if (!graphics)
+		{
+			graphics = this.add.graphics()
+				.setDepth(NIGHT_DEPTH)
+				.setAlpha(this.placeNightAlphas.get(place) ?? 0);
+			this.emptyNights.set(place, graphics);
+		}
+
+		return(graphics);
 	}
 
 	/**
@@ -944,12 +1027,13 @@ export class AreaScene extends Phaser.Scene
 		const nightAlpha = (darkAdapted ? DARK_ADAPTED_NIGHT_ALPHA : NIGHT_ALPHA);
 
 		// With neighbors, each area is darkened by its own light, so a dark cave beside a sunlit field shows as
-		// one, and where no area lies is darkened by the player's area's
+		// one, and where no area lies is darkened by the light of an area beside it
 		if (this.areaNight)
 		{
+			const alphas = new Map([[PLAYER_PLACE, (1 - light) * nightAlpha]]);
+
 			this.night?.setAlpha(0);
 			this.areaNight.setAlpha((1 - light) * nightAlpha);
-			this.emptyNight?.setAlpha((1 - light) * nightAlpha);
 
 			for (const { slot, night } of this.drawnNeighbors)
 			{
@@ -960,8 +1044,17 @@ export class AreaScene extends Phaser.Scene
 					column: Math.min(Math.max(ownCell.column - slot.columnOffset, neighbor.bounds.minColumn), neighbor.bounds.maxColumn),
 					row: Math.min(Math.max(ownCell.row - slot.rowOffset, neighbor.bounds.minRow), neighbor.bounds.maxRow)
 				};
+				const alpha = (1 - areaLight(neighbor.lightLevel, this.secondOfDayIn(neighbor, nearest))) * nightAlpha;
 
-				night.setAlpha((1 - areaLight(neighbor.lightLevel, this.secondOfDayIn(neighbor, nearest))) * nightAlpha);
+				night.setAlpha(alpha);
+				alphas.set(placeKeyOf(slot.columns, slot.rows), alpha);
+			}
+
+			this.placeNightAlphas = alphas;
+
+			for (const [place, graphics] of this.emptyNights)
+			{
+				graphics.setAlpha(alphas.get(place) ?? 0);
 			}
 		}
 		else
