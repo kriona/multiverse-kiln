@@ -112,11 +112,12 @@ export interface RoomSide
 	lobby: boolean;
 
 	/**
-	 * Where players go when the area they are in is deleted or leaves the room's side of the edge
+	 * Where players go when the area they are in is deleted or leaves the room's side of the edge. It is
+	 * asked once the area has been read again, so it can look at the area as it now is
 	 *
 	 * @return The place, or undefined when there is nowhere to go
 	 */
-	fallback(): PlayerPosition | undefined;
+	fallback(): Promise<PlayerPosition | undefined>;
 }
 
 /**
@@ -1395,7 +1396,7 @@ export class AreaPlayers
 
 		if (!area || (area.loaded.area.lobby !== this.side.lobby))
 		{
-			this.sendToFallback(playerIds);
+			await this.sendToFallback(areaId, playerIds);
 			return;
 		}
 
@@ -1488,18 +1489,20 @@ export class AreaPlayers
 	 * Sends players to the fallback place, for when their area has been deleted or has left the room's
 	 * side of the lobby region's edge
 	 *
+	 * @param areaId The area they are in
 	 * @param playerIds The players
 	 */
-	private sendToFallback(playerIds: string[]): void
+	private async sendToFallback(areaId: string, playerIds: string[]): Promise<void>
 	{
-		const fallback = this.side.fallback();
+		const fallback = await this.side.fallback();
 
 		if (fallback === undefined)
 		{
 			return;
 		}
 
-		for (const playerId of playerIds)
+		// Players may have left the area, or set out for another, while the place was found
+		for (const playerId of playerIds.filter((each) => ((this.areaIds.get(each) === areaId) && !this.travelling.has(each))))
 		{
 			this.travel(playerId, {
 				column: 0,

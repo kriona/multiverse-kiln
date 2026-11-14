@@ -1622,7 +1622,8 @@ export const groups = pgTable('groups', {
 
 	/**
 	 * Where the group started: the anchor being's starting area. Members with nowhere else to be go
-	 * there; null when it was deleted, and the universe's starting area is used instead
+	 * there; null when it was deleted or put below the lobby region, and the universe's starting area
+	 * is used instead
 	 */
 	startingAreaId: uuid('starting_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 

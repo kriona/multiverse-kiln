@@ -10,7 +10,7 @@ import { adminDb } from '../src/db/adminClient.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
-import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
+import { addGroupMember, clearGroupStartingAreas, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
 import { createAreaLink, deleteArea, setAreaNeighbor, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
@@ -1648,6 +1648,50 @@ describe('GameRoom', () =>
 			const { client } = await joinAs(room, browserIdA, anchor);
 
 			assert.strictEqual(playerIdOf(room, client), anchor.characterId);
+		});
+
+		it('sends the members in the group\'s own starting area to the universe\'s when a save puts it below the lobby region', async () =>
+		{
+			anchor = await addPlayerWithCharacter('Homebody');
+			groupId = await addGroup(universe.universeId, anchor.characterId, universe.houseAreaId, 'The Homebodies');
+
+			const room = await createGameRoom();
+
+			await joinAs(room, browserIdA, anchor);
+			assert.strictEqual(room.getAreaId(anchor.characterId), universe.houseAreaId);
+
+			// As the save does, without the area change, so the room still has the house as it was
+			await setWorkedOut(universe.houseAreaId, { passageOfTime: null, lobby: true });
+			await clearGroupStartingAreas([universe.houseAreaId]);
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
+			await waitUntil(() => (room.getAreaId(anchor.characterId) === universe.fieldAreaId));
+		});
+
+		it('sends the members in the group\'s own starting area to the universe\'s when it becomes a lobby area', async () =>
+		{
+			anchor = await addPlayerWithCharacter('Homebody');
+			groupId = await addGroup(universe.universeId, anchor.characterId, universe.houseAreaId, 'The Homebodies');
+
+			const room = await createGameRoom();
+
+			await joinAs(room, browserIdA, anchor);
+			assert.strictEqual(room.getAreaId(anchor.characterId), universe.houseAreaId);
+
+			await setWorkedOut(universe.houseAreaId, { passageOfTime: null, lobby: true });
+			areaChanges.publish({ kind: 'area', areaId: universe.houseAreaId });
+			await waitUntil(() => (room.getAreaId(anchor.characterId) === universe.fieldAreaId));
+		});
+
+		it('starts windows in the universe\'s starting area while the group\'s own is a lobby area', async () =>
+		{
+			anchor = await addPlayerWithCharacter('Homebody');
+			groupId = await addGroup(universe.universeId, anchor.characterId, universe.houseAreaId, 'The Homebodies');
+			await setWorkedOut(universe.houseAreaId, { passageOfTime: null, lobby: true });
+
+			const room = await createGameRoom();
+
+			await joinAs(room, browserIdA, anchor);
+			assert.strictEqual(room.getAreaId(anchor.characterId), universe.fieldAreaId);
 		});
 
 		it('sends a member who comes back while their area is disabled where its members are sent', async () =>

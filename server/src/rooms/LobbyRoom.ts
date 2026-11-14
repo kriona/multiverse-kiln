@@ -130,7 +130,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 */
 	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, {
 		lobby: true,
-		fallback: () => ((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell })
+		fallback: () => Promise.resolve(((this.lobbyAreaId === undefined) ? undefined : { areaId: this.lobbyAreaId, ...this.lobbyCell }))
 	}, {
 		shared: false,
 		clockSeconds: () => 0

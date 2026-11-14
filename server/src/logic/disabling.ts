@@ -124,7 +124,8 @@ export interface SavedMember
 	characterId: string;
 
 	/**
-	 * Their group's starting area and cell; the area is null when it was deleted
+	 * Their group's starting area and cell; the area is null when it was deleted or put below the lobby
+	 * region
 	 */
 	groupStart: { areaId: string | null; column: number; row: number };
 }
@@ -134,8 +135,8 @@ export interface SavedMember
  *
  * @param members The members
  * @param destination Where everyone goes, or null to send each to their group's starting area
- * @param universeStart The universe's starting area and cell, for a group whose starting area was
- * deleted; null when it has none
+ * @param universeStart The universe's starting area and cell, for a group with no starting area of its
+ * own; null when it has none
  * @return Each member's new place; members with nowhere to go are left out, and placed when next played
  */
 export function evacuatedPlaces(members: readonly SavedMember[], destination: Place | null, universeStart: Place | null): (Place & { characterId: string })[]

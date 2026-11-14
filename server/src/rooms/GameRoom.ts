@@ -158,18 +158,14 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Characters walk only the areas outside the lobby region, treating a lobby area as an edge, and go to
-	 * the group's starting area when their area is deleted or put below it. Everyone here is in the group,
-	 * so they see what any of them sees, and are sent only the cells the group has seen. A link that
-	 * needs the whole group is refused unless every member who can be played, and the anchor being, is
-	 * here together
+	 * the group's starting area (startingPlace()) when their area is deleted or put below it. Everyone
+	 * here is in the group, so they see what any of them sees, and are sent only the cells the group has
+	 * seen. A link that needs the whole group is refused unless every member who can be played, and the
+	 * anchor being, is here together
 	 */
 	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, {
 		lobby: false,
-		fallback: () => ({
-			areaId: this.startingAreaId,
-			column: 0,
-			row: 0
-		})
+		fallback: () => this.startingPlace()
 	}, {
 		shared: true,
 		clockSeconds: () => this.state.clock,
@@ -930,8 +926,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Where a member starts: where they were last, then beside the anchor being (where they
-	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone or
-	 * disabled is passed over, and a cell an area no longer holds since it was made smaller moves inside it
+	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone,
+	 * disabled or a lobby area is passed over, and a cell an area no longer holds since it was made smaller
+	 * moves inside it
 	 *
 	 * @param member The member
 	 * @return The area and cell
@@ -949,7 +946,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		{
 			const area = (candidate ? await this.areas.load(candidate.areaId) : undefined);
 
-			if (candidate && area?.loaded.area.enabled)
+			if (candidate && area?.loaded.area.enabled && !area.loaded.area.lobby)
 			{
 				return({
 					area,
@@ -972,28 +969,62 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Loads the group's starting area, switching to the universe's when the group's own is gone
-	 * (useUniverseStartingArea())
+	 * Where members with nowhere else to be go: the starting cell of the group's starting area
+	 * (loadStartingArea())
 	 *
-	 * @return The area; undefined when neither exists
+	 * @return The place; undefined when there is no starting area
+	 */
+	private async startingPlace(): Promise<PlayerPosition | undefined>
+	{
+		const startingArea = await this.loadStartingArea();
+
+		return((startingArea
+			? {
+				areaId: startingArea.loaded.area.id,
+				...startingCellOn(startingArea.loaded.bounds, this.startingCell)
+			}
+			: undefined));
+	}
+
+	/**
+	 * Loads the group's starting area, switching to the universe's when the group's own is gone or is a
+	 * lobby area, which only the lobby walks (useUniverseStartingArea())
+	 *
+	 * @return The area; undefined when neither can be used
 	 */
 	private async loadStartingArea(): Promise<ActiveArea | undefined>
 	{
 		const startingArea = await this.areas.load(this.startingAreaId);
 
-		if (startingArea)
+		if (startingArea && !startingArea.loaded.area.lobby)
 		{
 			return(startingArea);
 		}
 
 		await this.useUniverseStartingArea();
 
-		return(this.areas.load(this.startingAreaId));
+		const universeArea = await this.areas.load(this.startingAreaId);
+
+		return((universeArea?.loaded.area.lobby ? undefined : universeArea));
+	}
+
+	/**
+	 * Reads the group's starting area again, switching to the universe's when the group no longer has
+	 * one of its own, such as after a save put it below the lobby region
+	 */
+	private async readGroupStartingArea(): Promise<void>
+	{
+		const group = await findGroup(this.groupId);
+
+		if (group && (group.startingAreaId === null))
+		{
+			await this.useUniverseStartingArea();
+		}
 	}
 
 	/**
 	 * Makes the universe's starting area and cell the group's, as they are for a room whose group has no
-	 * starting area of its own, for when the group's own has been deleted
+	 * starting area of its own, for when the group's own has been deleted or can't be used
 	 */
 	private async useUniverseStartingArea(): Promise<void>
 	{
@@ -1322,21 +1353,22 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Sends the members in an area that has been disabled elsewhere: those in play travel there, and
-	 * those out of it are put there for when they are next played
+	 * Sends the members in an area that has been disabled or put below the lobby region elsewhere: those
+	 * in play travel there, and those out of it are put there for when they are next played
 	 *
-	 * @param areaId The disabled area
+	 * @param areaId The area
 	 * @param destination Where they go, or null for the group's starting area
 	 */
 	private async evacuate(areaId: string, destination: AreaPlace | null): Promise<void>
 	{
-		const startingArea = (destination ? undefined : await this.loadStartingArea());
-		const target = (destination ?? (startingArea
-			? {
-				areaId: startingArea.loaded.area.id,
-				...startingCellOn(startingArea.loaded.bounds, this.startingCell)
-			}
-			: undefined));
+		// The save may have taken the area away as the group's starting area. The database says so at once,
+		// while this room may not have read the area as the save left it yet
+		if ((destination === null) && (areaId === this.startingAreaId))
+		{
+			await this.readGroupStartingArea();
+		}
+
+		const target = (destination ?? await this.startingPlace());
 
 		if (!target)
 		{

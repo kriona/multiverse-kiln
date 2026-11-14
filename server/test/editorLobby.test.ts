@@ -2,7 +2,7 @@ import assert from 'assert';
 import type { AreaListPayload, EditableUniverse, EditorChange, SaveImpactPayload } from '@multiverse-kiln/shared';
 
 import { findEditorArea, listStartingAreaIds, loadArea } from '../src/db/areaRepo.js';
-import { listGroupMembers, listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
+import { findGroup, listGroupMembers, listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { findEditableUniverse, findUniverse } from '../src/db/universeRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
@@ -217,6 +217,25 @@ describe('The lobby region', () =>
 		assert.deepStrictEqual(await listMembersInAreas([campId]), []);
 		assert.ok(published.some((change) => ((change.kind === 'evacuated') && (change.areaId === campId) && (change.destination === null))));
 		assert.strictEqual((await loadArea(campId))?.area.lobby, true);
+	});
+
+	it('starts a group whose own starting area is put below the lobby region in the universe\'s, moving its characters there', async () =>
+	{
+		const { universeId, fieldAreaId } = universe;
+		const caveId = await addArea(universeId, 'Cave');
+		const brokkId = await addCharacter((await addPlayer('Bob')).id, universeId, 'Brokk');
+		const groupId = await addGroup(universeId, brokkId, caveId);
+		const enter: EditorChange = { kind: 'updateArea', areaId: caveId, update: { parents: [{ kind: 'region', id: await testLobbyRegionId(universeId) }] } };
+
+		await moveMembers([{ characterId: brokkId, areaId: caveId, column: 1, row: 1 }]);
+
+		const published = await publishedBy(() => saveAll(ada, universeId, [enter]));
+		const [member] = await listGroupMembers(groupId);
+
+		assert.strictEqual((await loadArea(caveId))?.area.lobby, true);
+		assert.strictEqual((await findGroup(groupId))?.startingAreaId, null);
+		assert.deepStrictEqual(member?.position, { areaId: fieldAreaId, column: 0, row: 0 });
+		assert.ok(published.some((change) => ((change.kind === 'evacuated') && (change.areaId === caveId) && (change.destination === null))));
 	});
 
 	it('deletes the lobby region, leaving the universe without a lobby', async () =>

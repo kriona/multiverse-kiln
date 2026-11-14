@@ -130,7 +130,7 @@ class FakeRoom
 		() => this.time
 	);
 
-	readonly players = new AreaPlayers(new LobbyState().players, this.cache, { lobby: false, fallback: () => undefined }, {
+	readonly players = new AreaPlayers(new LobbyState().players, this.cache, { lobby: false, fallback: () => Promise.resolve(undefined) }, {
 		shared: false,
 		clockSeconds: () => 0
 	});

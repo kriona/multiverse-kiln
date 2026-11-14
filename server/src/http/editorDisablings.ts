@@ -10,7 +10,7 @@ import type { AreaEvacuation, AreaEvacuations, GroupSizeLowering, ItemDisabling 
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
-import { deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
+import { clearGroupStartingAreas, deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
 import { areasById, areasInTree, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
 import { groupChanges } from '../players/groupChanges.js';
@@ -235,13 +235,16 @@ function note<Id, Choice>(noted: Map<Id, Noted<Choice>>, id: Id, wasEnabled: boo
 
 /**
  * Sends the group characters in areas the save puts below the lobby region back to where their groups
- * start: only the lobby walks the lobby areas
+ * start: only the lobby walks the lobby areas. A group starting in one of the areas starts in the
+ * universe's starting area from then on, which is never a lobby area
  *
  * @param context The save
  * @param areaIds The areas
  */
 async function leaveLobbyAreas(context: ChangeContext, areaIds: readonly string[]): Promise<void>
 {
+	await clearGroupStartingAreas(areaIds, context.transaction);
+
 	for (const areaId of areaIds)
 	{
 		await evacuateArea(context, areaId, null);
