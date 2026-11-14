@@ -187,6 +187,22 @@ export interface PlayerSight
 }
 
 /**
+ * Where a step across a seam took a player
+ */
+interface SeamCrossing
+{
+	/**
+	 * The area across the seam, which is the player's own area when its seam loops back to it
+	 */
+	area: ActiveArea;
+
+	/**
+	 * The cell they landed on, counted in that area's columns and rows
+	 */
+	cell: Cell;
+}
+
+/**
  * The players in a room with areas (a universe's lobby or a group's game room): which
  * clients control them, which area each is in, how they move, and which of them each client sees
  *
@@ -988,18 +1004,21 @@ export class AreaPlayers
 			}
 
 			// A step across a seam ends past the area's edge, in the neighbor the player now moves into
-			const current = ((!mover.step && area.seams) ? this.crossSeam(playerId, player, area) : area);
+			const crossing = ((!mover.step && area.seams) ? this.crossSeam(playerId, player, area) : undefined);
+			const current = (crossing?.area ?? area);
 
 			if (!player.ghost)
 			{
 				occupancy.hold(playerId, this.placedCells(current, occupiedCells({ x: player.x, y: player.y, step: this.steps.get(playerId) }, current.grid)));
 			}
 
-			const link = ((mover.stoppedAt && !this.locked && (current === area)) ? linkAt(area.layout, mover.stoppedAt) : undefined);
+			// The cell stepped onto, counted in the columns and rows of the area across the seam when the step crossed one
+			const steppedOnto = (mover.stoppedAt && (crossing?.cell ?? mover.stoppedAt));
+			const link = ((steppedOnto && !this.locked) ? linkAt(current.layout, steppedOnto) : undefined);
 
-			if (link)
+			if (link?.mode === 'automatic')
 			{
-				this.takeLinkFrom(playerId, link, area);
+				this.takeLinkFrom(playerId, link, current);
 			}
 		}
 
@@ -1029,9 +1048,9 @@ export class AreaPlayers
 	 * @param playerId The player's ID
 	 * @param player The player
 	 * @param area The area they were in
-	 * @return The area they are in now
+	 * @return The area and cell they crossed into, or undefined when they didn't cross a seam
 	 */
-	private crossSeam(playerId: string, player: Player, area: ActiveArea): ActiveArea
+	private crossSeam(playerId: string, player: Player, area: ActiveArea): SeamCrossing | undefined
 	{
 		const cell = {
 			column: Math.floor(player.x / area.grid.cellSize),
@@ -1040,7 +1059,7 @@ export class AreaPlayers
 
 		if (isInBounds(area.loaded.bounds, cell.column, cell.row))
 		{
-			return(area);
+			return(undefined);
 		}
 
 		const found = this.areas.locate(area.loaded.area.id, cell.column, cell.row);
@@ -1056,17 +1075,24 @@ export class AreaPlayers
 				player.y = position.y;
 			}
 
-			return(area);
+			return(undefined);
 		}
 
 		const center = cellCenter(found, target.grid);
+		const crossing: SeamCrossing = {
+			area: target,
+			cell: {
+				column: found.column,
+				row: found.row
+			}
+		};
 
 		this.putInArea(playerId, target.loaded.area.id);
 		player.x = center.x;
 		player.y = center.y;
 		this.sendArea(playerId, target, this.getClients(playerId));
 
-		return(target);
+		return(crossing);
 	}
 
 	/**
