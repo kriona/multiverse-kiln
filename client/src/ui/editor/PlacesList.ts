@@ -174,7 +174,15 @@ export class PlacesList
 
 				if (byKey.has(key))
 				{
-					children.set(key, [...(children.get(key) ?? []), each]);
+					let list = children.get(key);
+
+					if (!list)
+					{
+						list = [];
+						children.set(key, list);
+					}
+
+					list.push(each);
 				}
 			}
 		}
