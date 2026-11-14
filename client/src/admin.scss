@@ -30,7 +30,8 @@
 {
 	padding-inline-end: 12px;
 	border-inline-end: 1px solid $border;
-	font-size: 20px;
+	font-family: var(--font-heading);
+	font-size: var(--font-size-h2);
 	font-weight: bold;
 	white-space: nowrap;
 }
@@ -76,7 +77,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	font-size: 16px;
+	font-size: 1rem;
 	color: $link;
 	text-decoration: underline;
 }
@@ -110,7 +111,7 @@
 	h2
 	{
 		margin: 0;
-		font-size: 16px;
+		font-size: var(--font-size-h3);
 
 		// A second heading in a card, such as Characters under Universes
 		&:not(:first-child)
@@ -282,7 +283,7 @@
 	padding: 1px 8px;
 	border: 1px solid $border-strong;
 	border-radius: 10px;
-	font-size: 12px;
+	@include small-text;
 	color: $text-muted;
 	white-space: nowrap;
 }

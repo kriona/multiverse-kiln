@@ -6383,6 +6383,10 @@
 		"message": "GNU Affero General Public License",
 		"source": "GNU Affero General Public License"
 	},
+	"license.alegreyaLicense": {
+		"message": "Alegreya's articles",
+		"source": "Alegreya's license"
+	},
 	"license.artwork": {
 		"message": "Flag an' tile charts",
 		"source": "Logo and tilesets"
@@ -6411,6 +6415,14 @@
 		"message": "What's in the hold",
 		"source": "Contents"
 	},
+	"license.fonts": {
+		"message": "Letterin'",
+		"source": "Fonts"
+	},
+	"license.fontsCredit": {
+		"message": "The words be writ in {nunito}, copyright {nunitoCopyright}, an' the headings in {alegreya}, copyright {alegreyaCopyright}. Both be used under the {license}, whose full text sails with each font's files ({nunitoLicense}, {alegreyaLicense}).",
+		"source": "Text is set in {nunito}, copyright {nunitoCopyright}, and headings in {alegreya}, copyright {alegreyaCopyright}. Both are used under the {license}, whose full text comes with each font's files ({nunitoLicense}, {alegreyaLicense})."
+	},
 	"license.game": {
 		"message": "Ye ol' Game Engine",
 		"source": "The Game Engine"
@@ -6426,6 +6438,10 @@
 	"license.icons": {
 		"message": "Sigils",
 		"source": "Icons"
+	},
+	"license.nunitoLicense": {
+		"message": "Nunito's articles",
+		"source": "Nunito's license"
 	},
 	"license.openGameContent": {
 		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}.",

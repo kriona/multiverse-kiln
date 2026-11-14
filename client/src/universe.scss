@@ -34,7 +34,7 @@
 
 .universe-summary
 {
-	font-size: 17px;
+	font-size: 1.125rem;
 }
 
 // Enter Universe, and Edit Universe beside it for players who work on the universe
@@ -62,7 +62,7 @@
 	h2
 	{
 		margin: 0;
-		font-size: 16px;
+		font-size: var(--font-size-h3);
 	}
 }
 
@@ -75,7 +75,7 @@
 
 .universe-languages-note
 {
-	font-size: 13px;
+	@include small-text;
 	color: $text-faint;
 }
 
@@ -136,7 +136,7 @@
 .universe-language-only,
 .universe-language-shown
 {
-	font-size: 12px;
+	@include small-text;
 	color: $text-faint;
 }
 
@@ -181,7 +181,7 @@
 .universe-character-leaving
 {
 	margin-inline-start: auto;
-	font-size: 12px;
+	@include small-text;
 	color: $error;
 }
 

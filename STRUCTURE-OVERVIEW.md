@@ -1116,6 +1116,10 @@ Every page, editor and game screen can be used with only a keyboard and with a s
 - The area editor's cells (and the link dialog's preview) can be focused and worked with a cursor, which starts in the middle of the view: the arrow keys move it, Space or Enter paints or picks its cell, holding Space while moving paints a stroke, + and - zoom and Home returns to the center cell. Each cell the cursor reaches is read out with what it holds.
 - Colors are never the only way information is shown: the tile table's swatches carry the color's hex code.
 
+## Text size and fonts
+- Text sizes are in `rem`, so the pages' text grows with the base size a player sets in their browser. Body text is `1rem` and each heading size 1.3 times the one below; small text, such as hints and the footer, is `0.875rem` (`client/src/_shared.scss`).
+- Body text and controls are in Nunito, and headings and the site's name in Alegreya, both hosted with the site (`client/public/fonts/`), never from Google's servers. Codes, such as 2FA codes, are in a monospace font.
+
 ## Sortable tables
 A table that can be sorted has a button in each heading that sorts it (`TableSorter` in `client/src/ui/tableSorter.ts`, with `sortRows()` and `SortOrder` in `/shared`). Clicking a heading sorts going up, and clicking it again going down. The heading sorted by has `aria-sort` and an arrow showing which way; the others show an arrow both ways. Screen readers are told how the table is now sorted. A list paged on the server sends the order as the `sort` and `direction` query parameters, and the server sorts before paging; ties are kept in the list's own order.
 

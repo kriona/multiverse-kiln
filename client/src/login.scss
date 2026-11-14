@@ -24,7 +24,7 @@ main
 .auth-panel h1
 {
 	margin: 0;
-	font-size: 22px;
+	font-size: var(--font-size-h2);
 }
 
 // Links styled as buttons keep the button's colors (a.button in _shared.scss)
@@ -51,7 +51,7 @@ main
 	.icon
 	{
 		flex: none;
-		font-size: 40px;
+		font-size: 2.5rem;
 		color: $success;
 	}
 
@@ -65,7 +65,7 @@ main
 .auth-panel h2
 {
 	margin: 8px 0 0;
-	font-size: 18px;
+	font-size: var(--font-size-h3);
 }
 
 .auth-logo

@@ -8,6 +8,7 @@ import { heldAreaMessages } from '../network/heldAreaMessages';
 import type { AreaConnection, AreaRoom, GameRoom } from '../network/serverConnection';
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
+import { bodyFontFamily } from '../rendering/canvasFonts';
 import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
 import type { CellMaskShader } from '../rendering/CellMaskShader';
 import { createRoundedFog } from '../rendering/RoundedFog';
@@ -153,11 +154,20 @@ const FOG_ROWS = ((Math.ceil(VIEW_ROWS / 2) + FOG_MARGIN) * 2) + 1;
  */
 const PAPER_DEPTH = 0.4;
 
-const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
-	fontFamily: 'sans-serif',
-	fontSize: '12px',
-	color: '#ffffff'
-};
+/**
+ * The style of the text drawn over the area, such as players' names, in the body font (AreaView waits for it
+ * to load before starting the scene)
+ *
+ * @return The style
+ */
+function textStyle(): Phaser.Types.GameObjects.Text.TextStyle
+{
+	return({
+		fontFamily: bodyFontFamily(),
+		fontSize: '12px',
+		color: '#ffffff'
+	});
+}
 
 /**
  * Whether the element with focus needs the keys that move the player: a text field takes letters, and a
@@ -520,7 +530,7 @@ export class AreaScene extends Phaser.Scene
 			description: 'Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language'
 		});
 
-		this.linkPrompt = this.add.text(0, 0, prompt, TEXT_STYLE).setOrigin(0.5, 0).setDepth(2).setVisible(false);
+		this.linkPrompt = this.add.text(0, 0, prompt, textStyle()).setOrigin(0.5, 0).setDepth(2).setVisible(false);
 		this.night = this.add.rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, NIGHT_COLOR)
 			.setOrigin(0, 0)
 			.setScrollFactor(0)
@@ -1521,7 +1531,7 @@ export class AreaScene extends Phaser.Scene
 
 			const rendered: RenderedPlayer = {
 				shape,
-				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, '', TEXT_STYLE).setOrigin(0.5, 1).setDepth(1),
+				label: this.add.text(player.x, player.y - PLAYER_RADIUS - NAME_OFFSET, '', textStyle()).setOrigin(0.5, 1).setDepth(1),
 				positions: new PositionBuffer(PATCH_INTERVAL_MS),
 				lastPosition: undefined,
 				stopListening: () => undefined

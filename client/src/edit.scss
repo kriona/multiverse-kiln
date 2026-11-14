@@ -286,19 +286,20 @@ $editor-chat-inset: 16px;
 {
 	position: absolute;
 	top: 50%;
-	// The middle of the icon: the button's 1px border and 14px padding, then half the 18px icon
-	left: 24px;
+	// The middle of the icon: the button's 1px border and 14px padding, then half the icon, sized to the
+	// button's 1rem text
+	left: calc(15px + (round(1.15rem, 1px) / 2));
 	transform: translate(-50%, -50%);
 	box-sizing: border-box;
-	min-width: 18px;
-	height: 18px;
-	padding: 0 5px;
-	border-radius: 9px;
+	min-width: 1.5em;
+	height: 1.5em;
+	padding: 0 0.4em;
+	border-radius: 0.75em;
 	background: $danger;
 	color: $text-on-accent;
-	font-size: 11px;
+	font-size: 0.75rem;
 	font-weight: bold;
-	line-height: 18px;
+	line-height: 1.5em;
 	text-align: center;
 	// Clicks go through to the button under it
 	pointer-events: none;
@@ -334,7 +335,7 @@ $editor-chat-inset: 16px;
 	h2
 	{
 		margin: 0;
-		font-size: 18px;
+		font-size: var(--font-size-h3);
 	}
 }
 
@@ -345,7 +346,7 @@ $editor-chat-inset: 16px;
 	h3
 	{
 		margin: 0 0 4px;
-		font-size: 14px;
+		font-size: 1rem;
 		color: $text-muted;
 	}
 }
@@ -389,7 +390,7 @@ $save-bar-height: 56px;
 	border-top: 1px solid $border;
 	background: $background-panel;
 	// The page's text size; the footer rule in _shared.scss makes text in every <footer> smaller
-	font-size: medium;
+	font-size: 1rem;
 
 	&[hidden]
 	{
@@ -648,7 +649,7 @@ tr.staged-deleted
 	border-radius: 4px;
 	background: $notice-background;
 	color: $notice-text;
-	font-size: 12px;
+	@include small-text;
 	font-style: normal;
 }
 
@@ -778,7 +779,7 @@ form > .changed-since,
 .walk-readout
 {
 	margin: 0;
-	font-size: 13px;
+	@include small-text;
 	color: $text;
 }
 
@@ -794,7 +795,7 @@ form > .changed-since,
 		align-items: center;
 		gap: 4px;
 		margin: 0;
-		font-size: 12px;
+		@include small-text;
 		color: $text-muted;
 	}
 }
@@ -1036,7 +1037,7 @@ form > .changed-since,
 	.hint
 	{
 		margin: 0;
-		font-size: 12px;
+		@include small-text;
 		color: $text-faint;
 	}
 }
@@ -1255,7 +1256,7 @@ form > .changed-since,
 		padding: 1px 4px;
 		background: $backdrop;
 		color: $text;
-		font-size: 12px;
+		@include small-text;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1275,7 +1276,7 @@ form > .changed-since,
 		padding: 2px;
 		border-radius: 4px;
 		background: $notice-background;
-		font-size: 14px;
+		@include small-text;
 		line-height: 1;
 	}
 }
@@ -1438,7 +1439,7 @@ html:has(.area-cells-editor.full-page) body
 	.resize-was
 	{
 		color: $changed;
-		font-size: 12px;
+		@include small-text;
 	}
 
 	.resize-north

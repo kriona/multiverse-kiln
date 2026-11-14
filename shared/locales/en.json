@@ -6383,6 +6383,10 @@
 		"defaultMessage": "GNU Affero General Public License",
 		"description": "The name of the game's license, linking to its full text"
 	},
+	"license.alegreyaLicense": {
+		"defaultMessage": "Alegreya's license",
+		"description": "On the license page, a link to the text of the license that comes with the Alegreya font, in English"
+	},
 	"license.artwork": {
 		"defaultMessage": "Logo and tilesets",
 		"description": "Heading of the license page's section crediting the artist who made the game's logo and default tilesets, and its link in the page's contents"
@@ -6411,6 +6415,14 @@
 		"defaultMessage": "Contents",
 		"description": "Heading of the list of links to each section of the license page"
 	},
+	"license.fonts": {
+		"defaultMessage": "Fonts",
+		"description": "Heading of the license page's section crediting the fonts the pages use, and its link in the page's contents"
+	},
+	"license.fontsCredit": {
+		"defaultMessage": "Text is set in {nunito}, copyright {nunitoCopyright}, and headings in {alegreya}, copyright {alegreyaCopyright}. Both are used under the {license}, whose full text comes with each font's files ({nunitoLicense}, {alegreyaLicense}).",
+		"description": "On the license page, crediting the fonts the pages use; {nunito} and {alegreya} are links to the fonts, {nunitoCopyright} and {alegreyaCopyright} are who holds their copyright and {license} is a link to their license, each the same in every language. {nunitoLicense} and {alegreyaLicense} are links to the license's text that comes with each font, named by license.nunitoLicense and license.alegreyaLicense"
+	},
 	"license.game": {
 		"defaultMessage": "The Game Engine",
 		"description": "Heading of the license page's section about the game's own code, and its link in the page's contents"
@@ -6426,6 +6438,10 @@
 	"license.icons": {
 		"defaultMessage": "Icons",
 		"description": "Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents"
+	},
+	"license.nunitoLicense": {
+		"defaultMessage": "Nunito's license",
+		"description": "On the license page, a link to the text of the license that comes with the Nunito font, in English"
 	},
 	"license.openGameContent": {
 		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}.",
