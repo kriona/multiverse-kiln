@@ -4,7 +4,7 @@
  */
 import { and, asc, between, count, eq, gt, inArray, lt, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, lobbyAreaTime, type AreaTime, type DisplayTime, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaSettingsUpdate, type FaerieMorning, type PassageOfTime, type PlaceRef, type PlaceSettings, type PlaceWorld, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, lobbyAreaTime, type AreaLinkEnd, type AreaTime,type DisplayTime, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaSettingsUpdate, type FaerieMorning, type PassageOfTime, type PlaceRef, type PlaceSettings, type PlaceWorld, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/areaEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
@@ -38,9 +38,15 @@ export interface AreaRecord
 	indoors: boolean;
 
 	/**
-	 * null for the lobby's area, which takes the Lobby tab's
+	 * null for a lobby area, which takes the Lobby tab's
 	 */
 	passageOfTime: PassageOfTime | null;
+
+	/**
+	 * Whether it is a lobby area, below the lobby region: only the lobby walks it, and the lobby walks
+	 * nothing else
+	 */
+	lobby: boolean;
 }
 
 /**
@@ -57,7 +63,7 @@ export interface LoadedArea
 
 	/**
 	 * How its time of day is worked out: its passage of time as worked out from its regions and areas,
-	 * or the universe's lobby time for the lobby's area
+	 * or the universe's lobby time for a lobby area
 	 */
 	time: AreaTime;
 
@@ -89,10 +95,11 @@ export interface LoadedArea
 	links: AreaLink[];
 
 	/**
-	 * The disabled areas the links lead to, as they were when the area was loaded. Nobody can go through
-	 * those links, so clients aren't told about them
+	 * The areas the links lead to that nobody can go to, as they were when the area was loaded: disabled
+	 * areas, and areas on the other side of the lobby region's edge. Nobody can go through those links,
+	 * so clients aren't told about them
 	 */
-	disabledTargetIds: ReadonlySet<string>;
+	closedTargetIds: ReadonlySet<string>;
 
 	/**
 	 * Every tile the area can use, for drawing it and for its walk seconds
@@ -139,7 +146,7 @@ export async function createArea(area: NewArea, executor: Executor = db): Promis
  * @param resolved The settings
  * @return The column values
  */
-function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inferInsert, 'resolvedEnabled' | 'resolvedIndoors' | 'resolvedLightLevel' | 'resolvedDefaultTileId' | 'resolvedPassageOfTime' | 'resolvedFaerieMorning' | 'resolvedFogOfWar'>
+function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inferInsert, 'resolvedEnabled' | 'resolvedIndoors' | 'resolvedLightLevel' | 'resolvedDefaultTileId' | 'resolvedPassageOfTime' | 'resolvedFaerieMorning' | 'resolvedFogOfWar' | 'resolvedLobby'>
 {
 	return({
 		resolvedEnabled: resolved.enabled,
@@ -148,7 +155,8 @@ function resolvedColumns(resolved: ResolvedAreaSettings): Pick<typeof areas.$inf
 		resolvedDefaultTileId: resolved.defaultTileId,
 		resolvedPassageOfTime: resolved.passageOfTime,
 		resolvedFaerieMorning: resolved.faerieMorning,
-		resolvedFogOfWar: resolved.fogOfWar
+		resolvedFogOfWar: resolved.fogOfWar,
+		resolvedLobby: resolved.lobby
 	});
 }
 
@@ -167,7 +175,8 @@ function resolvedOf(row: typeof areas.$inferSelect): ResolvedAreaSettings
 		defaultTileId: row.resolvedDefaultTileId,
 		passageOfTime: row.resolvedPassageOfTime,
 		faerieMorning: row.resolvedFaerieMorning,
-		fogOfWar: row.resolvedFogOfWar
+		fogOfWar: row.resolvedFogOfWar,
+		lobby: row.resolvedLobby
 	});
 }
 
@@ -230,7 +239,6 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			ruleset: universes.ruleset,
 			universe: {
 				displayTime: universes.displayTime,
-				lobbyAreaId: universes.lobbyAreaId,
 				lobbyPassageOfTime: universes.lobbyPassageOfTime,
 				lobbyDayHours: universes.lobbyDayHours,
 				lobbyFaerieMorning: universes.lobbyFaerieMorning
@@ -253,16 +261,16 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 	const linkRows = await executor
 		.select({
 			link: areaLinks,
-			targetEnabled: areas.resolvedEnabled
+			targetEnabled: areas.resolvedEnabled,
+			targetLobby: areas.resolvedLobby
 		})
 		.from(areaLinks)
 		.innerJoin(areas, eq(areas.id, areaLinks.targetAreaId))
 		.where(eq(areaLinks.areaId, areaId));
-	const disabledTargetIds = new Set(linkRows
-		.filter(({ targetEnabled }) => !targetEnabled)
+	const closedTargetIds = new Set(linkRows
+		.filter(({ targetEnabled, targetLobby }) => (!targetEnabled || (targetLobby !== area.resolvedLobby)))
 		.map(({ link }) => link.targetAreaId));
 
-	const isLobby = (area.id === universe.lobbyAreaId);
 	const tiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
 
 	return({
@@ -273,10 +281,11 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			name: area.name,
 			enabled: area.resolvedEnabled,
 			indoors: area.resolvedIndoors,
-			passageOfTime: area.resolvedPassageOfTime
+			passageOfTime: area.resolvedPassageOfTime,
+			lobby: area.resolvedLobby
 		},
 		ruleset,
-		time: (isLobby
+		time: (area.resolvedLobby
 			? lobbyAreaTime({
 				passageOfTime: universe.lobbyPassageOfTime,
 				faerieMorning: universe.lobbyFaerieMorning,
@@ -299,7 +308,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 			mode: link.mode,
 			requiresWholeGroup: link.requiresWholeGroup
 		})),
-		disabledTargetIds,
+		closedTargetIds,
 		tiles
 	});
 }
@@ -307,7 +316,7 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 /**
  * How an area's time of day is worked out from its stored passage of time
  *
- * @param passageOfTime The passage of time worked out for it, null only for the lobby's area
+ * @param passageOfTime The passage of time worked out for it, null only for a lobby area
  * @param faerieMorning Where morning is, for faerie
  * @return The time
  */
@@ -472,15 +481,15 @@ export async function listAreas(version: UniverseVersion, executor: Executor = d
 
 /**
  * A version's regions and areas with their own settings and parents, the kinds of the tiles it can use
- * and its lobby's area, for working out the areas' settings, with the settings each area has stored
+ * and its lobby region, for working out the areas' settings, with the settings each area has stored
  *
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
- * @param lobbyAreaId The version's lobby area
+ * @param lobbyRegionId The version's lobby region
  * @param executor The database, or a transaction
  * @return The world, and each area's stored settings by ID
  */
-export async function loadPlaceWorld(version: UniverseVersion, ruleset: Ruleset, lobbyAreaId: string | null, executor: Executor = db): Promise<{ world: PlaceWorld; stored: Map<string, ResolvedAreaSettings> }>
+export async function loadPlaceWorld(version: UniverseVersion, ruleset: Ruleset, lobbyRegionId: string | null, executor: Executor = db): Promise<{ world: PlaceWorld; stored: Map<string, ResolvedAreaSettings> }>
 {
 	const regionList = await listRegions(version, executor);
 	const areaList = await listAreas(version, executor);
@@ -491,7 +500,7 @@ export async function loadPlaceWorld(version: UniverseVersion, ruleset: Ruleset,
 			regions: regionList.map(({ builderIds: _builderIds, ...region }) => region),
 			areas: areaList.map(({ resolved: _resolved, ...area }) => area),
 			tileKinds: new Map(tiles.map((tile) => [tile.id, { indoors: tile.indoors, outdoors: tile.outdoors }])),
-			lobbyAreaId
+			lobbyRegionId
 		},
 		stored: new Map(areaList.map((area) => [area.id, area.resolved]))
 	});
@@ -1003,8 +1012,31 @@ export async function listVersionAreaLinks(version: UniverseVersion, executor: E
 }
 
 /**
+ * Where every link of a universe is and the area it leads to, for keeping the lobby areas apart from the
+ * rest of the world
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The links, by area, then row, then column
+ */
+export async function listLinkEnds(version: UniverseVersion, executor: Executor = db): Promise<AreaLinkEnd[]>
+{
+	return(executor
+		.select({
+			areaId: areaLinks.areaId,
+			column: areaLinks.column,
+			row: areaLinks.row,
+			targetAreaId: areaLinks.targetAreaId
+		})
+		.from(areaLinks)
+		.innerJoin(areas, eq(areas.id, areaLinks.areaId))
+		.where(inVersion(areas, version))
+		.orderBy(areaLinks.areaId, areaLinks.row, areaLinks.column));
+}
+
+/**
  * Every area of a universe that is a starting area: the universe's, its races' and classes', and its
- * classes' for each race. None of them may be the lobby's area
+ * classes' for each race. None of them may be a lobby area
  *
  * @param version The universe's live version or draft
  * @param executor The database, or a transaction

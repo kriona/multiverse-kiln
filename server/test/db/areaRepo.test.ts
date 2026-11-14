@@ -11,7 +11,7 @@ import { createGroup } from '../../src/db/groupRepo.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
-import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea, testRegionId } from './fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea, testLobbyRegionId, testRegionId } from './fixtures.js';
 
 /**
  * The settings addArea() works out for a grass area, with some of them changed
@@ -29,6 +29,7 @@ async function workedOut(changes: Partial<ResolvedAreaSettings>): Promise<Resolv
 		passageOfTime: 'flows_normally',
 		faerieMorning: null,
 		fogOfWar: true,
+		lobby: false,
 		...changes
 	});
 }
@@ -60,7 +61,7 @@ describe('areaRepo', () =>
 			const loaded = await loadArea(areaId);
 
 			assert.ok(loaded);
-			assert.deepStrictEqual(loaded.area, { id: areaId, universeId, parentAreaId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'flows_normally' });
+			assert.deepStrictEqual(loaded.area, { id: areaId, universeId, parentAreaId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'flows_normally', lobby: false });
 			assert.deepStrictEqual(loaded.bounds, { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 });
 			assert.strictEqual(loaded.defaultTileId, tileIds.get('grass'));
 			assert.strictEqual(loaded.loopsEastWest, false);
@@ -92,11 +93,15 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetAreaId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
 			assert.deepStrictEqual((await loadArea(insideId))?.links, []);
-			assert.deepStrictEqual([...(loaded?.disabledTargetIds ?? [])], []);
+			assert.deepStrictEqual([...(loaded?.closedTargetIds ?? [])], []);
 			assert.deepStrictEqual(await listAreasLinkingTo(insideId), [areaId]);
 
 			await storeResolvedSettings(new Map([[insideId, await workedOut({ enabled: false })]]));
-			assert.deepStrictEqual([...((await loadArea(areaId))?.disabledTargetIds ?? [])], [insideId]);
+			assert.deepStrictEqual([...((await loadArea(areaId))?.closedTargetIds ?? [])], [insideId]);
+
+			// Nobody goes across the lobby region's edge either way
+			await storeResolvedSettings(new Map([[insideId, await workedOut({ passageOfTime: null, lobby: true })]]));
+			assert.deepStrictEqual([...((await loadArea(areaId))?.closedTargetIds ?? [])], [insideId]);
 		});
 
 		it('plays the settings worked out for the area, not its own', async () =>
@@ -117,16 +122,24 @@ describe('areaRepo', () =>
 			assert.strictEqual(loaded.area.indoors, false);
 		});
 
-		it('gives the lobby\'s area the universe\'s lobby time', async () =>
+		it('gives a lobby area the universe\'s lobby time', async () =>
 		{
 			const universeId = await addUniverse();
-			const lobbyId = await addArea(universeId, 'Lobby');
+			const lobbyId = await addArea(universeId, 'Lobby', { lobby: true });
+			const houseId = await addArea(universeId, 'House', { lobby: true });
 			const startId = await addArea(universeId, 'Start');
 
-			await setUniverseAreas(universeId, lobbyId, startId);
+			await setUniverseAreas(universeId, {
+				lobbyRegionId: await testLobbyRegionId(universeId),
+				lobbyAreaId: lobbyId,
+				startingAreaId: startId
+			});
 			await updateAreaSettings(lobbyId, { passageOfTime: 'always_noon' });
 
 			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
+			assert.deepStrictEqual((await loadArea(houseId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
+			assert.strictEqual((await loadArea(houseId))?.area.lobby, true);
+			assert.strictEqual((await loadArea(startId))?.area.lobby, false);
 
 			await updateUniverseSettings(liveVersion(universeId), { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
 
@@ -197,7 +210,8 @@ describe('areaRepo', () =>
 						defaultTileId: grass,
 						passageOfTime: 'flows_normally',
 						faerieMorning: null,
-						fogOfWar: true
+						fogOfWar: true,
+						lobby: false
 					},
 					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
 				}

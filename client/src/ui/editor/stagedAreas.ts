@@ -45,7 +45,8 @@ const UNKNOWN_SETTINGS: ResolvedAreaSettings = {
 	defaultTileId: 0,
 	passageOfTime: null,
 	faerieMorning: null,
-	fogOfWar: true
+	fogOfWar: true,
+	lobby: false
 };
 
 /**

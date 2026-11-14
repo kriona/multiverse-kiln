@@ -6,14 +6,14 @@
 import { PlaceGraph, placeKey, resolveAreaSettings, samePlace, type AreaNode, type PlaceNode, type PlaceRef, type PlaceWorld, type TileUsedFor, type WorldResolution } from '@multiverse-kiln/shared';
 
 /**
- * A version's regions, areas, tiles and lobby, which changes as a save's changes are made
+ * A version's regions, areas, tiles and lobby region, which changes as a save's changes are made
  */
 export class PlaceModel
 {
 	private readonly regions: Map<string, PlaceNode>;
 	private readonly areas: Map<string, AreaNode>;
 	private readonly tileKinds: Map<number, TileUsedFor>;
-	private lobbyAreaId: string | null;
+	private lobbyRegionId: string | null;
 	private cachedGraph: PlaceGraph | undefined;
 
 	/**
@@ -24,7 +24,7 @@ export class PlaceModel
 		this.regions = new Map(world.regions.map((region) => [region.id, region]));
 		this.areas = new Map(world.areas.map((area) => [area.id, area]));
 		this.tileKinds = new Map(world.tileKinds);
-		this.lobbyAreaId = world.lobbyAreaId;
+		this.lobbyRegionId = world.lobbyRegionId;
 	}
 
 	/**
@@ -50,7 +50,7 @@ export class PlaceModel
 			regions: [...this.regions.values()],
 			areas: [...this.areas.values()],
 			tileKinds: this.tileKinds,
-			lobbyAreaId: this.lobbyAreaId
+			lobbyRegionId: this.lobbyRegionId
 		});
 	}
 
@@ -210,13 +210,23 @@ export class PlaceModel
 	}
 
 	/**
-	 * Makes another area the lobby's, or none
+	 * Makes another region the lobby region, or none
 	 *
-	 * @param areaId The area's ID, or null
+	 * @param regionId The region's ID, or null
 	 */
-	setLobbyArea(areaId: string | null): void
+	setLobbyRegion(regionId: string | null): void
 	{
-		this.lobbyAreaId = areaId;
+		this.lobbyRegionId = regionId;
+	}
+
+	/**
+	 * The lobby region
+	 *
+	 * @return Its ID, or null when there is none
+	 */
+	lobbyRegion(): string | null
+	{
+		return(this.lobbyRegionId);
 	}
 
 	/**

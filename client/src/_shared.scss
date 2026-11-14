@@ -50,7 +50,10 @@ $draft-background: #6a1b9a;
 $draft-background-hover: #7b1fa2;
 
 // Orange: region names in the editor, set apart from areas' names
-$region-text: #ffb74d;
+$region-text: #ff9b05;
+
+// Yellow: the lobby region's name in the editor, set apart from the other regions' (and tagged "lobby")
+$lobby-region-text: #ffe600;
 
 // Teal: a field whose value differs from what it was, such as a side of Edit Size
 $changed: #4dd0e1;
@@ -1127,7 +1130,8 @@ button.player-search-clear
 		background: $background-field-hover;
 	}
 
-	.combobox-empty
+	.combobox-empty,
+	.combobox-disabled
 	{
 		color: $text-faint;
 		cursor: default;

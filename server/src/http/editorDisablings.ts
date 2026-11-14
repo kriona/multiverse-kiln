@@ -17,6 +17,7 @@ import { groupChanges } from '../players/groupChanges.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import type { ChangeContext } from './editorChangeContext.js';
 import { parentPlace } from './editorAreas.js';
+import type { PlacesOutcome } from './editorPlaces.js';
 
 /**
  * Something a save enables or disables: whether it was enabled before the save, and what the last change
@@ -91,13 +92,14 @@ export class SaveDisablings
 
 	/**
 	 * Once every change is saved: takes disabled items from the characters carrying them, or gives back
-	 * those enabled again, moves the characters out of disabled areas and brings groups larger than a
-	 * lowered group size down to it, as the changes chose
+	 * those enabled again, moves the characters out of disabled areas and group characters out of areas
+	 * put below the lobby region, and brings groups larger than a lowered group size down to it, as the
+	 * changes chose
 	 *
 	 * @param context The save
-	 * @param disabledAreaIds The areas the save found enabled and leaves disabled
+	 * @param places The areas the save disables, and those it puts below the lobby region
 	 */
-	async finish(context: ChangeContext, disabledAreaIds: readonly string[]): Promise<void>
+	async finish(context: ChangeContext, places: PlacesOutcome): Promise<void>
 	{
 		// The draft's characters are the live version's: applying the draft asks what happens to them
 		if (context.version.draft)
@@ -106,7 +108,8 @@ export class SaveDisablings
 		}
 
 		await this.finishItems(context);
-		await this.finishAreas(context, disabledAreaIds);
+		await this.finishAreas(context, places.disabled);
+		await leaveLobbyAreas(context, places.enteredLobby);
 		await this.finishGroupSize(context);
 	}
 
@@ -149,7 +152,8 @@ export class SaveDisablings
 	}
 
 	/**
-	 * Moves the characters out of the areas the save disables, other than the lobby's
+	 * Moves the characters out of the areas the save disables. Lobby players in a lobby area go back to
+	 * the lobby's starting square, unless it is in that area, when the lobby has no area to walk in
 	 *
 	 * @param context The save
 	 * @param disabledAreaIds The areas the save found enabled and leaves disabled
@@ -164,19 +168,31 @@ export class SaveDisablings
 		const { universe, transaction } = context;
 
 		// An area the save deleted isn't listed
-		const byId = areasById(areasInTree(await listAreas(context.version, transaction)));
+		const listed = await listAreas(context.version, transaction);
+		const lobbyAreaIds = new Set(listed
+			.filter((area) => area.resolved.lobby)
+			.map((area) => area.id));
+		const byId = areasById(areasInTree(listed));
 		const loadedLinks = new Map<string, readonly LinkInto[]>();
 
 		for (const areaId of disabledAreaIds)
 		{
-			// The lobby's players are always in its area, and have nowhere else to start
-			if (areaId !== universe.lobbyAreaId)
+			if (areaId === universe.lobbyAreaId)
 			{
-				const moveTo = (this.areaChoices.get(areaId) ?? 'start');
-				const destination = ((moveTo === 'parent') ? await parentPlace(transaction, byId, areaId, loadedLinks) : null);
-
-				await evacuateArea(context, areaId, destination);
+				continue;
 			}
+
+			// Only the lobby walks a lobby area, and it sends its players back to its starting square
+			if (lobbyAreaIds.has(areaId))
+			{
+				context.published.push({ kind: 'evacuated', areaId, destination: null });
+				continue;
+			}
+
+			const moveTo = (this.areaChoices.get(areaId) ?? 'start');
+			const destination = ((moveTo === 'parent') ? await parentPlace(transaction, byId, areaId, loadedLinks) : null);
+
+			await evacuateArea(context, areaId, destination);
 		}
 	}
 
@@ -215,6 +231,21 @@ function note<Id, Choice>(noted: Map<Id, Noted<Choice>>, id: Id, wasEnabled: boo
 		wasEnabled: (earlier?.wasEnabled ?? wasEnabled),
 		choice: (choice ?? earlier?.choice)
 	});
+}
+
+/**
+ * Sends the group characters in areas the save puts below the lobby region back to where their groups
+ * start: only the lobby walks the lobby areas
+ *
+ * @param context The save
+ * @param areaIds The areas
+ */
+async function leaveLobbyAreas(context: ChangeContext, areaIds: readonly string[]): Promise<void>
+{
+	for (const areaId of areaIds)
+	{
+		await evacuateArea(context, areaId, null);
+	}
 }
 
 /**

@@ -97,6 +97,11 @@ export interface SelectOption
 {
 	value: string;
 	label: string;
+
+	/**
+	 * Whether the choice is listed but can't be chosen, its label saying why
+	 */
+	disabled?: boolean;
 }
 
 /**
@@ -107,7 +112,14 @@ export interface SelectOption
  */
 export function setOptions(select: HTMLSelectElement, options: readonly SelectOption[]): void
 {
-	select.replaceChildren(...options.map((option) => new Option(option.label, option.value)));
+	select.replaceChildren(...options.map((option) =>
+	{
+		const element = new Option(option.label, option.value);
+
+		element.disabled = (option.disabled ?? false);
+
+		return(element);
+	}));
 }
 
 /**

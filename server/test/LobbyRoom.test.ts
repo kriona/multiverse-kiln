@@ -11,7 +11,7 @@ import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
-import { deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
+import { createAreaLink, deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
@@ -22,7 +22,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, addArea,defaultClassId, defaultRaceId, defaultTileId, setWorkedOut, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, setWorkedOut, testLobbyRegionId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -852,16 +852,46 @@ describe('LobbyRoom', () =>
 			assert.strictEqual((await grace.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
 		});
 
-		it('sends players in a disabled area to the lobby area, or where they are sent', async () =>
+		it('sends players in a disabled lobby area back to the starting square, wherever an editor sends them', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const room = lobbyOf(ada);
 
-			areaChanges.publish({ kind: 'evacuated', areaId: universe.squareAreaId, destination: { areaId: universe.houseAreaId, column: 2, row: 2 } });
-			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.houseAreaId));
+			// The starting square's own area takes the lobby's area away instead
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.squareAreaId, destination: null });
+			await walkIntoHouse(ada);
 
-			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: { areaId: universe.fieldAreaId, column: 2, row: 2 } });
 			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+
+		it('sends players in an area leaving the lobby region back to the starting square', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			await walkIntoHouse(ada);
+			await setWorkedOut(universe.houseAreaId, { passageOfTime: 'flows_normally', lobby: false });
+			areaChanges.publish({ kind: 'area', areaId: universe.houseAreaId });
+
+			await waitUntil(() => (lobbyOf(ada).getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+
+		it('takes nobody through a link out of the lobby areas, and doesn\'t tell players about it', async () =>
+		{
+			await createAreaLink({ areaId: universe.squareAreaId, column: 2, row: 2, targetAreaId: universe.fieldAreaId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false });
+
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
+
+			assert.ok(!area.links.some((link) => ((link.column === 2) && (link.row === 2))));
+
+			// A player setting out through a link stops, so walking on afterwards shows nobody went
+			placeOnCell(playerOf(ada), 2, 2);
+			ada.room.send(MessageType.TakeLink);
+			ada.room.send(MessageType.Move, { x: 1, y: 0 });
+			await waitUntil(() => (Math.floor(playerOf(ada).x / GRID_CELL_SIZE) === 3));
+			ada.room.send(MessageType.Move, { x: 0, y: 0 });
+			assert.strictEqual(lobbyOf(ada).getAreaId(ada.playerId), universe.squareAreaId);
 		});
 	});
 
@@ -1296,11 +1326,16 @@ describe('LobbyRoom', () =>
 		{
 			// A long lobby, forest near the center and far to the east
 			const universeId = await createUniverse({ name: 'Long Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
-			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -10, minRow: -10, maxColumn: 500, maxRow: 10 } });
+			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -10, minRow: -10, maxColumn: 500, maxRow: 10 }, lobby: true });
+			const fieldId = await addArea(universeId, 'Field');
 			const forest = await defaultTileId('forest');
 
 			await inTransaction((transaction) => editCells(areaId, [[1, 1, forest], [400, 1, forest]], transaction));
-			await setUniverseAreas(universeId, areaId, areaId);
+			await setUniverseAreas(universeId, {
+				lobbyRegionId: await testLobbyRegionId(universeId),
+				lobbyAreaId: areaId,
+				startingAreaId: fieldId
+			});
 
 			const ada = await joinAsNewPlayer(universeId, 'Ada');
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);

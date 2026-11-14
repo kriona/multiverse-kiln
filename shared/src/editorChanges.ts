@@ -533,11 +533,14 @@ export interface SaveConflictText
  * - item: it disables an item characters carry
  * - area: it disables an area characters are in, playing there or saved there by their group, and
  *   hasParent says whether it is inside an enabled area they could go to
+ * - lobbyArea: it puts an area group characters are in, playing there or saved there by their group,
+ *   below the lobby region, so they go back to where their group starts
  * - groupSize: it lowers the group size below the size of some groups
  */
 export type ChangeImpact =
 	| { changeIndex: number; kind: 'race' | 'class' | 'item'; id: number; name: OptionName; characters: number }
 	| { changeIndex: number; kind: 'area'; id: string; name: string; characters: number; hasParent: boolean }
+	| { changeIndex: number; kind: 'lobbyArea'; id: string; name: string; characters: number }
 	| { changeIndex: number; kind: 'groupSize'; groupSize: number; groups: number };
 
 /**

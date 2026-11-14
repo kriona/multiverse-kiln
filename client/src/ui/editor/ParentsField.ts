@@ -16,6 +16,11 @@ export interface ParentChoice
 	 * The names of the places it is inside, shown faintly after its name
 	 */
 	detail: string | undefined;
+
+	/**
+	 * Why it is listed but can't be chosen, shown after the detail, or undefined when it can be
+	 */
+	refusal?: string;
 }
 
 /**
@@ -49,7 +54,7 @@ export class ParentsField
 
 				this.add.value = '';
 
-				if (chosen && !this.parents.some((parent) => samePlace(parent, chosen.place)))
+				if (chosen && (chosen.refusal === undefined) && !this.parents.some((parent) => samePlace(parent, chosen.place)))
 				{
 					this.parents = [...this.parents, chosen.place];
 					this.render();
@@ -176,7 +181,8 @@ export class ParentsField
 	}
 
 	/**
-	 * Offers the choices Add Parent can add, leaving out the parents shown
+	 * Offers the choices Add Parent can add, leaving out the parents shown. Those that can't be chosen are
+	 * listed, saying why
 	 */
 	private offerChoices(): void
 	{
@@ -185,7 +191,8 @@ export class ParentsField
 			.map((choice) => ({
 				value: placeKey(choice.place),
 				name: choice.name,
-				detail: choice.detail
+				detail: ((choice.refusal === undefined) ? choice.detail : [choice.detail, choice.refusal].filter((each) => (each !== undefined)).join(' · ')),
+				disabled: (choice.refusal !== undefined)
 			})));
 	}
 }

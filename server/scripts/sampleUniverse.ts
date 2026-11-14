@@ -104,6 +104,7 @@ export const sampleUniverse = {
 	shortDescription: 'A small world for trying out the engine.',
 	longDescription: 'Walk around the city in the lobby, then set out across the kingdom, into the market district of its capitol, through the shop and down into its cellar.',
 	stage: 'let_there_be_light' as UniverseStage,
+	lobbyRegion: 'lobby',
 	lobbyArea: 'lobby',
 	startingArea: 'kingdom'
 };
@@ -166,7 +167,8 @@ export const sampleRegions: SampleRegion[] = [
 	{
 		key: 'capitol-city',
 		name: 'Capitol City',
-		parents: ['planet']
+		parents: ['planet'],
+		fogOfWar: false
 	}
 ];
 

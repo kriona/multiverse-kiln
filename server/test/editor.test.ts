@@ -332,11 +332,12 @@ describe('World editor API', () =>
 
 	describe('universes', () =>
 	{
-		it('creates a universe with a lobby and a starting area, and makes the player its creator', async () =>
+		it('creates a universe with a lobby and a starting area, each in a region, and makes the player its creator', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 			const areas = (await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas`)).body;
+			const grass = await defaultTileId('grass');
 
 			assert.strictEqual(universe.name, 'Kilnhaven');
 			assert.strictEqual(universe.stage, 'in_the_beginning');
@@ -346,13 +347,24 @@ describe('World editor API', () =>
 			assert.strictEqual(areas.lobbyAreaId, universe.lobbyAreaId);
 			assert.strictEqual(areas.startingAreaId, universe.startingAreaId);
 			assert.notStrictEqual(universe.lobbyAreaId, universe.startingAreaId);
+			assert.deepStrictEqual(areas.regions.map((region) => [region.name, region.defaultTileId, region.fogOfWar, region.passageOfTime]), [['Lobby', grass, false, null], ['World', grass, true, 'flows_normally']]);
+
+			const [lobbyRegion, worldRegion] = areas.regions;
+
+			assert.strictEqual(universe.lobbyRegionId, lobbyRegion.id);
+			assert.strictEqual(areas.lobbyRegionId, lobbyRegion.id);
 
 			const lobby = (await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${universe.lobbyAreaId}`)).body;
+			const start = areas.areas.find((area) => (area.id === universe.startingAreaId));
 
 			assert.deepStrictEqual(lobby.bounds, NEW_AREA_BOUNDS);
-			assert.strictEqual(lobby.resolved.defaultTileId, await defaultTileId('grass'));
-			assert.deepStrictEqual(areas.regions.map((region) => [region.name, region.defaultTileId]), [['World', await defaultTileId('grass')]]);
-			assert.deepStrictEqual(lobby.parents, [{ kind: 'region', id: areas.regions[0].id }]);
+			assert.strictEqual(lobby.resolved.defaultTileId, grass);
+			assert.strictEqual(lobby.resolved.lobby, true);
+			assert.strictEqual(lobby.resolved.fogOfWar, false);
+			assert.strictEqual(lobby.resolved.passageOfTime, null);
+			assert.deepStrictEqual(lobby.parents, [{ kind: 'region', id: lobbyRegion.id }]);
+			assert.deepStrictEqual(start?.parents, [{ kind: 'region', id: worldRegion.id }]);
+			assert.strictEqual(start.resolved.lobby, false);
 		});
 
 		it('lists the player\'s universes', async () =>
@@ -504,7 +516,7 @@ describe('World editor API', () =>
 			assert.strictEqual(universe.stage, 'prologue');
 		});
 
-		it('changes the lobby\'s time, keeping faerie time off a lobby whose area loops', async () =>
+		it('changes the lobby\'s time, keeping faerie time off a lobby whose areas loop', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const path = `/${universeId}`;
@@ -519,10 +531,19 @@ describe('World editor API', () =>
 			assert.strictEqual((await updateUniverse(ada, universeId, { lobbyPassageOfTime: 'faerie' })).status, 400);
 
 			assert.strictEqual((await updateArea(ada, universeId, lobbyAreaId, { loopsNorthSouth: true })).status, 200);
-			assert.strictEqual((await updateUniverse(ada, universeId, { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'west' })).body.error.id, 'error.faerieLobbyCantLoop');
+
+			const refused = await updateUniverse(ada, universeId, { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'west' });
+
+			assert.strictEqual(refused.body.error.id, 'error.lobbyProblems');
+			assert.deepStrictEqual(refused.body.placeProblems, [{ kind: 'lobbyFaerieLoops', areaId: lobbyAreaId }]);
 			assert.strictEqual((await updateArea(ada, universeId, lobbyAreaId, { loopsNorthSouth: false })).status, 200);
 			assert.strictEqual((await updateUniverse(ada, universeId, { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'west' })).status, 200);
-			assert.strictEqual((await updateArea(ada, universeId, lobbyAreaId, { loopsEastWest: true })).body.error.id, 'error.faerieLobbyCantLoop');
+			assert.strictEqual((await updateArea(ada, universeId, lobbyAreaId, { loopsEastWest: true })).body.error.id, 'error.lobbyProblems');
+
+			// Every area below the lobby region keeps from looping, not only the starting square's
+			const houseId = await createArea(ada, universeId, { name: 'House', parents: [{ kind: 'region', id: String(universe.lobbyRegionId) }] });
+
+			assert.strictEqual((await updateArea(ada, universeId, houseId, { loopsEastWest: true })).body.error.id, 'error.lobbyProblems');
 
 			universe = (await send<EditableUniverse>(ada, 'GET', path)).body;
 
@@ -658,13 +679,13 @@ describe('World editor API', () =>
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', torchId)).status, 200);
 		});
 
-		it('refuses the lobby, or an area of another universe, as the starting area', async () =>
+		it('refuses a lobby area, or an area of another universe, as the starting area', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 			const otherAreaId = await createArea(ada, await createUniverse(ada, 'Elsewhere'));
 
-			for (const startingAreaId of [universe.lobbyAreaId, otherAreaId, randomUUID()])
+			for (const startingAreaId of [otherAreaId, randomUUID()])
 			{
 				const response = await updateUniverse(ada, universeId, { startingAreaId });
 
@@ -672,6 +693,11 @@ describe('World editor API', () =>
 				assert.strictEqual(response.body.error.id, 'error.unusableStartingArea');
 			}
 
+			const lobby = await updateUniverse(ada, universeId, { startingAreaId: universe.lobbyAreaId });
+
+			assert.strictEqual(lobby.status, 409);
+			assert.strictEqual(lobby.body.error.id, 'error.lobbyProblems');
+			assert.deepStrictEqual(lobby.body.placeProblems, [{ kind: 'lobbyStartingArea', areaId: universe.lobbyAreaId }]);
 			assert.strictEqual((await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body.startingAreaId, universe.startingAreaId);
 		});
 	});
@@ -1214,12 +1240,8 @@ describe('World editor API', () =>
 				assert.strictEqual((await createIn(ada, universeId, 'Race', body)).status, 400, JSON.stringify(body));
 			}
 
-			for (const startingAreaId of [universe.lobbyAreaId, theirAreaId])
-			{
-				const response = await createIn(ada, universeId, 'Race', { ...lizardfolk, startingAreaId });
-
-				assert.strictEqual(response.body.error.id, 'error.unusableStartingArea');
-			}
+			assert.strictEqual((await createIn(ada, universeId, 'Race', { ...lizardfolk, startingAreaId: theirAreaId })).body.error.id, 'error.unusableStartingArea');
+			assert.deepStrictEqual((await createIn(ada, universeId, 'Race', { ...lizardfolk, startingAreaId: universe.lobbyAreaId })).body.placeProblems, [{ kind: 'lobbyStartingArea', areaId: universe.lobbyAreaId }]);
 
 			const response = await createIn(ada, universeId, 'Race', { ...lizardfolk, startingItems: [{ itemId: theirItemId, quantity: 1 }] });
 
@@ -1504,7 +1526,8 @@ describe('World editor API', () =>
 					defaultTileId: await defaultTileId('grass'),
 					passageOfTime: 'flows_normally',
 					faerieMorning: null,
-					fogOfWar: true
+					fogOfWar: true,
+					lobby: false
 				},
 				bounds: NEW_AREA_BOUNDS
 			});
@@ -1515,7 +1538,8 @@ describe('World editor API', () =>
 				defaultTileId: await defaultTileId('wood_floor'),
 				passageOfTime: 'flows_normally',
 				faerieMorning: null,
-				fogOfWar: true
+				fogOfWar: true,
+				lobby: false
 			});
 			assert.deepStrictEqual(inside.parents, [{ kind: 'area', id: outsideId }]);
 		});
@@ -1775,7 +1799,8 @@ describe('World editor API', () =>
 			await updateArea(ada, universeId, areaId, { passageOfTime: 'always_dawn' });
 			await saveChange(ada, universeId, { kind: 'updateRegion', regionId: await worldRegionId(ada, universeId), update: { passageOfTime: 'always_dusk' } });
 
-			// The lobby's area takes the Lobby tab's time, so only the starting area changes with the region
+			// The lobby's area is in the Lobby region, and takes the Lobby tab's time, so only the starting area
+			// changes with the World region
 			assert.deepStrictEqual(published, [
 				{ kind: 'time', universeId },
 				{ kind: 'area', areaId },

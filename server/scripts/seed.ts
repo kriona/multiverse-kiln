@@ -318,9 +318,10 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 		indoors: false,
 		lightLevel: null,
 		defaultTileId: requireTile(tileIds, 'grass'),
-		passageOfTime: null,
+		passageOfTime: 'flows_normally',
 		faerieMorning: null,
-		fogOfWar: true
+		fogOfWar: true,
+		lobby: false
 	};
 
 	for (const area of sampleAreas)
@@ -353,12 +354,16 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 		parsedAreas.set(area.key, parsed);
 	}
 
-	const lobbyAreaId = requireArea(areaIds, sampleUniverse.lobbyArea);
+	const lobbyRegionId = requireRegion(regionIds, sampleUniverse.lobbyRegion);
 
-	await setUniverseAreas(universeId, lobbyAreaId, requireArea(areaIds, sampleUniverse.startingArea), executor);
+	await setUniverseAreas(universeId, {
+		lobbyRegionId,
+		lobbyAreaId: requireArea(areaIds, sampleUniverse.lobbyArea),
+		startingAreaId: requireArea(areaIds, sampleUniverse.startingArea)
+	}, executor);
 
 	// Every area's settings come from its own and its regions', as a save in the editor works them out
-	const { world } = await loadPlaceWorld(version, 'pf1e', lobbyAreaId, executor);
+	const { world } = await loadPlaceWorld(version, 'pf1e', lobbyRegionId, executor);
 	const resolution = resolveAreaSettings(world);
 
 	if (resolution.problems.length > 0)

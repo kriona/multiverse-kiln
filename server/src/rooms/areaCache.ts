@@ -607,7 +607,8 @@ function memoryFor(area: ActiveArea, memory: AreaMemory | undefined): AreaMemory
 
 /**
  * Links on an area's cells as clients are told about them: where they are and how they are taken, but
- * not where they lead. Links to disabled areas are left out, since nobody can go through them
+ * not where they lead. Links to disabled areas and across the lobby region's edge are left out, since
+ * nobody can go through them
  *
  * @param loaded The area
  * @param include Whether to tell about a link, such as one on a cell the group has seen
@@ -616,7 +617,7 @@ function memoryFor(area: ActiveArea, memory: AreaMemory | undefined): AreaMemory
 export function toLinkCells(loaded: LoadedArea, include: (link: AreaLink) => boolean): AreaLinkCell[]
 {
 	return(loaded.links
-		.filter((link) => (!loaded.disabledTargetIds.has(link.targetAreaId) && include(link)))
+		.filter((link) => (!loaded.closedTargetIds.has(link.targetAreaId) && include(link)))
 		.map((link) => ({
 			column: link.column,
 			row: link.row,

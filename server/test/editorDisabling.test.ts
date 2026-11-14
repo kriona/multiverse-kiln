@@ -10,7 +10,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
 import { universeAccessChanges, type BarredChange } from '../src/players/universeAccess.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, dwarfFighter, testRegionId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, dwarfFighter, testRegionId, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, send, type Editor } from './editorRequests.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -231,6 +231,7 @@ describe('Disabling things players are using', () =>
 			published.push(change);
 		});
 
+		await withoutLobby(universe);
 		await setAreaParents(houseAreaId, [{ kind: 'region', id: await testRegionId(universe.universeId) }, { kind: 'area', id: squareAreaId }]);
 		await addGroup(universe.universeId, brokkId, null);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
@@ -261,6 +262,7 @@ describe('Disabling things players are using', () =>
 	{
 		const { houseAreaId, fieldAreaId } = universe;
 
+		await withoutLobby(universe);
 		await addGroup(universe.universeId, brokkId, fieldAreaId);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
@@ -337,6 +339,7 @@ describe('Disabling things players are using', () =>
 		const { houseAreaId } = universe;
 		const areaOff: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: false } };
 
+		await withoutLobby(universe);
 		await addGroup(universe.universeId, brokkId, null);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
@@ -359,6 +362,7 @@ describe('Disabling things players are using', () =>
 		const enable: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: true } };
 		const placeOfBrokk = async (): Promise<string | undefined> => (await listMembersInAreas([houseAreaId, squareAreaId])).find((member) => (member.characterId === brokkId))?.areaId;
 
+		await withoutLobby(universe);
 		await setAreaParents(houseAreaId, [{ kind: 'region', id: await testRegionId(universe.universeId) }, { kind: 'area', id: squareAreaId }]);
 		await addGroup(universe.universeId, brokkId, null);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);

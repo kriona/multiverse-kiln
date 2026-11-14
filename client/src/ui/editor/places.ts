@@ -254,7 +254,44 @@ export function describeProblem(problem: PlaceProblem, names: PlaceNames, tiles:
 				place: names(problem.place)
 			}));
 
-		default:
+		case 'lobbyLink':
+			return(t({
+				id: 'editor.place.lobbyLink',
+				defaultMessage: '{area} has a link to {target}, across the edge of the lobby',
+				description: 'A problem keeping a save, shown by the region and area editors and the Areas tab: an area below the lobby region (a lobby area) and an area outside it are joined by a link, and the lobby is never connected to the rest of the world; {area} is the area the link is on and {target} the area it leads to'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId }),
+				target: names({ kind: 'area', id: problem.targetAreaId })
+			}));
+
+		case 'lobbyStartingArea':
+			return(t({
+				id: 'editor.place.lobbyStartingArea',
+				defaultMessage: '{area}: characters start here, so it can\'t be part of the lobby',
+				description: 'A problem keeping a save, shown by the region and area editors and the Areas tab: an area where characters start (the universe\'s, a race\'s or a class\'s starting area) would be below the lobby region; {area} is the area'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId })
+			}));
+
+		case 'lobbySquareOutside':
+			return(t({
+				id: 'editor.place.lobbySquareOutside',
+				defaultMessage: '{area}: the lobby\'s starting square is here, so it must stay part of the lobby',
+				description: 'A problem keeping a save, shown by the region and area editors and the Areas tab: the area holding the lobby\'s starting square (chosen on the Lobby tab) would no longer be below the lobby region; {area} is the area'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId })
+			}));
+
+		case 'lobbyFaerieLoops':
+			return(t({
+				id: 'editor.place.lobbyFaerieLoops',
+				defaultMessage: '{area}: the lobby\'s passage of time is faerie, so it can\'t loop',
+				description: 'A problem keeping a save, shown by the region and area editors and the Areas tab: an area below the lobby region loops while the Lobby tab\'s passage of time is faerie; {area} is the area'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId })
+			}));
+
+		case 'tooDeep':
 			return(t({
 				id: 'editor.place.tooDeep',
 				defaultMessage: '{place} is nested more than ten levels deep',
@@ -278,6 +315,8 @@ export function problemPlaces(problem: PlaceProblem): PlaceRef[]
 	{
 		case 'conflict':
 			return([{ kind: 'area', id: problem.areaId }, ...problem.values.map(({ place }) => place)]);
+		case 'lobbyLink':
+			return([{ kind: 'area', id: problem.areaId }, { kind: 'area', id: problem.targetAreaId }]);
 		case 'insideItself':
 		case 'tooDeep':
 			return([problem.place]);

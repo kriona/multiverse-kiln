@@ -148,7 +148,8 @@ export async function createUniverse(editor: Editor, name: string = 'Kilnhaven',
 }
 
 /**
- * The region a new universe holds its areas in, from the API
+ * The region a new universe holds its starting area in, World, from the API: the top-level region that
+ * isn't its lobby region
  *
  * @param editor A browser that may list the universe's areas
  * @param universeId The universe's ID
@@ -158,7 +159,7 @@ export async function createUniverse(editor: Editor, name: string = 'Kilnhaven',
 export async function worldRegionId(editor: Editor, universeId: string, version: 'live' | 'draft' = 'live'): Promise<string>
 {
 	const response = await send<AreaListPayload>(editor, 'GET', `/${universeId}/areas${((version === 'draft') ? '?version=draft' : '')}`);
-	const world = response.body.regions.find((region) => (region.parents.length === 0));
+	const world = response.body.regions.find((region) => ((region.parents.length === 0) && (region.id !== response.body.lobbyRegionId)));
 
 	assert.ok(world, JSON.stringify(response.body));
 

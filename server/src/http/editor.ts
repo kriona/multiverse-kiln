@@ -19,7 +19,7 @@ import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { countUniversesWithRole, listEditableUniverses, setUniverseRole } from '../db/universeEditorRepo.js';
 import { createUniverse, setUniverseAreas, UniverseNameTakenError, updateUniverseSettings } from '../db/universeRepo.js';
 import { countTranslations, deleteTranslationsOutside, deleteUniverseText, deleteUniverseTextOf } from '../db/universeTextRepo.js';
-import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, listStartingAreaIds, replaceTileInAreas, setAreaParents } from '../db/areaRepo.js';
+import { createArea, findAreasUsingTile, findEditorArea, isTileInUse, replaceTileInAreas, setAreaParents } from '../db/areaRepo.js';
 import { loadUniverseContext, playerIdOf, refuseWithoutRequiredTwoFactor, refuseWritesFromOtherOrigins, requireLogin, requireRole, universeContextOf } from './editorAccess.js';
 import { addDefaultStartingItems } from '../db/startingItemRepo.js';
 import { isSameVersion, liveVersion, type UniverseVersion } from '../db/universeVersions.js';
@@ -203,7 +203,8 @@ async function refusingTakenName<T>(work: () => Promise<T>): Promise<T | Refusal
 }
 
 /**
- * POST /: a new universe with a lobby area and a starting area, created by the player
+ * POST /: a new universe, created by the player, with a Lobby region (its lobby region) holding its
+ * lobby area and a World region holding its starting area
  *
  * @param request The request
  * @param response The response
@@ -265,19 +266,34 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			throw new Error(`The ${ruleset} default tile "${tileKey}" is missing`);
 		}
 
-		// Every area is in a region, which sets what the areas inherit
-		const regionId = await createRegion(liveVersion(createdId), {
+		// Every area is in a region, which sets what the areas inherit. The lobby's region is its lobby
+		// region, whose areas take the Lobby tab's passage of time, and nothing near its players is hidden
+		// from them
+		const outdoors = {
+			enabled: null,
+			indoors: false,
+			lightLevel: 'lit',
+			defaultTileId,
+			faerieMorning: null
+		} as const;
+		const lobbyRegionId = await createRegion(liveVersion(createdId), {
+			...outdoors,
+			name: universeTranslator.format({
+				id: 'universe.lobbyRegionName',
+				defaultMessage: 'Lobby',
+				description: 'Name given to the lobby region of a new universe, holding the areas players walk in its lobby; its creator can change it. Regions are only seen in the world editor'
+			}),
+			passageOfTime: null,
+			fogOfWar: false
+		}, transaction);
+		const worldRegionId = await createRegion(liveVersion(createdId), {
+			...outdoors,
 			name: universeTranslator.format({
 				id: 'universe.worldRegionName',
 				defaultMessage: 'World',
 				description: 'Name given to the region holding the areas of a new universe, which sets the settings they inherit; its creator can change it. Regions are only seen in the world editor'
 			}),
-			enabled: null,
-			indoors: false,
-			lightLevel: 'lit',
-			defaultTileId,
 			passageOfTime: 'flows_normally',
-			faerieMorning: null,
 			fogOfWar: true
 		}, transaction);
 		const resolved: ResolvedAreaSettings = {
@@ -287,7 +303,8 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			defaultTileId,
 			passageOfTime: 'flows_normally',
 			faerieMorning: null,
-			fogOfWar: true
+			fogOfWar: true,
+			lobby: false
 		};
 		const area = {
 			universeId: createdId,
@@ -303,25 +320,25 @@ async function createUniverseRoute(request: Request, response: Response): Promis
 			defaultMessage: 'Starting Area',
 			description: 'Name given to the area characters of a new universe start in, which its creator can change'
 		});
-		// Nothing near the lobby's players is hidden from them
 		const lobbyAreaId = await createArea({
 			...area,
 			name: lobbyAreaName,
-			fogOfWar: false,
 			resolved: {
 				...resolved,
 				passageOfTime: null,
-				fogOfWar: false
+				fogOfWar: false,
+				lobby: true
 			}
 		}, transaction);
 		const startingAreaId = await createArea({ ...area, name: startingAreaName, resolved }, transaction);
 
-		for (const areaId of [lobbyAreaId, startingAreaId])
-		{
-			await setAreaParents(areaId, [{ kind: 'region', id: regionId }], transaction);
-		}
-
-		await setUniverseAreas(createdId, lobbyAreaId, startingAreaId, transaction);
+		await setAreaParents(lobbyAreaId, [{ kind: 'region', id: lobbyRegionId }], transaction);
+		await setAreaParents(startingAreaId, [{ kind: 'region', id: worldRegionId }], transaction);
+		await setUniverseAreas(createdId, {
+			lobbyRegionId,
+			lobbyAreaId,
+			startingAreaId
+		}, transaction);
 		await addDefaultStartingItems(createdId, ruleset, transaction);
 		await setUniverseRole(createdId, playerId, 'creator', transaction);
 
@@ -398,28 +415,42 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	}
 
 	const { universe, version, transaction } = context;
+	const lobbyRegionId = ((update.lobbyRegionId === undefined) ? universe.lobbyRegionId : update.lobbyRegionId);
 	const lobbyAreaId = ((update.lobbyAreaId === undefined) ? universe.lobbyAreaId : update.lobbyAreaId);
-	const lobbyArea = ((lobbyAreaId !== null) ? await findEditorArea(lobbyAreaId, transaction) : undefined);
 
-	const lobbyChanged = ((update.lobbyAreaId !== undefined) && (update.lobbyAreaId !== null) && (update.lobbyAreaId !== universe.lobbyAreaId));
-
-	if (lobbyChanged)
+	if ((lobbyRegionId !== null) && (lobbyRegionId !== universe.lobbyRegionId) && !(await context.places.load()).region(lobbyRegionId))
 	{
-		checkLobbyArea(context, lobbyArea?.version);
+		refuse(400, {
+			id: 'error.noSuchLobbyRegion',
+			defaultMessage: 'The lobby region must be one of this universe\'s regions.',
+			description: 'Why the lobby region wasn\'t saved: the region chosen isn\'t one of the universe\'s, perhaps because another editor deleted it'
+		});
 	}
 
-	const problem = lobbyTimeProblem({ ...universe, ...update }, lobbyArea?.area);
+	if ((lobbyAreaId !== null) && (lobbyAreaId !== universe.lobbyAreaId))
+	{
+		checkLobbyArea(context, (await findEditorArea(lobbyAreaId, transaction))?.version);
+	}
+
+	const problem = lobbyTimeProblem({ ...universe, ...update });
 
 	if (problem !== undefined)
 	{
 		refuse(400, problem);
 	}
 
-	// The lobby's area takes the Lobby tab's passage of time, and the area it leaves its own again
-	if (lobbyAreaId !== universe.lobbyAreaId)
+	// The lobby areas take the Lobby tab's passage of time, and the areas leaving the lobby their own again
+	if (lobbyRegionId !== universe.lobbyRegionId)
 	{
 		await context.places.load();
 		context.places.touch();
+	}
+
+	// Whether the lobby's starting square is below the lobby region, and its areas don't loop with faerie
+	// time, is checked once every change is made
+	if ((lobbyAreaId !== universe.lobbyAreaId) || (update.lobbyPassageOfTime !== undefined))
+	{
+		context.places.checkLobby();
 	}
 
 	const { startingAreaId, startingItems } = update;
@@ -427,17 +458,10 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
 	await checkStartingReferences(context, {
 		areaIds: (((startingAreaId === undefined) || (startingAreaId === null)) ? [] : [startingAreaId]),
-		itemIds: startingItems?.map(({ itemId }) => itemId),
-		lobbyAreaId
+		itemIds: startingItems?.map(({ itemId }) => itemId)
 	});
 	await applyLanguages(context, update);
 	await updateUniverseSettings(version, update, transaction);
-
-	// Checked once the settings are saved, so the universe's starting area is the one the change leaves
-	if (lobbyChanged && (lobbyAreaId !== null))
-	{
-		await checkLobbyNotStartingArea(context, lobbyAreaId);
-	}
 
 	// A coin given back the engine's name or abbreviation has engine text again, translated with the engine
 	for (const [field, saved, sent] of [['name', universe.coinNames, update.coinNames], ['abbreviation', universe.coinAbbreviations, update.coinAbbreviations]] as const)
@@ -458,20 +482,9 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		context.published.push({ kind: 'time', universeId: universe.id });
 	}
 
-	const lobbyMoved = ((lobbyAreaId !== universe.lobbyAreaId) || ((update.lobbyColumn ?? universe.lobbyColumn) !== universe.lobbyColumn) || ((update.lobbyRow ?? universe.lobbyRow) !== universe.lobbyRow));
+	const lobbyMoved = ((lobbyRegionId !== universe.lobbyRegionId) || (lobbyAreaId !== universe.lobbyAreaId) || ((update.lobbyColumn ?? universe.lobbyColumn) !== universe.lobbyColumn) || ((update.lobbyRow ?? universe.lobbyRow) !== universe.lobbyRow));
 
-	// The lobby's time and vision follow its settings, so the areas it leaves and joins are read again
-	if (lobbyAreaId !== universe.lobbyAreaId)
-	{
-		for (const areaId of [universe.lobbyAreaId, lobbyAreaId])
-		{
-			if (areaId !== null)
-			{
-				context.published.push({ kind: 'area', areaId });
-			}
-		}
-	}
-
+	// The areas joining and leaving the lobby are read again once their settings are worked out
 	if (lobbyMoved)
 	{
 		context.published.push({ kind: 'lobby', universeId: universe.id });
@@ -512,7 +525,7 @@ async function applyLanguages(context: ChangeContext, update: UniverseSettingsUp
 }
 
 /**
- * Refuses a lobby area that isn't one of the version's areas
+ * Refuses a lobby starting square in an area that isn't one of the version's areas
  *
  * @param context The save
  * @param areaVersion The version the area belongs to, or undefined when there is no such area
@@ -525,25 +538,6 @@ function checkLobbyArea(context: ChangeContext, areaVersion: UniverseVersion | u
 			id: 'error.noSuchLobbyArea',
 			defaultMessage: 'The lobby must be one of this universe\'s areas.',
 			description: 'Why the lobby\'s area wasn\'t saved: the area chosen isn\'t one of the universe\'s, perhaps because another editor deleted it'
-		});
-	}
-}
-
-/**
- * Refuses a lobby area that is a starting area: the universe's, a race's or a class's. Called once the
- * universe's settings are saved, so it sees the starting area the same change gives the universe
- *
- * @param context The save
- * @param lobbyAreaId The lobby's area
- */
-async function checkLobbyNotStartingArea(context: ChangeContext, lobbyAreaId: string): Promise<void>
-{
-	if ((await listStartingAreaIds(context.version, context.transaction)).includes(lobbyAreaId))
-	{
-		refuse(409, {
-			id: 'error.lobbyIsStartingArea',
-			defaultMessage: 'Characters start in this area, so it can\'t be the lobby. Choose another area, or first change where the universe\'s, races\' and classes\' characters start.',
-			description: 'Why the lobby\'s area wasn\'t saved: the area chosen is where characters of the universe, or of one of its races or classes, start, and a starting area can\'t be the lobby'
 		});
 	}
 }

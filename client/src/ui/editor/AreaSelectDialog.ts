@@ -1,4 +1,4 @@
-import { isInBounds, parentAreas, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
+import { isInBounds, lobbyAreaIds, parentAreas, PlaceGraph, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -49,7 +49,7 @@ export interface AreaSelection
 
 /**
  * What an area is chosen for: where characters start (the universe's, a race's or a class's), or where
- * players start in the lobby. A starting area can't be the lobby's, so neither offers the other's areas
+ * players start in the lobby. A starting area can't be a lobby area, so neither offers the other's areas
  */
 export type AreaSelectPurpose = 'starting' | 'lobby';
 
@@ -58,8 +58,8 @@ export type AreaSelectPurpose = 'starting' | 'lobby';
  * universe's areas, found by typing part of its name, and the square of it they start on, chosen on a
  * preview of the area
  *
- * Choosing a starting area leaves out the lobby's area, and choosing the lobby's area leaves out the
- * starting areas
+ * Choosing a starting area leaves out the lobby areas, those below the lobby region, and choosing the
+ * lobby's starting square lists only them
  */
 export class AreaSelectDialog
 {
@@ -69,6 +69,7 @@ export class AreaSelectDialog
 	private readonly results = getElement('area-select-results', HTMLFieldSetElement);
 	private readonly none = getElement('area-select-none', HTMLElement);
 	private readonly lobbyHint = getElement('area-select-lobby-hint', HTMLElement);
+	private readonly startingHint = getElement('area-select-starting-hint', HTMLElement);
 	private readonly summary = getElement('area-select-summary', HTMLElement);
 	private readonly cellText = getElement('area-select-cell', HTMLElement);
 	private readonly error = getElement('area-select-error', HTMLElement);
@@ -174,9 +175,11 @@ export class AreaSelectDialog
 	 * @param areaId The area chosen now, which starts out chosen, if any
 	 * @param cell The square of that area chosen now
 	 * @param purpose What the area is chosen for, a starting area unless said otherwise
+	 * @param lobbyRegionId The lobby region, below which the lobby's areas are, when it isn't the one
+	 * saved, as when the Lobby tab has chosen another
 	 * @return The area and square chosen, or undefined when the dialog was closed without choosing
 	 */
-	async open(universe: EditableUniverse, areaId: string | null, cell: StartingCell, purpose: AreaSelectPurpose = 'starting'): Promise<AreaSelection | undefined>
+	async open(universe: EditableUniverse, areaId: string | null, cell: StartingCell, purpose: AreaSelectPurpose = 'starting', lobbyRegionId?: string | null): Promise<AreaSelection | undefined>
 	{
 		const version = ++this.version;
 
@@ -189,6 +192,7 @@ export class AreaSelectDialog
 		this.results.replaceChildren();
 		this.none.hidden = true;
 		this.lobbyHint.hidden = (purpose !== 'lobby');
+		this.startingHint.hidden = true;
 		this.summary.textContent = '';
 		this.cellText.textContent = '';
 		this.submit.disabled = true;
@@ -210,9 +214,10 @@ export class AreaSelectDialog
 
 			if (version === this.version)
 			{
-				const excluded = new Set((purpose === 'lobby') ? list.startingAreaIds : [list.lobbyAreaId]);
+				const inLobby = lobbyAreaIds(new PlaceGraph(list.regions, list.areas), ((lobbyRegionId === undefined) ? list.lobbyRegionId : lobbyRegionId));
 
-				this.areas = list.areas.filter((area) => !excluded.has(area.id));
+				this.areas = list.areas.filter((area) => (inLobby.has(area.id) === (purpose === 'lobby')));
+				this.startingHint.hidden = ((purpose === 'lobby') || (inLobby.size === 0));
 				this.tiles = this.stagedTiles.withChanges(tiles).tiles;
 				this.showResults();
 				void this.showPreview();

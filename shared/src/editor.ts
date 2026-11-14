@@ -404,19 +404,26 @@ export interface UniverseSettings
 	lobbyDayHours: number;
 
 	/**
-	 * Set exactly when lobbyPassageOfTime is faerie. The lobby's area can't loop while it is
+	 * Set exactly when lobbyPassageOfTime is faerie. The lobby areas can't loop while it is
 	 */
 	lobbyFaerieMorning: FaerieMorning | null;
 
 	/**
-	 * The area players walk around in the lobby: one of the universe's areas other than a starting area
-	 * (the universe's, a race's or a class's). While it is null or disabled, the lobby has no area, and
-	 * its players only chat and choose their characters
+	 * The region whose areas players walk in the lobby (the lobby areas, every area below it), or null for
+	 * a universe without a lobby to walk in. No starting area (the universe's, a race's or a class's) is
+	 * below it, and no link crosses its edge
+	 */
+	lobbyRegionId: string | null;
+
+	/**
+	 * The area of the lobby's starting square, where players start in the lobby: a lobby area. While it is
+	 * null or disabled, the lobby has no area, and its players only chat and choose their characters
 	 */
 	lobbyAreaId: string | null;
 
 	/**
-	 * The cell of the lobby's area players start nearest (see StartingCell); 0 while lobbyAreaId is null
+	 * The cell of the lobby's starting square players start nearest (see StartingCell); 0 while
+	 * lobbyAreaId is null
 	 */
 	lobbyColumn: number;
 
@@ -867,7 +874,7 @@ export interface UniverseEditListQuery
 
 /**
  * The settings the Audit tab names when a save changes them. Settings the editor shows as one field are
- * one here: a starting area and its cell are startingArea (lobbyArea for the lobby's area), a passage of time and its faerie morning are
+ * one here: a starting area and its cell are startingArea (lobbyArea for the lobby's starting square), a passage of time and its faerie morning are
  * passageOfTime (lobbyPassageOfTime for the lobby's), and a tile's graphic or uploaded graphic is graphic
  */
 export const AUDIT_FIELDS = [
@@ -883,6 +890,7 @@ export const AUDIT_FIELDS = [
 	'displayTime',
 	'lobbyPassageOfTime',
 	'lobbyDayHours',
+	'lobbyRegion',
 	'lobbyArea',
 	'groupSize',
 	'startingMoney',
@@ -994,7 +1002,12 @@ export interface AuditFieldValues
 	lobbyDayHours: number;
 
 	/**
-	 * Null when the universe has no lobby area
+	 * Null when the universe has no lobby region, by its name when saved
+	 */
+	lobbyRegion: string | null;
+
+	/**
+	 * The lobby's starting square, null when the universe has none
 	 */
 	lobbyArea: AuditPlace | null;
 	groupSize: number;
@@ -1925,14 +1938,32 @@ export interface AreaListPayload
 {
 	regions: EditorRegion[];
 	areas: EditorAreaSummary[];
+	lobbyRegionId: string | null;
 	lobbyAreaId: string | null;
 	startingAreaId: string | null;
 
 	/**
 	 * Every area that is a starting area: the universe's, its races' and classes', and its classes' for
-	 * each race. None of them may be the lobby's area
+	 * each race. None of them may be a lobby area
 	 */
 	startingAreaIds: string[];
+
+	/**
+	 * Every link between areas, by the cell it is on, so the editor can keep the lobby areas from being
+	 * connected to the rest of the world
+	 */
+	links: AreaLinkEnd[];
+}
+
+/**
+ * Where a link is and the area it leads to
+ */
+export interface AreaLinkEnd
+{
+	areaId: string;
+	column: number;
+	row: number;
+	targetAreaId: string;
 }
 
 /**

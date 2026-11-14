@@ -1385,8 +1385,8 @@ class ImportPlanner
 
 	/**
 	 * Changes the universe's settings, the Ruleset tab's, the difficulty levels, races, classes and themes
-	 * to the file's. The lobby goes last, once nothing starts in the area that becomes it, and is taken
-	 * away first, so no starting area is refused for being the lobby on the way
+	 * to the file's. The lobby region and starting square go last, once every region and area is in place;
+	 * the save checks the lobby's edge once every change is made, so none is refused on the way
 	 */
 	private planSettings(): void
 	{
@@ -1394,6 +1394,7 @@ class ImportPlanner
 		const { universe, name } = this.target;
 		const startingItems = this.itemQuantities(settings.startingItems, 'settings');
 		const startingAreaId = ((typeof settings.startingAreaId === 'string') ? this.areaTarget(settings.startingAreaId, 'settings') : null);
+		const lobbyRegionId = ((typeof settings.lobbyRegionId === 'string') ? this.regionTarget(settings.lobbyRegionId, 'settings') : null);
 		const lobbyAreaId = ((typeof settings.lobbyAreaId === 'string') ? this.areaTarget(settings.lobbyAreaId, 'settings') : null);
 
 		if ((name === undefined) && (typeof settings.name === 'string'))
@@ -1402,14 +1403,6 @@ class ImportPlanner
 		}
 
 		this.newName = name;
-
-		// A lobby moving to another area is taken away while the starting areas change, and set last
-		const lobbyMoves = (lobbyAreaId !== universe.lobbyAreaId);
-
-		if (lobbyMoves && (universe.lobbyAreaId !== null))
-		{
-			this.add({ kind: 'universe', update: { lobbyAreaId: null } }, 'settings');
-		}
 
 		this.addLater((ids) => ({
 			kind: 'universe',
@@ -1426,14 +1419,15 @@ class ImportPlanner
 		this.planClasses();
 		this.planThemes();
 
-		if ((lobbyAreaId !== null) && (lobbyMoves || (settings.lobbyColumn !== universe.lobbyColumn) || (settings.lobbyRow !== universe.lobbyRow)))
+		if ((lobbyRegionId !== universe.lobbyRegionId) || (lobbyAreaId !== universe.lobbyAreaId) || (settings.lobbyColumn !== universe.lobbyColumn) || (settings.lobbyRow !== universe.lobbyRow))
 		{
 			this.addLater((ids) => ({
 				kind: 'universe',
 				update: {
-					lobbyAreaId: savedString(ids, lobbyAreaId),
-					lobbyColumn: settings.lobbyColumn,
-					lobbyRow: settings.lobbyRow
+					lobbyRegionId: ((lobbyRegionId === null) ? null : savedString(ids, lobbyRegionId)),
+					lobbyAreaId: ((lobbyAreaId === null) ? null : savedString(ids, lobbyAreaId)),
+					lobbyColumn: ((lobbyAreaId === null) ? 0 : settings.lobbyColumn),
+					lobbyRow: ((lobbyAreaId === null) ? 0 : settings.lobbyRow)
 				}
 			}), 'settings');
 		}
@@ -1703,7 +1697,7 @@ class ImportPlanner
 	 */
 	private regionTarget(fileId: string, where: string): Target<string>
 	{
-		return(this.regionTargets.get(fileId) ?? refuseFile(`${where} names region ${fileId}, which the file doesn't list`));
+		return(this.regionTargets.get(fileId) ?? this.existing('region', fileId) ?? refuseFile(`${where} names region ${fileId}, which the file doesn't list`));
 	}
 
 	/**
@@ -1714,7 +1708,7 @@ class ImportPlanner
 	 * @param fileId Its ID in the file
 	 * @return Its ID in the draft, or undefined when the draft doesn't have it
 	 */
-	private existing<Id extends number | string>(kind: 'item' | 'area' | 'tile' | 'race' | 'class' | 'theme' | 'difficultyLevel', fileId: Id): Id | undefined
+	private existing<Id extends number | string>(kind: 'item' | 'region' | 'area' | 'tile' | 'race' | 'class' | 'theme' | 'difficultyLevel', fileId: Id): Id | undefined
 	{
 		if (!this.sameUniverse)
 		{
@@ -1723,6 +1717,7 @@ class ImportPlanner
 
 		const lists: Record<typeof kind, { ids: readonly (number | string)[]; matcher: Matcher<number> | Matcher<string> }> = {
 			item: { ids: this.target.items.map((each) => each.id), matcher: this.matchers.items },
+			region: { ids: this.target.regions.map((each) => each.id), matcher: this.matchers.regions },
 			area: { ids: this.target.areas.map((each) => each.id), matcher: this.matchers.areas },
 			tile: { ids: this.target.tiles.map((each) => each.id), matcher: this.matchers.tiles },
 			race: { ids: this.target.races.map((each) => each.id), matcher: this.matchers.races },

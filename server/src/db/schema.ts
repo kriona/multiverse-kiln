@@ -287,12 +287,19 @@ function universeVersionColumns()
 		displayTime: displayTime('display_time').notNull().default('precise'),
 
 		/**
-		 * The area players walk around in the lobby; while it is null or disabled, the lobby has no area to walk around
+		 * The region whose areas players walk in the lobby (every area below it), or null for none. No
+		 * starting area is below it, and no link crosses its edge (checked by every save)
+		 */
+		lobbyRegionId: uuid('lobby_region_id').references((): AnyPgColumn => regions.id, { onDelete: 'set null' }),
+
+		/**
+		 * The area of the lobby's starting square, below the lobby region; while it is null or disabled, the
+		 * lobby has no area to walk around
 		 */
 		lobbyAreaId: uuid('lobby_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 
 		/**
-		 * The cell of the lobby's area players start nearest; column 0, row 0 is the middle of a new area
+		 * The cell of the lobby's starting square players start nearest; column 0, row 0 is the middle of a new area
 		 */
 		lobbyColumn: integer('lobby_column').notNull().default(0),
 		lobbyRow: integer('lobby_row').notNull().default(0),
@@ -365,8 +372,8 @@ function universeVersionColumns()
 type UniverseVersionTable = Record<keyof ReturnType<typeof universeVersionColumns>, AnyPgColumn>;
 
 /**
- * The indexes and checks on the columns of universeVersionColumns(). The area columns are indexed for
- * deleting areas, which clears them
+ * The indexes and checks on the columns of universeVersionColumns(). The region and area columns are
+ * indexed for deleting regions and areas, which clears them
  *
  * @param tableName The table's name, which starts each constraint's name
  * @param table The table's columns
@@ -375,6 +382,7 @@ type UniverseVersionTable = Record<keyof ReturnType<typeof universeVersionColumn
 function universeVersionConstraints(tableName: string, table: UniverseVersionTable)
 {
 	return([
+		index(`${tableName}_lobby_region_id_index`).on(table.lobbyRegionId),
 		index(`${tableName}_lobby_area_id_index`).on(table.lobbyAreaId),
 		index(`${tableName}_starting_area_id_index`).on(table.startingAreaId),
 		check(`${tableName}_source_language_length`, sql`char_length(${table.sourceLanguage}) BETWEEN 1 AND ${sql.raw(String(MAX_LOCALE_LENGTH))}`),
@@ -1285,8 +1293,9 @@ export const areas = pgTable('areas', {
 	 * The settings worked out for the area from its own and what is above it, which the rooms, the game and
 	 * the editor's previews read (resolveAreaSettings() in shared/src/regions.ts). Every save that changes
 	 * areas, regions, parents or tiles' kinds stores them, and refuses a conflict or a missing value. The
-	 * light level is null exactly when the area is outdoors, and the passage of time for the lobby's
-	 * area, which takes the Lobby tab's. With fog of war off, players see everything near them
+	 * light level is null exactly when the area is outdoors, and the passage of time exactly for a lobby
+	 * area (one below the lobby region), which takes the Lobby tab's. With fog of war off, players see
+	 * everything near them
 	 */
 	resolvedEnabled: boolean('resolved_enabled').notNull(),
 	resolvedIndoors: boolean('resolved_indoors').notNull(),
@@ -1295,6 +1304,7 @@ export const areas = pgTable('areas', {
 	resolvedPassageOfTime: passageOfTime('resolved_passage_of_time'),
 	resolvedFaerieMorning: faerieMorning('resolved_faerie_morning'),
 	resolvedFogOfWar: boolean('resolved_fog_of_war').notNull(),
+	resolvedLobby: boolean('resolved_lobby').notNull(),
 
 	minColumn: integer('min_column').notNull(),
 	minRow: integer('min_row').notNull(),
@@ -1315,6 +1325,7 @@ export const areas = pgTable('areas', {
 	check('areas_faerie_morning_set', faerieMorningSet(table.passageOfTime, table.faerieMorning)),
 	check('areas_resolved_light_level_set', sql`(${table.resolvedLightLevel} IS NOT NULL) = ${table.resolvedIndoors}`),
 	check('areas_resolved_faerie_morning_set', faerieMorningSet(table.resolvedPassageOfTime, table.resolvedFaerieMorning)),
+	check('areas_resolved_passage_of_time_set', sql`(${table.resolvedPassageOfTime} IS NULL) = ${table.resolvedLobby}`),
 	check('areas_faerie_does_not_loop', sql`${table.resolvedPassageOfTime} IS DISTINCT FROM 'faerie' OR NOT (${table.loopsEastWest} OR ${table.loopsNorthSouth})`)
 ]);
 

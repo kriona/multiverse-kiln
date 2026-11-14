@@ -1,9 +1,10 @@
 /**
- * What a save's changes to regions and areas would do to which areas are enabled, worked out in memory
- * without saving anything, so the editor can warn about the areas they disable with characters in them
- * (see Disabling things players are using in STRUCTURE-OVERVIEW.md)
+ * What a save's changes to regions and areas would do to which areas are enabled and which are below the
+ * lobby region, worked out in memory without saving anything, so the editor can warn about the areas
+ * they disable or put in the lobby with characters in them (see Disabling things players are using and
+ * Lobby in STRUCTURE-OVERVIEW.md)
  */
-import { samePlace, type AreaNode, type EditorChange, type PlaceGraph, type PlaceNode, type PlaceRef, type PlaceSettings } from '@multiverse-kiln/shared';
+import { lobbyAreaIds, samePlace, type AreaNode, type EditorChange, type PlaceGraph, type PlaceNode, type PlaceRef, type PlaceSettings } from '@multiverse-kiln/shared';
 
 import type { PlaceModel } from './placeModel.js';
 
@@ -210,4 +211,72 @@ export function findDisabledAreas(model: PlaceModel, changes: readonly EditorCha
 	}
 
 	return(new Map([...disabledAt].filter(([areaId]) => (enabledBefore.has(areaId) && !enabled.has(areaId) && (model.area(areaId) !== undefined)))));
+}
+
+/**
+ * Whether a change can change which areas are below the lobby region
+ *
+ * @param change The change
+ * @return True when it can
+ */
+function canChangeLobby(change: EditorChange): boolean
+{
+	switch (change.kind)
+	{
+		case 'updateRegion':
+		case 'updateArea':
+			return(change.update.parents !== undefined);
+		case 'createArea':
+		case 'deleteRegion':
+		case 'deleteArea':
+			return(true);
+		case 'universe':
+			return(change.update.lobbyRegionId !== undefined);
+		default:
+			return(false);
+	}
+}
+
+/**
+ * The areas outside the lobby region before a save that its changes put below it, each with the last
+ * change that put it there. Their group characters go back to where their groups start
+ *
+ * @param model The regions and areas as saved, with the lobby region, which it changes as the changes would
+ * @param changes The save's changes
+ * @return The change putting each area below the lobby region, by area ID
+ */
+export function findLobbyEntries(model: PlaceModel, changes: readonly EditorChange[]): Map<string, number>
+{
+	const lobbyBefore = lobbyAreaIds(model.graph(), model.lobbyRegion());
+	let inLobby = lobbyBefore;
+	const enteredAt = new Map<string, number>();
+
+	for (const [changeIndex, change] of changes.entries())
+	{
+		applyPlaceChange(model, change);
+
+		if ((change.kind === 'universe') && (change.update.lobbyRegionId !== undefined))
+		{
+			model.setLobbyRegion(change.update.lobbyRegionId);
+		}
+
+		if (!canChangeLobby(change))
+		{
+			continue;
+		}
+
+		const now = lobbyAreaIds(model.graph(), model.lobbyRegion());
+
+		for (const areaId of now)
+		{
+			if (!inLobby.has(areaId))
+			{
+				enteredAt.set(areaId, changeIndex);
+			}
+		}
+
+		inLobby = now;
+	}
+
+	return(new Map([...enteredAt].filter(([areaId]) => (!lobbyBefore.has(areaId) && inLobby.has(areaId) && (model.area(areaId) !== undefined)))));
 }

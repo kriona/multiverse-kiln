@@ -24,6 +24,12 @@ export interface ListedPlace
 	tags: string[];
 
 	/**
+	 * Whether it is the lobby region, whose name and line down to what is inside it are yellow, not the
+	 * other regions' orange
+	 */
+	lobby?: boolean;
+
+	/**
 	 * Whether it will be deleted when the tab is saved
 	 */
 	deleted: boolean;
@@ -266,7 +272,7 @@ export class PlacesList
 
 				if (each.place.kind === 'region')
 				{
-					list.className = 'place-region-contents';
+					list.className = ((each.lobby ?? false) ? 'place-region-contents place-lobby-contents' : 'place-region-contents');
 				}
 
 				list.append(...inside.map((child) => itemOf(child, [...path, key], (placeKey(child.parents[0] ?? each.place) === key))));
@@ -332,6 +338,7 @@ export class PlacesList
 
 		button.type = 'button';
 		button.className = `universe-item place-${each.place.kind}`;
+		button.classList.toggle('place-lobby', (each.lobby ?? false));
 		name.textContent = each.name;
 		button.append(name);
 

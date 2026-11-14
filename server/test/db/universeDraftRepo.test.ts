@@ -13,8 +13,8 @@ import { findEditableUniverse, hasDraft, updateUniverseSettings } from '../../sr
 import { listTranslations, saveTranslation } from '../../src/db/universeTextRepo.js';
 import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { db } from '../../src/db/client.js';
-import { areaChunks, areaLinks, areas, tiles, universeTranslations } from '../../src/db/schema.js';
-import { addArea, addPlayableUniverse, dwarfFighter, type PlayableUniverse } from './fixtures.js';
+import { areaChunks, areaLinks, areas, regions, tiles, universeTranslations } from '../../src/db/schema.js';
+import { addArea, addPlayableUniverse, dwarfFighter, testLobbyRegionId, type PlayableUniverse } from './fixtures.js';
 import { addPlayer } from '../players.js';
 
 /**
@@ -103,6 +103,7 @@ describe('universeDraftRepo', () =>
 		it('copies the live version with IDs of its own, pointing the copies at each other', async () =>
 		{
 			const { universeId, squareAreaId, fieldAreaId } = universe;
+			const testLobbyId = await testLobbyRegionId(universeId);
 
 			await inTransaction((transaction) => startDraft(universeId, transaction));
 
@@ -120,6 +121,8 @@ describe('universeDraftRepo', () =>
 			const draftFieldId = await draftAreaOf(universeId, fieldAreaId);
 
 			assert.strictEqual(draft?.lobbyAreaId, draftSquareId);
+			assert.strictEqual(draft?.lobbyRegionId, (await findDraftOrigins<string>(regions, universeId)).entries().find(([, liveId]) => (liveId === testLobbyId))?.[0]);
+			assert.notStrictEqual(draft?.lobbyRegionId, testLobbyId);
 			assert.strictEqual(draft?.version, 'draft');
 			assert.strictEqual(draft?.shortDescription, 'Live');
 
@@ -205,6 +208,7 @@ describe('universeDraftRepo', () =>
 
 			assert.strictEqual(live?.shortDescription, 'Draft');
 			assert.strictEqual(live?.lobbyAreaId, squareAreaId);
+			assert.strictEqual(live?.lobbyRegionId, await testLobbyRegionId(universeId));
 
 			// The character still carries the same item, now with the draft's settings
 			const character = await findCharacterDetails(playerId, universeId, 'pf1e', characterId);

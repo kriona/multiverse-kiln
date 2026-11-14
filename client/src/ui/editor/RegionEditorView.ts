@@ -33,6 +33,9 @@ export class RegionEditorView
 	private readonly form = getElement('region-form', HTMLFormElement);
 	private readonly fields = getElement('region-fields', HTMLFieldSetElement);
 	private readonly name = getElement('region-name', HTMLInputElement);
+	private readonly lobbyNotice = getElement('region-lobby-notice', HTMLElement);
+	private readonly backToLobby = getElement('region-back-lobby', HTMLButtonElement);
+	private readonly lobbyTimeHint = getElement('region-lobby-time-hint', HTMLElement);
 	private readonly warnings = getElement('region-warnings', HTMLElement);
 	private readonly warningList = getElement('region-warning-list', HTMLUListElement);
 	private readonly problems = getElement('region-problems', HTMLElement);
@@ -141,10 +144,29 @@ export class RegionEditorView
 			}
 		});
 
+		this.backToLobby.addEventListener('click', () =>
+		{
+			if (this.changes.confirmDiscard())
+			{
+				host.backToLobby();
+			}
+		});
+
 		this.deleteButton.addEventListener('click', () =>
 		{
 			this.toggleDelete();
 		});
+	}
+
+	/**
+	 * Says whether the region open is the lobby region, and offers to go back to the Lobby tab
+	 */
+	private showLobby(): void
+	{
+		const isLobby = ((this.region !== undefined) && (this.region.id === this.host.lobbyRegionId()));
+
+		this.lobbyNotice.hidden = !isLobby;
+		this.backToLobby.hidden = !isLobby;
 	}
 
 	/**
@@ -217,6 +239,7 @@ export class RegionEditorView
 		const override: PlaceOverride = { place, node: region };
 
 		this.name.value = region.name;
+		this.showLobby();
 		this.parents.set(region.parents, this.host.names(), this.host.parentChoices(place, 'region', override));
 		this.settings.fill(region, this.host.inheritedView(place, override));
 		this.builderIds = [...region.builderIds];
@@ -352,6 +375,9 @@ export class RegionEditorView
 		const view = this.host.inheritedView(override.place, override);
 		const names = this.host.names();
 
+		// The areas at and below the lobby region take the Lobby tab's passage of time
+		this.settings.hideTime(view.resolved.lobby);
+		this.lobbyTimeHint.hidden = !view.resolved.lobby;
 		this.settings.showInherited(view);
 		this.parents.setChoices(this.host.parentChoices(override.place, 'region', override));
 
@@ -398,12 +424,13 @@ export class RegionEditorView
 	}
 
 	/**
-	 * Shows the region open again, after another tab's changes or the claims changed
+	 * Shows the region open again, after another tab's changes, the claims or the lobby region changed
 	 */
 	refresh(): void
 	{
 		if (this.region && !this.view.hidden)
 		{
+			this.showLobby();
 			this.settingsChanged();
 		}
 	}

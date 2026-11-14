@@ -109,7 +109,7 @@ export interface InheritedValues
  * - conflict: places at the nearest level above that set it give different values, in the order found
  * - missing: nothing above sets it
  * - ignored: it means nothing here: the light level of an outdoor place, and the passage of time of the
- *   lobby's area, which takes the Lobby tab's
+ *   lobby region and everything below it, whose areas take the Lobby tab's
  */
 export type SettingResolution<T> =
 	| { kind: 'own'; value: T }
@@ -132,9 +132,9 @@ export interface EnabledResolution
 }
 
 /**
- * Every setting of a place, worked out
+ * Every setting of a place, worked out, and whether it is the lobby region or below it
  */
-export type PlaceResolution = { enabled: EnabledResolution } & { [Setting in InheritedSetting]: SettingResolution<InheritedValues[Setting]> };
+export type PlaceResolution = { enabled: EnabledResolution; lobby: boolean } & { [Setting in InheritedSetting]: SettingResolution<InheritedValues[Setting]> };
 
 /**
  * An area's settings as worked out and stored on it, which the rooms and the game read
@@ -152,7 +152,7 @@ export interface ResolvedAreaSettings
 	defaultTileId: number;
 
 	/**
-	 * null for the lobby's area, whose passage of time is the Lobby tab's
+	 * null exactly for a lobby area, whose passage of time is the Lobby tab's
 	 */
 	passageOfTime: PassageOfTime | null;
 
@@ -162,6 +162,12 @@ export interface ResolvedAreaSettings
 	faerieMorning: FaerieMorning | null;
 
 	fogOfWar: boolean;
+
+	/**
+	 * Whether the area is below the lobby region, at any depth: a lobby area, walked in the lobby and never
+	 * connected to the rest of the world
+	 */
+	lobby: boolean;
 }
 
 /**
@@ -195,7 +201,7 @@ export interface TileUsedFor
 
 /**
  * Everything working out areas' settings reads: a version's regions and areas, the kinds of the tiles
- * they can use, and its lobby's area
+ * they can use, and its lobby region
  */
 export interface PlaceWorld
 {
@@ -208,11 +214,15 @@ export interface PlaceWorld
 	 */
 	tileKinds: ReadonlyMap<number, TileUsedFor>;
 
-	lobbyAreaId: string | null;
+	/**
+	 * The region whose areas players walk in the lobby, whose passage of time is the Lobby tab's
+	 */
+	lobbyRegionId: string | null;
 }
 
 /**
- * Something that keeps an area's settings from being worked out, or a region or area nested wrongly
+ * Something that keeps an area's settings from being worked out, a region or area nested wrongly, or a
+ * lobby area connected to the rest of the world
  *
  * - conflict: places at one level above it set a setting to different values
  * - missing: nothing it is inside sets a setting
@@ -220,6 +230,11 @@ export interface PlaceWorld
  * - noRegion: it is in no region, directly or through the area it is inside
  * - insideItself: the place is inside itself, however far down
  * - tooDeep: the place is nested more than MAX_PLACE_DEPTH levels deep
+ * - lobbyLink: a link on the area leads across the lobby region's edge, into or out of the lobby
+ * - lobbyStartingArea: characters start in the area (the universe's, a race's or a class's starting
+ *   area), and it is a lobby area
+ * - lobbySquareOutside: the lobby's starting square is in the area, which isn't a lobby area
+ * - lobbyFaerieLoops: the area is a lobby area and loops, while the lobby's passage of time is faerie
  */
 export type PlaceProblem =
 	| { kind: 'conflict'; areaId: string; setting: InheritedSetting; values: { place: PlaceRef; value: InheritedValues[InheritedSetting] }[] }
@@ -227,7 +242,39 @@ export type PlaceProblem =
 	| { kind: 'faerieLoops'; areaId: string }
 	| { kind: 'noRegion'; areaId: string }
 	| { kind: 'insideItself'; place: PlaceRef }
-	| { kind: 'tooDeep'; place: PlaceRef };
+	| { kind: 'tooDeep'; place: PlaceRef }
+	| { kind: 'lobbyLink'; areaId: string; targetAreaId: string }
+	| { kind: 'lobbyStartingArea'; areaId: string }
+	| { kind: 'lobbySquareOutside'; areaId: string }
+	| { kind: 'lobbyFaerieLoops'; areaId: string };
+
+/**
+ * A link between two areas, as far as the lobby region's edge goes: the area it is on and the area it
+ * leads to
+ */
+export interface AreaLinkPair
+{
+	areaId: string;
+	targetAreaId: string;
+}
+
+/**
+ * The lobby's settings as far as its edge goes
+ */
+export interface LobbyEdge
+{
+	lobbyRegionId: string | null;
+
+	/**
+	 * The area of the lobby's starting square, which must be a lobby area
+	 */
+	lobbyAreaId: string | null;
+
+	/**
+	 * Whether the lobby's passage of time is faerie, which the lobby areas can't loop with
+	 */
+	faerie: boolean;
+}
 
 /**
  * The text form of a place, for sets and maps
@@ -559,10 +606,10 @@ export function suitsKind(tileKinds: ReadonlyMap<number, TileUsedFor>, tileId: n
  * @param graph The version's regions and areas
  * @param place The place
  * @param tileKinds The tiles the version can use, by ID
- * @param lobbyAreaId The lobby's area, whose passage of time is ignored
+ * @param lobbyRegionId The lobby region, below which the passage of time is ignored
  * @return Each setting
  */
-export function resolvePlace(graph: PlaceGraph, place: PlaceRef, tileKinds: ReadonlyMap<number, TileUsedFor>, lobbyAreaId: string | null): PlaceResolution
+export function resolvePlace(graph: PlaceGraph, place: PlaceRef, tileKinds: ReadonlyMap<number, TileUsedFor>, lobbyRegionId: string | null): PlaceResolution
 {
 	const node = graph.node(place);
 
@@ -582,22 +629,168 @@ export function resolvePlace(graph: PlaceGraph, place: PlaceRef, tileKinds: Read
 			passageOfTime: each.passageOfTime,
 			faerieMorning: each.faerieMorning
 		});
+	const lobby = ((lobbyRegionId !== null) && levelsInclude(place, levels, { kind: 'region', id: lobbyRegionId }));
 
 	return({
 		enabled: {
 			enabled: (disabledBy.length === 0),
 			disabledBy
 		},
+		lobby,
 		indoors,
 		lightLevel: ((kind === false)
 			? { kind: 'ignored' }
 			: resolveSetting(graph, node, levels, (each) => each.lightLevel, (first, second) => (first === second))),
 		defaultTileId: resolveSetting(graph, node, levels, tileOf, (first, second) => (first === second)),
-		passageOfTime: (((place.kind === 'area') && (place.id === lobbyAreaId))
+		passageOfTime: (lobby
 			? { kind: 'ignored' }
 			: resolveSetting(graph, node, levels, passageOf, samePassage)),
 		fogOfWar: resolveSetting(graph, node, levels, (each) => each.fogOfWar, (first, second) => (first === second))
 	});
+}
+
+/**
+ * Whether a place is another, or is below it
+ *
+ * @param place The place
+ * @param levels Everything above it (PlaceGraph.levelsAbove())
+ * @param other The other place
+ * @return True when it is
+ */
+function levelsInclude(place: PlaceRef, levels: readonly PlaceRef[][], other: PlaceRef): boolean
+{
+	return(samePlace(place, other) || levels.some((level) => level.some((each) => samePlace(each, other))));
+}
+
+/**
+ * Whether a place is the lobby region or below it, at any depth. An area that is is a lobby area
+ *
+ * @param graph The version's regions and areas
+ * @param place The place
+ * @param lobbyRegionId The lobby region, or null when the universe has none
+ * @return True when it is
+ */
+export function isInLobby(graph: PlaceGraph, place: PlaceRef, lobbyRegionId: string | null): boolean
+{
+	if (lobbyRegionId === null)
+	{
+		return(false);
+	}
+
+	const lobbyRegion: PlaceRef = { kind: 'region', id: lobbyRegionId };
+
+	return(samePlace(place, lobbyRegion) || graph.isBelow(place, lobbyRegion));
+}
+
+/**
+ * The lobby areas: every area below the lobby region, at any depth
+ *
+ * @param graph The version's regions and areas
+ * @param lobbyRegionId The lobby region, or null when the universe has none
+ * @return Their IDs
+ */
+export function lobbyAreaIds(graph: PlaceGraph, lobbyRegionId: string | null): Set<string>
+{
+	if ((lobbyRegionId === null) || !graph.regions.has(lobbyRegionId))
+	{
+		return(new Set());
+	}
+
+	return(new Set(graph.descendantsOf({ kind: 'region', id: lobbyRegionId })
+		.filter((place) => (place.kind === 'area'))
+		.map((place) => place.id)));
+}
+
+/**
+ * What connects the lobby areas to the rest of the world, or keeps the lobby from working: links across
+ * the lobby region's edge either way, starting areas below it, a starting square outside it, and lobby
+ * areas that loop while the lobby's passage of time is faerie. The server refuses every save leaving any,
+ * and the editor offers nothing that would make one
+ *
+ * @param graph The version's regions and areas
+ * @param lobby The lobby region, its starting square's area and whether its time is faerie
+ * @param links The links between areas; those with neither end a lobby area may be left out
+ * @param startingAreaIds Every starting area: the universe's, its races' and its classes'
+ * @return The problems: links in the order given, then starting areas, the starting square and looping areas
+ */
+export function lobbyProblems(graph: PlaceGraph, lobby: LobbyEdge, links: readonly AreaLinkPair[], startingAreaIds: readonly string[]): PlaceProblem[]
+{
+	const inLobby = lobbyAreaIds(graph, lobby.lobbyRegionId);
+	const problems: PlaceProblem[] = [];
+	const found = new Set<string>();
+
+	for (const { areaId, targetAreaId } of links)
+	{
+		const key = `${areaId}>${targetAreaId}`;
+
+		if (!found.has(key) && graph.areas.has(areaId) && graph.areas.has(targetAreaId) && (inLobby.has(areaId) !== inLobby.has(targetAreaId)))
+		{
+			found.add(key);
+			problems.push({ kind: 'lobbyLink', areaId, targetAreaId });
+		}
+	}
+
+	for (const areaId of new Set(startingAreaIds))
+	{
+		if (inLobby.has(areaId))
+		{
+			problems.push({ kind: 'lobbyStartingArea', areaId });
+		}
+	}
+
+	if ((lobby.lobbyAreaId !== null) && graph.areas.has(lobby.lobbyAreaId) && !inLobby.has(lobby.lobbyAreaId))
+	{
+		problems.push({ kind: 'lobbySquareOutside', areaId: lobby.lobbyAreaId });
+	}
+
+	if (lobby.faerie)
+	{
+		for (const areaId of inLobby)
+		{
+			const area = graph.areas.get(areaId);
+
+			if (area && (area.loopsEastWest || area.loopsNorthSouth))
+			{
+				problems.push({ kind: 'lobbyFaerieLoops', areaId });
+			}
+		}
+	}
+
+	return(problems);
+}
+
+/**
+ * What giving a region or area other parents would carry across the lobby region's edge: the links that
+ * would cross it and the starting areas that would be below it, that don't already. The editor offers no
+ * parent that does either
+ *
+ * @param world The version's regions and areas, and its lobby region
+ * @param place The region or area that would move
+ * @param parents The parents it would have
+ * @param links The links between areas
+ * @param startingAreaIds Every starting area: the universe's, its races' and its classes'
+ * @return The lobbyLink and lobbyStartingArea problems the move would make
+ */
+export function lobbyProblemsOfMove(world: PlaceWorld, place: PlaceRef, parents: readonly PlaceRef[], links: readonly AreaLinkPair[], startingAreaIds: readonly string[]): PlaceProblem[]
+{
+	if (world.lobbyRegionId === null)
+	{
+		return([]);
+	}
+
+	const lobby: LobbyEdge = {
+		lobbyRegionId: world.lobbyRegionId,
+		lobbyAreaId: null,
+		faerie: false
+	};
+	const keyOf = (problem: PlaceProblem): string => JSON.stringify(problem);
+	const before = new Set(lobbyProblems(new PlaceGraph(world.regions, world.areas), lobby, links, startingAreaIds).map(keyOf));
+	const moved = new PlaceGraph(
+		world.regions.map((region) => (((place.kind === 'region') && (region.id === place.id)) ? { ...region, parents } : region)),
+		world.areas.map((area) => (((place.kind === 'area') && (area.id === place.id)) ? { ...area, parents } : area))
+	);
+
+	return(lobbyProblems(moved, lobby, links, startingAreaIds).filter((problem) => !before.has(keyOf(problem))));
 }
 
 /**
@@ -741,7 +934,7 @@ export function storedAreaSettings(resolution: PlaceResolution): ResolvedAreaSet
 	const passage = resolvedValue(resolution.passageOfTime);
 	const fogOfWar = resolvedValue(resolution.fogOfWar);
 
-	if ((indoors === undefined) || (defaultTileId === undefined) || (fogOfWar === undefined) || (indoors && (lightLevel === undefined)) || ((passage === undefined) && (resolution.passageOfTime.kind !== 'ignored')))
+	if ((indoors === undefined) || (defaultTileId === undefined) || (fogOfWar === undefined) || (indoors && (lightLevel === undefined)) || ((passage === undefined) && !resolution.lobby))
 	{
 		return(undefined);
 	}
@@ -751,9 +944,10 @@ export function storedAreaSettings(resolution: PlaceResolution): ResolvedAreaSet
 		indoors,
 		lightLevel: (indoors ? (lightLevel ?? null) : null),
 		defaultTileId,
-		passageOfTime: (passage?.passageOfTime ?? null),
-		faerieMorning: (passage?.faerieMorning ?? null),
-		fogOfWar
+		passageOfTime: (resolution.lobby ? null : (passage?.passageOfTime ?? null)),
+		faerieMorning: (resolution.lobby ? null : (passage?.faerieMorning ?? null)),
+		fogOfWar,
+		lobby: resolution.lobby
 	});
 }
 
@@ -812,7 +1006,8 @@ export function isInRegion(graph: PlaceGraph, areaId: string): boolean
 }
 
 /**
- * Every area's settings worked out, and what keeps any from being saved
+ * Every area's settings worked out, and what keeps any from being saved besides the lobby's edge
+ * (lobbyProblems())
  */
 export interface WorldResolution
 {
@@ -850,7 +1045,7 @@ export function resolveAreaSettings(world: PlaceWorld): WorldResolution
 
 	for (const area of world.areas)
 	{
-		const resolution = resolvePlace(graph, { kind: 'area', id: area.id }, world.tileKinds, world.lobbyAreaId);
+		const resolution = resolvePlace(graph, { kind: 'area', id: area.id }, world.tileKinds, world.lobbyRegionId);
 		const settings = storedAreaSettings(resolution);
 		const found = areaSettingProblems(area, resolution);
 

@@ -144,12 +144,13 @@ export interface UniverseRecord
 	ruleset: Ruleset;
 
 	/**
-	 * Undefined until the universe's areas exist, and while it has no lobby area
+	 * The area of the lobby's starting square: undefined until the universe's areas exist, and while the
+	 * lobby has none
 	 */
 	lobbyAreaId: string | undefined;
 
 	/**
-	 * The cell of the lobby's area players start nearest
+	 * The cell of the lobby's starting square players start nearest
 	 */
 	lobbyColumn: number;
 
@@ -184,8 +185,8 @@ export interface UniverseRecord
 }
 
 /**
- * What a new universe needs. Its slug comes from its name, and its lobby and starting areas are set
- * once they exist (setUniverseAreas)
+ * What a new universe needs. Its slug comes from its name, and its lobby region and its lobby and
+ * starting areas are set once they exist (setUniverseAreas)
  */
 export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset'>;
 
@@ -216,21 +217,39 @@ export async function createUniverse(universe: NewUniverse, executor: Executor =
 }
 
 /**
- * Sets the area a universe's lobby is in and the area its groups start in
+ * The regions and areas a new universe's lobby and groups start in, for setUniverseAreas()
+ */
+export interface UniverseAreas
+{
+	/**
+	 * The region whose areas players walk in the lobby, or null for none
+	 */
+	lobbyRegionId: string | null;
+
+	/**
+	 * The area of the lobby's starting square, below the lobby region
+	 */
+	lobbyAreaId: string | null;
+
+	/**
+	 * The area groups start in, outside the lobby region
+	 */
+	startingAreaId: string;
+}
+
+/**
+ * Sets a universe's lobby region, the area of the lobby's starting square and the area its groups start
+ * in. The caller makes sure the lobby's area is below the lobby region and the starting area isn't
  *
  * @param universeId The universe's ID
- * @param lobbyAreaId The lobby's area
- * @param startingAreaId The area groups start in
+ * @param universeAreas The regions and areas
  * @param executor The database, or a transaction
  */
-export async function setUniverseAreas(universeId: string, lobbyAreaId: string, startingAreaId: string, executor: Executor = db): Promise<void>
+export async function setUniverseAreas(universeId: string, universeAreas: UniverseAreas, executor: Executor = db): Promise<void>
 {
 	await executor
 		.update(universes)
-		.set({
-			lobbyAreaId,
-			startingAreaId
-		})
+		.set(universeAreas)
 		.where(eq(universes.id, universeId));
 }
 
@@ -356,6 +375,7 @@ function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 		lobbyPassageOfTime: table.lobbyPassageOfTime,
 		lobbyDayHours: table.lobbyDayHours,
 		lobbyFaerieMorning: table.lobbyFaerieMorning,
+		lobbyRegionId: table.lobbyRegionId,
 		lobbyAreaId: table.lobbyAreaId,
 		lobbyColumn: table.lobbyColumn,
 		lobbyRow: table.lobbyRow,

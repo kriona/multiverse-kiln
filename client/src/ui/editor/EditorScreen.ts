@@ -385,9 +385,9 @@ export class EditorScreen
 		{
 			this.updateUniverse(update);
 
-			if (update.lobbyAreaId !== undefined)
+			if (this.universe)
 			{
-				this.areasTab.setLobbyArea(update.lobbyAreaId);
+				this.areasTab.setLobby(this.universe.lobbyRegionId, this.universe.lobbyAreaId);
 			}
 		});
 
@@ -505,7 +505,7 @@ export class EditorScreen
 				open: (universe) =>
 				{
 					this.lobbyTab.open(universe);
-					this.areasTab.setLobbyArea(universe.lobbyAreaId);
+					this.areasTab.setLobby(universe.lobbyRegionId, universe.lobbyAreaId);
 				}
 			},
 			coins: {
@@ -620,6 +620,15 @@ export class EditorScreen
 			{
 				this.selectTab('areas');
 				void this.areasTab.openArea(this.universe.lobbyAreaId);
+			}
+		});
+
+		getElement('lobby-edit-region', HTMLButtonElement).addEventListener('click', () =>
+		{
+			if (this.universe?.lobbyRegionId)
+			{
+				this.selectTab('areas');
+				void this.areasTab.openRegion(this.universe.lobbyRegionId);
 			}
 		});
 	}
@@ -1316,6 +1325,7 @@ export class EditorScreen
 		this.showViewLink(universe);
 		this.areasTab.setUniverse(universe);
 		getElement('lobby-edit-area', HTMLButtonElement).hidden = (universe.lobbyAreaId === null);
+		getElement('lobby-edit-region', HTMLButtonElement).hidden = (universe.lobbyRegionId === null);
 	}
 
 	/**

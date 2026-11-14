@@ -68,6 +68,11 @@ export class PlaceFields
 	private readonly fogOfWar: HTMLSelectElement;
 
 	/**
+	 * Whether the passage of time is hidden, since the Lobby tab sets it (see hideTime())
+	 */
+	private timeHidden = false;
+
+	/**
 	 * What was last shown of what the place inherits, to label the inherit choices with
 	 */
 	private view: InheritedView | undefined;
@@ -274,12 +279,13 @@ export class PlaceFields
 		const selected = this.read().defaultTileId;
 
 		this.lightField.hidden = (kind === false);
-		this.faerieField.hidden = (this.time.value !== 'faerie');
+		this.faerieField.hidden = (this.timeHidden || (this.time.value !== 'faerie'));
 		this.fillDefaultTiles(selected);
 	}
 
 	/**
-	 * Hides the passage of time, as the lobby's area does, whose time the Lobby tab sets
+	 * Hides the passage of time, as the lobby areas and the regions at and below the lobby region do,
+	 * whose time the Lobby tab sets
 	 *
 	 * @param hidden Whether to hide it
 	 */
@@ -287,15 +293,14 @@ export class PlaceFields
 	{
 		const field = this.time.closest('label');
 
+		this.timeHidden = hidden;
+
 		if (field)
 		{
 			field.hidden = hidden;
 		}
 
-		if (hidden)
-		{
-			this.faerieField.hidden = true;
-		}
+		this.faerieField.hidden = (hidden || (this.time.value !== 'faerie'));
 	}
 
 	/**

@@ -834,6 +834,13 @@
       "when": 1794575736752,
       "tag": "0118_fog_of_war",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1794618556635,
+      "tag": "0119_lobby_region",
+      "breakpoints": true
     }
   ]
 }

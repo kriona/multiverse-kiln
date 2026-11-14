@@ -26,7 +26,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { KeptChatLog } from '../src/rooms/keptChat.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, setWorkedOut, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, setWorkedOut, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -419,6 +419,9 @@ describe('GameRoom', () =>
 		browsers.clear();
 		browserMembers.clear();
 		universe = await addPlayableUniverse();
+
+		// Groups play the square and house too, which only the lobby walks while they are lobby areas
+		await withoutLobby(universe);
 		anchor = await addPlayerWithCharacter('Anchor');
 		groupId = await addGroup(universe.universeId, anchor.characterId, universe.fieldAreaId, 'The Fellowship');
 	});
@@ -589,6 +592,26 @@ describe('GameRoom', () =>
 			previousStage: 'end_of_time',
 			roles: new Map()
 		});
+		client.send(MessageType.Move, { x: 1, y: 0 });
+		await waitUntil(() => (player.x > linkCenter.x));
+
+		assert.strictEqual(room.getAreaId(playerId), universe.fieldAreaId);
+	});
+
+	it('treats a lobby area as an edge, taking nobody through a link into it', async () =>
+	{
+		await createAreaLink({ areaId: universe.fieldAreaId, column: 5, row: 5, targetAreaId: universe.houseAreaId, targetColumn: 2, targetRow: 2, mode: 'manual', requiresWholeGroup: false });
+		await setWorkedOut(universe.houseAreaId, { passageOfTime: null, lobby: true });
+
+		const room = await createGameRoom();
+		const client = await joinAsNewPlayer(room);
+		const playerId = playerIdOf(room, client);
+		const player = room.state.players.get(playerId) as Player;
+		const linkCenter = cellCenter({ column: 5, row: 5 }, grid);
+
+		// A member setting out through a link stops, so walking on afterwards shows nobody went
+		placeOnCell(player, 5, 5);
+		client.send(MessageType.TakeLink);
 		client.send(MessageType.Move, { x: 1, y: 0 });
 		await waitUntil(() => (player.x > linkCenter.x));
 

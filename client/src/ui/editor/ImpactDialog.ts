@@ -107,6 +107,20 @@ const AREA_ANSWERS: { value: AreaEvacuation; label: MessageDescriptor }[] = [
 ];
 
 /**
+ * The answer to an area being put in the lobby, the only thing that can happen to its group characters
+ */
+const LOBBY_AREA_ANSWERS: ImpactOption[] = [
+	{
+		value: 'start',
+		label: {
+			id: 'editor.impact.lobbyToStart',
+			defaultMessage: 'Move them back to where their groups start',
+			description: 'The only choice in the dialog the editor\'s Save opens, for an area being put below the lobby region with characters of groups in it: groups never play in the lobby, so they go to their group\'s starting area'
+		}
+	}
+];
+
+/**
  * The answers to a lowered group size's impact (GroupSizeLowering)
  */
 const GROUP_ANSWERS: { value: GroupSizeLowering; label: MessageDescriptor }[] = [
@@ -320,6 +334,21 @@ function describeImpact(impact: ChangeImpact, ruleset: Ruleset): { legend: strin
 				chosen: (impact.hasParent ? 'parent' : 'start')
 			});
 
+		case 'lobbyArea':
+			return({
+				legend: t({
+					id: 'editor.impact.lobbyArea',
+					defaultMessage: 'Putting {name} in the lobby: {count, plural, one {# character in a group is in it} other {# characters in groups are in it}}',
+					description: 'Heading in the dialog the editor\'s Save opens, for an area being put below the lobby region, which only the lobby walks; {name} is the area\'s name and {count} how many characters of groups are in it, playing or where their group left them'
+				}, {
+					name: impact.name,
+					count: impact.characters
+				}),
+				// Groups never play in the lobby, so there is nowhere else for them to go
+				options: LOBBY_AREA_ANSWERS,
+				chosen: 'start'
+			});
+
 		case 'groupSize':
 			return({
 				legend: t({
@@ -364,7 +393,7 @@ function withAnswer(change: EditorChange, impact: ChangeImpact, answer: string):
 				? { ...change, moveTo: { ...change.moveTo, [impact.id]: ((answer === 'parent') ? 'parent' : 'start') } }
 				: change);
 		case 'universe':
-			return({ ...change, largerGroups: groupAnswer(answer) });
+			return(((impact.kind === 'groupSize') ? { ...change, largerGroups: groupAnswer(answer) } : change));
 		default:
 			return(change);
 	}
@@ -391,6 +420,8 @@ function withDraftAnswer(choices: DraftApplyChoices, impact: ChangeImpact, answe
 			return({ ...choices, items: { ...choices.items, [impact.id]: ((answer === 'remove') ? 'remove' : 'keep') } });
 		case 'area':
 			return({ ...choices, areas: { ...choices.areas, [impact.id]: ((answer === 'parent') ? 'parent' : 'start') } });
+		case 'lobbyArea':
+			return(choices);
 		case 'groupSize':
 			return({ ...choices, largerGroups: groupAnswer(answer) });
 	}

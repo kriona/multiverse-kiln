@@ -157,12 +157,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private seenSaving: Promise<void> = Promise.resolve();
 
 	/**
-	 * Characters whose area is deleted go to the group's starting area. Everyone here is in the group,
+	 * Characters walk only the areas outside the lobby region, treating a lobby area as an edge, and go to
+	 * the group's starting area when their area is deleted or put below it. Everyone here is in the group,
 	 * so they see what any of them sees, and are sent only the cells the group has seen. A link that
 	 * needs the whole group is refused unless every member who can be played, and the anchor being, is
 	 * here together
 	 */
-	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.startingAreaId, {
+	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, {
+		lobby: false,
+		fallback: () => ({
+			areaId: this.startingAreaId,
+			column: 0,
+			row: 0
+		})
+	}, {
 		shared: true,
 		clockSeconds: () => this.state.clock,
 		memory: this.seen

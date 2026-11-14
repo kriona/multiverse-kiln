@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { canTakeParent, isWithinAssignments, MAX_PLACE_DEPTH, PlaceGraph, resolveAreaSettings, resolvePlace, type AreaNode, type PlaceNode, type PlaceRef, type PlaceSettings, type PlaceWorld, type TileUsedFor } from '@multiverse-kiln/shared';
+import { canTakeParent, isInLobby, isWithinAssignments, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, MAX_PLACE_DEPTH, PlaceGraph, resolveAreaSettings, resolvePlace, type AreaNode, type PlaceNode, type PlaceRef, type PlaceSettings, type PlaceWorld, type TileUsedFor } from '@multiverse-kiln/shared';
 
 const GRASS = 1;
 const WOOD_FLOOR = 2;
@@ -85,12 +85,12 @@ function area(id: string, parents: string[], settings: Partial<PlaceSettings & P
  *
  * @param regions The regions
  * @param areas The areas
- * @param lobbyAreaId The lobby's area
+ * @param lobbyRegionId The lobby region
  * @return The world
  */
-function world(regions: PlaceNode[], areas: AreaNode[], lobbyAreaId: string | null = null): PlaceWorld
+function world(regions: PlaceNode[], areas: AreaNode[], lobbyRegionId: string | null = null): PlaceWorld
 {
-	return({ regions, areas, tileKinds: TILE_KINDS, lobbyAreaId });
+	return({ regions, areas, tileKinds: TILE_KINDS, lobbyRegionId });
 }
 
 /**
@@ -104,7 +104,7 @@ function resolveArea(places: PlaceWorld, areaId: string): ReturnType<typeof reso
 {
 	const graph = new PlaceGraph(places.regions, places.areas);
 
-	return(resolvePlace(graph, { kind: 'area', id: areaId }, places.tileKinds, places.lobbyAreaId));
+	return(resolvePlace(graph, { kind: 'area', id: areaId }, places.tileKinds, places.lobbyRegionId));
 }
 
 describe('Working out area settings', () =>
@@ -122,7 +122,8 @@ describe('Working out area settings', () =>
 			defaultTileId: GRASS,
 			passageOfTime: 'flows_normally',
 			faerieMorning: null,
-			fogOfWar: true
+			fogOfWar: true,
+			lobby: false
 		});
 		assert.deepStrictEqual(resolveArea(places, 'Kingdom').indoors, { kind: 'inherited', value: false, from: [{ kind: 'region', id: 'Planet' }] });
 	});
@@ -140,7 +141,8 @@ describe('Working out area settings', () =>
 			defaultTileId: WOOD_FLOOR,
 			passageOfTime: 'always_noon',
 			faerieMorning: null,
-			fogOfWar: true
+			fogOfWar: true,
+			lobby: false
 		});
 	});
 
@@ -268,7 +270,8 @@ describe('Working out area settings', () =>
 			defaultTileId: WOOD_FLOOR,
 			passageOfTime: 'flows_normally',
 			faerieMorning: null,
-			fogOfWar: true
+			fogOfWar: true,
+			lobby: false
 		});
 	});
 
@@ -338,13 +341,41 @@ describe('Working out area settings', () =>
 		assert.deepStrictEqual(resolveAreaSettings(places).problems, [{ kind: 'faerieLoops', areaId: 'Glade' }]);
 	});
 
-	it('gives the lobby\'s area no passage of time', () =>
+	it('gives every area below the lobby region no passage of time, and marks them lobby areas', () =>
 	{
-		const places = world([region('Lobby', [], { ...FULL, passageOfTime: null })], [area('Square', ['Lobby'])], 'Square');
+		// The lobby region is inside another region, and Bea's areas hold an area below it too
+		const places = world([
+			region('Everything', [], FULL),
+			region('Lobby', ['Everything'], { passageOfTime: null }),
+			region('Market', ['Lobby']),
+			region('Bea', [], { ...FULL, passageOfTime: 'always_noon' })
+		], [
+			area('Square', ['Lobby']),
+			area('Stall', ['Market', 'Bea']),
+			area('Back Room', ['area:Stall'], { passageOfTime: 'faerie', faerieMorning: 'west' }),
+			area('Field', ['Everything'])
+		], 'Lobby');
 		const result = resolveAreaSettings(places);
 
 		assert.deepStrictEqual(result.problems, []);
-		assert.strictEqual(result.stored.get('Square')?.passageOfTime, null);
+
+		for (const areaId of ['Square', 'Stall', 'Back Room'])
+		{
+			assert.strictEqual(result.stored.get(areaId)?.passageOfTime, null, areaId);
+			assert.strictEqual(result.stored.get(areaId)?.lobby, true, areaId);
+		}
+
+		assert.strictEqual(result.stored.get('Field')?.passageOfTime, 'flows_normally');
+		assert.strictEqual(result.stored.get('Field')?.lobby, false);
+		assert.strictEqual(resolvePlace(result.graph, { kind: 'region', id: 'Lobby' }, places.tileKinds, 'Lobby').lobby, true);
+		assert.strictEqual(resolvePlace(result.graph, { kind: 'region', id: 'Everything' }, places.tileKinds, 'Lobby').lobby, false);
+	});
+
+	it('checks an area leaving the lobby region for a passage of time like any other', () =>
+	{
+		const places = world([region('Lobby', [], { ...FULL, passageOfTime: null })], [area('Square', ['Lobby'])]);
+
+		assert.deepStrictEqual(resolveAreaSettings(places).problems, [{ kind: 'missing', areaId: 'Square', setting: 'passageOfTime' }]);
 	});
 
 	it('finds areas in no region', () =>
@@ -415,5 +446,77 @@ describe('Working out area settings', () =>
 		assert.strictEqual(isWithinAssignments(graph, { kind: 'area', id: 'Cellar' }, assigned), true);
 		assert.strictEqual(isWithinAssignments(graph, { kind: 'area', id: 'Field' }, assigned), false);
 		assert.strictEqual(isWithinAssignments(graph, { kind: 'region', id: 'Planet' }, assigned), false);
+	});
+});
+
+describe('The lobby region\'s edge', () =>
+{
+	const places = world([
+		region('Lobby', [], FULL),
+		region('Planet', [], FULL)
+	], [
+		area('Square', ['Lobby']),
+		area('House', ['Lobby']),
+		area('Kingdom', ['Planet']),
+		area('Shop', ['Planet'], { loopsEastWest: true })
+	]);
+	const graph = new PlaceGraph(places.regions, places.areas);
+	const edge = { lobbyRegionId: 'Lobby', lobbyAreaId: 'Square', faerie: false };
+
+	it('finds the lobby areas', () =>
+	{
+		assert.deepStrictEqual([...lobbyAreaIds(graph, 'Lobby')].sort(), ['House', 'Square']);
+		assert.deepStrictEqual([...lobbyAreaIds(graph, null)], []);
+		assert.ok(isInLobby(graph, { kind: 'region', id: 'Lobby' }, 'Lobby'));
+		assert.ok(!isInLobby(graph, { kind: 'area', id: 'Kingdom' }, 'Lobby'));
+	});
+
+	it('allows links within the lobby and within the rest of the world', () =>
+	{
+		assert.deepStrictEqual(lobbyProblems(graph, edge, [
+			{ areaId: 'Square', targetAreaId: 'House' },
+			{ areaId: 'Kingdom', targetAreaId: 'Shop' }
+		], ['Kingdom']), []);
+	});
+
+	it('refuses a link across the edge either way, once for each pair', () =>
+	{
+		assert.deepStrictEqual(lobbyProblems(graph, edge, [
+			{ areaId: 'Square', targetAreaId: 'Kingdom' },
+			{ areaId: 'Square', targetAreaId: 'Kingdom' },
+			{ areaId: 'Shop', targetAreaId: 'House' }
+		], []), [
+			{ kind: 'lobbyLink', areaId: 'Square', targetAreaId: 'Kingdom' },
+			{ kind: 'lobbyLink', areaId: 'Shop', targetAreaId: 'House' }
+		]);
+	});
+
+	it('refuses a starting area below the lobby region', () =>
+	{
+		assert.deepStrictEqual(lobbyProblems(graph, edge, [], ['Kingdom', 'House']), [{ kind: 'lobbyStartingArea', areaId: 'House' }]);
+	});
+
+	it('refuses a starting square outside the lobby region, or without one', () =>
+	{
+		assert.deepStrictEqual(lobbyProblems(graph, { ...edge, lobbyAreaId: 'Kingdom' }, [], []), [{ kind: 'lobbySquareOutside', areaId: 'Kingdom' }]);
+		assert.deepStrictEqual(lobbyProblems(graph, { ...edge, lobbyRegionId: null }, [], []), [{ kind: 'lobbySquareOutside', areaId: 'Square' }]);
+	});
+
+	it('refuses a lobby area looping with faerie lobby time', () =>
+	{
+		const looping = new PlaceGraph(places.regions, places.areas.map((each) => ((each.id === 'House') ? { ...each, loopsNorthSouth: true } : each)));
+
+		assert.deepStrictEqual(lobbyProblems(looping, edge, [], []), []);
+		assert.deepStrictEqual(lobbyProblems(looping, { ...edge, faerie: true }, [], []), [{ kind: 'lobbyFaerieLoops', areaId: 'House' }]);
+	});
+
+	it('finds what moving a region or area under other parents would carry across the edge', () =>
+	{
+		const lobbyWorld = { ...places, lobbyRegionId: 'Lobby' };
+		const links = [{ areaId: 'Kingdom', targetAreaId: 'Shop' }];
+
+		assert.deepStrictEqual(lobbyProblemsOfMove(lobbyWorld, { kind: 'area', id: 'Kingdom' }, [{ kind: 'region', id: 'Lobby' }], links, []), [{ kind: 'lobbyLink', areaId: 'Kingdom', targetAreaId: 'Shop' }]);
+		assert.deepStrictEqual(lobbyProblemsOfMove(lobbyWorld, { kind: 'region', id: 'Planet' }, [{ kind: 'region', id: 'Lobby' }], links, ['Kingdom']), [{ kind: 'lobbyStartingArea', areaId: 'Kingdom' }]);
+		assert.deepStrictEqual(lobbyProblemsOfMove(lobbyWorld, { kind: 'region', id: 'Planet' }, [{ kind: 'region', id: 'Lobby' }], links, []), []);
 	});
 });

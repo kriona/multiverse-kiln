@@ -325,6 +325,7 @@ function universeSettingsOf(universe: EditableUniverseDetails): UniverseSettings
 		lobbyPassageOfTime: universe.lobbyPassageOfTime,
 		lobbyDayHours: universe.lobbyDayHours,
 		lobbyFaerieMorning: universe.lobbyFaerieMorning,
+		lobbyRegionId: universe.lobbyRegionId,
 		lobbyAreaId: universe.lobbyAreaId,
 		lobbyColumn: universe.lobbyColumn,
 		lobbyRow: universe.lobbyRow,

@@ -55,7 +55,7 @@ export interface LinkDialogTarget
 	link: EditorAreaLink | undefined;
 
 	/**
-	 * Every area of the universe
+	 * The areas the link can lead to: those on its area's side of the lobby region's edge
 	 */
 	areas: readonly EditorAreaSummary[];
 

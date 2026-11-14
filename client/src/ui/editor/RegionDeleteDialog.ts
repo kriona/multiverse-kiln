@@ -17,6 +17,7 @@ export class RegionDeleteDialog
 	private readonly dialog = getElement('region-delete-dialog', HTMLDialogElement);
 	private readonly form = getElement('region-delete-form', HTMLFormElement);
 	private readonly title = getElement('region-delete-title', HTMLElement);
+	private readonly lobby = getElement('region-delete-lobby', HTMLElement);
 	private readonly only = getElement('region-delete-only', HTMLElement);
 	private readonly onlyIntro = getElement('region-delete-only-intro', HTMLElement);
 	private readonly onlyList = getElement('region-delete-only-list', HTMLUListElement);
@@ -94,6 +95,7 @@ export class RegionDeleteDialog
 
 		this.region = region;
 		this.form.reset();
+		this.lobby.hidden = (region.id !== this.host.lobbyRegionId());
 		this.title.textContent = t({
 			id: 'editor.regionDelete.title',
 			defaultMessage: 'Delete {region}',
@@ -226,14 +228,14 @@ export class RegionDeleteDialog
 
 		const after = this.simulate(world, moves, deleted);
 		const touched = new Set([...only, ...shared, ...graph.descendantsOf(place)].map(placeKey));
-		const problems = resolveAreaSettings(after).problems.filter((problem) => problemPlaces(problem).some((each) => touched.has(placeKey(each))));
+		const problems = [...resolveAreaSettings(after).problems, ...this.host.lobbyProblemsIn(after)].filter((problem) => problemPlaces(problem).some((each) => touched.has(placeKey(each))));
 
 		if (problems.length > 0)
 		{
 			showMessage(this.problems, t({
 				id: 'editor.regionDelete.problems',
 				defaultMessage: 'Deleting it this way would leave problems: {problems}',
-				description: 'Shown in the Delete Region dialog when the choices would leave areas without a setting or with different values from above, which keeps it from going on; {problems} lists them'
+				description: 'Shown in the Delete Region dialog when the choices would leave areas without a setting or with different values from above, or connect the lobby\'s areas to the rest of the world, which keeps it from going on; {problems} lists them'
 			}, {
 				problems: formatList(problems.map((problem) => describeProblem(problem, this.host.names(), this.host.tiles(), universe.ruleset)), 'conjunction')
 			}));

@@ -381,7 +381,7 @@ export class AreaEditor
 	 * @param area The area
 	 * @param tiles Every tile the universe can use, with the Tilesets tab's changes
 	 * @param deletedTiles The tiles the Tilesets tab will delete, which can't be painted with
-	 * @param areas Every area of the universe, for the links' targets
+	 * @param areas The areas the area's links can lead to: those on its side of the lobby region's edge
 	 * @param editable Whether the area's cells can be changed: false for a player whose role can't change the world, or an area that will be deleted
 	 */
 	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], deletedTiles: ReadonlyMap<number, number | undefined>, areas: readonly EditorAreaSummary[], editable: boolean): Promise<void>
@@ -474,6 +474,17 @@ export class AreaEditor
 	hasUnsavedChanges(): boolean
 	{
 		return((this.unsaved.size > 0) || this.hasUnsavedBounds() || (this.stagedLinks.size > 0));
+	}
+
+	/**
+	 * The links added, changed or deleted that haven't been saved, in the area open and return links in
+	 * others
+	 *
+	 * @return The changes, each with a null target for a link deleted
+	 */
+	stagedLinkChanges(): LinkChange[]
+	{
+		return([...this.stagedLinks.values()]);
 	}
 
 	/**

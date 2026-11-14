@@ -1440,8 +1440,8 @@
 		"source": "Could not load the links."
 	},
 	"editor.area.lobbyNotice": {
-		"message": "This area be the game's tavern.",
-		"source": "This area is the game's lobby."
+		"message": "This area be part o' the game's tavern.",
+		"source": "This area is part of the game's lobby."
 	},
 	"editor.area.lobbyTime": {
 		"message": "How the hours pass in the tavern be set on the Lobby tab.",
@@ -1559,9 +1559,9 @@
 		"message": "Couldn't haul up the areas.",
 		"source": "Could not load the areas."
 	},
-	"editor.areaSelect.lobbyHint": {
-		"message": "A home port can't be a tavern.",
-		"source": "A starting area can't be a lobby."
+	"editor.areaSelect.lobbyAreasHint": {
+		"message": "Only the areas below the tavern's sea be listed.",
+		"source": "Only the areas below the lobby region are listed."
 	},
 	"editor.areaSelect.none": {
 		"message": "No areas be matchin'.",
@@ -1578,6 +1578,10 @@
 	"editor.areaSelect.results": {
 		"message": "Areas",
 		"source": "Areas"
+	},
+	"editor.areaSelect.startingHint": {
+		"message": "The areas below the tavern's sea ain't listed: no hand sets sail from the tavern.",
+		"source": "The areas below the lobby region aren't listed: characters can't start in the lobby."
 	},
 	"editor.areaSelect.searchLabel": {
 		"message": "Search areas by name",
@@ -1734,6 +1738,10 @@
 	"editor.audit.field.lobbyPassageOfTime": {
 		"message": "Tavern's passage o' time",
 		"source": "Lobby's passage of time"
+	},
+	"editor.audit.field.lobbySquare": {
+		"message": "Tavern's moorin' spot",
+		"source": "Lobby's starting square"
 	},
 	"editor.audit.field.startingArea": {
 		"message": "Home port",
@@ -2523,6 +2531,14 @@
 		"message": "Let 'em keep sailin'; only new hands can't choose it",
 		"source": "Let them keep playing; only new characters can't choose it"
 	},
+	"editor.impact.lobbyArea": {
+		"message": "Puttin' {name} in the tavern: {count, plural, one {# hand of a crew be in it} other {# hands o' crews be in it}}",
+		"source": "Putting {name} in the lobby: {count, plural, one {# character in a group is in it} other {# characters in groups are in it}}"
+	},
+	"editor.impact.lobbyToStart": {
+		"message": "Send 'em back to where their crews set sail",
+		"source": "Move them back to where their groups start"
+	},
 	"editor.impact.preventPlaying": {
 		"message": "Keep 'em ashore till it be open again",
 		"source": "Stop them playing until it is enabled again"
@@ -2739,25 +2755,13 @@
 		"message": "Needs the whole crew",
 		"source": "Requires the whole group"
 	},
-	"editor.lobby.area": {
-		"message": "Tavern area",
-		"source": "Lobby area"
-	},
-	"editor.lobby.areaChoice": {
-		"message": "Tavern area: {area}",
-		"source": "Lobby area: {area}"
-	},
-	"editor.lobby.areaHint": {
-		"message": "The area to use as the game's tavern, fer scallywags between crews.",
-		"source": "The area to use as the game's lobby for players between groups."
-	},
 	"editor.lobby.chooseArea": {
 		"message": "Choose Area",
 		"source": "Choose Area"
 	},
-	"editor.lobby.clearArea": {
-		"message": "No Tavern Area",
-		"source": "No Lobby Area"
+	"editor.lobby.clearSquare": {
+		"message": "No Mooring Spot",
+		"source": "No Starting Square"
 	},
 	"editor.lobby.dayHours": {
 		"message": "How swift?",
@@ -2771,25 +2775,53 @@
 		"message": "Edit the tavern's area",
 		"source": "Edit the lobby's area"
 	},
-	"editor.lobby.explanation": {
-		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. Its area be one o' the universe's areas, edited on the Areas tab like any other.",
-		"source": "The lobby is where everyone in the universe meets before joining a group. Its area is one of the universe's areas, edited on the Areas tab like any other."
+	"editor.lobby.editRegion": {
+		"message": "Edit the tavern's sea",
+		"source": "Edit the lobby region"
 	},
-	"editor.lobby.noArea": {
+	"editor.lobby.explanation": {
+		"message": "The tavern be where every soul in the universe gathers afore joinin' a crew. Its areas be the areas below the tavern's sea, edited on the Areas tab like any other, an' no passage joins 'em to the rest o' the world.",
+		"source": "The lobby is where everyone in the universe meets before joining a group. Its areas are the areas below the lobby region, edited on the Areas tab like any other, and nothing connects them to the rest of the world."
+	},
+	"editor.lobby.noAreaHint": {
+		"message": "{reason, select, noRegion {Without a tavern sea, scallywags only jaw an' pick their hands.} disabled {The area o' the tavern's moorin' spot be disabled, so scallywags only jaw an' pick their hands.} other {Without a moorin' spot, scallywags only jaw an' pick their hands.}}",
+		"source": "{reason, select, noRegion {Without a lobby region, players only chat and choose their characters.} disabled {The area of the lobby's starting square is disabled, so players only chat and choose their characters.} other {Without a starting square, players only chat and choose their characters.}}"
+	},
+	"editor.lobby.noRegion": {
+		"message": "No Tavern Sea",
+		"source": "No Lobby Region"
+	},
+	"editor.lobby.noSquare": {
 		"message": "None",
 		"source": "None"
 	},
-	"editor.lobby.noAreaHint": {
-		"message": "{reason, select, disabled {The tavern's area be disabled, so scallywags only jaw an' pick their hands.} other {Without a tavern area, scallywags only jaw an' pick their hands.}}",
-		"source": "{reason, select, disabled {The lobby's area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}"
+	"editor.lobby.region": {
+		"message": "Tavern sea",
+		"source": "Lobby region"
+	},
+	"editor.lobby.regionHint": {
+		"message": "Scallywags roam every area below it, however deep. A sea with a home port below it, or with passages leadin' out of it, can't be the tavern's sea.",
+		"source": "Players walk every area below it, at any depth. A region with a starting area below it, or with links leading out of it, can't be the lobby region."
+	},
+	"editor.lobby.regionLeftOut": {
+		"message": "{region} ({reason, select, starting {hands set sail from an area below it} other {passages lead out of it}})",
+		"source": "{region} ({reason, select, starting {characters start in an area below it} other {links lead out of it}})"
 	},
 	"editor.lobby.saveFailed": {
 		"message": "Couldn't stow the tavern's settings.",
 		"source": "Could not save the lobby's settings."
 	},
+	"editor.lobby.squareChoice": {
+		"message": "Moorin' spot: {area}",
+		"source": "Starting square: {area}"
+	},
+	"editor.lobby.squareHint": {
+		"message": "Where scallywags drop anchor in the tavern: a square in one o' the areas below the tavern's sea.",
+		"source": "Where players start in the lobby: a square in one of the areas below the lobby region."
+	},
 	"editor.lobby.timeHint": {
-		"message": "Nothin' ye do in the tavern takes any time, so its hours pass by this 'stead o' the universe's way.",
-		"source": "Actions take no time in the lobby, so its time of day follows this instead of the universe's passage of time."
+		"message": "Nothin' ye do in the tavern takes any time, so the hours in every area below the tavern's sea pass by this 'stead o' their own way.",
+		"source": "Actions take no time in the lobby, so the time of day in every area below the lobby region follows this instead of their own passage of time."
 	},
 	"editor.notes": {
 		"message": "Scribblings",
@@ -2866,6 +2898,26 @@
 	"editor.place.insideItself": {
 		"message": "{place} be inside its own hold",
 		"source": "{place} is inside itself"
+	},
+	"editor.place.lobbyFaerieLoops": {
+		"message": "{area}: the tavern's hours pass the faerie way, so it can't loop",
+		"source": "{area}: the lobby's passage of time is faerie, so it can't loop"
+	},
+	"editor.place.lobbyLink": {
+		"message": "{area} has a passage to {target}, across the edge o' the tavern",
+		"source": "{area} has a link to {target}, across the edge of the lobby"
+	},
+	"editor.place.lobbyParentRefused": {
+		"message": "{reason, select, starting {in the tavern, where no hand sets sail} other {in the tavern, an' passages here lead out of it}}",
+		"source": "{reason, select, starting {in the lobby, where characters can't start} other {in the lobby, and links here lead out of it}}"
+	},
+	"editor.place.lobbySquareOutside": {
+		"message": "{area}: the tavern's moorin' spot be here, so it must stay part o' the tavern",
+		"source": "{area}: the lobby's starting square is here, so it must stay part of the lobby"
+	},
+	"editor.place.lobbyStartingArea": {
+		"message": "{area}: hands set sail from here, so it can't be part o' the tavern",
+		"source": "{area}: characters start here, so it can't be part of the lobby"
 	},
 	"editor.place.missing": {
 		"message": "{area}: nothin' above it sets {setting, select, indoors {whether it be below decks or topside} lightLevel {its lantern light} defaultTileId {a usual tile} fogOfWar {whether the sea fog rolls in} other {how the hours pass}}",
@@ -3011,6 +3063,10 @@
 		"message": "A sea gathers areas. The seas an' areas in it take what it sets as handed down, an' shipwrights posted to it can work on all that sails in it.",
 		"source": "A region groups areas. The regions and areas inside it inherit the settings it sets, and builders assigned to it can edit everything inside it."
 	},
+	"editor.region.lobbyNotice": {
+		"message": "This sea be the game's tavern.",
+		"source": "This region is the game's lobby."
+	},
 	"editor.region.noBuilders": {
 		"message": "No shipwrights be posted to this sea.",
 		"source": "No builders are assigned to this region."
@@ -3066,6 +3122,10 @@
 	"editor.regionDelete.leave": {
 		"message": "Leave 'em with their other mothers",
 		"source": "Leave them in their other parents"
+	},
+	"editor.regionDelete.lobby": {
+		"message": "This be the tavern's sea. Once it's scuttled, the universe has no tavern to roam till another sea be chosen on the Lobby tab.",
+		"source": "This is the lobby region. Once it's deleted, the universe has no lobby to walk in until another region is chosen on the Lobby tab."
 	},
 	"editor.regionDelete.move": {
 		"message": "Sail 'em to",
@@ -5063,10 +5123,6 @@
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
 	},
-	"error.faerieLobbyCantLoop": {
-		"message": "The tavern's hours can't pass the faerie way while its area loops.",
-		"source": "The lobby's passage of time can't be faerie while its area loops."
-	},
 	"error.faerieMorningMismatch": {
 		"message": "Where the mornin' be must be chosen when, and only when, the hours pass the faerie way.",
 		"source": "Where morning is must be chosen when, and only when, the passage of time is faerie."
@@ -5179,9 +5235,9 @@
 		"message": "A passage must sail to another area.",
 		"source": "A link must go to another area."
 	},
-	"error.lobbyIsStartingArea": {
-		"message": "Hands set sail from this area, so it can't be the tavern. Pick another area, or first change where the universe's, folks' an' callin's hands set sail from.",
-		"source": "Characters start in this area, so it can't be the lobby. Choose another area, or first change where the universe's, races' and classes' characters start."
+	"error.lobbyProblems": {
+		"message": "The tavern's areas would be joined to the rest o' the world, or the tavern couldn't be roamed.",
+		"source": "The lobby's areas would be connected to the rest of the world, or the lobby couldn't be walked in."
 	},
 	"error.logInFirst": {
 		"message": "Come aboard first.",
@@ -5246,6 +5302,10 @@
 	"error.noSuchLobbyArea": {
 		"message": "The tavern must be one o' this universe's areas.",
 		"source": "The lobby must be one of this universe's areas."
+	},
+	"error.noSuchLobbyRegion": {
+		"message": "The tavern's sea must be one o' this universe's seas.",
+		"source": "The lobby region must be one of this universe's regions."
 	},
 	"error.noSuchPlayer": {
 		"message": "No sailor goes by that username.",
@@ -8449,6 +8509,10 @@
 	},
 	"universe.lobbyAreaName": {
 		"message": "Tavern",
+		"source": "Lobby"
+	},
+	"universe.lobbyRegionName": {
+		"message": "Tavern Waters",
 		"source": "Lobby"
 	},
 	"universe.role.admin": {

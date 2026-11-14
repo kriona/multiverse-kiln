@@ -7,6 +7,7 @@ import { editsEveryPlace, type AreaEvacuations, type MessageDescriptor, type New
 import { countRegions, createRegion, deleteRegion, findLiveRegionId, listAssignmentsByBuilder, setRegionAssignments, setRegionParents, updateRegionSettings } from '../db/regionRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
+import { findEditableUniverse, updateUniverseSettings } from '../db/universeRepo.js';
 import { recordRef, refuse, resolveNumberRef, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { assignedRegionMessage, checkOwnSettings, outsideAssignmentsMessage, requireParentChangesWithin, resolveParents } from './editorPlaces.js';
 
@@ -173,7 +174,8 @@ export async function updateRegionChange(context: ChangeContext, regionId: Strin
 
 /**
  * Deletes a region. What it holds loses it as a parent; the save moves or deletes what has no other
- * parent with changes before this one, and is refused when it leaves an area in no region
+ * parent with changes before this one, and is refused when it leaves an area in no region. Deleting the
+ * lobby region leaves the universe without a lobby region or starting square
  *
  * @param context The save
  * @param regionId The region
@@ -188,6 +190,19 @@ export async function deleteRegionChange(context: ChangeContext, regionId: Strin
 	if (await context.places.isAssignedTo(region.id))
 	{
 		refuse(403, assignedRegionMessage);
+	}
+
+	// The universe has no lobby to walk in until another region is chosen on the Lobby tab
+	if (region.id === context.universe.lobbyRegionId)
+	{
+		await updateUniverseSettings(context.version, {
+			lobbyRegionId: null,
+			lobbyAreaId: null,
+			lobbyColumn: 0,
+			lobbyRow: 0
+		}, context.transaction);
+		context.universe = (await findEditableUniverse(context.version, context.transaction) ?? context.universe);
+		context.published.push({ kind: 'lobby', universeId: context.universe.id });
 	}
 
 	(await context.places.load()).deleteRegion(region.id);

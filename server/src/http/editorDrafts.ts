@@ -139,11 +139,19 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 	const enabledBefore = new Set(areasBefore
 		.filter((area) => area.resolved.enabled)
 		.map((area) => area.id));
-	const disabledAreaIds = (await listAreas(live, transaction))
-		.filter((area) => (enabledBefore.has(area.id) && !area.resolved.enabled))
-		.map((area) => area.id);
+	const outsideLobbyBefore = new Set(areasBefore
+		.filter((area) => !area.resolved.lobby)
+		.map((area) => area.id));
+	const areasAfter = await listAreas(live, transaction);
 
-	await disablings.finish(liveContext, disabledAreaIds);
+	await disablings.finish(liveContext, {
+		disabled: areasAfter
+			.filter((area) => (enabledBefore.has(area.id) && !area.resolved.enabled))
+			.map((area) => area.id),
+		enteredLobby: areasAfter
+			.filter((area) => (outsideLobbyBefore.has(area.id) && area.resolved.lobby))
+			.map((area) => area.id)
+	});
 
 	const defaultLevel = await findDefaultDifficultyLevel(live, transaction);
 

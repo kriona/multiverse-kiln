@@ -99,10 +99,15 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Starting equipment',
 		description: 'Heading of the list of items every character starts with, on the editor\'s Characters tab; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	lobbyRegion: {
+		id: 'editor.lobby.region',
+		defaultMessage: 'Lobby region',
+		description: 'Label of the field on the editor\'s Lobby tab choosing the lobby region, the region whose areas players walk in the lobby; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	lobbyArea: {
-		id: 'editor.lobby.area',
-		defaultMessage: 'Lobby area',
-		description: 'Label of the Lobby tab\'s choice of the area players walk around in the lobby, and the square of it they start on; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		id: 'editor.audit.field.lobbySquare',
+		defaultMessage: 'Lobby\'s starting square',
+		description: 'Names the setting for where players start in the lobby (the Lobby tab\'s starting square: an area below the lobby region and a square of it), in the list of what a save changed on the editor\'s Audit tab'
 	},
 	startingArea: {
 		id: 'editor.audit.field.startingArea',
@@ -650,6 +655,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'castingStyle':
 			return(t(PF1E_CASTING_STYLE_NAMES[change.value]));
 		case 'parentArea':
+		case 'lobbyRegion':
 			return((change.value ?? t(VALUE_MESSAGES.none)));
 		case 'parents':
 		case 'assignments':

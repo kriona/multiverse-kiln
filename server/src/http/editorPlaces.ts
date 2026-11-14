@@ -3,9 +3,9 @@
  * changes make them, so each change is checked against how the changes before it left them and against
  * what a builder may edit, then every area's settings worked out and stored once every change is made
  */
-import { editsEveryPlace, isWithinAssignments, placeKey, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
+import { editsEveryPlace, isWithinAssignments, lobbyProblems, placeKey, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
 
-import { listAreasLinkingTo, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
+import { listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
 import { listAssignedRegionIds } from '../db/regionRepo.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
 import { PlaceModel } from '../logic/placeModel.js';
@@ -20,6 +20,22 @@ export const outsideAssignmentsMessage: MessageDescriptor = {
 	defaultMessage: 'That region or area isn\'t within the regions you\'re assigned to, so you can\'t change it.',
 	description: 'Why the world editor couldn\'t save a builder\'s change: builders only edit the regions and areas below the regions a creator assigned them to, and the change touches one outside them (a move, a parent or a link needs both ends within them)'
 };
+
+/**
+ * What a save did to the areas it found, once every change is made
+ */
+export interface PlacesOutcome
+{
+	/**
+	 * The areas the save found enabled and leaves disabled
+	 */
+	disabled: string[];
+
+	/**
+	 * The areas the save found outside the lobby region and leaves below it
+	 */
+	enteredLobby: string[];
+}
 
 /**
  * The regions and areas of the version a save changes, and the settings worked out for its areas
@@ -50,6 +66,12 @@ export class SavePlaces
 	touches = 0;
 
 	/**
+	 * How many changes may have connected the lobby areas to the rest of the world, or kept the lobby
+	 * from working (see checkLobby()), so the save knows which change last may have
+	 */
+	lobbyChecks = 0;
+
+	/**
 	 * @param contextOf The save, which holds this
 	 */
 	constructor(private readonly contextOf: () => ChangeContext)
@@ -76,7 +98,7 @@ export class SavePlaces
 		if (!this.model)
 		{
 			const { universe, version, transaction } = this.context;
-			const { world, stored } = await loadPlaceWorld(version, universe.ruleset, universe.lobbyAreaId, transaction);
+			const { world, stored } = await loadPlaceWorld(version, universe.ruleset, universe.lobbyRegionId, transaction);
 
 			this.model = new PlaceModel(world);
 			this.before = stored;
@@ -93,6 +115,17 @@ export class SavePlaces
 	touch(): void
 	{
 		this.touches++;
+		this.checkLobby();
+	}
+
+	/**
+	 * Notes that a change may have connected the lobby areas to the rest of the world or kept the lobby
+	 * from working: changed the regions or areas, a link, a starting area or the lobby's settings. Once
+	 * the save's changes are made, the lobby is checked (lobbyProblems())
+	 */
+	checkLobby(): void
+	{
+		this.lobbyChecks++;
 	}
 
 	/**
@@ -132,9 +165,10 @@ export class SavePlaces
 			indoors: false,
 			lightLevel: null,
 			defaultTileId: [...model.world().tileKinds.keys()][0],
-			passageOfTime: null,
+			passageOfTime: 'flows_normally',
 			faerieMorning: null,
-			fogOfWar: true
+			fogOfWar: true,
+			lobby: false
 		});
 	}
 
@@ -255,22 +289,67 @@ export class SavePlaces
 	/**
 	 * Once every change is made: works out the settings of every area of the version, refuses the save
 	 * when an area is left with a conflict or a missing value or anything is nested wrongly, and stores the
-	 * settings that changed, telling the rooms about the areas whose settings changed
+	 * settings that changed, telling the rooms about the areas whose settings changed. Then refuses the
+	 * save when it leaves the lobby areas connected to the rest of the world, or the lobby unable to work
 	 *
-	 * @return The areas the save found enabled and leaves disabled
+	 * @return The areas the save disables, and those it puts below the lobby region
 	 */
-	async finish(): Promise<string[]>
+	async finish(): Promise<PlacesOutcome>
 	{
-		if (!this.model || (this.touches === 0))
+		const resolution = (((this.model !== undefined) && (this.touches > 0)) ? await this.resolveAndStore() : undefined);
+
+		if (this.lobbyChecks > 0)
 		{
-			return([]);
+			await this.checkLobbyEdge();
 		}
 
-		const resolution = await this.resolveAndStore();
+		const stored = [...(resolution?.stored ?? [])];
 
-		return([...resolution.stored]
-			.filter(([areaId, settings]) => ((this.before.get(areaId)?.enabled ?? false) && !settings.enabled))
-			.map(([areaId]) => areaId));
+		return({
+			disabled: stored
+				.filter(([areaId, settings]) => ((this.before.get(areaId)?.enabled ?? false) && !settings.enabled))
+				.map(([areaId]) => areaId),
+			enteredLobby: stored
+				.filter(([areaId, settings]) => (this.before.has(areaId) && !(this.before.get(areaId)?.lobby ?? true) && settings.lobby))
+				.map(([areaId]) => areaId)
+		});
+	}
+
+	/**
+	 * Refuses the save when it leaves a link across the lobby region's edge, a starting area below it, the
+	 * lobby's starting square outside it, or a lobby area that loops with faerie lobby time
+	 */
+	private async checkLobbyEdge(): Promise<void>
+	{
+		const { universe, version, transaction } = this.context;
+		const model = await this.load();
+
+		model.setLobbyRegion(universe.lobbyRegionId);
+
+		// Without a lobby region, the only thing to check is that no starting square is left behind
+		const [links, startingAreaIds] = ((universe.lobbyRegionId === null)
+			? [[], []]
+			: await Promise.all([listLinkEnds(version, transaction), listStartingAreaIds(version, transaction)]));
+		const problems = lobbyProblems(model.graph(), {
+			lobbyRegionId: universe.lobbyRegionId,
+			lobbyAreaId: universe.lobbyAreaId,
+			faerie: (universe.lobbyPassageOfTime === 'faerie')
+		}, links, startingAreaIds);
+
+		if (problems.length > 0)
+		{
+			throw new ChangeRefusal({
+				status: 409,
+				message: {
+					id: 'error.lobbyProblems',
+					defaultMessage: 'The lobby\'s areas would be connected to the rest of the world, or the lobby couldn\'t be walked in.',
+					description: 'Why the world editor couldn\'t save: the areas below the lobby region (the lobby areas) must never be connected to the rest of the world, and the changes leave a link across its edge, a starting area below it, the lobby\'s starting square outside it, or a lobby area that loops while the lobby\'s time is faerie; the editor lists each problem on the Areas tab'
+				}
+			}, undefined, undefined, {
+				problems,
+				names: this.placeNames(problems)
+			});
+		}
 	}
 
 	/**
@@ -284,7 +363,7 @@ export class SavePlaces
 		const { context } = this;
 		const model = await this.load();
 
-		model.setLobbyArea(context.universe.lobbyAreaId);
+		model.setLobbyRegion(context.universe.lobbyRegionId);
 
 		const resolution = model.resolve();
 
@@ -385,6 +464,10 @@ export class SavePlaces
 				{
 					name(place);
 				}
+			}
+			else if (problem.kind === 'lobbyLink')
+			{
+				name({ kind: 'area', id: problem.targetAreaId });
 			}
 			else if ((problem.kind === 'insideItself') || (problem.kind === 'tooDeep'))
 			{
@@ -545,5 +628,6 @@ function sameSettings(first: ResolvedAreaSettings, second: ResolvedAreaSettings)
 		&& (first.defaultTileId === second.defaultTileId)
 		&& (first.passageOfTime === second.passageOfTime)
 		&& (first.faerieMorning === second.faerieMorning)
-		&& (first.fogOfWar === second.fogOfWar));
+		&& (first.fogOfWar === second.fogOfWar)
+		&& (first.lobby === second.lobby));
 }

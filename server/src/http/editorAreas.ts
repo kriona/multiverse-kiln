@@ -10,7 +10,7 @@ import { loadUniverseTiles } from '../db/tileRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { listRegions } from '../db/regionRepo.js';
-import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor, type AreaInTree, type LinkInto } from '../logic/disabling.js';
 import { chunksOfChanges } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
@@ -66,38 +66,23 @@ export function timeSettingsProblem(settings: { passageOfTime: string; faerieMor
 }
 
 /**
- * What is wrong with a universe's lobby time, if anything
+ * What is wrong with a universe's lobby time, if anything. Lobby areas that loop while it is faerie are
+ * refused once the save's changes are made (lobbyProblems())
  *
  * @param lobby The lobby's passage of time and faerie morning
- * @param lobbyArea Whether the lobby's area loops, or undefined when the universe has no lobby area yet
  * @return Why the settings can't be saved, or undefined when they can
  */
-export function lobbyTimeProblem(lobby: Pick<UniverseSettings, 'lobbyPassageOfTime' | 'lobbyFaerieMorning'>, lobbyArea: Pick<EditorArea, 'loopsEastWest' | 'loopsNorthSouth'> | undefined): MessageDescriptor | undefined
+export function lobbyTimeProblem(lobby: Pick<UniverseSettings, 'lobbyPassageOfTime' | 'lobbyFaerieMorning'>): MessageDescriptor | undefined
 {
-	const problem = timeSettingsProblem({
+	return(timeSettingsProblem({
 		passageOfTime: lobby.lobbyPassageOfTime,
 		faerieMorning: lobby.lobbyFaerieMorning
-	});
-
-	if (problem !== undefined)
-	{
-		return(problem);
-	}
-
-	if ((lobby.lobbyPassageOfTime === 'faerie') && ((lobbyArea?.loopsEastWest ?? false) || (lobbyArea?.loopsNorthSouth ?? false)))
-	{
-		return({
-			id: 'error.faerieLobbyCantLoop',
-			defaultMessage: 'The lobby\'s passage of time can\'t be faerie while its area loops.',
-			description: 'Why the lobby\'s settings, or its area\'s, were refused: faerie time and an area that wraps around at its edges can\'t be combined'
-		});
-	}
-
-	return(undefined);
+	}));
 }
 
 /**
- * GET /:universeId/areas: every area of the universe
+ * GET /:universeId/areas: every region and area of the universe, its lobby and starting areas, and its
+ * links between areas
  *
  * @param request The request
  * @param response The response
@@ -108,9 +93,11 @@ async function listAreasRoute(request: Request, response: Response): Promise<voi
 	const payload: AreaListPayload = {
 		regions: await listRegions(version),
 		areas: await listAreas(version),
+		lobbyRegionId: universe.lobbyRegionId,
 		lobbyAreaId: universe.lobbyAreaId,
 		startingAreaId: universe.startingAreaId,
-		startingAreaIds: await listStartingAreaIds(version)
+		startingAreaIds: await listStartingAreaIds(version),
+		links: await listLinkEnds(version)
 	};
 
 	response.json(payload);
@@ -279,9 +266,9 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
 }
 
 /**
- * Changes an area's settings or parents. Once the save has saved every change, each area other than
- * the lobby's that it leaves disabled sends the characters in it where moveTo says, those playing and
- * those saved there by their group (see editorDisablings.ts)
+ * Changes an area's settings or parents. Once the save has saved every change, each area outside the
+ * lobby that it leaves disabled sends the characters in it where moveTo says, those playing and those
+ * saved there by their group (see editorDisablings.ts)
  *
  * @param context The save
  * @param areaId The area
@@ -290,7 +277,7 @@ export async function createAreaChange(context: ChangeContext, ref: NewRef, area
  */
 export async function updateAreaChange(context: ChangeContext, areaId: StringRef, update: AreaChangeUpdate, moveTo: AreaEvacuations): Promise<void>
 {
-	const { universe, transaction } = context;
+	const { transaction } = context;
 	const area = await areaNodeOf(context, areaId);
 	const place: PlaceRef = { kind: 'area', id: area.id };
 	const resolved = resolveAreaUpdate(context, update);
@@ -300,16 +287,6 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
 	await context.places.requireWithin(place);
 	await requireParentChangesWithin(context, place, area.parents, parents);
 	await checkOwnSettings(context, updated);
-
-	if (area.id === universe.lobbyAreaId)
-	{
-		const lobbyProblem = lobbyTimeProblem(universe, updated);
-
-		if (lobbyProblem !== undefined)
-		{
-			refuse(400, lobbyProblem);
-		}
-	}
 
 	// The database refuses an area that loops with faerie time stored for it, though the save may yet
 	// change its time, so the stored time is set aside until its settings are worked out again
@@ -578,6 +555,7 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 	}
 
 	await saveAreaLink(area.id, column, row, { ...target, targetAreaId }, transaction);
+	context.places.checkLobby();
 	context.published.push({ kind: 'area', areaId: area.id });
 }
 

@@ -871,6 +871,11 @@ form > .changed-since,
 	{
 		border-left-color: $region-text;
 	}
+
+	.place-lobby-contents
+	{
+		border-left-color: $lobby-region-text;
+	}
 }
 
 .place-row
@@ -902,6 +907,11 @@ form > .changed-since,
 {
 	color: $region-text;
 	font-style: italic;
+}
+
+.place-region.place-lobby strong
+{
+	color: $lobby-region-text;
 }
 
 .place-parent-list
@@ -1422,7 +1432,7 @@ div.ability-modifiers
 	gap: 8px;
 }
 
-// The hint and buttons under the lobby's area, indented to show they belong to it
+// The hint and buttons under the lobby's starting square, indented to show they belong to it
 .lobby-area-details
 {
 	margin-left: 24px;

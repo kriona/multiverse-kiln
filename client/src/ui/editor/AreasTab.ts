@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, canTakeParent, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, isWithinAssignments, loadedFor, MAX_AREA_NAME_LENGTH, MAX_REGION_NAME_LENGTH, PlaceGraph, placeKey, resolveAreaSettings, resolvePlace, samePlace, type AreaChangeUpdate, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, canTakeParent, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, MAX_AREA_NAME_LENGTH, MAX_REGION_NAME_LENGTH, PlaceGraph, placeKey, resolveAreaSettings, resolvePlace, samePlace, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -93,6 +93,9 @@ export interface PlacesHost
 	listItem(place: PlaceRef): HTMLLIElement;
 	problemsFor(place: PlaceRef, override: PlaceOverride, list: HTMLElement, container: HTMLElement): void;
 	inheritedView(place: PlaceRef, override: PlaceOverride): InheritedView;
+	lobbyRegionId(): string | null;
+	lobbyProblemsIn(world: PlaceWorld): PlaceProblem[];
+	backToLobby(): void;
 }
 
 /**
@@ -116,7 +119,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private readonly name = getElement('area-name', HTMLInputElement);
 	private readonly lobbyTimeHint = getElement('area-lobby-time-hint', HTMLElement);
 	private readonly lobbyNotice = getElement('area-lobby-notice', HTMLElement);
-	private readonly backToLobby = getElement('area-back-lobby', HTMLButtonElement);
+	private readonly backToLobbyButton = getElement('area-back-lobby', HTMLButtonElement);
 	private readonly loopsEastWest = getElement('area-loops-east-west', HTMLInputElement);
 	private readonly loopsNorthSouth = getElement('area-loops-north-south', HTMLInputElement);
 	private readonly loopsHint = getElement('area-loops-hint', HTMLElement);
@@ -237,9 +240,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private universeOpen: EditableUniverse | undefined;
 
 	/**
-	 * Every region and area of the universe, and which are the lobby and starting areas, as last loaded
+	 * Every region and area of the universe, its lobby region and starting square, its starting areas and
+	 * its links between areas, as last loaded
 	 */
-	private loaded: AreaListPayload = { regions: [], areas: [], lobbyAreaId: null, startingAreaId: null, startingAreaIds: [] };
+	private loaded: AreaListPayload = { regions: [], areas: [], lobbyRegionId: null, lobbyAreaId: null, startingAreaId: null, startingAreaIds: [], links: [] };
 
 	/**
 	 * The universe the regions and areas, and the tiles, were last loaded for, as the editor had it open
@@ -367,12 +371,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			}
 		});
 
-		this.backToLobby.addEventListener('click', () =>
+		this.backToLobbyButton.addEventListener('click', () =>
 		{
 			if (this.areaChanges.confirmDiscard())
 			{
-				void this.showListView();
-				this.onBackToLobby();
+				this.backToLobby();
 			}
 		});
 
@@ -512,34 +515,56 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Follows the lobby moving to another area, or to none, once the Lobby tab has saved it
+	 * Follows the lobby moving to another region or starting square, or to none, once the Lobby tab has
+	 * saved it
 	 *
-	 * @param lobbyAreaId The lobby's area, or null for none
+	 * @param lobbyRegionId The lobby region, or null for none
+	 * @param lobbyAreaId The area of the lobby's starting square, or null for none
 	 */
-	setLobbyArea(lobbyAreaId: string | null): void
+	setLobby(lobbyRegionId: string | null, lobbyAreaId: string | null): void
 	{
-		this.loaded = { ...this.loaded, lobbyAreaId };
+		this.loaded = { ...this.loaded, lobbyRegionId, lobbyAreaId };
 		this.renderList();
 
 		if (this.area && this.universeOpen)
 		{
-			const isLobby = (this.area.id === lobbyAreaId);
-
-			this.showLobby(isLobby);
-			this.deleteButton.hidden = (!this.canEditPlace({ kind: 'area', id: this.area.id }) || isLobby || (this.area.id === this.loaded.startingAreaId));
+			this.deleteButton.hidden = (!this.canEditPlace({ kind: 'area', id: this.area.id }) || (this.area.id === lobbyAreaId) || (this.area.id === this.loaded.startingAreaId));
+			this.settingsChanged();
 		}
+
+		this.regionEditor.refresh();
 	}
 
 	/**
-	 * Says in the area editor whether the area shown is the lobby's, whose passage of time is set on the
-	 * Lobby tab instead, and offers to go back to the Lobby tab
+	 * The lobby region, as last saved
+	 *
+	 * @return Its ID, or null for none
+	 */
+	lobbyRegionId(): string | null
+	{
+		return(this.loaded.lobbyRegionId);
+	}
+
+	/**
+	 * Leaves the region or area editor for the list, and shows the Lobby tab, the editor's changes already
+	 * confirmed thrown away
+	 */
+	backToLobby(): void
+	{
+		void this.showListView();
+		this.onBackToLobby();
+	}
+
+	/**
+	 * Says in the area editor whether the area shown is below the lobby region, whose passage of time is
+	 * set on the Lobby tab instead, and offers to go back to the Lobby tab
 	 *
 	 * @param isLobby Whether it is
 	 */
 	private showLobby(isLobby: boolean): void
 	{
 		this.lobbyNotice.hidden = !isLobby;
-		this.backToLobby.hidden = !isLobby;
+		this.backToLobbyButton.hidden = !isLobby;
 		this.settings.hideTime(isLobby);
 		this.lobbyTimeHint.hidden = !isLobby;
 	}
@@ -591,6 +616,22 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			this.editorView.scrollIntoView({ block: 'start' });
 			this.name.focus({ preventScroll: true });
 		}
+	}
+
+	/**
+	 * Opens a region in the region editor, first asking whether to discard the unsaved changes of the
+	 * region or area it shows
+	 *
+	 * @param regionId The region's ID
+	 */
+	async openRegion(regionId: string): Promise<void>
+	{
+		if (!this.confirmLeave())
+		{
+			return;
+		}
+
+		await this.loadRegion(regionId);
 	}
 
 	/**
@@ -852,19 +893,21 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private renderList(): void
 	{
+		const lobby = this.lobbyPlaceKeys();
 		const listed: ListedPlace[] = [
 			...this.regions().map((region): ListedPlace => ({
 				place: { kind: 'region', id: region.id },
 				name: region.name,
 				parents: region.parents,
-				tags: this.tagsOf({ kind: 'region', id: region.id }, true),
-				deleted: this.staged.isPlaceDeleted({ kind: 'region', id: region.id })
+				tags: this.tagsOf({ kind: 'region', id: region.id }, true, lobby),
+				deleted: this.staged.isPlaceDeleted({ kind: 'region', id: region.id }),
+				lobby: (region.id === this.loaded.lobbyRegionId)
 			})),
 			...this.areas().map((area): ListedPlace => ({
 				place: { kind: 'area', id: area.id },
 				name: area.name,
 				parents: area.parents,
-				tags: this.tagsOf({ kind: 'area', id: area.id }, area.resolved.enabled),
+				tags: this.tagsOf({ kind: 'area', id: area.id }, area.resolved.enabled, lobby),
 				deleted: this.staged.isDeleted(area.id)
 			}))
 		];
@@ -873,22 +916,45 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
+	 * The lobby region and the lobby areas below it, as the tab's changes leave them, which the list tags
+	 * "lobby"
+	 *
+	 * @return Their keys (placeKey())
+	 */
+	private lobbyPlaceKeys(): Set<string>
+	{
+		const world = this.world();
+		const regionId = world.lobbyRegionId;
+
+		if (regionId === null)
+		{
+			return(new Set());
+		}
+
+		return(new Set([
+			placeKey({ kind: 'region', id: regionId }),
+			...[...lobbyAreaIds(new PlaceGraph(world.regions, world.areas), regionId)].map((id) => placeKey({ kind: 'area', id }))
+		]));
+	}
+
+	/**
 	 * What the list says of a region or area
 	 *
 	 * @param place The region or area
 	 * @param enabled Whether it is enabled, as last saved for an area
+	 * @param lobby The lobby region and lobby areas (lobbyPlaceKeys())
 	 * @return The tags
 	 */
-	private tagsOf(place: PlaceRef, enabled: boolean): string[]
+	private tagsOf(place: PlaceRef, enabled: boolean, lobby: ReadonlySet<string>): string[]
 	{
 		const node = ((place.kind === 'region') ? this.regions().find((region) => (region.id === place.id)) : undefined);
 
 		return([
-			((place.id === this.loaded.lobbyAreaId)
+			(lobby.has(placeKey(place))
 				? t({
 					id: 'editor.areas.lobbyTag',
 					defaultMessage: 'lobby',
-					description: 'Under an area in the list of areas, for the area players walk around in the universe\'s lobby'
+					description: 'Under a region or area in the list of regions and areas, for the lobby region and the areas below it, which players walk in the universe\'s lobby'
 				})
 				: undefined),
 			((place.id === this.loaded.startingAreaId)
@@ -1428,7 +1494,49 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			.filter((tile) => !this.tilesDeleted.has(tile.id))
 			.map((tile) => [tile.id, { indoors: tile.indoors, outdoors: tile.outdoors }]));
 
-		return({ regions, areas, tileKinds, lobbyAreaId: this.loaded.lobbyAreaId });
+		return({ regions, areas, tileKinds, lobbyRegionId: this.loaded.lobbyRegionId });
+	}
+
+	/**
+	 * Every link between areas, as saved with the area editor's changes not yet saved
+	 *
+	 * @return The links' areas and the areas they lead to
+	 */
+	links(): AreaLinkPair[]
+	{
+		const targets = new Map<string, AreaLinkPair | null>();
+		const keyOf = (link: { areaId: string; column: number; row: number }): string => `${link.areaId},${link.column},${link.row}`;
+
+		for (const link of this.loaded.links)
+		{
+			targets.set(keyOf(link), { areaId: link.areaId, targetAreaId: link.targetAreaId });
+		}
+
+		for (const change of this.areaEditor.stagedLinkChanges())
+		{
+			targets.set(keyOf(change), ((change.target === null) ? null : { areaId: change.areaId, targetAreaId: change.target.targetAreaId }));
+		}
+
+		return([...targets.values()].filter((link) => (link !== null)));
+	}
+
+	/**
+	 * What would connect the lobby areas to the rest of the world, or keep the lobby from working, in a
+	 * world as the tab's changes leave it (lobbyProblems()). A world without the lobby region, such as one
+	 * deleting it, leaves the universe without a lobby or starting square, and so without these problems
+	 *
+	 * @param world The regions and areas
+	 * @return The problems
+	 */
+	lobbyProblemsIn(world: PlaceWorld): PlaceProblem[]
+	{
+		const lobbyRegionId = (world.regions.some((region) => (region.id === world.lobbyRegionId)) ? world.lobbyRegionId : null);
+
+		return(lobbyProblems(new PlaceGraph(world.regions, world.areas), {
+			lobbyRegionId,
+			lobbyAreaId: ((lobbyRegionId === null) ? null : this.loaded.lobbyAreaId),
+			faerie: (this.universeOpen?.lobbyPassageOfTime === 'faerie')
+		}, this.links(), this.loaded.startingAreaIds));
 	}
 
 	/**
@@ -1461,7 +1569,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	/**
 	 * What a region or area can be put inside, besides its parents: the regions (and, for an area without
 	 * a parent area, the areas) that don't put it inside itself or nest anything more than ten levels
-	 * deep, leaving out those that will be deleted and, for a builder, those outside their assignments
+	 * deep, leaving out those that will be deleted and, for a builder, those outside their assignments.
+	 * Those that would carry it into the lobby while links lead from it out of the lobby, or characters
+	 * start in it, are listed but can't be chosen, saying why
 	 *
 	 * @param place The region or area
 	 * @param kind Whether it is a region or an area
@@ -1478,15 +1588,53 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			...world.regions.map((region): PlaceRef => ({ kind: 'region', id: region.id })),
 			...(((kind === 'area') && !hasParentArea) ? world.areas.map((area): PlaceRef => ({ kind: 'area', id: area.id })) : [])
 		];
+		const refusal = this.lobbyEntryRefusal(world, graph, place, override);
 
 		return(candidates
 			.filter((candidate) => (canTakeParent(graph, place, candidate) && this.canEditPlace(candidate)))
 			.map((candidate) => ({
 				place: candidate,
 				name: names(candidate),
-				detail: (formatList(graph.parentsOf(candidate).map(names), 'conjunction') || undefined)
+				detail: (formatList(graph.parentsOf(candidate).map(names), 'conjunction') || undefined),
+				refusal: (((refusal !== undefined) && isInLobby(graph, candidate, world.lobbyRegionId)) ? refusal : undefined)
 			}))
 			.sort((first, second) => first.name.localeCompare(second.name)));
+	}
+
+	/**
+	 * Why a region or area outside the lobby can't be put inside a parent in the lobby: links lead from
+	 * it, or from what is below it, out of the lobby, or characters start there. Taking a parent never
+	 * takes anything out of the lobby, so every parent in the lobby is refused alike
+	 *
+	 * @param world The regions and areas, as the editor shows them
+	 * @param graph The same, indexed
+	 * @param place The region or area
+	 * @param override It, as its editor shows it
+	 * @return Why, or undefined when it can be, or is in the lobby already
+	 */
+	private lobbyEntryRefusal(world: PlaceWorld, graph: PlaceGraph, place: PlaceRef, override: PlaceOverride): string | undefined
+	{
+		const lobbyRegionId = world.lobbyRegionId;
+
+		if ((lobbyRegionId === null) || isInLobby(graph, place, lobbyRegionId))
+		{
+			return(undefined);
+		}
+
+		const problems = lobbyProblemsOfMove(world, place, [...override.node.parents, { kind: 'region', id: lobbyRegionId }], this.links(), this.loaded.startingAreaIds);
+
+		if (problems.length === 0)
+		{
+			return(undefined);
+		}
+
+		return(t({
+			id: 'editor.place.lobbyParentRefused',
+			defaultMessage: '{reason, select, starting {in the lobby, where characters can\'t start} other {in the lobby, and links here lead out of it}}',
+			description: 'After a region or area offered as a parent in the region and area editors\' Add Parent, when it can\'t be chosen: it is below the lobby region, and {reason} is "starting" when characters start in this region or area (or below it), or otherwise links lead from here to areas outside the lobby. The lobby areas are never connected to the rest of the world'
+		}, {
+			reason: (problems.some((problem) => (problem.kind === 'lobbyStartingArea')) ? 'starting' : 'links')
+		}));
 	}
 
 	/**
@@ -1505,8 +1653,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const blankGraph = new PlaceGraph(blank.regions, blank.areas);
 
 		return({
-			inherited: resolvePlace(blankGraph, place, world.tileKinds, world.lobbyAreaId),
-			resolved: resolvePlace(graph, place, world.tileKinds, world.lobbyAreaId),
+			inherited: resolvePlace(blankGraph, place, world.tileKinds, world.lobbyRegionId),
+			resolved: resolvePlace(graph, place, world.tileKinds, world.lobbyRegionId),
 			names: this.names(),
 			tiles: this.tileList,
 			deletedTiles: this.deletedTiles(),
@@ -1532,7 +1680,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const resolution = resolveAreaSettings(world);
 		const below = new Set([placeKey(place), ...resolution.graph.descendantsOf(place).map(placeKey)]);
 		const names = this.names();
-		const problems = resolution.problems.filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
+		const problems = [...resolution.problems, ...this.lobbyProblemsIn(world)].filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
 
 		this.listProblems(problems, names, list, container, (universe?.ruleset ?? 'pf1e'));
 	}
@@ -1584,9 +1732,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		button.type = 'button';
 		button.className = `universe-item place-${place.kind}`;
+		button.classList.toggle('place-lobby', ((place.kind === 'region') && (place.id === this.loaded.lobbyRegionId)));
 		name.textContent = this.names()(place);
 		details.className = 'universe-ruleset';
-		details.textContent = formatList(this.tagsOf(place, (area?.resolved.enabled ?? true)));
+		details.textContent = formatList(this.tagsOf(place, (area?.resolved.enabled ?? true), this.lobbyPlaceKeys()));
 		button.append(name, details);
 		button.addEventListener('click', () =>
 		{
@@ -1658,9 +1807,15 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		const place: PlaceRef = { kind: 'area', id: area.id };
 		const override = this.areaOverride();
-		const faerie = this.settings.isFaerie();
+		const view = this.inheritedView(place, override);
 
-		this.settings.showInherited(this.inheritedView(place, override));
+		// A lobby area's passage of time is the Lobby tab's, so its own isn't shown, and only the lobby's
+		// keeps it from looping
+		this.showLobby(view.resolved.lobby);
+
+		const faerie = (view.resolved.lobby ? (this.universeOpen?.lobbyPassageOfTime === 'faerie') : this.settings.isFaerie());
+
+		this.settings.showInherited(view);
 		this.parents.setChoices(this.parentChoices(place, 'area', override));
 		this.loopsHint.hidden = !faerie;
 		this.loopsEastWest.disabled = faerie;
@@ -1688,17 +1843,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const place: PlaceRef = { kind: 'area', id: area.id };
 		const deleted = this.staged.isDeleted(area.id);
 		const editable = (this.canEditPlace(place) && !deleted);
-		const isLobby = (area.id === this.loaded.lobbyAreaId);
+		const isLobbySquare = (area.id === this.loaded.lobbyAreaId);
 		const isStart = (area.id === this.loaded.startingAreaId);
 
 		this.area = area;
 		this.fillSettings(area);
-		this.showLobby(isLobby);
 		this.showSize(area);
 		this.fields.disabled = !editable;
 		this.name.disabled = !editable;
 		this.parents.setDisabled(!editable);
-		this.deleteButton.hidden = (!this.canEditPlace(place) || isLobby || isStart);
+		this.deleteButton.hidden = (!this.canEditPlace(place) || isLobbySquare || isStart);
 		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
 			id: 'editor.area.delete',
 			defaultMessage: 'Delete Area',
@@ -1709,7 +1863,23 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		this.showChildren(area.id);
 		this.showClaim();
 		this.areaChanges.markSaved();
-		void this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.areas().filter((other) => !this.staged.isDeleted(other.id)), editable);
+		void this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.linkTargets(area.id), editable);
+	}
+
+	/**
+	 * The areas a link from an area can lead to: those on its side of the lobby region's edge, as the tab's
+	 * changes leave them, other than those that will be deleted
+	 *
+	 * @param areaId The area's ID
+	 * @return The areas
+	 */
+	private linkTargets(areaId: string): EditorAreaSummary[]
+	{
+		const world = this.world();
+		const inLobby = lobbyAreaIds(new PlaceGraph(world.regions, world.areas), world.lobbyRegionId);
+		const side = inLobby.has(areaId);
+
+		return(this.areas().filter((other) => (!this.staged.isDeleted(other.id) && (inLobby.has(other.id) === side))));
 	}
 
 	/**

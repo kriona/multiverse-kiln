@@ -78,7 +78,7 @@ function world(regions: PlaceNode[], areas: AreaNode[]): PlaceWorld
 		regions,
 		areas,
 		tileKinds: TILE_KINDS,
-		lobbyAreaId: null
+		lobbyRegionId: null
 	});
 }
 

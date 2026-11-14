@@ -4,7 +4,7 @@ import type { AreaListPayload, ChangeImpact, EditableUniverse, EditorArea, Edito
 import { loadArea } from '../src/db/areaRepo.js';
 import { listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { addCharacter, addGroup, addPlayableUniverse, assignToTestRegion, defaultTileId, testRegionId } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, assignToTestRegion, defaultTileId, TEST_LOBBY_REGION_NAME, TEST_REGION_NAME, testRegionId, withoutLobby } from './db/fixtures.js';
 import { createUniverse, logIn, saveAll, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -185,7 +185,8 @@ describe('Regions', () =>
 			defaultTileId: await defaultTileId('wood_floor'),
 			passageOfTime: 'flows_normally',
 			faerieMorning: null,
-			fogOfWar: true
+			fogOfWar: true,
+			lobby: false
 		});
 
 		await saveAll(ada, universeId, [{ kind: 'updateRegion', regionId: worldId, update: { passageOfTime: 'always_noon' } }]);
@@ -263,7 +264,7 @@ describe('Regions', () =>
 
 		const listed = (await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas`)).body;
 
-		assert.deepStrictEqual(listed.regions.map((region) => region.name), ['Kept', 'World']);
+		assert.deepStrictEqual(listed.regions.map((region) => region.name), ['Kept', 'Lobby', 'World']);
 		assert.deepStrictEqual(listed.areas.find((area) => (area.name === 'Shared'))?.parents, [inRegion(String(ids['new:kept']))]);
 		assert.deepStrictEqual(listed.areas.find((area) => (area.name === 'Moved'))?.parents, [inRegion(String(ids['new:kept']))]);
 	});
@@ -363,6 +364,8 @@ describe('Regions', () =>
 		const carl = await logIn('Carl');
 		const testRegion = await testRegionId(universeId);
 
+		// Bea's areas link to the square and house, which can't be lobby areas then
+		await withoutLobby(universe);
 		await setUniverseRole(universeId, ada.playerId, 'creator');
 		await setUniverseRole(universeId, bea.playerId, 'builder');
 		await setUniverseRole(universeId, carl.playerId, 'builder');
@@ -420,6 +423,7 @@ describe('Regions', () =>
 		const { universeId, houseAreaId, squareAreaId } = universe;
 		const brokkId = await addCharacter((await addPlayer('Bob')).id, universeId, 'Brokk');
 
+		await withoutLobby(universe);
 		await setUniverseRole(universeId, ada.playerId, 'creator');
 
 		const ids = await saveAll(ada, universeId, [newRegion('inn', 'Inn', [await testRegionId(universeId)])]);
@@ -449,6 +453,7 @@ describe('Regions', () =>
 		const brokkId = await addCharacter((await addPlayer('Bob')).id, universeId, 'Brokk');
 		const bea = await logIn('Bea');
 
+		await withoutLobby(universe);
 		await setUniverseRole(universeId, ada.playerId, 'creator');
 		await setUniverseRole(universeId, bea.playerId, 'builder');
 		await assignToTestRegion(universeId, [bea.playerId]);
@@ -457,10 +462,11 @@ describe('Regions', () =>
 		await saveAll(ada, universeId, [{ kind: 'startDraft' }]);
 
 		const draft = (await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas?version=draft`)).body;
-		const draftRegion = draft.regions[0];
+		const draftRegion = draft.regions.find((region) => (region.name === TEST_REGION_NAME));
 
 		// The draft copies the regions, with the live region's builders
-		assert.deepStrictEqual(draft.regions.map((region) => [region.name, region.builderIds]), [['Test Region', [bea.playerId]]]);
+		assert.ok(draftRegion);
+		assert.deepStrictEqual(draft.regions.map((region) => [region.name, region.builderIds]), [[TEST_LOBBY_REGION_NAME, []], [TEST_REGION_NAME, [bea.playerId]]]);
 		assert.notStrictEqual(draftRegion.id, await testRegionId(universeId));
 
 		const saved = await send(bea, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'updateRegion', regionId: draftRegion.id, update: { enabled: false } }] } });
@@ -477,6 +483,8 @@ describe('Regions', () =>
 		// The live region keeps its ID, and its builders
 		const live = (await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas`)).body;
 
-		assert.deepStrictEqual(live.regions.map((region) => [region.id, region.enabled, region.builderIds]), [[await testRegionId(universeId), false, [bea.playerId]]]);
+		assert.deepStrictEqual(live.regions
+			.filter((region) => (region.name === TEST_REGION_NAME))
+			.map((region) => [region.id, region.enabled, region.builderIds]), [[await testRegionId(universeId), false, [bea.playerId]]]);
 	});
 });

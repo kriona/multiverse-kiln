@@ -71,17 +71,17 @@ describe('Saving editor changes', () =>
 	it('saves changes in order, letting later ones name what earlier ones made', async () =>
 	{
 		const universeId = await createUniverse(ada);
-		const { lobbyAreaId } = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+		const { startingAreaId } = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 
-		assert.ok(lobbyAreaId);
+		assert.ok(startingAreaId);
 
 		const worldId = await worldRegionId(ada, universeId);
 		const ids = await saveAll(ada, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },
 			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', defaultTileId: 'new:lava', parents: [{ kind: 'region', id: worldId }] } },
 			{ kind: 'createArea', ref: 'new:grotto', area: { name: 'Grotto', parents: [{ kind: 'area', id: 'new:cave' }] } },
-			{ kind: 'editCells', areaId: lobbyAreaId, changes: [[0, 0, 'new:lava']] },
-			{ kind: 'saveLink', areaId: lobbyAreaId, column: 1, row: 0, target: { targetAreaId: 'new:cave', targetColumn: 0, targetRow: 0, mode: 'automatic', requiresWholeGroup: false } }
+			{ kind: 'editCells', areaId: startingAreaId, changes: [[0, 0, 'new:lava']] },
+			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: 'new:cave', targetColumn: 0, targetRow: 0, mode: 'automatic', requiresWholeGroup: false } }
 		]);
 		const tileId = ids['new:lava'];
 		const caveId = ids['new:cave'];
@@ -92,11 +92,11 @@ describe('Saving editor changes', () =>
 		const cave = (await send<{ defaultTileId: number }>(ada, 'GET', `/${universeId}/areas/${caveId}`)).body;
 		const grotto = (await send<{ parents: PlaceRef[] }>(ada, 'GET', `/${universeId}/areas/${ids['new:grotto']}`)).body;
 		const usage = (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).body;
-		const links = (await send<AreaLinkListPayload>(ada, 'GET', `/${universeId}/areas/${lobbyAreaId}/links`)).body;
+		const links = (await send<AreaLinkListPayload>(ada, 'GET', `/${universeId}/areas/${startingAreaId}/links`)).body;
 
 		assert.strictEqual(cave.defaultTileId, tileId);
 		assert.deepStrictEqual(grotto.parents, [{ kind: 'area', id: caveId }]);
-		assert.deepStrictEqual(usage.areas.map((area) => area.name), ['Lobby']);
+		assert.deepStrictEqual(usage.areas.map((area) => area.name), ['Starting Area']);
 		assert.deepStrictEqual(links.links.map((link) => link.targetAreaId), [caveId]);
 	});
 

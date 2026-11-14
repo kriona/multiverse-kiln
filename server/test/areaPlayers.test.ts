@@ -29,7 +29,8 @@ function loadedArea(areaId: string): LoadedArea
 			name: 'Field',
 			enabled: true,
 			indoors: false,
-			passageOfTime: 'flows_normally'
+			passageOfTime: 'flows_normally',
+			lobby: false
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },
@@ -41,7 +42,7 @@ function loadedArea(areaId: string): LoadedArea
 		loopsEastWest: false,
 		loopsNorthSouth: false,
 		links: [],
-		disabledTargetIds: new Set(),
+		closedTargetIds: new Set(),
 		tiles: [
 			{ id: 1, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, graphic: 'grass', uploadedGraphic: null, visionCost: 0, walkSeconds: 10 }
 		]
@@ -115,7 +116,7 @@ class FakeRoom
 		() => this.time
 	);
 
-	readonly players = new AreaPlayers(new LobbyState().players, this.cache, () => undefined, {
+	readonly players = new AreaPlayers(new LobbyState().players, this.cache, { lobby: false, fallback: () => undefined }, {
 		shared: false,
 		clockSeconds: () => 0
 	});

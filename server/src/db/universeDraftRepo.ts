@@ -409,6 +409,7 @@ export async function startDraft(universeId: string, executor: Executor): Promis
 
 	await copyRows(executor, universeDrafts, sql`${universes} AS src WHERE src.id = ${universeId}`, {
 		universe_id: sql`src.id`,
+		lobby_region_id: sql`NULL`,
 		lobby_area_id: sql`NULL`,
 		starting_area_id: sql`NULL`
 	}, ['created_at']);
@@ -469,7 +470,7 @@ export async function startDraft(universeId: string, executor: Executor): Promis
 		await copyRows(executor, table, sql`${table} AS src WHERE ${live}`, values);
 	}
 
-	await executor.execute(sql`UPDATE ${universeDrafts} AS d SET lobby_area_id = ${draftIdOf(areas, universeId, sql`u.lobby_area_id`)}, starting_area_id = ${draftIdOf(areas, universeId, sql`u.starting_area_id`)} FROM ${universes} AS u WHERE d.universe_id = ${universeId} AND u.id = ${universeId}`);
+	await executor.execute(sql`UPDATE ${universeDrafts} AS d SET lobby_region_id = ${draftIdOf(regions, universeId, sql`u.lobby_region_id`)}, lobby_area_id = ${draftIdOf(areas, universeId, sql`u.lobby_area_id`)}, starting_area_id = ${draftIdOf(areas, universeId, sql`u.starting_area_id`)} FROM ${universes} AS u WHERE d.universe_id = ${universeId} AND u.id = ${universeId}`);
 }
 
 /**
@@ -609,7 +610,7 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 	await executor.execute(sql`UPDATE ${universes} AS u SET ${sql.join(settingNames.map((name) => sql`${sql.identifier(name)} = ${columnOf('d', name)}`), sql`, `)} FROM ${universeDrafts} AS d WHERE u.id = ${universeId} AND d.universe_id = ${universeId}`);
 
 	// Every reference to a draft row now points at the live row it was copied from
-	for (const { table, column, target } of [...REFERENCES, { table: universes, column: 'lobby_area_id', target: areas }, { table: universes, column: 'starting_area_id', target: areas }])
+	for (const { table, column, target } of [...REFERENCES, { table: universes, column: 'lobby_region_id', target: regions }, { table: universes, column: 'lobby_area_id', target: areas }, { table: universes, column: 'starting_area_id', target: areas }])
 	{
 		await executor.execute(sql`UPDATE ${table} SET ${sql.identifier(column)} = m.origin_id FROM ${target} AS m WHERE ${table}.${sql.identifier(column)} = m.id AND m.universe_id = ${universeId} AND m.draft AND m.origin_id IS NOT NULL`);
 	}

@@ -101,6 +101,25 @@ export interface RoomVision
 }
 
 /**
+ * Which areas a room's players walk: a lobby walks only the lobby areas (those below the lobby region),
+ * and a group's room only the others, so a link or evacuation across the lobby region's edge takes no one
+ */
+export interface RoomSide
+{
+	/**
+	 * Whether the room is a lobby
+	 */
+	lobby: boolean;
+
+	/**
+	 * Where players go when the area they are in is deleted or leaves the room's side of the edge
+	 *
+	 * @return The place, or undefined when there is nowhere to go
+	 */
+	fallback(): PlayerPosition | undefined;
+}
+
+/**
  * A player leaving the room, from AreaPlayers.leave()
  */
 export interface LeftPlayer
@@ -256,11 +275,12 @@ export class AreaPlayers
 	/**
 	 * @param players The room's synced players, which this adds to, moves and removes
 	 * @param areas The room's areas
-	 * @param fallbackAreaId The area players go to when the area they are in is deleted
+	 * @param side Which side of the lobby region's edge the room's players walk, and where they go when
+	 * their area is deleted or leaves that side
 	 * @param vision How the room's players see
 	 * @param wholeGroupLinks How links that require the whole group work, in a group's room
 	 */
-	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly fallbackAreaId: () => string | undefined, private readonly vision: RoomVision, private readonly wholeGroupLinks?: WholeGroupLinks)
+	constructor(private readonly players: MapSchema<Player>, private readonly areas: AreaCache, private readonly side: RoomSide, private readonly vision: RoomVision, private readonly wholeGroupLinks?: WholeGroupLinks)
 	{
 	}
 
@@ -714,7 +734,7 @@ export class AreaPlayers
 
 		if (link?.mode === 'manual')
 		{
-			this.takeLinkFrom(playerId, link);
+			this.takeLinkFrom(playerId, link, area);
 		}
 	}
 
@@ -882,7 +902,7 @@ export class AreaPlayers
 
 			if (link)
 			{
-				this.takeLinkFrom(playerId, link);
+				this.takeLinkFrom(playerId, link, area);
 			}
 		}
 
@@ -1034,7 +1054,8 @@ export class AreaPlayers
 	/**
 	 * Reads an area again after its settings, bounds, links or tiles changed. Players its new bounds no
 	 * longer hold are moved onto the nearest free cell inside them, and everyone in it is sent the area
-	 * again. Players in an area that has been deleted go to the fallback area
+	 * again. Players in an area that has been deleted, or has left the room's side of the lobby region's
+	 * edge, go to the fallback place
 	 *
 	 * @param areaId The area's ID
 	 * @param keepChunks Whether only the tiles changed, so the loaded chunks are still right
@@ -1059,7 +1080,7 @@ export class AreaPlayers
 		const area = await this.areas.reload(areaId, keepChunks);
 		const playerIds = this.playersIn(areaId).filter((playerId) => !this.travelling.has(playerId));
 
-		if (!area)
+		if (!area || (area.loaded.area.lobby !== this.side.lobby))
 		{
 			this.sendToFallback(playerIds);
 			return;
@@ -1151,15 +1172,16 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Sends players to the center of the fallback area, for when their area has been deleted
+	 * Sends players to the fallback place, for when their area has been deleted or has left the room's
+	 * side of the lobby region's edge
 	 *
 	 * @param playerIds The players
 	 */
 	private sendToFallback(playerIds: string[]): void
 	{
-		const fallbackAreaId = this.fallbackAreaId();
+		const fallback = this.side.fallback();
 
-		if (fallbackAreaId === undefined)
+		if (fallback === undefined)
 		{
 			return;
 		}
@@ -1169,9 +1191,9 @@ export class AreaPlayers
 			this.travel(playerId, {
 				column: 0,
 				row: 0,
-				targetAreaId: fallbackAreaId,
-				targetColumn: 0,
-				targetRow: 0,
+				targetAreaId: fallback.areaId,
+				targetColumn: fallback.column,
+				targetRow: fallback.row,
 				mode: 'automatic',
 				requiresWholeGroup: false
 			});
@@ -1180,13 +1202,20 @@ export class AreaPlayers
 
 	/**
 	 * Sends a player through a link they stand on. A link that requires the whole group sends every
-	 * member of the group with them, or nobody while the group isn't together
+	 * member of the group with them, or nobody while the group isn't together. A link nobody can go
+	 * through, to a disabled area or across the lobby region's edge, takes nobody
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link
+	 * @param area The area the link is in
 	 */
-	private takeLinkFrom(playerId: string, link: AreaLink): void
+	private takeLinkFrom(playerId: string, link: AreaLink, area: ActiveArea): void
 	{
+		if (area.loaded.closedTargetIds.has(link.targetAreaId))
+		{
+			return;
+		}
+
 		if (!link.requiresWholeGroup || !this.wholeGroupLinks)
 		{
 			this.travel(playerId, link);
@@ -1249,7 +1278,8 @@ export class AreaPlayers
 	}
 
 	/**
-	 * Moves a travelling player into the area their link leads to, on the free cell nearest its target
+	 * Moves a travelling player into the area their link leads to, on the free cell nearest its target.
+	 * Nobody arrives in an area across the lobby region's edge from the room's side
 	 *
 	 * @param playerId The player's ID
 	 * @param link The link they took
@@ -1266,7 +1296,7 @@ export class AreaPlayers
 
 		const player = this.players.get(playerId);
 
-		if (!player || !target || (!target.loaded.area.enabled && !intoDisabled))
+		if (!player || !target || (!target.loaded.area.enabled && !intoDisabled) || (target.loaded.area.lobby !== this.side.lobby))
 		{
 			return;
 		}

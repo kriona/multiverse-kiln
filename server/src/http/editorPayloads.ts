@@ -285,6 +285,7 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 	lobbyPassageOfTime: z.enum(LOBBY_PASSAGES_OF_TIME).optional(),
 	lobbyDayHours: z.number().int().min(MIN_LOBBY_DAY_HOURS).max(MAX_LOBBY_DAY_HOURS).optional(),
 	lobbyFaerieMorning: z.enum(FAERIE_MORNINGS).nullable().optional(),
+	lobbyRegionId: z.uuid().nullable().optional(),
 	lobbyAreaId: z.uuid().nullable().optional(),
 	lobbyColumn: cellCoordinate.optional(),
 	lobbyRow: cellCoordinate.optional(),

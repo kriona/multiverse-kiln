@@ -352,7 +352,8 @@ describe('importing a universe', () =>
 
 	/**
 	 * Kilnhaven: a universe translated into French, with a cave painted with a tile of its own drawn with
-	 * an uploaded tileset, a link from the lobby into it, an item, and a race starting in the cave with it
+	 * an uploaded tileset, a link from the starting area into it, an item, and a race starting in the cave
+	 * with it
 	 */
 	beforeEach(async () =>
 	{
@@ -360,16 +361,16 @@ describe('importing a universe', () =>
 		kilnhavenId = await createUniverse(ada, 'Kilnhaven');
 		caveId = await createArea(ada, kilnhavenId, { name: 'Cave' });
 
-		const { lobbyAreaId } = (await send<EditableUniverse>(ada, 'GET', `/${kilnhavenId}`)).body;
+		const { startingAreaId } = (await send<EditableUniverse>(ada, 'GET', `/${kilnhavenId}`)).body;
 
-		assert.ok(lobbyAreaId);
+		assert.ok(startingAreaId);
 
 		const ids = await saveAll(ada, kilnhavenId, [
 			{ kind: 'universe', update: { translationLanguages: ['fr'], longDescription: 'A small town.' } },
 			{ kind: 'uploadTileGraphic', ref: 'new:mossy', upload: { name: 'Mossy', format: 'dualGrid', drawOrder: 35, image: await solidPng(), rightsConfirmed: true } },
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, uploadedGraphicId: 'new:mossy' } },
 			{ kind: 'editCells', areaId: caveId, changes: [[0, 0, 'new:moss'], [12, -3, VOID_CELL]] },
-			{ kind: 'saveLink', areaId: lobbyAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
+			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
 			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', type: 'torch', enabled: true } },
 			{ kind: 'saveTranslatorNote', text: { kind: 'area', thingId: caveId, field: 'name' }, note: 'A dark place' },
 			{ kind: 'saveNoTranslation', text: { kind: 'universe', thingId: kilnhavenId, field: 'name' }, noTranslation: true }
@@ -414,7 +415,8 @@ describe('importing a universe', () =>
 		const market = exported.areas.find((area) => (area.name === 'Market'));
 
 		assert.ok(capitol && market);
-		assert.deepStrictEqual(exported.regions?.map((region) => region.name), ['Capitol City', 'World']);
+		assert.deepStrictEqual(exported.regions?.map((region) => region.name), ['Capitol City', 'Lobby', 'World']);
+		assert.strictEqual(exported.manifest.settings?.lobbyRegionId, exported.regions.find((region) => (region.name === 'Lobby'))?.id);
 		assert.deepStrictEqual(capitol.parents, [{ kind: 'region', id: worldId }]);
 		assert.strictEqual(capitol.passageOfTime, 'always_noon');
 		assert.strictEqual(capitol.fogOfWar, false);
@@ -438,7 +440,11 @@ describe('importing a universe', () =>
 		const importedMarket = draft.areas.find((area) => (area.name === 'Market'));
 
 		assert.ok(importedCapitol && importedWorld && importedMarket);
-		assert.deepStrictEqual(draft.regions.map((region) => region.name), ['Capitol City', 'World']);
+		assert.deepStrictEqual(draft.regions.map((region) => region.name), ['Capitol City', 'Lobby', 'World']);
+
+		// The lobby region is the file's, matched to the draft's own Lobby region
+		assert.strictEqual(draft.lobbyRegionId, draft.regions.find((region) => (region.name === 'Lobby'))?.id);
+		assert.strictEqual(draft.areas.find((area) => (area.id === draft.lobbyAreaId))?.resolved.lobby, true);
 		assert.deepStrictEqual(importedCapitol.parents, [{ kind: 'region', id: importedWorld.id }]);
 		assert.deepStrictEqual(importedMarket.parents, [{ kind: 'region', id: importedCapitol.id }]);
 		assert.strictEqual(importedMarket.resolved.passageOfTime, 'always_noon');
@@ -473,23 +479,26 @@ describe('importing a universe', () =>
 
 		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
 
-		const { manifest, races, tilesets, items, areas, translations } = await draftOf(ada, otherId);
+		const { manifest, races, tilesets, items, areas, regions, translations } = await draftOf(ada, otherId);
 		const cave = areas.find((area) => (area.name === 'Cave'));
 		const lobby = areas.find((area) => (area.name === 'Lobby'));
+		const start = areas.find((area) => (area.name === 'Starting Area'));
 		const tile = tilesets?.tiles.find((each) => (each.name === 'Moss'));
 		const lantern = items?.find((item) => (item.name === 'Lantern'));
 		const race = races?.find((each) => (each.name === 'Molefolk'));
+		const lobbyRegion = regions?.find((region) => (region.name === 'Lobby'));
 
 		assert.deepStrictEqual(areas.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
-		assert.ok(cave && lobby && tile && lantern && race);
+		assert.ok(cave && lobby && start && tile && lantern && race && lobbyRegion);
 		assert.strictEqual(manifest.settings?.name, 'Kilnhaven (copy)');
 		assert.strictEqual(manifest.settings?.longDescription, 'A small town.');
 		assert.strictEqual(manifest.settings?.lobbyAreaId, lobby.id);
+		assert.strictEqual(manifest.settings?.lobbyRegionId, lobbyRegion.id);
 		assert.strictEqual(cellAt(cave, 0, 0), tile.id);
 		assert.strictEqual(cellAt(cave, 12, -3), VOID_CELL);
 		assert.strictEqual(tilesets?.tileGraphics.length, 1);
 		assert.strictEqual(tile.uploadedGraphicId, tilesets.tileGraphics[0]?.id);
-		assert.deepStrictEqual(lobby.links.map((link) => [link.column, link.row, link.targetAreaId, link.requiresWholeGroup]), [[1, 0, cave.id, true]]);
+		assert.deepStrictEqual(start.links.map((link) => [link.column, link.row, link.targetAreaId, link.requiresWholeGroup]), [[1, 0, cave.id, true]]);
 		assert.deepStrictEqual(race.startingItems, [{ itemId: lantern.id, quantity: 2 }]);
 		assert.strictEqual(race.startingAreaId, cave.id);
 		assert.deepStrictEqual(translations?.translatorNotes, [{ kind: 'area', thingId: cave.id, field: 'name', note: 'A dark place' }]);
