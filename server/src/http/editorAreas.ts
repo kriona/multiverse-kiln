@@ -289,12 +289,13 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
 	await checkOwnSettings(context, updated);
 
 	// The database refuses an area that loops with faerie time stored for it, though the save may yet
-	// change its time, so the stored time is set aside until its settings are worked out again
+	// change its time, so the stored time is set aside until its settings are worked out again. An area
+	// with faerie time is outside the lobby, which must have a time stored, so it stores normal time
 	const stored = context.places.storedOf(area.id);
 
 	if ((updated.loopsEastWest || updated.loopsNorthSouth) && (stored?.passageOfTime === 'faerie'))
 	{
-		const setAside = { ...stored, passageOfTime: null, faerieMorning: null };
+		const setAside = { ...stored, passageOfTime: 'flows_normally' as const, faerieMorning: null };
 
 		await storeResolvedSettings(new Map([[area.id, setAside]]), transaction);
 		context.places.noteStored(area.id, setAside);

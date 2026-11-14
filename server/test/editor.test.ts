@@ -1582,6 +1582,16 @@ describe('World editor API', () =>
 			assert.strictEqual((await updateArea(ada, universeId, areaId, { defaultTileId: theirTileId })).status, 400);
 		});
 
+		it('loops an area with faerie time once the same save takes faerie off, and refuses it while faerie stays', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const areaId = await createArea(ada, universeId, { passageOfTime: 'faerie', faerieMorning: 'east' });
+
+			assert.strictEqual((await updateArea(ada, universeId, areaId, { loopsEastWest: true })).status, 409);
+			assert.strictEqual((await updateArea(ada, universeId, areaId, { passageOfTime: 'flows_normally', faerieMorning: null, loopsEastWest: true })).status, 200);
+			assert.strictEqual((await send<EditorArea>(ada, 'GET', `/${universeId}/areas/${areaId}`)).body.loopsEastWest, true);
+		});
+
 		it('changes an area\'s light level', async () =>
 		{
 			const universeId = await createUniverse(ada);
