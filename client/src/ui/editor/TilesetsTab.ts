@@ -1,4 +1,4 @@
-import { canEditTilesOpen, canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, mergeTileChanges, placeKey, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type NewRef, type PlaceTileChange, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { canEditTilesOpen, canEditWorld, defineMessages, IMPASSABLE_WALK_SECONDS, loadedFrom, MAX_TILES_PER_PAGE, mergeTileChanges, placeKey, TILE_SORT_COLUMNS, TILE_USED_IN, tileUsedIn, type EditableUniverse, type EditorChange, type EditorTile, type LoadedSettings, type NewRef, type PlaceRef, type PlaceTileChange, type TileChangeSettings, type TileListPayload, type TileListQuery, type TileSettings, type TileSortColumn, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { formatDuration, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -12,7 +12,7 @@ import { editorMessages } from './editorMessages';
 import { newRef, numberRef, type EditorSave, type SavedIds, type SaveRefusal } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import { combineChanges, type SavableTab } from './SaveBar';
-import { describeRefusedChange, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
+import { describeRefusedChange, isNewId, joinTags, markStagedRow, StagedAdditions, StagedChanges, StagedDeletions, stagedPage, stagedTag, stagedView, type StagedChange, type StagedState } from './stagedChanges';
 import { isNewPlace } from './stagedAreas';
 import { TileDialog } from './TileDialog';
 import type { StagedUpload } from './TileGraphicDialog';
@@ -546,6 +546,9 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			});
 		}
 
+		// The new tiles added earlier in the save, which the changes after them can name
+		const created = new Set<number>();
+
 		this.collected = {
 			uploads: uploads.map(({ id }) => id),
 			tiles: this.staged.collect(save, (change) => this.tileChange(change), (change, refusal) =>
@@ -555,7 +558,12 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 				showMessage(this.error, describeRefusedChange(change, refusal, (tile ? tileName(tile, universe.ruleset) : ''), !tile?.custom));
 			}, (change) =>
 			{
-				this.collectPlaceTiles(save, change);
+				this.collectPlaceTiles(save, change, created);
+
+				if (change.kind === 'create')
+				{
+					created.add(change.id);
+				}
 			}),
 			deletions: this.uploadsToDelete.list()
 		};
@@ -590,14 +598,29 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 	 * server works the areas' settings out again as the tile is deleted, so they must have another first.
 	 * Places the Areas tab adds take theirs when it adds them
 	 *
+	 * A saved place the Areas tab's unsaved changes take off a deleted tile isn't one the dialog replacing
+	 * it lists, so it takes the default tile those changes give it here, ahead of the Areas tab's own change
+	 * saving the same. A new tile added later in the save can't be named yet, so a place taking one isn't
+	 * sent here
+	 *
 	 * @param save The save
 	 * @param change The tile's change
+	 * @param created The new tiles added earlier in the save
 	 */
-	private collectPlaceTiles(save: EditorSave, change: StagedChange<TileSettings>): void
+	private collectPlaceTiles(save: EditorSave, change: StagedChange<TileSettings>, created: ReadonlySet<number>): void
 	{
-		const entry = this.placeTiles.get(change.id);
+		if (change.kind === 'create')
+		{
+			return;
+		}
 
-		if (!entry || (change.kind === 'create'))
+		const entry = this.placeTiles.get(change.id);
+		const chosen = ((entry === undefined) ? [] : mergeTileChanges(entry.kinds, entry.deleted).filter(({ place }) => !isNewPlace(place)));
+		const chosenKeys = new Set(chosen.map(({ place }) => placeKey(place)));
+		const staged = ((change.kind === 'remove') ? [...(this.places?.stagedDefaultTiles().values() ?? [])] : []);
+		const taken = staged.filter(({ place, loaded, defaultTileId }) => ((loaded === change.id) && (defaultTileId !== change.id) && !chosenKeys.has(placeKey(place)) && ((defaultTileId === null) || !isNewId(defaultTileId) || created.has(defaultTileId))));
+
+		if ((chosen.length === 0) && (taken.length === 0))
 		{
 			return;
 		}
@@ -615,18 +638,23 @@ export class TilesetsTab implements SavableTab, FollowsOtherSaves
 			}));
 		};
 
-		for (const { place, defaultTileId } of mergeTileChanges(entry.kinds, entry.deleted))
+		const addPlace = (place: PlaceRef, defaultTileId: number | null, loaded: LoadedSettings | undefined): void =>
 		{
 			const update = { defaultTileId: ((defaultTileId === null) ? null : numberRef('tile', defaultTileId)) };
 
-			if (isNewPlace(place))
-			{
-				continue;
-			}
-
 			save.add(((place.kind === 'region')
-				? { kind: 'updateRegion', regionId: place.id, update }
-				: { kind: 'updateArea', areaId: place.id, update }), onRefused);
+				? { kind: 'updateRegion', regionId: place.id, update, loaded }
+				: { kind: 'updateArea', areaId: place.id, update, loaded }), onRefused);
+		};
+
+		for (const { place, defaultTileId } of chosen)
+		{
+			addPlace(place, defaultTileId, undefined);
+		}
+
+		for (const { place, loaded, defaultTileId } of taken)
+		{
+			addPlace(place, defaultTileId, { defaultTileId: loaded });
 		}
 	}
 

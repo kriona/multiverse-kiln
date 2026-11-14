@@ -21,12 +21,20 @@ export interface TilePlaces
 	loadPlaces(): Promise<void>;
 
 	/**
-	 * The regions and areas as the Areas tab's changes leave them, with the tiles' kinds as the Tilesets
-	 * tab's changes leave them
+	 * The regions and areas as the Areas tab's changes leave them, with the region or area open as its
+	 * editor shows it and the tiles' kinds as the Tilesets tab's changes leave them
 	 *
 	 * @return The world
 	 */
-	world(): PlaceWorld;
+	shownWorld(): PlaceWorld;
+
+	/**
+	 * The default tiles the Areas tab's unsaved changes give saved regions and areas: the region or area
+	 * open, and the areas left with changes to their default tile
+	 *
+	 * @return Each place's default tile, by placeKey()
+	 */
+	stagedDefaultTiles(): ReadonlyMap<string, StagedDefaultTile>;
 
 	/**
 	 * Names the regions and areas
@@ -54,6 +62,26 @@ export interface TilePlaces
 	 * Shows the regions and areas as a save left them, once it gave some of them other default tiles
 	 */
 	placesSaved(): Promise<void>;
+}
+
+/**
+ * The default tile the Areas tab's unsaved changes give a saved region or area
+ */
+export interface StagedDefaultTile
+{
+	place: PlaceRef;
+
+	/**
+	 * The default tile it sets as loaded, which the Areas tab's change compares with what is saved, or
+	 * null when it inherits one
+	 */
+	loaded: number | null;
+
+	/**
+	 * The default tile the Areas tab's change saves (negative for a tile not saved yet), or null to
+	 * inherit one
+	 */
+	defaultTileId: number | null;
 }
 
 /**
@@ -234,7 +262,7 @@ export class TileReplaceDialog
 			return;
 		}
 
-		const world = (before ? before(places.world()) : places.world());
+		const world = (before ? before(places.shownWorld()) : places.shownWorld());
 		const losing = new DefaultTileLoss(world, tile.id, loss);
 
 		if (losing.places.length === 0)

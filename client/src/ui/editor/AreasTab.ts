@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -24,7 +24,7 @@ import { RegionEditorView } from './RegionEditorView';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { isNewAreaId, isNewPlace, StagedAreas, withoutParent } from './stagedAreas';
 import { CheckedChanges, labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
-import type { TilePlaces } from './TileReplaceDialog';
+import type { StagedDefaultTile, TilePlaces } from './TileReplaceDialog';
 
 /**
  * Text the tab shows in more than one place (see src/localization.ts)
@@ -3394,7 +3394,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			save.add({ kind: 'deleteRegion', regionId }, onRefused(regionFallback));
 		}
 
-		this.regionEditor.collect(save, regionCollected, refParents, (tileId) => ((regionCollected === undefined) ? null : this.defaultTileRef({ kind: 'region', id: regionCollected.id }, tileId)));
+		this.regionEditor.collect(save, regionCollected, refParents, (tileId) => ((regionCollected === undefined) ? null : this.defaultTileRef({ kind: 'region', id: regionCollected.id }, tileId)), (place, loaded, update) => this.loadedSettings(place, loaded, update));
 
 		let saved: EditorArea | undefined;
 
@@ -3438,7 +3438,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				kind: 'updateArea',
 				areaId,
 				update,
-				loaded: loadedFor(kept.loaded, update)
+				loaded: this.loadedSettings({ kind: 'area', id: areaId }, kept.loaded, update)
 			}, onRefused(keptFallback, {
 				area: areaName(areaId)
 			}));
@@ -3459,7 +3459,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 					kind: 'updateArea',
 					areaId: area.id,
 					update,
-					loaded: loadedFor((this.areaLoaded ?? area), update)
+					loaded: this.loadedSettings({ kind: 'area', id: area.id }, (this.areaLoaded ?? area), update)
 				}, onRefused({
 					id: 'editor.area.saveFailed',
 					defaultMessage: 'Could not save the area.',
@@ -3704,6 +3704,88 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const tileId = this.defaultTileFor(place, defaultTileId);
 
 		return(((tileId === null) ? null : numberRef('tile', tileId)));
+	}
+
+	/**
+	 * The settings a change to a saved region or area sends as loaded (loadedFor()). When the Tilesets
+	 * tab's changes give it another default tile earlier in the same save, its default tile is left out,
+	 * so the change's own default tile is saved over that one rather than conflicting with it
+	 *
+	 * @param place The region or area
+	 * @param loaded It as loaded
+	 * @param update The settings the change sends
+	 * @return The loaded settings, or undefined
+	 */
+	private loadedSettings(place: PlaceRef, loaded: object, update: object): LoadedSettings | undefined
+	{
+		const settings = loadedFor(loaded, update);
+
+		if ((settings === undefined) || !this.stagedTiles.defaultTileChanges().has(placeKey(place)))
+		{
+			return(settings);
+		}
+
+		return(Object.fromEntries(Object.entries(settings).filter(([key]) => (key !== 'defaultTileId'))));
+	}
+
+	/**
+	 * The regions and areas as the tab's changes leave them, with the region or area open as its editor
+	 * shows it, for the dialog replacing a default tile
+	 *
+	 * @return The world
+	 */
+	shownWorld(): PlaceWorld
+	{
+		const override = (this.regionEditor.shownOverride() ?? ((this.area === undefined) ? undefined : this.areaOverride()));
+
+		return(this.world(override));
+	}
+
+	/**
+	 * The default tiles the tab's unsaved changes give saved regions and areas, as the save sends them: the
+	 * region open, the area open, and the areas left with changes to their default tile. The places that
+	 * will be deleted are left out
+	 *
+	 * @return Each place's default tile, by placeKey()
+	 */
+	stagedDefaultTiles(): ReadonlyMap<string, StagedDefaultTile>
+	{
+		const staged = new Map<string, StagedDefaultTile>();
+		const add = (place: PlaceRef, loaded: number | null, shown: number | null): void =>
+		{
+			if (!isNewPlace(place) && !this.staged.isPlaceDeleted(place))
+			{
+				staged.set(placeKey(place), {
+					place,
+					loaded,
+					defaultTileId: this.defaultTileFor(place, shown)
+				});
+			}
+		};
+
+		for (const [areaId, kept] of this.keptSettings)
+		{
+			if (kept.changes.defaultTileId !== undefined)
+			{
+				add({ kind: 'area', id: areaId }, kept.loaded.defaultTileId, kept.changes.defaultTileId);
+			}
+		}
+
+		const area = this.area;
+
+		if (area && this.areaChanges.hasUnsavedChanges())
+		{
+			add({ kind: 'area', id: area.id }, (this.areaLoaded ?? area).defaultTileId, this.settings.read().defaultTileId);
+		}
+
+		const region = this.regionEditor.changedDefaultTile();
+
+		if (region)
+		{
+			add(region.place, region.loaded, region.shown);
+		}
+
+		return(staged);
 	}
 
 	/**

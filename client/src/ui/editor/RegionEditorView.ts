@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, loadedFor, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type MessageValues, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type LoadedSettings, type MessageValues, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -200,6 +200,45 @@ export class RegionEditorView
 			id: this.region.id,
 			name: ((name === '') ? this.region.name : name),
 			builderIds: this.builderIds
+		});
+	}
+
+	/**
+	 * The region open as its form shows it, unsaved changes included
+	 *
+	 * @return The override, or undefined when no region is open
+	 */
+	shownOverride(): PlaceOverride | undefined
+	{
+		return((this.view.hidden ? undefined : this.override()));
+	}
+
+	/**
+	 * The default tile of the region open, as loaded and as its form shows it, while it is a saved region
+	 * with unsaved changes that a save sends
+	 *
+	 * @return The region and its default tiles, or undefined when a save sends none
+	 */
+	changedDefaultTile(): { place: PlaceRef; loaded: number | null; shown: number | null } | undefined
+	{
+		const region = this.region;
+
+		if (!region || this.view.hidden || !this.changes.hasUnsavedChanges())
+		{
+			return(undefined);
+		}
+
+		const place: PlaceRef = { kind: 'region', id: region.id };
+
+		if (isNewPlace(place) || this.host.staged.isPlaceDeleted(place))
+		{
+			return(undefined);
+		}
+
+		return({
+			place,
+			loaded: region.defaultTileId,
+			shown: this.settings.read().defaultTileId
 		});
 	}
 
@@ -542,8 +581,10 @@ export class RegionEditorView
 	 * @param region The region as readForSave() read it
 	 * @param refParents How the save names its parents
 	 * @param defaultTileRef How the save names the region's default tile, from the one its form shows
+	 * @param loadedSettings The settings the region's change sends as loaded, from the region as loaded
+	 * and the change's settings
 	 */
-	collect(save: EditorSave, region: EditorRegion | undefined, refParents: RefParents, defaultTileRef: (tileId: number | null) => NumberRef | null): void
+	collect(save: EditorSave, region: EditorRegion | undefined, refParents: RefParents, defaultTileRef: (tileId: number | null) => NumberRef | null, loadedSettings: (place: PlaceRef, loaded: EditorRegion, update: RegionChangeUpdate) => LoadedSettings | undefined): void
 	{
 		const loadedRegion = this.region;
 
@@ -580,7 +621,7 @@ export class RegionEditorView
 				kind: 'updateRegion',
 				regionId: region.id,
 				update,
-				loaded: loadedFor(loadedRegion, update)
+				loaded: loadedSettings({ kind: 'region', id: region.id }, loadedRegion, update)
 			}, (refusal) =>
 			{
 				this.showRefusal(refusal, fallback);
