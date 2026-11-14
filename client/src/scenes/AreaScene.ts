@@ -9,7 +9,7 @@ import type { AreaConnection, AreaRoom, GameRoom } from '../network/serverConnec
 import { PositionBuffer, type Point } from '../rendering/PositionBuffer';
 import { AreaRenderer } from '../rendering/AreaRenderer';
 import { bodyFontFamily } from '../rendering/canvasFonts';
-import { loadUploadedTileGraphics, preloadTileGraphics } from '../rendering/tileGraphics';
+import { loadUploadedTileGraphics, preloadTileGraphics, tileGraphicImage } from '../rendering/tileGraphics';
 import type { CellMaskShader } from '../rendering/CellMaskShader';
 import { createRoundedFog } from '../rendering/RoundedFog';
 import { createUnexploredPaper, preloadUnexploredPaper } from '../rendering/UnexploredPaper';
@@ -251,6 +251,16 @@ interface DrawnNeighbor
 	slot: SeamSlot;
 	renderer: AreaRenderer;
 	night: Phaser.GameObjects.Rectangle;
+
+	/**
+	 * What the renderer was made from: the area as the scene holds it, its chunks, where it is drawn in the
+	 * world, and its tiles drawn with graphics then (see loadedGraphics()), so a renderer still drawing the
+	 * same is kept when the neighbors are drawn again
+	 */
+	source: AreaPayload;
+	chunks: ReadonlyMap<string, readonly number[]>;
+	offset: { x: number; y: number };
+	graphics: string;
 }
 
 /**
@@ -1169,7 +1179,7 @@ export class AreaScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws the player's area and the neighboring areas around it afresh, where the origin puts them, each
+	 * Draws the player's area afresh and the neighboring areas around it, where the origin puts them, each
 	 * with a darkening of its own when the area has neighbors
 	 */
 	private drawArea(): void
@@ -1184,18 +1194,16 @@ export class AreaScene extends Phaser.Scene
 	}
 
 	/**
-	 * Draws the neighboring areas the scene knows around the player's area, in place of those drawn before
+	 * Draws the neighboring areas the scene knows around the player's area, in place of those drawn before.
+	 * A neighbor drawn before from the same area and chunks, in the same place in the world, with the same
+	 * graphics loaded, keeps its renderer, which would draw it the same
 	 */
 	private drawNeighbors(): void
 	{
-		this.clearNeighbors();
+		const before = this.drawnNeighbors;
+		const wanted: (Omit<DrawnNeighbor, 'renderer' | 'night'> & { kept: DrawnNeighbor | undefined })[] = [];
 
-		if (!this.hasSeams())
-		{
-			return;
-		}
-
-		for (const slot of seamSlots(this.seamLookup, this.area.areaId))
+		for (const slot of (this.hasSeams() ? seamSlots(this.seamLookup, this.area.areaId) : []))
 		{
 			const neighbor = ((slot.areaId === this.area.areaId) ? { payload: this.area, chunks: this.chunks } : this.neighbors.get(slot.areaId));
 
@@ -1204,15 +1212,64 @@ export class AreaScene extends Phaser.Scene
 				continue;
 			}
 
+			const offset = this.worldOffset(slot.columnOffset, slot.rowOffset);
+			const graphics = this.loadedGraphics(neighbor.payload);
+			const index = before.findIndex((drawn) => ((drawn.source === neighbor.payload) && (drawn.chunks === neighbor.chunks) && (drawn.offset.x === offset.x) && (drawn.offset.y === offset.y) && (drawn.graphics === graphics)));
+			const kept = ((index >= 0) ? before.splice(index, 1)[0] : undefined);
+
+			wanted.push({
+				slot,
+				source: neighbor.payload,
+				chunks: neighbor.chunks,
+				offset,
+				graphics,
+				kept
+			});
+		}
+
+		// What isn't kept goes before anything is made, so no more renderers are held at once than are drawn
+		this.drawnNeighbors = before;
+		this.clearNeighbors();
+
+		for (const { slot, source, chunks, offset, graphics, kept } of wanted)
+		{
+			if (kept)
+			{
+				this.drawnNeighbors.push({
+					...kept,
+					slot
+				});
+				continue;
+			}
+
 			// Each place draws the area once, its own loops left to the places around it
-			const payload: AreaPayload = { ...neighbor.payload, loopsEastWest: false, loopsNorthSouth: false };
+			const payload: AreaPayload = { ...source, loopsEastWest: false, loopsNorthSouth: false };
 
 			this.drawnNeighbors.push({
 				slot,
-				renderer: new AreaRenderer(this, payload, neighbor.chunks, this.worldOffset(slot.columnOffset, slot.rowOffset)),
-				night: this.nightOver(payload.bounds, slot.columnOffset, slot.rowOffset)
+				renderer: new AreaRenderer(this, payload, chunks, offset),
+				night: this.nightOver(payload.bounds, slot.columnOffset, slot.rowOffset),
+				source,
+				chunks,
+				offset,
+				graphics
 			});
 		}
+	}
+
+	/**
+	 * Which of an area's tiles have graphics loaded to draw them with: a renderer made before more of them
+	 * arrived draws those tiles in their colors
+	 *
+	 * @param area The area
+	 * @return The tiles' IDs, joined
+	 */
+	private loadedGraphics(area: AreaPayload): string
+	{
+		return(area.tiles
+			.filter((tile) => (tileGraphicImage(this, tile) !== undefined))
+			.map((tile) => tile.id)
+			.join());
 	}
 
 	/**
