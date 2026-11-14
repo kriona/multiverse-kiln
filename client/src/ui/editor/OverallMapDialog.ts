@@ -20,6 +20,12 @@ const MIN_CELL_PIXELS = 0.25;
 const MAX_CELL_PIXELS = 4;
 
 /**
+ * The most areas whose cells load for the map at once: each loads a block of chunks at a time, so this is
+ * also the most requests for chunks the map has on their way
+ */
+const MAX_AREAS_LOADING = 4;
+
+/**
  * The room left around the areas on the map, in pixels, when an edge loops, for the arrows drawn
  * outside the edges that loop
  */
@@ -54,6 +60,22 @@ export interface OverallMapSource
 	 * Opens an area's editor
 	 */
 	open: (areaId: string) => void;
+}
+
+/**
+ * An area the map draws, with its button
+ */
+interface AreaToDraw
+{
+	/**
+	 * The area's button, which its cells are drawn on
+	 */
+	button: HTMLButtonElement;
+
+	/**
+	 * The area
+	 */
+	area: EditorArea;
 }
 
 /**
@@ -107,6 +129,7 @@ export class OverallMapDialog
 		const scale = Math.min(MAX_CELL_PIXELS, Math.max(MIN_CELL_PIXELS, Math.min(MAP_WIDTH / Math.max(layout.width, 1), MAP_HEIGHT / Math.max(layout.height, 1))));
 		const nameOf = (id: string): string => (source.area(id)?.name ?? id);
 		const buttons = new Map<string, HTMLButtonElement>();
+		const drawn: AreaToDraw[] = [];
 
 		// The ends of a row or column that loops, where walking off comes back on at its other end
 		const loops: { placement: MapPlacement; side: NeighborSide; targetId: string }[] = [];
@@ -169,9 +192,11 @@ export class OverallMapDialog
 
 			if (area)
 			{
-				void this.drawArea(version, button, area, source);
+				drawn.push({ button, area });
 			}
 		}
+
+		void this.drawAreas(version, drawn, source);
 
 		for (const seam of layout.seams)
 		{
@@ -338,6 +363,35 @@ export class OverallMapDialog
 		return(placements
 			.filter((each) => (((step.columns === 0) || (Math.sign(each.gridColumn - from.gridColumn) === step.columns)) && ((step.rows === 0) || (Math.sign(each.gridRow - from.gridRow) === step.rows)) && (each !== from)))
 			.sort((first, second) => (gridDistance(first, from) - gridDistance(second, from)))[0]);
+	}
+
+	/**
+	 * Draws the areas' cells on their buttons in the order given, loading MAX_AREAS_LOADING areas at once
+	 * at most, and starting no more once the dialog has closed or opened again
+	 *
+	 * @param version The dialog's version when it opened
+	 * @param areas The areas and their buttons
+	 * @param source What the map draws the areas from
+	 */
+	private async drawAreas(version: number, areas: readonly AreaToDraw[], source: OverallMapSource): Promise<void>
+	{
+		let next = 0;
+
+		/**
+		 * Draws the next area not yet started until none are left or the dialog's version changes
+		 */
+		const drawNext = async (): Promise<void> =>
+		{
+			while ((next < areas.length) && (version === this.version))
+			{
+				const { button, area } = areas[next];
+
+				next++;
+				await this.drawArea(version, button, area, source);
+			}
+		};
+
+		await Promise.all(Array.from({ length: MAX_AREAS_LOADING }, drawNext));
 	}
 
 	/**
