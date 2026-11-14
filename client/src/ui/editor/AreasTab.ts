@@ -2145,9 +2145,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private stageGrid(grid: ReadonlyMap<string, GridArea>): void
 	{
+		const savedNeighbors = this.savedNeighbors();
+
 		for (const [areaId, area] of grid)
 		{
-			const saved = (this.areas().find((each) => (each.id === areaId))?.neighbors ?? NO_NEIGHBORS);
+			const saved = (savedNeighbors.get(areaId) ?? NO_NEIGHBORS);
 
 			if (NEIGHBOR_SIDES.every((side) => (saved[side] === area.neighbors[side])))
 			{
@@ -2162,6 +2164,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		this.keptChanges.check();
 		this.settingsChanged();
 		this.areaEditor.showNeighbors();
+	}
+
+	/**
+	 * Every area's neighbors as areas() gives them, without the neighbors the tab staged
+	 *
+	 * @return The neighbors, by area ID
+	 */
+	private savedNeighbors(): Map<string, AreaNeighbors>
+	{
+		return(new Map(this.areas().map((area) => [area.id, area.neighbors])));
 	}
 
 	/**
@@ -3482,10 +3494,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		// Setting a neighbor sets both ways, so the change from the other side of a pair finds nothing to
 		// change. The grid leaves out the areas that are gone or will be deleted, and neighbors naming them
 		const grid = this.neighborGrid();
+		const savedNeighbors = this.savedNeighbors();
 
 		for (const areaId of this.stagedNeighbors.keys())
 		{
-			const before = (this.areas().find((each) => (each.id === areaId))?.neighbors ?? NO_NEIGHBORS);
+			const before = (savedNeighbors.get(areaId) ?? NO_NEIGHBORS);
 			const neighbors = grid.get(areaId)?.neighbors;
 
 			if (!neighbors)
