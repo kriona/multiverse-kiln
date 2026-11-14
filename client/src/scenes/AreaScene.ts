@@ -1147,6 +1147,7 @@ export class AreaScene extends Phaser.Scene
 	{
 		this.area = area;
 		this.chunks = chunks;
+		this.forgetUnplacedNeighbors();
 		this.manualLinks = new Set(area.links.filter((link) => (link.mode === 'manual')).map((link) => `${link.column},${link.row}`));
 
 		const vision = visionOf(area, this.chunks);
@@ -1176,6 +1177,26 @@ export class AreaScene extends Phaser.Scene
 				this.drawArea();
 			}
 		});
+	}
+
+	/**
+	 * Forgets the neighboring areas the scene holds that are in none of the places around the player's area,
+	 * such as one crossed out of two crossings ago. The room sends one again once it is in one of those
+	 * places near the player. Areas with neighbors are at least MIN_NEIGHBOR_AREA_SIDE cells each way, more
+	 * than the fog reaches past the area's edges, so every cell the scene looks up across a seam, to draw it
+	 * or to see it, is in one of those places
+	 */
+	private forgetUnplacedNeighbors(): void
+	{
+		const placed = new Set((this.hasSeams() ? seamSlots(this.seamLookup, this.area.areaId) : []).map((slot) => slot.areaId));
+
+		for (const areaId of [...this.neighbors.keys()])
+		{
+			if (!placed.has(areaId))
+			{
+				this.neighbors.delete(areaId);
+			}
+		}
 	}
 
 	/**
