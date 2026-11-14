@@ -1,7 +1,7 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
 import fillIcon from 'virtual:icon/ph:paint-bucket';
-import { areaFill, canPaintTile, carriedResizes, CHUNK_SIZE, chunkCoordinate, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, hasNeighbors, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_PREVIEW_CELLS, NO_NEIGHBORS, parseChunkKey, seamSides, seamSlots, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type NeighborGrid, type SeamLookup, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { areaFill, canPaintTile, carriedResizes, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, hasNeighbors, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_PREVIEW_CELLS, NO_NEIGHBORS, parseChunkKey, seamSides, seamSlots, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type NeighborGrid, type SeamLookup, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -129,6 +129,54 @@ interface OpenArea
 }
 
 /**
+ * An area the cell editor has open, or has left with changes not yet saved, and its changes (see Unsaved
+ * changes in STRUCTURE-OVERVIEW.md). The bounds of its area are its bounds as last saved, and those of its
+ * cells its size as shown
+ */
+interface AreaWork
+{
+	open: OpenArea;
+
+	/**
+	 * Its steps to undo and redo
+	 */
+	history: EditHistory;
+
+	/**
+	 * Each painted cell that differs from the server's copy, with its value now, by "column,row"
+	 */
+	unsaved: Map<string, CellChange>;
+
+	/**
+	 * The server's value of each cell in unsaved, by "column,row"
+	 */
+	savedValues: Map<string, number>;
+
+	/**
+	 * The cells other editors painted while the area was open, with the display name of the last to
+	 * paint each, whether they painted over painting here and the save that marked it (counted by
+	 * followedSaves), by "column,row"
+	 */
+	paintedByOthers: Map<string, { name: string; overPainting: boolean; save: number }>;
+
+	/**
+	 * The cells this window saved painting to while the area was open, by "column,row"
+	 */
+	paintedHere: Set<string>;
+
+	/**
+	 * Whether a smaller size is saved without asking about the links it cuts off: once the player agreed
+	 * to delete them, or Edit Size in another area carried this one to the size, after warning
+	 */
+	discardOnSave: boolean;
+
+	/**
+	 * Whether showing the area again loads its cells afresh, after a save made the tiles it is painted with
+	 */
+	reloadOnShow: boolean;
+}
+
+/**
  * What taking in another editor's painting did to the open area
  */
 export interface FollowedPainting
@@ -222,7 +270,8 @@ interface Stroke
  * Size, and a tool for the area's links
  *
  * Painting, changes to the area's size and links show immediately and are kept until the editor's Save
- * button calls save(); a click, a drag, a fill or a change of size is one step to undo
+ * button saves them; a click, a drag, a fill or a change of size is one step to undo. Opening another area
+ * keeps the changes and undo history of the area left, and saving saves every area's changes
  */
 export class AreaEditor
 {
@@ -243,7 +292,6 @@ export class AreaEditor
 	private readonly error = getElement('area-cells-error', HTMLElement);
 	private readonly canvasElement = getElement('area-canvas', HTMLElement);
 	private readonly canvas = new AreaCanvas(this.canvasElement, VIEW_WIDTH, VIEW_HEIGHT);
-	private readonly history = new EditHistory();
 	private readonly resizeDialog: ResizeDialog;
 	private readonly linkDialog: LinkDialog;
 	private readonly canvasObserver = new ResizeObserver(() =>
@@ -251,7 +299,16 @@ export class AreaEditor
 		this.fitCanvas();
 	});
 
-	private open: OpenArea | undefined;
+	/**
+	 * The area open and its changes
+	 */
+	private work: AreaWork | undefined;
+
+	/**
+	 * The areas left with changes not yet saved, by area ID
+	 */
+	private readonly kept = new Map<string, AreaWork>();
+
 	private stroke: Stroke | undefined;
 
 	/**
@@ -270,57 +327,24 @@ export class AreaEditor
 	private hovered: BrushCell | undefined;
 
 	/**
-	 * Each painted cell that differs from the server's copy, with its value now, by "column,row"
-	 */
-	private readonly unsaved = new Map<string, CellChange>();
-
-	/**
-	 * The server's value of each cell in unsaved, by "column,row"
-	 */
-	private readonly savedValues = new Map<string, number>();
-
-	/**
-	 * The cells other editors painted while the area was open, with the display name of the last to
-	 * paint each, whether they painted over painting here and the save that marked it (counted by
-	 * followedSaves), by "column,row"
-	 */
-	private readonly paintedByOthers = new Map<string, { name: string; overPainting: boolean; save: number }>();
-
-	/**
 	 * How many saves made in other windows followPainting() has taken in, which numbers their marks
 	 */
 	private followedSaves = 0;
 
 	/**
-	 * The cells this window saved painting to while the area was open, by "column,row"
-	 */
-	private readonly paintedHere = new Set<string>();
-
-	/**
-	 * Links added, changed or deleted that haven't been saved, in this area and return links in others,
-	 * by linkKey()
+	 * Links added, changed or deleted that haven't been saved, in every area, by linkKey()
 	 */
 	private stagedLinks = new Map<string, LinkChange>();
 
 	/**
-	 * Saves being sent; the area's cells are read-only while there are any
+	 * Saves being sent; the areas' cells are read-only while there are any
 	 */
 	private pendingSaves = 0;
 
 	/**
-	 * What the save being sent holds: the area, its new bounds, the cells painted and the link changes
+	 * What the save being sent holds: each area's new bounds and the cells painted, and the link changes
 	 */
-	private collected: { areaId: string; bounds: AreaBounds; cells: CellChange[]; links: [string, LinkChange][] } | undefined;
-
-	/**
-	 * Whether the player agreed to delete the links a smaller area cuts off, for the next save
-	 */
-	private discardOnSave = false;
-
-	/**
-	 * Whether showing the open area again loads its cells afresh, after a save made the tiles it is painted with
-	 */
-	private reloadOnShow = false;
+	private collected: { areas: { work: AreaWork; bounds: AreaBounds; cells: CellChange[] }[]; links: [string, LinkChange][] } | undefined;
 
 	/**
 	 * The tiles the Tilesets tab will delete, which can't be painted with
@@ -363,9 +387,19 @@ export class AreaEditor
 	private neighborCells = new Map<string, AreaCells>();
 
 	/**
+	 * The area open
+	 *
+	 * @return The area and what goes with it, or undefined while none is
+	 */
+	private get open(): OpenArea | undefined
+	{
+		return(this.work?.open);
+	}
+
+	/**
 	 * @param source Where the areas, their links and their chunks come from
 	 * @param onBoundsChanged Called with an area's new bounds after the cell editor resizes it
-	 * @param onUnsavedChanged Called with whether the area has painting, a change of size or links that haven't been saved, whenever that may have changed
+	 * @param onUnsavedChanged Called with whether the area open has painting, a change of size or links that haven't been saved, whenever that or the changes kept for other areas may have changed
 	 * @param neighbors What the Areas tab knows of the open area's neighbors
 	 */
 	constructor(private readonly source: AreaSource, private readonly onBoundsChanged: (bounds: AreaBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void, private readonly neighbors: NeighborSource)
@@ -502,20 +536,23 @@ export class AreaEditor
 	 * Shows an area's cells
 	 *
 	 * Opening the area already shown keeps what has loaded, the undo history and the links not yet saved,
-	 * so changing the area's other settings doesn't lose them
+	 * so changing the area's other settings doesn't lose them. Opening an area left with changes shows it
+	 * with them, and its undo history
 	 *
 	 * @param universe The area's universe
-	 * @param area The area
+	 * @param area The area, at its size as saved
 	 * @param tiles Every tile the universe can use, with the Tilesets tab's changes
 	 * @param deletedTiles The tiles the Tilesets tab will delete, which can't be painted with
 	 * @param areas The areas the area's links can lead to: those on its side of the lobby region's edge
 	 * @param editable Whether the area's cells can be changed: false for a player whose role can't change the world, or an area that will be deleted
+	 * @param carried The size Edit Size in another area carried it to, not yet saved, for an area without changes of its own
 	 */
-	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], deletedTiles: ReadonlyMap<number, number | undefined>, areas: readonly EditorAreaSummary[], editable: boolean): Promise<void>
+	async show(universe: EditableUniverse, area: EditorArea, tiles: readonly EditorTile[], deletedTiles: ReadonlyMap<number, number | undefined>, areas: readonly EditorAreaSummary[], editable: boolean, carried?: AreaBounds): Promise<void>
 	{
 		const version = ++this.openVersion;
 		const sameArea = (this.open?.area.id === area.id);
-		const same = (sameArea && !this.reloadOnShow && (this.open !== undefined) && sameBounds(this.open.cells.bounds, area.bounds));
+		const kept = (sameArea ? undefined : this.kept.get(area.id));
+		const same = (sameArea && (this.work !== undefined) && !this.work.reloadOnShow && sameBounds(this.work.open.cells.bounds, area.bounds));
 
 		this.deletedTiles = deletedTiles;
 		this.fillTiles(universe, area, tiles, sameArea);
@@ -551,20 +588,40 @@ export class AreaEditor
 
 		const camera = (sameArea ? this.canvas.scene?.cameraState() : undefined);
 
-		if (same && this.open)
+		if (kept && (this.kept.get(area.id) === kept))
 		{
-			this.open = { ...this.open, universe, area, tiles, areas, links, editable };
+			this.keep();
+			this.kept.delete(area.id);
+			this.neighborCells.clear();
+			kept.open = { ...kept.open, universe, area: { ...area, bounds: kept.open.area.bounds }, tiles, areas, links, editable };
+			this.work = kept;
+			this.unsavedChanged();
+		}
+		else if (same && this.work)
+		{
+			this.work.open = { ...this.work.open, universe, area, tiles, areas, links, editable };
 		}
 		else
 		{
-			this.reloadOnShow = false;
-			this.open?.loader.stop();
-			this.history.clear();
-			this.stagedLinks.clear();
-			this.paintedByOthers.clear();
-			this.paintedHere.clear();
+			if (sameArea)
+			{
+				this.work?.open.loader.stop();
+				this.work = undefined;
+			}
+			else
+			{
+				this.keep();
+			}
+
 			this.neighborCells.clear();
-			this.open = this.openArea(universe, area, tiles, areas, links, editable);
+			this.work = this.createWork(this.openArea(universe, area, tiles, areas, links, editable));
+
+			if (carried && !sameBounds(carried, area.bounds))
+			{
+				this.work.open.cells.setBounds(carried);
+				this.work.discardOnSave = true;
+			}
+
 			this.unsavedChanged();
 		}
 
@@ -573,22 +630,35 @@ export class AreaEditor
 	}
 
 	/**
-	 * Stops showing the area's cells, for when the area editor closes
+	 * Lets the area open's cells be changed, or makes them read-only, such as while the area will be deleted
+	 *
+	 * @param editable Whether they can be changed
+	 */
+	setEditable(editable: boolean): void
+	{
+		this.tools.hidden = !editable;
+
+		if (this.work)
+		{
+			this.work.open.editable = editable;
+		}
+	}
+
+	/**
+	 * Stops showing the area's cells, for when the area editor closes, keeping the area's changes
 	 */
 	hide(): void
 	{
 		this.setFullPage(false);
 		this.openVersion++;
-		this.open?.loader.stop();
-		this.open = undefined;
+
+		if (this.stroke)
+		{
+			this.finishStroke();
+		}
+
+		this.keep();
 		this.view = undefined;
-		this.stroke = undefined;
-		this.history.clear();
-		this.unsaved.clear();
-		this.savedValues.clear();
-		this.stagedLinks.clear();
-		this.paintedByOthers.clear();
-		this.paintedHere.clear();
 		this.neighborCells.clear();
 		this.shownNeighbors = [];
 		this.pickStatus.textContent = '';
@@ -598,13 +668,157 @@ export class AreaEditor
 	}
 
 	/**
-	 * Whether the area has painting, a change of size or links that haven't been saved
+	 * Throws away every area's painting, changes of size and links not yet saved, for when another
+	 * universe or version opens
+	 */
+	discard(): void
+	{
+		this.hide();
+
+		for (const work of this.kept.values())
+		{
+			work.open.loader.stop();
+		}
+
+		this.kept.clear();
+		this.stagedLinks.clear();
+		this.unsavedChanged();
+	}
+
+	/**
+	 * Throws away an area's painting and change of size, and the links not yet saved in it and into it, for
+	 * an area that is gone: one added since the Areas tab was saved and deleted, or one a save deleted
+	 *
+	 * @param areaId The area's ID
+	 */
+	forget(areaId: string): void
+	{
+		this.kept.get(areaId)?.open.loader.stop();
+		this.kept.delete(areaId);
+
+		for (const [key, change] of [...this.stagedLinks])
+		{
+			if ((change.areaId === areaId) || (change.target?.targetAreaId === areaId))
+			{
+				this.stagedLinks.delete(key);
+			}
+		}
+
+		this.unsavedChanged();
+	}
+
+	/**
+	 * Leaves the area open: keeps it while it has painting or a change of size not yet saved, and
+	 * otherwise stops loading it
+	 */
+	private keep(): void
+	{
+		const work = this.work;
+
+		this.work = undefined;
+
+		if (!work)
+		{
+			return;
+		}
+
+		if (this.hasCellChanges(work))
+		{
+			this.kept.set(work.open.area.id, work);
+		}
+		else
+		{
+			work.open.loader.stop();
+		}
+	}
+
+	/**
+	 * The area open or left with changes
+	 *
+	 * @param areaId The area's ID
+	 * @return Its changes, or undefined when it is neither
+	 */
+	private workOf(areaId: string): AreaWork | undefined
+	{
+		return(((this.work?.open.area.id === areaId) ? this.work : this.kept.get(areaId)));
+	}
+
+	/**
+	 * Whether the area open has painting, a change of size or links in it that haven't been saved
 	 *
 	 * @return True while it has
 	 */
 	hasUnsavedChanges(): boolean
 	{
-		return((this.unsaved.size > 0) || this.hasUnsavedBounds() || (this.stagedLinks.size > 0));
+		const work = this.work;
+
+		return((work !== undefined) && (this.hasCellChanges(work) || [...this.stagedLinks.values()].some((change) => (change.areaId === work.open.area.id))));
+	}
+
+	/**
+	 * Whether any area has painting, a change of size or links that haven't been saved: the area open,
+	 * or one left with them
+	 *
+	 * @return True while one has
+	 */
+	hasAnyChanges(): boolean
+	{
+		return(this.hasUnsavedChanges() || (this.kept.size > 0) || (this.stagedLinks.size > 0));
+	}
+
+	/**
+	 * The areas other than the one open with painting, a change of size or links not yet saved
+	 *
+	 * @return Their IDs
+	 */
+	changedAreaIds(): Set<string>
+	{
+		return(new Set([
+			...this.kept.keys(),
+			...[...this.stagedLinks.values()].map((change) => change.areaId)
+		]));
+	}
+
+	/**
+	 * The size an area left with changes has, not yet saved
+	 *
+	 * @param areaId The area's ID
+	 * @return Its bounds, or undefined for an area not left with changes
+	 */
+	keptBounds(areaId: string): AreaBounds | undefined
+	{
+		return(this.kept.get(areaId)?.open.cells.bounds);
+	}
+
+	/**
+	 * Gives an area left with changes the size Edit Size in the area open carries it to. Saving it doesn't
+	 * ask about the links the size cuts off, as Edit Size warned about them
+	 *
+	 * @param areaId The area's ID
+	 * @param bounds Its bounds
+	 * @return False when the area wasn't left with changes
+	 */
+	carry(areaId: string, bounds: AreaBounds): boolean
+	{
+		const work = this.kept.get(areaId);
+
+		if (!work)
+		{
+			return(false);
+		}
+
+		work.open.cells.setBounds(bounds);
+		work.discardOnSave = true;
+
+		if (!this.hasCellChanges(work))
+		{
+			work.open.loader.stop();
+			this.kept.delete(areaId);
+		}
+
+		this.unsavedChanged();
+
+		return(true);
 	}
 
 	/**
@@ -631,23 +845,30 @@ export class AreaEditor
 
 	/**
 	 * Gives areas added since the Areas tab was last saved the IDs the server saved them with, wherever
-	 * the open area or its links not yet saved name them
+	 * the open area, the areas left with changes or the links not yet saved name them
 	 *
 	 * @param ids Each new area's saved ID, by the ID it had on the page
 	 */
 	resolveIds(ids: ReadonlyMap<string, string>): void
 	{
-		const open = this.open;
 		const resolve = (areaId: string): string => (ids.get(areaId) ?? areaId);
+		const kept = [...this.kept.values()];
 
-		if (open)
+		for (const work of [...kept, ...(this.work ? [this.work] : [])])
 		{
-			open.area = { ...open.area, id: resolve(open.area.id) };
-			open.areas = open.areas.map((area) => ({
+			work.open.area = { ...work.open.area, id: resolve(work.open.area.id) };
+			work.open.areas = work.open.areas.map((area) => ({
 				...area,
 				id: resolve(area.id),
 				parents: area.parents.map((parent) => ({ ...parent, id: resolve(parent.id) }))
 			}));
+		}
+
+		this.kept.clear();
+
+		for (const work of kept)
+		{
+			this.kept.set(work.open.area.id, work);
 		}
 
 		this.stagedLinks = new Map([...this.stagedLinks.values()]
@@ -660,156 +881,148 @@ export class AreaEditor
 	}
 
 	/**
-	 * Keeps the open area as a new area once a save in another window deleted it, so saving adds it again
-	 * with the cells as they show here: every loaded cell that isn't the default tile is painting not yet
-	 * saved, the area grows or shrinks from the size every new area starts with, and its links are links
-	 * not yet saved, except those deleted here. The parts of the area that hadn't loaded went with the
-	 * area, so they load as the default tile, and the links other areas had into it are gone
+	 * Keeps an area, the one open or one left with changes, as a new area once a save in another window
+	 * deleted it, so saving adds it again with the cells as they show here: every loaded cell that isn't
+	 * the default tile is painting not yet saved, the area grows or shrinks from the size every new area
+	 * starts with, and its links are links not yet saved, except those deleted here. The parts of the area
+	 * that hadn't loaded went with the area, so they load as the default tile, and the links other areas
+	 * had into it are gone. The links not yet saved in an area without painting or a change of size here
+	 * name it as the new area
 	 *
-	 * @param areaId The area's ID as a new area
+	 * @param areaId The area's ID
+	 * @param newId Its ID as a new area
 	 * @param bounds The bounds every new area starts with
 	 */
-	recreate(areaId: string, bounds: AreaBounds): void
+	recreate(areaId: string, newId: string, bounds: AreaBounds): void
 	{
-		const open = this.open;
+		const work = this.workOf(areaId);
 
-		if (!open)
+		this.resolveIds(new Map([[areaId, newId]]));
+
+		if (!work)
 		{
+			this.unsavedChanged();
 			return;
 		}
 
-		this.resolveIds(new Map([[open.area.id, areaId]]));
+		const open = work.open;
+
 		open.loader.stop();
-		open.loader = this.createLoader(areaId, open.cells);
+		open.loader = this.createLoader(newId, open.cells);
 		open.area = { ...open.area, bounds };
 
 		for (const { column, row, ...target } of open.links)
 		{
-			const key = linkKey(areaId, column, row);
+			const key = linkKey(newId, column, row);
 
 			if (!this.stagedLinks.has(key))
 			{
-				this.stagedLinks.set(key, { areaId, column, row, target });
+				this.stagedLinks.set(key, { areaId: newId, column, row, target });
 			}
 		}
 
 		for (const [key, change] of [...this.stagedLinks])
 		{
-			if ((change.areaId === areaId) && (change.target === null))
+			if ((change.areaId === newId) && (change.target === null))
 			{
 				this.stagedLinks.delete(key);
 			}
 		}
 
 		open.links = [];
-		this.unsaved.clear();
-		this.savedValues.clear();
+		work.unsaved.clear();
+		work.savedValues.clear();
 
 		for (const cell of open.cells.paintedCells())
 		{
 			const key = `${cell[0]},${cell[1]}`;
 
-			this.unsaved.set(key, cell);
-			this.savedValues.set(key, DEFAULT_TILE_CELL);
+			work.unsaved.set(key, cell);
+			work.savedValues.set(key, DEFAULT_TILE_CELL);
 		}
 
-		if (this.view)
+		if (work === this.work)
 		{
-			open.loader.request(this.view);
+			if (this.view)
+			{
+				open.loader.request(this.view);
+			}
+
+			this.canvas.scene?.setLinks(linksInArea(open, this.currentLinks(newId, open.links)));
+			this.showHoveredCell();
 		}
 
-		this.canvas.scene?.setLinks(linksInArea(open, this.currentLinks(areaId, open.links)));
-		this.showHoveredCell();
 		this.unsavedChanged();
 		this.updateButtons();
 	}
 
 	/**
-	 * Whether the area has grown since its bounds were last saved
+	 * Whether an area has painting or a change of size that hasn't been saved
 	 *
+	 * @param work The area and its changes
 	 * @return True when it has
 	 */
-	private hasUnsavedBounds(): boolean
+	private hasCellChanges(work: AreaWork): boolean
 	{
-		return((this.open !== undefined) && !sameBounds(this.open.cells.bounds, this.open.area.bounds));
+		return((work.unsaved.size > 0) || !sameBounds(work.open.cells.bounds, work.open.area.bounds));
 	}
 
 	/**
-	 * Adds the area's new bounds, the painting not yet saved (in changes of up to MAX_CELL_CHANGES cells)
-	 * and the links not yet saved to a save. The area's cells are read-only until the save is over
+	 * Adds every area's new bounds and the painting not yet saved (in changes of up to MAX_CELL_CHANGES
+	 * cells), and then the links not yet saved, to a save: the area open's and those of the areas left
+	 * with changes. The areas' cells are read-only until the save is over
 	 *
-	 * The server refuses painting and links outside its bounds, so the area first grows to cover both its
-	 * saved and new bounds, then the painting is saved, then it shrinks to its new bounds, and last the
-	 * links are saved; a link on a cell the smaller area cuts off is dropped. Cells a smaller area cuts off
-	 * are set to the default tile with the painting, so shrinking discards nothing unless saved links are
-	 * on them, which the player is asked about when the server refuses the save for it
+	 * The server refuses painting and links outside an area's bounds, so each area first grows to cover
+	 * both its saved and new bounds, then its painting is saved, then it shrinks to its new bounds, and
+	 * last the links are saved; a link on a cell a smaller area cuts off is dropped. Cells a smaller area
+	 * cuts off are set to the default tile with the painting, so shrinking discards nothing unless saved
+	 * links are on them, which the player is asked about when the server refuses the save for it
 	 *
 	 * @param save The save
 	 * @param areaRef How the save names an area, from its ID on the page
 	 * @param tileRef How the save names the tile a cell is painted with, from its ID on the page
-	 * @param onRefused Shows why the server refused one of the area's changes
+	 * @param include Whether an area's changes, and the links in and into it, are saved: false for an area that will be deleted
+	 * @param onRefused Shows why the server refused one of an area's changes
 	 */
-	collect(save: EditorSave, areaRef: (areaId: string) => StringRef, tileRef: (tileId: number) => NumberRef, onRefused: (refusal: SaveRefusal) => void): void
+	collect(save: EditorSave, areaRef: (areaId: string) => StringRef, tileRef: (tileId: number) => NumberRef, include: (areaId: string) => boolean, onRefused: (areaId: string, refusal: SaveRefusal) => void): void
 	{
-		const open = this.open;
+		const works = [...this.kept.values(), ...(this.work ? [this.work] : [])].filter((work) => (this.hasCellChanges(work) && include(work.open.area.id)));
+		const links = [...this.stagedLinks].filter(([, change]) => (include(change.areaId) && ((change.target === null) || include(change.target.targetAreaId))));
 
-		if (!open || !this.hasUnsavedChanges())
+		if ((works.length === 0) && (links.length === 0))
 		{
 			return;
 		}
 
-		const areaId = areaRef(open.area.id);
-		const bounds = open.cells.bounds;
-		const covering = unionBounds(open.area.bounds, bounds);
-		const cells = [...this.unsaved.values()];
-		const links = [...this.stagedLinks];
-
 		showMessage(this.error, undefined);
 
-		if (!sameBounds(covering, open.area.bounds))
-		{
-			save.add({ kind: 'resizeArea', areaId, bounds: covering, discard: false }, onRefused);
-		}
-
-		for (let start = 0; start < cells.length; start += MAX_CELL_CHANGES)
-		{
-			save.add({
-				kind: 'editCells',
-				areaId,
-				changes: cells
-					.slice(start, start + MAX_CELL_CHANGES)
-					.map(([column, row, value]) => [column, row, (((value === DEFAULT_TILE_CELL) || (value === VOID_CELL)) ? value : tileRef(value))])
-			}, onRefused);
-		}
-
-		if (!sameBounds(bounds, covering))
-		{
-			save.add({ kind: 'resizeArea', areaId, bounds, discard: this.discardOnSave }, (refusal) =>
-			{
-				this.resizeRefused(refusal, onRefused);
-			});
-		}
+		const areas = works.map((work) => this.collectCells(save, work, areaRef, tileRef, onRefused));
 
 		for (const [, change] of links)
 		{
-			const cutOff = ((change.areaId === open.area.id) && !isInBounds(bounds, change.column, change.row));
+			const work = this.workOf(change.areaId);
+			const refused = (refusal: SaveRefusal): void =>
+			{
+				onRefused(change.areaId, refusal);
+			};
 
-			if (cutOff)
+			// A link on a cell a smaller area cuts off goes with the cell
+			if (work && !isInBounds(work.open.cells.bounds, change.column, change.row))
 			{
 				continue;
 			}
 
 			if (change.target === null)
 			{
-				save.add({ kind: 'deleteLink', areaId: areaRef(change.areaId), column: change.column, row: change.row }, onRefused);
+				save.add({ kind: 'deleteLink', areaId: areaRef(change.areaId), column: change.column, row: change.row }, refused);
 			}
 			else
 			{
-				save.add({ kind: 'saveLink', areaId: areaRef(change.areaId), column: change.column, row: change.row, target: { ...change.target, targetAreaId: areaRef(change.target.targetAreaId) } }, onRefused);
+				save.add({ kind: 'saveLink', areaId: areaRef(change.areaId), column: change.column, row: change.row, target: { ...change.target, targetAreaId: areaRef(change.target.targetAreaId) } }, refused);
 			}
 		}
 
-		this.collected = { areaId: open.area.id, bounds, cells, links };
+		this.collected = { areas, links };
 		this.pendingSaves++;
 		this.updateSaveStatus();
 		this.updateButtons();
@@ -822,13 +1035,65 @@ export class AreaEditor
 	}
 
 	/**
+	 * Adds an area's new bounds and the painting not yet saved to a save (see collect())
+	 *
+	 * @param save The save
+	 * @param work The area and its changes
+	 * @param areaRef How the save names an area, from its ID on the page
+	 * @param tileRef How the save names the tile a cell is painted with, from its ID on the page
+	 * @param onRefused Shows why the server refused one of the area's changes
+	 * @return The area, its new bounds and the cells painted, for saved()
+	 */
+	private collectCells(save: EditorSave, work: AreaWork, areaRef: (areaId: string) => StringRef, tileRef: (tileId: number) => NumberRef, onRefused: (areaId: string, refusal: SaveRefusal) => void): { work: AreaWork; bounds: AreaBounds; cells: CellChange[] }
+	{
+		const open = work.open;
+		const pageId = open.area.id;
+		const areaId = areaRef(pageId);
+		const bounds = open.cells.bounds;
+		const covering = unionBounds(open.area.bounds, bounds);
+		// Painting on cells the size Edit Size carried the area to cuts off goes with the cells
+		const cells = [...work.unsaved.values()].filter(([column, row]) => isInBounds(covering, column, row));
+		const refused = (refusal: SaveRefusal): void =>
+		{
+			onRefused(pageId, refusal);
+		};
+
+		if (!sameBounds(covering, open.area.bounds))
+		{
+			save.add({ kind: 'resizeArea', areaId, bounds: covering, discard: false }, refused);
+		}
+
+		for (let start = 0; start < cells.length; start += MAX_CELL_CHANGES)
+		{
+			save.add({
+				kind: 'editCells',
+				areaId,
+				changes: cells
+					.slice(start, start + MAX_CELL_CHANGES)
+					.map(([column, row, value]) => [column, row, (((value === DEFAULT_TILE_CELL) || (value === VOID_CELL)) ? value : tileRef(value))])
+			}, refused);
+		}
+
+		if (!sameBounds(bounds, covering))
+		{
+			save.add({ kind: 'resizeArea', areaId, bounds, discard: work.discardOnSave }, (refusal) =>
+			{
+				this.resizeRefused(work, refusal, refused);
+			});
+		}
+
+		return({ work, bounds, cells });
+	}
+
+	/**
 	 * Asks whether to delete the links a smaller area cuts off, when the server refused the save for them,
 	 * and saves again without them when the player agrees
 	 *
+	 * @param work The area and its changes
 	 * @param refusal Why the save was refused
 	 * @param onRefused Shows why the area's cells weren't saved
 	 */
-	private resizeRefused(refusal: SaveRefusal, onRefused: (refusal: SaveRefusal) => void): void
+	private resizeRefused(work: AreaWork, refusal: SaveRefusal, onRefused: (refusal: SaveRefusal) => void): void
 	{
 		const conflict = refusal.resizeConflict;
 
@@ -840,15 +1105,16 @@ export class AreaEditor
 
 		const question = t({
 			id: 'editor.area.confirmDeleteLinks',
-			defaultMessage: 'Saving the smaller area deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can\'t be undone. Save anyway?',
-			description: 'Asked while saving an area made smaller, when links are on the cells it cuts off or lead into them; {links} is how many'
+			defaultMessage: 'Making {area} smaller deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can\'t be undone. Save anyway?',
+			description: 'Asked while saving an area made smaller, when links are on the cells it cuts off or lead into them; {area} is the area\'s name and {links} how many links'
 		}, {
+			area: work.open.area.name,
 			links: conflict.discardedLinks
 		});
 
 		if (window.confirm(question))
 		{
-			this.discardOnSave = true;
+			work.discardOnSave = true;
 			refusal.retry();
 			return;
 		}
@@ -857,38 +1123,60 @@ export class AreaEditor
 			...refusal,
 			error: new EditorApiError(t({
 				id: 'editor.area.linksKept',
-				defaultMessage: 'The links were kept, so the area wasn\'t made smaller.',
-				description: 'Why saving stopped: the player chose not to delete the links a smaller area would cut off; nothing was saved'
+				defaultMessage: 'The links were kept, so {area} wasn\'t made smaller.',
+				description: 'Why saving stopped: the player chose not to delete the links a smaller area would cut off; {area} is the area\'s name. Nothing was saved'
+			}, {
+				area: work.open.area.name
 			}), 409, conflict)
 		});
 	}
 
 	/**
-	 * Takes the area's changes as saved, once the save collect() added them to is saved. An area painted
-	 * with tiles the save made, whose IDs on the page are negative, loads afresh when the area editor
-	 * shows it again, so its cells hold the tiles' saved IDs
+	 * Takes the areas' changes as saved, once the save collect() added them to is saved. An area left with
+	 * changes that has none left is no longer kept. An area painted with tiles the save made, whose IDs on
+	 * the page are negative, loads afresh when the area editor shows it again, so its cells hold the
+	 * tiles' saved IDs
 	 */
 	saved(): void
 	{
 		const collected = this.collected;
-		const open = this.open;
 
 		this.collected = undefined;
-		this.discardOnSave = false;
 
-		if (!collected || !open || (open.area.id !== collected.areaId))
+		if (!collected)
 		{
 			return;
 		}
 
-		this.markCellsSaved(collected.cells);
-
-		for (const [column, row] of collected.cells)
+		for (const { work, bounds, cells } of collected.areas)
 		{
-			this.paintedHere.add(`${column},${row}`);
-		}
+			work.discardOnSave = false;
+			this.markCellsSaved(work, cells);
 
-		open.area = { ...open.area, bounds: collected.bounds };
+			for (const [column, row] of cells)
+			{
+				work.paintedHere.add(`${column},${row}`);
+			}
+
+			work.open.area = { ...work.open.area, bounds };
+
+			if (cells.some(([, , value]) => ((value < 0) && (value !== VOID_CELL))))
+			{
+				work.reloadOnShow = true;
+			}
+
+			if ((work !== this.work) && !this.hasCellChanges(work) && (this.kept.get(work.open.area.id) === work))
+			{
+				work.open.loader.stop();
+				this.kept.delete(work.open.area.id);
+
+				// Its cells are as saved, so a preview of it keeps them, unless they hold the page's IDs of new tiles
+				if (!work.reloadOnShow)
+				{
+					this.neighborCells.set(work.open.area.id, work.open.cells);
+				}
+			}
+		}
 
 		for (const [key, change] of collected.links)
 		{
@@ -896,11 +1184,6 @@ export class AreaEditor
 			{
 				this.stagedLinks.delete(key);
 			}
-		}
-
-		if (collected.cells.some(([, , value]) => ((value < 0) && (value !== VOID_CELL))))
-		{
-			this.reloadOnShow = true;
 		}
 
 		this.unsavedChanged();
@@ -974,51 +1257,60 @@ export class AreaEditor
 	}
 
 	/**
-	 * Takes cells as stored on the server
+	 * Takes an area's cells as stored on the server
 	 *
+	 * @param work The area and its changes
 	 * @param changes The cells and the values stored
 	 */
-	private markCellsSaved(changes: readonly CellChange[]): void
+	private markCellsSaved(work: AreaWork, changes: readonly CellChange[]): void
 	{
 		for (const [column, row, value] of changes)
 		{
 			const key = `${column},${row}`;
 
-			this.savedValues.set(key, value);
+			work.savedValues.set(key, value);
 
-			if (this.unsaved.get(key)?.[2] === value)
+			if (work.unsaved.get(key)?.[2] === value)
 			{
-				this.unsaved.delete(key);
-				this.savedValues.delete(key);
+				work.unsaved.delete(key);
+				work.savedValues.delete(key);
 			}
 		}
 	}
 
 	/**
-	 * Remembers cell changes as unsaved painting. A cell changed back to its saved value is no longer unsaved
+	 * Remembers cell changes of the area open as unsaved painting. A cell changed back to its saved value is
+	 * no longer unsaved
 	 *
 	 * @param changes The cells and their new values
 	 * @param previous The same cells' values before, in the same order
 	 */
 	private trackChanges(changes: readonly CellChange[], previous: readonly CellChange[]): void
 	{
+		const work = this.work;
+
+		if (!work)
+		{
+			return;
+		}
+
 		changes.forEach(([column, row, value], index) =>
 		{
 			const key = `${column},${row}`;
 
-			if (!this.savedValues.has(key))
+			if (!work.savedValues.has(key))
 			{
-				this.savedValues.set(key, previous[index][2]);
+				work.savedValues.set(key, previous[index][2]);
 			}
 
-			if (this.savedValues.get(key) === value)
+			if (work.savedValues.get(key) === value)
 			{
-				this.unsaved.delete(key);
-				this.savedValues.delete(key);
+				work.unsaved.delete(key);
+				work.savedValues.delete(key);
 			}
 			else
 			{
-				this.unsaved.set(key, [column, row, value]);
+				work.unsaved.set(key, [column, row, value]);
 			}
 		});
 
@@ -1053,7 +1345,28 @@ export class AreaEditor
 	}
 
 	/**
-	 * Creates what loads an area's chunks into its cells as the view reaches them
+	 * An area just opened, without changes
+	 *
+	 * @param open The area
+	 * @return The area and its changes
+	 */
+	private createWork(open: OpenArea): AreaWork
+	{
+		return({
+			open,
+			history: new EditHistory(),
+			unsaved: new Map(),
+			savedValues: new Map(),
+			paintedByOthers: new Map(),
+			paintedHere: new Set(),
+			discardOnSave: false,
+			reloadOnShow: false
+		});
+	}
+
+	/**
+	 * Creates what loads an area's chunks into its cells as the view reaches them. Chunks that arrive once
+	 * the area is left go into its cells without being drawn
 	 *
 	 * @param areaId The area's ID
 	 * @param cells The area's cells
@@ -1063,10 +1376,16 @@ export class AreaEditor
 	{
 		return(new ChunkLoader((range) => this.source.loadChunks(areaId, range), cells, (chunkKeys) =>
 		{
-			this.canvas.scene?.refreshChunks(chunkKeys);
+			if (this.open?.cells === cells)
+			{
+				this.canvas.scene?.refreshChunks(chunkKeys);
+			}
 		}, (error) =>
 		{
-			showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
+			if (this.open?.cells === cells)
+			{
+				showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
+			}
 		}));
 	}
 
@@ -1143,8 +1462,9 @@ export class AreaEditor
 				continue;
 			}
 
-			// The open area shown past its own looping edge is its cells as they are here, with the painting not yet saved
-			let cells = ((slot.areaId === open.area.id) ? open.cells : this.neighborCells.get(slot.areaId));
+			// The open area shown past its own looping edge, and an area left with changes, are their cells as
+			// they are here, with the painting not yet saved
+			let cells = ((slot.areaId === open.area.id) ? open.cells : (this.kept.get(slot.areaId)?.open.cells ?? this.neighborCells.get(slot.areaId)));
 
 			if (!cells || !sameBounds(cells.bounds, area.bounds))
 			{
@@ -1173,20 +1493,20 @@ export class AreaEditor
 	}
 
 	/**
-	 * An area's cells with every chunk loaded, for drawing it whole: the open area's as they show here, with
-	 * the painting not yet saved, and another's as saved
+	 * An area's cells with every chunk loaded, for drawing it whole: those of the area open and the areas
+	 * left with changes as they show here, with the painting not yet saved, and another's as saved
 	 *
 	 * @param area The area, at its size as the Areas tab has it
 	 * @return The cells
 	 */
 	async cellsOf(area: EditorArea): Promise<AreaCells>
 	{
-		const open = this.open;
+		const work = this.workOf(area.id);
 
-		if (open && (area.id === open.area.id))
+		if (work)
 		{
-			await open.loader.loadAll();
-			return(open.cells);
+			await work.open.loader.loadAll();
+			return(work.open.cells);
 		}
 
 		const cells = new AreaCells(area.bounds);
@@ -1231,6 +1551,10 @@ export class AreaEditor
 	 * Loads the chunks of a neighbor that it shows past the open area's edges, and draws them as they come.
 	 * An area added since the Areas tab was saved is all its default tile
 	 *
+	 * The area may be shown again while the chunks load, such as after a save, starting another load of
+	 * the same cells that finds them loaded already. So whichever load finishes draws every chunk of the
+	 * range, while the area open still shows the neighbor's cells
+	 *
 	 * @param open The open area
 	 * @param neighbor The neighbor
 	 */
@@ -1258,16 +1582,26 @@ export class AreaEditor
 		try
 		{
 			const { chunks } = await this.source.loadChunks(neighbor.area.id, range);
-			const loaded = cells.load(range, chunks);
+			const keys: string[] = [];
 
-			if (this.open === open)
+			cells.load(range, chunks);
+
+			for (let chunkRow = range.minChunkRow; chunkRow <= range.maxChunkRow; chunkRow++)
 			{
-				this.canvas.scene?.refreshPreview(neighbor.area.id, loaded);
+				for (let chunkColumn = range.minChunkColumn; chunkColumn <= range.maxChunkColumn; chunkColumn++)
+				{
+					keys.push(chunkKey(chunkColumn, chunkRow));
+				}
+			}
+
+			if ((this.open?.area.id === open.area.id) && this.shownNeighbors.some((shown) => (shown.cells === cells)))
+			{
+				this.canvas.scene?.refreshPreview(neighbor.area.id, keys);
 			}
 		}
 		catch (error)
 		{
-			if (this.open === open)
+			if (this.open?.area.id === open.area.id)
 			{
 				showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
 			}
@@ -1356,7 +1690,7 @@ export class AreaEditor
 	 */
 	private showPaintedByOthers(): void
 	{
-		this.canvas.scene?.setHighlights([...this.paintedByOthers].map(([key, painted]) =>
+		this.canvas.scene?.setHighlights([...(this.work?.paintedByOthers ?? [])].map(([key, painted]) =>
 		{
 			const [column, row] = key.split(',').map(Number);
 
@@ -1365,11 +1699,11 @@ export class AreaEditor
 	}
 
 	/**
-	 * Takes in the painting another editor saved to the open area: loads the chunks it painted again, if
-	 * they have loaded here, and marks each cell it changed, in the warning color where it painted over
-	 * painting here: painting not yet saved, or saved from here while the area was open. A cell painted
-	 * here and not yet saved keeps the painting here, which is saved over theirs, and undoing back to the
-	 * saved cells gives theirs
+	 * Takes in the painting another editor saved to the open area, or to an area left with changes: loads
+	 * the chunks it painted again, if they have loaded here, and marks each cell it changed, in the warning
+	 * color where it painted over painting here: painting not yet saved, or saved from here while the area
+	 * was open. A cell painted here and not yet saved keeps the painting here, which is saved over theirs,
+	 * and undoing back to the saved cells gives theirs
 	 *
 	 * @param areaId The area painted
 	 * @param chunks The chunks of the area the save painted
@@ -1379,7 +1713,7 @@ export class AreaEditor
 	 */
 	async followPainting(areaId: string, chunks: readonly ChunkCoordinates[], name: string): Promise<FollowedPainting>
 	{
-		const opened = this.open;
+		const work = this.workOf(areaId);
 		const nothing: FollowedPainting = {
 			paintedOver: 0,
 			unmark: () =>
@@ -1388,11 +1722,12 @@ export class AreaEditor
 			}
 		};
 
-		if (!opened || (opened.area.id !== areaId))
+		if (!work)
 		{
 			return(nothing);
 		}
 
+		const opened = work.open;
 		let reloaded: Map<string, number[] | undefined>;
 
 		try
@@ -1401,18 +1736,24 @@ export class AreaEditor
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
+			if (work === this.work)
+			{
+				showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
+			}
+
 			return(nothing);
 		}
 
 		// Showing the area's settings again keeps its cells, which a new size replaces
-		const open = this.open;
+		const open = work.open;
 
-		if (!open || (open.cells !== opened.cells))
+		if ((this.workOf(open.area.id) !== work) || (open.cells !== opened.cells))
 		{
 			return(nothing);
 		}
 
+		const isOpen = (work === this.work);
+		const stroke = (isOpen ? this.stroke : undefined);
 		const applied: CellChange[] = [];
 		const rebased: SavedCell[] = [];
 		const save = ++this.followedSaves;
@@ -1429,7 +1770,7 @@ export class AreaEditor
 				const key = `${column},${row}`;
 				const theirs = (cells?.[index] ?? DEFAULT_TILE_CELL);
 				const shown = open.cells.valueAt(column, row);
-				const before = (this.savedValues.get(key) ?? this.stroke?.before.get(key)?.[2] ?? shown);
+				const before = (work.savedValues.get(key) ?? stroke?.before.get(key)?.[2] ?? shown);
 
 				if ((before === undefined) || (before === theirs))
 				{
@@ -1437,10 +1778,10 @@ export class AreaEditor
 				}
 
 				// A cell painted here, in an earlier stroke or the one under way, keeps the painting here
-				const mine = this.unsaved.get(key);
-				const strokeBefore = this.stroke?.before.get(key);
-				const strokeValue = this.stroke?.after.get(key);
-				const overPainting = (this.paintedHere.has(key) || ((mine !== undefined) && (mine[2] !== theirs)) || ((strokeValue !== undefined) && (strokeValue !== theirs)));
+				const mine = work.unsaved.get(key);
+				const strokeBefore = stroke?.before.get(key);
+				const strokeValue = stroke?.after.get(key);
+				const overPainting = (work.paintedHere.has(key) || ((mine !== undefined) && (mine[2] !== theirs)) || ((strokeValue !== undefined) && (strokeValue !== theirs)));
 
 				rebased.push({
 					column,
@@ -1448,7 +1789,7 @@ export class AreaEditor
 					before,
 					after: theirs
 				});
-				this.paintedByOthers.set(key, { name, overPainting, save });
+				work.paintedByOthers.set(key, { name, overPainting, save });
 
 				if (overPainting)
 				{
@@ -1457,12 +1798,12 @@ export class AreaEditor
 
 				if (mine)
 				{
-					this.savedValues.set(key, theirs);
+					work.savedValues.set(key, theirs);
 
 					if (mine[2] === theirs)
 					{
-						this.unsaved.delete(key);
-						this.savedValues.delete(key);
+						work.unsaved.delete(key);
+						work.savedValues.delete(key);
 					}
 				}
 				else if (strokeBefore)
@@ -1476,45 +1817,60 @@ export class AreaEditor
 			}
 		}
 
-		this.history.rebase(rebased);
+		work.history.rebase(rebased);
 
 		if (applied.length > 0)
 		{
-			this.canvas.scene?.refreshChunks(open.cells.apply(applied));
+			const changedChunks = open.cells.apply(applied);
+
+			if (isOpen)
+			{
+				this.canvas.scene?.refreshChunks(changedChunks);
+			}
 		}
 
-		this.showPaintedByOthers();
-		this.showHoveredCell();
+		if (isOpen)
+		{
+			this.showPaintedByOthers();
+			this.showHoveredCell();
+		}
+		else if (!this.hasCellChanges(work))
+		{
+			// Their painting matches every change made here
+			open.loader.stop();
+			this.kept.delete(open.area.id);
+		}
+
 		this.unsavedChanged();
 
 		return({
 			paintedOver,
 			unmark: () =>
 			{
-				this.unmarkPainting(open.cells, save);
+				this.unmarkPainting(work, save);
 			}
 		});
 	}
 
 	/**
-	 * Takes the marks one save made off the area, while the cells they are on are still open
+	 * Takes the marks one save made off an area
 	 *
-	 * @param cells The cells the save painted
+	 * @param work The area and its changes
 	 * @param save The save, as followPainting() numbered it
 	 */
-	private unmarkPainting(cells: AreaCells, save: number): void
+	private unmarkPainting(work: AreaWork, save: number): void
 	{
-		if (this.open?.cells !== cells)
-		{
-			return;
-		}
-
-		for (const [key, painted] of this.paintedByOthers)
+		for (const [key, painted] of work.paintedByOthers)
 		{
 			if (painted.save === save)
 			{
-				this.paintedByOthers.delete(key);
+				work.paintedByOthers.delete(key);
 			}
+		}
+
+		if (work !== this.work)
+		{
+			return;
 		}
 
 		this.showPaintedByOthers();
@@ -1702,12 +2058,12 @@ export class AreaEditor
 			}
 		}
 
-		if (changes.length === 0)
+		if ((changes.length === 0) || !this.work)
 		{
 			return;
 		}
 
-		this.history.push({ changes, inverse });
+		this.work.history.push({ changes, inverse });
 		this.trackChanges(changes, inverse);
 		this.updateButtons();
 	}
@@ -1765,9 +2121,9 @@ export class AreaEditor
 				cells = (confirmed ? await this.cellsToFill(open.cells, column, row, value) : undefined);
 			}
 
-			const current = this.open;
+			const work = this.work;
 
-			if ((cells === undefined) || (current?.cells !== open.cells) || this.stroke || (this.pendingSaves > 0))
+			if ((cells === undefined) || (work?.open.cells !== open.cells) || this.stroke || (this.pendingSaves > 0))
 			{
 				return;
 			}
@@ -1792,7 +2148,7 @@ export class AreaEditor
 			};
 
 			showMessage(this.error, undefined);
-			this.history.push(step);
+			work.history.push(step);
 			this.applyStep(step.changes, step.inverse);
 			announce(t({
 				id: 'editor.area.filled',
@@ -1948,7 +2304,7 @@ export class AreaEditor
 			return;
 		}
 
-		const step = this.history.undo();
+		const step = this.work?.history.undo();
 
 		if (step)
 		{
@@ -1966,7 +2322,7 @@ export class AreaEditor
 			return;
 		}
 
-		const step = this.history.redo();
+		const step = this.work?.history.redo();
 
 		if (step)
 		{
@@ -2014,9 +2370,10 @@ export class AreaEditor
 	 */
 	private resize(bounds: AreaBounds): void
 	{
-		const open = this.open;
+		const work = this.work;
+		const open = work?.open;
 
-		if (!open || sameBounds(bounds, open.cells.bounds))
+		if (!work || !open || sameBounds(bounds, open.cells.bounds))
 		{
 			return;
 		}
@@ -2040,7 +2397,7 @@ export class AreaEditor
 		};
 
 		showMessage(this.error, undefined);
-		this.history.push(step);
+		work.history.push(step);
 		this.applyStep(step.changes, step.inverse, bounds, carried.map(({ areaId, after }) => ({ areaId, bounds: after })));
 	}
 
@@ -2092,8 +2449,8 @@ export class AreaEditor
 	{
 		const saving = (this.pendingSaves > 0);
 
-		this.undoButton.disabled = (saving || !this.history.canUndo);
-		this.redoButton.disabled = (saving || !this.history.canRedo);
+		this.undoButton.disabled = (saving || !this.work?.history.canUndo);
+		this.redoButton.disabled = (saving || !this.work?.history.canRedo);
 		this.resizeButton.disabled = saving;
 	}
 
@@ -2149,7 +2506,7 @@ export class AreaEditor
 			links: this.currentLinks(open.area.id, open.links),
 			ruleset: open.universe.ruleset
 		}, cell);
-		const paintedBy = this.paintedByOthers.get(`${cell.column},${cell.row}`);
+		const paintedBy = this.work?.paintedByOthers.get(`${cell.column},${cell.row}`);
 
 		return((((paintedBy === undefined) || (described === ''))
 			? described
@@ -2190,9 +2547,10 @@ export class AreaEditor
 	 */
 	async setTiles(tiles: readonly EditorTile[], deletedTiles: ReadonlyMap<number, number | undefined>, indoors: boolean): Promise<void>
 	{
-		const open = this.open;
+		const work = this.work;
+		const open = work?.open;
 
-		if (!open)
+		if (!work || !open)
 		{
 			return;
 		}
@@ -2200,7 +2558,7 @@ export class AreaEditor
 		const camera = this.canvas.scene?.cameraState();
 
 		this.deletedTiles = deletedTiles;
-		this.open = { ...open, tiles };
+		work.open = { ...open, tiles };
 		this.fillTiles(open.universe, { ...open.area, resolved: { ...open.area.resolved, indoors } }, tiles, true);
 		await this.startScene(camera);
 	}
@@ -2305,13 +2663,11 @@ export class AreaEditor
 				continue;
 			}
 
-			// One request holds every chunk of the largest area
-			const cells = new AreaCells(area.bounds);
-			const range = cells.chunkRange;
+			// An area left with changes counts the painting and links not yet saved
+			const cells = await this.cellsOf(area);
 
-			cells.load(range, (await this.source.loadChunks(areaId, range)).chunks);
 			loss.cells += cells.paintedCellsOutside(after).length;
-			loss.links += (await this.source.listLinks(areaId)).filter((link) => (isInBounds(area.bounds, link.column, link.row) && !isInBounds(after, link.column, link.row))).length;
+			loss.links += this.currentLinks(areaId, await this.source.listLinks(areaId)).filter((link) => (isInBounds(area.bounds, link.column, link.row) && !isInBounds(after, link.column, link.row))).length;
 		}
 
 		return(loss);

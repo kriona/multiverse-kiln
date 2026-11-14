@@ -1320,8 +1320,8 @@
 		"source": "Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place."
 	},
 	"editor.area.confirmDeleteLinks": {
-		"message": "Stowin' the smaller area scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
-		"source": "Saving the smaller area deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
+		"message": "Shrinkin' {area} scuttles {links, plural, one {# passage} other {# passages}} on or into the cells it cuts off. There be no takin' it back. Stow anyway?",
+		"source": "Making {area} smaller deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?"
 	},
 	"editor.area.confirmDeleteNew": {
 		"message": "Scuttle {area}? It ain't been stowed yet, so its settings, daubin' and passages be lost to the deep.",
@@ -1452,8 +1452,8 @@
 		"source": "Links"
 	},
 	"editor.area.linksKept": {
-		"message": "The passages were kept, so the area weren't made smaller.",
-		"source": "The links were kept, so the area wasn't made smaller."
+		"message": "The passages were kept, so {area} weren't made smaller.",
+		"source": "The links were kept, so {area} wasn't made smaller."
 	},
 	"editor.area.loadFailed": {
 		"message": "Couldn't haul up the area's cells.",
@@ -1695,6 +1695,10 @@
 		"message": "{count, plural, one {{names} be workin' it} other {{names} be workin' it}}",
 		"source": "{count, plural, one {{names} is editing} other {{names} are editing}}"
 	},
+	"editor.areas.keptSaveFailed": {
+		"message": "Couldn't stow {area}.",
+		"source": "Could not save {area}."
+	},
 	"editor.areas.listFailed": {
 		"message": "Couldn't list the areas.",
 		"source": "Could not list the areas."
@@ -1710,6 +1714,10 @@
 	"editor.areas.startingAreaTag": {
 		"message": "home port",
 		"source": "starting area"
+	},
+	"editor.areas.unsavedTag": {
+		"message": "not yet stowed",
+		"source": "unsaved changes"
 	},
 	"editor.audit.caption": {
 		"message": "Stowin's",

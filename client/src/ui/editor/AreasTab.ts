@@ -1,7 +1,7 @@
-import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
-import { describeEditorError, type EditorApi } from '../../network/editorApi';
+import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { announce } from '../announcer';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, showMessage } from '../dom';
@@ -22,9 +22,20 @@ import { describeProblem, placeNamer, problemPlaces, type PlaceNames } from './p
 import { PlacesList, type ListedPlace } from './PlacesList';
 import { RegionEditorView } from './RegionEditorView';
 import { combineChanges, type SavableTab } from './SaveBar';
-import { isNewAreaId, isNewPlace, StagedAreas } from './stagedAreas';
-import { labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
+import { isNewAreaId, isNewPlace, StagedAreas, withoutParent } from './stagedAreas';
+import { CheckedChanges, labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
 import type { TilePlaces } from './TileReplaceDialog';
+
+/**
+ * Text the tab shows in more than one place (see src/localization.ts)
+ */
+const messages = defineMessages({
+	needsParent: {
+		id: 'editor.area.needsParent',
+		defaultMessage: 'An area must be inside at least one region or area.',
+		description: 'Shown when an area\'s parents have all been removed, which keeps it from saving: in the area editor, or on the Areas tab after the name of an area left before saving'
+	}
+});
 
 /**
  * How a save names a region or area: a saved one by its ID, and one added since the tab was last saved
@@ -87,6 +98,90 @@ function isFollowedPainting(detail: SavedEditDetail): boolean
 export type PlaceOverride = { place: PlaceRef; node: PlaceNode | AreaNode };
 
 /**
+ * The settings changed in a saved area that the area editor left before they were saved
+ */
+interface KeptSettings
+{
+	/**
+	 * The area as it was loaded when the settings were changed, which the save compares with what is saved
+	 */
+	loaded: EditorArea;
+
+	/**
+	 * The settings changed, as the area editor showed them
+	 */
+	changes: Partial<AreaSettings>;
+}
+
+/**
+ * What a save in another window changed in an area, said above the area's settings
+ */
+interface ChangedSinceNote
+{
+	name: string;
+	details: readonly SavedEditDetail[];
+}
+
+/**
+ * An area's settings, without the rest of what the editor has of it
+ *
+ * @param area The area
+ * @return Its settings
+ */
+function settingsOf(area: AreaSettings): AreaSettings
+{
+	return({
+		name: area.name,
+		parents: area.parents,
+		enabled: area.enabled,
+		indoors: area.indoors,
+		lightLevel: area.lightLevel,
+		defaultTileId: area.defaultTileId,
+		passageOfTime: area.passageOfTime,
+		faerieMorning: area.faerieMorning,
+		fogOfWar: area.fogOfWar,
+		loopsEastWest: area.loopsEastWest,
+		loopsNorthSouth: area.loopsNorthSouth
+	});
+}
+
+/**
+ * The settings of an area that differ between two sets of them
+ *
+ * @param settings The settings now
+ * @param before The settings before
+ * @return The settings that differ, as they are now
+ */
+function changedSettings(settings: AreaSettings, before: AreaSettings): Partial<AreaSettings>
+{
+	return(Object.fromEntries((Object.keys(settings) as (keyof AreaSettings)[])
+		.filter((key) => (JSON.stringify(settings[key]) !== JSON.stringify(before[key])))
+		.map((key) => [key, settings[key]])));
+}
+
+/**
+ * Why an area's settings can't be saved: a name that is blank or holds characters names can't, or no
+ * parents
+ *
+ * @param settings The settings
+ * @return The problem, or undefined for none
+ */
+function settingsProblem(settings: Partial<AreaSettings>): 'name' | 'parents' | undefined
+{
+	if ((settings.name !== undefined) && ((settings.name.trim() === '') || DISALLOWED_TEXT_CHARACTERS.test(settings.name)))
+	{
+		return('name');
+	}
+
+	if ((settings.parents !== undefined) && (settings.parents.length === 0))
+	{
+		return('parents');
+	}
+
+	return(undefined);
+}
+
+/**
  * What the Areas tab gives the region editor: the regions and areas with the tab's changes, and the
  * world worked out from them
  */
@@ -118,7 +213,8 @@ export interface PlacesHost
  *
  * The area editor is a view in the tab rather than a dialog, since it holds the area's cells. Regions and
  * areas added, deleted and moved wait on the page until the tab is saved, as do the changes made to the
- * region or area open; a new area can be opened, painted and linked to before it is saved
+ * region or area open; a new area can be opened, painted and linked to before it is saved. Opening
+ * another area, a region or the list keeps the changes of the area left, until they are saved
  */
 export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, TilePlaces
 {
@@ -171,14 +267,44 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private stagedNeighbors = new Map<string, AreaNeighbors>();
 
 	/**
-	 * The bounds Edit Size gave the saved areas its resize carried along, not yet saved, by area ID
+	 * The bounds Edit Size gave the saved areas its resize carried along, not yet saved, by area ID. An
+	 * area left with changes of its own takes them as its size instead, as does an area opened
 	 */
 	private carriedBounds = new Map<string, AreaBounds>();
 
 	/**
-	 * The new areas Add Neighbor added beside the area open, which go with its changes when they are thrown away
+	 * The settings changed in the saved areas the area editor left before they were saved, by area ID. An
+	 * area added since the tab was saved keeps its settings in staged
 	 */
-	private addedNeighbors: string[] = [];
+	private readonly keptSettings = new Map<string, KeptSettings>();
+
+	/**
+	 * What saves in other windows changed in the areas left with changes, by area ID, said above an area's
+	 * settings when it opens again
+	 */
+	private readonly keptNotes = new Map<string, ChangedSinceNote[]>();
+
+	/**
+	 * What saves in other windows changed in the area open while it had changes, as changedSince says
+	 */
+	private openNotes: ChangedSinceNote[] = [];
+
+	/**
+	 * The settings the area open showed once it had opened, which leaving it compares the form with
+	 */
+	private openedSettings: AreaSettings | undefined;
+
+	/**
+	 * The area open as it was loaded when its settings were first changed: as it opened, or for an area
+	 * left with changes, as it was when they were made
+	 */
+	private areaLoaded: EditorArea | undefined;
+
+	/**
+	 * Whether the tab has changes not yet saved outside the area open: the areas left with changes, the
+	 * links and neighbors changed, and the sizes Edit Size carried areas to
+	 */
+	private readonly keptChanges: CheckedChanges;
 
 	/**
 	 * The side Add Neighbor adds a new area to, while its dialog is open
@@ -240,11 +366,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private cellsUnsaved = false;
 
 	/**
-	 * Whether the area editor's settings or cells have changes that haven't been saved
+	 * Whether the area open has changes to its settings or cells that haven't been saved
 	 */
 	private readonly areaChanges = new ChangeTracker({
 		root: this.form,
-		state: () => [this.cellsUnsaved, this.parents.value.map(placeKey).join(','), JSON.stringify([...this.stagedNeighbors]), JSON.stringify([...this.carriedBounds])]
+		state: () => [this.cellsUnsaved, this.parents.value.map(placeKey).join(',')]
 	});
 
 	/**
@@ -260,7 +386,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Whether the tab has changes that haven't been saved: regions and areas added, deleted or moved, or
-	 * changes to the region or area open
+	 * changes to the region or area open or to the areas left with changes
 	 */
 	readonly changes: ReturnType<typeof combineChanges>;
 
@@ -318,9 +444,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * What the save being sent holds: the regions and areas deleted and added, the area open as it is
-	 * saved and its settings as the form showed them, and the openVersion when the save started
+	 * saved and its settings as the form showed them, the settings of the areas left with changes, and the
+	 * openVersion when the save started
 	 */
-	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; version: number } = { createdIds: [], area: undefined, shown: undefined, version: -1 };
+	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; kept: ReadonlyMap<string, KeptSettings>; version: number } = { createdIds: [], area: undefined, shown: undefined, kept: new Map(), version: -1 };
 
 	/**
 	 * The area the editor is showing
@@ -359,7 +486,6 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly areaSelect: AreaSelectDialog, private readonly onPlaceChanged: (place: PlaceRef | undefined) => void, private readonly onAreasLoaded: () => void, private readonly onBackToLobby: () => void)
 	{
 		this.regionEditor = new RegionEditorView(api, this);
-		this.changes = combineChanges(this.areaChanges, this.staged, this.regionEditor.changes);
 		this.list = new PlacesList((place) =>
 		{
 			this.open(place);
@@ -391,6 +517,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			this.cellsUnsaved = unsaved;
 			this.areaChanges.check();
+			this.keptChanges.check();
 		}, {
 			grid: () => this.neighborGrid(),
 			area: (areaId) => this.neighborArea(areaId),
@@ -401,6 +528,17 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			open: (areaId) =>
 			{
 				this.open({ kind: 'area', id: areaId });
+			}
+		});
+
+		this.keptChanges = new CheckedChanges(() => ((this.keptSettings.size > 0) || (this.stagedNeighbors.size > 0) || (this.carriedBounds.size > 0) || this.areaEditor.hasAnyChanges()));
+		this.changes = combineChanges(this.areaChanges, this.staged, this.regionEditor.changes, this.keptChanges);
+
+		this.areaChanges.subscribe((unsaved) =>
+		{
+			if (!unsaved)
+			{
+				this.openNotes = [];
 			}
 		});
 
@@ -453,18 +591,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		getElement('area-back', HTMLButtonElement).addEventListener('click', () =>
 		{
-			if (this.areaChanges.confirmDiscard())
-			{
-				void this.showListView();
-			}
+			void this.showListView();
 		});
 
 		this.backToLobbyButton.addEventListener('click', () =>
 		{
-			if (this.areaChanges.confirmDiscard())
-			{
-				this.backToLobby();
-			}
+			this.backToLobby();
 		});
 
 		this.staged.subscribe(() =>
@@ -565,9 +697,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			return;
 		}
 
-		if (this.universeOpen?.id !== target.id)
+		// The draft's regions and areas have IDs of their own, so the other version's changes go too
+		if ((this.universeOpen?.id !== target.id) || (this.universeOpen.version !== target.version))
 		{
-			this.staged.clear();
+			this.discardChanges();
 		}
 
 		this.universeOpen = target;
@@ -634,8 +767,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Leaves the region or area editor for the list, and shows the Lobby tab, the editor's changes already
-	 * confirmed thrown away
+	 * Leaves the region or area editor for the list, and shows the Lobby tab: the region editor's changes
+	 * already confirmed thrown away, and the area editor's kept
 	 */
 	backToLobby(): void
 	{
@@ -669,23 +802,19 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Whether the region or area editor may be left: asks first while it has unsaved changes
+	 * Whether the region or area editor may be left: asks first while the region editor has unsaved
+	 * changes. The area editor's are kept
 	 *
 	 * @return False when the player kept the changes
 	 */
 	private confirmLeave(): boolean
 	{
-		if (!this.editorView.hidden && !this.areaChanges.confirmDiscard())
-		{
-			return(false);
-		}
-
 		return(this.regionEditor.confirmLeave());
 	}
 
 	/**
 	 * Opens an area in the area editor, first asking whether to discard the unsaved changes of the region
-	 * or area it shows
+	 * it shows, and keeping those of the area it shows
 	 *
 	 * @param areaId The area's ID
 	 */
@@ -708,7 +837,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Opens a region in the region editor, first asking whether to discard the unsaved changes of the
-	 * region or area it shows
+	 * region it shows, and keeping those of the area the area editor shows
 	 *
 	 * @param regionId The region's ID
 	 */
@@ -724,7 +853,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Opens a region or area, or the list for none, that the page's history went back or forward to, first
-	 * asking whether to discard the unsaved changes of the region or area the editor shows
+	 * asking whether to discard the unsaved changes of the region the editor shows, and keeping those of
+	 * the area
 	 *
 	 * @param place The region or area, or undefined for the list
 	 * @return False when the player kept the changes, leaving the tab as it was
@@ -742,8 +872,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Opens a region or area, or the list for none, discarding any unsaved changes of the region or area
-	 * the tab shows
+	 * Opens a region or area, or the list for none, discarding any unsaved changes of the region the tab
+	 * shows, and keeping those of the area
 	 *
 	 * @param place The region or area, or undefined for the list
 	 */
@@ -764,8 +894,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Opens a region in the region editor, discarding any unsaved changes of the region or area the tab
-	 * shows, once the regions have loaded, as they haven't when the page opens at a region
+	 * Opens a region in the region editor, discarding any unsaved changes of the region the tab shows and
+	 * keeping those of the area, once the regions have loaded, as they haven't when the page opens at a
+	 * region
 	 *
 	 * @param regionId The region's ID
 	 */
@@ -841,36 +972,119 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Hides the area editor, throwing its unsaved changes away
+	 * Hides the area editor, keeping the area's unsaved changes until the tab is saved
 	 */
 	private hideAreaEditor(): void
 	{
-		// The areas Add Neighbor added go with the rest of the area editor's changes
-		const added = this.addedNeighbors;
+		const area = this.area;
 
-		this.addedNeighbors = [];
-		this.stagedNeighbors.clear();
-		this.carriedBounds.clear();
+		this.keepArea();
+		this.area = undefined;
+		this.areaLoaded = undefined;
+		this.openedSettings = undefined;
+		this.openNotes = [];
+		this.areaEditor.hide();
 
-		for (const areaId of added)
+		// A new area deleted while it was open takes its painting with it
+		if (area && isNewAreaId(area.id) && !this.staged.get(area.id))
 		{
-			if (this.staged.get(areaId))
-			{
-				this.staged.delete(areaId);
-			}
+			this.areaEditor.forget(area.id);
 		}
 
-		this.area = undefined;
-		this.areaEditor.hide();
 		this.areaChanges.markSaved();
 		this.changedSince.hide();
 		this.editorView.hidden = true;
 		showMessage(this.claimLine, undefined);
 		this.shownClaim = [];
+		this.keptChanges.check();
 	}
 
 	/**
-	 * Opens an area in the area editor, discarding any unsaved changes of the region or area it shows
+	 * Keeps the settings changed in the area open as the area editor leaves it, with what saves in other
+	 * windows changed in it meanwhile, until the tab is saved. A new area takes them as its settings
+	 */
+	private keepArea(): void
+	{
+		const area = this.area;
+		const opened = this.openedSettings;
+
+		// A new area deleted since it opened took its changes with it
+		if (!area || !opened || (isNewAreaId(area.id) && !this.staged.get(area.id)))
+		{
+			return;
+		}
+
+		const shown = this.shownSettings();
+		const changes = changedSettings(shown, opened);
+
+		if (Object.keys(changes).length > 0)
+		{
+			if (isNewAreaId(area.id))
+			{
+				this.staged.setNewSettings(area.id, shown);
+			}
+			else
+			{
+				this.keptSettings.set(area.id, {
+					loaded: (this.areaLoaded ?? area),
+					changes
+				});
+			}
+		}
+
+		if ((this.openNotes.length > 0) && this.areaChanges.hasUnsavedChanges())
+		{
+			this.keptNotes.set(area.id, this.openNotes);
+		}
+	}
+
+	/**
+	 * Throws away every change on the tab, for when another universe or version opens
+	 */
+	private discardChanges(): void
+	{
+		this.staged.clear();
+		this.keptSettings.clear();
+		this.keptNotes.clear();
+		this.stagedNeighbors.clear();
+		this.carriedBounds.clear();
+		this.area = undefined;
+		this.areaEditor.discard();
+		this.keptChanges.check();
+	}
+
+	/**
+	 * Throws away the changes kept for an area that is gone: one added since the tab was saved and then
+	 * deleted, or one a save deleted. The areas whose kept parents name it take its parents in its place,
+	 * as the server gives the areas inside a deleted area. Neighbors naming it are left out when saving
+	 *
+	 * @param areaId The area's ID
+	 * @param parents Its parents
+	 */
+	private forgetArea(areaId: string, parents: readonly PlaceRef[]): void
+	{
+		const place: PlaceRef = { kind: 'area', id: areaId };
+
+		this.areaEditor.forget(areaId);
+		this.keptSettings.delete(areaId);
+		this.keptNotes.delete(areaId);
+		this.carriedBounds.delete(areaId);
+		this.stagedNeighbors.delete(areaId);
+
+		for (const [keptId, kept] of this.keptSettings)
+		{
+			if (kept.changes.parents)
+			{
+				this.keptSettings.set(keptId, { ...kept, changes: { ...kept.changes, parents: withoutParent(kept.changes.parents, place, parents) } });
+			}
+		}
+
+		this.keptChanges.check();
+	}
+
+	/**
+	 * Opens an area in the area editor, keeping any unsaved changes of the area it shows and discarding
+	 * those of the region
 	 *
 	 * @param areaId The area's ID
 	 */
@@ -892,7 +1106,6 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		const version = ++this.openVersion;
 
-		// Any unsaved painting has been discarded, so the area's cells load afresh
 		this.hideAreaEditor();
 		this.regionEditor.hide();
 		// A new area has no address until it is saved
@@ -1069,8 +1282,27 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				: undefined),
 			((!enabled || (node?.enabled === false)) ? t(editorMessages.disabledTag) : undefined),
 			(isNewPlace(place) ? stagedTag('new', false) : undefined),
+			(((place.kind === 'area') && !isNewPlace(place) && this.hasKeptChanges(place.id))
+				? t({
+					id: 'editor.areas.unsavedTag',
+					defaultMessage: 'unsaved changes',
+					description: 'Under an area in the list of regions and areas, for one changed in the area editor that was left before the changes were saved. The editor\'s Save button saves them'
+				})
+				: undefined),
 			((place.kind === 'area') && this.claims.has(place.id) ? claimTag(this.claims.get(place.id) ?? []) : undefined)
 		].filter((tag) => (tag !== undefined)));
+	}
+
+	/**
+	 * Whether an area other than the one open has changes not yet saved: settings, painting, size, links
+	 * or neighbors
+	 *
+	 * @param areaId The area's ID
+	 * @return True when it has
+	 */
+	private hasKeptChanges(areaId: string): boolean
+	{
+		return(this.keptSettings.has(areaId) || this.areaEditor.changedAreaIds().has(areaId) || this.stagedNeighbors.has(areaId) || this.carriedBounds.has(areaId));
 	}
 
 	/**
@@ -1146,12 +1378,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	/**
 	 * Follows a save made in another window that changed regions or areas: loads the list again, and the
 	 * area open when the save changed it and it has no unsaved changes here; with them, keeps them and says
-	 * above the area's settings what the save changed. An area the save deleted is taken as deleted here
-	 * too. Painting the open area's cells is left to followPainting()
+	 * above the area's settings what the save changed. The areas left with changes keep them too, and say
+	 * what the save changed once they open again. An area the save deleted is taken as deleted here too,
+	 * and one with changes here is kept as a new area. Painting the cells of the area open and the areas
+	 * left with changes is left to followPainting()
 	 *
 	 * @param save The save
-	 * @return True when the save changed a region or area with unsaved changes here: the one open, or one
-	 * being deleted when the tab is saved
+	 * @return True when the save changed a region or area with unsaved changes here: the one open, one left
+	 * with changes, or one being deleted when the tab is saved
 	 */
 	otherSaved(save: OtherSave): boolean
 	{
@@ -1166,6 +1400,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const deletedOf = (subject: AuditSubject): Set<string> => new Set(changed.flatMap((detail) => (((detail.subject === subject) && (detail.action === 'deleted') && (typeof detail.id === 'string')) ? [detail.id] : [])));
 		const deletedAreaIds = deletedOf('area');
 		const deletedRegionIds = deletedOf('region');
+		const keptChanged = this.followKeptAreas(save.name, changed, deletedAreaIds);
 
 		for (const areaId of deletedAreaIds)
 		{
@@ -1177,7 +1412,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			this.staged.markPlaceDeleted({ kind: 'region', id: regionId });
 		}
 
-		const deletedHere = changed.some((detail) => ((typeof detail.id === 'string') && (this.staged.isDeleted(detail.id) || this.staged.isPlaceDeleted({ kind: 'region', id: detail.id }))));
+		const deletedHere = (keptChanged || changed.some((detail) => ((typeof detail.id === 'string') && (this.staged.isDeleted(detail.id) || this.staged.isPlaceDeleted({ kind: 'region', id: detail.id })))));
 		const regionChanged = this.regionEditor.otherSaved(save, changed);
 
 		if (regionChanged)
@@ -1233,10 +1468,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		if (this.areaChanges.hasUnsavedChanges() || linkDialog.hasUnappliedChanges())
 		{
 			this.changedSince.add(save.name, rest);
+			this.openNotes.push({ name: save.name, details: rest });
 
 			if (deletedAreaIds.has(open.id) && !isNewAreaId(open.id))
 			{
-				this.recreateOpenArea(open);
+				this.recreateOpenArea(open, deletedAreaIds);
 			}
 
 			return(true);
@@ -1253,33 +1489,89 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
+	 * Follows what a save in another window changed in the saved areas left with changes: notes it, to say
+	 * above an area's settings when it opens again, and keeps an area it deleted as a new area. Changes to
+	 * an area's neighbors or a size carried to it go with an area it deleted. Call it before the areas
+	 * are taken as deleted, while the tab still has their parents
+	 *
+	 * @param name Who saved
+	 * @param changed What the save changed in regions and areas
+	 * @param deletedAreaIds The areas it deleted
+	 * @return True when it changed an area left with changes
+	 */
+	private followKeptAreas(name: string, changed: readonly SavedEditDetail[], deletedAreaIds: ReadonlySet<string>): boolean
+	{
+		const withWork = new Set([...this.keptSettings.keys(), ...this.areaEditor.changedAreaIds()]);
+		const open = this.area?.id;
+		let followed = false;
+
+		for (const areaId of withWork)
+		{
+			const details = changed.filter((detail) => ((detail.id === areaId) && !isFollowedPainting(detail)));
+
+			if ((areaId === open) || isNewAreaId(areaId) || (details.length === 0))
+			{
+				continue;
+			}
+
+			followed = true;
+			this.keptNotes.set(areaId, [...(this.keptNotes.get(areaId) ?? []), { name, details }]);
+
+			// An area with only links changed loses them; one with settings, painting or a size changed is kept
+			if (deletedAreaIds.has(areaId) && (this.keptSettings.has(areaId) || (this.areaEditor.keptBounds(areaId) !== undefined)))
+			{
+				this.recreateKeptArea(areaId, deletedAreaIds);
+			}
+			else if (deletedAreaIds.has(areaId))
+			{
+				this.forgetArea(areaId, (this.loaded.areas.find((area) => (area.id === areaId))?.parents ?? []));
+			}
+		}
+
+		for (const areaId of deletedAreaIds)
+		{
+			if ((areaId !== open) && (this.stagedNeighbors.has(areaId) || this.carriedBounds.has(areaId)) && !withWork.has(areaId))
+			{
+				this.forgetArea(areaId, (this.loaded.areas.find((area) => (area.id === areaId))?.parents ?? []));
+			}
+		}
+
+		return(followed);
+	}
+
+	/**
+	 * Whether a region or area a recreated area names as a parent is still there: not the area itself, and
+	 * not one a save in another window deleted
+	 *
+	 * @param areaId The recreated area's ID
+	 * @param deletedAreaIds The areas the save deleted
+	 * @return Whether a parent is still there
+	 */
+	private parentExists(areaId: string, deletedAreaIds: ReadonlySet<string>): (parent: PlaceRef) => boolean
+	{
+		return((parent) => ((parent.kind === 'region') ? this.regions().some((region) => (region.id === parent.id)) : this.areas().some((other) => ((other.id === parent.id) && (other.id !== areaId) && !deletedAreaIds.has(other.id)))));
+	}
+
+	/**
 	 * Keeps the area open, which a save in another window deleted while it had unsaved changes here, as a
 	 * new area with the settings it was loaded with and its cells as they show here (AreaEditor.recreate()),
 	 * so saving adds it again with the changes made to it, and deleting it discards them. Parents the save
 	 * deleted are left out, as the server leaves them out of the areas inside them
 	 *
 	 * @param area The area, as it was loaded
+	 * @param deletedAreaIds The areas the save deleted
 	 */
-	private recreateOpenArea(area: EditorArea): void
+	private recreateOpenArea(area: EditorArea, deletedAreaIds: ReadonlySet<string>): void
 	{
-		const exists = (parent: PlaceRef): boolean => ((parent.kind === 'region') ? this.regions().some((region) => (region.id === parent.id)) : this.areas().some((other) => ((other.id === parent.id) && (other.id !== area.id))));
-		const parents = area.parents.filter(exists);
+		const exists = this.parentExists(area.id, deletedAreaIds);
+		const settings = settingsOf(area);
 		const added = this.staged.create({
-			name: area.name,
-			parents,
-			enabled: area.enabled,
-			indoors: area.indoors,
-			lightLevel: area.lightLevel,
-			defaultTileId: area.defaultTileId,
-			passageOfTime: area.passageOfTime,
-			faerieMorning: area.faerieMorning,
-			fogOfWar: area.fogOfWar,
-			loopsEastWest: area.loopsEastWest,
-			loopsNorthSouth: area.loopsNorthSouth
+			...settings,
+			parents: settings.parents.filter(exists)
 		});
 
 		this.parents.set(this.parents.value.filter(exists), this.names(), this.parentChoices({ kind: 'area', id: added.id }, 'area', this.areaOverride()));
-		this.areaEditor.recreate(added.id, added.bounds);
+		this.areaEditor.recreate(area.id, added.id, added.bounds);
 		this.area = { ...area, id: added.id };
 		// A new area has no address until it is saved
 		this.onPlaceChanged(undefined);
@@ -1287,21 +1579,54 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Takes the painting a save made in another window to the open area into its cells, unsaved changes or
-	 * not, marking the cells it changed (AreaEditor.followPainting()). Call it after otherSaved()
+	 * Keeps an area left with changes, which a save in another window deleted, as a new area with its
+	 * settings as they were left and its cells as they show here (AreaEditor.recreate()), as the area open
+	 * is kept (recreateOpenArea())
+	 *
+	 * @param areaId The area's ID
+	 * @param deletedAreaIds The areas the save deleted
+	 */
+	private recreateKeptArea(areaId: string, deletedAreaIds: ReadonlySet<string>): void
+	{
+		const kept = this.keptSettings.get(areaId);
+		const area = (kept?.loaded ?? this.loaded.areas.find((each) => (each.id === areaId)));
+
+		if (!area)
+		{
+			this.forgetArea(areaId, []);
+			return;
+		}
+
+		const settings = { ...settingsOf(area), ...kept?.changes };
+		const added = this.staged.create({
+			...settings,
+			name: settings.name.trim(),
+			parents: settings.parents.filter(this.parentExists(areaId, deletedAreaIds))
+		});
+
+		this.areaEditor.recreate(areaId, added.id, added.bounds);
+		this.keptSettings.delete(areaId);
+		this.keptNotes.set(added.id, (this.keptNotes.get(areaId) ?? []));
+		this.keptNotes.delete(areaId);
+		this.carriedBounds.delete(areaId);
+		this.stagedNeighbors.delete(areaId);
+		this.keptChanges.check();
+	}
+
+	/**
+	 * Takes the painting a save made in another window to the open area, and to the areas left with
+	 * changes, into their cells, unsaved changes or not, marking the cells it changed
+	 * (AreaEditor.followPainting()). Call it after otherSaved()
 	 *
 	 * @param save The save
-	 * @return How many of the cells it changed had been painted here while the area was open, and what
-	 * takes its marks off the area
+	 * @return How many of the cells it changed had been painted here while the areas were open, and what
+	 * takes its marks off them
 	 */
 	async followPainting(save: OtherSave): Promise<FollowedPainting>
 	{
-		const open = this.area;
-		const followed = ((open === undefined)
-			? []
-			: await Promise.all(save.details
-				.filter((detail) => (isFollowedPainting(detail) && (detail.id === open.id)))
-				.map((detail) => this.areaEditor.followPainting(open.id, (detail.chunks ?? []), save.name))));
+		const followed = await Promise.all(save.details
+			.filter((detail) => (isFollowedPainting(detail) && (typeof detail.id === 'string')))
+			.map((detail) => this.areaEditor.followPainting(String(detail.id), (detail.chunks ?? []), save.name)));
 
 		return({
 			paintedOver: followed.reduce((sum, each) => (sum + each.paintedOver), 0),
@@ -1493,16 +1818,22 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Every area of the universe as last loaded, then the areas added since the tab was last saved, with
-	 * the parents the tab's changes give them
+	 * the parents the tab's changes give them and the settings changed in the areas left with changes
 	 *
 	 * @return The areas, including those that will be deleted
 	 */
 	areas(): EditorAreaSummary[]
 	{
-		return([...this.loaded.areas, ...this.staged.newAreas()].map((area) => ({
-			...area,
-			parents: [...(this.staged.movedParents({ kind: 'area', id: area.id }) ?? area.parents)]
-		})));
+		return([...this.loaded.areas, ...this.staged.newAreas()].map((area) =>
+		{
+			const changes = this.keptSettings.get(area.id)?.changes;
+
+			return({
+				...area,
+				...changes,
+				parents: [...(changes?.parents ?? this.staged.movedParents({ kind: 'area', id: area.id }) ?? area.parents)]
+			});
+		}));
 	}
 
 	/**
@@ -1625,8 +1956,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * The universe's areas as the grid of neighbors sees them, with the tab's changes: the area open at its
-	 * size and loops as its editor shows them, the neighbors the area editor changed, the sizes its resizes
-	 * carried other areas to, and without the areas that will be deleted
+	 * size and loops as its editor shows them, the areas left with changes at their sizes, the neighbors
+	 * the area editor changed, the sizes its resizes carried other areas to, and without the areas that
+	 * will be deleted
 	 *
 	 * @return The areas, by ID
 	 */
@@ -1644,7 +1976,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 			grid.set(area.id, {
 				id: area.id,
-				bounds: ((isOpen && open) ? open.bounds : (this.carriedBounds.get(area.id) ?? area.bounds)),
+				bounds: ((isOpen && open) ? open.bounds : (this.areaEditor.keptBounds(area.id) ?? this.carriedBounds.get(area.id) ?? area.bounds)),
 				neighbors: {
 					north: (((neighbors.north !== null) && kept.has(neighbors.north)) ? neighbors.north : null),
 					east: (((neighbors.east !== null) && kept.has(neighbors.east)) ? neighbors.east : null),
@@ -1690,8 +2022,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Gives an area the area open carries along in a resize its new bounds: a saved one's until the tab
-	 * is saved, and a new one's for good
+	 * Gives an area the area open carries along in a resize its new bounds: an area left with changes takes
+	 * them as its size, a saved one keeps them until the tab is saved, and a new one takes them for good
 	 *
 	 * @param areaId The area's ID
 	 * @param bounds Its bounds
@@ -1699,21 +2031,22 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private setCarriedBounds(areaId: string, bounds: AreaBounds): void
 	{
 		const saved = this.loaded.areas.find((area) => (area.id === areaId));
+		const kept = this.areaEditor.carry(areaId, bounds);
 
-		if (isNewAreaId(areaId))
+		if (!kept && isNewAreaId(areaId))
 		{
 			this.staged.setNewBounds(areaId, bounds);
 		}
-		else if (saved && sameBoundsAs(saved.bounds, bounds))
+		else if (!kept && saved && sameBoundsAs(saved.bounds, bounds))
 		{
 			this.carriedBounds.delete(areaId);
 		}
-		else
+		else if (!kept)
 		{
 			this.carriedBounds.set(areaId, bounds);
 		}
 
-		this.areaChanges.check();
+		this.keptChanges.check();
 		this.areaEditor.showNeighbors();
 		this.showNeighborSection();
 	}
@@ -1739,7 +2072,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			}
 		}
 
-		this.areaChanges.check();
+		this.keptChanges.check();
 		this.settingsChanged();
 		this.areaEditor.showNeighbors();
 	}
@@ -2068,7 +2401,6 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			loopsNorthSouth: false
 		}, placed.bounds);
 
-		this.addedNeighbors.push(added.id);
 		this.neighborChanges.markSaved();
 		this.neighborDialog.close();
 		this.stageGrid(withNeighbors(this.neighborGrid(), added.id, placed.joins));
@@ -2494,30 +2826,71 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private showArea(universe: EditableUniverse, area: EditorArea): void
 	{
-		const place: PlaceRef = { kind: 'area', id: area.id };
-		const deleted = this.staged.isDeleted(area.id);
-		const editable = (this.canEditPlace(place) && !deleted);
-		const isLobbySquare = (area.id === this.loaded.lobbyAreaId);
-		const isStart = (area.id === this.loaded.startingAreaId);
+		const editable = (this.canEditPlace({ kind: 'area', id: area.id }) && !this.staged.isDeleted(area.id));
+		const kept = this.keptSettings.get(area.id);
+		const notes = (this.keptNotes.get(area.id) ?? []);
+		// An area Edit Size in another area carried to a size takes it as its own size
+		const carried = this.carriedBounds.get(area.id);
 
-		this.area = area;
+		this.area = { ...area, bounds: (this.areaEditor.keptBounds(area.id) ?? carried ?? area.bounds) };
 		this.fillSettings(area);
-		this.showSize(area);
-		this.fields.disabled = !editable;
-		this.name.disabled = !editable;
-		this.parents.setDisabled(!editable);
-		this.deleteButton.hidden = (!this.canEditPlace(place) || isLobbySquare || isStart);
-		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
-			id: 'editor.area.delete',
-			defaultMessage: 'Delete Area',
-			description: 'Button that deletes the area being edited when the Areas tab is saved'
-		}));
+		this.showSize(this.area);
+		this.showEditable();
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 		this.showChildren(area.id);
 		this.showClaim();
 		this.areaChanges.markSaved();
-		void this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.linkTargets(area.id), editable);
+		this.openedSettings = this.shownSettings();
+		this.areaLoaded = (kept?.loaded ?? area);
+		this.keptSettings.delete(area.id);
+		this.keptNotes.delete(area.id);
+		this.carriedBounds.delete(area.id);
+
+		// An area left with changes shows them over the area as it now is, as the save will merge them
+		if (kept)
+		{
+			this.fillSettings({ ...area, ...kept.changes }, kept.changes.parents);
+			this.areaChanges.check();
+		}
+
+		for (const note of notes)
+		{
+			this.changedSince.add(note.name, note.details);
+		}
+
+		this.openNotes = notes;
+		this.keptChanges.check();
+		void this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.linkTargets(area.id), editable, carried);
+	}
+
+	/**
+	 * Lets the area open be changed, or makes it read-only for a player who can't change it or while it
+	 * will be deleted, and offers Delete Area or Undo Delete
+	 */
+	private showEditable(): void
+	{
+		const area = this.area;
+
+		if (!area)
+		{
+			return;
+		}
+
+		const place: PlaceRef = { kind: 'area', id: area.id };
+		const deleted = this.staged.isDeleted(area.id);
+		const editable = (this.canEditPlace(place) && !deleted);
+
+		this.fields.disabled = !editable;
+		this.name.disabled = !editable;
+		this.parents.setDisabled(!editable);
+		this.deleteButton.hidden = (!this.canEditPlace(place) || (area.id === this.loaded.lobbyAreaId) || (area.id === this.loaded.startingAreaId));
+		labelRemoveButton(this.deleteButton, { removed: deleted }, false, t({
+			id: 'editor.area.delete',
+			defaultMessage: 'Delete Area',
+			description: 'Button that deletes the area being edited when the Areas tab is saved'
+		}));
+		this.areaEditor.setEditable(editable);
 	}
 
 	/**
@@ -2559,11 +2932,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * Fills the area editor's settings fields
 	 *
 	 * @param settings The settings
+	 * @param parents The parents to show, when the form changed them; otherwise those the tab's changes give the area
 	 */
-	private fillSettings(settings: EditorArea): void
+	private fillSettings(settings: EditorArea, parents?: readonly PlaceRef[]): void
 	{
 		const place: PlaceRef = { kind: 'area', id: settings.id };
-		const node = { ...settings, parents: (this.staged.movedParents(place) ?? settings.parents) };
+		const node = { ...settings, parents: [...(parents ?? this.staged.movedParents(place) ?? settings.parents)] };
 
 		this.name.value = node.name;
 		this.parents.set(node.parents, this.names(), this.parentChoices(place, 'area', { place, node }));
@@ -2647,11 +3021,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		if (settings.parents.length === 0)
 		{
-			showMessage(this.error, t({
-				id: 'editor.area.needsParent',
-				defaultMessage: 'An area must be inside at least one region or area.',
-				description: 'Shown in the area editor when its parents have all been removed, which keeps it from saving'
-			}));
+			showMessage(this.error, t(messages.needsParent));
 			return(undefined);
 		}
 
@@ -2683,13 +3053,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 *
 	 * @param refusal Why the save was refused
 	 * @param fallback What to say when the server named no problems
+	 * @param values The values fallback names, such as the area's name
 	 * @param error Where to say it
 	 * @param problemList Where to list the problems
 	 * @param problems What holds the list
 	 */
-	showRefusal(refusal: SaveRefusal, fallback: Parameters<typeof describeEditorError>[1], error: HTMLElement, problemList: HTMLElement, problems: HTMLElement): void
+	showRefusal(refusal: SaveRefusal, fallback: Parameters<typeof describeEditorError>[1], values: MessageValues | undefined, error: HTMLElement, problemList: HTMLElement, problems: HTMLElement): void
 	{
-		showMessage(error, describeEditorError(refusal.error, fallback));
+		showMessage(error, describeEditorError(refusal.error, fallback, values));
 
 		if (refusal.placeProblems)
 		{
@@ -2702,15 +3073,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Adds the tab's changes to a save: the regions added, the places moved, the areas deleted and added,
-	 * the regions deleted, then the region or area open in its editor, an area's cells first and then its
-	 * settings as the form shows them
+	 * the regions deleted, then the region open in its editor, then the areas the area editor changed: the
+	 * cells of the area open and the areas left with changes, then their links, then their settings
 	 *
 	 * A new region or area is added after what it is inside, so it can name it. Tiles staged for deletion
 	 * on the Tilesets tab are sent as the tiles chosen to replace them, as the Tilesets tab's changes
 	 * repaint the saved areas
 	 *
 	 * @param save The save
-	 * @return False when the region or area editor's settings have a problem
+	 * @return False when the settings of the region or area open, or of an area left with changes, have a
+	 * problem
 	 */
 	collect(save: EditorSave): boolean
 	{
@@ -2740,17 +3112,37 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		const refParents = (parents: readonly PlaceRef[]): PlaceRef[] => parents.map((parent) => ({ kind: parent.kind, id: placeRef(parent.id) }));
-		const onRefused = (fallback: Parameters<typeof describeEditorError>[1]) => (refusal: SaveRefusal): void =>
+		const onRefused = (fallback: Parameters<typeof describeEditorError>[1], values?: MessageValues) => (refusal: SaveRefusal): void =>
 		{
 			if (this.area)
 			{
-				this.showRefusal(refusal, fallback, this.error, this.problemList, this.problems);
+				this.showRefusal(refusal, fallback, values, this.error, this.problemList, this.problems);
 			}
-			else if (!this.regionEditor.showRefusal(refusal, fallback))
+			else if (!this.regionEditor.showRefusal(refusal, fallback, values))
 			{
-				showMessage(this.listError, describeEditorError(refusal.error, fallback));
+				showMessage(this.listError, describeEditorError(refusal.error, fallback, values));
 			}
 		};
+		const names = this.names();
+		const areaName = (areaId: string): string => names({ kind: 'area', id: areaId });
+		const keptFallback = {
+			id: 'editor.areas.keptSaveFailed',
+			defaultMessage: 'Could not save {area}.',
+			description: 'Shown on the Areas tab when an area changed in the area editor and left before saving can\'t be saved, followed by why; {area} is its name. Nothing was saved'
+		};
+		const keptProblem = this.keptProblem();
+
+		if (keptProblem)
+		{
+			onRefused(keptFallback, { area: keptProblem.name })({
+				error: new EditorApiError(keptProblem.reason, 400, undefined),
+				retry: () =>
+				{
+					// Nothing was sent
+				}
+			});
+			return(false);
+		}
 		const regionFallback = {
 			id: 'editor.regions.saveFailed',
 			defaultMessage: 'Could not save the regions.',
@@ -2794,14 +3186,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		for (const areaId of this.staged.deletedIds())
 		{
-			save.add({ kind: 'deleteArea', areaId }, (refusal) =>
-			{
-				onRefused({
-					id: 'editor.areas.deleteFailed',
-					defaultMessage: 'Could not delete {area}.',
-					description: 'Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved'
-				})(refusal);
-			});
+			save.add({ kind: 'deleteArea', areaId }, onRefused({
+				id: 'editor.areas.deleteFailed',
+				defaultMessage: 'Could not delete {area}.',
+				description: 'Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved'
+			}, {
+				area: areaName(areaId)
+			}));
 		}
 
 		const created = this.creationOrder(settings);
@@ -2814,7 +3205,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				kind: 'createArea',
 				ref: newRef('', newArea.id),
 				area: {
-					name: fields.name,
+					name: fields.name.trim(),
 					parents: refParents(fields.parents),
 					enabled: fields.enabled,
 					indoors: fields.indoors,
@@ -2830,6 +3221,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				id: 'editor.areas.createFailed',
 				defaultMessage: 'Could not add {area}.',
 				description: 'Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved'
+			}, {
+				area: fields.name.trim()
 			}));
 
 			// A neighbor Add Neighbor made is as large as its row and column, and every new area starts out the same size
@@ -2848,17 +3241,54 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		let saved: EditorArea | undefined;
 
-		if (area && settings)
+		this.areaEditor.collect(save, placeRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (areaId) => !this.staged.isDeleted(areaId), (areaId, refusal) =>
 		{
-			this.areaEditor.collect(save, placeRef, (tileId) => numberRef('tile', this.paintedAs(tileId)), (refusal) =>
+			if (areaId === this.area?.id)
 			{
 				showMessage(this.error, describeEditorError(refusal.error, {
 					id: 'editor.area.cellsSaveFailed',
 					defaultMessage: 'Could not save the area\'s cells.',
 					description: 'Shown in the area editor when the server refused the painting on the area\'s cells, its new size or its links, followed by why; nothing was saved'
 				}));
-			});
+			}
+			else
+			{
+				onRefused(keptFallback, { area: areaName(areaId) })(refusal);
+			}
+		});
 
+		// The parents an area left with changes takes, those that will be deleted giving theirs in their place
+		const world = this.world();
+		const keptCollected = new Map(this.keptSettings);
+
+		for (const [areaId, kept] of keptCollected)
+		{
+			const { name, parents, defaultTileId, ...others } = kept.changes;
+
+			if (this.staged.isDeleted(areaId))
+			{
+				continue;
+			}
+
+			const update: AreaChangeUpdate = {
+				...others,
+				...((name === undefined) ? {} : { name: name.trim() }),
+				...((parents === undefined) ? {} : { parents: refParents(world.areas.find((each) => (each.id === areaId))?.parents ?? parents) }),
+				...((defaultTileId === undefined) ? {} : { defaultTileId: this.defaultTileRef({ kind: 'area', id: areaId }, defaultTileId) })
+			};
+
+			save.add({
+				kind: 'updateArea',
+				areaId,
+				update,
+				loaded: loadedFor(kept.loaded, update)
+			}, onRefused(keptFallback, {
+				area: areaName(areaId)
+			}));
+		}
+
+		if (area && settings)
+		{
 			// A new area is added with the form's settings
 			if (this.areaChanges.hasUnsavedChanges() && !isNewAreaId(area.id))
 			{
@@ -2872,7 +3302,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 					kind: 'updateArea',
 					areaId: area.id,
 					update,
-					loaded: loadedFor(area, update)
+					loaded: loadedFor((this.areaLoaded ?? area), update)
 				}, onRefused({
 					id: 'editor.area.saveFailed',
 					defaultMessage: 'Could not save the area.',
@@ -2892,12 +3322,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			}
 		}
 
-		// Setting a neighbor sets both ways, so the change from the other side of a pair finds nothing to change
-		for (const [areaId, neighbors] of this.stagedNeighbors)
+		// Setting a neighbor sets both ways, so the change from the other side of a pair finds nothing to
+		// change. The grid leaves out the areas that are gone or will be deleted, and neighbors naming them
+		const grid = this.neighborGrid();
+
+		for (const areaId of this.stagedNeighbors.keys())
 		{
 			const before = (this.areas().find((each) => (each.id === areaId))?.neighbors ?? NO_NEIGHBORS);
+			const neighbors = grid.get(areaId)?.neighbors;
 
-			if (this.staged.isDeleted(areaId))
+			if (!neighbors)
 			{
 				continue;
 			}
@@ -2920,10 +3354,42 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			],
 			area: saved,
 			shown: ((saved === undefined) ? undefined : this.shownSettings()),
+			kept: keptCollected,
 			version: this.openVersion
 		};
 
 		return(true);
+	}
+
+	/**
+	 * The first area left with changes whose settings can't be saved: a name that is blank or holds
+	 * characters names can't, or no parents
+	 *
+	 * @return The area's name and what is wrong, or undefined when every area's settings can be saved
+	 */
+	private keptProblem(): { name: string; reason: string } | undefined
+	{
+		const kept = [...this.keptSettings]
+			.filter(([areaId]) => !this.staged.isDeleted(areaId))
+			.map(([, { loaded, changes }]) => ({ name: loaded.name, settings: changes }));
+		const added = this.staged.newAreas()
+			.filter((newArea) => (newArea.id !== this.area?.id))
+			.map((newArea) => ({ name: newArea.name, settings: newArea }));
+
+		for (const { name, settings } of [...kept, ...added])
+		{
+			const problem = settingsProblem(settings);
+
+			if (problem !== undefined)
+			{
+				return({
+					name,
+					reason: ((problem === 'name') ? t(formMessages.invalidText) : t(messages.needsParent))
+				});
+			}
+		}
+
+		return(undefined);
 	}
 
 	/**
@@ -2935,9 +3401,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	async saved(ids: SavedIds): Promise<void>
 	{
 		const universe = this.universeOpen;
-		const { createdIds, area, shown, version } = this.collected;
+		const { createdIds, area, shown, kept, version } = this.collected;
 
-		this.collected = { createdIds: [], area: undefined, shown: undefined, version: -1 };
+		this.collected = { createdIds: [], area: undefined, shown: undefined, kept: new Map(), version: -1 };
 
 		if (!universe)
 		{
@@ -2949,14 +3415,35 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		// The neighbors and sizes the area editor changed are saved, and the areas it added are saved areas now
 		this.stagedNeighbors.clear();
 		this.carriedBounds.clear();
-		this.addedNeighbors = [];
+
+		// Settings changed again while the save was sent stay unsaved
+		for (const [areaId, settings] of kept)
+		{
+			if (this.keptSettings.get(areaId) === settings)
+			{
+				this.keptSettings.delete(areaId);
+			}
+		}
 
 		const deletedAreas = this.staged.deletedIds();
 
 		for (const areaId of deletedAreas)
 		{
-			this.staged.markDeleted(areaId, (this.loaded.areas.find((each) => (each.id === areaId))?.parents ?? []));
+			const parents = (this.loaded.areas.find((each) => (each.id === areaId))?.parents ?? []);
+
+			this.staged.markDeleted(areaId, parents);
+			this.forgetArea(areaId, parents);
 		}
+
+		for (const areaId of [...this.keptNotes.keys()])
+		{
+			if (!this.hasKeptChanges(areaId))
+			{
+				this.keptNotes.delete(areaId);
+			}
+		}
+
+		this.keptChanges.check();
 
 		for (const regionId of this.staged.deletedRegionIds())
 		{
@@ -3186,6 +3673,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		this.staged.markPlaceCreated(place, savedId);
 		this.parents.replaceId(place.id, savedId);
 
+		for (const [areaId, kept] of this.keptSettings)
+		{
+			if (kept.changes.parents)
+			{
+				this.keptSettings.set(areaId, { ...kept, changes: { ...kept.changes, parents: kept.changes.parents.map((parent) => (samePlace(parent, place) ? { ...parent, id: savedId } : parent)) } });
+			}
+		}
+
 		if (place.kind === 'area')
 		{
 			this.areaEditor.resolveIds(new Map([[place.id, savedId]]));
@@ -3257,7 +3752,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		if (this.staged.isDeleted(area.id))
 		{
 			this.staged.undoDelete(area.id);
-			this.showArea(universe, area);
+			this.showEditable();
 			return;
 		}
 
@@ -3329,6 +3824,14 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		this.staged.delete(area.id);
+
+		// A new area goes at once, with its changes, and the areas beside it lose it as a neighbor
+		if (isNewAreaId(area.id))
+		{
+			this.forgetArea(area.id, this.parents.value);
+			this.stageGrid(this.neighborGrid());
+		}
+
 		void this.showListView();
 	}
 

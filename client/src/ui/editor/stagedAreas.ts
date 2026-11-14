@@ -58,7 +58,7 @@ const UNKNOWN_SETTINGS: ResolvedAreaSettings = {
  * @param inherited The removed area's parents, given in its place
  * @return The parents, or the same list when it held none of them
  */
-function withoutParent(parents: readonly PlaceRef[], removed: PlaceRef, inherited: readonly PlaceRef[]): PlaceRef[]
+export function withoutParent(parents: readonly PlaceRef[], removed: PlaceRef, inherited: readonly PlaceRef[]): PlaceRef[]
 {
 	if (!parents.some((parent) => samePlace(parent, removed)))
 	{
@@ -236,6 +236,18 @@ export class StagedAreas implements ChangeSource
 	newRegions(): readonly EditorRegion[]
 	{
 		return(this.addedRegions);
+	}
+
+	/**
+	 * Gives a new area the settings the area editor showed as it was left
+	 *
+	 * @param areaId Its ID
+	 * @param settings Its settings
+	 */
+	setNewSettings(areaId: string, settings: AreaSettings): void
+	{
+		this.added = this.added.map((area) => ((area.id === areaId) ? { ...area, ...settings, parents: [...settings.parents] } : area));
+		this.changed();
 	}
 
 	/**

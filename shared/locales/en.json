@@ -1320,8 +1320,8 @@
 		"description": "Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name"
 	},
 	"editor.area.confirmDeleteLinks": {
-		"defaultMessage": "Saving the smaller area deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?",
-		"description": "Asked while saving an area made smaller, when links are on the cells it cuts off or lead into them; {links} is how many"
+		"defaultMessage": "Making {area} smaller deletes {links, plural, one {# link} other {# links}} on or into the cells it cuts off. This can't be undone. Save anyway?",
+		"description": "Asked while saving an area made smaller, when links are on the cells it cuts off or lead into them; {area} is the area's name and {links} how many links"
 	},
 	"editor.area.confirmDeleteNew": {
 		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, painting and links will be lost.",
@@ -1452,8 +1452,8 @@
 		"description": "Area editor tool that adds and changes links to other areas"
 	},
 	"editor.area.linksKept": {
-		"defaultMessage": "The links were kept, so the area wasn't made smaller.",
-		"description": "Why saving stopped: the player chose not to delete the links a smaller area would cut off; nothing was saved"
+		"defaultMessage": "The links were kept, so {area} wasn't made smaller.",
+		"description": "Why saving stopped: the player chose not to delete the links a smaller area would cut off; {area} is the area's name. Nothing was saved"
 	},
 	"editor.area.loadFailed": {
 		"defaultMessage": "Could not load the area's cells.",
@@ -1493,7 +1493,7 @@
 	},
 	"editor.area.needsParent": {
 		"defaultMessage": "An area must be inside at least one region or area.",
-		"description": "Shown in the area editor when its parents have all been removed, which keeps it from saving"
+		"description": "Shown when an area's parents have all been removed, which keeps it from saving: in the area editor, or on the Areas tab after the name of an area left before saving"
 	},
 	"editor.area.neighborButton": {
 		"defaultMessage": "{action} ({side, select, north {north} east {east} south {south} other {west}})",
@@ -1695,6 +1695,10 @@
 		"defaultMessage": "Could not delete {area}.",
 		"description": "Shown on the Areas tab when the server refused to delete an area, followed by why; {area} is its name. Nothing was saved"
 	},
+	"editor.areas.keptSaveFailed": {
+		"defaultMessage": "Could not save {area}.",
+		"description": "Shown on the Areas tab when an area changed in the area editor and left before saving can't be saved, followed by why; {area} is its name. Nothing was saved"
+	},
 	"editor.areas.listFailed": {
 		"defaultMessage": "Could not list the areas.",
 		"description": "Shown on the Areas tab when the areas couldn't be loaded"
@@ -1710,6 +1714,10 @@
 	"editor.areas.startingAreaTag": {
 		"defaultMessage": "starting area",
 		"description": "Under an area in the list of areas, for the area new characters start in"
+	},
+	"editor.areas.unsavedTag": {
+		"defaultMessage": "unsaved changes",
+		"description": "Under an area in the list of regions and areas, for one changed in the area editor that was left before the changes were saved. The editor's Save button saves them"
 	},
 	"editor.audit.caption": {
 		"defaultMessage": "Saves",

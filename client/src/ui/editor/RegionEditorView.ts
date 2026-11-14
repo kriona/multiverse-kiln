@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, loadedFor, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, loadedFor, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type MessageValues, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -583,16 +583,17 @@ export class RegionEditorView
 	 *
 	 * @param refusal Why
 	 * @param fallback What to say when the server said nothing more
+	 * @param values The values fallback names, such as an area's name
 	 * @return False when the region editor isn't open
 	 */
-	showRefusal(refusal: SaveRefusal, fallback: Parameters<typeof describeEditorError>[1]): boolean
+	showRefusal(refusal: SaveRefusal, fallback: Parameters<typeof describeEditorError>[1], values?: MessageValues): boolean
 	{
 		if (this.view.hidden)
 		{
 			return(false);
 		}
 
-		showMessage(this.error, describeEditorError(refusal.error, fallback));
+		showMessage(this.error, describeEditorError(refusal.error, fallback, values));
 
 		if (refusal.placeProblems)
 		{
