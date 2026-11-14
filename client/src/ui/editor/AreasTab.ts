@@ -539,6 +539,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}, {
 			grid: () => this.neighborGrid(),
 			area: (areaId) => this.neighborArea(areaId),
+			areaLookup: () => this.neighborAreas(),
 			setBounds: (areaId, bounds) =>
 			{
 				this.setCarriedBounds(areaId, bounds);
@@ -2097,14 +2098,37 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private neighborArea(areaId: string): EditorArea | undefined
 	{
-		const area = this.areas().find((each) => (each.id === areaId));
-		const gridArea = this.neighborGrid().get(areaId);
+		return(this.neighborAreas()(areaId));
+	}
 
-		return(area && {
-			...area,
-			bounds: (gridArea?.bounds ?? area.bounds),
-			neighbors: (gridArea?.neighbors ?? area.neighbors),
-			resolved: this.resolvedOf(area)
+	/**
+	 * Looks up areas as neighborArea() gives them, for looking up many while nothing changes: the areas, the
+	 * grid and the settings of the world are worked out once, on the first lookup
+	 *
+	 * @param grid The grid of neighbors as neighborGrid() gives it, when the caller has it
+	 * @return The lookup, giving undefined for an area the tab doesn't have
+	 */
+	private neighborAreas(grid?: NeighborGrid): (areaId: string) => EditorArea | undefined
+	{
+		const resolvedOf = this.settingsResolver();
+		let found: { areas: Map<string, EditorAreaSummary>; grid: NeighborGrid } | undefined;
+
+		return((areaId) =>
+		{
+			found ??= {
+				areas: new Map(this.areas().map((area) => [area.id, area])),
+				grid: (grid ?? this.neighborGrid())
+			};
+
+			const area = found.areas.get(areaId);
+			const gridArea = found.grid.get(areaId);
+
+			return(area && {
+				...area,
+				bounds: (gridArea?.bounds ?? area.bounds),
+				neighbors: (gridArea?.neighbors ?? area.neighbors),
+				resolved: resolvedOf(area)
+			});
 		});
 	}
 
@@ -2449,9 +2473,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		const grid = this.neighborGrid();
+		const areaOf = this.neighborAreas(grid);
 		const choices = [...grid.keys()]
 			.filter((areaId) => (areaId !== area.id))
-			.map((areaId) => this.neighborArea(areaId))
+			.map((areaId) => areaOf(areaId))
 			.filter((candidate) => (candidate !== undefined))
 			.map((candidate) => ({
 				area: candidate,
@@ -2594,8 +2619,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			return;
 		}
 
-		this.overallMap.open(this.neighborGrid(), area.id, {
-			area: (areaId) => ((areaId === area.id) ? { ...area, name: this.name.value, resolved: this.resolvedOf(area) } : this.neighborArea(areaId)),
+		// The map looks the areas up only while it opens, so they are worked out once for it
+		const grid = this.neighborGrid();
+		const areaOf = this.neighborAreas(grid);
+		const resolvedOf = this.settingsResolver();
+
+		this.overallMap.open(grid, area.id, {
+			area: (areaId) => ((areaId === area.id) ? { ...area, name: this.name.value, resolved: resolvedOf(area) } : areaOf(areaId)),
 			cells: (shown) => this.areaEditor.cellsOf(shown),
 			tiles: () => this.tileList,
 			open: (areaId) =>
@@ -3087,14 +3117,30 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private resolvedOf(area: EditorArea): EditorArea['resolved']
 	{
-		if (!isNewAreaId(area.id))
+		return(this.settingsResolver()(area));
+	}
+
+	/**
+	 * Works out areas' settings as resolvedOf() does, for working out many while nothing changes: the
+	 * settings of the world are worked out once, for the first new area
+	 *
+	 * @return The resolver, taking an area and giving its settings
+	 */
+	private settingsResolver(): (area: EditorArea) => EditorArea['resolved']
+	{
+		let stored: ReadonlyMap<string, EditorArea['resolved']> | undefined;
+
+		return((area) =>
 		{
-			return(area.resolved);
-		}
+			if (!isNewAreaId(area.id))
+			{
+				return(area.resolved);
+			}
 
-		const world = this.world();
+			stored ??= resolveAreaSettings(this.world()).stored;
 
-		return(resolveAreaSettings(world).stored.get(area.id) ?? area.resolved);
+			return(stored.get(area.id) ?? area.resolved);
+		});
 	}
 
 	/**

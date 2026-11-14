@@ -212,6 +212,14 @@ export interface NeighborSource
 	area: (areaId: string) => EditorArea | undefined;
 
 	/**
+	 * Looks up areas as area() gives them, for looking up many while nothing changes: the Areas tab's areas
+	 * are worked out once, on the first lookup
+	 *
+	 * @return The lookup, giving undefined for an area it doesn't have
+	 */
+	areaLookup: () => (areaId: string) => EditorArea | undefined;
+
+	/**
 	 * Gives another area in the open area's row or column new bounds, as a resize carries it along
 	 *
 	 * @param areaId The area's ID
@@ -1606,10 +1614,11 @@ export class AreaEditor
 			maxRow: bounds.maxRow + NEIGHBOR_PREVIEW_CELLS
 		};
 		const shown: ShownNeighbor[] = [];
+		const areaOf = this.neighbors.areaLookup();
 
 		for (const slot of (hasNeighbors(grid.get(open.area.id)?.neighbors ?? NO_NEIGHBORS) ? seamSlots(lookup, open.area.id) : []))
 		{
-			const area = ((slot.areaId === open.area.id) ? { ...open.area, bounds } : this.neighbors.area(slot.areaId));
+			const area = ((slot.areaId === open.area.id) ? { ...open.area, bounds } : areaOf(slot.areaId));
 
 			if (!area)
 			{
@@ -1796,10 +1805,12 @@ export class AreaEditor
 			}
 		}
 
+		const areaOf = this.neighbors.areaLookup();
+
 		for (const [direction, button] of this.edgeButtons)
 		{
 			const areaId = this.edgeTargets.get(direction)?.areaId;
-			const name = ((areaId === undefined) ? undefined : this.neighbors.area(areaId)?.name);
+			const name = ((areaId === undefined) ? undefined : areaOf(areaId)?.name);
 
 			button.hidden = (name === undefined);
 
@@ -2800,7 +2811,12 @@ export class AreaEditor
 		this.resizeDialog.open({
 			bounds: open.cells.bounds,
 			check: (bounds) => this.checkResize(open, bounds),
-			carried: (bounds) => [...carriedResizes(this.neighbors.grid(), open.area.id, open.cells.bounds, bounds).keys()].map((areaId) => (this.neighbors.area(areaId)?.name ?? areaId)),
+			carried: (bounds) =>
+			{
+				const areaOf = this.neighbors.areaLookup();
+
+				return([...carriedResizes(this.neighbors.grid(), open.area.id, open.cells.bounds, bounds).keys()].map((areaId) => (areaOf(areaId)?.name ?? areaId)));
+			},
 			minimumSide: (withNeighbors ? MIN_NEIGHBOR_AREA_SIDE : undefined),
 			onResize: (bounds) =>
 			{
