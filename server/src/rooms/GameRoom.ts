@@ -1108,6 +1108,12 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 			this.lastSights.set(playerId, key);
 
+			// Without fog of war in sight, every cell is known, so nothing would be recorded
+			if (!this.areas.fogWithinReach(area, cell, Math.floor(budget)))
+			{
+				continue;
+			}
+
 			const known = (column: number, row: number): boolean =>
 			{
 				const found = this.areaPlayers.locate(areaId, column, row);

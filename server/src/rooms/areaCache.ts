@@ -203,6 +203,64 @@ export class AreaCache
 	}
 
 	/**
+	 * Whether a player looking from a cell of an area may see a cell of an area with fog of war: the area
+	 * has it, or cells within reach lie past its edges and its seams lead, directly or through other areas,
+	 * into a loaded area with it that can be crossed into
+	 *
+	 * @param area The area
+	 * @param cell The cell looked from
+	 * @param reach How many columns and rows each way the player sees (visibleCells())
+	 * @return Whether they may
+	 */
+	fogWithinReach(area: ActiveArea, cell: Cell, reach: number): boolean
+	{
+		if (area.loaded.fogOfWar)
+		{
+			return(true);
+		}
+
+		const { bounds } = area.loaded;
+
+		// An area with neighbors loops only through its seams, so every cell within reach inside its bounds is its own
+		if (!area.seams || ((cell.column - reach >= bounds.minColumn) && (cell.column + reach <= bounds.maxColumn) && (cell.row - reach >= bounds.minRow) && (cell.row + reach <= bounds.maxRow)))
+		{
+			return(false);
+		}
+
+		const reached = new Set([area.loaded.area.id]);
+		const toFollow = [area.loaded.sides];
+
+		for (let index = 0; index < toFollow.length; index++)
+		{
+			for (const sideId of Object.values(toFollow[index]))
+			{
+				if ((sideId === null) || reached.has(sideId))
+				{
+					continue;
+				}
+
+				reached.add(sideId);
+
+				const side = this.areas.get(sideId);
+
+				if (!side || !this.opensSeam(side.loaded))
+				{
+					continue;
+				}
+
+				if (side.loaded.fogOfWar)
+				{
+					return(true);
+				}
+
+				toFollow.push(side.loaded.sides);
+			}
+		}
+
+		return(false);
+	}
+
+	/**
 	 * The walk seconds of a cell past an area's edges, in the area across the seam
 	 *
 	 * @param areaId The area the cell is counted from

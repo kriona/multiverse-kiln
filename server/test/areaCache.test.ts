@@ -50,6 +50,37 @@ function loadedArea(): LoadedArea
 }
 
 /**
+ * An area 32 cells across, all grass, in a row of areas joined by seams
+ *
+ * @param areaId The area's ID
+ * @param fogOfWar Whether it has fog of war
+ * @param west The area to its west, or null for none
+ * @param east The area to its east, or null for none
+ * @return The area's settings
+ */
+function areaInRow(areaId: string, fogOfWar: boolean, west: string | null, east: string | null): LoadedArea
+{
+	const base = loadedArea();
+	const neighbors = {
+		...NO_NEIGHBORS,
+		west,
+		east
+	};
+
+	return({
+		...base,
+		area: {
+			...base.area,
+			id: areaId
+		},
+		fogOfWar,
+		bounds: { minColumn: -16, minRow: -16, maxColumn: 15, maxRow: 15 },
+		neighbors,
+		sides: { ...neighbors }
+	});
+}
+
+/**
  * A chunk whose first cell is forest and the rest the default tile
  *
  * @param chunkColumn The chunk's column
@@ -464,5 +495,27 @@ describe('AreaCache', () =>
 		};
 
 		assert.deepStrictEqual(toAreaPayload(area, []).links, [{ column: 0, row: 0, mode: 'manual' }]);
+	});
+
+	it('finds fog of war within reach across seams, through areas without it, only near an edge', async () =>
+	{
+		const row: Record<string, LoadedArea> = {
+			town: areaInRow('town', false, null, 'fields'),
+			fields: areaInRow('fields', false, 'town', 'forest'),
+			forest: areaInRow('forest', true, 'fields', null)
+		};
+		const cache = new AreaCache((areaId) => Promise.resolve(row[areaId]), () => Promise.resolve([]));
+		const town = await cache.load('town');
+
+		await cache.load('fields');
+		assert.ok(town);
+		assert.strictEqual(cache.fogWithinReach(town, { column: 13, row: 0 }, 12), false, 'Forest isn\'t loaded');
+
+		await cache.load('forest');
+		assert.strictEqual(cache.fogWithinReach(town, { column: 13, row: 0 }, 12), true, 'Forest, through Fields');
+		assert.strictEqual(cache.fogWithinReach(town, { column: 0, row: 0 }, 12), false, 'every cell within reach is in Town');
+
+		cache.setSeamFilter((loaded) => (loaded.area.id !== 'forest'));
+		assert.strictEqual(cache.fogWithinReach(town, { column: 13, row: 0 }, 12), false, 'Forest can\'t be crossed into');
 	});
 });

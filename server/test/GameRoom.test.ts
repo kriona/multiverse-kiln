@@ -1955,5 +1955,24 @@ describe('GameRoom', () =>
 
 			assert.ok(seen.has(forest, -16, 0), 'the cell across the seam from where they stand');
 		});
+
+		it('records the cells seen across a seam in a neighbor with fog of war from an area without it', async () =>
+		{
+			await layOut(false);
+			await setWorkedOut(town, { passageOfTime: 'always_noon', faerieMorning: null, fogOfWar: false });
+			await setWorkedOut(forest, { passageOfTime: 'always_noon', faerieMorning: null });
+			await setWorkedOut(fields, { fogOfWar: false });
+
+			const room = await createGameRoom();
+			const seen = (room as unknown as { seen: SeenCells }).seen;
+
+			await standInTown(room, 13, 0);
+			await waitUntil(() => (room.locate(town, square.maxColumn + 1, 0) !== undefined));
+			await room.waitForNextTimestep();
+			await room.waitForNextTimestep();
+
+			assert.ok(seen.has(forest, -16, 0), 'the cell across the seam from where they stand');
+			assert.strictEqual(seen.has(town, 13, 0), false, 'nothing is recorded in Town, which has no fog of war');
+		});
 	});
 });
