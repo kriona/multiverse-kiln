@@ -4,7 +4,7 @@
  */
 import { and, asc, between, count, eq, gt, inArray, lt, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, isInBounds, lobbyAreaTime, type AreaLinkEnd, type AreaTime,type DisplayTime, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaSettingsUpdate, type FaerieMorning, type PassageOfTime, type PlaceRef, type PlaceSettings, type PlaceWorld, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, hasNeighbors, isInBounds, lobbyAreaTime, NO_NEIGHBORS, oppositeSide, seamSides, type AreaNeighbors, type GridArea, type NeighborSide, type AreaLinkEnd, type AreaTime,type DisplayTime, type CellChange, type ChunkRange, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type Ruleset, type AreaChunk, type AreaLightLevel, type AreaLinkTarget, type AreaSettingsUpdate, type FaerieMorning, type PassageOfTime, type PlaceRef, type PlaceSettings, type PlaceWorld, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { applyCellChanges, chunksOfChanges, clipChunk, isChunkInside, isDefaultChunk } from '../logic/areaEdits.js';
 import type { AreaLink } from '../logic/areaGrid.js';
@@ -92,6 +92,19 @@ export interface LoadedArea
 
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
+
+	/**
+	 * Its neighbor on each side (see Neighboring areas in STRUCTURE-OVERVIEW.md)
+	 */
+	neighbors: AreaNeighbors;
+
+	/**
+	 * Where walking off each side leads, for an area with neighbors (seamSides()): its neighbor, or the
+	 * far end of a row or column that loops, which may be the area itself. All null without neighbors,
+	 * whose looping follows loopsEastWest and loopsNorthSouth alone
+	 */
+	sides: AreaNeighbors;
+
 	links: AreaLink[];
 
 	/**
@@ -272,6 +285,10 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		.map(({ link }) => link.targetAreaId));
 
 	const tiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
+	const neighbors = neighborsOf(area);
+
+	// Where a row or column of neighbors loops depends on its ends, so the whole grid is read
+	const sides = (hasNeighbors(neighbors) ? seamSides(await loadNeighborGrid(liveVersion(area.universeId), executor), area.id) : { ...NO_NEIGHBORS });
 
 	return({
 		area: {
@@ -299,6 +316,8 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 		defaultTileId: area.resolvedDefaultTileId,
 		loopsEastWest: area.loopsEastWest,
 		loopsNorthSouth: area.loopsNorthSouth,
+		neighbors,
+		sides,
 		links: linkRows.map(({ link }) => ({
 			column: link.column,
 			row: link.row,
@@ -434,10 +453,55 @@ async function loadAreaParents(rows: readonly Pick<typeof areas.$inferSelect, 'i
  */
 function editorAreaOf(row: typeof areas.$inferSelect, parents: PlaceRef[]): EditorArea
 {
+	return(summaryOf(row, parents));
+}
+
+/**
+ * An area's neighbor on each side, from its row
+ *
+ * @param row The row
+ * @return The neighbors
+ */
+function neighborsOf(row: Pick<typeof areas.$inferSelect, 'northAreaId' | 'eastAreaId' | 'southAreaId' | 'westAreaId'>): AreaNeighbors
+{
 	return({
-		...summaryOf(row, parents),
-		bounds: boundsOf(row)
+		north: row.northAreaId,
+		east: row.eastAreaId,
+		south: row.southAreaId,
+		west: row.westAreaId
 	});
+}
+
+/**
+ * The column holding an area's neighbor on a side
+ *
+ * @param side The side
+ * @return The column
+ */
+function neighborColumn(side: NeighborSide): typeof areas.northAreaId | typeof areas.eastAreaId | typeof areas.southAreaId | typeof areas.westAreaId
+{
+	switch (side)
+	{
+		case 'north':
+			return(areas.northAreaId);
+		case 'east':
+			return(areas.eastAreaId);
+		case 'south':
+			return(areas.southAreaId);
+		default:
+			return(areas.westAreaId);
+	}
+}
+
+/**
+ * The property of an area's row holding its neighbor on a side
+ *
+ * @param side The side
+ * @return The property's name
+ */
+function neighborKey(side: NeighborSide): 'northAreaId' | 'eastAreaId' | 'southAreaId' | 'westAreaId'
+{
+	return(`${side}AreaId`);
 }
 
 /**
@@ -456,7 +520,9 @@ function summaryOf(row: typeof areas.$inferSelect, parents: PlaceRef[]): EditorA
 		...placeSettingsOf(row),
 		loopsEastWest: row.loopsEastWest,
 		loopsNorthSouth: row.loopsNorthSouth,
-		resolved: resolvedOf(row)
+		resolved: resolvedOf(row),
+		bounds: boundsOf(row),
+		neighbors: neighborsOf(row)
 	});
 }
 
@@ -521,6 +587,124 @@ export async function storeResolvedSettings(settings: ReadonlyMap<string, Resolv
 			.set(resolvedColumns(resolved))
 			.where(eq(areas.id, areaId));
 	}
+}
+
+/**
+ * Every area of a version as the grid of neighbors sees it
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The areas, by ID
+ */
+export async function loadNeighborGrid(version: UniverseVersion, executor: Executor = db): Promise<Map<string, GridArea>>
+{
+	const rows = await executor
+		.select({
+			id: areas.id,
+			minColumn: areas.minColumn,
+			minRow: areas.minRow,
+			maxColumn: areas.maxColumn,
+			maxRow: areas.maxRow,
+			loopsEastWest: areas.loopsEastWest,
+			loopsNorthSouth: areas.loopsNorthSouth,
+			northAreaId: areas.northAreaId,
+			eastAreaId: areas.eastAreaId,
+			southAreaId: areas.southAreaId,
+			westAreaId: areas.westAreaId
+		})
+		.from(areas)
+		.where(inVersion(areas, version));
+
+	return(new Map(rows.map((row) => [row.id, {
+		id: row.id,
+		bounds: boundsOf(row),
+		neighbors: neighborsOf(row),
+		loopsEastWest: row.loopsEastWest,
+		loopsNorthSouth: row.loopsNorthSouth
+	}])));
+}
+
+/**
+ * Makes an area another's neighbor on a side, both ways, or with null makes its neighbor there no longer
+ * one. The areas either had on those sides before lose them. Both areas must be of the same version
+ *
+ * @param areaId The area's ID
+ * @param side The side
+ * @param neighborId The neighbor's ID, or null for none
+ * @param executor A transaction
+ * @return The areas whose neighbors changed, the area included
+ */
+export async function setAreaNeighbor(areaId: string, side: NeighborSide, neighborId: string | null, executor: Executor): Promise<string[]>
+{
+	const facing = oppositeSide(side);
+	const rows = await executor
+		.select()
+		.from(areas)
+		.where(inArray(areas.id, ((neighborId === null) ? [areaId] : [areaId, neighborId])));
+	const area = rows.find((row) => (row.id === areaId));
+	const neighbor = rows.find((row) => (row.id === neighborId));
+
+	if (!area)
+	{
+		return([]);
+	}
+
+	const changed = new Set<string>();
+	const clear = async (id: string, clearedSide: NeighborSide, expected: string): Promise<void> =>
+	{
+		const cleared = await executor
+			.update(areas)
+			.set({ [neighborKey(clearedSide)]: null })
+			.where(and(
+				eq(areas.id, id),
+				eq(neighborColumn(clearedSide), expected)
+			))
+			.returning({ id: areas.id });
+
+		if (cleared.length > 0)
+		{
+			changed.add(id);
+		}
+	};
+	const previous = area[neighborKey(side)];
+
+	if ((previous !== null) && (previous !== neighborId))
+	{
+		await clear(previous, facing, areaId);
+		await clear(areaId, side, previous);
+	}
+
+	if ((neighborId === null) || !neighbor)
+	{
+		return([...changed]);
+	}
+
+	const neighborPrevious = neighbor[neighborKey(facing)];
+
+	if ((neighborPrevious !== null) && (neighborPrevious !== areaId))
+	{
+		await clear(neighborPrevious, side, neighborId);
+	}
+
+	if (previous !== neighborId)
+	{
+		await executor
+			.update(areas)
+			.set({ [neighborKey(side)]: neighborId })
+			.where(eq(areas.id, areaId));
+		changed.add(areaId);
+	}
+
+	if (neighborPrevious !== areaId)
+	{
+		await executor
+			.update(areas)
+			.set({ [neighborKey(facing)]: areaId })
+			.where(eq(areas.id, neighborId));
+		changed.add(neighborId);
+	}
+
+	return([...changed]);
 }
 
 /**

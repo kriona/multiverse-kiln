@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, canEditWorld, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, lobbyAreaIds, lobbyProblems, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, PlaceGraph, REAL_TIME_NAME, type AreaListPayload, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, lobbyAreaIds, lobbyProblems, MAX_LOBBY_DAY_HOURS, neighborPairs, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, PlaceGraph, REAL_TIME_NAME, type AreaListPayload, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -257,13 +257,25 @@ export class LobbyTab implements SavableTab
 		{
 			const graph = new PlaceGraph(list.regions, list.areas);
 			const regions = [...list.regions].sort((first, second) => first.name.localeCompare(second.name));
+			const neighbors = neighborPairs(new Map(list.areas.map((area) => [area.id, area])));
 
 			for (const region of regions)
 			{
-				const problems = lobbyProblems(graph, { lobbyRegionId: region.id, lobbyAreaId: null, faerie: false }, list.links, list.startingAreaIds);
-				const reason = (problems.some((problem) => (problem.kind === 'lobbyStartingArea'))
-					? 'starting'
-					: (problems.some((problem) => (problem.kind === 'lobbyLink')) ? 'links' : undefined));
+				const problems = lobbyProblems(graph, { lobbyRegionId: region.id, lobbyAreaId: null, faerie: false }, list.links, list.startingAreaIds, neighbors);
+				let reason: string | undefined;
+
+				if (problems.some((problem) => (problem.kind === 'lobbyStartingArea')))
+				{
+					reason = 'starting';
+				}
+				else if (problems.some((problem) => (problem.kind === 'lobbyLink')))
+				{
+					reason = 'links';
+				}
+				else if (problems.some((problem) => (problem.kind === 'lobbyNeighbor')))
+				{
+					reason = 'neighbors';
+				}
 
 				options.push({
 					value: region.id,
@@ -271,8 +283,8 @@ export class LobbyTab implements SavableTab
 						? region.name
 						: t({
 							id: 'editor.lobby.regionLeftOut',
-							defaultMessage: '{region} ({reason, select, starting {characters start in an area below it} other {links lead out of it}})',
-							description: 'A region in the editor Lobby tab\'s choice of the lobby region that can\'t be chosen, and why: {region} is its name, and {reason} is "starting" when characters start in an area below it, or otherwise links lead from its areas to areas outside it. The lobby areas are never connected to the rest of the world'
+							defaultMessage: '{region} ({reason, select, starting {characters start in an area below it} neighbors {its areas have neighbors outside it} other {links lead out of it}})',
+							description: 'A region in the editor Lobby tab\'s choice of the lobby region that can\'t be chosen, and why: {region} is its name, and {reason} is "starting" when characters start in an area below it, "neighbors" when its areas have neighboring areas (walked across without links) outside it, or otherwise links lead from its areas to areas outside it. The lobby areas are never connected to the rest of the world'
 						}, {
 							region: region.name,
 							reason

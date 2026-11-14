@@ -76,6 +76,10 @@ const REFERENCES: readonly { table: PgTable; column: string; target: CopiedTable
 	{ table: areas, column: 'default_tile_id', target: tiles },
 	{ table: areas, column: 'resolved_default_tile_id', target: tiles },
 	{ table: areas, column: 'parent_area_id', target: areas },
+	{ table: areas, column: 'north_area_id', target: areas },
+	{ table: areas, column: 'east_area_id', target: areas },
+	{ table: areas, column: 'south_area_id', target: areas },
+	{ table: areas, column: 'west_area_id', target: areas },
 	{ table: races, column: 'starting_area_id', target: areas },
 	{ table: classes, column: 'starting_area_id', target: areas },
 	{ table: raceStartingItems, column: 'item_id', target: items },
@@ -431,7 +435,12 @@ export async function startDraft(universeId: string, executor: Executor): Promis
 		await copyRows(executor, table, sql`${table} AS src WHERE ${live}`, values, ['id']);
 	}
 
-	await executor.execute(sql`UPDATE ${areas} AS a SET parent_area_id = ${draftIdOf(areas, universeId, sql`a.parent_area_id`)} WHERE a.universe_id = ${universeId} AND a.draft AND a.parent_area_id IS NOT NULL`);
+	for (const reference of REFERENCES.filter((each) => ((each.table === areas) && (each.target === areas))))
+	{
+		const column = sql.identifier(reference.column);
+
+		await executor.execute(sql`UPDATE ${areas} AS a SET ${column} = ${draftIdOf(areas, universeId, sql`a.${column}`)} WHERE a.universe_id = ${universeId} AND a.draft AND a.${column} IS NOT NULL`);
+	}
 
 	for (const { child, column, parent } of CHILD_TABLES)
 	{

@@ -9,6 +9,7 @@ import type { AreaEditorHost } from '../../scenes/AreaEditorScene';
 import { getElement, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
 import { areaEditorMessages } from './areaEditorMessages';
+import type { AreaSource } from './areaSource';
 import { describeCell } from './cellDescription';
 import { editorMessages } from './editorMessages';
 import type { StagedTiles } from './stagedChanges';
@@ -54,6 +55,16 @@ export interface AreaSelection
 export type AreaSelectPurpose = 'starting' | 'lobby';
 
 /**
+ * An area offered as another's neighbor (see Neighboring areas in STRUCTURE-OVERVIEW.md), and why it
+ * can't be chosen, when it can't
+ */
+export interface NeighborChoice
+{
+	area: EditorArea;
+	refusal: string | undefined;
+}
+
+/**
  * Selection: Area (see STRUCTURE-OVERVIEW.md): a dialog for choosing where characters start: one of the
  * universe's areas, found by typing part of its name, and the square of it they start on, chosen on a
  * preview of the area
@@ -70,6 +81,14 @@ export class AreaSelectDialog
 	private readonly none = getElement('area-select-none', HTMLElement);
 	private readonly lobbyHint = getElement('area-select-lobby-hint', HTMLElement);
 	private readonly startingHint = getElement('area-select-starting-hint', HTMLElement);
+	private readonly neighborHint = getElement('area-select-neighbor-hint', HTMLElement);
+	private readonly previewHelp = getElement('area-select-preview-help', HTMLElement);
+
+	/**
+	 * While choosing a neighbor: why each area that can't be one can't, by ID, and where the areas and
+	 * their chunks come from, the Areas tab's changes not yet saved included
+	 */
+	private neighborMode: { refusals: Map<string, string>; source: AreaSource } | undefined;
 	private readonly summary = getElement('area-select-summary', HTMLElement);
 	private readonly cellText = getElement('area-select-cell', HTMLElement);
 	private readonly error = getElement('area-select-error', HTMLElement);
@@ -186,6 +205,7 @@ export class AreaSelectDialog
 		this.finish(undefined);
 		this.universe = universe;
 		this.areas = [];
+		this.neighborMode = undefined;
 		this.chosenAreaId = (areaId ?? undefined);
 		this.chosenCell = ((areaId === null) ? MIDDLE_CELL : cell);
 		this.search.value = '';
@@ -193,6 +213,8 @@ export class AreaSelectDialog
 		this.none.hidden = true;
 		this.lobbyHint.hidden = (purpose !== 'lobby');
 		this.startingHint.hidden = true;
+		this.neighborHint.hidden = true;
+		this.previewHelp.hidden = false;
 		this.summary.textContent = '';
 		this.cellText.textContent = '';
 		this.submit.disabled = true;
@@ -236,6 +258,46 @@ export class AreaSelectDialog
 		}
 
 		return(chosen);
+	}
+
+	/**
+	 * Opens the dialog to choose an area's neighbor on a side: the areas that can be listed, and those that
+	 * can't greyed out with why, each shown on the preview without choosing a square
+	 *
+	 * @param universe The universe
+	 * @param choices Every area to list, with why it can't be chosen when it can't
+	 * @param tiles The tiles the universe can use, with the Tilesets tab's changes, for the preview
+	 * @param source Where the areas and their chunks come from, the Areas tab's changes not yet saved included
+	 * @param hint What the dialog says it chooses, such as "Choose the area east of Town."
+	 * @return The area chosen, or undefined when the dialog was closed without choosing
+	 */
+	async openForNeighbor(universe: EditableUniverse, choices: readonly NeighborChoice[], tiles: readonly EditorTile[], source: AreaSource, hint: string): Promise<EditorArea | undefined>
+	{
+		const selection = this.open(universe, null, MIDDLE_CELL);
+
+		// The list and preview open() loads for a starting area give way to the neighbors given
+		this.version++;
+		this.neighborMode = {
+			refusals: new Map(choices
+				.filter((choice) => (choice.refusal !== undefined))
+				.map((choice) => [choice.area.id, choice.refusal ?? ''])),
+			source
+		};
+		this.areas = choices
+			.map((choice) => choice.area)
+			.sort((first, second) => first.name.localeCompare(second.name));
+		this.tiles = [...tiles];
+		this.neighborHint.textContent = hint;
+		this.neighborHint.hidden = false;
+		this.lobbyHint.hidden = true;
+		this.startingHint.hidden = true;
+		this.previewHelp.hidden = true;
+		showMessage(this.error, undefined);
+		this.showResults();
+
+		const chosen = await selection;
+
+		return(chosen?.area);
 	}
 
 	/**
@@ -302,10 +364,19 @@ export class AreaSelectDialog
 			notes.push(t(editorMessages.disabled));
 		}
 
+		// An area that can't be a neighbor there is listed with why, and can't be chosen
+		const refusal = this.neighborMode?.refusals.get(area.id);
+
+		if (refusal !== undefined)
+		{
+			notes.push(refusal);
+		}
+
 		label.className = 'checkbox described-choice';
 		input.type = 'radio';
 		input.name = 'area-select';
 		input.value = area.id;
+		input.disabled = (refusal !== undefined);
 		input.checked = (area.id === this.chosenAreaId);
 		text.className = 'choice-text';
 		name.textContent = area.name;
@@ -345,10 +416,11 @@ export class AreaSelectDialog
 		}
 
 		let area: EditorArea;
+		const neighborMode = this.neighborMode;
 
 		try
 		{
-			area = await this.api.getArea(universe.id, areaId);
+			area = await (neighborMode ? neighborMode.source.getArea(areaId) : this.api.getArea(universe.id, areaId));
 		}
 		catch (error)
 		{
@@ -378,7 +450,7 @@ export class AreaSelectDialog
 		});
 
 		const cells = new AreaCells(bounds);
-		const loader = new ChunkLoader((range) => this.api.loadChunks(universe.id, area.id, range), cells, (chunkKeys) =>
+		const loader = new ChunkLoader((range) => (neighborMode ? neighborMode.source.loadChunks(area.id, range) : this.api.loadChunks(universe.id, area.id, range)), cells, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
 		}, (error) =>
@@ -393,7 +465,12 @@ export class AreaSelectDialog
 
 		if (this.preview?.area === area)
 		{
-			this.showCell();
+			// A neighbor has no square to choose
+			if (!neighborMode)
+			{
+				this.showCell();
+			}
+
 			scene.centerOnCell(this.chosenCell.column, this.chosenCell.row);
 		}
 	}
@@ -415,9 +492,10 @@ export class AreaSelectDialog
 			paintEnd: () => undefined,
 			fill: () => undefined,
 			pickTile: () => undefined,
+			openNeighbor: () => undefined,
 			pick: (column, row) =>
 			{
-				if (this.preview && isInBounds(this.preview.area.bounds, column, row))
+				if (this.preview && !this.neighborMode && isInBounds(this.preview.area.bounds, column, row))
 				{
 					this.chosenCell = { column, row };
 					this.showCell();

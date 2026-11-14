@@ -4,14 +4,14 @@ import type { ColyseusTestServer } from '@colyseus/testing';
 import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 import { matchMaker } from 'colyseus';
 
-import { cellIndexInChunk, CHUNK_SIZE, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
+import { cellIndexInChunk, CHUNK_SIZE, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL,GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NeighborAreasPayload, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
 import { adminDb } from '../src/db/adminClient.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { addGroupMember, findGroup, leaveGroup, listGroupMembers } from '../src/db/groupRepo.js';
-import { createAreaLink, deleteArea } from '../src/db/areaRepo.js';
+import { createAreaLink, deleteArea, setAreaNeighbor, updateAreaSettings } from '../src/db/areaRepo.js';
 import { loadSeenChunks } from '../src/db/worldStateRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
@@ -26,7 +26,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { KeptChatLog } from '../src/rooms/keptChat.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, setWorkedOut, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
+import { addArea, addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, setWorkedOut, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -1707,6 +1707,186 @@ describe('GameRoom', () =>
 			client.send(MessageType.TakeLink);
 
 			await waitUntil(() => ((room.getAreaId(characterId) === universe.houseAreaId) && (room.getAreaId(anchor.characterId) === universe.houseAreaId)));
+		});
+	});
+
+	describe('across the seams of neighboring areas', () =>
+	{
+		/**
+		 * 32 x 32 cells around the center, the smallest area that can have neighbors
+		 */
+		const square = { minColumn: -16, minRow: -16, maxColumn: 15, maxRow: 15 };
+
+		/**
+		 * A 2 x 2 grid the group starts in: Town and Forest on top, Fields below Town, and Marsh below Forest
+		 * unless the corner is left empty
+		 */
+		let town: string;
+		let forest: string;
+		let fields: string;
+
+		/**
+		 * Lays out the grid, and has the group start in Town
+		 *
+		 * @param withCorner Whether Marsh fills the corner below Forest
+		 * @param topLoops Whether Town and Forest's row loops east-west
+		 */
+		async function layOut(withCorner: boolean, topLoops: boolean = false): Promise<void>
+		{
+			town = await addArea(universe.universeId, 'Town', { bounds: square });
+			forest = await addArea(universe.universeId, 'Forest', { bounds: square });
+			fields = await addArea(universe.universeId, 'Fields', { bounds: square });
+
+			await inTransaction(async (transaction) =>
+			{
+				await setAreaNeighbor(town, 'east', forest, transaction);
+				await setAreaNeighbor(town, 'south', fields, transaction);
+
+				if (withCorner)
+				{
+					const marsh = await addArea(universe.universeId, 'Marsh', { bounds: square });
+
+					await setAreaNeighbor(forest, 'south', marsh, transaction);
+					await setAreaNeighbor(fields, 'east', marsh, transaction);
+				}
+			});
+
+			if (topLoops)
+			{
+				await updateAreaSettings(town, { loopsEastWest: true });
+				await updateAreaSettings(forest, { loopsEastWest: true });
+			}
+
+			// A character anchors one group, so this group has an anchor of its own
+			anchor = await addPlayerWithCharacter('Seam Anchor');
+			groupId = await addGroup(universe.universeId, anchor.characterId, town, 'Seam Walkers');
+		}
+
+		/**
+		 * Joins as a new player and stands them on a cell of Town, once the areas around it have loaded
+		 *
+		 * @param room Server-side room
+		 * @param column The cell's column
+		 * @param row The cell's row
+		 * @return The window, and the player
+		 */
+		async function standInTown(room: GameRoom, column: number, row: number): Promise<{ window: JoinedWindow; playerId: string; player: Player }>
+		{
+			const window = await joinFromBrowser(room, randomUUID());
+			const playerId = playerIdOf(room, window.client);
+			const player = room.state.players.get(playerId) as Player;
+
+			placeOnCell(player, column, row);
+
+			// The neighbors load as the room refreshes the chunks near its players; Fields is always enabled
+			await waitUntil(() => (room.locate(town, 0, square.maxRow + 1) !== undefined));
+
+			return({ window, playerId, player });
+		}
+
+		it('walks a player across a seam into the neighbor, with nothing to press, sending the areas around them', async () =>
+		{
+			await layOut(true);
+
+			const room = await createGameRoom();
+			const { window, playerId } = await standInTown(room, 14, 3);
+			const neighbors = new Promise<NeighborAreasPayload>((resolve) =>
+			{
+				window.client.onMessage(ServerMessageType.NeighborAreas, (payload: NeighborAreasPayload) =>
+				{
+					if (payload.areaId === forest)
+					{
+						resolve(payload);
+					}
+				});
+			});
+
+			window.client.send(MessageType.Move, { x: 1, y: 0 });
+			await waitUntil(() => (room.getAreaId(playerId) === forest));
+
+			const position = room.getPosition(playerId);
+
+			assert.strictEqual(position?.row, 3);
+			assert.ok(((position?.column ?? 0) <= -15), JSON.stringify(position));
+			assert.ok((await neighbors).areas.some((area) => (area.areaId === town)));
+		});
+
+		it('walks west off the west end of a looping row onto its east end', async () =>
+		{
+			await layOut(true, true);
+
+			const room = await createGameRoom();
+			const { window, playerId } = await standInTown(room, -16, 2);
+
+			window.client.send(MessageType.Move, { x: -1, y: 0 });
+			await waitUntil(() => (room.getAreaId(playerId) === forest));
+
+			assert.deepStrictEqual(room.getPosition(playerId), { areaId: forest, column: 15, row: 2 });
+		});
+
+		it('stops at the end of a row that doesn\'t loop, and at a disabled neighbor', async () =>
+		{
+			await layOut(true);
+			await setWorkedOut(forest, { enabled: false });
+
+			const room = await createGameRoom();
+			const { window, playerId, player } = await standInTown(room, -16, 2);
+
+			window.client.send(MessageType.Move, { x: -1, y: 0 });
+			await waitUntilStopped(room, player);
+
+			assert.deepStrictEqual(room.getPosition(playerId), { areaId: town, column: -16, row: 2 });
+
+			window.client.send(MessageType.Move, { x: 0, y: 0 });
+			await waitUntilStopped(room, player);
+			placeOnCell(player, 15, 2);
+			window.client.send(MessageType.Move, { x: 1, y: 0 });
+			await room.waitForNextTimestep();
+			await waitUntilStopped(room, player);
+
+			assert.deepStrictEqual(room.getPosition(playerId), { areaId: town, column: 15, row: 2 });
+		});
+
+		it('blocks a diagonal step across a corner with no area diagonally across it', async () =>
+		{
+			await layOut(false);
+
+			const room = await createGameRoom();
+			const { window, playerId } = await standInTown(room, 15, 15);
+
+			// The diagonal step is blocked, so the player steps east alone
+			window.client.send(MessageType.Move, { x: 1, y: 1 });
+			await waitUntil(() => (room.getAreaId(playerId) === forest));
+
+			assert.deepStrictEqual(room.getPosition(playerId), { areaId: forest, column: -16, row: 15 });
+		});
+
+		it('shows a member across a seam, and records the cells seen there as the neighbor\'s', async () =>
+		{
+			await layOut(true);
+			await setWorkedOut(town, { passageOfTime: 'always_noon', faerieMorning: null });
+			await setWorkedOut(forest, { passageOfTime: 'always_noon', faerieMorning: null });
+
+			const room = await createGameRoom();
+			const ada = await standInTown(room, 13, 0);
+			const grace = await joinFromBrowser(room, browserIdB, 'Grace');
+			const graceId = playerIdOf(room, grace.client);
+
+			placeOnCell(room.state.players.get(graceId) as Player, 15, 0);
+			grace.client.send(MessageType.Move, { x: 1, y: 0 });
+			await waitUntil(() => (room.getAreaId(graceId) === forest));
+			grace.client.send(MessageType.Move, { x: 0, y: 0 });
+
+			await waitUntil(() => (ada.window.client.state.players?.get(graceId)?.areaId === forest));
+
+			await ada.window.client.leave();
+			await grace.client.leave();
+			await waitUntil(async () => (await loadSeenChunks(groupId)).some((chunk) => (chunk.areaId === forest)));
+
+			const saved = new SeenCells();
+
+			saved.load(await loadSeenChunks(groupId));
+			assert.ok(saved.has(forest, -16, 0), 'the cell across the seam from where they stood');
 		});
 	});
 });

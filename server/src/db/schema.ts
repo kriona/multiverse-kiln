@@ -1312,16 +1312,31 @@ export const areas = pgTable('areas', {
 	maxRow: integer('max_row').notNull(),
 	loopsEastWest: boolean('loops_east_west').notNull().default(false),
 	loopsNorthSouth: boolean('loops_north_south').notNull().default(false),
+
+	/**
+	 * The area's neighbor on each side, of the same version (see Neighboring areas in
+	 * STRUCTURE-OVERVIEW.md): always both ways, which every save that changes them keeps, along with the
+	 * rest of the grid's rules. Deleting an area leaves its neighbors with an edge
+	 */
+	northAreaId: uuid('north_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	eastAreaId: uuid('east_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	southAreaId: uuid('south_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
+	westAreaId: uuid('west_area_id').references((): AnyPgColumn => areas.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	index('areas_universe_id_index').on(table.universeId),
 	index('areas_parent_area_id_index').on(table.parentAreaId),
+	index('areas_north_area_id_index').on(table.northAreaId),
+	index('areas_east_area_id_index').on(table.eastAreaId),
+	index('areas_south_area_id_index').on(table.southAreaId),
+	index('areas_west_area_id_index').on(table.westAreaId),
 	index('areas_default_tile_id_index').on(table.defaultTileId),
 	index('areas_resolved_default_tile_id_index').on(table.resolvedDefaultTileId),
 	...originConstraints('areas', table),
 	check('areas_width', sql`${table.maxColumn} - ${table.minColumn} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
 	check('areas_height', sql`${table.maxRow} - ${table.minRow} BETWEEN 0 AND ${sql.raw(String(MAX_AREA_SIDE - 1))}`),
 	check('areas_not_inside_itself', sql`${table.parentAreaId} <> ${table.id}`),
+	check('areas_not_own_neighbor', sql`${table.id} NOT IN (${table.northAreaId}, ${table.eastAreaId}, ${table.southAreaId}, ${table.westAreaId})`),
 	check('areas_faerie_morning_set', faerieMorningSet(table.passageOfTime, table.faerieMorning)),
 	check('areas_resolved_light_level_set', sql`(${table.resolvedLightLevel} IS NOT NULL) = ${table.resolvedIndoors}`),
 	check('areas_resolved_faerie_morning_set', faerieMorningSet(table.resolvedPassageOfTime, table.resolvedFaerieMorning)),

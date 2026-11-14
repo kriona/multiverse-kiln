@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { IMPASSABLE_WALK_SECONDS, type EditorTile, type EditorArea, type AreaBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
+import { hasNeighbors, IMPASSABLE_WALK_SECONDS, isInBounds, NO_NEIGHBORS, type EditorTile, type EditorArea, type AreaBounds, type Ruleset, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { sleepGameLoop, wakeGameLoop } from '../rendering/gameLoop';
 import { startScene } from '../rendering/sceneStart';
@@ -38,6 +38,11 @@ export class AreaCanvas
 	private current?: AreaEditorScene;
 	private host?: AreaEditorHost;
 	private bounds?: AreaBounds;
+
+	/**
+	 * The cells of the neighbors shown past the area's edges, which the keyboard's cursor can move onto
+	 */
+	private previews: readonly AreaBounds[] = [];
 
 	/**
 	 * Whether the wheel pans the area instead of scrolling the page (see setWheelPans)
@@ -95,6 +100,7 @@ export class AreaCanvas
 		this.current = undefined;
 		this.host = host;
 		this.bounds = bounds;
+		this.previews = [];
 
 		if (this.cursor && ((this.cursor.column < bounds.minColumn) || (this.cursor.column > bounds.maxColumn) || (this.cursor.row < bounds.minRow) || (this.cursor.row > bounds.maxRow)))
 		{
@@ -162,6 +168,28 @@ export class AreaCanvas
 			this.game.scene.stop(AREA_EDITOR_SCENE_KEY);
 			sleepGameLoop(this.game);
 		}
+	}
+
+	/**
+	 * Sets the cells of the neighbors shown past the area's edges, which the keyboard's cursor can move
+	 * onto, though nothing there can be changed
+	 *
+	 * @param previews Each neighbor's cells shown, in the area's columns and rows
+	 */
+	setPreviews(previews: readonly AreaBounds[]): void
+	{
+		this.previews = previews;
+	}
+
+	/**
+	 * Whether a cell is one of the neighbors' shown past the area's edges
+	 *
+	 * @param cell The cell
+	 * @return True when it is
+	 */
+	isPreviewCell(cell: BrushCell): boolean
+	{
+		return(this.previews.some((preview) => isInBounds(preview, cell.column, cell.row)));
 	}
 
 	/**
@@ -309,8 +337,8 @@ export class AreaCanvas
 	};
 
 	/**
-	 * Moves the keyboard's cursor to a cell, kept inside the area, painting the cells on the way while
-	 * Space is held, and reads out where it is
+	 * Moves the keyboard's cursor to a cell, kept inside the area or the neighbors shown past its edges,
+	 * painting the cells on the way while Space is held, and reads out where it is
 	 *
 	 * @param target The cell
 	 */
@@ -325,10 +353,16 @@ export class AreaCanvas
 		}
 
 		const previous = this.cursor;
-		const cell = {
-			column: Phaser.Math.Clamp(target.column, bounds.minColumn, bounds.maxColumn),
-			row: Phaser.Math.Clamp(target.row, bounds.minRow, bounds.maxRow)
-		};
+
+		// Past everything shown, the cursor stays inside the part it was in
+		const inside = (isInBounds(bounds, target.column, target.row) || this.isPreviewCell(target));
+		const keptIn = ((previous === undefined) ? bounds : (this.previews.find((preview) => isInBounds(preview, previous.column, previous.row)) ?? bounds));
+		const cell = (inside
+			? target
+			: {
+				column: Phaser.Math.Clamp(target.column, keptIn.minColumn, keptIn.maxColumn),
+				row: Phaser.Math.Clamp(target.row, keptIn.minRow, keptIn.maxRow)
+			});
 
 		this.cursor = cell;
 		this.current?.showCursor(cell);
@@ -346,7 +380,8 @@ export class AreaCanvas
 	}
 
 	/**
-	 * Does what a click on the cursor's cell does: paints it, fills from it or picks it
+	 * Does what a click on the cursor's cell does: paints it, fills from it or picks it, or opens the
+	 * neighbor shown past the area's edge there
 	 *
 	 * @param cell The cursor's cell
 	 * @param hold Whether to keep painting as the cursor moves, until stopPainting()
@@ -355,6 +390,13 @@ export class AreaCanvas
 	{
 		const host = this.host;
 		const mode = host?.pointerMode();
+
+		// A neighbor opens whether or not the area can be changed
+		if (host && this.isPreviewCell(cell) && this.bounds && !isInBounds(this.bounds, cell.column, cell.row))
+		{
+			host.openNeighbor(cell);
+			return;
+		}
 
 		if (!host || (mode === 'none'))
 		{
@@ -423,8 +465,10 @@ export function editorAreaPayload(area: EditorArea, tiles: readonly EditorTile[]
 		lightLevel: null,
 		fogOfWar: false,
 		bounds: area.bounds,
-		loopsEastWest: area.loopsEastWest,
-		loopsNorthSouth: area.loopsNorthSouth,
+		// An area with neighbors shows them past its edges instead of its own far side
+		loopsEastWest: (area.loopsEastWest && !hasNeighbors(area.neighbors)),
+		loopsNorthSouth: (area.loopsNorthSouth && !hasNeighbors(area.neighbors)),
+		sides: { ...NO_NEIGHBORS },
 		defaultTileId: area.resolved.defaultTileId,
 		tiles: tiles.map((tile) => ({
 			id: tile.id,

@@ -3,14 +3,14 @@
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_TILE_CELL, editsEveryPlace, isInBounds, isNewRef, MAX_AREA_LINKS, NEW_AREA_BOUNDS, VOID_CELL, type AreaChangeUpdate, type AreaEvacuations, type AreaNode, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type PlaceRef, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_TILE_CELL, editsEveryPlace, hasNeighbors, isInBounds, isNewRef, MAX_AREA_LINKS, NEIGHBOR_SIDES, NEW_AREA_BOUNDS, oppositeSide, VOID_CELL, type NeighborSide, type AreaChangeUpdate, type AreaEvacuations, type AreaNode, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type PlaceRef, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { listRegions } from '../db/regionRepo.js';
-import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, setAreaNeighbor, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor, type AreaInTree, type LinkInto } from '../logic/disabling.js';
 import { chunksOfChanges } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
@@ -311,6 +311,12 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
 	context.places.touch();
 	context.disablings.areas(moveTo);
 	context.published.push({ kind: 'area', areaId: area.id });
+
+	// Whether a row or column of neighbors loops depends on its ends, which the rooms read again
+	if ((update.loopsEastWest !== undefined) || (update.loopsNorthSouth !== undefined))
+	{
+		context.places.noteNeighbors([area.id]);
+	}
 }
 
 /**
@@ -375,6 +381,16 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 	// The links leading here go with it, so the areas they're on are read again
 	const linkingAreaIds = await listAreasLinkingTo(area.id, transaction);
 
+	// Its neighbors are left with an edge where it was
+	const neighbors = (await findEditorArea(area.id, transaction))?.area.neighbors;
+
+	if (neighbors && hasNeighbors(neighbors))
+	{
+		context.places.noteNeighbors(NEIGHBOR_SIDES
+			.map((side) => neighbors[side])
+			.filter((neighborId) => (neighborId !== null)));
+	}
+
 	for (const child of (await context.places.load()).deleteArea(area.id))
 	{
 		await setAreaParents(child.id, child.parents, transaction);
@@ -433,6 +449,52 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 	{
 		context.published.push({ kind: 'area', areaId: linkingAreaId });
 	}
+
+	// Touching sides must stay the same length, which is checked once the save's changes are made
+	if (hasNeighbors(area.neighbors))
+	{
+		context.places.noteNeighbors([area.id]);
+	}
+}
+
+/**
+ * Makes an area another's neighbor on a side, both ways, or makes its neighbor there no longer one. The
+ * grid as a whole is checked once the save's changes are made. A builder needs every area whose
+ * neighbors the change sets or takes away within their assignments
+ *
+ * @param context The save
+ * @param areaId The area
+ * @param side The side
+ * @param neighborId The neighbor, which may be made earlier in the save, or null for none
+ */
+export async function setNeighborChange(context: ChangeContext, areaId: StringRef, side: NeighborSide, neighborId: StringRef | null): Promise<void>
+{
+	const area = await areaOf(context, areaId);
+	const neighbor = ((neighborId === null) ? undefined : await areaOf(context, neighborId));
+	const previous = area.neighbors[side];
+	const theirs = neighbor?.neighbors[oppositeSide(side)];
+
+	if (neighbor?.id === area.id)
+	{
+		refuse(400, {
+			id: 'error.ownNeighbor',
+			defaultMessage: 'An area can\'t be its own neighbor. To walk off one edge and come back on the other, make it loop.',
+			description: 'Why an area\'s neighbor was refused: the area chosen is the area itself'
+		});
+	}
+
+	// The areas that lose this area or the neighbor as their neighbor are changed too
+	for (const lost of [previous, theirs])
+	{
+		if ((lost !== null) && (lost !== undefined) && (lost !== area.id) && (lost !== neighbor?.id))
+		{
+			await context.places.requireWithin({ kind: 'area', id: lost });
+		}
+	}
+
+	const changed = await setAreaNeighbor(area.id, side, (neighbor?.id ?? null), context.transaction);
+
+	context.places.noteNeighbors([...changed, area.id]);
 }
 
 /**

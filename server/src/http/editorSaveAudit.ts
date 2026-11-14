@@ -4,7 +4,7 @@
  * setting sent with the value it already has isn't listed, and a thing deleted is named as it was
  */
 import { isDeepStrictEqual } from 'util';
-import { AUDIT_FIELDS, chunkCoordinate, chunkKey, parseChunkKey, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type PlaceRef, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { AUDIT_FIELDS, chunkCoordinate, chunkKey, oppositeSide, parseChunkKey, type AreaNeighbors, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type PlaceRef, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
 import { listRegions } from '../db/regionRepo.js';
@@ -597,6 +597,27 @@ export class SaveAudit
 				return(this.changeArea(change.areaId, 'area', 'deleted', 1));
 			case 'resizeArea':
 				return(this.changeArea(change.areaId, 'area', 'resized', 1));
+			case 'setNeighbor':
+			{
+				const areaId = resolveStringRef(this.context, change.areaId);
+				const before = await this.findArea(areaId);
+				const neighborId = ((change.neighborId === null) ? null : resolveStringRef(this.context, change.neighborId));
+				const neighbor = ((neighborId === null) ? undefined : await this.findArea(neighborId));
+				const neighbors = (before?.neighbors as AreaNeighbors | undefined);
+
+				if (before && neighbors && (neighbors[change.side] !== neighborId))
+				{
+					this.addChanged('area', { key: null, name: before.name }, [{ field: 'neighbor', value: { side: change.side, area: (neighbor?.name ?? null) } }]);
+					this.areas.set(areaId, { ...before, neighbors: { ...neighbors, [change.side]: neighborId } });
+
+					if (neighbor && (neighborId !== null))
+					{
+						this.areas.set(neighborId, { ...neighbor, neighbors: { ...(neighbor.neighbors as AreaNeighbors), [oppositeSide(change.side)]: areaId } });
+					}
+				}
+
+				return;
+			}
 			case 'editCells':
 			{
 				const areaId = resolveStringRef(this.context, change.areaId);
@@ -756,6 +777,7 @@ export class SaveAudit
 			case 'updateArea':
 			case 'deleteArea':
 			case 'resizeArea':
+			case 'setNeighbor':
 			case 'editCells':
 			case 'saveLink':
 			case 'deleteLink':

@@ -1,5 +1,5 @@
 import { ErrorCode, Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
+import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, visionKey, type AreaCellRef, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
@@ -826,6 +826,30 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
+	 * Where a character is
+	 *
+	 * @param characterId The character's ID
+	 * @return Their area and cell, or undefined when the character isn't in play
+	 */
+	getPosition(characterId: string): PlayerPosition | undefined
+	{
+		return(this.areaPlayers.getPosition(characterId));
+	}
+
+	/**
+	 * The area and cell a cell past an area's edges is in, across its seams with the areas the room has loaded
+	 *
+	 * @param areaId The area the cell is counted from
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return The cell, or undefined past an edge or a seam into an area not loaded yet
+	 */
+	locate(areaId: string, column: number, row: number): AreaCellRef | undefined
+	{
+		return(this.areaPlayers.locate(areaId, column, row));
+	}
+
+	/**
 	 * Puts a player's playable characters who aren't in play into it, each where they were last, or
 	 * beside the anchor being when they have never been played in the group
 	 *
@@ -1022,7 +1046,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	/**
 	 * Marks what each member in play sees as seen by the group, working it out again only for those
 	 * who have moved to another cell or whose sight has changed since the last tick, and only for the
-	 * cells the group hasn't seen yet. Nothing is recorded in an area without fog of war
+	 * cells the group hasn't seen yet. Cells seen across a seam are marked in the neighboring area they
+	 * are in. Nothing is recorded in an area without fog of war
 	 */
 	private explore(): void
 	{
@@ -1030,7 +1055,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		{
 			const areaId = area.loaded.area.id;
 
-			if (!area.loaded.fogOfWar)
+			// An area with neighbors may see into areas with fog of war, whatever its own
+			if (!area.loaded.fogOfWar && !area.seams)
 			{
 				this.lastSights.delete(playerId);
 				continue;
@@ -1039,15 +1065,44 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			// A tenth of a square, as the light changes around dawn and dusk, makes too little difference to look again
 			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)}`;
 
-			if (this.lastSights.get(playerId) !== key)
+			if (this.lastSights.get(playerId) === key)
 			{
-				this.lastSights.set(playerId, key);
+				continue;
+			}
 
-				const fresh = this.seen.mark(areaId, visibleCells(cell, budget, area.vision, (column, row) => this.seen.has(areaId, column, row)));
+			this.lastSights.set(playerId, key);
 
-				if (fresh.length > 0)
+			const known = (column: number, row: number): boolean =>
+			{
+				const found = this.areaPlayers.locate(areaId, column, row);
+				const recorded = ((found !== undefined) && (this.areas.get(found.areaId)?.loaded.fogOfWar ?? false));
+
+				return(!found || !recorded || this.seen.has(found.areaId, found.column, found.row));
+			};
+			const byArea = new Map<string, string[]>();
+
+			for (const seenKey of visibleCells(cell, budget, area.vision, known))
+			{
+				const [column, row] = seenKey.split(',').map(Number);
+				const found = this.areaPlayers.locate(areaId, column, row);
+
+				if (found)
 				{
-					this.sendCellsSeen(area, fresh);
+					const keys = (byArea.get(found.areaId) ?? []);
+
+					keys.push(visionKey(found.column, found.row));
+					byArea.set(found.areaId, keys);
+				}
+			}
+
+			for (const [seenAreaId, keys] of byArea)
+			{
+				const seenArea = this.areas.get(seenAreaId);
+				const fresh = this.seen.mark(seenAreaId, keys);
+
+				if (seenArea && (fresh.length > 0))
+				{
+					this.sendCellsSeen(seenArea, fresh);
 				}
 			}
 		}

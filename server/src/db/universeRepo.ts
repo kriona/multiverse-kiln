@@ -1,13 +1,13 @@
 /**
  * Universes: the only module that reads or writes the universes table
  */
-import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinAbbreviationColumns, fromCoinColumns, fromCoinNameColumns, toCoinAbbreviationColumns, toCoinColumns, toCoinNameColumns } from './coinColumns.js';
 import { addDefaultDifficultyLevels } from './difficultyRepo.js';
-import { players, universeDrafts, universeEditors, universes } from './schema.js';
+import { areas, players, regions, tileGraphics, tiles, universeDrafts, universeEditors, universes, universeTranslations, universeTranslatorNotes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 import { anyColumnContains } from './textSearch.js';
 import type { UniverseVersion } from './universeVersions.js';
@@ -797,4 +797,35 @@ export async function deleteUniverse(universeId: string, executor: Executor = db
 		.returning({ id: universes.id });
 
 	return(deleted.length > 0);
+}
+
+/**
+ * Deletes a universe's world, in both versions, keeping the universe and its characters, groups,
+ * editors and settings: its regions, areas (with their cells and links), its own tiles and uploaded
+ * tilesets, and the translations and notes of its areas and tiles. Groups and races left starting in an
+ * area that goes start in the universe's starting area, and members saved in one go there too. Call it
+ * with the universe's draft discarded first
+ *
+ * @param universeId The universe's ID
+ * @param executor A transaction
+ */
+export async function deleteUniverseWorld(universeId: string, executor: Executor): Promise<void>
+{
+	for (const table of [universeTranslations, universeTranslatorNotes])
+	{
+		await executor
+			.delete(table)
+			.where(and(
+				eq(table.universeId, universeId),
+				inArray(table.kind, ['area', 'tile'])
+			));
+	}
+
+	// Areas first, since they and regions name tiles that can't be deleted while named, and tiles name tilesets
+	for (const table of [areas, regions, tiles, tileGraphics])
+	{
+		await executor
+			.delete(table)
+			.where(eq(table.universeId, universeId));
+	}
 }

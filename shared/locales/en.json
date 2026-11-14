@@ -1247,6 +1247,10 @@
 		"defaultMessage": "You no longer have a role in this universe, so your changes can't be saved.",
 		"description": "Shown above the editor's tabs, and in the editors' chat panel, when the player's role in the universe was taken away while they had the editor open"
 	},
+	"editor.area.addNeighbor": {
+		"defaultMessage": "Add Neighbor",
+		"description": "Button in a row of the area editor's Neighbors section that adds a new area next to it on that side, walked across without a link, after asking for its name"
+	},
 	"editor.area.areaDefault": {
 		"defaultMessage": "{tile} (default)",
 		"description": "A choice of tile to paint that is the area's default tile; {tile} is its name"
@@ -1299,6 +1303,14 @@
 		"defaultMessage": "Areas inside this one",
 		"description": "Heading of the list of areas inside the area being edited"
 	},
+	"editor.area.chooseNeighbor": {
+		"defaultMessage": "Choose",
+		"description": "Button in a row of the area editor's Neighbors section that opens a dialog for choosing the area next to it on that side, walked across without a link"
+	},
+	"editor.area.chooseNeighborHint": {
+		"defaultMessage": "Choose the area to put {side, select, north {north} east {east} south {south} other {west}} of {area}. It also becomes a neighbor of the other areas next to that spot.",
+		"description": "At the top of the dialog for choosing the area editor's neighbor on a side: {side} is the side and {area} the area being edited"
+	},
 	"editor.area.claimed": {
 		"defaultMessage": "{count, plural, one {{names} is also editing this area. You can still modify it; cells the other person paints will be shown to you (including conflicts).} other {{names} are editing this area too. You can still modify it; cells the others paint will be shown to you (including conflicts).}}",
 		"description": "Above the area's cells in the area editor while other editors have the same area open in theirs; {names} is their display names as a list, e.g. \"Bea and Cal\", and {count} how many. It warns rather than locks. Also read out by screen readers when it changes"
@@ -1315,6 +1327,10 @@
 		"defaultMessage": "Delete {area}? It hasn't been saved, so its settings, painting and links will be lost.",
 		"description": "Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name"
 	},
+	"editor.area.confirmDeleteWithNeighbors": {
+		"defaultMessage": "Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place. {count, plural, one {Its neighbor {neighbors} will have} other {Its neighbors {neighbors} will have}} an edge where it was.",
+		"description": "Asks before marking an area to be deleted when the Areas tab is saved, when it has neighboring areas (walked across without links), which are left with nothing past that side; {area} is its name, {neighbors} lists the neighbors' names and {count} how many"
+	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
 		"description": "Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -1330,6 +1346,14 @@
 	"editor.area.draw": {
 		"defaultMessage": "Draw",
 		"description": "Area editor tool that paints tiles onto the area's cells"
+	},
+	"editor.area.edgeButton": {
+		"defaultMessage": "{direction, select, north {North: {area}} northEast {Northeast: {area}} east {East: {area}} southEast {Southeast: {area}} south {South: {area}} southWest {Southwest: {area}} west {West: {area}} other {Northwest: {area}}}",
+		"description": "What screen readers hear for a button on an edge or corner of the area editor's cells, which opens the area past it (a neighboring area, walked across without a link, or the far end of a row of them that loops); {direction} is which edge or corner and {area} that area's name"
+	},
+	"editor.area.edgeDirection": {
+		"defaultMessage": "{direction, select, north {North} northEast {Northeast} east {East} southEast {Southeast} south {South} southWest {Southwest} west {West} other {Northwest}}",
+		"description": "On a button on an edge or corner of the area editor's cells that opens the area past it (a neighboring area, walked across without a link, or the far end of a row of them that loops), in gray before that area's name: which edge or corner it is on"
 	},
 	"editor.area.exitFullPage": {
 		"defaultMessage": "Exit Full Page",
@@ -1396,8 +1420,8 @@
 		"description": "In the list of keyboard shortcuts, the names of the Space and Enter keys"
 	},
 	"editor.area.keys.paintDescription": {
-		"defaultMessage": "Paint the cursor's cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting",
-		"description": "In the list of keyboard shortcuts, what Space and Enter do on the area editor's cells"
+		"defaultMessage": "Paint the cursor's cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting. On a neighboring area, open it",
+		"description": "In the list of keyboard shortcuts, what Space and Enter do on the area editor's cells; the cells of neighboring areas (walked across without links) are shown dimmed past the area's edges"
 	},
 	"editor.area.keys.pickTileDescription": {
 		"defaultMessage": "Choose the cursor's cell's tile in the Tile list",
@@ -1447,6 +1471,18 @@
 		"defaultMessage": "The lobby's passage of time is set on the Lobby tab.",
 		"description": "Shown in the area and region editors, for an area below the lobby region and for the lobby region and the regions below it, in place of their passage of time, which the Lobby tab sets"
 	},
+	"editor.area.loopHalf": {
+		"defaultMessage": "Its {axis, select, eastWest {row} other {column}} of neighbors doesn't loop {axis, select, eastWest {east-west} other {north-south}}. Only one of its ends is checked. Check both this area and {area} at the other end.",
+		"description": "Warning beside the area editor's loop checkboxes, for an area at one end of a row or column of neighboring areas (walked across without links) when only one of the two ends loops, so the row or column doesn't; {axis} is which way (eastWest or northSouth) and {area} the name of the area at the other end"
+	},
+	"editor.area.loopMisaligned": {
+		"defaultMessage": "Its {axis, select, eastWest {row} other {column}} of neighbors and the one beside it with {areas} don't both loop {axis, select, eastWest {east-west} other {north-south}}. Walking where they meet reaches different areas depending on the route taken. Make all {axis, select, eastWest {rows} other {columns}} side by side loop.",
+		"description": "Warning beside the area editor's loop checkboxes, for an area with neighboring areas (walked across without links) whose row or column loops differently from the one beside it: one loops and the other doesn't, or their ends aren't lined up. {axis} is which way (eastWest or northSouth) and {areas} the names of the areas beside this one in that row or column"
+	},
+	"editor.area.loopNotHere": {
+		"defaultMessage": "{place, select, ring {Its {axis, select, eastWest {row} other {column}} of neighbors joins back onto itself. It always loops {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east and west} other {north and south}}. Only the areas at the ends of its {axis, select, eastWest {row} other {column}} decide whether it loops.}}",
+		"description": "Beside the area editor's loop checkboxes, which are disabled, for an area with neighboring areas (walked across without links): {place} is \"ring\" when its row or column of neighbors joins back onto itself, which always loops, and otherwise the area has neighbors on both sides, so only the ends' checkboxes count; {axis} is which way (eastWest or northSouth)"
+	},
 	"editor.area.loopsEastWest": {
 		"defaultMessage": "Loops east-west",
 		"description": "Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -1459,9 +1495,49 @@
 		"defaultMessage": "An area must be inside at least one region or area.",
 		"description": "Shown in the area editor when its parents have all been removed, which keeps it from saving"
 	},
+	"editor.area.neighborButton": {
+		"defaultMessage": "{action} ({side, select, north {north} east {east} south {south} other {west}})",
+		"description": "What screen readers hear for a button in a row of the area editor's Neighbors section, such as Choose or Remove, with the side of the area it is for"
+	},
+	"editor.area.neighborCell": {
+		"defaultMessage": "{area}: {cell}",
+		"description": "Under the area editor's cells, a cell of a neighboring area shown dimmed past the area's edge (walked across without a link), under the pointer or the keyboard's cursor: {area} is the neighbor's name and {cell} the cell in it and what it holds, e.g. \"3, -2: Grass\""
+	},
+	"editor.area.neighborRefusal": {
+		"defaultMessage": "{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby's edge} assignments {Outside the regions you're assigned} other {It wouldn't fit the rest of the grid}}",
+		"description": "Under an area in the dialog for choosing the area editor's neighbor on a side, when it can't be chosen; {reason} is why: it is the area itself, it is smaller than {cells} cells each way, a side that would join here has another neighbor, sides that would touch are of different lengths, it is across the lobby region's edge (the lobby is never connected to the rest of the world), it is outside the regions a builder is assigned, or joining it would break the grid of neighbors elsewhere"
+	},
+	"editor.area.neighborRemoved": {
+		"defaultMessage": "{area} is no longer a neighbor.",
+		"description": "Read out by screen readers after Remove in the area editor's Neighbors section; {area} is the area that is no longer next to the area being edited"
+	},
+	"editor.area.neighborSide": {
+		"defaultMessage": "{side, select, north {North} east {East} south {South} other {West}}",
+		"description": "Names a side of the area in the area editor's Neighbors section, before the neighboring area on that side"
+	},
+	"editor.area.neighbors": {
+		"defaultMessage": "Neighbors",
+		"description": "Heading of the area editor's list of the areas next to the area on each side, walked across without a link"
+	},
+	"editor.area.neighborsSaveFailed": {
+		"defaultMessage": "Could not save the neighboring areas.",
+		"description": "Shown in the area editor when the server refused a change to the area's neighbors (areas walked across without links), or to the size of an area resized along with it, followed by why; nothing was saved"
+	},
+	"editor.area.neighborsTooSmall": {
+		"defaultMessage": "An area must be at least {cells, number} cells each way to have neighbors. Make it larger with Edit Size first.",
+		"description": "In the area editor's Neighbors section, for an area too small to have neighboring areas (walked across without links), in place of Choose and Add Neighbor; {cells} is the fewest cells along each side"
+	},
+	"editor.area.noNeighbor": {
+		"defaultMessage": "None",
+		"description": "In the area editor's Neighbors section, for a side of the area with no neighboring area"
+	},
 	"editor.area.openFailed": {
 		"defaultMessage": "Could not open the area.",
 		"description": "Shown in the area editor when the area couldn't be loaded"
+	},
+	"editor.area.overallMap": {
+		"defaultMessage": "See Overall Map",
+		"description": "Button in the area editor that opens a dialog drawing the whole grid of neighboring areas the area is in, zoomed out"
 	},
 	"editor.area.parent": {
 		"defaultMessage": "Parent area",
@@ -1482,6 +1558,10 @@
 	"editor.area.redo": {
 		"defaultMessage": "Redo",
 		"description": "Button that makes again the painting or change of size Undo took back"
+	},
+	"editor.area.removeNeighbor": {
+		"defaultMessage": "Remove",
+		"description": "Button in a row of the area editor's Neighbors section that makes the area there no longer the area's neighbor; neither area is deleted"
 	},
 	"editor.area.resize": {
 		"defaultMessage": "Edit Size",
@@ -1743,6 +1823,10 @@
 		"defaultMessage": "Lobby's starting square",
 		"description": "Names the setting for where players start in the lobby (the Lobby tab's starting square: an area below the lobby region and a square of it), in the list of what a save changed on the editor's Audit tab"
 	},
+	"editor.audit.field.neighbor": {
+		"defaultMessage": "Neighbor",
+		"description": "Names an area's neighboring area (walked across without a link) in the list of what a save changed, on the editor's Audit tab; its value says which side and which area, e.g. \"East: Forest\""
+	},
 	"editor.audit.field.startingArea": {
 		"defaultMessage": "Starting area",
 		"description": "Names the setting for where characters start (of the universe, or of a race or class), in the list of what a save changed on the editor's Audit tab"
@@ -1810,6 +1894,10 @@
 	"editor.audit.value.mobs": {
 		"defaultMessage": "mobs",
 		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
+	},
+	"editor.audit.value.neighbor": {
+		"defaultMessage": "{side, select, north {North} east {East} south {South} other {West}}: {area}",
+		"description": "The value of an area's neighbor in the list of what a save changed, on the editor's Audit tab: {side} is which side of the area, and {area} the neighboring area's name, or \"none\" when it has none there any more"
 	},
 	"editor.audit.value.no": {
 		"defaultMessage": "no",
@@ -2804,8 +2892,8 @@
 		"description": "Explains the lobby region on the editor's Lobby tab, under its field"
 	},
 	"editor.lobby.regionLeftOut": {
-		"defaultMessage": "{region} ({reason, select, starting {characters start in an area below it} other {links lead out of it}})",
-		"description": "A region in the editor Lobby tab's choice of the lobby region that can't be chosen, and why: {region} is its name, and {reason} is \"starting\" when characters start in an area below it, or otherwise links lead from its areas to areas outside it. The lobby areas are never connected to the rest of the world"
+		"defaultMessage": "{region} ({reason, select, starting {characters start in an area below it} neighbors {its areas have neighbors outside it} other {links lead out of it}})",
+		"description": "A region in the editor Lobby tab's choice of the lobby region that can't be chosen, and why: {region} is its name, and {reason} is \"starting\" when characters start in an area below it, \"neighbors\" when its areas have neighboring areas (walked across without links) outside it, or otherwise links lead from its areas to areas outside it. The lobby areas are never connected to the rest of the world"
 	},
 	"editor.lobby.saveFailed": {
 		"defaultMessage": "Could not save the lobby's settings.",
@@ -2823,6 +2911,30 @@
 		"defaultMessage": "Actions take no time in the lobby, so the time of day in every area below the lobby region follows this instead of their own passage of time.",
 		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
 	},
+	"editor.neighborAdd.added": {
+		"defaultMessage": "Added {area} {side, select, north {north} east {east} south {south} other {west}} of this area.",
+		"description": "Read out by screen readers after the Add Neighbor dialog added a new area beside the area being edited; {area} is its name and {side} the side"
+	},
+	"editor.neighborAdd.hint": {
+		"defaultMessage": "The new area goes {side, select, north {north} east {east} south {south} other {west}} of {area}. It's in the same regions and areas, has the same settings, and is painted with its default tile. It's saved with the rest of your changes.",
+		"description": "In the Add Neighbor dialog of the area editor: {side} is the side of the area being edited the new area goes on, walked across without a link, and {area} the area being edited"
+	},
+	"editor.neighborAdd.outsideAssignments": {
+		"defaultMessage": "An area next to that spot is outside the regions you're assigned. A new area can't be added there.",
+		"description": "Shown in the Add Neighbor dialog to a builder when the new area would be the neighbor of an area outside the regions assigned to them, which they can't change"
+	},
+	"editor.neighborAdd.refused": {
+		"defaultMessage": "{reason, select, tooSmall {This area must be at least {cells, number} cells each way to have neighbors.} taken {An area next to that spot already has a neighbor there.} size {The areas next to that spot have sides of different lengths.} other {A new area there wouldn't fit the rest of the grid.}}",
+		"description": "Shown in the Add Neighbor dialog when no new area fits beside the area being edited on that side; {reason} is why, and {cells} the fewest cells along each side of an area with neighbors"
+	},
+	"editor.neighborAdd.submit": {
+		"defaultMessage": "Add",
+		"description": "Button in the Add Neighbor dialog that adds the new area beside the area being edited"
+	},
+	"editor.neighborAdd.title": {
+		"defaultMessage": "Add Neighbor",
+		"description": "Title of the dialog in the area editor that adds a new area beside the area as its neighbor, walked across without a link"
+	},
 	"editor.notes": {
 		"defaultMessage": "Notes",
 		"description": "Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet"
@@ -2834,6 +2946,58 @@
 	"editor.option.keepPlaying": {
 		"defaultMessage": "Existing characters keep playing while disabled",
 		"description": "Names a race's or class's setting in the list of what a save changed, on the editor's Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can't play until it is enabled again (no). Chosen in the dialog the editor's Save opens when disabling a race or class characters are"
+	},
+	"editor.overallMap.areaLoops": {
+		"defaultMessage": "{place}. Loops {loops}",
+		"description": "What screen readers hear for an area on the Overall Map with edges that loop (a row or column of neighboring areas whose ends join, marked with arrows): {place} is the area's name and where it is, and {loops} lists its edges that loop and where each comes back on, e.g. \"west to Northeast March\""
+	},
+	"editor.overallMap.areaMisaligned": {
+		"defaultMessage": "{place}. Warning: doesn't loop like the areas beside it",
+		"description": "What screen readers hear for an area on the Overall Map whose row or column of neighboring areas loops differently from the one beside it, marked on the map with a warning sign: {place} is everything else said about the area, its name and where it is"
+	},
+	"editor.overallMap.direction": {
+		"defaultMessage": "{count, plural, one {# area {direction, select, north {north} east {east} south {south} other {west}}} other {# areas {direction, select, north {north} east {east} south {south} other {west}}}}",
+		"description": "Part of where an area is on the Overall Map from the area being edited, for screen readers, e.g. \"2 areas east\"; {count} is how many areas away and {direction} which way"
+	},
+	"editor.overallMap.hint": {
+		"defaultMessage": "Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter.",
+		"description": "Explains the Overall Map dialog: each area of the grid of neighboring areas is drawn in its place, and opening one goes to its editor"
+	},
+	"editor.overallMap.loop": {
+		"defaultMessage": "{side, select, north {north} east {east} south {south} other {west}} to {target}",
+		"description": "One edge of an area on the Overall Map that loops, in the list screen readers hear for the area: {side} is the edge, and {target} the area at the other end of its row or column, where walking off the edge comes back on, which may be the same area"
+	},
+	"editor.overallMap.loops": {
+		"defaultMessage": "The arrows mark edges that loop. Walking off one brings you back at the other end of its row or column.",
+		"description": "Under the Overall Map, when rows or columns of neighboring areas loop, explaining the arrows drawn outside the edges that loop"
+	},
+	"editor.overallMap.misaligned": {
+		"defaultMessage": "The areas marked with a warning sign are in rows or columns side by side where some loop and others don't. Walking where they meet reaches different areas depending on the route taken. Make all rows or columns side by side loop.",
+		"description": "Warning under the Overall Map when rows or columns of neighboring areas side by side loop differently: one loops and the other doesn't, or their ends aren't lined up. The areas in them are marked on the map with a warning sign, ⚠️, which also starts this text"
+	},
+	"editor.overallMap.openArea": {
+		"defaultMessage": "{area} (open)",
+		"description": "The name of the area being edited on the Overall Map, which marks it"
+	},
+	"editor.overallMap.openPlace": {
+		"defaultMessage": "{area}, the open area",
+		"description": "What screen readers hear for the area being edited on the Overall Map; {area} is its name"
+	},
+	"editor.overallMap.place": {
+		"defaultMessage": "{area}, {place} of the open area",
+		"description": "What screen readers hear for an area on the Overall Map: {area} is its name, and {place} where it is from the area being edited, e.g. \"Forest, 1 area east and 2 areas south of the area open\""
+	},
+	"editor.overallMap.seam": {
+		"defaultMessage": "the {side, select, north {north} east {east} south {south} other {west}} side of {area} joins {neighbor}",
+		"description": "One join between neighboring areas drawn apart on the Overall Map, in its list of them: {side} is the side of {area} that {neighbor} is on"
+	},
+	"editor.overallMap.seams": {
+		"defaultMessage": "The dashed lines mark where areas drawn apart are neighbors: {joins}.",
+		"description": "Under the Overall Map, when areas of the grid are neighbors but drawn apart, such as where a ring of areas joins back: {joins} lists each, e.g. \"the east side of Plains joins Town\""
+	},
+	"editor.overallMap.title": {
+		"defaultMessage": "Overall Map",
+		"description": "Title of the dialog drawing the whole grid of neighboring areas an area is in, zoomed out"
 	},
 	"editor.pageTitle": {
 		"defaultMessage": "Edit {universe}",
@@ -2907,6 +3071,10 @@
 		"defaultMessage": "{area} has a link to {target}, across the edge of the lobby",
 		"description": "A problem keeping a save, shown by the region and area editors and the Areas tab: an area below the lobby region (a lobby area) and an area outside it are joined by a link, and the lobby is never connected to the rest of the world; {area} is the area the link is on and {target} the area it leads to"
 	},
+	"editor.place.lobbyNeighbor": {
+		"defaultMessage": "{area}: its neighbor {target} is on the other side of the lobby's edge",
+		"description": "A problem keeping a save, shown by the region and area editors and the Areas tab: an area below the lobby region (a lobby area) and an area outside it are neighbors, walked across without a link, and the lobby is never connected to the rest of the world; {area} and {target} are the two areas"
+	},
 	"editor.place.lobbyParentRefused": {
 		"defaultMessage": "{reason, select, starting {in the lobby, where characters can't start} other {in the lobby, and links here lead out of it}}",
 		"description": "After a region or area offered as a parent in the region and area editors' Add Parent, when it can't be chosen: it is below the lobby region, and {reason} is \"starting\" when characters start in this region or area (or below it), or otherwise links lead from here to areas outside the lobby. The lobby areas are never connected to the rest of the world"
@@ -2922,6 +3090,22 @@
 	"editor.place.missing": {
 		"defaultMessage": "{area}: nothing above it sets {setting, select, indoors {whether it is indoors or outdoors} lightLevel {a light level} defaultTileId {a default tile} fogOfWar {whether it has fog of war} other {a passage of time}}",
 		"description": "A problem keeping a save, shown by the region and area editors: no region or area above an area sets one of its settings, and it doesn't set it itself; {area} is the area and {setting} which setting"
+	},
+	"editor.place.neighborGrid": {
+		"defaultMessage": "{area}: going {first, select, north {north} east {east} south {south} other {west}} then {second, select, north {north} east {east} south {south} other {west}} reaches {firstReached}, but going {second, select, north {north} east {east} south {south} other {west}} then {first, select, north {north} east {east} south {south} other {west}} reaches {secondReached}",
+		"description": "A problem keeping a save, shown by the area editor: neighboring areas form a grid, where going one way then the other reaches the same area as going the other way first; {area} is where it starts, {first} and {second} the directions, and {firstReached} and {secondReached} the two different areas reached"
+	},
+	"editor.place.neighborOneWay": {
+		"defaultMessage": "{area}: {neighbor} is its {side, select, north {north} east {east} south {south} other {west}} neighbor, but not the other way around",
+		"description": "A problem keeping a save, shown by the area editor: neighboring areas must be neighbors both ways, and one isn't; {area} and {neighbor} are the areas and {side} which side of {area} the neighbor is on"
+	},
+	"editor.place.neighborSides": {
+		"defaultMessage": "{area}: its {side, select, north {north} east {east} south {south} other {west}} side isn't the same length as the side of {neighbor} next to it",
+		"description": "A problem keeping a save, shown by the area editor: neighboring areas touch along sides of the same length, so every area in a row is the same height and every area in a column the same width; {area} and {neighbor} are the areas and {side} which side of {area} the neighbor is on"
+	},
+	"editor.place.neighborTooSmall": {
+		"defaultMessage": "{area}: an area with neighbors must be at least {cells, number} cells each way",
+		"description": "A problem keeping a save, shown by the area editor: an area with neighboring areas (walked across without links) is smaller than allowed; {area} is the area and {cells} the fewest cells along each side"
 	},
 	"editor.place.noRegion": {
 		"defaultMessage": "{area} isn't in any region",
@@ -3259,6 +3443,10 @@
 		"defaultMessage": "Could not save the regions.",
 		"description": "Shown on the Areas tab when the server refused a change to its regions, followed by why; nothing was saved"
 	},
+	"editor.resize.carried": {
+		"defaultMessage": "{count, plural, one {{areas} is resized too.} other {{areas} are resized too.}} This keeps the touching sides of the areas in its row and column the same length.",
+		"description": "In the dialog for changing an area's size, when the area has neighboring areas (walked across without links): the other areas in its row (when it gets taller or shorter) or column (wider or narrower) change size with it. {areas} lists their names and {count} how many"
+	},
 	"editor.resize.cutOffWarning": {
 		"defaultMessage": "The smaller area cuts off {cells, plural, one {# painted cell} other {# painted cells}} and {links, plural, one {# link} other {# links}}. Undo brings the cells back, but the links are deleted when the area is saved. Resize anyway?",
 		"description": "Warns before making an area smaller cuts off cells painted with something other than the default tile, and area links"
@@ -3318,6 +3506,10 @@
 	"editor.resize.title": {
 		"defaultMessage": "Edit Size",
 		"description": "Title of the dialog for changing an area's size"
+	},
+	"editor.resize.tooSmallForNeighbors": {
+		"defaultMessage": "An area with neighbors must be at least {min, number} cells in each direction.",
+		"description": "Shown in the dialog for changing an area's size, which keeps Resize off, when the size asked for an area with neighboring areas (walked across without links) is smaller than allowed; {min} is the fewest cells on a side"
 	},
 	"editor.resize.total": {
 		"defaultMessage": "{height, number} tall x {width, number} wide",
@@ -5243,6 +5435,10 @@
 		"defaultMessage": "Log in first.",
 		"description": "Why a request was refused, such as one to the editor or to change the account's email address: the browser isn't logged in"
 	},
+	"error.neighborProblems": {
+		"defaultMessage": "The neighboring areas wouldn't fit together.",
+		"description": "Why the world editor couldn't save: neighboring areas must be at least 32 cells each way, touch along sides of the same length, and form a grid where going north then west reaches the same area as going west then north; the editor lists each problem"
+	},
 	"error.noEnabledClass": {
 		"defaultMessage": "A universe needs at least one enabled class, so new characters have one to be.",
 		"description": "Why a character class couldn't be disabled or deleted: it is the last class new characters can choose"
@@ -5386,6 +5582,10 @@
 	"error.outsideAssignments": {
 		"defaultMessage": "That region or area isn't within the regions you're assigned to, so you can't change it.",
 		"description": "Why the world editor couldn't save a builder's change: builders only edit the regions and areas below the regions a creator assigned them to, and the change touches one outside them (a move, a parent or a link needs both ends within them)"
+	},
+	"error.ownNeighbor": {
+		"defaultMessage": "An area can't be its own neighbor. To walk off one edge and come back on the other, make it loop.",
+		"description": "Why an area's neighbor was refused: the area chosen is the area itself"
 	},
 	"error.parentNotInUniverse": {
 		"defaultMessage": "A parent must be a region or area of this universe.",

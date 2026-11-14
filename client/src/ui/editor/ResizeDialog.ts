@@ -1,6 +1,6 @@
 import { MAX_AREA_SIDE, type AreaBounds } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
+import { formatList, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { announce } from '../announcer';
 import { ChangeTracker } from '../changeTracker';
@@ -42,9 +42,20 @@ interface ResizeTarget
 	bounds: AreaBounds;
 
 	/**
-	 * Finds out what new bounds would cut off
+	 * Finds out what new bounds would cut off, in the area and the areas it carries along
 	 */
 	check: (bounds: AreaBounds) => Promise<ResizeLoss>;
+
+	/**
+	 * The names of the other areas new bounds resize with it: those in its row or column of neighbors (see
+	 * Neighboring areas in STRUCTURE-OVERVIEW.md)
+	 */
+	carried: (bounds: AreaBounds) => string[];
+
+	/**
+	 * The fewest cells the area may have each way, for an area with neighbors; undefined for any size
+	 */
+	minimumSide: number | undefined;
 
 	/**
 	 * Called with the new bounds when the player resizes the area
@@ -68,6 +79,7 @@ export class ResizeDialog
 	private readonly west = getElement('resize-west', HTMLInputElement);
 	private readonly extendBy = getElement('resize-extend-by', HTMLInputElement);
 	private readonly total = getElement('resize-total', HTMLElement);
+	private readonly carried = getElement('resize-carried', HTMLElement);
 	private readonly warning = getElement('resize-warning', HTMLElement);
 	private readonly submit = getElement('resize-submit', HTMLButtonElement);
 
@@ -289,14 +301,27 @@ export class ResizeDialog
 		const height = (bounds.maxRow - bounds.minRow) + 1;
 		const valid = (Number.isInteger(width) && Number.isInteger(height));
 		const tooLarge = (valid && ((width > MAX_AREA_SIDE) || (height > MAX_AREA_SIDE)));
+		const minimum = this.target?.minimumSide;
+		const tooSmall = (valid && (minimum !== undefined) && ((width < minimum) || (height < minimum)));
+		const carried = ((valid && this.target) ? this.target.carried(bounds) : []);
 
+		showMessage(this.carried, ((carried.length === 0)
+			? undefined
+			: t({
+				id: 'editor.resize.carried',
+				defaultMessage: '{count, plural, one {{areas} is resized too.} other {{areas} are resized too.}} This keeps the touching sides of the areas in its row and column the same length.',
+				description: 'In the dialog for changing an area\'s size, when the area has neighboring areas (walked across without links): the other areas in its row (when it gets taller or shorter) or column (wider or narrower) change size with it. {areas} lists their names and {count} how many'
+			}, {
+				areas: formatList(carried, 'conjunction'),
+				count: carried.length
+			})));
 		this.confirmedBounds = undefined;
 		setButtonText(this.submit, t({
 			id: 'editor.resize.submit',
 			defaultMessage: 'Resize',
 			description: 'Button that changes the area to the size given'
 		}));
-		this.submit.disabled = (!valid || tooLarge);
+		this.submit.disabled = (!valid || tooLarge || tooSmall);
 		this.total.textContent = (valid
 			? t({
 				id: 'editor.resize.total',
@@ -307,15 +332,30 @@ export class ResizeDialog
 				width
 			})
 			: '');
-		showMessage(this.warning, (tooLarge
-			? t({
+		let problem: string | undefined;
+
+		if (tooLarge)
+		{
+			problem = t({
 				id: 'editor.area.tooLarge',
 				defaultMessage: 'An area can be at most {max, number} cells in each direction.',
 				description: 'Shown when the size asked for an area is larger than allowed; {max} is the most cells on a side'
 			}, {
 				max: MAX_AREA_SIDE
-			})
-			: undefined));
+			});
+		}
+		else if (tooSmall)
+		{
+			problem = t({
+				id: 'editor.resize.tooSmallForNeighbors',
+				defaultMessage: 'An area with neighbors must be at least {min, number} cells in each direction.',
+				description: 'Shown in the dialog for changing an area\'s size, which keeps Resize off, when the size asked for an area with neighboring areas (walked across without links) is smaller than allowed; {min} is the fewest cells on a side'
+			}, {
+				min: minimum
+			});
+		}
+
+		showMessage(this.warning, problem);
 	}
 
 	/**

@@ -333,6 +333,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.area.loopsNorthSouth',
 		defaultMessage: 'Loops north-south',
 		description: 'Checkbox for an area that wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	neighbor: {
+		id: 'editor.audit.field.neighbor',
+		defaultMessage: 'Neighbor',
+		description: 'Names an area\'s neighboring area (walked across without a link) in the list of what a save changed, on the editor\'s Audit tab; its value says which side and which area, e.g. "East: Forest"'
 	}
 });
 
@@ -702,6 +707,15 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'loopsEastWest':
 		case 'loopsNorthSouth':
 			return(t((change.value ? VALUE_MESSAGES.yes : VALUE_MESSAGES.no)));
+		case 'neighbor':
+			return(t({
+				id: 'editor.audit.value.neighbor',
+				defaultMessage: '{side, select, north {North} east {East} south {South} other {West}}: {area}',
+				description: 'The value of an area\'s neighbor in the list of what a save changed, on the editor\'s Audit tab: {side} is which side of the area, and {area} the neighboring area\'s name, or "none" when it has none there any more'
+			}, {
+				side: change.value.side,
+				area: (change.value.area ?? t(VALUE_MESSAGES.none))
+			}));
 	}
 }
 

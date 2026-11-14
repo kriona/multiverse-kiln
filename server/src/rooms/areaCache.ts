@@ -1,7 +1,7 @@
-import { chunkKey, createVisionArea, GRID_CELL_SIZE, IMPASSABLE_WALK_SECONDS, parseChunkKey, type AreaChunk, type AreaChunkUpdate, type AreaLinkCell, type AreaPayload, type VisionArea } from '@multiverse-kiln/shared';
+import { chunkKey, createVisionArea, GRID_CELL_SIZE, hasNeighbors, IMPASSABLE_WALK_SECONDS, isInBounds, locateCell, parseChunkKey, seamSlots, type AreaCellRef, type AreaChunk, type AreaChunkUpdate, type AreaLinkCell, type AreaPayload, type SeamLookup, type SeamSlot, type VisionArea } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../db/areaRepo.js';
-import type { Grid } from '../logic/movement.js';
+import type { Cell, Grid } from '../logic/movement.js';
 import { createAreaGrid, type AreaLayout, type AreaLink } from '../logic/areaGrid.js';
 
 /**
@@ -33,6 +33,13 @@ export interface ActiveArea
 	 * Every loaded chunk, by chunkKey()
 	 */
 	loadedChunks: Set<string>;
+
+	/**
+	 * Whether the area has neighbors (see Neighboring areas in STRUCTURE-OVERVIEW.md): then players walk,
+	 * see and are seen across its seams, and where each edge leads is loaded.sides rather than its loop
+	 * checkboxes
+	 */
+	seams: boolean;
 }
 
 /**
@@ -97,12 +104,136 @@ export class AreaCache
 	private readonly pendingChunks = new WeakMap<ActiveArea, Map<string, Promise<string[]>>>();
 
 	/**
+	 * Whether players can cross a seam into an area: by default, while it is enabled
+	 */
+	private opensSeam: (loaded: LoadedArea) => boolean = (loaded) => loaded.area.enabled;
+
+	/**
 	 * @param loadArea Reads an area's settings, links and tiles
 	 * @param readChunks Reads some of an area's stored chunks
 	 * @param now The time in milliseconds, for how long areas have gone unused
 	 */
 	constructor(private readonly loadArea: AreaLoader, private readonly readChunks: ChunkReader, private readonly now: () => number = Date.now)
 	{
+	}
+
+	/**
+	 * Sets which areas players can cross a seam into: a room's players walk only the areas on its side of
+	 * the lobby region's edge, and never into a disabled area. An area seams lead to that it doesn't take
+	 * is an edge
+	 *
+	 * @param opens Whether a loaded area can be crossed into
+	 */
+	setSeamFilter(opens: (loaded: LoadedArea) => boolean): void
+	{
+		this.opensSeam = opens;
+	}
+
+	/**
+	 * An area as the seams see it, while it is loaded and can be crossed into
+	 *
+	 * @param areaId The area's ID
+	 * @return The area, or undefined when a seam into it is an edge
+	 */
+	readonly seamArea: SeamLookup = (areaId) =>
+	{
+		const area = this.areas.get(areaId);
+
+		if (!area || !this.opensSeam(area.loaded))
+		{
+			return(undefined);
+		}
+
+		return({
+			id: areaId,
+			bounds: area.loaded.bounds,
+			sides: area.loaded.sides
+		});
+	};
+
+	/**
+	 * The area and cell a cell past an area's edges is in, across its seams with loaded areas
+	 *
+	 * @param areaId The area the cell is counted from
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return The cell, which is the same cell inside the area; undefined past an edge
+	 */
+	locate(areaId: string, column: number, row: number): AreaCellRef | undefined
+	{
+		const area = this.areas.get(areaId);
+
+		if (area && isInBounds(area.loaded.bounds, column, row))
+		{
+			return({ areaId, column, row });
+		}
+
+		return((area?.seams ? locateCell(this.seamArea, areaId, column, row) : undefined));
+	}
+
+	/**
+	 * The areas around an area across its seams, as far as they are loaded (seamSlots())
+	 *
+	 * @param areaId The area's ID
+	 * @return The places holding a loaded area; none for an area without neighbors
+	 */
+	slots(areaId: string): SeamSlot[]
+	{
+		const area = this.areas.get(areaId);
+
+		return((area?.seams ? seamSlots((id) => ((id === areaId) ? { id, bounds: area.loaded.bounds, sides: area.loaded.sides } : this.seamArea(id)), areaId) : []));
+	}
+
+	/**
+	 * The walk seconds of a cell past an area's edges, in the area across the seam
+	 *
+	 * @param areaId The area the cell is counted from
+	 * @param cell The cell
+	 * @return The walk seconds, or undefined past an edge
+	 */
+	private walkAcross(areaId: string, cell: Cell): number | undefined
+	{
+		const found = this.locate(areaId, cell.column, cell.row);
+		const target = ((found === undefined) ? undefined : this.areas.get(found.areaId));
+
+		return(((found && target) ? target.grid.walkSeconds(found) : undefined));
+	}
+
+	/**
+	 * The vision cost of a cell past an area's edges, in the area across the seam
+	 *
+	 * @param areaId The area the cell is counted from
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return The vision cost, or undefined past an edge
+	 */
+	private visionAcross(areaId: string, column: number, row: number): number | undefined
+	{
+		const found = this.locate(areaId, column, row);
+		const target = ((found === undefined) ? undefined : this.areas.get(found.areaId));
+
+		return(((found && target) ? target.vision.visionCost(found.column, found.row) : undefined));
+	}
+
+	/**
+	 * Gets a loaded area ready to play in
+	 *
+	 * @param loaded The area's settings, links and tiles
+	 * @param chunks Its loaded chunks that aren't all the default tile
+	 * @param loadedChunks Every loaded chunk
+	 * @return The area
+	 */
+	private activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunks: Set<string>): ActiveArea
+	{
+		const areaId = loaded.area.id;
+		const seams = hasNeighbors(loaded.neighbors);
+
+		return(activate(loaded, chunks, loadedChunks, (seams
+			? {
+				walk: (cell) => this.walkAcross(areaId, cell),
+				vision: (column, row) => this.visionAcross(areaId, column, row)
+			}
+			: undefined)));
 	}
 
 	/**
@@ -381,7 +512,7 @@ export class AreaCache
 			return(undefined);
 		}
 
-		const area = activate(loaded, (keepChunks ? before.chunks : new Map<string, number[]>()), (keepChunks ? before.loadedChunks : new Set<string>()));
+		const area = this.activate(loaded, (keepChunks ? before.chunks : new Map<string, number[]>()), (keepChunks ? before.loadedChunks : new Set<string>()));
 
 		this.areas.set(areaId, area);
 
@@ -432,7 +563,7 @@ export class AreaCache
 			return(undefined);
 		}
 
-		const area = activate(loaded, new Map(), new Set());
+		const area = this.activate(loaded, new Map(), new Set());
 
 		this.areas.set(areaId, area);
 		this.usedAt.set(areaId, this.now());
@@ -486,15 +617,35 @@ export class AreaCache
 }
 
 /**
- * Gets a loaded area ready to play in
+ * How an area with neighbors walks and sees across its seams
+ */
+interface SeamHooks
+{
+	/**
+	 * The walk seconds of a cell past the area's edges, or undefined past an edge
+	 */
+	walk: (cell: Cell) => number | undefined;
+
+	/**
+	 * The vision cost of a cell past the area's edges, or undefined past an edge
+	 */
+	vision: (column: number, row: number) => number | undefined;
+}
+
+/**
+ * Gets a loaded area ready to play in. An area with neighbors loops only through its seams, so its own
+ * loop checkboxes are left out of its grid and vision
  *
  * @param loaded The area's settings, links and tiles
  * @param chunks Its loaded chunks that aren't all the default tile
  * @param loadedChunks Every loaded chunk
+ * @param seams How it walks and sees across its seams, for an area with neighbors
  * @return The area
  */
-function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunks: Set<string>): ActiveArea
+function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunks: Set<string>, seams?: SeamHooks): ActiveArea
 {
+	const loopsEastWest = (loaded.loopsEastWest && !seams);
+	const loopsNorthSouth = (loaded.loopsNorthSouth && !seams);
 	const layout: AreaLayout = {
 		tiles: {
 			bounds: loaded.bounds,
@@ -502,20 +653,23 @@ function activate(loaded: LoadedArea, chunks: Map<string, number[]>, loadedChunk
 			chunks
 		},
 		indoors: loaded.area.indoors,
-		loopsEastWest: loaded.loopsEastWest,
-		loopsNorthSouth: loaded.loopsNorthSouth,
+		loopsEastWest,
+		loopsNorthSouth,
 		tileWalkSeconds: new Map(loaded.tiles.map((tile) => [tile.id, tile.walkSeconds])),
 		links: loaded.links,
 		loadedChunks
 	};
+	const vision = createVisionArea(layout.tiles, loopsEastWest, loopsNorthSouth, new Map(loaded.tiles.map((tile) => [tile.id, tile.visionCost])));
 
 	return({
 		loaded,
 		layout,
-		grid: createAreaGrid(layout, GRID_CELL_SIZE),
-		vision: createVisionArea(layout.tiles, loaded.loopsEastWest, loaded.loopsNorthSouth, new Map(loaded.tiles.map((tile) => [tile.id, tile.visionCost]))),
+		grid: createAreaGrid(layout, GRID_CELL_SIZE, seams?.walk),
+		// A neighbor's cells may cost to see past, however clear the area's own are
+		vision: (seams ? { ...vision, clear: false, beyond: seams.vision } : vision),
 		chunks,
-		loadedChunks
+		loadedChunks,
+		seams: (seams !== undefined)
 	});
 }
 
@@ -572,8 +726,9 @@ export function toAreaPayload(area: ActiveArea, chunkKeys: Iterable<string>, mem
 		lightLevel: loaded.lightLevel,
 		fogOfWar: loaded.fogOfWar,
 		bounds: loaded.bounds,
-		loopsEastWest: loaded.loopsEastWest,
-		loopsNorthSouth: loaded.loopsNorthSouth,
+		loopsEastWest: area.layout.loopsEastWest,
+		loopsNorthSouth: area.layout.loopsNorthSouth,
+		sides: loaded.sides,
 		defaultTileId: loaded.defaultTileId,
 		// A default tile's English name stays on the server; the client names it in the player's language
 		tiles: loaded.tiles.map((tile) => ({

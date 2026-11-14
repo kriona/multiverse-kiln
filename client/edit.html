@@ -567,6 +567,15 @@
 										Loops north-south
 									</label>
 									<p id="area-loops-hint" class="hint" data-message="error.faerieCantLoop" data-translation-context="Why an area can't both have faerie time and wrap around at its edges: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings" hidden>An area whose passage of time is faerie can't loop.</p>
+									<p id="area-loops-neighbors" class="hint" hidden></p>
+									<div class="field-label area-neighbors">
+										<span id="area-neighbors-label" data-message="editor.area.neighbors" data-translation-context="Heading of the area editor's list of the areas next to the area on each side, walked across without a link">Neighbors</span>
+										<p id="area-neighbors-hint" class="hint" hidden></p>
+										<ul id="area-neighbor-list" class="area-neighbor-list" aria-labelledby="area-neighbors-label"></ul>
+										<div class="form-buttons">
+											<button id="area-overall-map" type="button" class="secondary" data-shortcut="Alt+V" data-message="editor.area.overallMap" data-translation-context="Button in the area editor that opens a dialog drawing the whole grid of neighboring areas the area is in, zoomed out"><!-- icon ph:map-trifold -->See Overall Map</button>
+										</div>
+									</div>
 									<div id="area-problems" class="place-problems" hidden>
 										<p data-message="editor.place.problemsHeading" data-translation-context="Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them">These keep your changes from saving:</p>
 										<ul id="area-problem-list"></ul>
@@ -616,13 +625,23 @@
 									</div>
 									<button id="area-full-page" type="button" class="secondary area-full-page" data-shortcut="Alt+P"></button>
 								</div>
-								<div id="area-canvas" class="area-canvas" tabindex="0" role="application" aria-label="Cells" aria-describedby="area-keyboard-help area-cells-error" data-shortcut="Alt+M" data-message-aria-label="editor.area.label" data-translation-context-aria-label="Name of the area's cells in the area editor, where they are painted, for screen readers">
-									<span id="area-cursor" class="area-cursor"></span>
+								<!-- The buttons on the edges come after the cells, so Tab reaches them next -->
+								<div class="area-canvas-frame">
+									<div id="area-canvas" class="area-canvas" tabindex="0" role="application" aria-label="Cells" aria-describedby="area-keyboard-help area-cells-error" data-shortcut="Alt+M" data-message-aria-label="editor.area.label" data-translation-context-aria-label="Name of the area's cells in the area editor, where they are painted, for screen readers">
+										<span id="area-cursor" class="area-cursor"></span>
+									</div>
+									<button id="area-edge-north-west" type="button" class="secondary area-edge area-edge-north-west" hidden></button>
+									<button id="area-edge-north" type="button" class="secondary area-edge area-edge-north" hidden></button>
+									<button id="area-edge-north-east" type="button" class="secondary area-edge area-edge-north-east" hidden></button>
+									<button id="area-edge-west" type="button" class="secondary area-edge area-edge-west" hidden></button>
+									<button id="area-edge-east" type="button" class="secondary area-edge area-edge-east" hidden></button>
+									<button id="area-edge-south-west" type="button" class="secondary area-edge area-edge-south-west" hidden></button>
+									<button id="area-edge-south" type="button" class="secondary area-edge area-edge-south" hidden></button>
+									<button id="area-edge-south-east" type="button" class="secondary area-edge area-edge-south-east" hidden></button>
 								</div>
 								<div class="area-status">
 									<span id="area-save-status" role="status"></span>
-									<span id="area-pick-status" role="status"></span>
-								</div>
+									<span id="area-pick-status" role="status"></span>								</div>
 								<p class="hint" data-message="editor.area.help" data-translation-context="Explains how to use the area editor's cells with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.</p>
 								<p id="area-keyboard-help" class="hint" data-message="editor.area.keyboardHelp" data-translation-context="Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language">With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. P chooses the cell's tile in the Tile list. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="area-cells-error" class="form-error" role="alert" hidden></p>
@@ -1622,6 +1641,7 @@
 						<h2 id="area-select-title" data-message="editor.areaSelect.title" data-translation-context="Title of the dialog for choosing one of the universe's areas">Choose an Area</h2>
 						<p id="area-select-lobby-hint" class="hint" data-message="editor.areaSelect.lobbyAreasHint" data-translation-context="Shown in the dialog for choosing the area of the lobby's starting square, which lists only the areas below the lobby region" hidden>Only the areas below the lobby region are listed.</p>
 						<p id="area-select-starting-hint" class="hint" data-message="editor.areaSelect.startingHint" data-translation-context="Shown in the dialog for choosing where characters start, which leaves out the areas below the lobby region" hidden>The areas below the lobby region aren't listed: characters can't start in the lobby.</p>
+						<p id="area-select-neighbor-hint" class="hint" hidden></p>
 						<input id="area-select-search" type="search" placeholder="Search by name" aria-label="Search areas by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.areaSelect.searchLabel" data-translation-context-aria-label="Name of the field that narrows the areas down by name, for screen readers" />
 						<fieldset id="area-select-results" class="choice stacked area-select-results" aria-label="Areas" data-message-aria-label="editor.areaSelect.results" data-translation-context-aria-label="Name of the list of areas to choose from, for screen readers"></fieldset>
 						<p id="area-select-none" class="universe-empty" data-message="editor.areaSelect.none" data-translation-context="Shown in the dialog for choosing an area when no area's name matches the search" hidden>No areas match.</p>
@@ -1672,6 +1692,7 @@
 							</div>
 						</div>
 						<p id="resize-total"></p>
+						<p id="resize-carried" class="hint" hidden></p>
 						<section class="form-group" aria-labelledby="resize-extend-title">
 							<h3 id="resize-extend-title" data-message="editor.resize.extendTitle" data-translation-context="Heading of the part of the dialog for changing an area's size with buttons that make the area bigger on one side">Extend Size</h3>
 							<div class="resize-grid resize-extend">
@@ -1691,6 +1712,31 @@
 							<button id="resize-submit" type="submit" aria-describedby="resize-warning" data-shortcut="Alt+S" data-message="editor.resize.submit" data-translation-context="Button that changes the area to the size given">Resize</button>
 						</div>
 					</form>
+				</dialog>
+				<dialog id="neighbor-add-dialog" class="panel dialog" aria-labelledby="neighbor-add-title">
+					<form id="neighbor-add-form" class="form">
+						<h2 id="neighbor-add-title" data-message="editor.neighborAdd.title" data-translation-context="Title of the dialog in the area editor that adds a new area beside the area as its neighbor, walked across without a link">Add Neighbor</h2>
+						<p id="neighbor-add-hint" class="hint"></p>
+						<label data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							Name
+							<input id="neighbor-add-name" required />
+						</label>
+						<div class="dialog-buttons">
+							<button id="neighbor-add-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="neighbor-add-submit" type="submit" data-shortcut="Alt+A" data-message="editor.neighborAdd.submit" data-translation-context="Button in the Add Neighbor dialog that adds the new area beside the area being edited">Add</button>
+						</div>
+					</form>
+				</dialog>
+				<dialog id="overall-map-dialog" class="panel dialog overall-map-dialog" aria-labelledby="overall-map-title">
+					<h2 id="overall-map-title" data-message="editor.overallMap.title" data-translation-context="Title of the dialog drawing the whole grid of neighboring areas an area is in, zoomed out">Overall Map</h2>
+					<p class="hint" data-message="editor.overallMap.hint" data-translation-context="Explains the Overall Map dialog: each area of the grid of neighboring areas is drawn in its place, and opening one goes to its editor">Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter.</p>
+					<div id="overall-map" class="overall-map"></div>
+					<p id="overall-map-seams" class="hint" hidden></p>
+					<p id="overall-map-loops" class="hint" hidden></p>
+					<p id="overall-map-misaligned" class="notice overall-map-misaligned" hidden></p>
+					<div class="dialog-buttons">
+						<button id="overall-map-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
+					</div>
 				</dialog>
 				<dialog id="link-dialog" class="panel dialog link-dialog" aria-labelledby="link-title">
 					<form id="link-form" class="form">

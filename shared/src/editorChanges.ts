@@ -14,6 +14,7 @@ import type { DifficultyLevelSettings } from './difficulty.js';
 import type { AreaSettingsUpdate, AreaLinkTarget, AuditField, AuditFieldChange, AuditSubject, CellChange, ClassSettings, ErrorPayload, ItemSettings, NewAreaRequest, RaceSettings, RegionSettings, RegionSettingsUpdate, ResizeConflict, RulesetSettings, ThemeSettings, TileGraphicUploadRequest, TileSettings, UniverseSettingsUpdate } from './editor.js';
 import type { LoadedSettings } from './fieldMerge.js';
 import type { AreaBounds } from './areaCells.js';
+import type { NeighborSide } from './areaNeighbors.js';
 import type { PlaceProblem } from './regions.js';
 import { canEditAtEndOfTime, canEditItems, canEditTiles, canEditUniverseSettings, canEditWorld, canManageEditors, canManageVersions, canMarkNoTranslation, canStartDraft, canTranslate, type BuilderPermissions, type EditorAccess, type UniverseRole, type UniverseStage } from './universes.js';
 import type { UniverseTextRef } from './universeText.js';
@@ -185,6 +186,13 @@ export interface EditorRoleSettings
  *   A builder edits only the regions and areas below the regions assigned to them
  * - resizeArea: gives an area new bounds. Without discard, a resize that would discard painted cells
  *   or links is refused with 409 and a SaveRefusedPayload holding resizeConflict
+ * - setNeighbor: makes an area the neighbor of another on a side, both ways, or with null makes the
+ *   area's neighbor there no longer one (see Neighboring areas in STRUCTURE-OVERVIEW.md). The neighbors
+ *   either had there before lose them. Every save that changes neighbors, or the size of an area with
+ *   them, checks the grid once its changes are made, refusing with placeProblems an area with neighbors
+ *   under MIN_NEIGHBOR_AREA_SIDE, touching sides of different lengths, a grid that isn't consistent, and
+ *   neighbors across the lobby region's edge. A builder sets and removes neighbors only with both areas
+ *   within their assignments
  * - editCells: up to MAX_CELL_CHANGES cells inside the area's bounds; a cell listed twice takes the later value
  * - saveLink, deleteLink: add or replace a cell's link, or delete it
  * - saveTranslation: translate a piece of universe text into one of the universe's translation
@@ -234,6 +242,7 @@ export type EditorChange =
 	| { kind: 'updateArea'; areaId: StringRef; update: AreaChangeUpdate; loaded?: LoadedSettings; moveTo?: AreaEvacuations }
 	| { kind: 'deleteArea'; areaId: StringRef; moveTo?: AreaEvacuations }
 	| { kind: 'resizeArea'; areaId: StringRef; bounds: AreaBounds; discard: boolean }
+	| { kind: 'setNeighbor'; areaId: StringRef; side: NeighborSide; neighborId: StringRef | null }
 	| { kind: 'editCells'; areaId: StringRef; changes: CellChangeRef[] }
 	| { kind: 'saveLink'; areaId: StringRef; column: number; row: number; target: AreaLinkTarget }
 	| { kind: 'deleteLink'; areaId: StringRef; column: number; row: number }
@@ -302,6 +311,7 @@ export const EDITOR_CHANGE_CHECKS: Readonly<Record<EditorChangeKind, EditorChang
 	updateArea: 'editWorld',
 	deleteArea: 'editWorld',
 	resizeArea: 'editWorld',
+	setNeighbor: 'editWorld',
 	editCells: 'editWorld',
 	saveLink: 'editWorld',
 	deleteLink: 'editWorld',

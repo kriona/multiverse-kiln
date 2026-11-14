@@ -3,19 +3,20 @@
  *
  *   npm run db:seed -w server
  *
- * Run it by hand after migrating, like the migrations themselves; nothing runs it automatically. It
- * replaces the sample universe if it is already there, and leaves everything else alone. It refuses
- * to run when NODE_ENV is production
+ * Run it by hand after migrating, like the migrations themselves; nothing runs it automatically. When
+ * the sample universe is already there, it replaces its world (its regions, areas, tiles and tilesets,
+ * and its draft), keeping its characters, groups and editors, and leaves everything else alone. Groups
+ * and characters saved in an area that went start over in the universe's starting area. It refuses to
+ * run when NODE_ENV is production
  *
  * To make a player the sample universe's creator, so they can open it in the editor, give their username:
  *
  *   npm run db:seed -w server -- --creator ada
  *
- * The account must exist already: register it first. Replacing the universe also removes its editors,
- * so pass --creator every time
+ * The account must exist already: register it first
  */
 import { parseArgs } from 'node:util';
-import { CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, resolveAreaSettings, type AreaBounds, type PlaceRef, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { areasWithMisalignedLoops, CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, neighborProblems, resolveAreaSettings, type AreaBounds, type NeighborSide, type PlaceRef, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { db, pool, type Executor } from '../src/db/client.js';
 import { findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
@@ -23,8 +24,9 @@ import { addDefaultStartingItems } from '../src/db/startingItemRepo.js';
 import { listTileGraphicStorageKeys } from '../src/db/tileGraphicRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { createUniverse, deleteUniverse, setUniverseAreas } from '../src/db/universeRepo.js';
-import { createArea, createAreaLink, loadPlaceWorld, saveGroundChunk, setAreaParents, storeResolvedSettings } from '../src/db/areaRepo.js';
+import { discardDraft } from '../src/db/universeDraftRepo.js';
+import { createUniverse, deleteUniverseWorld, findUniverse, hasDraft, setUniverseAreas, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { createArea, createAreaLink, loadNeighborGrid, loadPlaceWorld, saveGroundChunk, setAreaNeighbor, setAreaParents, storeResolvedSettings } from '../src/db/areaRepo.js';
 import { createRegion, setRegionParents } from '../src/db/regionRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { deleteObjects } from '../src/storage/objectStorage.js';
@@ -258,7 +260,8 @@ async function findCreator(): Promise<PlayerProfile | undefined>
 }
 
 /**
- * Creates the sample universe, replacing it if it exists
+ * Creates the sample universe, or replaces the world of the one already there: its draft, regions, areas,
+ * tiles and tilesets go, and its characters, groups, editors and other settings stay
  *
  * @param executor A transaction
  * @param creator The player to make its creator, if any
@@ -267,24 +270,41 @@ async function findCreator(): Promise<PlayerProfile | undefined>
 async function seed(executor: Executor, creator: PlayerProfile | undefined): Promise<string[]>
 {
 	const storageKeys = await listTileGraphicStorageKeys(SAMPLE_UNIVERSE_ID, executor);
+	const universeId = SAMPLE_UNIVERSE_ID;
+	const version = liveVersion(universeId);
 
-	if (await deleteUniverse(SAMPLE_UNIVERSE_ID, executor))
+	if (await findUniverse(universeId, executor))
 	{
-		console.log(`Replacing ${sampleUniverse.name}`);
+		console.log(`Replacing the world of ${sampleUniverse.name}, keeping its characters and groups`);
+
+		if (await hasDraft(universeId, executor))
+		{
+			await discardDraft(universeId, executor);
+		}
+
+		await deleteUniverseWorld(universeId, executor);
+		await updateUniverseSettings(version, {
+			name: sampleUniverse.name,
+			shortDescription: sampleUniverse.shortDescription,
+			longDescription: sampleUniverse.longDescription,
+			stage: sampleUniverse.stage
+		}, executor);
+	}
+	else
+	{
+		await createUniverse({
+			id: universeId,
+			name: sampleUniverse.name,
+			shortDescription: sampleUniverse.shortDescription,
+			longDescription: sampleUniverse.longDescription,
+			stage: sampleUniverse.stage,
+			ruleset: 'pf1e'
+		}, executor);
+		await addDefaultStartingItems(universeId, 'pf1e', executor);
 	}
 
 	const tileIds = await findDefaultTileIds('pf1e', executor);
-	const universeId = await createUniverse({
-		id: SAMPLE_UNIVERSE_ID,
-		name: sampleUniverse.name,
-		shortDescription: sampleUniverse.shortDescription,
-		longDescription: sampleUniverse.longDescription,
-		stage: sampleUniverse.stage,
-		ruleset: 'pf1e'
-	}, executor);
-	const version = liveVersion(universeId);
 
-	await addDefaultStartingItems(universeId, 'pf1e', executor);
 	for (const tile of Object.values(sampleTiles))
 	{
 		tileIds.set(tile.key, await createTile({ ...tile, key: null, ruleset: 'pf1e', universeId }, executor));
@@ -388,6 +408,29 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 			mode: link.mode,
 			requiresWholeGroup: false
 		}, executor);
+	}
+
+	// Each pair of neighbors is set from one of its areas, which sets both ways
+	for (const area of sampleAreas)
+	{
+		for (const [side, neighbor] of Object.entries(area.neighbors ?? {}) as [NeighborSide, string][])
+		{
+			await setAreaNeighbor(requireArea(areaIds, area.key), side, requireArea(areaIds, neighbor), executor);
+		}
+	}
+
+	const grid = await loadNeighborGrid(version, executor);
+	const neighborProblemsFound = neighborProblems(grid);
+	const misaligned = areasWithMisalignedLoops(grid);
+
+	if (neighborProblemsFound.length > 0)
+	{
+		throw new Error(`The sample world's neighboring areas don't fit together: ${JSON.stringify(neighborProblemsFound)}`);
+	}
+
+	if (misaligned.length > 0)
+	{
+		throw new Error(`The sample world's rows or columns of neighboring areas don't loop alike: ${misaligned.map((areaId) => sampleAreas.find((area) => (areaIds.get(area.key) === areaId))?.key ?? areaId).join(', ')}`);
 	}
 
 	console.log(`Created ${sampleUniverse.name} with ${sampleRegions.length} regions, ${sampleAreas.length} areas and ${sampleLinks.length} links`);

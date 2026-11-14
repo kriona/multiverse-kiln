@@ -247,7 +247,17 @@ const importArea = z.looseObject({
 		targetRow: cellCoordinate,
 		mode: z.enum(AREA_LINK_MODES),
 		requiresWholeGroup: z.boolean()
-	})).max(MAX_AREA_LINKS)
+	})).max(MAX_AREA_LINKS),
+
+	/**
+	 * Left out by exports made before areas had neighbors, which have none
+	 */
+	neighbors: z.object({
+		north: z.uuid().nullable(),
+		east: z.uuid().nullable(),
+		south: z.uuid().nullable(),
+		west: z.uuid().nullable()
+	}).optional()
 });
 
 /**

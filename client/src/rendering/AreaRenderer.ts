@@ -284,8 +284,10 @@ export class AreaRenderer
 	 * @param area The area
 	 * @param chunks The area's stored chunks, by chunkKey(), when someone else holds them and changes
 	 * them (calling refreshChunks); otherwise they are taken from area.chunks
+	 * @param offset How far the area is drawn from where its cells are, in world units, such as a
+	 * neighboring area drawn beside another (see Neighboring areas in STRUCTURE-OVERVIEW.md)
 	 */
-	constructor(private readonly scene: Phaser.Scene, private readonly area: AreaPayload, chunks?: ReadonlyMap<string, readonly number[]>)
+	constructor(private readonly scene: Phaser.Scene, private readonly area: AreaPayload, chunks?: ReadonlyMap<string, readonly number[]>, private readonly offset: { x: number; y: number } = { x: 0, y: 0 })
 	{
 		const { bounds } = area;
 
@@ -322,13 +324,16 @@ export class AreaRenderer
 	 */
 	update(view: Phaser.Geom.Rectangle): void
 	{
-		this.lastView = view;
+		// The pieces are worked out where the area's cells are, and drawn at its offset
+		const shifted = new Phaser.Geom.Rectangle(view.x - this.offset.x, view.y - this.offset.y, view.width, view.height);
+
+		this.lastView = shifted;
 		this.dropStalePieces();
-		this.drawPieces(view);
+		this.drawPieces(shifted);
 
 		if (this.atlasFull)
 		{
-			this.startAtlasOver(view);
+			this.startAtlasOver(shifted);
 		}
 
 		this.sendAtlas();
@@ -719,8 +724,8 @@ export class AreaRenderer
 			width: CHUNK_SIZE,
 			height: CHUNK_SIZE
 		});
-		const left = pieceColumn * PIECE_SIZE;
-		const top = pieceRow * PIECE_SIZE;
+		const left = (pieceColumn * PIECE_SIZE) + this.offset.x;
+		const top = (pieceRow * PIECE_SIZE) + this.offset.y;
 		const tileset = map.addTilesetImage(this.textureKey, this.textureKey, GRID_CELL_SIZE, GRID_CELL_SIZE, 0, 0);
 		const ground = (tileset ? map.createBlankLayer('ground', tileset, left - HALF_CELL, top - HALF_CELL) : null);
 		const grid = (tileset ? map.createBlankLayer('grid', tileset, left, top) : null);

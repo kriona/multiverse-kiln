@@ -411,7 +411,7 @@ export class EditorScreen
 		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
 		this.themesSection = new ThemesSection(api);
 		this.difficultySection = new DifficultySection(api);
-		this.areasTab = new AreasTab(api, this.tilesetsTab, (place) =>
+		this.areasTab = new AreasTab(api, this.tilesetsTab, areaSelect, (place) =>
 		{
 			this.setPlace({
 				tab: this.place.tab,

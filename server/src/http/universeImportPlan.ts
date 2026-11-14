@@ -15,7 +15,7 @@
  * can only name saved things in a save from the editor, so the import makes those changes once the
  * changes before them are saved (PendingChange)
  */
-import { isNewRef, PlaceGraph, type EditorRegion, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { isNewRef, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { listRegions } from '../db/regionRepo.js';
@@ -1169,6 +1169,36 @@ class ImportPlanner
 		}
 
 		this.planLinks(bounds);
+		this.planNeighbors();
+	}
+
+	/**
+	 * Gives the areas the file's neighbors where the draft's differ, once every area is made and sized, so
+	 * the grid is checked as the file has it. Setting a neighbor sets both ways, so the change from the
+	 * other side of a pair finds nothing left to change. An area the file names as a neighbor must be one
+	 * of its own
+	 */
+	private planNeighbors(): void
+	{
+		const draftAreas = new Map(this.target.areas.map((area) => [area.id, area]));
+
+		for (const area of (this.manifest.areas ?? []))
+		{
+			const where = `area ${area.id}`;
+			const target = this.areaTarget(area.id, where);
+			const draftNeighbors = (draftAreas.get(target)?.neighbors ?? NO_NEIGHBORS);
+
+			for (const side of NEIGHBOR_SIDES)
+			{
+				const fileNeighbor = (area.neighbors?.[side] ?? null);
+				const neighborId = ((fileNeighbor === null) ? null : this.areaTarget(fileNeighbor, where));
+
+				if (neighborId !== draftNeighbors[side])
+				{
+					this.add({ kind: 'setNeighbor', areaId: target, side, neighborId }, where);
+				}
+			}
+		}
 	}
 
 	/**

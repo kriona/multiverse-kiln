@@ -101,6 +101,17 @@ export interface VisionArea
 	 * @return The vision cost
 	 */
 	visionCost: (column: number, row: number) => number;
+
+	/**
+	 * For an area with neighbors, the vision cost of a cell past its edges, in the neighboring area across
+	 * the seam (see Neighboring areas in STRUCTURE-OVERVIEW.md); undefined for a cell past an edge, which
+	 * can't be seen. Without it, nothing past the edges is seen
+	 *
+	 * @param column The cell's column, outside the bounds
+	 * @param row The cell's row, outside the bounds
+	 * @return The vision cost, or undefined
+	 */
+	beyond?: (column: number, row: number) => number | undefined;
 }
 
 /**
@@ -206,12 +217,12 @@ export function visionBudget(light: number, sight: Sight): number
  * @param to The cell to look at
  * @param budget The character's vision budget (visionBudget)
  * @param area The area
- * @return True when the cell is inside the area and seen (see isSeen); in an area that loops, along the
- * shorter way round
+ * @return True when the cell is inside the area, or across a seam with a neighbor, and seen (see isSeen);
+ * in an area that loops, along the shorter way round
  */
 export function canSee(from: VisionCell, to: VisionCell, budget: number, area: VisionArea): boolean
 {
-	if (!isInBounds(area.bounds, to.column, to.row))
+	if (!isInBounds(area.bounds, to.column, to.row) && (area.beyond?.(to.column, to.row) === undefined))
 	{
 		return(false);
 	}
@@ -233,7 +244,8 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, area: V
  * @param skip Which cells to leave out without looking at them, such as those a group has already seen,
  * given the cell inside the area; none when undefined
  * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area,
- * each seen or not along the shorter way round, as canSee() looks at it
+ * each seen or not along the shorter way round, as canSee() looks at it. Cells across a seam with a
+ * neighbor are counted in the area's own columns and rows, outside its bounds
  */
 export function visibleCells(from: VisionCell, budget: number, area: VisionArea, skip?: (column: number, row: number) => boolean): Set<string>
 {
@@ -264,7 +276,7 @@ export function visibleCells(from: VisionCell, budget: number, area: VisionArea,
 			}
 
 			// Looking is what costs, so a skipped cell is left out before it
-			if (isInBounds(area.bounds, column, row) && !(skip?.(column, row) ?? false) && isSeen(columns, rows, budget, costAt))
+			if (isInArea(area, column, row) && !(skip?.(column, row) ?? false) && isSeen(columns, rows, budget, costAt))
 			{
 				visible.add(visionKey(column, row));
 			}
@@ -459,7 +471,7 @@ function isInSight(columns: number, rows: number, budget: number, costAt: CostAt
  * @param column The cell's column
  * @param row The cell's row
  * @param area The area
- * @return Its vision cost; OPAQUE_VISION_COST outside the area
+ * @return Its vision cost, across a seam in a neighboring area; OPAQUE_VISION_COST past an edge
  */
 function visionCostAt(column: number, row: number, area: VisionArea): number
 {
@@ -468,10 +480,23 @@ function visionCostAt(column: number, row: number, area: VisionArea): number
 
 	if (!isInBounds(area.bounds, wrappedColumn, wrappedRow))
 	{
-		return(OPAQUE_VISION_COST);
+		return(area.beyond?.(wrappedColumn, wrappedRow) ?? OPAQUE_VISION_COST);
 	}
 
 	return(area.visionCost(wrappedColumn, wrappedRow));
+}
+
+/**
+ * Whether a cell is part of what vision looks at: inside the area, or across a seam in a neighboring area
+ *
+ * @param area The area
+ * @param column The cell's column
+ * @param row The cell's row
+ * @return True when it is
+ */
+function isInArea(area: VisionArea, column: number, row: number): boolean
+{
+	return(isInBounds(area.bounds, column, row) || (area.beyond?.(column, row) !== undefined));
 }
 
 /**

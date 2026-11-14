@@ -9,6 +9,7 @@
 import type { OptionName } from './characters.js';
 import type { LocalizedMessage } from './localization.js';
 import type { AreaBounds } from './areaCells.js';
+import type { AreaNeighbors, NeighborSide } from './areaNeighbors.js';
 import type { AreaChunk } from './messages.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
@@ -941,7 +942,8 @@ export const AUDIT_FIELDS = [
 	'defaultTile',
 	'fogOfWar',
 	'loopsEastWest',
-	'loopsNorthSouth'
+	'loopsNorthSouth',
+	'neighbor'
 ] as const;
 
 export type AuditField = typeof AUDIT_FIELDS[number];
@@ -1113,6 +1115,14 @@ export interface AuditFieldValues
 	fogOfWar: boolean | null;
 	loopsEastWest: boolean;
 	loopsNorthSouth: boolean;
+
+	/**
+	 * An area's neighbor on one side, by its name when saved, or null for none
+	 */
+	neighbor: {
+		side: NeighborSide;
+		area: string | null;
+	};
 }
 
 /**
@@ -1898,6 +1908,12 @@ export interface EditorAreaSummary extends AreaSettings
 {
 	id: string;
 	resolved: ResolvedAreaSettings;
+	bounds: AreaBounds;
+
+	/**
+	 * Its neighbor on each side (see Neighboring areas in STRUCTURE-OVERVIEW.md), changed with setNeighbor
+	 */
+	neighbors: AreaNeighbors;
 }
 
 /**
@@ -1969,10 +1985,7 @@ export interface AreaLinkEnd
 /**
  * Response of GET EDITOR_UNIVERSES_PATH/:universeId/areas/:areaId
  */
-export interface EditorArea extends EditorAreaSummary
-{
-	bounds: AreaBounds;
-}
+export type EditorArea = EditorAreaSummary;
 
 /**
  * A new area's settings. Settings left out take their defaults: inherit for the settings areas share with

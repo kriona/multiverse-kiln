@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { LobbyState, PLAIN_SIGHT, type AreaChunk } from '@multiverse-kiln/shared';
+import { LobbyState, NO_NEIGHBORS, PLAIN_SIGHT, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { AREA_IDLE_MS, AreaCache } from '../src/rooms/areaCache.js';
@@ -41,6 +41,8 @@ function loadedArea(areaId: string): LoadedArea
 		defaultTileId: 1,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
+		neighbors: { ...NO_NEIGHBORS },
+		sides: { ...NO_NEIGHBORS },
 		links: [],
 		closedTargetIds: new Set(),
 		tiles: [

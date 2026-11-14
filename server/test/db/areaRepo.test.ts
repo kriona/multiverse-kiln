@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, tileIdAt, VOID_CELL, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, tileIdAt, VOID_CELL, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
@@ -213,7 +213,8 @@ describe('areaRepo', () =>
 						fogOfWar: true,
 						lobby: false
 					},
-					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
+					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 },
+					neighbors: NO_NEIGHBORS
 				}
 			});
 			assert.deepStrictEqual((await listAreas(liveVersion(universeId))).map((area) => area.name), ['Abbey', 'Village']);

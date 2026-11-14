@@ -28,6 +28,16 @@ export interface EditStep
 		before: AreaBounds;
 		after: AreaBounds;
 	};
+
+	/**
+	 * For a change of the area's size that carries the other areas in its row or column along (see
+	 * Neighboring areas in STRUCTURE-OVERVIEW.md), each one's bounds before and after
+	 */
+	carried?: {
+		areaId: string;
+		before: AreaBounds;
+		after: AreaBounds;
+	}[];
 }
 
 /**

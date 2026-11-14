@@ -3,9 +3,9 @@
  * changes make them, so each change is checked against how the changes before it left them and against
  * what a builder may edit, then every area's settings worked out and stored once every change is made
  */
-import { editsEveryPlace, isWithinAssignments, lobbyProblems, placeKey, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
+import { editsEveryPlace, isWithinAssignments, lobbyProblems, neighborPairs, neighborProblems, placeKey, type GridArea, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
 
-import { listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
+import { listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadNeighborGrid, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
 import { listAssignedRegionIds } from '../db/regionRepo.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
 import { PlaceModel } from '../logic/placeModel.js';
@@ -72,6 +72,21 @@ export class SavePlaces
 	lobbyChecks = 0;
 
 	/**
+	 * How many changes have touched neighbors (see noteNeighbors())
+	 */
+	neighborChecks = 0;
+
+	/**
+	 * The areas those changes touched
+	 */
+	private readonly neighborAreaIds = new Set<string>();
+
+	/**
+	 * The version's areas as the grid of neighbors sees them, read once the save's changes are made
+	 */
+	private grid: Map<string, GridArea> | undefined;
+
+	/**
 	 * @param contextOf The save, which holds this
 	 */
 	constructor(private readonly contextOf: () => ChangeContext)
@@ -126,6 +141,25 @@ export class SavePlaces
 	checkLobby(): void
 	{
 		this.lobbyChecks++;
+	}
+
+	/**
+	 * Notes that a change set or took away neighbors, resized an area with them, or changed how an area
+	 * loops: once the save's changes are made, the grid is checked (neighborProblems()) and the lobby's
+	 * edge with it, and the rooms read again every area of the grids these areas are in, since where a
+	 * row or column loops depends on its ends
+	 *
+	 * @param areaIds The areas
+	 */
+	noteNeighbors(areaIds: Iterable<string>): void
+	{
+		this.neighborChecks++;
+		this.checkLobby();
+
+		for (const areaId of areaIds)
+		{
+			this.neighborAreaIds.add(areaId);
+		}
 	}
 
 	/**
@@ -298,6 +332,11 @@ export class SavePlaces
 	{
 		const resolution = (((this.model !== undefined) && (this.touches > 0)) ? await this.resolveAndStore() : undefined);
 
+		if (this.neighborChecks > 0)
+		{
+			await this.checkNeighbors();
+		}
+
 		if (this.lobbyChecks > 0)
 		{
 			await this.checkLobbyEdge();
@@ -326,15 +365,17 @@ export class SavePlaces
 
 		model.setLobbyRegion(universe.lobbyRegionId);
 
-		// Without a lobby region, the only thing to check is that no starting square is left behind
-		const [links, startingAreaIds] = ((universe.lobbyRegionId === null)
-			? [[], []]
-			: await Promise.all([listLinkEnds(version, transaction), listStartingAreaIds(version, transaction)]));
+		// Without a lobby region, the only thing to check is that no starting square is left behind. A
+		// transaction runs one query at a time, so they are read in turn
+		const hasLobby = (universe.lobbyRegionId !== null);
+		const links = (hasLobby ? await listLinkEnds(version, transaction) : []);
+		const startingAreaIds = (hasLobby ? await listStartingAreaIds(version, transaction) : []);
+		const grid = (hasLobby ? await this.neighborGrid() : new Map<string, GridArea>());
 		const problems = lobbyProblems(model.graph(), {
 			lobbyRegionId: universe.lobbyRegionId,
 			lobbyAreaId: universe.lobbyAreaId,
 			faerie: (universe.lobbyPassageOfTime === 'faerie')
-		}, links, startingAreaIds);
+		}, links, startingAreaIds, neighborPairs(grid));
 
 		if (problems.length > 0)
 		{
@@ -349,6 +390,71 @@ export class SavePlaces
 				problems,
 				names: this.placeNames(problems)
 			});
+		}
+	}
+
+	/**
+	 * The version's areas as the grid of neighbors sees them, as the save's changes leave them, read the
+	 * first time they are needed once the changes are made
+	 *
+	 * @return The areas, by ID
+	 */
+	private async neighborGrid(): Promise<Map<string, GridArea>>
+	{
+		this.grid ??= await loadNeighborGrid(this.context.version, this.context.transaction);
+
+		return(this.grid);
+	}
+
+	/**
+	 * Refuses the save when it leaves the grid of neighbors broken (neighborProblems()), and tells the
+	 * rooms to read again every area of the grids the changed areas are in, before and after
+	 */
+	private async checkNeighbors(): Promise<void>
+	{
+		const grid = await this.neighborGrid();
+		const problems = neighborProblems(grid);
+
+		if (problems.length > 0)
+		{
+			await this.load();
+
+			throw new ChangeRefusal({
+				status: 409,
+				message: {
+					id: 'error.neighborProblems',
+					defaultMessage: 'The neighboring areas wouldn\'t fit together.',
+					description: 'Why the world editor couldn\'t save: neighboring areas must be at least 32 cells each way, touch along sides of the same length, and form a grid where going north then west reaches the same area as going west then north; the editor lists each problem'
+				}
+			}, undefined, undefined, {
+				problems,
+				names: this.placeNames(problems)
+			});
+		}
+
+		const reached = new Set<string>();
+		const queue = [...this.neighborAreaIds].filter((areaId) => grid.has(areaId));
+
+		for (const areaId of queue)
+		{
+			reached.add(areaId);
+		}
+
+		for (let index = 0; index < queue.length; index++)
+		{
+			for (const neighborId of Object.values(grid.get(queue[index])?.neighbors ?? {}))
+			{
+				if ((neighborId !== null) && grid.has(neighborId) && !reached.has(neighborId))
+				{
+					reached.add(neighborId);
+					queue.push(neighborId);
+				}
+			}
+		}
+
+		for (const areaId of reached)
+		{
+			this.context.published.push({ kind: 'area', areaId });
 		}
 	}
 
@@ -465,9 +571,18 @@ export class SavePlaces
 					name(place);
 				}
 			}
-			else if (problem.kind === 'lobbyLink')
+			else if ((problem.kind === 'lobbyLink') || (problem.kind === 'lobbyNeighbor'))
 			{
 				name({ kind: 'area', id: problem.targetAreaId });
+			}
+			else if ((problem.kind === 'neighborOneWay') || (problem.kind === 'neighborSides'))
+			{
+				name({ kind: 'area', id: problem.neighborAreaId });
+			}
+			else if (problem.kind === 'neighborGrid')
+			{
+				name({ kind: 'area', id: problem.firstReached });
+				name({ kind: 'area', id: problem.secondReached });
 			}
 			else if ((problem.kind === 'insideItself') || (problem.kind === 'tooDeep'))
 			{

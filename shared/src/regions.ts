@@ -8,6 +8,7 @@
  * path. The editor and every save that changes them run the same functions, so nothing is ever saved with
  * a conflict or a missing value
  */
+import type { NeighborSide } from './areaNeighbors.js';
 import type { AreaLightLevel, FaerieMorning, PassageOfTime } from './universes.js';
 
 /**
@@ -235,6 +236,12 @@ export interface PlaceWorld
  *   area), and it is a lobby area
  * - lobbySquareOutside: the lobby's starting square is in the area, which isn't a lobby area
  * - lobbyFaerieLoops: the area is a lobby area and loops, while the lobby's passage of time is faerie
+ * - lobbyNeighbor: the area is a neighbor of an area on the other side of the lobby region's edge
+ * - neighborTooSmall: the area has neighbors and is smaller than MIN_NEIGHBOR_AREA_SIDE either way
+ * - neighborOneWay: the area's neighbor on a side doesn't have it as its neighbor on the facing side
+ * - neighborSides: the area and its neighbor on a side touch along sides of different lengths
+ * - neighborGrid: going one way then the other from the area reaches a different area than going the
+ *   other way round (see neighborProblems() in shared/src/areaNeighbors.ts)
  */
 export type PlaceProblem =
 	| { kind: 'conflict'; areaId: string; setting: InheritedSetting; values: { place: PlaceRef; value: InheritedValues[InheritedSetting] }[] }
@@ -246,7 +253,12 @@ export type PlaceProblem =
 	| { kind: 'lobbyLink'; areaId: string; targetAreaId: string }
 	| { kind: 'lobbyStartingArea'; areaId: string }
 	| { kind: 'lobbySquareOutside'; areaId: string }
-	| { kind: 'lobbyFaerieLoops'; areaId: string };
+	| { kind: 'lobbyFaerieLoops'; areaId: string }
+	| { kind: 'lobbyNeighbor'; areaId: string; targetAreaId: string }
+	| { kind: 'neighborTooSmall'; areaId: string }
+	| { kind: 'neighborOneWay'; areaId: string; side: NeighborSide; neighborAreaId: string }
+	| { kind: 'neighborSides'; areaId: string; side: NeighborSide; neighborAreaId: string }
+	| { kind: 'neighborGrid'; areaId: string; first: NeighborSide; second: NeighborSide; firstReached: string; secondReached: string };
 
 /**
  * A link between two areas, as far as the lobby region's edge goes: the area it is on and the area it
@@ -711,22 +723,36 @@ export function lobbyAreaIds(graph: PlaceGraph, lobbyRegionId: string | null): S
  * @param lobby The lobby region, its starting square's area and whether its time is faerie
  * @param links The links between areas; those with neither end a lobby area may be left out
  * @param startingAreaIds Every starting area: the universe's, its races' and its classes'
- * @return The problems: links in the order given, then starting areas, the starting square and looping areas
+ * @param neighbors The areas that are neighbors, each pair once (neighborPairs())
+ * @return The problems: links in the order given, then neighbors, starting areas, the starting square and
+ * looping areas
  */
-export function lobbyProblems(graph: PlaceGraph, lobby: LobbyEdge, links: readonly AreaLinkPair[], startingAreaIds: readonly string[]): PlaceProblem[]
+export function lobbyProblems(graph: PlaceGraph, lobby: LobbyEdge, links: readonly AreaLinkPair[], startingAreaIds: readonly string[], neighbors: readonly AreaLinkPair[] = []): PlaceProblem[]
 {
 	const inLobby = lobbyAreaIds(graph, lobby.lobbyRegionId);
 	const problems: PlaceProblem[] = [];
 	const found = new Set<string>();
+	const crosses = (areaId: string, targetAreaId: string): boolean => (graph.areas.has(areaId) && graph.areas.has(targetAreaId) && (inLobby.has(areaId) !== inLobby.has(targetAreaId)));
 
 	for (const { areaId, targetAreaId } of links)
 	{
 		const key = `${areaId}>${targetAreaId}`;
 
-		if (!found.has(key) && graph.areas.has(areaId) && graph.areas.has(targetAreaId) && (inLobby.has(areaId) !== inLobby.has(targetAreaId)))
+		if (!found.has(key) && crosses(areaId, targetAreaId))
 		{
 			found.add(key);
 			problems.push({ kind: 'lobbyLink', areaId, targetAreaId });
+		}
+	}
+
+	for (const { areaId, targetAreaId } of neighbors)
+	{
+		const key = `${areaId}|${targetAreaId}`;
+
+		if (!found.has(key) && crosses(areaId, targetAreaId))
+		{
+			found.add(key);
+			problems.push({ kind: 'lobbyNeighbor', areaId, targetAreaId });
 		}
 	}
 
@@ -769,9 +795,10 @@ export function lobbyProblems(graph: PlaceGraph, lobby: LobbyEdge, links: readon
  * @param parents The parents it would have
  * @param links The links between areas
  * @param startingAreaIds Every starting area: the universe's, its races' and its classes'
- * @return The lobbyLink and lobbyStartingArea problems the move would make
+ * @param neighbors The areas that are neighbors, each pair once (neighborPairs())
+ * @return The lobbyLink, lobbyNeighbor and lobbyStartingArea problems the move would make
  */
-export function lobbyProblemsOfMove(world: PlaceWorld, place: PlaceRef, parents: readonly PlaceRef[], links: readonly AreaLinkPair[], startingAreaIds: readonly string[]): PlaceProblem[]
+export function lobbyProblemsOfMove(world: PlaceWorld, place: PlaceRef, parents: readonly PlaceRef[], links: readonly AreaLinkPair[], startingAreaIds: readonly string[], neighbors: readonly AreaLinkPair[] = []): PlaceProblem[]
 {
 	if (world.lobbyRegionId === null)
 	{
@@ -784,13 +811,13 @@ export function lobbyProblemsOfMove(world: PlaceWorld, place: PlaceRef, parents:
 		faerie: false
 	};
 	const keyOf = (problem: PlaceProblem): string => JSON.stringify(problem);
-	const before = new Set(lobbyProblems(new PlaceGraph(world.regions, world.areas), lobby, links, startingAreaIds).map(keyOf));
+	const before = new Set(lobbyProblems(new PlaceGraph(world.regions, world.areas), lobby, links, startingAreaIds, neighbors).map(keyOf));
 	const moved = new PlaceGraph(
 		world.regions.map((region) => (((place.kind === 'region') && (region.id === place.id)) ? { ...region, parents } : region)),
 		world.areas.map((area) => (((place.kind === 'area') && (area.id === place.id)) ? { ...area, parents } : area))
 	);
 
-	return(lobbyProblems(moved, lobby, links, startingAreaIds).filter((problem) => !before.has(keyOf(problem))));
+	return(lobbyProblems(moved, lobby, links, startingAreaIds, neighbors).filter((problem) => !before.has(keyOf(problem))));
 }
 
 /**

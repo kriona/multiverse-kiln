@@ -1,7 +1,7 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
 import fillIcon from 'virtual:icon/ph:paint-bucket';
-import { areaFill, canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { areaFill, canPaintTile, carriedResizes, CHUNK_SIZE, chunkCoordinate, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, hasNeighbors, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_PREVIEW_CELLS, NO_NEIGHBORS, parseChunkKey, seamSides, seamSlots, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type NeighborGrid, type SeamLookup, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -10,7 +10,7 @@ import { ChunkLoader } from '../../editor/ChunkLoader';
 import { EditHistory, type EditStep, type SavedCell } from '../../editor/EditHistory';
 import { currentLocale, t } from '../../localization';
 import { describeEditorError, EditorApiError } from '../../network/editorApi';
-import type { AreaEditorHost, CameraState, PointerMode } from '../../scenes/AreaEditorScene';
+import type { AreaEditorHost, CameraState, NeighborPreview, PointerMode } from '../../scenes/AreaEditorScene';
 import { announce } from '../announcer';
 import { askToConfirm } from '../confirmDialog';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
@@ -56,6 +56,43 @@ const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages(
  * Value of the tile choice for Unexplored, which paints VOID_CELL
  */
 const UNEXPLORED_CHOICE = 'unexplored';
+
+/**
+ * An edge or corner of the area editor's cells, which a button opens the area past
+ */
+type EdgeDirection = 'north' | 'northEast' | 'east' | 'southEast' | 'south' | 'southWest' | 'west' | 'northWest';
+
+/**
+ * Each edge and corner: its button's ID after area-edge-, and which way it is from the area, -1, 0 or 1
+ * along each axis
+ */
+const EDGE_DIRECTIONS: readonly { direction: EdgeDirection; id: string; columns: number; rows: number }[] = [
+	{ direction: 'north', id: 'north', columns: 0, rows: -1 },
+	{ direction: 'northEast', id: 'north-east', columns: 1, rows: -1 },
+	{ direction: 'east', id: 'east', columns: 1, rows: 0 },
+	{ direction: 'southEast', id: 'south-east', columns: 1, rows: 1 },
+	{ direction: 'south', id: 'south', columns: 0, rows: 1 },
+	{ direction: 'southWest', id: 'south-west', columns: -1, rows: 1 },
+	{ direction: 'west', id: 'west', columns: -1, rows: 0 },
+	{ direction: 'northWest', id: 'north-west', columns: -1, rows: -1 }
+];
+
+/**
+ * Finds the areas of a grid as the seams see them, walking off the end of a row or column that loops
+ * onto its other end
+ *
+ * @param grid The areas
+ * @return The lookup
+ */
+function seamLookupOf(grid: NeighborGrid): SeamLookup
+{
+	return((areaId) =>
+	{
+		const area = grid.get(areaId);
+
+		return(area && { id: areaId, bounds: area.bounds, sides: seamSides(grid, areaId) });
+	});
+}
 
 /**
  * The outline of the cells other editors painted while the area was open
@@ -105,6 +142,62 @@ export interface FollowedPainting
 	 * Takes the save's marks off the area
 	 */
 	unmark: () => void;
+}
+
+/**
+ * What the cell editor knows of the open area's neighbors (see Neighboring areas in
+ * STRUCTURE-OVERVIEW.md), from the Areas tab, with this window's changes not yet saved
+ */
+export interface NeighborSource
+{
+	/**
+	 * The universe's areas as the grid of neighbors sees them, the open area at its size as shown
+	 */
+	grid: () => NeighborGrid;
+
+	/**
+	 * An area as the Areas tab has it, with its settings worked out
+	 *
+	 * @param areaId The area's ID
+	 * @return The area, or undefined for one it doesn't have
+	 */
+	area: (areaId: string) => EditorArea | undefined;
+
+	/**
+	 * Gives another area in the open area's row or column new bounds, as a resize carries it along
+	 *
+	 * @param areaId The area's ID
+	 * @param bounds Its bounds
+	 */
+	setBounds: (areaId: string, bounds: AreaBounds) => void;
+
+	/**
+	 * Opens an area's editor
+	 *
+	 * @param areaId The area's ID
+	 */
+	open: (areaId: string) => void;
+}
+
+/**
+ * A neighbor shown past the open area's edges
+ */
+interface ShownNeighbor
+{
+	area: EditorArea;
+
+	/**
+	 * Its cells as loaded, which every place showing it shares
+	 */
+	cells: AreaCells;
+
+	/**
+	 * The cells of it shown, in the open area's columns and rows
+	 */
+	shownBounds: AreaBounds;
+
+	columnOffset: number;
+	rowOffset: number;
 }
 
 /**
@@ -250,12 +343,46 @@ export class AreaEditor
 	private view: ChunkRange | undefined;
 
 	/**
+	 * The buttons on the edges and corners of the cells that open the area past them
+	 */
+	private readonly edgeButtons = new Map<EdgeDirection, HTMLButtonElement>(EDGE_DIRECTIONS.map(({ direction, id }) => [direction, getElement(`area-edge-${id}`, HTMLButtonElement)]));
+
+	/**
+	 * The area each edge button opens, by its direction
+	 */
+	private edgeTargets = new Map<EdgeDirection, string>();
+
+	/**
+	 * The neighbors shown past the open area's edges
+	 */
+	private shownNeighbors: ShownNeighbor[] = [];
+
+	/**
+	 * Each neighbor's cells as loaded for showing, by area ID, kept while the open area stays open
+	 */
+	private neighborCells = new Map<string, AreaCells>();
+
+	/**
 	 * @param source Where the areas, their links and their chunks come from
 	 * @param onBoundsChanged Called with an area's new bounds after the cell editor resizes it
 	 * @param onUnsavedChanged Called with whether the area has painting, a change of size or links that haven't been saved, whenever that may have changed
+	 * @param neighbors What the Areas tab knows of the open area's neighbors
 	 */
-	constructor(private readonly source: AreaSource, private readonly onBoundsChanged: (bounds: AreaBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void)
+	constructor(private readonly source: AreaSource, private readonly onBoundsChanged: (bounds: AreaBounds) => void, private readonly onUnsavedChanged: (unsaved: boolean) => void, private readonly neighbors: NeighborSource)
 	{
+		for (const [direction, button] of this.edgeButtons)
+		{
+			button.addEventListener('click', () =>
+			{
+				const areaId = this.edgeTargets.get(direction);
+
+				if (areaId !== undefined)
+				{
+					this.neighbors.open(areaId);
+				}
+			});
+		}
+
 		this.resizeDialog = new ResizeDialog();
 		this.linkDialog = new LinkDialog();
 		this.brushSize.max = String(MAX_BRUSH_SIZE);
@@ -331,8 +458,8 @@ export class AreaEditor
 			keys: () => t(areaEditorMessages.spaceOrEnter),
 			description: () => t({
 				id: 'editor.area.keys.paintDescription',
-				defaultMessage: 'Paint the cursor\'s cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting',
-				description: 'In the list of keyboard shortcuts, what Space and Enter do on the area editor\'s cells'
+				defaultMessage: 'Paint the cursor\'s cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting. On a neighboring area, open it',
+				description: 'In the list of keyboard shortcuts, what Space and Enter do on the area editor\'s cells; the cells of neighboring areas (walked across without links) are shown dimmed past the area\'s edges'
 			})
 		});
 
@@ -436,6 +563,7 @@ export class AreaEditor
 			this.stagedLinks.clear();
 			this.paintedByOthers.clear();
 			this.paintedHere.clear();
+			this.neighborCells.clear();
 			this.open = this.openArea(universe, area, tiles, areas, links, editable);
 			this.unsavedChanged();
 		}
@@ -461,8 +589,11 @@ export class AreaEditor
 		this.stagedLinks.clear();
 		this.paintedByOthers.clear();
 		this.paintedHere.clear();
+		this.neighborCells.clear();
+		this.shownNeighbors = [];
 		this.pickStatus.textContent = '';
 		this.canvas.stop();
+		this.showEdgeButtons();
 		this.unsavedChanged();
 	}
 
@@ -960,7 +1091,264 @@ export class AreaEditor
 		{
 			scene.setLinks(linksInArea(open, this.currentLinks(open.area.id, open.links)));
 			this.showPaintedByOthers();
+			this.showNeighbors();
 		}
+	}
+
+	/**
+	 * Shows the open area's neighbors past its edges, dimmed, as the Areas tab now has them: NEIGHBOR_PREVIEW_CELLS
+	 * rows or columns of each neighbor and of the areas at the corners, and past the end of a row or column
+	 * that loops, its other end. Their cells load as needed, and the buttons on the edges name the neighbors
+	 */
+	showNeighbors(): void
+	{
+		const open = this.open;
+		const scene = this.canvas.scene;
+
+		if (!open || !scene)
+		{
+			this.showEdgeButtons();
+			return;
+		}
+
+		const grid = this.neighbors.grid();
+		const lookup = seamLookupOf(grid);
+		const bounds = open.cells.bounds;
+		const reach: AreaBounds = {
+			minColumn: bounds.minColumn - NEIGHBOR_PREVIEW_CELLS,
+			minRow: bounds.minRow - NEIGHBOR_PREVIEW_CELLS,
+			maxColumn: bounds.maxColumn + NEIGHBOR_PREVIEW_CELLS,
+			maxRow: bounds.maxRow + NEIGHBOR_PREVIEW_CELLS
+		};
+		const shown: ShownNeighbor[] = [];
+
+		for (const slot of (hasNeighbors(grid.get(open.area.id)?.neighbors ?? NO_NEIGHBORS) ? seamSlots(lookup, open.area.id) : []))
+		{
+			const area = ((slot.areaId === open.area.id) ? { ...open.area, bounds } : this.neighbors.area(slot.areaId));
+
+			if (!area)
+			{
+				continue;
+			}
+
+			const shownBounds: AreaBounds = {
+				minColumn: Math.max(reach.minColumn, area.bounds.minColumn + slot.columnOffset),
+				minRow: Math.max(reach.minRow, area.bounds.minRow + slot.rowOffset),
+				maxColumn: Math.min(reach.maxColumn, area.bounds.maxColumn + slot.columnOffset),
+				maxRow: Math.min(reach.maxRow, area.bounds.maxRow + slot.rowOffset)
+			};
+
+			if ((shownBounds.minColumn > shownBounds.maxColumn) || (shownBounds.minRow > shownBounds.maxRow))
+			{
+				continue;
+			}
+
+			// The open area shown past its own looping edge is its cells as they are here, with the painting not yet saved
+			let cells = ((slot.areaId === open.area.id) ? open.cells : this.neighborCells.get(slot.areaId));
+
+			if (!cells || !sameBounds(cells.bounds, area.bounds))
+			{
+				cells = new AreaCells(area.bounds);
+				this.neighborCells.set(slot.areaId, cells);
+			}
+
+			shown.push({
+				area,
+				cells,
+				shownBounds,
+				columnOffset: slot.columnOffset,
+				rowOffset: slot.rowOffset
+			});
+		}
+
+		this.shownNeighbors = shown;
+		this.canvas.setPreviews(shown.map((neighbor) => neighbor.shownBounds));
+		scene.setPreviews(shown.map((neighbor) => this.previewOf(open, neighbor)));
+		this.showEdgeButtons();
+
+		for (const neighbor of shown)
+		{
+			void this.loadNeighbor(open, neighbor);
+		}
+	}
+
+	/**
+	 * An area's cells with every chunk loaded, for drawing it whole: the open area's as they show here, with
+	 * the painting not yet saved, and another's as saved
+	 *
+	 * @param area The area, at its size as the Areas tab has it
+	 * @return The cells
+	 */
+	async cellsOf(area: EditorArea): Promise<AreaCells>
+	{
+		const open = this.open;
+
+		if (open && (area.id === open.area.id))
+		{
+			await open.loader.loadAll();
+			return(open.cells);
+		}
+
+		const cells = new AreaCells(area.bounds);
+		const range = cells.chunkRange;
+
+		cells.load(range, (await this.source.loadChunks(area.id, range)).chunks);
+
+		return(cells);
+	}
+
+	/**
+	 * A neighbor as the scene shows it
+	 *
+	 * @param open The open area
+	 * @param neighbor The neighbor
+	 * @return The preview
+	 */
+	private previewOf(open: OpenArea, neighbor: ShownNeighbor): NeighborPreview
+	{
+		const { shownBounds, columnOffset, rowOffset } = neighbor;
+		const area = {
+			...neighbor.area,
+			bounds: {
+				minColumn: shownBounds.minColumn - columnOffset,
+				minRow: shownBounds.minRow - rowOffset,
+				maxColumn: shownBounds.maxColumn - columnOffset,
+				maxRow: shownBounds.maxRow - rowOffset
+			},
+			loopsEastWest: false,
+			loopsNorthSouth: false
+		};
+
+		return({
+			area: editorAreaPayload(area, open.tiles, open.universe.ruleset),
+			chunks: neighbor.cells.chunks,
+			columnOffset,
+			rowOffset
+		});
+	}
+
+	/**
+	 * Loads the chunks of a neighbor that it shows past the open area's edges, and draws them as they come.
+	 * An area added since the Areas tab was saved is all its default tile
+	 *
+	 * @param open The open area
+	 * @param neighbor The neighbor
+	 */
+	private async loadNeighbor(open: OpenArea, neighbor: ShownNeighbor): Promise<void>
+	{
+		const { cells, shownBounds, columnOffset, rowOffset } = neighbor;
+
+		if (cells === open.cells)
+		{
+			return;
+		}
+
+		const range: ChunkRange = {
+			minChunkColumn: chunkCoordinate(shownBounds.minColumn - columnOffset),
+			minChunkRow: chunkCoordinate(shownBounds.minRow - rowOffset),
+			maxChunkColumn: chunkCoordinate(shownBounds.maxColumn - columnOffset),
+			maxChunkRow: chunkCoordinate(shownBounds.maxRow - rowOffset)
+		};
+
+		if (cells.isLoaded(range.minChunkColumn, range.minChunkRow) && cells.isLoaded(range.maxChunkColumn, range.maxChunkRow))
+		{
+			return;
+		}
+
+		try
+		{
+			const { chunks } = await this.source.loadChunks(neighbor.area.id, range);
+			const loaded = cells.load(range, chunks);
+
+			if (this.open === open)
+			{
+				this.canvas.scene?.refreshPreview(neighbor.area.id, loaded);
+			}
+		}
+		catch (error)
+		{
+			if (this.open === open)
+			{
+				showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
+			}
+		}
+	}
+
+	/**
+	 * Shows the buttons on the edges of the cells that have a neighbor past them, each naming it
+	 */
+	private showEdgeButtons(): void
+	{
+		const open = this.open;
+		const grid = this.neighbors.grid();
+		const slots = ((open && hasNeighbors(grid.get(open.area.id)?.neighbors ?? NO_NEIGHBORS)) ? seamSlots(seamLookupOf(grid), open.area.id) : []);
+
+		this.edgeTargets = new Map();
+
+		// The area past each edge and corner: a neighbor, or the far end of a row or column that loops
+		for (const slot of slots)
+		{
+			const direction = EDGE_DIRECTIONS.find((each) => ((each.columns === slot.columns) && (each.rows === slot.rows)))?.direction;
+
+			if ((direction !== undefined) && (slot.areaId !== open?.area.id))
+			{
+				this.edgeTargets.set(direction, slot.areaId);
+			}
+		}
+
+		for (const [direction, button] of this.edgeButtons)
+		{
+			const areaId = this.edgeTargets.get(direction);
+			const name = ((areaId === undefined) ? undefined : this.neighbors.area(areaId)?.name);
+
+			button.hidden = (name === undefined);
+
+			if (name === undefined)
+			{
+				button.replaceChildren();
+				button.removeAttribute('aria-label');
+				continue;
+			}
+
+			const directionText = document.createElement('span');
+			const nameText = document.createElement('span');
+
+			directionText.className = 'area-edge-direction';
+			directionText.textContent = t({
+				id: 'editor.area.edgeDirection',
+				defaultMessage: '{direction, select, north {North} northEast {Northeast} east {East} southEast {Southeast} south {South} southWest {Southwest} west {West} other {Northwest}}',
+				description: 'On a button on an edge or corner of the area editor\'s cells that opens the area past it (a neighboring area, walked across without a link, or the far end of a row of them that loops), in gray before that area\'s name: which edge or corner it is on'
+			}, {
+				direction
+			});
+			nameText.textContent = name;
+			button.replaceChildren(directionText, ' ', nameText);
+			button.setAttribute('aria-label', t({
+				id: 'editor.area.edgeButton',
+				defaultMessage: '{direction, select, north {North: {area}} northEast {Northeast: {area}} east {East: {area}} southEast {Southeast: {area}} south {South: {area}} southWest {Southwest: {area}} west {West: {area}} other {Northwest: {area}}}',
+				description: 'What screen readers hear for a button on an edge or corner of the area editor\'s cells, which opens the area past it (a neighboring area, walked across without a link, or the far end of a row of them that loops); {direction} is which edge or corner and {area} that area\'s name'
+			}, {
+				direction,
+				area: name
+			}));
+		}
+	}
+
+	/**
+	 * The neighbor shown at a cell past the open area's edges, and the cell in it
+	 *
+	 * @param cell The cell, in the open area's columns and rows
+	 * @return The neighbor and its cell, in its own columns and rows, or undefined for none
+	 */
+	private neighborAt(cell: BrushCell): { neighbor: ShownNeighbor; column: number; row: number } | undefined
+	{
+		const neighbor = this.shownNeighbors.find((each) => isInBounds(each.shownBounds, cell.column, cell.row));
+
+		return(neighbor && {
+			neighbor,
+			column: cell.column - neighbor.columnOffset,
+			row: cell.row - neighbor.rowOffset
+		});
 	}
 
 	/**
@@ -1173,6 +1561,16 @@ export class AreaEditor
 				this.showHoveredCell();
 			},
 			describe: (cell) => this.cellText(cell),
+			openNeighbor: (cell) =>
+			{
+				const found = this.neighborAt(cell);
+
+				// The open area shown past its own looping edge is already open
+				if (found && (found.neighbor.area.id !== this.open?.area.id))
+				{
+					this.neighbors.open(found.neighbor.area.id);
+				}
+			},
 			viewChanged: (range) =>
 			{
 				this.view = range;
@@ -1428,13 +1826,16 @@ export class AreaEditor
 	private pickTile(column: number, row: number): void
 	{
 		const open = this.open;
+		const across = ((open && !isInBounds(open.cells.bounds, column, row)) ? this.neighborAt({ column, row }) : undefined);
 
-		if (!open?.editable || !isInBounds(open.cells.bounds, column, row))
+		if (!open?.editable || (!isInBounds(open.cells.bounds, column, row) && !across))
 		{
 			return;
 		}
 
-		const value = open.cells.valueAt(column, row);
+		// A neighbor shown past the edge gives its tile too, its default tile being its own
+		const value = (across ? across.neighbor.cells.valueAt(across.column, across.row) : open.cells.valueAt(column, row));
+		const defaultTileId = (across?.neighbor.area.resolved.defaultTileId ?? open.area.resolved.defaultTileId);
 
 		if (value === undefined)
 		{
@@ -1446,7 +1847,7 @@ export class AreaEditor
 			return;
 		}
 
-		const tileId = ((value === DEFAULT_TILE_CELL) ? open.area.resolved.defaultTileId : value);
+		const tileId = ((value === DEFAULT_TILE_CELL) ? defaultTileId : value);
 		const choice = ((value === VOID_CELL) ? UNEXPLORED_CHOICE : String(tileId));
 		const option = [...this.tile.options].find((candidate) => (candidate.value === choice));
 
@@ -1551,7 +1952,7 @@ export class AreaEditor
 
 		if (step)
 		{
-			this.applyStep(step.inverse, step.changes, step.bounds?.before);
+			this.applyStep(step.inverse, step.changes, step.bounds?.before, step.carried?.map(({ areaId, before }) => ({ areaId, bounds: before })));
 		}
 	}
 
@@ -1569,7 +1970,7 @@ export class AreaEditor
 
 		if (step)
 		{
-			this.applyStep(step.changes, step.inverse, step.bounds?.after);
+			this.applyStep(step.changes, step.inverse, step.bounds?.after, step.carried?.map(({ areaId, after }) => ({ areaId, bounds: after })));
 		}
 	}
 
@@ -1579,14 +1980,21 @@ export class AreaEditor
 	 * @param changes The cells and their values
 	 * @param previous The same cells' values before, in the same order
 	 * @param bounds The area's bounds after the step, for a change of the area's size
+	 * @param carried The bounds of the other areas in its row or column after the step, for a change of size
+	 * that carries them along
 	 */
-	private applyStep(changes: EditStep['changes'], previous: EditStep['changes'], bounds?: AreaBounds): void
+	private applyStep(changes: EditStep['changes'], previous: EditStep['changes'], bounds?: AreaBounds, carried?: { areaId: string; bounds: AreaBounds }[]): void
 	{
 		if (this.open && (changes.length > 0))
 		{
 			this.canvas.scene?.refreshChunks(this.open.cells.apply(changes));
 			this.showHoveredCell();
 			this.trackChanges(changes, previous);
+		}
+
+		for (const { areaId, bounds: areaBounds } of (carried ?? []))
+		{
+			this.neighbors.setBounds(areaId, areaBounds);
 		}
 
 		if (bounds)
@@ -1598,8 +2006,9 @@ export class AreaEditor
 	}
 
 	/**
-	 * Changes the area's size as one step to undo. Cells a smaller area cuts off are set to the default
-	 * tile, so undoing the step brings them back
+	 * Changes the area's size as one step to undo, carrying the other areas in its row or column along so
+	 * touching sides stay the same length. Cells a smaller area cuts off are set to the default tile, so
+	 * undoing the step brings them back, and undoing it puts back every area's size
 	 *
 	 * @param bounds The new bounds
 	 */
@@ -1614,18 +2023,25 @@ export class AreaEditor
 
 		const inverse = open.cells.paintedCellsOutside(bounds);
 		const changes: CellChange[] = inverse.map(([column, row]) => [column, row, DEFAULT_TILE_CELL]);
+		const grid = this.neighbors.grid();
+		const carried = [...carriedResizes(grid, open.area.id, open.cells.bounds, bounds)].map(([areaId, after]) => ({
+			areaId,
+			before: (grid.get(areaId)?.bounds ?? after),
+			after
+		}));
 		const step: EditStep = {
 			changes,
 			inverse,
 			bounds: {
 				before: open.cells.bounds,
 				after: bounds
-			}
+			},
+			...((carried.length === 0) ? {} : { carried })
 		};
 
 		showMessage(this.error, undefined);
 		this.history.push(step);
-		this.applyStep(step.changes, step.inverse, bounds);
+		this.applyStep(step.changes, step.inverse, bounds, carried.map(({ areaId, after }) => ({ areaId, bounds: after })));
 	}
 
 	/**
@@ -1702,6 +2118,28 @@ export class AreaEditor
 		if (!open)
 		{
 			return('');
+		}
+
+		const across = (isInBounds(open.cells.bounds, cell.column, cell.row) ? undefined : this.neighborAt(cell));
+
+		if (across)
+		{
+			const { neighbor } = across;
+
+			return(t({
+				id: 'editor.area.neighborCell',
+				defaultMessage: '{area}: {cell}',
+				description: 'Under the area editor\'s cells, a cell of a neighboring area shown dimmed past the area\'s edge (walked across without a link), under the pointer or the keyboard\'s cursor: {area} is the neighbor\'s name and {cell} the cell in it and what it holds, e.g. "3, -2: Grass"'
+			}, {
+				area: neighbor.area.name,
+				cell: describeCell({
+					cells: neighbor.cells,
+					defaultTileId: neighbor.area.resolved.defaultTileId,
+					tiles: open.tiles,
+					links: [],
+					ruleset: open.universe.ruleset
+				}, across)
+			}));
 		}
 
 		const described = describeCell({
@@ -1823,9 +2261,14 @@ export class AreaEditor
 			return;
 		}
 
+		const grid = this.neighbors.grid();
+		const withNeighbors = hasNeighbors(grid.get(open.area.id)?.neighbors ?? NO_NEIGHBORS);
+
 		this.resizeDialog.open({
 			bounds: open.cells.bounds,
 			check: (bounds) => this.checkResize(open, bounds),
+			carried: (bounds) => [...carriedResizes(this.neighbors.grid(), open.area.id, open.cells.bounds, bounds).keys()].map((areaId) => (this.neighbors.area(areaId)?.name ?? areaId)),
+			minimumSide: (withNeighbors ? MIN_NEIGHBOR_AREA_SIDE : undefined),
 			onResize: (bounds) =>
 			{
 				if ((this.open === open) && (this.pendingSaves === 0))
@@ -1837,20 +2280,41 @@ export class AreaEditor
 	}
 
 	/**
-	 * Finds out what new bounds would cut off the area, first loading every chunk they would cut off
+	 * Finds out what new bounds would cut off the area, and the areas its row or column carries along,
+	 * first loading every chunk they would cut off
 	 *
 	 * @param open The area open when Edit Size opened
 	 * @param bounds The new bounds
-	 * @return The painted cells and the area's own links outside the new bounds
+	 * @return The painted cells and the areas' own links outside their new bounds
 	 */
 	private async checkResize(open: OpenArea, bounds: AreaBounds): Promise<ResizeLoss>
 	{
 		await open.loader.loadOutside(bounds);
 
-		return({
+		const loss: ResizeLoss = {
 			cells: open.cells.paintedCellsOutside(bounds).length,
 			links: this.currentLinks(open.area.id, open.links).filter((link) => (isInBounds(open.cells.bounds, link.column, link.row) && !isInBounds(bounds, link.column, link.row))).length
-		});
+		};
+
+		for (const [areaId, after] of carriedResizes(this.neighbors.grid(), open.area.id, open.cells.bounds, bounds))
+		{
+			const area = this.neighbors.area(areaId);
+
+			if (!area)
+			{
+				continue;
+			}
+
+			// One request holds every chunk of the largest area
+			const cells = new AreaCells(area.bounds);
+			const range = cells.chunkRange;
+
+			cells.load(range, (await this.source.loadChunks(areaId, range)).chunks);
+			loss.cells += cells.paintedCellsOutside(after).length;
+			loss.links += (await this.source.listLinks(areaId)).filter((link) => (isInBounds(area.bounds, link.column, link.row) && !isInBounds(after, link.column, link.row))).length;
+		}
+
+		return(loss);
 	}
 
 	/**

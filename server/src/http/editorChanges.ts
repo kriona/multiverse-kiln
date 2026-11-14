@@ -25,7 +25,7 @@ import { areaChanges } from '../world/areaChanges.js';
 import { editorUpdates } from '../world/editorUpdates.js';
 import { applyRulesetChange, applyUniverseChange, createTileChange, removeTileChange, saveTileChange } from './editor.js';
 import { findEditorAccess, universeContextOf, type UniverseContext } from './editorAccess.js';
-import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, updateAreaChange } from './editorAreas.js';
+import { createAreaChange, deleteAreaChange, deleteLinkChange, editCellsChange, resizeAreaChange, saveLinkChange, setNeighborChange, updateAreaChange } from './editorAreas.js';
 import { ChangeRefusal, refuse, type ChangeContext, type PreparedUpload } from './editorChangeContext.js';
 import { createClassChange, removeClassChange, saveClassChange } from './editorClasses.js';
 import { createDifficultyLevelChange, removeDifficultyLevelChange, saveDifficultyLevelChange } from './editorDifficultyLevels.js';
@@ -704,6 +704,8 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			return(deleteAreaChange(context, change.areaId, (change.moveTo ?? {})));
 		case 'resizeArea':
 			return(resizeAreaChange(context, change.areaId, change.bounds, change.discard));
+		case 'setNeighbor':
+			return(setNeighborChange(context, change.areaId, change.side, change.neighborId));
 		case 'editCells':
 			return(editCellsChange(context, change.areaId, change.changes));
 		case 'saveLink':

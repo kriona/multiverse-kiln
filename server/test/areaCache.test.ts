@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, NO_NEIGHBORS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { SeenCells } from '../src/logic/seenCells.js';
@@ -38,6 +38,8 @@ function loadedArea(): LoadedArea
 		defaultTileId: GRASS,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
+		neighbors: { ...NO_NEIGHBORS },
+		sides: { ...NO_NEIGHBORS },
 		links: [],
 		closedTargetIds: new Set(),
 		tiles: [

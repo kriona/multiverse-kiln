@@ -1,4 +1,5 @@
 import type { AreaBounds } from './areaCells.js';
+import type { AreaNeighbors } from './areaNeighbors.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
 import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode, UniverseStage } from './universes.js';
@@ -39,9 +40,17 @@ export enum ServerMessageType
 	Area = 'area',
 
 	/**
-	 * Chunks of the area that the player has come near, or that an editor has changed (payload: ChunksPayload)
+	 * Chunks of the area that the player has come near, or that an editor has changed, or of a
+	 * neighboring area near the player (payload: ChunksPayload)
 	 */
 	Chunks = 'chunks',
+
+	/**
+	 * The areas across the seams of the client's area (see Neighboring areas in STRUCTURE-OVERVIEW.md):
+	 * sent after Area whenever the player's area has neighbors, and when they come near one that hasn't
+	 * been sent, with the chunks near the player (payload: NeighborAreasPayload)
+	 */
+	NeighborAreas = 'neighborAreas',
 
 	/**
 	 * A save in the editor changed the universe's text (names, translations or languages), so clients
@@ -120,7 +129,8 @@ export interface CellValue
 export interface CellsSeenPayload
 {
 	/**
-	 * The area the cells belong to; a client whose player has since moved to another area ignores them
+	 * The area the cells belong to: the client's area or one of its neighboring areas. A client ignores
+	 * cells of an area it no longer draws
 	 */
 	areaId: string;
 
@@ -266,11 +276,29 @@ export interface AreaChunkUpdate
 export interface ChunksPayload
 {
 	/**
-	 * The area the chunks belong to; a client whose player has since moved to another area ignores them
+	 * The area the chunks belong to: the client's area or one of its neighboring areas. A client ignores
+	 * chunks of an area it no longer draws
 	 */
 	areaId: string;
 
 	chunks: AreaChunkUpdate[];
+}
+
+/**
+ * Payload of ServerMessageType.NeighborAreas
+ */
+export interface NeighborAreasPayload
+{
+	/**
+	 * The client's area they are around; a client whose player has since moved to another area ignores them
+	 */
+	areaId: string;
+
+	/**
+	 * The areas across its seams and at its corners near the player, each with its chunks near the player.
+	 * A client keeps those it was sent before that aren't listed
+	 */
+	areas: AreaPayload[];
 }
 
 /**
@@ -327,8 +355,20 @@ export interface AreaPayload
 	fogOfWar: boolean;
 
 	bounds: AreaBounds;
+
+	/**
+	 * Whether stepping off the area's east or west edge comes back on at the other. Always false for an area
+	 * with neighbors, whose sides say where each edge leads instead
+	 */
 	loopsEastWest: boolean;
+
 	loopsNorthSouth: boolean;
+
+	/**
+	 * Where walking off each side leads, for an area with neighbors (seamSides()): the area there, or null
+	 * for an edge. All null for an area without neighbors
+	 */
+	sides: AreaNeighbors;
 
 	/**
 	 * Tile of every cell holding DEFAULT_TILE_CELL, including every cell of a chunk that isn't listed

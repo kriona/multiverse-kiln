@@ -1,4 +1,4 @@
-import { NEW_AREA_BOUNDS, placeKey, samePlace, type AreaSettings, type EditorArea, type EditorRegion, type PlaceRef, type RegionSettings, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { NEW_AREA_BOUNDS, NO_NEIGHBORS, placeKey, samePlace, type AreaBounds, type AreaSettings, type EditorArea, type EditorRegion, type PlaceRef, type RegionSettings, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import type { ChangeSource } from './stagedChanges';
@@ -144,21 +144,36 @@ export class StagedAreas implements ChangeSource
 	 * Adds an area
 	 *
 	 * @param settings Its settings
+	 * @param bounds Its bounds: those every new area starts with by default, or the size Add Neighbor
+	 * gives a neighbor, which saving it resizes it to
 	 * @return The area, with an ID that isNewAreaId() until it is saved
 	 */
-	create(settings: AreaSettings): EditorArea
+	create(settings: AreaSettings, bounds: AreaBounds = NEW_AREA_BOUNDS): EditorArea
 	{
 		const area: EditorArea = {
 			...settings,
 			id: `${NEW_AREA_PREFIX}${this.nextId++}`,
 			resolved: { ...UNKNOWN_SETTINGS },
-			bounds: { ...NEW_AREA_BOUNDS }
+			bounds: { ...bounds },
+			neighbors: { ...NO_NEIGHBORS }
 		};
 
 		this.added.push(area);
 		this.changed();
 
 		return(area);
+	}
+
+	/**
+	 * Gives a new area other bounds, such as those a resize carrying it along gives it
+	 *
+	 * @param areaId Its ID
+	 * @param bounds Its bounds
+	 */
+	setNewBounds(areaId: string, bounds: AreaBounds): void
+	{
+		this.added = this.added.map((area) => ((area.id === areaId) ? { ...area, bounds: { ...bounds } } : area));
+		this.changed();
 	}
 
 	/**

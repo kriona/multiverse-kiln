@@ -14,6 +14,7 @@ export * from './items.js';
 export * from './localization.js';
 export * from './areaCells.js';
 export * from './areaFill.js';
+export * from './areaNeighbors.js';
 export * from './messages.js';
 export * from './money.js';
 export * from './names.js';

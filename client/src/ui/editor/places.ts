@@ -3,7 +3,7 @@
  * world it works their settings out from, staged changes included, and how a worked-out setting and a
  * problem read
  */
-import { AREA_LIGHT_LEVEL_NAMES, defineMessages, FAERIE_MORNING_NAMES, PASSAGE_OF_TIME_NAMES, placeKey, type AreaLightLevel, type EditorTile, type FaerieMorning, type InheritedSetting, type InheritedValues, type MessageDescriptor, type PassageOfTime, type PlaceProblem, type PlaceRef, type Ruleset, type SettingResolution } from '@multiverse-kiln/shared';
+import { AREA_LIGHT_LEVEL_NAMES, defineMessages, FAERIE_MORNING_NAMES, MIN_NEIGHBOR_AREA_SIDE, PASSAGE_OF_TIME_NAMES, placeKey, type AreaLightLevel, type EditorTile, type FaerieMorning, type InheritedSetting, type InheritedValues, type MessageDescriptor, type PassageOfTime, type PlaceProblem, type PlaceRef, type Ruleset, type SettingResolution } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { tileName } from '../tileNames';
@@ -299,6 +299,61 @@ export function describeProblem(problem: PlaceProblem, names: PlaceNames, tiles:
 			}, {
 				place: names(problem.place)
 			}));
+
+		case 'lobbyNeighbor':
+			return(t({
+				id: 'editor.place.lobbyNeighbor',
+				defaultMessage: '{area}: its neighbor {target} is on the other side of the lobby\'s edge',
+				description: 'A problem keeping a save, shown by the region and area editors and the Areas tab: an area below the lobby region (a lobby area) and an area outside it are neighbors, walked across without a link, and the lobby is never connected to the rest of the world; {area} and {target} are the two areas'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId }),
+				target: names({ kind: 'area', id: problem.targetAreaId })
+			}));
+
+		case 'neighborTooSmall':
+			return(t({
+				id: 'editor.place.neighborTooSmall',
+				defaultMessage: '{area}: an area with neighbors must be at least {cells, number} cells each way',
+				description: 'A problem keeping a save, shown by the area editor: an area with neighboring areas (walked across without links) is smaller than allowed; {area} is the area and {cells} the fewest cells along each side'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId }),
+				cells: MIN_NEIGHBOR_AREA_SIDE
+			}));
+
+		case 'neighborOneWay':
+			return(t({
+				id: 'editor.place.neighborOneWay',
+				defaultMessage: '{area}: {neighbor} is its {side, select, north {north} east {east} south {south} other {west}} neighbor, but not the other way around',
+				description: 'A problem keeping a save, shown by the area editor: neighboring areas must be neighbors both ways, and one isn\'t; {area} and {neighbor} are the areas and {side} which side of {area} the neighbor is on'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId }),
+				neighbor: names({ kind: 'area', id: problem.neighborAreaId }),
+				side: problem.side
+			}));
+
+		case 'neighborSides':
+			return(t({
+				id: 'editor.place.neighborSides',
+				defaultMessage: '{area}: its {side, select, north {north} east {east} south {south} other {west}} side isn\'t the same length as the side of {neighbor} next to it',
+				description: 'A problem keeping a save, shown by the area editor: neighboring areas touch along sides of the same length, so every area in a row is the same height and every area in a column the same width; {area} and {neighbor} are the areas and {side} which side of {area} the neighbor is on'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId }),
+				neighbor: names({ kind: 'area', id: problem.neighborAreaId }),
+				side: problem.side
+			}));
+
+		case 'neighborGrid':
+			return(t({
+				id: 'editor.place.neighborGrid',
+				defaultMessage: '{area}: going {first, select, north {north} east {east} south {south} other {west}} then {second, select, north {north} east {east} south {south} other {west}} reaches {firstReached}, but going {second, select, north {north} east {east} south {south} other {west}} then {first, select, north {north} east {east} south {south} other {west}} reaches {secondReached}',
+				description: 'A problem keeping a save, shown by the area editor: neighboring areas form a grid, where going one way then the other reaches the same area as going the other way first; {area} is where it starts, {first} and {second} the directions, and {firstReached} and {secondReached} the two different areas reached'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId }),
+				first: problem.first,
+				second: problem.second,
+				firstReached: names({ kind: 'area', id: problem.firstReached }),
+				secondReached: names({ kind: 'area', id: problem.secondReached })
+			}));
 	}
 }
 
@@ -316,7 +371,13 @@ export function problemPlaces(problem: PlaceProblem): PlaceRef[]
 		case 'conflict':
 			return([{ kind: 'area', id: problem.areaId }, ...problem.values.map(({ place }) => place)]);
 		case 'lobbyLink':
+		case 'lobbyNeighbor':
 			return([{ kind: 'area', id: problem.areaId }, { kind: 'area', id: problem.targetAreaId }]);
+		case 'neighborOneWay':
+		case 'neighborSides':
+			return([{ kind: 'area', id: problem.areaId }, { kind: 'area', id: problem.neighborAreaId }]);
+		case 'neighborGrid':
+			return([{ kind: 'area', id: problem.areaId }, { kind: 'area', id: problem.firstReached }, { kind: 'area', id: problem.secondReached }]);
 		case 'insideItself':
 		case 'tooDeep':
 			return([problem.place]);

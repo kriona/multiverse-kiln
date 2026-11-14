@@ -358,6 +358,7 @@ export class LinkDialog
 			paintEnd: () => undefined,
 			fill: () => undefined,
 			pickTile: () => undefined,
+			openNeighbor: () => undefined,
 			hover: () => undefined,
 			describe: (cell) =>
 			{

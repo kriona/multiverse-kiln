@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, canTakeParent, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, MAX_AREA_NAME_LENGTH, MAX_REGION_NAME_LENGTH, PlaceGraph, placeKey, resolveAreaSettings, resolvePlace, samePlace, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -10,10 +10,12 @@ import { formMessages } from '../formMessages';
 import { SearchSelect } from '../SearchSelect';
 import { claimTag, sameClaims, type AreaClaims } from './areaClaims';
 import { AreaEditor, type FollowedPainting } from './AreaEditor';
+import type { AreaSelectDialog } from './AreaSelectDialog';
 import type { AreaSource } from './areaSource';
 import { editorMessages } from './editorMessages';
 import { newRef, numberRef, type EditorSave, type SaveRefusal, type SavedIds } from './editorSave';
 import { ChangedSinceLine, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import { OverallMapDialog } from './OverallMapDialog';
 import { ParentsField, type ParentChoice } from './ParentsField';
 import { PlaceFields, type InheritedView } from './PlaceFields';
 import { describeProblem, placeNamer, problemPlaces, type PlaceNames } from './places';
@@ -34,6 +36,18 @@ import type { TilePlaces } from './TileReplaceDialog';
 export function placeRef(id: string): string
 {
 	return((isNewAreaId(id) ? newRef('', id) : id));
+}
+
+/**
+ * Whether two sets of bounds are the same
+ *
+ * @param first One area's bounds
+ * @param second The other's
+ * @return True when every edge matches
+ */
+function sameBoundsAs(first: AreaBounds, second: AreaBounds): boolean
+{
+	return((first.minColumn === second.minColumn) && (first.minRow === second.minRow) && (first.maxColumn === second.maxColumn) && (first.maxRow === second.maxRow));
 }
 
 /**
@@ -139,7 +153,42 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private readonly regionForm = getElement('region-add-form', HTMLFormElement);
 	private readonly regionName = getElement('region-add-name', HTMLInputElement);
 	private readonly regionError = getElement('region-add-error', HTMLElement);
+	private readonly loopsNeighbors = getElement('area-loops-neighbors', HTMLElement);
+	private readonly neighborsHint = getElement('area-neighbors-hint', HTMLElement);
+	private readonly neighborList = getElement('area-neighbor-list', HTMLUListElement);
+	private readonly overallMapButton = getElement('area-overall-map', HTMLButtonElement);
+	private readonly neighborDialog = getElement('neighbor-add-dialog', HTMLDialogElement);
+	private readonly neighborForm = getElement('neighbor-add-form', HTMLFormElement);
+	private readonly neighborName = getElement('neighbor-add-name', HTMLInputElement);
+	private readonly neighborHint = getElement('neighbor-add-hint', HTMLElement);
+	private readonly overallMap = new OverallMapDialog();
 	private readonly areaEditor: AreaEditor;
+
+	/**
+	 * The neighbors changed in the area editor and not yet saved: each changed area's four sides as they
+	 * will be, by area ID (see Neighboring areas in STRUCTURE-OVERVIEW.md)
+	 */
+	private stagedNeighbors = new Map<string, AreaNeighbors>();
+
+	/**
+	 * The bounds Edit Size gave the saved areas its resize carried along, not yet saved, by area ID
+	 */
+	private carriedBounds = new Map<string, AreaBounds>();
+
+	/**
+	 * The new areas Add Neighbor added beside the area open, which go with its changes when they are thrown away
+	 */
+	private addedNeighbors: string[] = [];
+
+	/**
+	 * The side Add Neighbor adds a new area to, while its dialog is open
+	 */
+	private addingSide: NeighborSide | undefined;
+
+	/**
+	 * Whether the Add Neighbor dialog has a name typed
+	 */
+	private readonly neighborChanges = new ChangeTracker({ root: this.neighborForm });
 	private readonly list: PlacesList;
 	private readonly regionEditor: RegionEditorView;
 
@@ -195,7 +244,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private readonly areaChanges = new ChangeTracker({
 		root: this.form,
-		state: () => [this.cellsUnsaved, this.parents.value.map(placeKey).join(',')]
+		state: () => [this.cellsUnsaved, this.parents.value.map(placeKey).join(','), JSON.stringify([...this.stagedNeighbors]), JSON.stringify([...this.carriedBounds])]
 	});
 
 	/**
@@ -302,11 +351,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	/**
 	 * @param api The editor's API
 	 * @param stagedTiles The Tilesets tab's changes, which the areas are drawn and painted with
+	 * @param areaSelect The dialog for choosing an area, which chooses a neighbor
 	 * @param onPlaceChanged Called with the region or area the tab opens, or undefined when it goes back to the list or opens one not yet saved
 	 * @param onAreasLoaded Called each time the tab has loaded the universe's areas, which areaName() names
 	 * @param onBackToLobby Called when the player leaves the lobby's area with Back to Lobby, to show the Lobby tab
 	 */
-	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly onPlaceChanged: (place: PlaceRef | undefined) => void, private readonly onAreasLoaded: () => void, private readonly onBackToLobby: () => void)
+	constructor(private readonly api: EditorApi, private readonly stagedTiles: StagedTiles, private readonly areaSelect: AreaSelectDialog, private readonly onPlaceChanged: (place: PlaceRef | undefined) => void, private readonly onAreasLoaded: () => void, private readonly onBackToLobby: () => void)
 	{
 		this.regionEditor = new RegionEditorView(api, this);
 		this.changes = combineChanges(this.areaChanges, this.staged, this.regionEditor.changes);
@@ -335,11 +385,49 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			{
 				this.area = { ...this.area, bounds };
 				this.showSize(this.area);
+				this.showNeighborSection();
 			}
 		}, (unsaved) =>
 		{
 			this.cellsUnsaved = unsaved;
 			this.areaChanges.check();
+		}, {
+			grid: () => this.neighborGrid(),
+			area: (areaId) => this.neighborArea(areaId),
+			setBounds: (areaId, bounds) =>
+			{
+				this.setCarriedBounds(areaId, bounds);
+			},
+			open: (areaId) =>
+			{
+				this.open({ kind: 'area', id: areaId });
+			}
+		});
+
+		this.overallMapButton.addEventListener('click', () =>
+		{
+			this.openOverallMap();
+		});
+
+		this.neighborChanges.guardDialog(this.neighborDialog);
+
+		getElement('neighbor-add-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			if (this.neighborChanges.confirmDiscard())
+			{
+				this.neighborDialog.close();
+			}
+		});
+
+		this.neighborName.addEventListener('input', () =>
+		{
+			setFieldError(this.neighborName, undefined);
+		});
+
+		this.neighborForm.addEventListener('submit', (event) =>
+		{
+			event.preventDefault();
+			this.addNeighbor();
 		});
 		this.name.maxLength = MAX_AREA_NAME_LENGTH;
 		this.addName.maxLength = MAX_AREA_NAME_LENGTH;
@@ -757,6 +845,21 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	private hideAreaEditor(): void
 	{
+		// The areas Add Neighbor added go with the rest of the area editor's changes
+		const added = this.addedNeighbors;
+
+		this.addedNeighbors = [];
+		this.stagedNeighbors.clear();
+		this.carriedBounds.clear();
+
+		for (const areaId of added)
+		{
+			if (this.staged.get(areaId))
+			{
+				this.staged.delete(areaId);
+			}
+		}
+
 		this.area = undefined;
 		this.areaEditor.hide();
 		this.areaChanges.markSaved();
@@ -1521,6 +1624,488 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
+	 * The universe's areas as the grid of neighbors sees them, with the tab's changes: the area open at its
+	 * size and loops as its editor shows them, the neighbors the area editor changed, the sizes its resizes
+	 * carried other areas to, and without the areas that will be deleted
+	 *
+	 * @return The areas, by ID
+	 */
+	private neighborGrid(): Map<string, GridArea>
+	{
+		const open = this.area;
+		const areas = this.areas().filter((area) => !this.staged.isDeleted(area.id));
+		const kept = new Set(areas.map((area) => area.id));
+		const grid = new Map<string, GridArea>();
+
+		for (const area of areas)
+		{
+			const isOpen = (area.id === open?.id);
+			const neighbors = (this.stagedNeighbors.get(area.id) ?? area.neighbors);
+
+			grid.set(area.id, {
+				id: area.id,
+				bounds: ((isOpen && open) ? open.bounds : (this.carriedBounds.get(area.id) ?? area.bounds)),
+				neighbors: {
+					north: (((neighbors.north !== null) && kept.has(neighbors.north)) ? neighbors.north : null),
+					east: (((neighbors.east !== null) && kept.has(neighbors.east)) ? neighbors.east : null),
+					south: (((neighbors.south !== null) && kept.has(neighbors.south)) ? neighbors.south : null),
+					west: (((neighbors.west !== null) && kept.has(neighbors.west)) ? neighbors.west : null)
+				},
+				loopsEastWest: (isOpen ? this.loopsEastWest.checked : area.loopsEastWest),
+				loopsNorthSouth: (isOpen ? this.loopsNorthSouth.checked : area.loopsNorthSouth)
+			});
+		}
+
+		return(grid);
+	}
+
+	/**
+	 * The areas that are neighbors, as the tab's changes leave them, for keeping the lobby areas apart
+	 *
+	 * @return Each pair once
+	 */
+	private neighborPairs(): AreaLinkPair[]
+	{
+		return(neighborPairs(this.neighborGrid()));
+	}
+
+	/**
+	 * An area as the area editor shows it beside the area open: with the tab's changes, its size as a
+	 * resize carried it, and its settings worked out
+	 *
+	 * @param areaId The area's ID
+	 * @return The area, or undefined for one the tab doesn't have
+	 */
+	private neighborArea(areaId: string): EditorArea | undefined
+	{
+		const area = this.areas().find((each) => (each.id === areaId));
+		const gridArea = this.neighborGrid().get(areaId);
+
+		return(area && {
+			...area,
+			bounds: (gridArea?.bounds ?? area.bounds),
+			neighbors: (gridArea?.neighbors ?? area.neighbors),
+			resolved: this.resolvedOf(area)
+		});
+	}
+
+	/**
+	 * Gives an area the area open carries along in a resize its new bounds: a saved one's until the tab
+	 * is saved, and a new one's for good
+	 *
+	 * @param areaId The area's ID
+	 * @param bounds Its bounds
+	 */
+	private setCarriedBounds(areaId: string, bounds: AreaBounds): void
+	{
+		const saved = this.loaded.areas.find((area) => (area.id === areaId));
+
+		if (isNewAreaId(areaId))
+		{
+			this.staged.setNewBounds(areaId, bounds);
+		}
+		else if (saved && sameBoundsAs(saved.bounds, bounds))
+		{
+			this.carriedBounds.delete(areaId);
+		}
+		else
+		{
+			this.carriedBounds.set(areaId, bounds);
+		}
+
+		this.areaChanges.check();
+		this.areaEditor.showNeighbors();
+		this.showNeighborSection();
+	}
+
+	/**
+	 * Stages the neighbors a change to the grid leaves: every area whose neighbors differ from those saved
+	 *
+	 * @param grid The areas after the change
+	 */
+	private stageGrid(grid: ReadonlyMap<string, GridArea>): void
+	{
+		for (const [areaId, area] of grid)
+		{
+			const saved = (this.areas().find((each) => (each.id === areaId))?.neighbors ?? NO_NEIGHBORS);
+
+			if (NEIGHBOR_SIDES.every((side) => (saved[side] === area.neighbors[side])))
+			{
+				this.stagedNeighbors.delete(areaId);
+			}
+			else
+			{
+				this.stagedNeighbors.set(areaId, { ...area.neighbors });
+			}
+		}
+
+		this.areaChanges.check();
+		this.settingsChanged();
+		this.areaEditor.showNeighbors();
+	}
+
+	/**
+	 * Lists the area open's neighbor on each side, with Choose, Add Neighbor and Remove for those who may
+	 * change them, and says why an area too small to have neighbors has none to add
+	 */
+	private showNeighborSection(): void
+	{
+		const area = this.area;
+
+		if (!area)
+		{
+			return;
+		}
+
+		const grid = this.neighborGrid();
+		const own = grid.get(area.id);
+		const neighbors = (own?.neighbors ?? NO_NEIGHBORS);
+		const editable = (this.canEditPlace({ kind: 'area', id: area.id }) && !this.staged.isDeleted(area.id));
+		const bigEnough = canHaveNeighbors(own?.bounds ?? area.bounds);
+		const names = this.names();
+
+		showMessage(this.neighborsHint, (bigEnough
+			? undefined
+			: t({
+				id: 'editor.area.neighborsTooSmall',
+				defaultMessage: 'An area must be at least {cells, number} cells each way to have neighbors. Make it larger with Edit Size first.',
+				description: 'In the area editor\'s Neighbors section, for an area too small to have neighboring areas (walked across without links), in place of Choose and Add Neighbor; {cells} is the fewest cells along each side'
+			}, {
+				cells: MIN_NEIGHBOR_AREA_SIDE
+			})));
+		this.overallMapButton.hidden = !hasNeighbors(neighbors);
+		this.neighborList.replaceChildren(...NEIGHBOR_SIDES.map((side) =>
+		{
+			const item = document.createElement('li');
+			const label = document.createElement('span');
+			const name = document.createElement('span');
+			const neighborId = neighbors[side];
+
+			label.className = 'area-neighbor-side';
+			label.textContent = t({
+				id: 'editor.area.neighborSide',
+				defaultMessage: '{side, select, north {North} east {East} south {South} other {West}}',
+				description: 'Names a side of the area in the area editor\'s Neighbors section, before the neighboring area on that side'
+			}, {
+				side
+			});
+			name.className = 'area-neighbor-name';
+
+			if (neighborId === null)
+			{
+				name.textContent = t({
+					id: 'editor.area.noNeighbor',
+					defaultMessage: 'None',
+					description: 'In the area editor\'s Neighbors section, for a side of the area with no neighboring area'
+				});
+			}
+			else
+			{
+				const open = document.createElement('button');
+
+				open.type = 'button';
+				open.className = 'link-button';
+				open.textContent = names({ kind: 'area', id: neighborId });
+				open.addEventListener('click', () =>
+				{
+					this.open({ kind: 'area', id: neighborId });
+				});
+				name.append(open);
+			}
+
+			item.append(label, name);
+
+			if (editable && bigEnough)
+			{
+				item.append(this.neighborButton(t({
+					id: 'editor.area.chooseNeighbor',
+					defaultMessage: 'Choose',
+					description: 'Button in a row of the area editor\'s Neighbors section that opens a dialog for choosing the area next to it on that side, walked across without a link'
+				}), side, () =>
+				{
+					void this.chooseNeighbor(side);
+				}));
+
+				if (neighborId === null)
+				{
+					item.append(this.neighborButton(t({
+						id: 'editor.area.addNeighbor',
+						defaultMessage: 'Add Neighbor',
+						description: 'Button in a row of the area editor\'s Neighbors section that adds a new area next to it on that side, walked across without a link, after asking for its name'
+					}), side, () =>
+					{
+						this.openAddNeighbor(side);
+					}));
+				}
+			}
+
+			if (editable && (neighborId !== null) && this.canEditPlace({ kind: 'area', id: neighborId }))
+			{
+				item.append(this.neighborButton(t({
+					id: 'editor.area.removeNeighbor',
+					defaultMessage: 'Remove',
+					description: 'Button in a row of the area editor\'s Neighbors section that makes the area there no longer the area\'s neighbor; neither area is deleted'
+				}), side, () =>
+				{
+					this.stageGrid(withoutNeighbor(this.neighborGrid(), area.id, side));
+					announce(t({
+						id: 'editor.area.neighborRemoved',
+						defaultMessage: '{area} is no longer a neighbor.',
+						description: 'Read out by screen readers after Remove in the area editor\'s Neighbors section; {area} is the area that is no longer next to the area being edited'
+					}, {
+						area: names({ kind: 'area', id: neighborId })
+					}));
+				}));
+			}
+
+			return(item);
+		}));
+	}
+
+	/**
+	 * A button in a row of the Neighbors section, named for screen readers with the side it is for
+	 *
+	 * @param text What it says
+	 * @param side The side its row is for
+	 * @param onClick What it does
+	 * @return The button
+	 */
+	private neighborButton(text: string, side: NeighborSide, onClick: () => void): HTMLButtonElement
+	{
+		const button = document.createElement('button');
+
+		button.type = 'button';
+		button.className = 'secondary';
+		button.textContent = text;
+		button.setAttribute('aria-label', t({
+			id: 'editor.area.neighborButton',
+			defaultMessage: '{action} ({side, select, north {north} east {east} south {south} other {west}})',
+			description: 'What screen readers hear for a button in a row of the area editor\'s Neighbors section, such as Choose or Remove, with the side of the area it is for'
+		}, {
+			action: text,
+			side
+		}));
+		button.addEventListener('click', onClick);
+
+		return(button);
+	}
+
+	/**
+	 * Why an area can't be the area open's neighbor on a side, in words, or undefined when it can be
+	 *
+	 * @param grid The areas
+	 * @param areaId The area open
+	 * @param side The side
+	 * @param candidateId The area that would go there
+	 * @return Why not, or undefined
+	 */
+	private neighborRefusalText(grid: NeighborGrid, areaId: string, side: NeighborSide, candidateId: string): string | undefined
+	{
+		const world = this.world();
+		const inLobby = lobbyAreaIds(new PlaceGraph(world.regions, world.areas), world.lobbyRegionId);
+		const refusal = neighborRefusal(grid, areaId, side, candidateId);
+		const joins = (((refusal === undefined) || (refusal === 'grid')) ? placeNeighbors(grid, areaId, side) : new Map<NeighborSide, string>());
+		let reason: string | undefined = refusal;
+
+		if ((reason === undefined) && (inLobby.has(candidateId) !== inLobby.has(areaId)))
+		{
+			reason = 'lobby';
+		}
+		else if ((reason === undefined) && ![candidateId, ...joins.values()].every((id) => this.canEditPlace({ kind: 'area', id })))
+		{
+			reason = 'assignments';
+		}
+
+		if (reason === undefined)
+		{
+			return(undefined);
+		}
+
+		return(t({
+			id: 'editor.area.neighborRefusal',
+			defaultMessage: '{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby\'s edge} assignments {Outside the regions you\'re assigned} other {It wouldn\'t fit the rest of the grid}}',
+			description: 'Under an area in the dialog for choosing the area editor\'s neighbor on a side, when it can\'t be chosen; {reason} is why: it is the area itself, it is smaller than {cells} cells each way, a side that would join here has another neighbor, sides that would touch are of different lengths, it is across the lobby region\'s edge (the lobby is never connected to the rest of the world), it is outside the regions a builder is assigned, or joining it would break the grid of neighbors elsewhere'
+		}, {
+			reason,
+			cells: MIN_NEIGHBOR_AREA_SIDE
+		}));
+	}
+
+	/**
+	 * Chooses the area open's neighbor on a side with the area selection dialog, listing every other area
+	 * and why those that can't be chosen can't, and joins the one chosen to every area next to that place
+	 *
+	 * @param side The side
+	 */
+	private async chooseNeighbor(side: NeighborSide): Promise<void>
+	{
+		const universe = this.universeOpen;
+		const area = this.area;
+
+		if (!universe || !area)
+		{
+			return;
+		}
+
+		const grid = this.neighborGrid();
+		const choices = [...grid.keys()]
+			.filter((areaId) => (areaId !== area.id))
+			.map((areaId) => this.neighborArea(areaId))
+			.filter((candidate) => (candidate !== undefined))
+			.map((candidate) => ({
+				area: candidate,
+				refusal: this.neighborRefusalText(grid, area.id, side, candidate.id)
+			}));
+		const chosen = await this.areaSelect.openForNeighbor(universe, choices, this.tileList, this.source, t({
+			id: 'editor.area.chooseNeighborHint',
+			defaultMessage: 'Choose the area to put {side, select, north {north} east {east} south {south} other {west}} of {area}. It also becomes a neighbor of the other areas next to that spot.',
+			description: 'At the top of the dialog for choosing the area editor\'s neighbor on a side: {side} is the side and {area} the area being edited'
+		}, {
+			side,
+			area: this.name.value
+		}));
+
+		// The area may have closed, or the grid changed, while the dialog was open
+		if (!chosen || (this.area?.id !== area.id))
+		{
+			return;
+		}
+
+		const now = this.neighborGrid();
+
+		if (neighborRefusal(now, area.id, side, chosen.id) !== undefined)
+		{
+			return;
+		}
+
+		this.stageGrid(withNeighbors(now, chosen.id, placeNeighbors(now, area.id, side)));
+	}
+
+	/**
+	 * Opens the Add Neighbor dialog for a side of the area open
+	 *
+	 * @param side The side
+	 */
+	private openAddNeighbor(side: NeighborSide): void
+	{
+		const area = this.area;
+
+		if (!area)
+		{
+			return;
+		}
+
+		this.addingSide = side;
+		this.neighborForm.reset();
+		clearFieldErrors(this.neighborForm);
+		this.neighborName.maxLength = MAX_AREA_NAME_LENGTH;
+		this.neighborHint.textContent = t({
+			id: 'editor.neighborAdd.hint',
+			defaultMessage: 'The new area goes {side, select, north {north} east {east} south {south} other {west}} of {area}. It\'s in the same regions and areas, has the same settings, and is painted with its default tile. It\'s saved with the rest of your changes.',
+			description: 'In the Add Neighbor dialog of the area editor: {side} is the side of the area being edited the new area goes on, walked across without a link, and {area} the area being edited'
+		}, {
+			side,
+			area: this.name.value
+		});
+		this.neighborDialog.showModal();
+		this.neighborChanges.markSaved();
+		this.neighborName.focus();
+	}
+
+	/**
+	 * Adds the area the Add Neighbor dialog names beside the area open, to be saved with the tab: inside
+	 * the same parents, with the same settings of its own, as tall as the row it joins and as wide as the
+	 * column, and the neighbor of every area next to its place. The editor stays on the area open
+	 */
+	private addNeighbor(): void
+	{
+		const area = this.area;
+		const side = this.addingSide;
+		const name = this.neighborName.value.trim();
+
+		if (!area || (side === undefined))
+		{
+			return;
+		}
+
+		if ((name === '') || DISALLOWED_TEXT_CHARACTERS.test(name))
+		{
+			reportFieldError(this.neighborName, t(formMessages.invalidText));
+			return;
+		}
+
+		const grid = this.neighborGrid();
+		const placed = newNeighbor(grid, area.id, side);
+
+		if (typeof placed === 'string')
+		{
+			reportFieldError(this.neighborName, t({
+				id: 'editor.neighborAdd.refused',
+				defaultMessage: '{reason, select, tooSmall {This area must be at least {cells, number} cells each way to have neighbors.} taken {An area next to that spot already has a neighbor there.} size {The areas next to that spot have sides of different lengths.} other {A new area there wouldn\'t fit the rest of the grid.}}',
+				description: 'Shown in the Add Neighbor dialog when no new area fits beside the area being edited on that side; {reason} is why, and {cells} the fewest cells along each side of an area with neighbors'
+			}, {
+				reason: placed,
+				cells: MIN_NEIGHBOR_AREA_SIDE
+			}));
+			return;
+		}
+
+		if (![...placed.joins.values()].every((id) => this.canEditPlace({ kind: 'area', id })))
+		{
+			reportFieldError(this.neighborName, t({
+				id: 'editor.neighborAdd.outsideAssignments',
+				defaultMessage: 'An area next to that spot is outside the regions you\'re assigned. A new area can\'t be added there.',
+				description: 'Shown in the Add Neighbor dialog to a builder when the new area would be the neighbor of an area outside the regions assigned to them, which they can\'t change'
+			}));
+			return;
+		}
+
+		const settings = this.shownSettings();
+		const added = this.staged.create({
+			...settings,
+			name,
+			loopsEastWest: false,
+			loopsNorthSouth: false
+		}, placed.bounds);
+
+		this.addedNeighbors.push(added.id);
+		this.neighborChanges.markSaved();
+		this.neighborDialog.close();
+		this.stageGrid(withNeighbors(this.neighborGrid(), added.id, placed.joins));
+		announce(t({
+			id: 'editor.neighborAdd.added',
+			defaultMessage: 'Added {area} {side, select, north {north} east {east} south {south} other {west}} of this area.',
+			description: 'Read out by screen readers after the Add Neighbor dialog added a new area beside the area being edited; {area} is its name and {side} the side'
+		}, {
+			area: name,
+			side
+		}));
+	}
+
+	/**
+	 * Opens See Overall Map for the grid the area open is in, with the tab's changes
+	 */
+	private openOverallMap(): void
+	{
+		const area = this.area;
+
+		if (!area)
+		{
+			return;
+		}
+
+		this.overallMap.open(this.neighborGrid(), area.id, {
+			area: (areaId) => ((areaId === area.id) ? { ...area, name: this.name.value, resolved: this.resolvedOf(area) } : this.neighborArea(areaId)),
+			cells: (shown) => this.areaEditor.cellsOf(shown),
+			tiles: () => this.tileList,
+			open: (areaId) =>
+			{
+				this.open({ kind: 'area', id: areaId });
+			}
+		});
+	}
+
+	/**
 	 * What would connect the lobby areas to the rest of the world, or keep the lobby from working, in a
 	 * world as the tab's changes leave it (lobbyProblems()). A world without the lobby region, such as one
 	 * deleting it, leaves the universe without a lobby or starting square, and so without these problems
@@ -1536,7 +2121,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			lobbyRegionId,
 			lobbyAreaId: ((lobbyRegionId === null) ? null : this.loaded.lobbyAreaId),
 			faerie: (this.universeOpen?.lobbyPassageOfTime === 'faerie')
-		}, this.links(), this.loaded.startingAreaIds));
+		}, this.links(), this.loaded.startingAreaIds, this.neighborPairs()));
 	}
 
 	/**
@@ -1621,7 +2206,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			return(undefined);
 		}
 
-		const problems = lobbyProblemsOfMove(world, place, [...override.node.parents, { kind: 'region', id: lobbyRegionId }], this.links(), this.loaded.startingAreaIds);
+		const problems = lobbyProblemsOfMove(world, place, [...override.node.parents, { kind: 'region', id: lobbyRegionId }], this.links(), this.loaded.startingAreaIds, this.neighborPairs());
 
 		if (problems.length === 0)
 		{
@@ -1680,7 +2265,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const resolution = resolveAreaSettings(world);
 		const below = new Set([placeKey(place), ...resolution.graph.descendantsOf(place).map(placeKey)]);
 		const names = this.names();
-		const problems = [...resolution.problems, ...this.lobbyProblemsIn(world)].filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
+		const problems = [...resolution.problems, ...this.lobbyProblemsIn(world), ...neighborProblems(this.neighborGrid())].filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
 
 		this.listProblems(problems, names, list, container, (universe?.ruleset ?? 'pf1e'));
 	}
@@ -1828,8 +2413,77 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		this.problemsFor(place, this.areaOverride(), this.problemList, this.problems);
+		this.showLoopsAlongNeighbors(faerie);
+		this.showNeighborSection();
 		this.areaEditor.showTilesFor(this.isIndoors());
 		this.areaChanges.check();
+	}
+
+	/**
+	 * Disables the loop checkboxes that don't matter for an area with neighbors, saying why, and warns
+	 * about a row or column that doesn't loop because only one of its ends is checked, naming the other end,
+	 * and one that loops unlike the row or column beside it, naming the areas beside it
+	 *
+	 * @param faerie Whether the area's passage of time is faerie, which keeps it from looping anyway
+	 */
+	private showLoopsAlongNeighbors(faerie: boolean): void
+	{
+		const area = this.area;
+		const notes: string[] = [];
+
+		if (!area)
+		{
+			return;
+		}
+
+		const grid = this.neighborGrid();
+
+		for (const [axis, checkbox] of [['eastWest', this.loopsEastWest], ['northSouth', this.loopsNorthSouth]] as const)
+		{
+			const place = loopPlace(grid, area.id, axis);
+			const otherEnd = ((place === 'end') ? halfLoopingEnd(grid, area.id, axis) : undefined);
+
+			checkbox.disabled = (faerie || (place !== 'end'));
+
+			if (place !== 'end')
+			{
+				notes.push(t({
+					id: 'editor.area.loopNotHere',
+					defaultMessage: '{place, select, ring {Its {axis, select, eastWest {row} other {column}} of neighbors joins back onto itself. It always loops {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east and west} other {north and south}}. Only the areas at the ends of its {axis, select, eastWest {row} other {column}} decide whether it loops.}}',
+					description: 'Beside the area editor\'s loop checkboxes, which are disabled, for an area with neighboring areas (walked across without links): {place} is "ring" when its row or column of neighbors joins back onto itself, which always loops, and otherwise the area has neighbors on both sides, so only the ends\' checkboxes count; {axis} is which way (eastWest or northSouth)'
+				}, {
+					place,
+					axis
+				}));
+			}
+			else if (otherEnd !== undefined)
+			{
+				notes.push(t({
+					id: 'editor.area.loopHalf',
+					defaultMessage: 'Its {axis, select, eastWest {row} other {column}} of neighbors doesn\'t loop {axis, select, eastWest {east-west} other {north-south}}. Only one of its ends is checked. Check both this area and {area} at the other end.',
+					description: 'Warning beside the area editor\'s loop checkboxes, for an area at one end of a row or column of neighboring areas (walked across without links) when only one of the two ends loops, so the row or column doesn\'t; {axis} is which way (eastWest or northSouth) and {area} the name of the area at the other end'
+				}, {
+					axis,
+					area: this.names()({ kind: 'area', id: otherEnd })
+				}));
+			}
+
+			const misaligned = misalignedLoops(grid, area.id, axis);
+
+			if (misaligned.length > 0)
+			{
+				notes.push(t({
+					id: 'editor.area.loopMisaligned',
+					defaultMessage: 'Its {axis, select, eastWest {row} other {column}} of neighbors and the one beside it with {areas} don\'t both loop {axis, select, eastWest {east-west} other {north-south}}. Walking where they meet reaches different areas depending on the route taken. Make all {axis, select, eastWest {rows} other {columns}} side by side loop.',
+					description: 'Warning beside the area editor\'s loop checkboxes, for an area with neighboring areas (walked across without links) whose row or column loops differently from the one beside it: one loops and the other doesn\'t, or their ends aren\'t lined up. {axis} is which way (eastWest or northSouth) and {areas} the names of the areas beside this one in that row or column'
+				}, {
+					axis,
+					areas: formatList(misaligned.map((id) => this.names()({ kind: 'area', id })), 'conjunction')
+				}));
+			}
+		}
+
+		showMessage(this.loopsNeighbors, ((notes.length === 0) ? undefined : notes.join(' ')));
 	}
 
 	/**
@@ -2102,6 +2756,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			defaultMessage: 'Could not save the regions.',
 			description: 'Shown on the Areas tab when the server refused a change to its regions, followed by why; nothing was saved'
 		};
+		const neighborFallback = {
+			id: 'editor.area.neighborsSaveFailed',
+			defaultMessage: 'Could not save the neighboring areas.',
+			description: 'Shown in the area editor when the server refused a change to the area\'s neighbors (areas walked across without links), or to the size of an area resized along with it, followed by why; nothing was saved'
+		};
 
 		showMessage(error, undefined);
 
@@ -2172,6 +2831,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				defaultMessage: 'Could not add {area}.',
 				description: 'Shown on the Areas tab when the server refused an area added on it, followed by why; {area} is its name. Nothing was saved'
 			}));
+
+			// A neighbor Add Neighbor made is as large as its row and column, and every new area starts out the same size
+			if (!sameBoundsAs(newArea.bounds, NEW_AREA_BOUNDS))
+			{
+				save.add({ kind: 'resizeArea', areaId: newRef('', newArea.id), bounds: newArea.bounds, discard: false }, onRefused(neighborFallback));
+			}
 		}
 
 		for (const regionId of this.staged.deletedRegionIds())
@@ -2218,6 +2883,36 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			saved = { ...area, ...settings, defaultTileId: this.defaultTileFor({ kind: 'area', id: area.id }, settings.defaultTileId) };
 		}
 
+		// The sizes a resize carried the rest of the row or column to, which the warning in Edit Size covered
+		for (const [areaId, bounds] of this.carriedBounds)
+		{
+			if (!this.staged.isDeleted(areaId))
+			{
+				save.add({ kind: 'resizeArea', areaId, bounds, discard: true }, onRefused(neighborFallback));
+			}
+		}
+
+		// Setting a neighbor sets both ways, so the change from the other side of a pair finds nothing to change
+		for (const [areaId, neighbors] of this.stagedNeighbors)
+		{
+			const before = (this.areas().find((each) => (each.id === areaId))?.neighbors ?? NO_NEIGHBORS);
+
+			if (this.staged.isDeleted(areaId))
+			{
+				continue;
+			}
+
+			for (const side of NEIGHBOR_SIDES)
+			{
+				const neighborId = neighbors[side];
+
+				if (neighborId !== before[side])
+				{
+					save.add({ kind: 'setNeighbor', areaId: placeRef(areaId), side, neighborId: ((neighborId === null) ? null : placeRef(neighborId)) }, onRefused(neighborFallback));
+				}
+			}
+		}
+
 		this.collected = {
 			createdIds: [
 				...createdRegions.map((region): PlaceRef => ({ kind: 'region', id: region.id })),
@@ -2250,6 +2945,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		this.areaEditor.saved();
+
+		// The neighbors and sizes the area editor changed are saved, and the areas it added are saved areas now
+		this.stagedNeighbors.clear();
+		this.carriedBounds.clear();
+		this.addedNeighbors = [];
 
 		const deletedAreas = this.staged.deletedIds();
 
@@ -2583,21 +3283,45 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			return;
 		}
 
-		const question = (isNewAreaId(area.id)
-			? t({
+		const neighbors = NEIGHBOR_SIDES
+			.map((side) => this.neighborGrid().get(area.id)?.neighbors[side] ?? null)
+			.filter((neighborId) => (neighborId !== null))
+			.map((neighborId) => this.names()({ kind: 'area', id: neighborId }));
+		const neighborNames = [...new Set(neighbors)];
+		let question: string;
+
+		if (isNewAreaId(area.id))
+		{
+			question = t({
 				id: 'editor.area.confirmDeleteNew',
 				defaultMessage: 'Delete {area}? It hasn\'t been saved, so its settings, painting and links will be lost.',
 				description: 'Asks before deleting an area added since the Areas tab was last saved, which goes immediately; {area} is its name'
 			}, {
 				area: area.name
-			})
-			: t({
+			});
+		}
+		else if (neighborNames.length > 0)
+		{
+			question = t({
+				id: 'editor.area.confirmDeleteWithNeighbors',
+				defaultMessage: 'Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place. {count, plural, one {Its neighbor {neighbors} will have} other {Its neighbors {neighbors} will have}} an edge where it was.',
+				description: 'Asks before marking an area to be deleted when the Areas tab is saved, when it has neighboring areas (walked across without links), which are left with nothing past that side; {area} is its name, {neighbors} lists the neighbors\' names and {count} how many'
+			}, {
+				area: area.name,
+				neighbors: formatList(neighborNames, 'conjunction'),
+				count: neighborNames.length
+			});
+		}
+		else
+		{
+			question = t({
 				id: 'editor.area.confirmDeleteInRegions',
 				defaultMessage: 'Delete {area} and every link into it when the Areas tab is saved? The areas inside it take its parents in its place.',
 				description: 'Asks before marking an area to be deleted when the Areas tab is saved; {area} is its name'
 			}, {
 				area: area.name
-			}));
+			});
+		}
 
 		if (!window.confirm(question))
 		{

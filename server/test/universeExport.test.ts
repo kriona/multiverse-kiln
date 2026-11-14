@@ -362,6 +362,12 @@ describe('an exported area\'s file', () =>
 			fogOfWar: false,
 			loopsEastWest: false,
 			loopsNorthSouth: false,
+			neighbors: {
+				north: randomUUID(),
+				east: randomUUID(),
+				south: randomUUID(),
+				west: randomUUID()
+			},
 			resolved: {
 				enabled: false,
 				indoors: true,

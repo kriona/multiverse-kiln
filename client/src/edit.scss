@@ -1106,6 +1106,246 @@ form > .changed-since,
 	}
 }
 
+// The view with the buttons on its edges that open the neighbors past them
+.area-canvas-frame
+{
+	position: relative;
+	display: flex;
+	flex-direction: column;
+}
+
+.area-edge
+{
+	position: absolute;
+	z-index: 1;
+	padding: 2px 8px;
+	line-height: normal;
+}
+
+.area-edge-north,
+.area-edge-south
+{
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+.area-edge-north
+{
+	top: 4px;
+}
+
+.area-edge-south
+{
+	bottom: 4px;
+}
+
+.area-edge-east,
+.area-edge-west
+{
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.area-edge-east
+{
+	right: 4px;
+}
+
+.area-edge-west
+{
+	left: 4px;
+}
+
+.area-edge-north-west,
+.area-edge-north-east
+{
+	top: 4px;
+}
+
+.area-edge-south-east
+{
+	bottom: 4px;
+}
+
+// Above the cell under the pointer, shown in the same corner
+.area-edge-south-west
+{
+	bottom: 32px;
+}
+
+.area-edge-north-west,
+.area-edge-south-west
+{
+	left: 4px;
+}
+
+.area-edge-north-east,
+.area-edge-south-east
+{
+	right: 4px;
+}
+
+// Which edge or corner, set apart from the name of the area the button opens
+.area-edge-direction
+{
+	color: $text-muted;
+}
+
+// A row for each side: its name, the neighbor there, and what can be done about it
+.area-neighbor-list
+{
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 4px 0;
+	padding: 0;
+	list-style: none;
+
+	li
+	{
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.area-neighbor-side
+	{
+		min-width: 4em;
+		color: $text-muted;
+	}
+
+	.area-neighbor-name
+	{
+		flex: 1;
+	}
+}
+
+// The whole grid of neighboring areas, each drawn at scale in its place
+.overall-map-dialog
+{
+	max-width: min(960px, calc(100vw - 32px));
+}
+
+.overall-map
+{
+	position: relative;
+	overflow: auto;
+	max-height: 70vh;
+	border: 1px solid $border;
+	background: $background-page;
+}
+
+.overall-map-area
+{
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid $border;
+	border-radius: 0;
+	background: transparent;
+
+	canvas
+	{
+		flex: 1;
+		width: 100%;
+		min-height: 0;
+		image-rendering: pixelated;
+	}
+
+	span
+	{
+		padding: 1px 4px;
+		background: $backdrop;
+		color: $text;
+		font-size: 12px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	&.open
+	{
+		border: 3px solid $accent;
+	}
+
+	// An area in a row or column that loops unlike the one beside it, in the area's top right corner
+	.overall-map-warning
+	{
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		padding: 2px;
+		border-radius: 4px;
+		background: $notice-background;
+		font-size: 14px;
+		line-height: 1;
+	}
+}
+
+.overall-map-misaligned
+{
+	margin: 12px 0 0;
+}
+
+// Where the map draws apart areas joined across a seam, such as where a ring joins back
+.overall-map-seam
+{
+	position: absolute;
+	border: 2px dashed $notice-text;
+	pointer-events: none;
+}
+
+// The areas, inside the map's margin for the loops' arrows
+.overall-map-plane
+{
+	position: relative;
+}
+
+// An arrow outside a side that loops, pointing off it, centered on where loopMarker() places it
+.overall-map-loop
+{
+	position: absolute;
+	display: flex;
+	padding: 2px;
+	border-radius: 50%;
+	background: $notice-background;
+	color: #FF0;
+	pointer-events: none;
+	transform: translate(-50%, -50%);
+
+	svg
+	{
+		width: 16px;
+		height: 16px;
+	}
+
+	// Thickens the icon's filled shape by tracing its outline, in its 256-unit view box
+	path
+	{
+		stroke: currentColor;
+		stroke-width: 16;
+		stroke-linejoin: round;
+	}
+}
+
+.overall-map-loop-north svg
+{
+	transform: rotate(-90deg);
+}
+
+.overall-map-loop-south svg
+{
+	transform: rotate(90deg);
+}
+
+.overall-map-loop-west svg
+{
+	transform: rotate(180deg);
+}
+
 // The hovered cell, over the view's corner so it never changes the view's size
 .area-cursor
 {
@@ -1159,6 +1399,7 @@ html:has(.area-cells-editor.full-page) body
 		display: none;
 	}
 
+	.area-canvas-frame,
 	.area-canvas
 	{
 		flex: 1;
