@@ -324,6 +324,27 @@ export async function deleteBuilderAssignments(universeId: string, playerId: str
 }
 
 /**
+ * The builders assigned to a region: to its live region, for a region the draft copied
+ *
+ * @param regionId The region's ID, in either version
+ * @param executor The database, or a transaction
+ * @return Their player IDs, in the order they were assigned
+ */
+export async function listRegionBuilderIds(regionId: string, executor: Executor = db): Promise<string[]>
+{
+	const rows = await executor
+		.select({
+			playerId: regionAssignments.playerId
+		})
+		.from(regions)
+		.innerJoin(regionAssignments, eq(regionAssignments.regionId, sql`coalesce(${regions.originId}, ${regions.id})`))
+		.where(eq(regions.id, regionId))
+		.orderBy(asc(regionAssignments.createdAt), asc(regionAssignments.playerId));
+
+	return(rows.map((row) => row.playerId));
+}
+
+/**
  * The regions of a version a builder is assigned to: the live regions, or the draft's copies of them
  *
  * @param version The universe's live version or draft

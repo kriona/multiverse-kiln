@@ -7,7 +7,7 @@ import { isDeepStrictEqual } from 'util';
 import { AUDIT_FIELDS, chunkCoordinate, chunkKey, oppositeSide, parseChunkKey, type AreaNeighbors, type AuditAction, type AuditField, type AuditFieldChange, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type ClassRaceArea, type EditorChange, type EditorRoleSettings, type ItemQuantity, type NumberRef, type MergedChange, type OptionName, type PlaceRef, type SavedEditDetail, type StringRef, type TileGraphic, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { findEditorArea } from '../db/areaRepo.js';
-import { listRegions } from '../db/regionRepo.js';
+import { listRegionBuilderIds } from '../db/regionRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { listDifficultyLevels } from '../db/difficultyRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
@@ -561,7 +561,7 @@ export class SaveAudit
 			{
 				const regionId = resolveStringRef(this.context, change.regionId);
 				const before = (await this.context.places.load()).region(regionId);
-				const assigned = (await listRegions(this.context.version, this.context.transaction)).find((region) => (region.id === regionId))?.builderIds;
+				const assigned = await listRegionBuilderIds(regionId, this.context.transaction);
 
 				if (before && !isDeepStrictEqual(new Set(assigned), new Set(change.builderIds)))
 				{

@@ -4,7 +4,7 @@
  */
 import { editsEveryPlace, type AreaEvacuations, type MessageDescriptor, type NewRef, type NewRegionChange, type PlaceNode, type PlaceRef, type RegionChangeUpdate, type RegionSettings, type StringRef } from '@multiverse-kiln/shared';
 
-import { countRegions, createRegion, deleteRegion, findLiveRegionId, listAssignmentsByBuilder, setRegionAssignments, setRegionParents, updateRegionSettings } from '../db/regionRepo.js';
+import { countRegions, createRegion, deleteRegion, findLiveRegionId, listRegionBuilderIds, setRegionAssignments, setRegionParents, updateRegionSettings } from '../db/regionRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { listUniverseRoles } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, updateUniverseSettings } from '../db/universeRepo.js';
@@ -243,9 +243,7 @@ export async function assignBuildersChange(context: ChangeContext, regionId: Str
 		});
 	}
 
-	const before = new Set([...await listAssignmentsByBuilder(universe.id, transaction)]
-		.filter(([, regionIds]) => regionIds.includes(liveId))
-		.map(([playerId]) => playerId));
+	const before = new Set(await listRegionBuilderIds(liveId, transaction));
 
 	await setRegionAssignments(universe.id, liveId, builderIds, transaction);
 
