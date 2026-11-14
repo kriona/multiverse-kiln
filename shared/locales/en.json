@@ -1249,7 +1249,7 @@
 	},
 	"editor.area.addNeighbor": {
 		"defaultMessage": "Add Neighbor",
-		"description": "Button in a row of the area editor's Neighbors section that adds a new area next to it on that side, walked across without a link, after asking for its name"
+		"description": "Button in the area editor's Neighbors section that adds a new area on the side chosen beside it, walked across without a link, after asking for its name"
 	},
 	"editor.area.areaDefault": {
 		"defaultMessage": "{tile} (default)",
@@ -1305,7 +1305,7 @@
 	},
 	"editor.area.chooseNeighbor": {
 		"defaultMessage": "Choose",
-		"description": "Button in a row of the area editor's Neighbors section that opens a dialog for choosing the area next to it on that side, walked across without a link"
+		"description": "Button in the area editor's Neighbors section, beside a neighboring area or the side chosen to add one on, that opens a dialog for choosing the area next to it on that side, walked across without a link"
 	},
 	"editor.area.chooseNeighborHint": {
 		"defaultMessage": "Choose the area to put {side, select, north {north} east {east} south {south} other {west}} of {area}. It also becomes a neighbor of the other areas next to that spot.",
@@ -1495,9 +1495,13 @@
 		"defaultMessage": "An area must be inside at least one region or area.",
 		"description": "Shown when an area's parents have all been removed, which keeps it from saving: in the area editor, or on the Areas tab after the name of an area left before saving"
 	},
+	"editor.area.neighborAddSide": {
+		"defaultMessage": "Side to add a neighbor on",
+		"description": "What screen readers hear for the list of sides in the area editor's Neighbors section, which chooses the side the Choose and Add Neighbor buttons beside it add a neighboring area on"
+	},
 	"editor.area.neighborButton": {
 		"defaultMessage": "{action} ({side, select, north {north} east {east} south {south} other {west}})",
-		"description": "What screen readers hear for a button in a row of the area editor's Neighbors section, such as Choose or Remove, with the side of the area it is for"
+		"description": "What screen readers hear for a button in the area editor's Neighbors section, such as Choose or Remove, with the side of the area it is for"
 	},
 	"editor.area.neighborCell": {
 		"defaultMessage": "{area}: {cell}",
@@ -1513,7 +1517,7 @@
 	},
 	"editor.area.neighborSide": {
 		"defaultMessage": "{side, select, north {North} east {East} south {South} other {West}}",
-		"description": "Names a side of the area in the area editor's Neighbors section, before the neighboring area on that side"
+		"description": "Names a side of the area in the area editor's Neighbors section: before the neighboring area on that side, and as a choice in the list of sides to add a neighbor on"
 	},
 	"editor.area.neighbors": {
 		"defaultMessage": "Neighbors",
@@ -1525,11 +1529,11 @@
 	},
 	"editor.area.neighborsTooSmall": {
 		"defaultMessage": "An area must be at least {cells, number} cells each way to have neighbors. Make it larger with Edit Size first.",
-		"description": "In the area editor's Neighbors section, for an area too small to have neighboring areas (walked across without links), in place of Choose and Add Neighbor; {cells} is the fewest cells along each side"
+		"description": "In the area editor's Neighbors section, for an area too small to have neighboring areas (walked across without links), in place of the sides and their buttons; {cells} is the fewest cells along each side"
 	},
 	"editor.area.noNeighbor": {
 		"defaultMessage": "None",
-		"description": "In the area editor's Neighbors section, for a side of the area with no neighboring area"
+		"description": "In the area editor's Neighbors section, for an area with no neighboring areas, shown to those who can't add one"
 	},
 	"editor.area.openFailed": {
 		"defaultMessage": "Could not open the area.",
@@ -1561,7 +1565,7 @@
 	},
 	"editor.area.removeNeighbor": {
 		"defaultMessage": "Remove",
-		"description": "Button in a row of the area editor's Neighbors section that makes the area there no longer the area's neighbor; neither area is deleted"
+		"description": "Button beside a neighboring area in the area editor's Neighbors section that makes it no longer the area's neighbor; neither area is deleted"
 	},
 	"editor.area.resize": {
 		"defaultMessage": "Edit Size",

@@ -931,7 +931,7 @@ form > .changed-since,
 		gap: 8px;
 	}
 
-	button
+	button:not(.link-button)
 	{
 		padding: 2px 8px;
 	}
@@ -1191,7 +1191,7 @@ form > .changed-since,
 	color: $text-muted;
 }
 
-// A row for each side: its name, the neighbor there, and what can be done about it
+// A row for each neighbor: its side, its name and what can be done about it, then a row for adding one
 .area-neighbor-list
 {
 	display: flex;
@@ -1213,11 +1213,6 @@ form > .changed-since,
 	{
 		min-width: 4em;
 		color: $text-muted;
-	}
-
-	.area-neighbor-name
-	{
-		flex: 1;
 	}
 }
 

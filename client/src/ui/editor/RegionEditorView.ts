@@ -101,6 +101,9 @@ export class RegionEditorView
 		this.parents = new ParentsField('region', () =>
 		{
 			this.settingsChanged();
+		}, (place) =>
+		{
+			host.open(place);
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,

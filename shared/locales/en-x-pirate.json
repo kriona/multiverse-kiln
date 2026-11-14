@@ -1495,6 +1495,10 @@
 		"message": "An area must sail inside at least one sea or area.",
 		"source": "An area must be inside at least one region or area."
 	},
+	"editor.area.neighborAddSide": {
+		"message": "Which side to moor a neighbor on",
+		"source": "Side to add a neighbor on"
+	},
 	"editor.area.neighborButton": {
 		"message": "{action} ({side, select, north {nor'ard} east {east'ard} south {sou'ard} other {west'ard}})",
 		"source": "{action} ({side, select, north {north} east {east} south {south} other {west}})"

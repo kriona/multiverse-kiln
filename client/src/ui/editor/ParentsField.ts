@@ -24,8 +24,9 @@ export interface ParentChoice
 }
 
 /**
- * A region's or area's parents in its editor: each in the order they were added, with a Remove button,
- * and Add Parent, a search listing the regions (and areas) it can be put inside
+ * A region's or area's parents in its editor: each in the order they were added, named by a link to its
+ * editor, with a Remove button, and Add Parent, a search listing the regions (and areas) it can be put
+ * inside
  */
 export class ParentsField
 {
@@ -39,8 +40,9 @@ export class ParentsField
 	/**
 	 * @param prefix What the field's IDs start with: area or region
 	 * @param onChange Called when a parent is added or removed
+	 * @param onOpen Called with a parent whose link was clicked, to open its editor
 	 */
-	constructor(prefix: string, private readonly onChange: () => void)
+	constructor(prefix: string, private readonly onChange: () => void, private readonly onOpen: (place: PlaceRef) => void)
 	{
 		this.list = getElement(`${prefix}-parent-list`, HTMLUListElement);
 		this.add = new SearchSelect({
@@ -141,17 +143,23 @@ export class ParentsField
 	}
 
 	/**
-	 * Lists the parents, each with a Remove button
+	 * Lists the parents, each named by a link to its editor, with a Remove button
 	 */
 	private render(): void
 	{
 		this.list.replaceChildren(...this.parents.map((parent) =>
 		{
 			const item = document.createElement('li');
-			const name = document.createElement('span');
+			const name = document.createElement('button');
 			const remove = document.createElement('button');
 
+			name.type = 'button';
+			name.className = 'link-button';
 			name.textContent = this.names(parent);
+			name.addEventListener('click', () =>
+			{
+				this.onOpen(parent);
+			});
 			remove.type = 'button';
 			remove.className = 'secondary';
 			remove.hidden = this.disabled;

@@ -4,7 +4,7 @@ import { formatList, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { announce } from '../announcer';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, scrollBackTo, showMessage } from '../dom';
+import { getElement, scrollBackTo, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { SearchSelect } from '../SearchSelect';
@@ -34,6 +34,16 @@ const messages = defineMessages({
 		id: 'editor.area.needsParent',
 		defaultMessage: 'An area must be inside at least one region or area.',
 		description: 'Shown when an area\'s parents have all been removed, which keeps it from saving: in the area editor, or on the Areas tab after the name of an area left before saving'
+	},
+	neighborSide: {
+		id: 'editor.area.neighborSide',
+		defaultMessage: '{side, select, north {North} east {East} south {South} other {West}}',
+		description: 'Names a side of the area in the area editor\'s Neighbors section: before the neighboring area on that side, and as a choice in the list of sides to add a neighbor on'
+	},
+	chooseNeighbor: {
+		id: 'editor.area.chooseNeighbor',
+		defaultMessage: 'Choose',
+		description: 'Button in the area editor\'s Neighbors section, beside a neighboring area or the side chosen to add one on, that opens a dialog for choosing the area next to it on that side, walked across without a link'
 	}
 });
 
@@ -307,6 +317,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private readonly keptChanges: CheckedChanges;
 
 	/**
+	 * The side last chosen in the Neighbors section's list of sides to add a neighbor on
+	 */
+	private neighborAddSide: NeighborSide | undefined;
+
+	/**
 	 * The side Add Neighbor adds a new area to, while its dialog is open
 	 */
 	private addingSide: NeighborSide | undefined;
@@ -332,6 +347,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	private readonly parents = new ParentsField('area', () =>
 	{
 		this.settingsChanged();
+	}, (place) =>
+	{
+		this.open(place);
 	});
 
 	/**
@@ -2121,8 +2139,9 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Lists the area open's neighbor on each side, with Choose, Add Neighbor and Remove for those who may
-	 * change them, and says why an area too small to have neighbors has none to add
+	 * Lists the area open's neighbors, each with Choose and Remove beside it for those who may change them,
+	 * then a row for adding a neighbor on a side without one: the side, Choose and Add Neighbor. An area
+	 * with none says None to those who can't add one, and one too small to have neighbors says why instead
 	 */
 	private showNeighborSection(): void
 	{
@@ -2138,111 +2157,167 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const neighbors = (own?.neighbors ?? NO_NEIGHBORS);
 		const editable = (this.canEditPlace({ kind: 'area', id: area.id }) && !this.staged.isDeleted(area.id));
 		const bigEnough = canHaveNeighbors(own?.bounds ?? area.bounds);
-		const names = this.names();
+		const freeSides = NEIGHBOR_SIDES.filter((side) => (neighbors[side] === null));
+		const items = NEIGHBOR_SIDES.flatMap((side) =>
+		{
+			const neighborId = neighbors[side];
+
+			return(((neighborId === null) ? [] : [this.neighborItem(area.id, side, neighborId, editable, bigEnough)]));
+		});
 
 		showMessage(this.neighborsHint, (bigEnough
 			? undefined
 			: t({
 				id: 'editor.area.neighborsTooSmall',
 				defaultMessage: 'An area must be at least {cells, number} cells each way to have neighbors. Make it larger with Edit Size first.',
-				description: 'In the area editor\'s Neighbors section, for an area too small to have neighboring areas (walked across without links), in place of Choose and Add Neighbor; {cells} is the fewest cells along each side'
+				description: 'In the area editor\'s Neighbors section, for an area too small to have neighboring areas (walked across without links), in place of the sides and their buttons; {cells} is the fewest cells along each side'
 			}, {
 				cells: MIN_NEIGHBOR_AREA_SIDE
 			})));
 		this.overallMapButton.hidden = !hasNeighbors(neighbors);
-		this.neighborList.replaceChildren(...NEIGHBOR_SIDES.map((side) =>
+
+		if (editable && bigEnough && (freeSides.length > 0))
 		{
-			const item = document.createElement('li');
-			const label = document.createElement('span');
-			const name = document.createElement('span');
-			const neighborId = neighbors[side];
+			items.push(this.neighborAddItem(freeSides));
+		}
+		else if (bigEnough && (items.length === 0))
+		{
+			const none = document.createElement('li');
 
-			label.className = 'area-neighbor-side';
-			label.textContent = t({
-				id: 'editor.area.neighborSide',
-				defaultMessage: '{side, select, north {North} east {East} south {South} other {West}}',
-				description: 'Names a side of the area in the area editor\'s Neighbors section, before the neighboring area on that side'
-			}, {
-				side
+			none.textContent = t({
+				id: 'editor.area.noNeighbor',
+				defaultMessage: 'None',
+				description: 'In the area editor\'s Neighbors section, for an area with no neighboring areas, shown to those who can\'t add one'
 			});
-			name.className = 'area-neighbor-name';
+			items.push(none);
+		}
 
-			if (neighborId === null)
-			{
-				name.textContent = t({
-					id: 'editor.area.noNeighbor',
-					defaultMessage: 'None',
-					description: 'In the area editor\'s Neighbors section, for a side of the area with no neighboring area'
-				});
-			}
-			else
-			{
-				const open = document.createElement('button');
-
-				open.type = 'button';
-				open.className = 'link-button';
-				open.textContent = names({ kind: 'area', id: neighborId });
-				open.addEventListener('click', () =>
-				{
-					this.open({ kind: 'area', id: neighborId });
-				});
-				name.append(open);
-			}
-
-			item.append(label, name);
-
-			if (editable && bigEnough)
-			{
-				item.append(this.neighborButton(t({
-					id: 'editor.area.chooseNeighbor',
-					defaultMessage: 'Choose',
-					description: 'Button in a row of the area editor\'s Neighbors section that opens a dialog for choosing the area next to it on that side, walked across without a link'
-				}), side, () =>
-				{
-					void this.chooseNeighbor(side);
-				}));
-
-				if (neighborId === null)
-				{
-					item.append(this.neighborButton(t({
-						id: 'editor.area.addNeighbor',
-						defaultMessage: 'Add Neighbor',
-						description: 'Button in a row of the area editor\'s Neighbors section that adds a new area next to it on that side, walked across without a link, after asking for its name'
-					}), side, () =>
-					{
-						this.openAddNeighbor(side);
-					}));
-				}
-			}
-
-			if (editable && (neighborId !== null) && this.canEditPlace({ kind: 'area', id: neighborId }))
-			{
-				item.append(this.neighborButton(t({
-					id: 'editor.area.removeNeighbor',
-					defaultMessage: 'Remove',
-					description: 'Button in a row of the area editor\'s Neighbors section that makes the area there no longer the area\'s neighbor; neither area is deleted'
-				}), side, () =>
-				{
-					this.stageGrid(withoutNeighbor(this.neighborGrid(), area.id, side));
-					announce(t({
-						id: 'editor.area.neighborRemoved',
-						defaultMessage: '{area} is no longer a neighbor.',
-						description: 'Read out by screen readers after Remove in the area editor\'s Neighbors section; {area} is the area that is no longer next to the area being edited'
-					}, {
-						area: names({ kind: 'area', id: neighborId })
-					}));
-				}));
-			}
-
-			return(item);
-		}));
+		this.neighborList.hidden = (items.length === 0);
+		this.neighborList.replaceChildren(...items);
 	}
 
 	/**
-	 * A button in a row of the Neighbors section, named for screen readers with the side it is for
+	 * The Neighbors section's row for a neighbor: its side, its name, which opens its editor, and Choose and
+	 * Remove for those who may change it
+	 *
+	 * @param areaId The area open
+	 * @param side The side the neighbor is on
+	 * @param neighborId The neighbor
+	 * @param editable Whether the area open can be changed
+	 * @param bigEnough Whether the area open is large enough to have neighbors
+	 * @return The row
+	 */
+	private neighborItem(areaId: string, side: NeighborSide, neighborId: string, editable: boolean, bigEnough: boolean): HTMLLIElement
+	{
+		const names = this.names();
+		const item = document.createElement('li');
+		const label = document.createElement('span');
+		const open = document.createElement('button');
+
+		label.className = 'area-neighbor-side';
+		label.textContent = t(messages.neighborSide, {
+			side
+		});
+		open.type = 'button';
+		open.className = 'link-button';
+		open.textContent = names({ kind: 'area', id: neighborId });
+		open.addEventListener('click', () =>
+		{
+			this.open({ kind: 'area', id: neighborId });
+		});
+		item.append(label, open);
+
+		if (editable && bigEnough)
+		{
+			item.append(this.neighborButton(t(messages.chooseNeighbor), side, () =>
+			{
+				void this.chooseNeighbor(side);
+			}));
+		}
+
+		if (editable && this.canEditPlace({ kind: 'area', id: neighborId }))
+		{
+			item.append(this.neighborButton(t({
+				id: 'editor.area.removeNeighbor',
+				defaultMessage: 'Remove',
+				description: 'Button beside a neighboring area in the area editor\'s Neighbors section that makes it no longer the area\'s neighbor; neither area is deleted'
+			}), side, () =>
+			{
+				this.stageGrid(withoutNeighbor(this.neighborGrid(), areaId, side));
+				announce(t({
+					id: 'editor.area.neighborRemoved',
+					defaultMessage: '{area} is no longer a neighbor.',
+					description: 'Read out by screen readers after Remove in the area editor\'s Neighbors section; {area} is the area that is no longer next to the area being edited'
+				}, {
+					area: names({ kind: 'area', id: neighborId })
+				}));
+			}));
+		}
+
+		return(item);
+	}
+
+	/**
+	 * The Neighbors section's row for adding a neighbor: a list of the sides without one, and Choose and
+	 * Add Neighbor for the side chosen there
+	 *
+	 * @param freeSides The sides without a neighbor
+	 * @return The row
+	 */
+	private neighborAddItem(freeSides: readonly NeighborSide[]): HTMLLIElement
+	{
+		const item = document.createElement('li');
+		const select = document.createElement('select');
+		const chooseText = t(messages.chooseNeighbor);
+		const addText = t({
+			id: 'editor.area.addNeighbor',
+			defaultMessage: 'Add Neighbor',
+			description: 'Button in the area editor\'s Neighbors section that adds a new area on the side chosen beside it, walked across without a link, after asking for its name'
+		});
+		const sideChosen = (): NeighborSide => (freeSides.find((side) => (side === select.value)) ?? freeSides[0]);
+		const choose = this.neighborButton(chooseText, freeSides[0], () =>
+		{
+			void this.chooseNeighbor(sideChosen());
+		});
+		const add = this.neighborButton(addText, freeSides[0], () =>
+		{
+			this.openAddNeighbor(sideChosen());
+		});
+		const label = (): void =>
+		{
+			this.labelNeighborButton(choose, chooseText, sideChosen());
+			this.labelNeighborButton(add, addText, sideChosen());
+		};
+
+		item.className = 'area-neighbor-add';
+		select.setAttribute('aria-label', t({
+			id: 'editor.area.neighborAddSide',
+			defaultMessage: 'Side to add a neighbor on',
+			description: 'What screen readers hear for the list of sides in the area editor\'s Neighbors section, which chooses the side the Choose and Add Neighbor buttons beside it add a neighboring area on'
+		}));
+		setOptions(select, freeSides.map((side) => ({
+			value: side,
+			label: t(messages.neighborSide, {
+				side
+			})
+		})));
+		select.value = (((this.neighborAddSide !== undefined) && freeSides.includes(this.neighborAddSide)) ? this.neighborAddSide : freeSides[0]);
+		select.addEventListener('change', () =>
+		{
+			this.neighborAddSide = sideChosen();
+			label();
+		});
+		label();
+		item.append(select, choose, add);
+
+		return(item);
+	}
+
+	/**
+	 * A button in the Neighbors section, named for screen readers with the side it is for
 	 *
 	 * @param text What it says
-	 * @param side The side its row is for
+	 * @param side The side it is for
 	 * @param onClick What it does
 	 * @return The button
 	 */
@@ -2253,17 +2328,29 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		button.type = 'button';
 		button.className = 'secondary';
 		button.textContent = text;
+		this.labelNeighborButton(button, text, side);
+		button.addEventListener('click', onClick);
+
+		return(button);
+	}
+
+	/**
+	 * Names a button in the Neighbors section for screen readers with the side it is for
+	 *
+	 * @param button The button
+	 * @param text What it says
+	 * @param side The side it is for
+	 */
+	private labelNeighborButton(button: HTMLButtonElement, text: string, side: NeighborSide): void
+	{
 		button.setAttribute('aria-label', t({
 			id: 'editor.area.neighborButton',
 			defaultMessage: '{action} ({side, select, north {north} east {east} south {south} other {west}})',
-			description: 'What screen readers hear for a button in a row of the area editor\'s Neighbors section, such as Choose or Remove, with the side of the area it is for'
+			description: 'What screen readers hear for a button in the area editor\'s Neighbors section, such as Choose or Remove, with the side of the area it is for'
 		}, {
 			action: text,
 			side
 		}));
-		button.addEventListener('click', onClick);
-
-		return(button);
 	}
 
 	/**
