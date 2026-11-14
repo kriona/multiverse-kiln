@@ -1,6 +1,7 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
-import { canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import fillIcon from 'virtual:icon/ph:paint-bucket';
+import { areaFill, canPaintTile, CHUNK_SIZE, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, parseChunkKey, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -10,6 +11,8 @@ import { EditHistory, type EditStep, type SavedCell } from '../../editor/EditHis
 import { currentLocale, t } from '../../localization';
 import { describeEditorError, EditorApiError } from '../../network/editorApi';
 import type { AreaEditorHost, CameraState, PointerMode } from '../../scenes/AreaEditorScene';
+import { announce } from '../announcer';
+import { askToConfirm } from '../confirmDialog';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
 import { addKeyHelp, formatKeys } from '../shortcuts';
@@ -122,16 +125,17 @@ interface Stroke
 
 /**
  * The cell editor in the area editor: the area's cells on the same grid as gameplay, a draw tool (a tile
- * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) with undo and redo, Edit Size, and a
- * tool for the area's links
+ * or Void, 1 to MAX_BRUSH_SIZE cells across, square or circle) and a fill tool with undo and redo, Edit
+ * Size, and a tool for the area's links
  *
  * Painting, changes to the area's size and links show immediately and are kept until the editor's Save
- * button calls save(); a click, a drag or a change of size is one step to undo
+ * button calls save(); a click, a drag, a fill or a change of size is one step to undo
  */
 export class AreaEditor
 {
 	private readonly tools = getElement('area-tools', HTMLElement);
 	private readonly drawTool = getElement('area-tool-draw', HTMLInputElement);
+	private readonly fillTool = getElement('area-tool-fill', HTMLInputElement);
 	private readonly tile = getElement('area-tile', HTMLSelectElement);
 	private readonly brushSize = getElement('area-brush-size', HTMLInputElement);
 	private readonly brushShape = getElement('area-brush-shape', HTMLSelectElement);
@@ -155,6 +159,11 @@ export class AreaEditor
 
 	private open: OpenArea | undefined;
 	private stroke: Stroke | undefined;
+
+	/**
+	 * Whether a fill is under way, loading the area's chunks or asking whether to go ahead
+	 */
+	private filling = false;
 
 	/**
 	 * Whether the cell editor covers the window (see setFullPage)
@@ -310,7 +319,7 @@ export class AreaEditor
 			keys: () => t(areaEditorMessages.spaceOrEnter),
 			description: () => t({
 				id: 'editor.area.keys.paintDescription',
-				defaultMessage: 'Paint the cursor\'s cell, or open its link with the Links tool; hold Space while moving to keep painting',
+				defaultMessage: 'Paint the cursor\'s cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting',
 				description: 'In the list of keyboard shortcuts, what Space and Enter do on the area editor\'s cells'
 			})
 		});
@@ -1106,6 +1115,10 @@ export class AreaEditor
 			{
 				this.finishStroke();
 			},
+			fill: (column, row) =>
+			{
+				void this.fill(column, row);
+			},
 			pick: (column, row) =>
 			{
 				this.openLinkDialog(column, row);
@@ -1136,7 +1149,16 @@ export class AreaEditor
 			return('none');
 		}
 
-		return((this.drawTool.checked ? 'paint' : 'pick'));
+		if (this.drawTool.checked)
+		{
+			return('paint');
+		}
+		else if (this.fillTool.checked)
+		{
+			return('fill');
+		}
+
+		return('pick');
 	}
 
 	/**
@@ -1246,6 +1268,157 @@ export class AreaEditor
 		this.history.push({ changes, inverse });
 		this.trackChanges(changes, inverse);
 		this.updateButtons();
+	}
+
+	/**
+	 * Fills from a cell with the Tile list's tile, as one step to undo: the cell and every cell joined to it
+	 * to the north, east, south or west holding the same tile. A fill of more than FILL_CONFIRM_CELLS cells
+	 * asks first. Says how many cells it painted, for screen readers
+	 *
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 */
+	private async fill(column: number, row: number): Promise<void>
+	{
+		const open = this.open;
+
+		if (!open || this.filling || this.stroke || (this.pendingSaves > 0))
+		{
+			return;
+		}
+
+		const value = this.paintValue();
+
+		this.filling = true;
+
+		try
+		{
+			let cells = await this.cellsToFill(open.cells, column, row, value);
+
+			if ((cells !== undefined) && (cells.length > FILL_CONFIRM_CELLS))
+			{
+				const confirmed = await askToConfirm({
+					title: t({
+						id: 'editor.area.fillConfirmTitle',
+						defaultMessage: 'Fill Cells',
+						description: 'Title of the dialog asking before the area editor\'s Fill tool paints a large number of cells'
+					}),
+					question: t({
+						id: 'editor.area.fillConfirm',
+						defaultMessage: 'This fill paints {count, plural, one {# cell} other {# cells}}. Fill them?',
+						description: 'Asked before the area editor\'s Fill tool paints more than 1,000 cells at once; {count} is how many. Undo takes the fill back'
+					}, {
+						count: cells.length
+					}),
+					confirmLabel: t({
+						id: 'editor.area.fillConfirmButton',
+						defaultMessage: 'Fill',
+						description: 'Button in the dialog asking before the area editor\'s Fill tool paints a large number of cells, which paints them'
+					}),
+					confirmIcon: fillIcon,
+					harmless: true
+				});
+
+				// Other editors' painting may have reached the area while the dialog was open
+				cells = (confirmed ? await this.cellsToFill(open.cells, column, row, value) : undefined);
+			}
+
+			const current = this.open;
+
+			if ((cells === undefined) || (current?.cells !== open.cells) || this.stroke || (this.pendingSaves > 0))
+			{
+				return;
+			}
+
+			if (cells.length === 0)
+			{
+				if (isInBounds(open.cells.bounds, column, row))
+				{
+					announce(t({
+						id: 'editor.area.fillSameTile',
+						defaultMessage: 'The cell already holds that tile.',
+						description: 'Read out by screen readers when the area editor\'s Fill tool is used on a cell already holding the tile chosen to paint, so nothing changes'
+					}));
+				}
+
+				return;
+			}
+
+			const step: EditStep = {
+				changes: cells.map(([cellColumn, cellRow]) => [cellColumn, cellRow, value]),
+				inverse: cells
+			};
+
+			showMessage(this.error, undefined);
+			this.history.push(step);
+			this.applyStep(step.changes, step.inverse);
+			announce(t({
+				id: 'editor.area.filled',
+				defaultMessage: '{count, plural, one {Filled # cell.} other {Filled # cells.}}',
+				description: 'Read out by screen readers after the area editor\'s Fill tool painted cells; {count} is how many'
+			}, {
+				count: cells.length
+			}));
+		}
+		catch (error)
+		{
+			if (this.open?.cells === open.cells)
+			{
+				showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
+			}
+		}
+		finally
+		{
+			this.filling = false;
+		}
+	}
+
+	/**
+	 * The cells a fill from a cell paints, loading the rest of the area first when the fill reaches cells
+	 * that haven't loaded. The area's default tile counts as the same tile whether a cell holds it as
+	 * DEFAULT_TILE_CELL or by its ID
+	 *
+	 * @param cells The open area's cells
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @param value The value the fill paints
+	 * @return Each cell to paint with its value now, none when the cell filled from is outside the area or
+	 * already holds the tile, or undefined once the area has closed
+	 */
+	private async cellsToFill(cells: AreaCells, column: number, row: number, value: number): Promise<CellChange[] | undefined>
+	{
+		const open = this.open;
+
+		if (open?.cells !== cells)
+		{
+			return(undefined);
+		}
+
+		const defaultTileId = open.area.resolved.defaultTileId;
+		const tileOf = (cell: number): number => ((cell === defaultTileId) ? DEFAULT_TILE_CELL : cell);
+		const sameTile = (first: number, second: number): boolean => (tileOf(first) === tileOf(second));
+		const valueAt = (cellColumn: number, cellRow: number): number | undefined => cells.valueAt(cellColumn, cellRow);
+		let filled = areaFill(cells.bounds, column, row, valueAt, sameTile);
+
+		if (!filled.complete)
+		{
+			await open.loader.loadAll();
+			filled = areaFill(cells.bounds, column, row, valueAt, sameTile);
+		}
+
+		const target = valueAt(column, row);
+
+		if ((this.open?.cells !== cells) || !filled.complete)
+		{
+			return(undefined);
+		}
+
+		if ((target === undefined) || sameTile(target, value))
+		{
+			return([]);
+		}
+
+		return(filled.cells.map(([cellColumn, cellRow]) => [cellColumn, cellRow, (valueAt(cellColumn, cellRow) ?? DEFAULT_TILE_CELL)]));
 	}
 
 	/**

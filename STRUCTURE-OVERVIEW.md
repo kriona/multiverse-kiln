@@ -1012,8 +1012,11 @@ This is a component included in the [area editor](#editor-area). It shows you th
 ### Tool: Fill
 - Fill (Alt+I), beside Draw and Links, paints with the Tile list's tile, like the [draw tool](#tool-draw)
 - clicking a cell, or Space or Enter on the keyboard's cursor, paints it and every cell joined to it to the north, east, south or west that holds the same tile, within the area: it doesn't cross the area's looping edges or go into its [neighbors](#neighboring-areas)
+- the area's default tile is the same tile whether a cell holds it as the default or by its own ID
+- a fill reaching cells that haven't loaded loads the rest of the area first, so it covers every joined cell
 - a fill is one step for undo
 - a fill of more than 1,000 cells asks first in a dialog saying how many cells it paints
+- screen readers hear how many cells a fill painted, or that the cell already holds the tile
 
 ## Editor: Tile
 - Delete Tile (a tile the universe added) asks first in a dialog. When areas' cells use the tile, the dialog names them and asks for a tile to paint their cells with instead, which must be chosen. When it is areas' default tile, the dialog says so and asks what they get instead (see [Replacing a default tile](#replacing-a-default-tile)). The tile is struck through until the Tilesets tab is saved; saving paints every cell holding it with the replacement, and gives each region and area that set it as their default tile what the dialog chose, then deletes it. Undo Delete takes it back. A default tile the universe edited has Restore instead, which keeps it in the areas

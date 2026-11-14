@@ -27,7 +27,7 @@ const ARROW_STEPS: Record<string, BrushCell> = {
  * area is shown, running a fresh start of the scene for each area
  *
  * The canvas's element can be focused, and then the keyboard works the area with a cursor: the arrow
- * keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints or picks its cell
+ * keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints, fills from or picks its cell
  * as a click does, holding Space while moving keeps painting as a drag does, + and - zoom, and Home
  * goes back to the center cell. Each cell the cursor moves onto is read out to screen readers
  */
@@ -341,7 +341,7 @@ export class AreaCanvas
 	}
 
 	/**
-	 * Does what a click on the cursor's cell does: paints it or picks it
+	 * Does what a click on the cursor's cell does: paints it, fills from it or picks it
 	 *
 	 * @param cell The cursor's cell
 	 * @param hold Whether to keep painting as the cursor moves, until stopPainting()
@@ -359,6 +359,13 @@ export class AreaCanvas
 		if (mode === 'pick')
 		{
 			host.pick(cell.column, cell.row);
+			return;
+		}
+
+		// The fill says what it painted once it's done, which may wait for the area's chunks to load
+		if (mode === 'fill')
+		{
+			host.fill(cell.column, cell.row);
 			return;
 		}
 

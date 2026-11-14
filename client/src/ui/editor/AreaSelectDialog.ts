@@ -408,6 +408,7 @@ export class AreaSelectDialog
 			paintStart: () => undefined,
 			paint: () => undefined,
 			paintEnd: () => undefined,
+			fill: () => undefined,
 			pick: (column, row) =>
 			{
 				if (this.preview && isInBounds(this.preview.area.bounds, column, row))

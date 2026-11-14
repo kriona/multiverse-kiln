@@ -1335,6 +1335,30 @@
 		"message": "Furl the Page Back",
 		"source": "Exit Full Page"
 	},
+	"editor.area.fill": {
+		"message": "Flood",
+		"source": "Fill"
+	},
+	"editor.area.fillConfirm": {
+		"message": "This flood paints {count, plural, one {# cell} other {# cells}}. Flood 'em?",
+		"source": "This fill paints {count, plural, one {# cell} other {# cells}}. Fill them?"
+	},
+	"editor.area.fillConfirmButton": {
+		"message": "Flood",
+		"source": "Fill"
+	},
+	"editor.area.fillConfirmTitle": {
+		"message": "Flood the Cells",
+		"source": "Fill Cells"
+	},
+	"editor.area.fillSameTile": {
+		"message": "That cell already holds that tile, matey.",
+		"source": "The cell already holds that tile."
+	},
+	"editor.area.filled": {
+		"message": "{count, plural, one {Flooded # cell.} other {Flooded # cells.}}",
+		"source": "{count, plural, one {Filled # cell.} other {Filled # cells.}}"
+	},
 	"editor.area.fullPage": {
 		"message": "Unfurl Full Page",
 		"source": "Full Page"
@@ -1344,12 +1368,12 @@
 		"source": "Cells"
 	},
 	"editor.area.help": {
-		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Passages tool, click a cell to add or change its passage.",
-		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link."
+		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. With the Flood tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link."
 	},
 	"editor.area.keyboardHelp": {
-		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Passages tool opens the cell's passage; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
-		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
+		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, floods from the cell with the Flood tool, or opens the cell's passage with the Passages tool; hold Space while steerin' to keep paintin'. + and - zoom, and Home sails back to the center cell.",
+		"source": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell."
 	},
 	"editor.area.keys.cursor": {
 		"message": "Arrow keys",
@@ -1372,8 +1396,8 @@
 		"source": "Space / Enter"
 	},
 	"editor.area.keys.paintDescription": {
-		"message": "Paint the cursor's cell, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
-		"source": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting"
+		"message": "Paint the cursor's cell, flood from it with the Flood tool, or open its passage with the Passages tool; hold Space while steerin' to keep paintin'",
+		"source": "Paint the cursor's cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting"
 	},
 	"editor.area.keys.redo": {
 		"message": "Paint or resize again what ye took back",

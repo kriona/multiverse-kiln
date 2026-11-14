@@ -1335,6 +1335,30 @@
 		"defaultMessage": "Exit Full Page",
 		"description": "Button that puts the area editor's cells and their tools back in the page after they were made to fill the window"
 	},
+	"editor.area.fill": {
+		"defaultMessage": "Fill",
+		"description": "Area editor tool that paints a cell and every cell joined to it that holds the same tile"
+	},
+	"editor.area.fillConfirm": {
+		"defaultMessage": "This fill paints {count, plural, one {# cell} other {# cells}}. Fill them?",
+		"description": "Asked before the area editor's Fill tool paints more than 1,000 cells at once; {count} is how many. Undo takes the fill back"
+	},
+	"editor.area.fillConfirmButton": {
+		"defaultMessage": "Fill",
+		"description": "Button in the dialog asking before the area editor's Fill tool paints a large number of cells, which paints them"
+	},
+	"editor.area.fillConfirmTitle": {
+		"defaultMessage": "Fill Cells",
+		"description": "Title of the dialog asking before the area editor's Fill tool paints a large number of cells"
+	},
+	"editor.area.fillSameTile": {
+		"defaultMessage": "The cell already holds that tile.",
+		"description": "Read out by screen readers when the area editor's Fill tool is used on a cell already holding the tile chosen to paint, so nothing changes"
+	},
+	"editor.area.filled": {
+		"defaultMessage": "{count, plural, one {Filled # cell.} other {Filled # cells.}}",
+		"description": "Read out by screen readers after the area editor's Fill tool painted cells; {count} is how many"
+	},
 	"editor.area.fullPage": {
 		"defaultMessage": "Full Page",
 		"description": "Button that makes the area editor's cells and their tools fill the window"
@@ -1344,11 +1368,11 @@
 		"description": "Name of the area's cell editor (the card holding the area's cells and the tools that paint them), for screen readers"
 	},
 	"editor.area.help": {
-		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Links tool, click a cell to add or change its link.",
+		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.",
 		"description": "Explains how to use the area editor's cells with the mouse and keyboard"
 	},
 	"editor.area.keyboardHelp": {
-		"defaultMessage": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, or with the Links tool opens the cell's link; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.",
+		"defaultMessage": "With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. + and - zoom, and Home goes back to the center cell.",
 		"description": "Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language"
 	},
 	"editor.area.keys.cursor": {
@@ -1372,7 +1396,7 @@
 		"description": "In the list of keyboard shortcuts, the names of the Space and Enter keys"
 	},
 	"editor.area.keys.paintDescription": {
-		"defaultMessage": "Paint the cursor's cell, or open its link with the Links tool; hold Space while moving to keep painting",
+		"defaultMessage": "Paint the cursor's cell, fill from it with the Fill tool, or open its link with the Links tool; hold Space while moving to keep painting",
 		"description": "In the list of keyboard shortcuts, what Space and Enter do on the area editor's cells"
 	},
 	"editor.area.keys.redo": {
@@ -1457,7 +1481,7 @@
 	},
 	"editor.area.tile": {
 		"defaultMessage": "Tile",
-		"description": "Label of the field for the tile the Draw tool paints"
+		"description": "Label of the field for the tile the Draw and Fill tools paint"
 	},
 	"editor.area.tooLarge": {
 		"defaultMessage": "An area can be at most {max, number} cells in each direction.",

@@ -70,10 +70,11 @@ export interface CellHighlight
  * What a click on the area does
  *
  * - paint: the draw tool paints, and dragging keeps painting
+ * - fill: the fill tool fills from the cell clicked
  * - pick: the cell clicked is chosen, e.g. for a link
  * - none: the area can only be looked around
  */
-export type PointerMode = 'paint' | 'pick' | 'none';
+export type PointerMode = 'paint' | 'fill' | 'pick' | 'none';
 
 /**
  * Whoever shows the scene: what clicks do, and what the scene tells it
@@ -104,6 +105,11 @@ export interface AreaEditorHost
 	 * The stroke ends: the button is released, or the pointer leaves the game
 	 */
 	paintEnd: () => void;
+
+	/**
+	 * A cell is clicked in fill mode
+	 */
+	fill: (column: number, row: number) => void;
 
 	/**
 	 * A cell is clicked in pick mode
@@ -168,7 +174,7 @@ export interface AreaEditorSceneData
  * Shows an area's cells for editing: the same grid as gameplay, with the area's edges, its center cell,
  * its links and the brush outlined on top
  *
- * Left clicks paint or pick cells (see PointerMode); dragging with the right or middle button pans,
+ * Left clicks paint, fill or pick cells (see PointerMode); dragging with the right or middle button pans,
  * Ctrl+wheel zooms around the pointer, and the wheel alone pans while wheelPans is set. AreaCanvas
  * does the same from the keyboard with a cursor, which the scene outlines like the pointer. A looping area is shown once, without its far side
  * repeated, so every cell on screen is a cell that can be edited
@@ -446,7 +452,7 @@ export class AreaEditorScene extends Phaser.Scene
 	}
 
 	/**
-	 * Starts painting, picking or panning
+	 * Starts painting, fills, picks or starts panning
 	 *
 	 * @param pointer The pointer
 	 */
@@ -471,6 +477,10 @@ export class AreaEditorScene extends Phaser.Scene
 		if (mode === 'pick')
 		{
 			this.host.pick(cell.column, cell.row);
+		}
+		else if (mode === 'fill')
+		{
+			this.host.fill(cell.column, cell.row);
 		}
 		else if (mode === 'paint')
 		{
