@@ -32,7 +32,7 @@ const PIECE_SIZE = CHUNK_SIZE * GRID_CELL_SIZE;
 const PREPARE_MARGIN = DRAW_MARGIN + PIECE_SIZE;
 
 /**
- * How long each update may spend drawing pieces ahead of time, in milliseconds
+ * How long a game's renderers together may spend drawing pieces ahead of time in each frame, in milliseconds
  */
 const PREPARE_MILLISECONDS = 4;
 
@@ -203,6 +203,12 @@ export class AreaRenderer
 	 * Gives each area's atlas a key of its own, so an area's atlas can be removed while the next one is made
 	 */
 	private static nextTextureId = 0;
+
+	/**
+	 * How long the renderers of each game have spent drawing pieces ahead of time in its current frame (see
+	 * Phaser's TimeStep.frame), so together they keep within PREPARE_MILLISECONDS however many there are
+	 */
+	private static readonly aheadSpent = new WeakMap<Phaser.Game, { frame: number; milliseconds: number }>();
 
 	/**
 	 * Width of the area in world units: how far apart the copies of a looping area are
@@ -516,8 +522,8 @@ export class AreaRenderer
 
 	/**
 	 * Draws the pieces of the area within DRAW_MARGIN of a view, then as many of those within PREPARE_MARGIN
-	 * as PREPARE_MILLISECONDS allows, nearest the view's center first, and drops those further out than
-	 * KEEP_MARGIN
+	 * as what is left of the frame's PREPARE_MILLISECONDS allows, nearest the view's center first, and drops
+	 * those further out than KEEP_MARGIN
 	 *
 	 * @param view The camera's view of the world
 	 */
@@ -558,13 +564,14 @@ export class AreaRenderer
 			}
 		}
 
+		const spent = this.aheadSpentThisFrame();
 		const started = performance.now();
 
 		ahead.sort((a, b) => (a.distance - b.distance));
 
 		for (const piece of ahead)
 		{
-			if (this.atlasFull || this.atlasFullAhead || ((performance.now() - started) >= PREPARE_MILLISECONDS))
+			if (this.atlasFull || this.atlasFullAhead || ((spent.milliseconds + (performance.now() - started)) >= PREPARE_MILLISECONDS))
 			{
 				break;
 			}
@@ -584,6 +591,8 @@ export class AreaRenderer
 			this.pieces.set(chunkKey(piece.column, piece.row), drawn);
 		}
 
+		spent.milliseconds += (performance.now() - started);
+
 		for (const [key, piece] of this.pieces)
 		{
 			const { chunkColumn, chunkRow } = parseChunkKey(key);
@@ -594,6 +603,30 @@ export class AreaRenderer
 				this.pieces.delete(key);
 			}
 		}
+	}
+
+	/**
+	 * How long the game's renderers have spent drawing pieces ahead of time in its current frame, starting
+	 * from nothing on a new frame
+	 *
+	 * @return The time spent, which drawPieces() adds to
+	 */
+	private aheadSpentThisFrame(): { frame: number; milliseconds: number }
+	{
+		const { game } = this.scene;
+		const frame = game.loop.frame;
+		let spent = AreaRenderer.aheadSpent.get(game);
+
+		if (!spent || (spent.frame !== frame))
+		{
+			spent = {
+				frame,
+				milliseconds: 0
+			};
+			AreaRenderer.aheadSpent.set(game, spent);
+		}
+
+		return(spent);
 	}
 
 	/**
