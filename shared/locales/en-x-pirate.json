@@ -3135,6 +3135,10 @@
 		"message": "{height, number} tall by {width, number} wide",
 		"source": "{height, number} tall x {width, number} wide"
 	},
+	"editor.resize.was": {
+		"message": "once {cells, number}",
+		"source": "was {cells, number}"
+	},
 	"editor.resize.west": {
 		"message": "West",
 		"source": "West"

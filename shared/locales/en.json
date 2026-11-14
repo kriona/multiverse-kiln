@@ -3223,6 +3223,10 @@
 		"defaultMessage": "{height, number} tall x {width, number} wide",
 		"description": "The size of the area the dialog's fields describe, in cells"
 	},
+	"editor.resize.was": {
+		"defaultMessage": "was {cells, number}",
+		"description": "Under a field of the dialog for changing an area's size once it differs from the area's size, and read with the field by screen readers; {cells} is how many cells the area reaches on that side before the change"
+	},
 	"editor.resize.west": {
 		"defaultMessage": "West",
 		"description": "Label of the field for how many cells the area reaches west of its center"

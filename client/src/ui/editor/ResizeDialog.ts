@@ -53,7 +53,8 @@ interface ResizeTarget
 }
 
 /**
- * Edit Size: how far an area reaches from its center cell in each direction, with the total size, Extend
+ * Edit Size: how far an area reaches from its center cell in each direction, each side that differs from the
+ * area's size marked with what it was, the total size, Extend
  * Size buttons that add a number of cells to one side's field, and a warning before a smaller area cuts
  * off painted cells or links
  */
@@ -133,10 +134,12 @@ export class ResizeDialog
 	open(target: ResizeTarget): void
 	{
 		this.target = target;
-		this.north.value = String(-target.bounds.minRow);
-		this.south.value = String(target.bounds.maxRow);
-		this.west.value = String(-target.bounds.minColumn);
-		this.east.value = String(target.bounds.maxColumn);
+
+		for (const side of sides)
+		{
+			this.sideField(side).value = String(ResizeDialog.reach(target.bounds, side));
+		}
+
 		this.updateTotal();
 		this.dialog.showModal();
 		this.changes.markSaved();
@@ -196,6 +199,69 @@ export class ResizeDialog
 	}
 
 	/**
+	 * How far some bounds reach from the center cell on one side
+	 *
+	 * @param bounds The bounds
+	 * @param side The side
+	 * @return The number of cells past the center cell
+	 */
+	private static reach(bounds: AreaBounds, side: Side): number
+	{
+		if (side === 'north')
+		{
+			return(-bounds.minRow);
+		}
+		else if (side === 'east')
+		{
+			return(bounds.maxColumn);
+		}
+		else if (side === 'south')
+		{
+			return(bounds.maxRow);
+		}
+
+		return(-bounds.minColumn);
+	}
+
+	/**
+	 * Marks each side whose field differs from the area's size, with what it was under it, which the field
+	 * gives screen readers as its description
+	 */
+	private showChangedSides(): void
+	{
+		const target = this.target;
+
+		for (const side of sides)
+		{
+			const field = this.sideField(side);
+			const was = getElement(`resize-${side}-was`, HTMLElement);
+			const original = (target ? ResizeDialog.reach(target.bounds, side) : undefined);
+			const changed = ((original !== undefined) && (field.valueAsNumber !== original));
+
+			field.classList.toggle('changed', changed);
+			was.hidden = !changed;
+			was.textContent = (changed
+				? t({
+					id: 'editor.resize.was',
+					defaultMessage: 'was {cells, number}',
+					description: 'Under a field of the dialog for changing an area\'s size once it differs from the area\'s size, and read with the field by screen readers; {cells} is how many cells the area reaches on that side before the change'
+				}, {
+					cells: original
+				})
+				: '');
+
+			if (changed)
+			{
+				field.setAttribute('aria-describedby', was.id);
+			}
+			else
+			{
+				field.removeAttribute('aria-describedby');
+			}
+		}
+	}
+
+	/**
 	 * The bounds the inputs describe
 	 *
 	 * @return The bounds
@@ -211,10 +277,13 @@ export class ResizeDialog
 	}
 
 	/**
-	 * Shows the total size, and forgets any agreement to discard, since the bounds have changed
+	 * Shows the total size and which sides changed, and forgets any agreement to discard, since the bounds
+	 * have changed
 	 */
 	private updateTotal(): void
 	{
+		this.showChangedSides();
+
 		const bounds = this.bounds();
 		const width = (bounds.maxColumn - bounds.minColumn) + 1;
 		const height = (bounds.maxRow - bounds.minRow) + 1;

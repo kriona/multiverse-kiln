@@ -696,7 +696,7 @@ For SF1E, the default tiles are
 	- Bulkhead, color #4A5560, 100% vision cost, impassable
 
 ### Tab: Areas
-lists the universe's [regions](#regions) and areas as a tree or a table, chosen with a Tree / Table switch above them. A search above both narrows them by name. The lobby region and every [lobby area](#lobby) below it are tagged "lobby", like the universe's starting area is tagged "starting area".
+lists the universe's [regions](#regions) and areas as a tree or a table, chosen with a Tree / Table switch above them. A search above both narrows them by name. The lobby region and every [lobby area](#lobby) below it are tagged "lobby", like the universe's starting area is tagged "starting area". Region names are orange, apart from the lobby region's, which is yellow, along with the line in the tree down to what is inside it.
 - the tree: the top-level regions, each with the regions and areas inside it, and each area with the areas inside it. A region or area with several parents is listed under each of them, with everything inside it; each listing after the first starts collapsed. While searching, the tree shows each match with the regions and areas above it
 - the table: one row per region and area, with its name, whether it is a region or an area, its parents and its tags, sorted by name (see [sortable tables](#sortable-tables))
 - clicking on a region lets you [edit it](#editor-region), and clicking on an area lets you [edit it](#editor-area)

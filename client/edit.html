@@ -1621,23 +1621,35 @@
 						<h2 id="resize-title" data-message="editor.resize.title" data-translation-context="Title of the dialog for changing an area's size">Edit Size</h2>
 						<p class="hint" data-message="editor.resize.explanation" data-translation-context="Explains the four fields of the dialog for changing an area's size">How many cells the area reaches in each direction from its center cell (0, 0).</p>
 						<div class="resize-grid">
-							<label class="resize-north" data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the area reaches north of its center">
-								North
-								<input id="resize-north" type="number" min="0" step="1" required />
-							</label>
-							<label class="resize-west" data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the area reaches west of its center">
-								West
-								<input id="resize-west" type="number" min="0" step="1" required />
-							</label>
+							<div class="resize-side resize-north">
+								<label data-message="editor.resize.north" data-translation-context="Label of the field for how many cells the area reaches north of its center">
+									North
+									<input id="resize-north" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-north-was" class="resize-was" hidden></span>
+							</div>
+							<div class="resize-side resize-west">
+								<label data-message="editor.resize.west" data-translation-context="Label of the field for how many cells the area reaches west of its center">
+									West
+									<input id="resize-west" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-west-was" class="resize-was" hidden></span>
+							</div>
 							<span class="resize-center">0, 0</span>
-							<label class="resize-east" data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the area reaches east of its center">
-								East
-								<input id="resize-east" type="number" min="0" step="1" required />
-							</label>
-							<label class="resize-south" data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the area reaches south of its center">
-								South
-								<input id="resize-south" type="number" min="0" step="1" required />
-							</label>
+							<div class="resize-side resize-east">
+								<label data-message="editor.resize.east" data-translation-context="Label of the field for how many cells the area reaches east of its center">
+									East
+									<input id="resize-east" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-east-was" class="resize-was" hidden></span>
+							</div>
+							<div class="resize-side resize-south">
+								<label data-message="editor.resize.south" data-translation-context="Label of the field for how many cells the area reaches south of its center">
+									South
+									<input id="resize-south" type="number" min="0" step="1" required />
+								</label>
+								<span id="resize-south-was" class="resize-was" hidden></span>
+							</div>
 						</div>
 						<p id="resize-total"></p>
 						<section class="form-group" aria-labelledby="resize-extend-title">
