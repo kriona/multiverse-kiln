@@ -203,6 +203,40 @@ interface SeamCrossing
 }
 
 /**
+ * A player in or near an area, from playersNear()
+ */
+interface NearPlayer
+{
+	playerId: string;
+
+	/**
+	 * The area they are in
+	 */
+	area: ActiveArea;
+
+	/**
+	 * Their cell, counted in the nearby area's columns and rows: past its edges for a player across a seam
+	 */
+	cell: Cell;
+}
+
+/**
+ * The players in or near an area, worked out once for every viewer there
+ */
+interface NearbyPlayers
+{
+	/**
+	 * Every one of them, those in the area first
+	 */
+	near: NearPlayer[];
+
+	/**
+	 * Those of them who aren't ghosts
+	 */
+	visible: NearPlayer[];
+}
+
+/**
  * The players in a room with areas (a universe's lobby or a group's game room): which
  * clients control them, which area each is in, how they move, and which of them each client sees
  *
@@ -1994,6 +2028,7 @@ export class AreaPlayers
 		}
 
 		const seenByPlayer = new Map<string, Set<string>>();
+		const nearbyByArea = new Map<ActiveArea, NearbyPlayers>();
 		const nowMilliseconds = Date.now();
 
 		for (const [sessionId, client] of this.clients)
@@ -2009,7 +2044,7 @@ export class AreaPlayers
 
 			if (!seen)
 			{
-				seen = this.seenBy(playerId, nowMilliseconds);
+				seen = this.seenBy(playerId, nowMilliseconds, nearbyByArea);
 				seenByPlayer.set(playerId, seen);
 			}
 
@@ -2069,9 +2104,11 @@ export class AreaPlayers
 	 *
 	 * @param playerId The player's ID
 	 * @param nowMilliseconds The real time, for areas whose time of day follows it
+	 * @param nearbyByArea The players near each area, as far as they have been worked out in this refresh,
+	 * which this adds the player's area to
 	 * @return Their IDs
 	 */
-	private seenBy(playerId: string, nowMilliseconds: number): Set<string>
+	private seenBy(playerId: string, nowMilliseconds: number, nearbyByArea: Map<ActiveArea, NearbyPlayers>): Set<string>
 	{
 		const seen = new Set([playerId]);
 		const area = this.areaOf(playerId);
@@ -2081,12 +2118,25 @@ export class AreaPlayers
 			return(seen);
 		}
 
-		const near = this.playersNear(area);
-		const others = near.filter((other) => ((other.playerId !== playerId) && !this.isGhost(other.playerId)));
+		let nearby = nearbyByArea.get(area);
+
+		if (!nearby)
+		{
+			const near = this.playersNear(area);
+
+			nearby = {
+				near,
+				visible: near.filter((other) => !this.isGhost(other.playerId))
+			};
+			nearbyByArea.set(area, nearby);
+		}
+
+		// The visible players may include the player, who is already in seen and, being near, one of the lookers
+		const { near, visible } = nearby;
 
 		if (!area.loaded.fogOfWar && !area.seams)
 		{
-			for (const other of others)
+			for (const other of visible)
 			{
 				seen.add(other.playerId);
 			}
@@ -2095,7 +2145,7 @@ export class AreaPlayers
 		}
 
 		const viewer = near.find((each) => (each.playerId === playerId));
-		const lookers = [...(viewer ? [viewer] : []), ...(this.vision.shared ? others : [])];
+		const lookers = [...(viewer ? [viewer] : []), ...(this.vision.shared ? visible.filter((other) => (other.playerId !== playerId)) : [])];
 		const lookerIds = new Set(lookers.map((looker) => looker.playerId));
 		const sights = lookers
 			.map((looker) =>
@@ -2106,7 +2156,7 @@ export class AreaPlayers
 			})
 			.filter((sight) => (sight !== undefined));
 
-		for (const other of others)
+		for (const other of visible)
 		{
 			const fogless = (!area.loaded.fogOfWar && !other.area.loaded.fogOfWar);
 
@@ -2126,10 +2176,10 @@ export class AreaPlayers
 	 * @param area The area
 	 * @return The players, those in the area first
 	 */
-	private playersNear(area: ActiveArea): { playerId: string; area: ActiveArea; cell: Cell }[]
+	private playersNear(area: ActiveArea): NearPlayer[]
 	{
 		const areaId = area.loaded.area.id;
-		const near: { playerId: string; area: ActiveArea; cell: Cell }[] = [];
+		const near: NearPlayer[] = [];
 		const { bounds } = area.loaded;
 
 		for (const playerId of this.playersIn(areaId))
