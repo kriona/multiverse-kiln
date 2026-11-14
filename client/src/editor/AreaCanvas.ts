@@ -26,8 +26,8 @@ const ARROW_STEPS: Record<string, BrushCell> = {
  * A canvas showing an area's cells in the area editor scene: one Phaser game, created the first time an
  * area is shown, running a fresh start of the scene for each area
  *
- * The canvas's element can be focused, and then the keyboard works the area with a cursor: the arrow
- * keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints, fills from or picks its cell
+ * The canvas's element can be focused, and then the keyboard works the area with a cursor, which starts
+ * in the middle of the view: the arrow keys move it (FAST_CURSOR_STEP cells at a time with Shift), Space or Enter paints, fills from or picks its cell
  * as a click does, holding Space while moving keeps painting as a drag does, P picks its cell's tile as a
  * middle click does, + and - zoom, and Home goes back to the center cell. Each cell the cursor moves onto
  * is read out to screen readers
@@ -250,11 +250,30 @@ export class AreaCanvas
 	}
 
 	/**
-	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the center cell
+	 * Moves the keyboard's cursor to the same place in another area, whose cells line up with the area's
+	 * moved by an offset, for when the view carries over to it
+	 *
+	 * @param columnOffset How many columns the other area's cells are moved to line up with the area's
+	 * @param rowOffset How many rows they are moved
+	 */
+	shiftCursor(columnOffset: number, rowOffset: number): void
+	{
+		if (this.cursor)
+		{
+			this.cursor = {
+				column: this.cursor.column - columnOffset,
+				row: this.cursor.row - rowOffset
+			};
+		}
+	}
+
+	/**
+	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the cell in the middle
+	 * of the view, so focus doesn't move the view
 	 */
 	private readonly onFocus = (): void =>
 	{
-		this.moveCursor((this.cursor ?? { column: 0, row: 0 }));
+		this.moveCursor((this.cursor ?? this.current?.middleCell() ?? { column: 0, row: 0 }));
 	};
 
 	/**

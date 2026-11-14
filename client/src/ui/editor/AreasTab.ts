@@ -4,7 +4,7 @@ import { formatList, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
 import { announce } from '../announcer';
 import { ChangeTracker } from '../changeTracker';
-import { getElement, showMessage } from '../dom';
+import { getElement, scrollBackTo, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { SearchSelect } from '../SearchSelect';
@@ -814,7 +814,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Opens an area in the area editor, first asking whether to discard the unsaved changes of the region
-	 * it shows, and keeping those of the area it shows
+	 * it shows, and keeping those of the area it shows. An area opened from the area editor keeps the
+	 * page where it was, and the area editor's view and tools
 	 *
 	 * @param areaId The area's ID
 	 */
@@ -825,12 +826,48 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			return;
 		}
 
-		await this.loadArea(areaId);
+		const fromArea = (this.area !== undefined);
+		const opener = document.activeElement;
+		const fromCells = this.areaEditor.element.contains(opener);
+		// What the player was looking at stays put in the window: the cells, or the top of the editor
+		const anchor = (fromCells ? this.areaEditor.element : this.editorView);
+		const anchorTop = anchor.getBoundingClientRect().top;
 
-		// The row or link that opened it is hidden, so focus moves to the editor
-		if (this.area?.id === areaId)
+		await this.loadArea(areaId, fromArea);
+
+		if (this.area?.id !== areaId)
+		{
+			return;
+		}
+
+		// The row that opened it is hidden, so focus moves to the editor
+		if (!fromArea)
 		{
 			this.editorView.scrollIntoView({ block: 'start' });
+			this.name.focus({ preventScroll: true });
+			return;
+		}
+
+		scrollBackTo(anchor, anchorTop);
+
+		// Focus stays where it was, unless what had it was hidden or replaced while the area opened
+		const focused = document.activeElement;
+
+		if ((focused !== null) && (focused !== document.body))
+		{
+			return;
+		}
+
+		if ((opener instanceof HTMLElement) && opener.isConnected && opener.checkVisibility())
+		{
+			opener.focus({ preventScroll: true });
+		}
+		else if (fromCells)
+		{
+			this.areaEditor.focusCells();
+		}
+		else
+		{
 			this.name.focus({ preventScroll: true });
 		}
 	}
@@ -885,7 +922,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 		else if (place.kind === 'area')
 		{
-			await this.loadArea(place.id);
+			await this.loadArea(place.id, false);
 		}
 		else
 		{
@@ -973,8 +1010,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * Hides the area editor, keeping the area's unsaved changes until the tab is saved
+	 *
+	 * @param carryTo The area being opened in its place, which takes over its view, or undefined for none
 	 */
-	private hideAreaEditor(): void
+	private hideAreaEditor(carryTo?: string): void
 	{
 		const area = this.area;
 
@@ -983,7 +1022,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		this.areaLoaded = undefined;
 		this.openedSettings = undefined;
 		this.openNotes = [];
-		this.areaEditor.hide();
+		this.areaEditor.hide(carryTo);
 
 		// A new area deleted while it was open takes its painting with it
 		if (area && isNewAreaId(area.id) && !this.staged.get(area.id))
@@ -1087,8 +1126,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * those of the region
 	 *
 	 * @param areaId The area's ID
+	 * @param fromArea Whether the area editor's view and tools carry over from the area it shows
+	 * @return Once the area's cells show
 	 */
-	private async loadArea(areaId: string): Promise<void>
+	private async loadArea(areaId: string, fromArea: boolean): Promise<void>
 	{
 		const universe = this.universeOpen;
 
@@ -1106,7 +1147,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		const version = ++this.openVersion;
 
-		this.hideAreaEditor();
+		this.hideAreaEditor((fromArea ? areaId : undefined));
 		this.regionEditor.hide();
 		// A new area has no address until it is saved
 		this.onPlaceChanged((isNewAreaId(areaId) ? undefined : { kind: 'area', id: areaId }));
@@ -1130,6 +1171,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (version === this.openVersion)
 			{
+				// Full page carried over from the area left would cover the error
+				this.areaEditor.hide();
 				showMessage(this.error, describeEditorError(error, {
 					id: 'editor.area.openFailed',
 					defaultMessage: 'Could not open the area.',
@@ -1142,7 +1185,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		if (version === this.openVersion)
 		{
-			this.showArea(universe, area);
+			await this.showArea(universe, area);
 		}
 	}
 
@@ -1735,7 +1778,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (version === this.openVersion)
 			{
-				await this.loadArea(areaId);
+				await this.loadArea(areaId, true);
 			}
 
 			return;
@@ -1753,7 +1796,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		this.changedSince.hide();
-		this.showArea(universe, area);
+		void this.showArea(universe, area);
 	}
 
 	/**
@@ -2819,12 +2862,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Fills the area editor with an area's settings
+	 * Fills the area editor with an area's settings, and shows its cells
 	 *
 	 * @param universe The area's universe
 	 * @param area The area
+	 * @return Once its cells show
 	 */
-	private showArea(universe: EditableUniverse, area: EditorArea): void
+	private showArea(universe: EditableUniverse, area: EditorArea): Promise<void>
 	{
 		const editable = (this.canEditPlace({ kind: 'area', id: area.id }) && !this.staged.isDeleted(area.id));
 		const kept = this.keptSettings.get(area.id);
@@ -2861,7 +2905,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		this.openNotes = notes;
 		this.keptChanges.check();
-		void this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.linkTargets(area.id), editable, carried);
+		return(this.areaEditor.show(universe, { ...area, resolved: this.resolvedOf(area) }, this.tileList, this.tilesDeleted, this.linkTargets(area.id), editable, carried));
 	}
 
 	/**
@@ -2960,7 +3004,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const shown = this.shownSettings();
 		const changed = ((collected === undefined) ? [] : (Object.keys(shown) as (keyof AreaSettings)[]).filter((key) => (JSON.stringify(shown[key]) !== JSON.stringify(collected[key]))));
 
-		this.showArea(universe, area);
+		void this.showArea(universe, area);
 
 		if (changed.length > 0)
 		{

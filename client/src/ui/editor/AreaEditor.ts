@@ -1,7 +1,7 @@
 import exitFullPageIcon from 'virtual:icon/ph:arrows-in';
 import fullPageIcon from 'virtual:icon/ph:arrows-out';
 import fillIcon from 'virtual:icon/ph:paint-bucket';
-import { areaFill, canPaintTile, carriedResizes, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, hasNeighbors, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_PREVIEW_CELLS, NO_NEIGHBORS, parseChunkKey, seamSides, seamSlots, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type NeighborGrid, type SeamLookup, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
+import { areaFill, canPaintTile, carriedResizes, CHUNK_SIZE, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, defineMessages, FILL_CONFIRM_CELLS, GRID_CELL_SIZE, hasNeighbors, isInBounds, MAX_BRUSH_SIZE, MAX_CELL_CHANGES, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_PREVIEW_CELLS, NO_NEIGHBORS, parseChunkKey, seamSides, seamSlots, VOID_CELL, VIEW_HEIGHT, VIEW_WIDTH, type NeighborGrid, type SeamLookup, type CellChange, type ChunkCoordinates, type ChunkRange, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaLink, type EditorAreaSummary, type AreaBounds, type MessageDescriptor, type NumberRef, type StringRef } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -249,6 +249,33 @@ interface ShownNeighbor
 }
 
 /**
+ * Another area and how far its cells are moved to line up with the open area's across a seam: a cell of
+ * it at column c, row r is at column c + columnOffset, row r + rowOffset of the open area
+ */
+interface LinedUpArea
+{
+	areaId: string;
+	columnOffset: number;
+	rowOffset: number;
+}
+
+/**
+ * The view of the area left for another from the area editor, which that area opens with
+ */
+interface CarriedView
+{
+	/**
+	 * The area it is for
+	 */
+	areaId: string;
+
+	/**
+	 * Where its camera starts, showing what the area left showed, or undefined for its center cell
+	 */
+	camera: CameraState | undefined;
+}
+
+/**
  * The cells a stroke of the draw tool has painted so far
  */
 interface Stroke
@@ -271,7 +298,8 @@ interface Stroke
  *
  * Painting, changes to the area's size and links show immediately and are kept until the editor's Save
  * button saves them; a click, a drag, a fill or a change of size is one step to undo. Opening another area
- * keeps the changes and undo history of the area left, and saving saves every area's changes
+ * keeps the changes and undo history of the area left, and saving saves every area's changes. Opening
+ * another area from the area editor carries the view and the tools' choices over to it
  */
 export class AreaEditor
 {
@@ -374,7 +402,17 @@ export class AreaEditor
 	/**
 	 * The area each edge button opens, by its direction
 	 */
-	private edgeTargets = new Map<EdgeDirection, string>();
+	private edgeTargets = new Map<EdgeDirection, LinedUpArea>();
+
+	/**
+	 * The area an edge button or a click on a neighbor's cells is opening, lined up as it was shown there
+	 */
+	private leavingFor: LinedUpArea | undefined;
+
+	/**
+	 * The view the area being opened from the area editor starts with (see hide())
+	 */
+	private carried: CarriedView | undefined;
 
 	/**
 	 * The neighbors shown past the open area's edges
@@ -408,11 +446,12 @@ export class AreaEditor
 		{
 			button.addEventListener('click', () =>
 			{
-				const areaId = this.edgeTargets.get(direction);
+				const target = this.edgeTargets.get(direction);
 
-				if (areaId !== undefined)
+				if (target !== undefined)
 				{
-					this.neighbors.open(areaId);
+					this.leavingFor = target;
+					this.neighbors.open(target.areaId);
 				}
 			});
 		}
@@ -537,7 +576,8 @@ export class AreaEditor
 	 *
 	 * Opening the area already shown keeps what has loaded, the undo history and the links not yet saved,
 	 * so changing the area's other settings doesn't lose them. Opening an area left with changes shows it
-	 * with them, and its undo history
+	 * with them, and its undo history. An area opened from the area editor (see hide()) starts with the
+	 * view carried over and the tile chosen, when it can paint with it
 	 *
 	 * @param universe The area's universe
 	 * @param area The area, at its size as saved
@@ -553,9 +593,11 @@ export class AreaEditor
 		const sameArea = (this.open?.area.id === area.id);
 		const kept = (sameArea ? undefined : this.kept.get(area.id));
 		const same = (sameArea && (this.work !== undefined) && !this.work.reloadOnShow && sameBounds(this.work.open.cells.bounds, area.bounds));
+		const view = ((this.carried?.areaId === area.id) ? this.carried : undefined);
 
+		this.carried = undefined;
 		this.deletedTiles = deletedTiles;
-		this.fillTiles(universe, area, tiles, sameArea);
+		this.fillTiles(universe, area, tiles, (sameArea || (view !== undefined)));
 		this.tools.hidden = !editable;
 
 		if (!sameArea)
@@ -586,7 +628,7 @@ export class AreaEditor
 			return;
 		}
 
-		const camera = (sameArea ? this.canvas.scene?.cameraState() : undefined);
+		const camera = (sameArea ? this.canvas.scene?.cameraState() : view?.camera);
 
 		if (kept && (this.kept.get(area.id) === kept))
 		{
@@ -645,11 +687,25 @@ export class AreaEditor
 	}
 
 	/**
-	 * Stops showing the area's cells, for when the area editor closes, keeping the area's changes
+	 * Stops showing the area's cells, for when the area editor closes or opens another area, keeping the
+	 * area's changes
+	 *
+	 * Another area opened from the area editor carries the view over: full page stays, and the camera and
+	 * the keyboard's cursor show the same place in it, lined up as it is shown past the area's edges. An area
+	 * not shown there keeps the view where it is from its center cell (see carryView())
+	 *
+	 * @param carryTo The area being opened from the area editor, or undefined when the area editor closes
 	 */
-	hide(): void
+	hide(carryTo?: string): void
 	{
-		this.setFullPage(false);
+		this.carried = ((carryTo === undefined) ? undefined : this.carryView(carryTo));
+		this.leavingFor = undefined;
+
+		if (!this.carried)
+		{
+			this.setFullPage(false);
+		}
+
 		this.openVersion++;
 
 		if (this.stroke)
@@ -665,6 +721,108 @@ export class AreaEditor
 		this.canvas.stop();
 		this.showEdgeButtons();
 		this.unsavedChanged();
+	}
+
+	/**
+	 * The open area's view moved to another area, lined up with it, moving the keyboard's cursor with it.
+	 * When none of the other area would be in view, as for an edge button far from the part of the area in
+	 * view, the view centers on its cell nearest the middle of the view
+	 *
+	 * @param areaId The other area's ID
+	 * @return The view the other area starts with
+	 */
+	private carryView(areaId: string): CarriedView
+	{
+		const { columnOffset, rowOffset } = this.lineUp(areaId);
+		const scene = this.canvas.scene;
+
+		this.canvas.shiftCursor(columnOffset, rowOffset);
+
+		if (!scene)
+		{
+			return({
+				areaId,
+				camera: undefined
+			});
+		}
+
+		const camera = scene.cameraState();
+		const view = scene.viewCells();
+		const middle = scene.middleCell();
+		const bounds = this.neighbors.area(areaId)?.bounds;
+		let columns = -columnOffset;
+		let rows = -rowOffset;
+
+		if (bounds && !boundsOverlap(bounds, shiftBounds(view, columns, rows)))
+		{
+			columns += Math.min(Math.max(middle.column + columns, bounds.minColumn), bounds.maxColumn) - (middle.column + columns);
+			rows += Math.min(Math.max(middle.row + rows, bounds.minRow), bounds.maxRow) - (middle.row + rows);
+		}
+
+		return({
+			areaId,
+			camera: {
+				...camera,
+				scrollX: camera.scrollX + (columns * GRID_CELL_SIZE),
+				scrollY: camera.scrollY + (rows * GRID_CELL_SIZE)
+			}
+		});
+	}
+
+	/**
+	 * How another area lines up with the open area: as the edge button or the neighbor's cells opening it
+	 * showed it, or else as it is shown past the open area's edges nearest the middle of the view, since
+	 * one area can be shown past more than one edge
+	 *
+	 * @param areaId The other area's ID
+	 * @return How it lines up; unmoved for an area not shown past the edges
+	 */
+	private lineUp(areaId: string): LinedUpArea
+	{
+		if (this.leavingFor?.areaId === areaId)
+		{
+			return(this.leavingFor);
+		}
+
+		// Opened again, the area lines up with itself, though it may be shown past its own looping edges
+		if (this.open?.area.id === areaId)
+		{
+			return({
+				areaId,
+				columnOffset: 0,
+				rowOffset: 0
+			});
+		}
+
+		const middle = (this.canvas.scene?.middleCell() ?? { column: 0, row: 0 });
+		const nearest = this.shownNeighbors
+			.filter((neighbor) => (neighbor.area.id === areaId))
+			.map((neighbor) => ({ neighbor, distance: distanceToBounds(neighbor.shownBounds, middle) }))
+			.sort((a, b) => (a.distance - b.distance))[0]?.neighbor;
+
+		return({
+			areaId,
+			columnOffset: (nearest?.columnOffset ?? 0),
+			rowOffset: (nearest?.rowOffset ?? 0)
+		});
+	}
+
+	/**
+	 * The cell editor's card
+	 *
+	 * @return The element
+	 */
+	get element(): HTMLElement
+	{
+		return(this.section);
+	}
+
+	/**
+	 * Moves focus to the area's cells without scrolling the page
+	 */
+	focusCells(): void
+	{
+		this.canvasElement.focus({ preventScroll: true });
 	}
 
 	/**
@@ -1626,13 +1784,13 @@ export class AreaEditor
 
 			if ((direction !== undefined) && (slot.areaId !== open?.area.id))
 			{
-				this.edgeTargets.set(direction, slot.areaId);
+				this.edgeTargets.set(direction, slot);
 			}
 		}
 
 		for (const [direction, button] of this.edgeButtons)
 		{
-			const areaId = this.edgeTargets.get(direction);
+			const areaId = this.edgeTargets.get(direction)?.areaId;
 			const name = ((areaId === undefined) ? undefined : this.neighbors.area(areaId)?.name);
 
 			button.hidden = (name === undefined);
@@ -1924,6 +2082,11 @@ export class AreaEditor
 				// The open area shown past its own looping edge is already open
 				if (found && (found.neighbor.area.id !== this.open?.area.id))
 				{
+					this.leavingFor = {
+						areaId: found.neighbor.area.id,
+						columnOffset: found.neighbor.columnOffset,
+						rowOffset: found.neighbor.rowOffset
+					};
 					this.neighbors.open(found.neighbor.area.id);
 				}
 			},
@@ -2882,4 +3045,46 @@ function unionBounds(first: AreaBounds, second: AreaBounds): AreaBounds
 		maxColumn: Math.max(first.maxColumn, second.maxColumn),
 		maxRow: Math.max(first.maxRow, second.maxRow)
 	});
+}
+
+/**
+ * How many cells a cell is from a rectangle of cells, along the axis it is farthest
+ *
+ * @param bounds The rectangle
+ * @param cell The cell
+ * @return The distance; 0 for a cell inside it
+ */
+function distanceToBounds(bounds: AreaBounds, cell: BrushCell): number
+{
+	return(Math.max(bounds.minColumn - cell.column, cell.column - bounds.maxColumn, bounds.minRow - cell.row, cell.row - bounds.maxRow, 0));
+}
+
+/**
+ * Bounds moved along by a number of columns and rows
+ *
+ * @param bounds The bounds
+ * @param columns How many columns to move them
+ * @param rows How many rows to move them
+ * @return The bounds moved
+ */
+function shiftBounds(bounds: AreaBounds, columns: number, rows: number): AreaBounds
+{
+	return({
+		minColumn: bounds.minColumn + columns,
+		minRow: bounds.minRow + rows,
+		maxColumn: bounds.maxColumn + columns,
+		maxRow: bounds.maxRow + rows
+	});
+}
+
+/**
+ * Whether two sets of bounds share any cell
+ *
+ * @param first One set of bounds
+ * @param second The other
+ * @return True when they do
+ */
+function boundsOverlap(first: AreaBounds, second: AreaBounds): boolean
+{
+	return((first.minColumn <= second.maxColumn) && (second.minColumn <= first.maxColumn) && (first.minRow <= second.maxRow) && (second.minRow <= first.maxRow));
 }

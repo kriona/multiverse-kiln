@@ -385,6 +385,31 @@ export function scrollToFragment(): void
 }
 
 /**
+ * Scrolls whatever scrolls an element, the page or an element around it, so the element's top is back
+ * where it was in the window
+ *
+ * @param element The element
+ * @param top Where its top was, in pixels from the window's top
+ */
+export function scrollBackTo(element: HTMLElement, top: number): void
+{
+	const change = element.getBoundingClientRect().top - top;
+	let scroller = element.parentElement;
+
+	if (change === 0)
+	{
+		return;
+	}
+
+	while (scroller && ((scroller.scrollHeight <= scroller.clientHeight) || !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)))
+	{
+		scroller = scroller.parentElement;
+	}
+
+	(scroller ?? document.scrollingElement)?.scrollBy({ top: change, behavior: 'instant' });
+}
+
+/**
  * Closes every open dialog, the latest first, as Escape would: a dialog's cancel listeners run first,
  * so one with unsaved changes asks before it closes
  *

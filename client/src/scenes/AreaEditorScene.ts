@@ -739,6 +739,44 @@ export class AreaEditorScene extends Phaser.Scene
 	}
 
 	/**
+	 * The cell in the middle of the camera's view
+	 *
+	 * @return The cell
+	 */
+	middleCell(): BrushCell
+	{
+		// The camera zooms around the middle of its view, which is half its size past its scroll
+		const camera = this.cameras.main;
+
+		return({
+			column: Math.floor((camera.scrollX + (camera.width / 2)) / GRID_CELL_SIZE),
+			row: Math.floor((camera.scrollY + (camera.height / 2)) / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
+	 * The cells the camera's view reaches, in whole or in part
+	 *
+	 * @return Their bounds
+	 */
+	viewCells(): AreaBounds
+	{
+		// The camera zooms around the middle of its view, which is half its size past its scroll
+		const camera = this.cameras.main;
+		const width = camera.width / camera.zoom;
+		const height = camera.height / camera.zoom;
+		const left = camera.scrollX + ((camera.width - width) / 2);
+		const top = camera.scrollY + ((camera.height - height) / 2);
+
+		return({
+			minColumn: Math.floor(left / GRID_CELL_SIZE),
+			minRow: Math.floor(top / GRID_CELL_SIZE),
+			maxColumn: Math.floor((left + width) / GRID_CELL_SIZE),
+			maxRow: Math.floor((top + height) / GRID_CELL_SIZE)
+		});
+	}
+
+	/**
 	 * Moves the camera to a cell
 	 *
 	 * @param column The cell's column
