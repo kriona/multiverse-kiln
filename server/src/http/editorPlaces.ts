@@ -198,7 +198,7 @@ export class SavePlaces
 			enabled: false,
 			indoors: false,
 			lightLevel: null,
-			defaultTileId: [...model.world().tileKinds.keys()][0],
+			defaultTileId: [...model.tiles().keys()][0],
 			passageOfTime: 'flows_normally',
 			faerieMorning: null,
 			fogOfWar: true,
@@ -700,7 +700,7 @@ export async function checkOwnSettings(context: ChangeContext, settings: PlaceSe
 
 	const model = await context.places.load();
 
-	if ((settings.defaultTileId !== null) && !model.world().tileKinds.has(settings.defaultTileId))
+	if ((settings.defaultTileId !== null) && !model.tiles().has(settings.defaultTileId))
 	{
 		refuse(400, {
 			id: 'error.unusableDefaultTile',

@@ -50,6 +50,16 @@ export class PlaceModel
 	}
 
 	/**
+	 * The version's tiles as the changes so far left them
+	 *
+	 * @return The kinds of area each tile is for, by tile ID
+	 */
+	tiles(): ReadonlyMap<number, TileUsedFor>
+	{
+		return(this.tileKinds);
+	}
+
+	/**
 	 * Every area's settings worked out, with what keeps any from being saved
 	 *
 	 * @return The resolution

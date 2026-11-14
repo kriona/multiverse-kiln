@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import type { AreaNode, EditorChange, PlaceNode, PlaceRef, PlaceWorld } from '@multiverse-kiln/shared';
+import { isWithinAssignments, type AreaNode, type EditorChange, type PlaceNode, type PlaceRef, type PlaceWorld } from '@multiverse-kiln/shared';
 
 import { findDisabledAreas, findLobbyEntries } from '../../src/logic/placeChanges.js';
 import { PlaceModel } from '../../src/logic/placeModel.js';
@@ -168,6 +168,46 @@ describe('placeChanges', () =>
 			];
 
 			assert.deepStrictEqual([...findLobbyEntries(new PlaceModel(places), changes)], [['Kingdom', 0]]);
+		});
+	});
+
+	describe('a builder\'s save', () =>
+	{
+		it('checks each change against the places as the changes before it left them, in time growing with the changes', () =>
+		{
+			// A builder's save sets each area on the model, then checks it against their assignments. Building
+			// the graph again for every change, this takes most of a second; with the graph changed in place,
+			// a few milliseconds, so the limit leaves room for a slow machine
+			const regionIds = Array.from({ length: 20 }, (_, index) => `Region ${index}`);
+			const model = new PlaceModel(world([
+				region('North'),
+				region('South'),
+				...regionIds.map((id, index) => region(id, [(((index % 2) === 0) ? 'North' : 'South')]))
+			], Array.from({ length: 2000 }, (_, index) => area(`Area ${index}`, [regionIds[index % 20]]))));
+			const assigned = new Set(['North']);
+			let outside = 0;
+			const start = performance.now();
+
+			for (let index = 0; index < 2000; index++)
+			{
+				const areaId = `Area ${index}`;
+				const node = model.area(areaId) as AreaNode;
+
+				model.setArea({ ...node, parents: [{ kind: 'region', id: regionIds[(index * 2) % 20] }] });
+
+				if (!isWithinAssignments(model.graph(), { kind: 'area', id: areaId }, assigned))
+				{
+					outside++;
+				}
+			}
+
+			const elapsedMs = (performance.now() - start);
+
+			model.setArea({ ...(model.area('Area 0') as AreaNode), parents: [{ kind: 'region', id: 'Region 1' }] });
+
+			assert.strictEqual(outside, 0);
+			assert.strictEqual(isWithinAssignments(model.graph(), { kind: 'area', id: 'Area 0' }, assigned), false);
+			assert.ok((elapsedMs < 100), `Checking the changes took ${Math.round(elapsedMs)} ms`);
 		});
 	});
 });
