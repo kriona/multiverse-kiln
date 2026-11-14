@@ -30,6 +30,25 @@ interface Noted<Choice>
 }
 
 /**
+ * An area whose characters a save sends elsewhere, and where they go
+ */
+interface Evacuation
+{
+	areaId: string;
+
+	/**
+	 * Where they all go, or null to send each where their group (or the lobby) starts
+	 */
+	destination: AreaPlace | null;
+
+	/**
+	 * Whether the group members saved in the area move: not from a disabled lobby area, which only the
+	 * lobby walks (leaveLobbyAreas() moves those of an area the save puts below the lobby region)
+	 */
+	movesSaved: boolean;
+}
+
+/**
  * The items, areas and group size one save enables, disables or lowers, and what happens to the players
  * using them once every change is saved
  */
@@ -174,6 +193,7 @@ export class SaveDisablings
 			.map((area) => area.id));
 		const byId = areasById(areasInTree(listed));
 		const loadedLinks = new Map<string, readonly LinkInto[]>();
+		const evacuations: Evacuation[] = [];
 
 		for (const areaId of disabledAreaIds)
 		{
@@ -185,15 +205,25 @@ export class SaveDisablings
 			// Only the lobby walks a lobby area, and it sends its players back to its starting square
 			if (lobbyAreaIds.has(areaId))
 			{
-				context.published.push({ kind: 'evacuated', areaId, destination: null });
+				evacuations.push({
+					areaId,
+					destination: null,
+					movesSaved: false
+				});
 				continue;
 			}
 
 			const moveTo = (this.areaChoices.get(areaId) ?? 'start');
 			const destination = ((moveTo === 'parent') ? await parentPlace(transaction, byId, areaId, loadedLinks) : null);
 
-			await evacuateArea(context, areaId, destination);
+			evacuations.push({
+				areaId,
+				destination,
+				movesSaved: true
+			});
 		}
+
+		await evacuateAreas(context, evacuations);
 	}
 
 	/**
@@ -244,22 +274,21 @@ function note<Id, Choice>(noted: Map<Id, Noted<Choice>>, id: Id, wasEnabled: boo
 async function leaveLobbyAreas(context: ChangeContext, areaIds: readonly string[]): Promise<void>
 {
 	await clearGroupStartingAreas(areaIds, context.transaction);
-
-	for (const areaId of areaIds)
-	{
-		await evacuateArea(context, areaId, null);
-	}
+	await evacuateAreas(context, areaIds.map((areaId) => ({
+		areaId,
+		destination: null,
+		movesSaved: true
+	})));
 }
 
 /**
- * Sends the characters in a disabled area to a destination: those saved there by their group now, and
- * those playing there once the save commits
+ * Sends the characters in areas to their destinations: those saved there by their group now, all in one
+ * query and one update, and those playing there once the save commits, area by area in order
  *
  * @param context The save
- * @param areaId The area
- * @param destination Where they all go, or null to send each where their group starts
+ * @param evacuations The areas, in the order the rooms hear of them
  */
-async function evacuateArea(context: ChangeContext, areaId: string, destination: AreaPlace | null): Promise<void>
+async function evacuateAreas(context: ChangeContext, evacuations: readonly Evacuation[]): Promise<void>
 {
 	const { universe, transaction } = context;
 	const universeStart = ((universe.startingAreaId === null)
@@ -269,9 +298,18 @@ async function evacuateArea(context: ChangeContext, areaId: string, destination:
 			column: universe.startingColumn,
 			row: universe.startingRow
 		});
+	const destinations = new Map(evacuations.map(({ areaId, destination }) => [areaId, destination]));
+	const savedAreaIds = evacuations
+		.filter((evacuation) => evacuation.movesSaved)
+		.map((evacuation) => evacuation.areaId);
+	const members = await listMembersInAreas(savedAreaIds, transaction);
 
-	await moveMembers(evacuatedPlaces(await listMembersInAreas([areaId], transaction), destination, universeStart), transaction);
-	context.published.push({ kind: 'evacuated', areaId, destination });
+	await moveMembers(members.flatMap((member) => evacuatedPlaces([member], (destinations.get(member.areaId) ?? null), universeStart)), transaction);
+
+	for (const { areaId, destination } of evacuations)
+	{
+		context.published.push({ kind: 'evacuated', areaId, destination });
+	}
 }
 
 /**
