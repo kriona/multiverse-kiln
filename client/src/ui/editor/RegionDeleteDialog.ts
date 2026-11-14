@@ -232,22 +232,30 @@ export class RegionDeleteDialog
 
 		if (problems.length > 0)
 		{
+			const names = this.host.names();
+
 			showMessage(this.problems, t({
 				id: 'editor.regionDelete.problems',
 				defaultMessage: 'Deleting it this way would leave problems: {problems}',
 				description: 'Shown in the Delete Region dialog when the choices would leave areas without a setting or with different values from above, or connect the lobby\'s areas to the rest of the world, which keeps it from going on; {problems} lists them'
 			}, {
-				problems: formatList(problems.map((problem) => describeProblem(problem, this.host.names(), this.host.tiles(), universe.ruleset)), 'conjunction')
+				problems: formatList(problems.map((problem) => describeProblem(problem, names, this.host.tiles(), universe.ruleset)), 'conjunction')
 			}));
 			return;
 		}
 
-		const deletes = [...deleted].filter((key) => (key !== placeKey(place)));
+		const regionKey = placeKey(place);
+		const deletes = [...deleted].filter((key) => (key !== regionKey));
 
 		if (deletes.length > 0)
 		{
 			const names = this.host.names();
-			const listed = graph.places().filter((each) => deletes.includes(placeKey(each)));
+			const listed = graph.places().filter((each) =>
+			{
+				const key = placeKey(each);
+
+				return((key !== regionKey) && deleted.has(key));
+			});
 			const first = t({
 				id: 'editor.regionDelete.confirmDeleteAll',
 				defaultMessage: 'Delete {region} and {places}, with everything inside them, when the Areas tab is saved?',

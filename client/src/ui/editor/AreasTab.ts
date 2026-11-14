@@ -3002,13 +3002,15 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 			if (misaligned.length > 0)
 			{
+				const names = this.names();
+
 				notes.push(t({
 					id: 'editor.area.loopMisaligned',
 					defaultMessage: 'Its {axis, select, eastWest {row} other {column}} of neighbors and the one beside it with {areas} don\'t both loop {axis, select, eastWest {east-west} other {north-south}}. Walking where they meet reaches different areas depending on the route taken. Make all {axis, select, eastWest {rows} other {columns}} side by side loop.',
 					description: 'Warning beside the area editor\'s loop checkboxes, for an area with neighboring areas (walked across without links) whose row or column loops differently from the one beside it: one loops and the other doesn\'t, or their ends aren\'t lined up. {axis} is which way (eastWest or northSouth) and {areas} the names of the areas beside this one in that row or column'
 				}, {
 					axis,
-					areas: formatList(misaligned.map((id) => this.names()({ kind: 'area', id })), 'conjunction')
+					areas: formatList(misaligned.map((id) => names({ kind: 'area', id })), 'conjunction')
 				}));
 			}
 		}
@@ -4064,6 +4066,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		this.staged.undoDelete(area.id);
 
+		const names = this.names();
+
 		if (after.length > 0)
 		{
 			showMessage(this.error, t({
@@ -4071,7 +4075,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				defaultMessage: 'Deleting this area would leave the areas inside it, which take its parents in its place, with problems: {problems}',
 				description: 'Shown in the area editor in place of deleting the area, when the areas inside it would be left without a setting or with different values from above; {problems} lists the problems'
 			}, {
-				problems: formatList(after.map((problem) => describeProblem(problem, this.names(), this.tileList, universe.ruleset)), 'conjunction')
+				problems: formatList(after.map((problem) => describeProblem(problem, names, this.tileList, universe.ruleset)), 'conjunction')
 			}));
 			return;
 		}
@@ -4079,7 +4083,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const neighbors = NEIGHBOR_SIDES
 			.map((side) => this.neighborGrid().get(area.id)?.neighbors[side] ?? null)
 			.filter((neighborId) => (neighborId !== null))
-			.map((neighborId) => this.names()({ kind: 'area', id: neighborId }));
+			.map((neighborId) => names({ kind: 'area', id: neighborId }));
 		const neighborNames = [...new Set(neighbors)];
 		let question: string;
 
