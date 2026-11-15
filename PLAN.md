@@ -549,7 +549,7 @@ Steps:
 - [✅] `rulebooks` in each ruleset's settings: the optional books turned on, and the answers kept for each book turned off. The server checks it (known keys, the core rulebook always on), with tests
 - [✅] What is usable as one pure function, given a race's, class's or item's own state and its book's, used by Create Character, the lobby, starting equipment, starting areas and the check that refuses a save leaving no enabled race or class. Unit tests
 - [✅] Hiding the races, classes and items of books that are off from the Characters tab, the Items tab, item selection, Create Character and a class's starting areas by race, while the Character List's filters and character sheets keep them
-- [✅] The Rulebooks card on the Ruleset tab, after the settings card: a table of the ruleset's books, each with its name, its status (On, Off, or Always on for the core rulebook), an Enable or Disable button (none for the core rulebook) and a Contents button. Changes not saved yet are noted as in the other tables
+- [✅] The Rulebooks card on the Ruleset tab, after the settings card: a table of the ruleset's books, each with its name, an on/off switch (Always on for the core rulebook) and a Contents button
 - [ ] The Contents dialog: a table each for the book's races and classes (not its items, which can be too many), with their default names, summaries, descriptions and whether each is enabled in this universe. Done but for the descriptions
 - [✅] Turning off a book in use: one dialog for the book on Save, through the same check that asks about disabled races, classes and items
 - [✅] The audit ("Rulebooks" under "Changed the ruleset"), export and import of the books

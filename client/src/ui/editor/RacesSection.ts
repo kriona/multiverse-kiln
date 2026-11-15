@@ -45,9 +45,21 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 				...settings,
 				rulebook: null,
 				custom: true,
-				edited: false
+				edited: false,
+				editedSettings: false
 			}),
 			name: raceName,
+			settingsOf: (race) => ({
+				name: race.name,
+				enabled: race.enabled,
+				keepPlaying: race.keepPlaying,
+				startingMoney: race.startingMoney,
+				startingItems: race.startingItems,
+				startingAreaId: race.startingAreaId,
+				startingColumn: race.startingColumn,
+				startingRow: race.startingRow,
+				rules: race.rules
+			}),
 			describe: describeRace,
 			dialog: dialog.following,
 			openDialog: (universe, race, edit, onChanged) =>

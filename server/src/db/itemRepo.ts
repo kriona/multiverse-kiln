@@ -238,7 +238,8 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				enabled: settings.enabled,
 				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.type !== row.type)))
 			};
 
 			return({
@@ -262,15 +263,15 @@ const itemComparers: RowComparers<{ item: EditorItem; englishName: string }, Ite
 };
 
 /**
- * Where an item's notes put it when the Items tab sorts by them: those with none first, then disabled,
- * edited and custom ones
+ * Where an item's notes put it when the Items tab sorts by them: those with none first, then edited and
+ * custom ones. Whether it is disabled shows on its Enabled switch, not in its notes
  *
  * @param item The item
- * @return The sort key, from 0 to 7
+ * @return The sort key, from 0 to 3
  */
 function notesSortKey(item: EditorItem): number
 {
-	return((item.custom ? 4 : 0) + (item.edited ? 2 : 0) + (item.enabled ? 0 : 1));
+	return((item.custom ? 2 : 0) + (item.editedSettings ? 1 : 0));
 }
 
 /**
@@ -294,7 +295,7 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 			((name === undefined) || englishName.toLowerCase().includes(name))
 			&& ((query.enabled === undefined) || (item.enabled === query.enabled))
 			&& ((query.custom === undefined) || (item.custom === query.custom))
-			&& ((query.edited === undefined) || (item.edited === query.edited))
+			&& ((query.edited === undefined) || (item.editedSettings === query.edited))
 			&& ((query.category === undefined) || (itemCategory(ruleset, item.type) === query.category))
 			&& ((query.type === undefined) || (item.type === query.type))
 			&& ((ids === undefined) || ids.has(item.id))

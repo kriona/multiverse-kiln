@@ -194,7 +194,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	enabled: {
 		id: 'form.enabled',
 		defaultMessage: 'Enabled',
-		description: 'Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it, and the heading of the column of on/off switches for it in the editor\'s tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	keepPlaying: {
 		id: 'editor.option.keepPlaying',

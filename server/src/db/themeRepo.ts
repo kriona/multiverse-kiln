@@ -186,7 +186,8 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 				},
 				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && ((copy.name !== null) || (copy.ability !== row.ability)))
 			});
 		}));
 }

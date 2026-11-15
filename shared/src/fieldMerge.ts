@@ -131,6 +131,27 @@ export function sameValue(first: unknown, second: unknown): boolean
 }
 
 /**
+ * The settings that only say whether a race, class, theme or item can be used: what its Enabled switch
+ * changes, which doesn't make one of the ruleset's defaults count as edited
+ */
+const ENABLING_SETTINGS: ReadonlySet<string> = new Set(['enabled', 'keepPlaying']);
+
+/**
+ * Whether two sets of a race's, class's, theme's or item's settings differ in more than whether it can
+ * be used
+ *
+ * @param first One set of settings
+ * @param second The other
+ * @return True when a setting other than enabled or keepPlaying differs
+ */
+export function differsBeyondEnabling(first: object, second: object): boolean
+{
+	const others = (settings: object): Record<string, unknown> => Object.fromEntries(Object.entries(settings).filter(([key]) => !ENABLING_SETTINGS.has(key)));
+
+	return(!sameValue(others(first), others(second)));
+}
+
+/**
  * The settings a change saves, as it holds them: a universe or area change's update, the ruleset's
  * settings, and every other change's settings
  *

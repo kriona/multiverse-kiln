@@ -1,4 +1,4 @@
-import { canEditWorld, canEditItemsOpen, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, differsBeyondEnabling, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -7,8 +7,10 @@ import { formMessages } from '../formMessages';
 import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
+import { afterSwitchSlides } from '../toggleSwitch';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import { createEnabledSwitch } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { RulebookChoice } from './rulebookChoice';
@@ -413,7 +415,14 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			...settings,
 			rulebook: null,
 			custom: true,
-			edited: false
+			edited: false,
+			editedSettings: false
+		})).map(({ item, state }) => ({
+			item: {
+				...item,
+				editedSettings: this.editedSettingsOf(item)
+			},
+			state
 		}));
 
 		this.rows.replaceChildren(...shown.map(({ item, state }) => this.createRow(item, state, universe)));
@@ -439,15 +448,34 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 		if (!known)
 		{
-			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, rulebook: null, custom: true, edited: false });
+			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, rulebook: null, custom: true, edited: false, editedSettings: false });
 		}
 
 		return({ ...known, ...settings });
 	}
 
 	/**
-	 * An item's row in the table: its icon, name (opening the item editor), type, and whether it is
-	 * custom, edited, disabled or not saved yet
+	 * Whether a default item, with the changes made since it was saved, differs from the ruleset's in more
+	 * than whether it is enabled, which its edited tag shows
+	 *
+	 * @param item The item as the list shows it
+	 * @return True when it does
+	 */
+	private editedSettingsOf(item: EditorItem): boolean
+	{
+		const saved = this.known.get(item.id);
+
+		if (item.custom || !saved)
+		{
+			return(false);
+		}
+
+		return(saved.editedSettings || differsBeyondEnabling({ name: saved.name, type: saved.type }, { name: item.name, type: item.type }));
+	}
+
+	/**
+	 * An item's row in the table: its icon, name (opening the item editor), Enabled switch, type, and
+	 * whether it is custom, edited or not saved yet. Whether it is disabled shows on its switch
 	 *
 	 * @param item The item
 	 * @param state How it differs from what is saved
@@ -458,21 +486,23 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		const row = document.createElement('tr');
 		const nameButton = document.createElement('button');
+		const enabledSwitch = createEnabledSwitch(itemName(item, universe.ruleset), item.enabled, (this.canSave() && (state !== 'removed')), (enabled) =>
+		{
+			this.setEnabled(item, enabled);
+		});
 		const tags = [
 			(item.custom
 				? t(editorMessages.customTag)
 				: undefined),
-			(item.edited
+			(item.editedSettings
 				? t(editorMessages.editedTag)
 				: undefined),
-			(item.enabled
-				? undefined
-				: t(editorMessages.disabledTag)),
 			stagedTag(state, !item.custom)
 		];
 		const cells = [
 			createItemIcon(item.type, universe.ruleset),
 			nameButton,
+			enabledSwitch,
 			itemTypeName(item.type, universe.ruleset),
 			joinTags(...tags)
 		];
@@ -489,13 +519,52 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		{
 			const cell = document.createElement('td');
 
+			if (content === enabledSwitch)
+			{
+				cell.className = 'switch-cell';
+			}
+
 			cell.append(content);
 			row.append(cell);
 		}
 
+		row.dataset.itemId = String(item.id);
 		this.changedSince.mark(row.cells[1], item.id, (state !== undefined));
 
+		// A disabled item is struck through like one being deleted, as races and classes are; its notes say it is disabled
+		if (!item.enabled)
+		{
+			row.classList.add('staged-deleted');
+		}
+
 		return(markStagedRow(row, state, !item.custom));
+	}
+
+	/**
+	 * Enables or disables an item from its row's switch, as the Enabled checkbox in the item editor does.
+	 * The list is shown again once the switch has slid, so the row's notes follow, and the switch keeps focus
+	 *
+	 * @param item The item, as the list shows it
+	 * @param enabled Whether to enable it
+	 */
+	private setEnabled(item: EditorItem, enabled: boolean): void
+	{
+		this.changes.edit(item.id, loadedFrom(this.known.get(item.id))).apply({
+			name: item.name,
+			type: item.type,
+			enabled
+		});
+		afterSwitchSlides(() =>
+		{
+			const focused = this.rows.contains(document.activeElement);
+
+			this.render();
+
+			if (focused)
+			{
+				this.rows.querySelector<HTMLInputElement>(`tr[data-item-id="${item.id}"] .toggle-switch`)?.focus();
+			}
+		});
 	}
 
 	/**

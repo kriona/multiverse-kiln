@@ -1556,6 +1556,12 @@ export interface EditorItem extends ItemSettings
 	 * Whether the item is a default item the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default item than whether it is enabled, which the edited
+	 * tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**
@@ -1577,6 +1583,10 @@ export interface ItemListQuery
 
 	enabled?: boolean;
 	custom?: boolean;
+
+	/**
+	 * Whether the universe changed more of a default item than whether it is enabled (editedSettings)
+	 */
 	edited?: boolean;
 
 	/**
@@ -1604,7 +1614,7 @@ export interface ItemListQuery
 	/**
 	 * The column to sort the matches by before paging, with items that tie sorted by name. Names sort in
 	 * English, as the name filter matches them, and notes by the items' flags: those with none first, then
-	 * disabled, edited and custom ones. Left out, the items come by ID
+	 * edited (editedSettings) and custom ones. Left out, the items come by ID
 	 */
 	sort?: ItemSortColumn;
 
@@ -1743,6 +1753,12 @@ export interface EditorRace extends RaceSettings
 	 * Whether the race is a default race the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default race than whether it is enabled (and its characters
+	 * keep playing), which the edited tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**
@@ -1840,6 +1856,12 @@ export interface EditorClass extends ClassSettings
 	 * Whether the class is a default class the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default class than whether it is enabled (and its
+	 * characters keep playing), which the edited tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**
@@ -1902,6 +1924,12 @@ export interface EditorTheme extends ThemeSettings
 	 * Whether the theme is a default theme the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default theme than whether it is enabled, which the edited
+	 * tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**

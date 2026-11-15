@@ -1,10 +1,11 @@
-import { canEditWorld, loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, differsBeyondEnabling, loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { showMessage } from '../dom';
 import { TableSorter } from '../tableSorter';
-import { createOptionRow, optionTags } from './optionRows';
+import { afterSwitchSlides } from '../toggleSwitch';
+import { createEnabledSwitch, createOptionRow, optionTags } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
 import type { RulebookChoice } from './rulebookChoice';
 import { ChangedSinceNotes, DialogFollower, type FollowingDialog, type FollowsOtherSaves, type OtherSave } from './otherSaves';
@@ -28,6 +29,11 @@ export interface EditorOption
 
 	custom: boolean;
 	edited: boolean;
+
+	/**
+	 * Whether a default was changed in more than whether it is enabled, which the edited tag shows
+	 */
+	editedSettings: boolean;
 }
 
 /**
@@ -89,6 +95,14 @@ export interface OptionListSetup<T extends EditorOption, S>
 	name(option: T, ruleset: Ruleset): string;
 
 	/**
+	 * An option's settings, as its editor sends them
+	 *
+	 * @param option The option
+	 * @return Its settings
+	 */
+	settingsOf(option: T): S;
+
+	/**
 	 * An option's rules in a few words
 	 *
 	 * @param option The option
@@ -141,7 +155,7 @@ const rowComparers: RowComparers<{ name: string; notes: string }, OptionSortColu
  * A list of races, classes or themes on an editor tab, sorted by name or notes (see TableSorter), opening
  * the editor dialog of each. Changes made in the dialog wait on the page until the tab is saved
  */
-export class OptionList<T extends EditorOption & S, S> implements SavableTab, FollowsOtherSaves
+export class OptionList<T extends EditorOption & S, S extends { enabled: boolean }> implements SavableTab, FollowsOtherSaves
 {
 	/**
 	 * The changes made since the list was last saved
@@ -339,7 +353,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 
 	/**
 	 * The options with the changes made since they were last saved. A default option with changes counts
-	 * as edited
+	 * as edited, and its edited tag shows when they change more than whether it is enabled
 	 *
 	 * @return Each option, with how it differs from what is saved
 	 */
@@ -348,7 +362,8 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 		return(stagedView(this.options, this.changes, (option, settings) => ({
 			...option,
 			...settings,
-			edited: (option.custom ? option.edited : true)
+			edited: (option.custom ? option.edited : true),
+			editedSettings: (!option.custom && (option.editedSettings || differsBeyondEnabling(this.setup.settingsOf(option), settings)))
 		}), (id, settings) => this.setup.created(id, settings)));
 	}
 
@@ -370,7 +385,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 				...entry,
 				name: this.setup.name(entry.item, universe.ruleset),
 				// An option added since the last save is already tagged custom
-				notes: joinTags(optionTags(entry.item), ((entry.state === 'new') ? undefined : stagedTag(entry.state, !entry.item.custom)))
+				notes: joinTags(optionTags(entry.item, false), ((entry.state === 'new') ? undefined : stagedTag(entry.state, !entry.item.custom)))
 			}));
 		const byName = sortRows(rows, rowComparers, {
 			column: 'name',
@@ -380,10 +395,16 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 		this.setup.rows.replaceChildren(...sortRows(byName, rowComparers, this.sorter.order)
 			.map(({ item, state, name, notes }) =>
 			{
+				const enabledSwitch = createEnabledSwitch(name, item.enabled, (this.canSave() && (state !== 'removed')), (enabled) =>
+				{
+					this.setEnabled(item, enabled);
+				});
 				const row = markStagedRow(createOptionRow(name, this.setup.describe(item, universe.ruleset), notes, () =>
 				{
 					this.openOption(item);
-				}), state, !item.custom);
+				}, enabledSwitch), state, !item.custom);
+
+				row.dataset.optionId = String(item.id);
 
 				// A disabled option is struck through like one being deleted; its notes say it is disabled
 				if (!item.enabled)
@@ -395,6 +416,32 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 
 				return(row);
 			}));
+	}
+
+	/**
+	 * Enables or disables an option from its row's switch, as the Enabled checkbox in its editor does. The
+	 * list is shown again once the switch has slid, so the row's notes follow, and the switch keeps focus
+	 *
+	 * @param option The option, as the list shows it
+	 * @param enabled Whether to enable it
+	 */
+	private setEnabled(option: T, enabled: boolean): void
+	{
+		this.changes.edit(option.id, loadedFrom(this.options.find((saved) => (saved.id === option.id)))).apply({
+			...this.setup.settingsOf(option),
+			enabled
+		});
+		afterSwitchSlides(() =>
+		{
+			const focused = this.setup.rows.contains(document.activeElement);
+
+			this.render();
+
+			if (focused)
+			{
+				this.setup.rows.querySelector<HTMLInputElement>(`tr[data-option-id="${option.id}"] .toggle-switch`)?.focus();
+			}
+		});
 	}
 
 	/**

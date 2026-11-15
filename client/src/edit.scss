@@ -618,10 +618,14 @@ fieldset
 	margin: 0 0 12px;
 }
 
-// A row in an editor list that will be deleted when its tab is saved (markStagedRow)
+// A row in an editor list that will be deleted when its tab is saved (markStagedRow), or that is
+// disabled. Its Enabled switch keeps its look, so it can be read and turned back on
 tr.staged-deleted
 {
-	opacity: 0.3;
+	> td:not(.switch-cell)
+	{
+		opacity: 0.3;
+	}
 
 	td
 	{

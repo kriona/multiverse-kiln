@@ -3,7 +3,7 @@
  * class_starting_items and class_race_areas tables
  */
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
-import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
+import { differsBeyondEnabling, isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaClass } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
@@ -276,6 +276,16 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 			const settings = (copy ?? row);
 			const custom = (row.universeId !== null);
 			const classRules = rules.get(settings.id);
+			const comparable = (source: typeof row): object => ({
+				name: ((source.name === row.name) ? null : source.name),
+				startingMoney: fromCoinColumns(source),
+				startingItems: (startingItems.get(source.id) ?? []),
+				startingAreaId: source.startingAreaId,
+				startingColumn: source.startingColumn,
+				startingRow: source.startingRow,
+				raceAreas: (raceAreas.get(source.id) ?? []),
+				rules: rules.get(source.id)
+			});
 
 			if (!classRules)
 			{
@@ -297,7 +307,8 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 				rules: classRules,
 				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && differsBeyondEnabling(comparable(row), comparable(copy)))
 			});
 		}));
 }

@@ -505,11 +505,10 @@ A ruleset's [races](#races), [classes](#classes), [themes](#themes) and [items](
 
 The card is a table of the ruleset's books. Each row has:
 - the book's name. Book names are messages, translated with the official title of the book's translated edition where there is one (such as the German "Grundregelwerk")
-- its status: On, Off, or Always on for the core rulebook
-- an Enable or Disable button. The core rulebook has none, since it can't be turned off
+- its status: an on/off switch (a checkbox drawn as a switch, `.toggle-switch`), or Always on for the core rulebook, which can't be turned off. Like the editor's other changes, the save bar says when a switch's change isn't saved
 - a Contents button, which opens a dialog listing what the book brings: a table each for its races and classes, with their default names, summaries, descriptions and whether each is enabled in this universe. Its items aren't listed, since a book can bring too many
 
-Changes not saved yet are noted as in the other tables. The books are saved with the rest of the tab as `rulebooks`, and like the rest of the tab, only creators can change them. Only the core rulebook is on in a new universe.
+The books are saved with the rest of the tab as `rulebooks`, and like the rest of the tab, only creators can change them. Only the core rulebook is on in a new universe.
 
 While a book is on, what it brings shows on the [Characters](#tab-characters) and [Items](#tab-items) tabs, where each race, class and item can still be disabled on its own. Turning a book off keeps their edits (starting money, equipment and areas) for when it is turned back on. While it is off, they act as disabled and are hidden from the Characters tab's tables, the Items tab, [item selection](#selection-item), Create Character and a class's starting areas by race. They still show where they are in use, as disabled ones do: on characters, in the [Character List](#tab-character-list)'s filters, and in starting equipment, marked as disabled.
 
@@ -572,7 +571,7 @@ Money is credits (`cr`), the only coin.
 - Starting [money](#field-money), in the coins the [Ruleset](#tab-ruleset) tab names
 - Starting [area](#selection-area)
 
-Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes) of the [rulebooks](#rulebooks) that are on, and those the universe added, each in a section of its own, and saves them with the settings. Each list is a table of names, summaries and notes (custom, edited, disabled, and changes not saved yet), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
+Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes) of the [rulebooks](#rulebooks) that are on, and those the universe added, each in a section of its own, and saves them with the settings. Each list is a table of names, Enabled switches (which do what the Enabled checkbox in the race, class or theme editor does), summaries and notes (custom, edited, and changes not saved yet; a default only disabled isn't noted as edited, and a disabled row is struck through), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
 A character's starting area is chosen each time a group is made around them, so a change to these settings applies to characters already made. It is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area no longer holds, after it was made smaller, counts as the nearest square in the area. Every starting square must be one characters can walk on (see [Starting squares and links](#starting-squares-and-links)).
 
@@ -806,10 +805,11 @@ It needs a filter control that includes:
 the table contains:
 - icon
 - name, links to the [item editor](#editor-item)
+- an Enabled switch, which does what the item editor's Enabled checkbox does
 - summary (item type, properties, etc)
-- notes: custom, edited, disabled, and changes not saved yet
+- notes: custom, edited, and changes not saved yet. A default item only disabled isn't noted as edited, and a disabled item's row is struck through
 
-The table is sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, and notes by the items' flags, with items that have none first, then disabled, edited and custom ones. Items that tie are sorted by name.
+The table is sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, and notes by the items' flags, with items that have none first, then edited and custom ones. Items that tie are sorted by name.
 
 For PF1E, the only default item for now is a dagger; for SF1E, a survival knife.
 
@@ -955,6 +955,9 @@ Freetext but requires a format like "1pp 2gp 2sp 4cp" (PF1E) or "250cr" (SF1E), 
 Coins are written with the abbreviations the universe gives them in the Coins table of the [Ruleset](#tab-ruleset) tab, and the engine's in the player's language for the rest. A field reads each coin's abbreviation as shown, and also the engine's in the player's language and in English, unless another coin is shown with it: in a universe that writes gold pieces as "cr", "2gp" still reads as gold, but not once it writes silver pieces as "gp" (`acceptedCoinAbbreviations()` in `shared/src/money.ts`).
 
 Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
+
+## Switch: On/Off
+A checkbox drawn as a pill-shaped switch, with On or Off inside it in the player's language (`createToggleSwitch()` in `client/src/ui/toggleSwitch.ts`, styled by `.toggle-switch` in `client/src/_shared.scss`). It is still a checkbox, so Space toggles it and screen readers announce it as one, named by a label of its own or by the element it belongs to. Used for the [rulebooks](#rulebooks) and for the Enabled switches in the tables of races, classes, themes and items. A list drawn again when a switch changes waits for the knob to finish sliding (`afterSwitchSlides()`), and gives focus back to the switch.
 
 ## Selection: Item
 modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.

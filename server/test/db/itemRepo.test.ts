@@ -103,8 +103,8 @@ describe('itemRepo', () =>
 			const [mine] = await loadEditorItems(liveVersion(universeId), 'pf1e');
 			const [theirs] = await loadEditorItems(liveVersion(otherId), 'pf1e');
 
-			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, rulebook: 'core', custom: false, edited: true });
-			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, rulebook: 'core', custom: false, edited: false });
+			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, rulebook: 'core', custom: false, edited: true, editedSettings: true });
+			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, rulebook: 'core', custom: false, edited: false, editedSettings: false });
 		});
 	});
 
@@ -170,6 +170,10 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(await listedIds(universeId, { name: 'DAG' }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { enabled: true }), [torchId]);
 			assert.deepStrictEqual(await listedIds(universeId, { custom: true }), [torchId, swordId]);
+
+			// Disabling a default item alone isn't an edit; renaming it is
+			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), []);
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: 'rusty dagger', type: 'dagger', enabled: false });
 			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { category: 'weapon' }), [await daggerId(), swordId]);
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'torch' }), [torchId]);
@@ -195,9 +199,10 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name', direction: 'descending' }), [torchId, swordId, dagger, axeId]);
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name', offset: 1, limit: 2 }), [dagger, swordId]);
 
-			// Edited before custom, disabled after enabled, and items with the same notes by name
-			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes' }), [dagger, axeId, torchId, swordId]);
-			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes', direction: 'descending' }), [swordId, axeId, torchId, dagger]);
+			// Notes don't say an item is disabled, so the dagger, only disabled, has none, and custom items
+			// with the same notes go by name
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes' }), [dagger, axeId, swordId, torchId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes', direction: 'descending' }), [axeId, swordId, torchId, dagger]);
 		});
 	});
 
@@ -259,7 +264,7 @@ describe('itemRepo', () =>
 			assert.strictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0].enabled, false);
 
 			await restoreDefaultItem(liveVersion(universeId), id);
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, type: 'dagger', enabled: true, rulebook: 'core', custom: false, edited: false });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, type: 'dagger', enabled: true, rulebook: 'core', custom: false, edited: false, editedSettings: false });
 		});
 	});
 });

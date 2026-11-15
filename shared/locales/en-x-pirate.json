@@ -2619,6 +2619,10 @@
 		"message": "ye",
 		"source": "you"
 	},
+	"editor.enabledSwitch": {
+		"message": "{name} open",
+		"source": "{name} enabled"
+	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
 		"source": "{failure} {reason}"
@@ -3707,14 +3711,6 @@
 		"message": "What's Inside",
 		"source": "Contents"
 	},
-	"editor.rulebooks.disable": {
-		"message": "Close",
-		"source": "Disable"
-	},
-	"editor.rulebooks.enable": {
-		"message": "Open",
-		"source": "Enable"
-	},
 	"editor.rulebooks.heading": {
 		"message": "Books o' the Code",
 		"source": "Rulebooks"
@@ -3722,22 +3718,6 @@
 	"editor.rulebooks.hint": {
 		"message": "The books the universe's folk, callin's an' booty come from. While a book be open, what it brings shows on the Crew an' Booty tabs. Ye can still close each one there.",
 		"source": "The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there."
-	},
-	"editor.rulebooks.off": {
-		"message": "Closed",
-		"source": "Off"
-	},
-	"editor.rulebooks.offWhenSaved": {
-		"message": "Closed once stowed",
-		"source": "Off when saved"
-	},
-	"editor.rulebooks.on": {
-		"message": "Open",
-		"source": "On"
-	},
-	"editor.rulebooks.onWhenSaved": {
-		"message": "Open once stowed",
-		"source": "On when saved"
 	},
 	"editor.rulebooks.statusColumn": {
 		"message": "How She Stands",
@@ -8998,6 +8978,14 @@
 	"shortcuts.title": {
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
+	},
+	"switch.off": {
+		"message": "Nay",
+		"source": "Off"
+	},
+	"switch.on": {
+		"message": "Aye",
+		"source": "On"
 	},
 	"table.sorted": {
 		"message": "{direction, select, ascending {Stowed by {column}, low to high} other {Stowed by {column}, high to low}}",

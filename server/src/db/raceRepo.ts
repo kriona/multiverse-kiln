@@ -2,7 +2,7 @@
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
-import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
+import { darkvisionSquares, differsBeyondEnabling, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaRace } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
@@ -259,6 +259,15 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 			const settings = (copy ?? row);
 			const custom = (row.universeId !== null);
 			const raceRules = rules.get(settings.id);
+			const comparable = (source: typeof row): object => ({
+				name: ((source.name === row.name) ? null : source.name),
+				startingMoney: fromCoinColumns(source),
+				startingItems: (startingItems.get(source.id) ?? []),
+				startingAreaId: source.startingAreaId,
+				startingColumn: source.startingColumn,
+				startingRow: source.startingRow,
+				rules: rules.get(source.id)
+			});
 
 			if (!raceRules)
 			{
@@ -279,7 +288,8 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				rules: raceRules,
 				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && differsBeyondEnabling(comparable(row), comparable(copy)))
 			});
 		}));
 }

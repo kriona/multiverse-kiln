@@ -44,9 +44,15 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 				...settings,
 				rulebook: null,
 				custom: true,
-				edited: false
+				edited: false,
+				editedSettings: false
 			}),
 			name: themeName,
+			settingsOf: (theme) => ({
+				name: theme.name,
+				enabled: theme.enabled,
+				rules: theme.rules
+			}),
 			describe: describeTheme,
 			dialog: dialog.following,
 			openDialog: (universe, theme, edit, onChanged) =>

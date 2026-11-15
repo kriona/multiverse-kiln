@@ -2619,6 +2619,10 @@
 		"defaultMessage": "you",
 		"description": "In the Notes column of the editor's Editors table, for the row of the player using the editor, on its own line after any other notes"
 	},
+	"editor.enabledSwitch": {
+		"defaultMessage": "{name} enabled",
+		"description": "Read by screen readers for the on/off switch in a row of the editor's tables of races, classes, themes and items, which does what the Enabled checkbox in its editor does; {name} is the race's, class's, theme's or item's name"
+	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
 		"description": "An editor action that failed, followed by why; {failure} is e.g. \"Could not save the tile.\" and {reason} is the server's explanation. Change only to reorder the two sentences"
@@ -3707,14 +3711,6 @@
 		"defaultMessage": "Contents",
 		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that opens a dialog listing the races and classes the book brings"
 	},
-	"editor.rulebooks.disable": {
-		"defaultMessage": "Disable",
-		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that turns the book off; saved with the Save button"
-	},
-	"editor.rulebooks.enable": {
-		"defaultMessage": "Enable",
-		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that turns the book on; saved with the Save button"
-	},
 	"editor.rulebooks.heading": {
 		"defaultMessage": "Rulebooks",
 		"description": "Heading of the part of the editor's Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -3722,22 +3718,6 @@
 	"editor.rulebooks.hint": {
 		"defaultMessage": "The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there.",
 		"description": "Explains the Rulebooks table on the editor's Ruleset tab"
-	},
-	"editor.rulebooks.off": {
-		"defaultMessage": "Off",
-		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab: the universe doesn't use its races, classes and items"
-	},
-	"editor.rulebooks.offWhenSaved": {
-		"defaultMessage": "Off when saved",
-		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab that was turned off, which isn't saved yet"
-	},
-	"editor.rulebooks.on": {
-		"defaultMessage": "On",
-		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab: the universe uses its races, classes and items"
-	},
-	"editor.rulebooks.onWhenSaved": {
-		"defaultMessage": "On when saved",
-		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab that was turned on, which isn't saved yet"
 	},
 	"editor.rulebooks.statusColumn": {
 		"defaultMessage": "Status",
@@ -6137,7 +6117,7 @@
 	},
 	"form.enabled": {
 		"defaultMessage": "Enabled",
-		"description": "Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
@@ -8998,6 +8978,14 @@
 	"shortcuts.title": {
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Title of the dialog listing the keyboard shortcuts that work on the screen"
+	},
+	"switch.off": {
+		"defaultMessage": "Off",
+		"description": "Inside an on/off switch while it is off, such as a book of game rules the universe doesn't use, or a disabled race, class, theme or item, in the editor's tables. The switch has room for only about 4 letters"
+	},
+	"switch.on": {
+		"defaultMessage": "On",
+		"description": "Inside an on/off switch while it is on, such as a book of game rules the universe uses, or a race, class, theme or item that can be used, in the editor's tables. The switch has room for only about 4 letters"
 	},
 	"table.sorted": {
 		"defaultMessage": "{direction, select, ascending {Sorted by {column}, ascending} other {Sorted by {column}, descending}}",

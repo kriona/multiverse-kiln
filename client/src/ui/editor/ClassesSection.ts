@@ -46,9 +46,22 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 				...settings,
 				rulebook: null,
 				custom: true,
-				edited: false
+				edited: false,
+				editedSettings: false
 			}),
 			name: className,
+			settingsOf: (characterClass) => ({
+				name: characterClass.name,
+				enabled: characterClass.enabled,
+				keepPlaying: characterClass.keepPlaying,
+				startingMoney: characterClass.startingMoney,
+				startingItems: characterClass.startingItems,
+				startingAreaId: characterClass.startingAreaId,
+				startingColumn: characterClass.startingColumn,
+				startingRow: characterClass.startingRow,
+				raceAreas: characterClass.raceAreas,
+				rules: characterClass.rules
+			}),
 			describe: describeClass,
 			dialog: dialog.following,
 			openDialog: (universe, characterClass, edit, onChanged) =>

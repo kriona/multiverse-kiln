@@ -1109,7 +1109,7 @@ describe('World editor API', () =>
 			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon`)).body;
 			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1`)).body;
 
-			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, rulebook: null, custom: true, edited: false }]);
+			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, rulebook: null, custom: true, edited: false, editedSettings: false }]);
 
 			// Default items that keep their names are named by their keys, in the player's language
 			assert.deepStrictEqual(weapons.items.map((item) => (item.name ?? item.key)), ['dagger']);
@@ -1125,10 +1125,10 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
-			const disabled = { name: null, type: 'dagger', enabled: false };
+			const rusty = { name: 'rusty dagger', type: 'dagger', enabled: false };
 
-			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, disabled)).status, 200);
-			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...disabled, rulebook: 'core', custom: false, edited: true }]);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, rusty)).status, 200);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...rusty, rulebook: 'core', custom: false, edited: true, editedSettings: true }]);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${otherId}/items?edited=true`)).body.items, []);
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', daggerId)).status, 200);
@@ -1202,7 +1202,7 @@ describe('World editor API', () =>
 			const after = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
 			const theirs = (await send<RaceListPayload>(ada, 'GET', `/${otherId}/races`)).body.races;
 
-			assert.deepStrictEqual(after.find((race) => (race.id === id)), { id, key, ...changed, rulebook, custom, edited: true });
+			assert.deepStrictEqual(after.find((race) => (race.id === id)), { id, key, ...changed, rulebook, custom, edited: true, editedSettings: true });
 			assert.deepStrictEqual(theirs.find((race) => (race.id === id)), dwarf);
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Race', id)).status, 200);
@@ -1217,7 +1217,7 @@ describe('World editor API', () =>
 			const theirRaceId = (await createIn(ada, otherId, 'Race', lizardfolk)).body.id;
 
 			assert.strictEqual(created.status, 200);
-			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), [{ id: created.body.id, key: null, ...lizardfolk, rulebook: null, custom: true, edited: false }]);
+			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), [{ id: created.body.id, key: null, ...lizardfolk, rulebook: null, custom: true, edited: false, editedSettings: false }]);
 			assert.strictEqual((await saveIn(ada, universeId, 'Race', theirRaceId, lizardfolk)).status, 404);
 			assert.strictEqual((await saveIn(ada, universeId, 'Race', 'abc', lizardfolk)).status, 400);
 			assert.strictEqual((await removeFrom(ada, universeId, 'Race', created.body.id)).status, 200);
@@ -1307,7 +1307,7 @@ describe('World editor API', () =>
 
 			assert.strictEqual(created.status, 200);
 			assert.deepStrictEqual(classes.map((characterClass) => characterClass.key), [...Object.keys(PF1E_CLASSES), null]);
-			assert.deepStrictEqual(classes.find((characterClass) => characterClass.custom), { id: created.body.id, key: null, ...settings, rulebook: null, custom: true, edited: false });
+			assert.deepStrictEqual(classes.find((characterClass) => characterClass.custom), { id: created.body.id, key: null, ...settings, rulebook: null, custom: true, edited: false, editedSettings: false });
 
 			const wizard = classes.find((characterClass) => (characterClass.key === 'wizard')) as EditorClass;
 			const { id, key, rulebook, custom } = wizard;
@@ -1317,7 +1317,7 @@ describe('World editor API', () =>
 			};
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Class', id, changed)).status, 200);
-			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), { id, key, ...changed, rulebook, custom, edited: true });
+			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), { id, key, ...changed, rulebook, custom, edited: true, editedSettings: true });
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Class', id)).status, 200);
 			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), wizard);
@@ -1932,8 +1932,8 @@ describe('World editor API', () =>
 
 			const listed = (await send<ThemeListPayload>(ada, 'GET', path)).body.themes;
 
-			assert.deepStrictEqual(listed.find((theme) => (theme.id === created.body.id)), { id: created.body.id, key: null, ...smuggler, rulebook: null, custom: true, edited: false });
-			assert.deepStrictEqual(listed.find((theme) => (theme.id === pilot.id)), { ...pilot, enabled: false, rules: { ability: 'wisdom' }, edited: true });
+			assert.deepStrictEqual(listed.find((theme) => (theme.id === created.body.id)), { id: created.body.id, key: null, ...smuggler, rulebook: null, custom: true, edited: false, editedSettings: false });
+			assert.deepStrictEqual(listed.find((theme) => (theme.id === pilot.id)), { ...pilot, enabled: false, rules: { ability: 'wisdom' }, edited: true, editedSettings: true });
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Theme', pilot.id)).status, 200);
 			assert.deepStrictEqual((await send<ThemeListPayload>(ada, 'GET', path)).body.themes.find((theme) => (theme.id === pilot.id)), pilot);

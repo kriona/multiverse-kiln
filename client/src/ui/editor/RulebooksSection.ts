@@ -1,10 +1,11 @@
-import { CORE_RULEBOOK, defineMessages, rulesetHasThemes, RULESET_RULEBOOKS, type EditableUniverse, type MessageDescriptor, type RulebookSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { CORE_RULEBOOK, defineMessages, rulesetHasThemes, RULESET_RULEBOOKS, type EditableUniverse, type RulebookSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
+import { createToggleSwitch } from '../toggleSwitch';
 import { describeClass } from './ClassesSection';
 import { optionTags } from './optionRows';
 import { describeRace } from './RacesSection';
@@ -19,36 +20,6 @@ const messages = defineMessages({
 		id: 'editor.rulebooks.alwaysOn',
 		defaultMessage: 'Always on',
 		description: 'Status of the core rulebook in the Rulebooks table on the editor\'s Ruleset tab: it can\'t be turned off'
-	},
-	on: {
-		id: 'editor.rulebooks.on',
-		defaultMessage: 'On',
-		description: 'Status of a book in the Rulebooks table on the editor\'s Ruleset tab: the universe uses its races, classes and items'
-	},
-	off: {
-		id: 'editor.rulebooks.off',
-		defaultMessage: 'Off',
-		description: 'Status of a book in the Rulebooks table on the editor\'s Ruleset tab: the universe doesn\'t use its races, classes and items'
-	},
-	onWhenSaved: {
-		id: 'editor.rulebooks.onWhenSaved',
-		defaultMessage: 'On when saved',
-		description: 'Status of a book in the Rulebooks table on the editor\'s Ruleset tab that was turned on, which isn\'t saved yet'
-	},
-	offWhenSaved: {
-		id: 'editor.rulebooks.offWhenSaved',
-		defaultMessage: 'Off when saved',
-		description: 'Status of a book in the Rulebooks table on the editor\'s Ruleset tab that was turned off, which isn\'t saved yet'
-	},
-	enable: {
-		id: 'editor.rulebooks.enable',
-		defaultMessage: 'Enable',
-		description: 'Button in a row of the Rulebooks table on the editor\'s Ruleset tab that turns the book on; saved with the Save button'
-	},
-	disable: {
-		id: 'editor.rulebooks.disable',
-		defaultMessage: 'Disable',
-		description: 'Button in a row of the Rulebooks table on the editor\'s Ruleset tab that turns the book off; saved with the Save button'
 	},
 	contents: {
 		id: 'editor.rulebooks.contents',
@@ -215,8 +186,8 @@ export class RulebooksSection
 	}
 
 	/**
-	 * A book's row: its name, status, Enable or Disable button (none for the core rulebook) and Contents
-	 * button, each button described by the book's name
+	 * A book's row: its name, its status and its Contents button. The status is an on/off switch named by
+	 * the book, or Always on for the core rulebook
 	 *
 	 * @param ruleset The universe's ruleset
 	 * @param rulebook The book's key
@@ -228,29 +199,28 @@ export class RulebooksSection
 		const heading = document.createElement('th');
 		const status = document.createElement('td');
 		const actions = document.createElement('td');
-		const on = this.choice.shows(rulebook);
 		const contents = document.createElement('button');
 
 		heading.scope = 'row';
 		heading.id = `rulebook-${rulebook}`;
 		heading.textContent = rulebookName(ruleset, rulebook);
-		status.textContent = t(this.statusOf(rulebook, on));
 		actions.className = 'row-buttons';
 
-		if (rulebook !== CORE_RULEBOOK)
+		if (rulebook === CORE_RULEBOOK)
 		{
-			const toggle = document.createElement('button');
-
-			toggle.type = 'button';
-			toggle.className = 'secondary';
-			toggle.textContent = t(on ? messages.disable : messages.enable);
-			toggle.disabled = !this.editable;
-			toggle.setAttribute('aria-describedby', heading.id);
-			toggle.addEventListener('click', () =>
-			{
-				this.toggle(rulebook);
-			});
-			actions.append(toggle);
+			status.textContent = t(messages.alwaysOn);
+		}
+		else
+		{
+			status.append(createToggleSwitch({
+				name: { labelledBy: heading.id },
+				checked: this.choice.shows(rulebook),
+				disabled: !this.editable,
+				onChange: (checked) =>
+				{
+					this.toggle(rulebook, checked);
+				}
+			}));
 		}
 
 		contents.type = 'button';
@@ -268,33 +238,12 @@ export class RulebooksSection
 	}
 
 	/**
-	 * A book's status, saying when it differs from what is saved
-	 *
-	 * @param rulebook The book's key
-	 * @param on Whether the card has it on
-	 * @return The status's message
-	 */
-	private statusOf(rulebook: string, on: boolean): MessageDescriptor
-	{
-		if (rulebook === CORE_RULEBOOK)
-		{
-			return(messages.alwaysOn);
-		}
-
-		if (on === this.saved.rulebooks.includes(rulebook))
-		{
-			return((on ? messages.on : messages.off));
-		}
-
-		return((on ? messages.onWhenSaved : messages.offWhenSaved));
-	}
-
-	/**
 	 * Turns a book on or off, keeping the books in the order the ruleset lists them
 	 *
 	 * @param rulebook The book's key
+	 * @param on Whether to turn it on
 	 */
-	private toggle(rulebook: string): void
+	private toggle(rulebook: string, on: boolean): void
 	{
 		const universe = this.universe;
 
@@ -303,14 +252,9 @@ export class RulebooksSection
 			return;
 		}
 
-		const on = this.choice.rulebooks();
-		const turnedOn = !on.includes(rulebook);
+		const others = this.choice.rulebooks();
 
-		this.choice.set(RULESET_RULEBOOKS[universe.ruleset].filter((each) => ((each === rulebook) ? turnedOn : on.includes(each))));
-		this.render();
-
-		// The row is drawn again, so the book's button takes focus back
-		this.rows.querySelector<HTMLButtonElement>(`button[aria-describedby="rulebook-${rulebook}"]`)?.focus();
+		this.choice.set(RULESET_RULEBOOKS[universe.ruleset].filter((each) => ((each === rulebook) ? on : others.includes(each))));
 		this.onChange();
 	}
 
@@ -358,17 +302,17 @@ export class RulebooksSection
 				contentsList('races', t(messages.races), inBook(races).map((race) => ({
 					name: raceName(unnamed(race), ruleset),
 					summary: describeRace(race, ruleset),
-					notes: optionTags(race)
+					notes: optionTags(race, true)
 				}))),
 				contentsList('classes', t(messages.classes), inBook(classes).map((characterClass) => ({
 					name: className(unnamed(characterClass), ruleset),
 					summary: describeClass(characterClass, ruleset),
-					notes: optionTags(characterClass)
+					notes: optionTags(characterClass, true)
 				}))),
 				contentsList('themes', t(messages.themes), inBook(themes).map((theme) => ({
 					name: themeName(unnamed(theme), ruleset),
 					summary: describeTheme(theme),
-					notes: optionTags(theme)
+					notes: optionTags(theme, true)
 				})))
 			].filter((list): list is HTMLElement => (list !== undefined)));
 			this.dialogStatus.textContent = '';
