@@ -633,6 +633,93 @@ describe('importing a universe', () =>
 		assert.strictEqual(after.areas.find((area) => (area.id === draftCave.id))?.enabled, false);
 	});
 
+	it('imports a builder\'s change within their assignments from a file holding what the draft does outside them', async () =>
+	{
+		const bea = await logIn('Bea');
+		const worldId = await worldRegionId(ada, kilnhavenId);
+
+		await saveAll(ada, kilnhavenId, [
+			{ kind: 'addEditor', username: 'Bea', settings: { role: 'builder', languages: [], permissions: { canEditTiles: false, canEditItems: false, canEditMobs: false } } },
+			{ kind: 'createRegion', ref: 'new:capitol', region: { name: 'Capitol City', parents: [{ kind: 'region', id: worldId }], enabled: null, indoors: null, lightLevel: null, defaultTileId: null, passageOfTime: null, faerieMorning: null, fogOfWar: null } },
+			{ kind: 'createArea', ref: 'new:market', area: { name: 'Market', parents: [{ kind: 'region', id: 'new:capitol' }] } },
+			{ kind: 'assignBuilders', regionId: 'new:capitol', builderIds: [bea.playerId] }
+		]);
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const contents = await draftOf(ada, kilnhavenId);
+		const market = contents.areas.find((area) => (area.name === 'Market'));
+		const cave = contents.areas.find((area) => (area.name === 'Cave'));
+
+		assert.ok(market && cave);
+		assert.ok(contents.translations?.translatorNotes?.some((note) => (note.thingId === cave.id)));
+
+		// Outside Bea's region the file holds what the draft does: the cave and its note, the tiles and the items
+		market.name = 'Bazaar';
+
+		const imported = await importArchive(bea, kilnhavenId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const after = await draftOf(ada, kilnhavenId);
+
+		assert.strictEqual(after.areas.find((area) => (area.id === market.id))?.name, 'Bazaar');
+		assert.deepStrictEqual(after.translations?.translatorNotes, contents.translations?.translatorNotes);
+
+		// A change outside them is still refused, saving none of the file
+		cave.name = 'Grotto';
+		market.name = 'Souk';
+
+		const refused = await importArchive(bea, kilnhavenId, await archiveOf(contents));
+
+		assert.strictEqual(refused.status, 403, JSON.stringify(refused.body));
+		assert.strictEqual(refused.body.error.id, 'error.outsideAssignments');
+		assert.deepStrictEqual((await draftOf(ada, kilnhavenId)).areas.filter((area) => [cave.id, market.id].includes(area.id)).map((area) => area.name), ['Bazaar', 'Cave']);
+	});
+
+	it('keeps the draft\'s lobby region in a builder\'s import of a file without it, as the settings still name it', async () =>
+	{
+		const bea = await logIn('Bea');
+		const worldId = await worldRegionId(ada, kilnhavenId);
+		const { lobbyRegionId } = (await send<AreaListPayload>(ada, 'GET', `/${kilnhavenId}/areas`)).body;
+
+		assert.ok(lobbyRegionId);
+
+		// The lobby region is inside Bea's, and the universe has no starting square, so no lobby area is kept
+		await saveAll(ada, kilnhavenId, [
+			{ kind: 'addEditor', username: 'Bea', settings: { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: true, canEditMobs: false } } },
+			{ kind: 'updateRegion', regionId: lobbyRegionId, update: { parents: [{ kind: 'region', id: worldId }] } },
+			{ kind: 'universe', update: { lobbyAreaId: null, lobbyColumn: 0, lobbyRow: 0 } },
+			{ kind: 'assignBuilders', regionId: worldId, builderIds: [bea.playerId] }
+		]);
+		await saveAll(ada, kilnhavenId, [{ kind: 'startDraft' }]);
+
+		const draftLobbyRegionId = (await send<AreaListPayload>(ada, 'GET', `/${kilnhavenId}/areas?version=draft`)).body.lobbyRegionId;
+		const contents = await draftOf(ada, kilnhavenId);
+		const lobbyRegion = contents.regions?.find((region) => (region.id === draftLobbyRegionId));
+		const lobbyIndex = contents.areas.findIndex((area) => (area.name === 'Lobby'));
+
+		assert.ok(draftLobbyRegionId && lobbyRegion && (lobbyIndex >= 0));
+
+		contents.regions = contents.regions?.filter((region) => (region !== lobbyRegion));
+		contents.areas.splice(lobbyIndex, 1);
+		contents.areaPaths?.splice(lobbyIndex, 1);
+
+		const archive = await archiveOf(contents);
+		const preview = await importArchive<UniverseImportPreview>(bea, kilnhavenId, archive, { preview: true });
+
+		assert.ok(preview.body.leftOut.includes('keptForSettings'), JSON.stringify(preview.body));
+
+		const imported = await importArchive(bea, kilnhavenId, archive);
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const after = (await send<AreaListPayload>(ada, 'GET', `/${kilnhavenId}/areas?version=draft`)).body;
+
+		assert.strictEqual(after.lobbyRegionId, draftLobbyRegionId);
+		assert.ok(after.regions.some((region) => (region.id === draftLobbyRegionId)));
+		assert.ok(!after.areas.some((area) => (area.name === 'Lobby')));
+	});
+
 	it('refuses an import into the live version, a beta tester\'s, and files it can\'t import', async () =>
 	{
 		const archive = await exportArchive(ada, kilnhavenId);

@@ -15,7 +15,8 @@
  * can only name saved things in a save from the editor, so the import makes those changes once the
  * changes before them are saved (PendingChange)
  */
-import { isNewRef, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { isDeepStrictEqual } from 'util';
+import { isNewRef, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { listRegions } from '../db/regionRepo.js';
@@ -546,6 +547,22 @@ function pick(thing: Record<string, unknown>, fields: readonly string[]): Record
 }
 
 /**
+ * The settings a change gives one of the draft's things that differ from those it has. The import leaves
+ * out a change with none, so the save checks a builder's assignments and permissions only against what
+ * the import changes
+ *
+ * @param values The settings the change gives it
+ * @param current The thing, as the draft has it
+ * @return The settings that differ
+ */
+function changedSettings(values: Record<string, unknown>, current: object): Record<string, unknown>
+{
+	const saved = current as Record<string, unknown>;
+
+	return(Object.fromEntries(Object.entries(values).filter(([field, value]) => !isDeepStrictEqual(value, saved[field]))));
+}
+
+/**
  * A file's regions or areas, each after those of the same list it is inside, so each is made after its
  * parents; a file with one inside itself is refused
  *
@@ -657,7 +674,8 @@ class ImportPlanner
 	private readonly itemTargets = new Map<number, Target<number>>();
 	private readonly regionTargets = new Map<string, Target<string>>();
 
-	// The draft's regions the file doesn't have that the import keeps, since areas it keeps are in them
+	// The draft's regions the file doesn't have that the import keeps, since the settings name them or
+	// areas it keeps are in them
 	private keptRegions = new Set<string>();
 	private readonly areaTargets = new Map<string, Target<string>>();
 	private readonly raceTargets = new Map<number, Target<number>>();
@@ -918,7 +936,8 @@ class ImportPlanner
 	}
 
 	/**
-	 * Adds, changes and restores the draft's tiles to the file's
+	 * Adds, changes and restores the draft's tiles to the file's, saving a matched tile only when its
+	 * settings differ
 	 */
 	private planTiles(): void
 	{
@@ -948,7 +967,11 @@ class ImportPlanner
 
 				if (tile.edited)
 				{
-					this.add({ kind: 'saveTile', id: found.id, settings }, where);
+					if (!found.edited || (Object.keys(changedSettings(settings, found)).length > 0))
+					{
+						this.add({ kind: 'saveTile', id: found.id, settings }, where);
+					}
+
 					this.counts.tiles++;
 				}
 				else if (found.edited)
@@ -961,15 +984,25 @@ class ImportPlanner
 
 			const matched = this.matchers.tiles.take(tile.id);
 			const ref = ((matched === undefined) ? this.newRef('tile') : undefined);
+			const current = this.target.tiles.find((each) => (each.id === matched));
 
-			this.add(((ref === undefined) ? { kind: 'saveTile', id: matched, settings } : { kind: 'createTile', ref, settings }), where);
+			if (ref !== undefined)
+			{
+				this.add({ kind: 'createTile', ref, settings }, where);
+			}
+			else if (!current || (Object.keys(changedSettings(settings, current)).length > 0))
+			{
+				this.add({ kind: 'saveTile', id: matched, settings }, where);
+			}
+
 			this.tileTargets.set(tile.id, (ref ?? matched as number));
 			this.counts.tiles++;
 		}
 	}
 
 	/**
-	 * Adds, changes and restores the draft's items to the file's
+	 * Adds, changes and restores the draft's items to the file's, saving a matched item only when its
+	 * settings differ
 	 */
 	private planItems(): void
 	{
@@ -995,7 +1028,11 @@ class ImportPlanner
 
 				if (item.edited)
 				{
-					this.add({ kind: 'saveItem', id: found.id, settings }, where);
+					if (!found.edited || (Object.keys(changedSettings(settings, found)).length > 0))
+					{
+						this.add({ kind: 'saveItem', id: found.id, settings }, where);
+					}
+
 					this.counts.items++;
 				}
 				else if (found.edited)
@@ -1008,8 +1045,17 @@ class ImportPlanner
 
 			const matched = this.matchers.items.take(item.id);
 			const ref = ((matched === undefined) ? this.newRef('item') : undefined);
+			const current = this.target.items.find((each) => (each.id === matched));
 
-			this.add(((ref === undefined) ? { kind: 'saveItem', id: matched, settings } : { kind: 'createItem', ref, settings }), where);
+			if (ref !== undefined)
+			{
+				this.add({ kind: 'createItem', ref, settings }, where);
+			}
+			else if (!current || (Object.keys(changedSettings(settings, current)).length > 0))
+			{
+				this.add({ kind: 'saveItem', id: matched, settings }, where);
+			}
+
 			this.itemTargets.set(item.id, (ref ?? matched as number));
 			this.counts.items++;
 		}
@@ -1047,8 +1093,10 @@ class ImportPlanner
 
 	/**
 	 * Adds and changes the draft's regions to the file's, each after the regions it is inside, deleting
-	 * the draft's regions the file doesn't have first, apart from those holding areas the import keeps. A
-	 * matched region holding a name another of the file's regions takes is renamed out of the way first
+	 * the draft's regions the file doesn't have first, apart from those holding areas the import keeps
+	 * and, for an import that doesn't replace the settings, the lobby region with those above it. A
+	 * matched region holding a name another of the file's regions takes is renamed out of the way first,
+	 * and a matched region is changed only in the settings that differ
 	 *
 	 * @param settings Whether the import replaces the settings
 	 */
@@ -1065,9 +1113,19 @@ class ImportPlanner
 
 		const matched = new Set([...this.regionTargets.values()].filter((target) => !isNewRef(target)));
 		const draftGraph = new PlaceGraph(this.target.regions, this.target.areas);
-		const kept = new Set([...this.keptAreaIds(settings)].flatMap((areaId) => draftGraph.ancestorsOf({ kind: 'area', id: areaId })
+		const keptPlaces: PlaceRef[] = [...this.keptAreaIds(settings)].map((areaId) => ({ kind: 'area', id: areaId }));
+		const { lobbyRegionId } = this.target.universe;
+
+		// The settings name the lobby region too, whether or not they name a starting square in it
+		if (!settings && (lobbyRegionId !== null))
+		{
+			keptPlaces.push({ kind: 'region', id: lobbyRegionId });
+		}
+
+		const kept = new Set(keptPlaces
+			.flatMap((place) => [place, ...draftGraph.ancestorsOf(place)])
 			.filter((place) => ((place.kind === 'region') && !matched.has(place.id)))
-			.map((place) => place.id)));
+			.map((place) => place.id));
 
 		this.keptRegions = kept;
 
@@ -1099,8 +1157,17 @@ class ImportPlanner
 				parents: region.parents.map((parent) => ({ kind: 'region', id: this.regionTarget(parent.id, where) }))
 			};
 
-			// The save records only the settings that differ
-			this.add((isNewRef(target) ? { kind: 'createRegion', ref: target, region: values } : { kind: 'updateRegion', regionId: target, update: values }), where);
+			const current = draftRegions.get(target);
+			const update = (current ? changedSettings(values, current) : {});
+
+			if (isNewRef(target))
+			{
+				this.add({ kind: 'createRegion', ref: target, region: values }, where);
+			}
+			else if (Object.keys(update).length > 0)
+			{
+				this.add({ kind: 'updateRegion', regionId: target, update }, where);
+			}
 		}
 	}
 
@@ -1149,8 +1216,16 @@ class ImportPlanner
 				}))
 			};
 
-			// The save records only the settings that differ
-			this.add((draftArea ? { kind: 'updateArea', areaId: target, update: values } : { kind: 'createArea', ref: target, area: values }), where);
+			const update = (draftArea ? changedSettings(values, draftArea) : {});
+
+			if (!draftArea)
+			{
+				this.add({ kind: 'createArea', ref: target, area: values }, where);
+			}
+			else if (Object.keys(update).length > 0)
+			{
+				this.add({ kind: 'updateArea', areaId: target, update }, where);
+			}
 
 			// Making an area smaller discards its cells and links outside the new bounds, and links into them
 			if (!sameBounds((draftArea?.bounds ?? NEW_AREA_BOUNDS), area.bounds))
@@ -1870,7 +1945,7 @@ class ImportPlanner
 
 		const itemTargets = new Set(this.itemTargets.values());
 
-		if ((keptAreas.size > 0) || [...keptItems].some((itemId) => !itemTargets.has(itemId)))
+		if ((keptAreas.size > 0) || (keptRegions.size > 0) || [...keptItems].some((itemId) => !itemTargets.has(itemId)))
 		{
 			this.leftOut.add('keptForSettings');
 		}
