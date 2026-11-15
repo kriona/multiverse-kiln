@@ -24,7 +24,7 @@ const PASSED: BotCheckState = {
 };
 
 /**
- * How many attempts of a kind a subject made in the past hour
+ * How many attempts of a kind a subject made in the past day
  *
  * @param kind What is counted
  * @param subjectHash The subject
