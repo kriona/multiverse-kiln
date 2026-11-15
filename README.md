@@ -124,7 +124,7 @@ Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_AP
 | `VITE_SERVER_URL` | `client/.env` | WebSocket URL of the Colyseus server: `wss://www.multiversekiln.localhost:2567`. Use the same hostname as `DEV_HOST` so it matches the certificate. |
 | `VITE_SOURCE_URL` | `client/.env` | Where players can get the game engine's source code, linked from the page footer (required). The AGPL requires offering the source to players of a modified version, so a fork sets its own repository. |
 | `PORT` | `server/.env` | Port the Colyseus server listens on (default `2567`). |
-| `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` on your own computer to enable `/monitor`, the playground, and the bot login the load test uses (`POST /dev/bot-login`, which makes an account without email and logs it in). `.env.example` leaves it off. Off unless exactly `true`, and always off when `NODE_ENV` is set to anything but `development` and on Colyseus Cloud. Never set it on a server others can reach. |
+| `ENABLE_DEV_TOOLS` | `server/.env` | Set to `true` on your own computer to enable `/monitor`, the playground, the bot login the load test uses (`POST /dev/bot-login`, which makes an account without email and logs it in), Cloudflare's Turnstile test keys, and the login page's dev toggle that asks the browser for a bot check at every login (see [Bot checks](#bot-checks-optional)). `.env.example` leaves it off. Off unless exactly `true`, and always off when `NODE_ENV` is set to anything but `development` and on Colyseus Cloud. Never set it on a server others can reach. |
 | `ENABLE_DEV_CODES` | `server/.env` | Set to `true` on your own computer to take the dev code (`111111`) for any email or authenticator code, so testing logins doesn't need a mailbox or an authenticator app. It lets anyone who knows an account's email address log in to it, so `.env.example` leaves it off and `ENABLE_DEV_TOOLS` doesn't turn it on. Off unless exactly `true`, and always off when `NODE_ENV` is set to anything but `development` and on Colyseus Cloud. Never set it on a server others can reach. |
 | `SSL_KEY_FILE`, `SSL_CERT_FILE` | `server/.env` | Certificate for HTTPS/WSS (required). The example values point at `certs/` (see step 5). Leave unset on Colyseus Cloud, which handles TLS itself. |
 | `ALLOWED_ORIGINS` | `server/.env` | Comma-separated origins allowed to use the server from a browser (CORS and WebSocket connections). Required. Locally: the client and the server itself (for the playground). |
@@ -168,7 +168,9 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 | `1x0000000000000000000000000000000AA` | Every token passes |
 | `2x0000000000000000000000000000000AA` | Every token fails |
 
-To see a check without making many tries, log in as a server admin, open `/admin/settings` and turn on **Ask for a bot check at every login and emailed code**. Browsers that have logged in to the account are still not asked, so use a private window.
+To see a check without making many tries, click **act like a suspicious browser** under the login card. It shows only in development builds, and works only with `ENABLE_DEV_TOOLS=true`. The server then asks this browser for a check at every login and emailed code, even on an account it has logged in to. Click it again to turn it off. It lasts until the browser closes.
+
+You can also log in as a server admin, open `/admin/settings` and turn on **Ask for a bot check at every login and emailed code**. Browsers that have logged in to the account are still not asked, so use a private window.
 
 **On a real site:**
 

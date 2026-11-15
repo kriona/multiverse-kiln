@@ -1,5 +1,6 @@
 /**
- * Whether to serve the Colyseus playground, /monitor and the load test's bot login
+ * Whether to serve the Colyseus playground, /monitor and the load test's bot login, and to take the
+ * login page's dev toggle that makes a browser act suspicious for bot checks (auth/devSuspicious.ts)
  *
  * Dev tools are opt-in: an unset or misconfigured environment keeps them off, and .env.example leaves
  * them off. They need ENABLE_DEV_TOOLS exactly "true", NODE_ENV unset or exactly "development", and not

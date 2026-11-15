@@ -7,7 +7,8 @@ import { onLoginElsewhere } from './network/sessionBroadcast';
 import { keepProviderLinkError, providerLinkedPageUrl, readNextPage, takeProviderReturn } from './pages';
 import { forgetPlayerValues } from './rememberedValues';
 import { startCodeInputs } from './ui/codeInputs';
-import { showNoticeScreen, showStatus } from './ui/dom';
+import { addDevSuspiciousToggle } from './ui/devSuspicious';
+import { getElement, showNoticeScreen, showStatus } from './ui/dom';
 import { startLanguagePicker } from './ui/languagePicker';
 import { pageMessages } from './ui/pageMessages';
 import { startPasswordToggles } from './ui/passwordToggles';
@@ -29,6 +30,12 @@ async function start(): Promise<void>
 	startShortcuts();
 	startPasswordToggles();
 	startCodeInputs();
+
+	if (import.meta.env.DEV)
+	{
+		addDevSuspiciousToggle(getElement('login-screen', HTMLElement));
+	}
+
 	showStatus(t(pageMessages.connecting));
 
 	const api = new AuthApi(createClient());

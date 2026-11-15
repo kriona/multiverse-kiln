@@ -20,6 +20,14 @@ export type BotCheckAction = (typeof BOT_CHECK_ACTIONS)[number];
 export const MAX_BOT_CHECK_TOKEN_LENGTH = 2048;
 
 /**
+ * The cookie the login page sets in development builds to make the browser act suspicious, so the
+ * server asks it for a check at every login and email code, even on an account it has logged in to. The
+ * page sets it itself, so it isn't HttpOnly, and the server only reads it while dev tools are on
+ * (server/src/auth/devSuspicious.ts)
+ */
+export const DEV_SUSPICIOUS_COOKIE = '__Host-kiln-dev-suspicious';
+
+/**
  * The error a request needing a check is refused with (BotCheckNeededPayload)
  */
 export const BOT_CHECK_MESSAGES = defineMessages({

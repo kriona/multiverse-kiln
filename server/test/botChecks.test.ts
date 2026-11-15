@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_CHANGE_PATH, BOT_CHECK_MESSAGES, isBotCheckNeeded, type BotCheckAction } from '@multiverse-kiln/shared';
+import { AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_CHANGE_PATH, BOT_CHECK_MESSAGES, DEV_SUSPICIOUS_COOKIE, isBotCheckNeeded, type BotCheckAction } from '@multiverse-kiln/shared';
 
 import { watchQueries } from '../scripts/benchmarks/queries.js';
 import { hashAddress } from '../src/auth/keyedHashes.js';
@@ -460,6 +460,109 @@ describe('bot checks', () =>
 			await pastAttempts('addressCheckedCodeWhileBlocked', 'ada@example.com', MAX_CHECKED_CODES_PER_BLOCKED_ADDRESS_DAY - 1, 120);
 			await pool.query('UPDATE rate_limit_events SET occurred_at = occurred_at - interval \'2 minutes\'');
 			assert.strictEqual((await sendCode('ada@example.com', 'pass-email-code')).status, 429);
+		});
+	});
+
+	describe('a browser acting suspicious for testing', () =>
+	{
+		const savedEnv = {
+			ENABLE_DEV_TOOLS: process.env.ENABLE_DEV_TOOLS,
+			NODE_ENV: process.env.NODE_ENV
+		};
+
+		/**
+		 * Turns dev tools on or off for the test server, which runs in this process
+		 *
+		 * @param on Whether dev tools are on
+		 */
+		function setDevTools(on: boolean): void
+		{
+			const values: Record<keyof typeof savedEnv, string | undefined> = (on ? {
+				ENABLE_DEV_TOOLS: 'true',
+				NODE_ENV: 'development'
+			} : savedEnv);
+
+			for (const [name, value] of Object.entries(values))
+			{
+				// Setting a variable to undefined would store the text "undefined"
+				if (value === undefined)
+				{
+					delete process.env[name];
+				}
+				else
+				{
+					process.env[name] = value;
+				}
+			}
+		}
+
+		/**
+		 * A browser that has logged in to Ada's account, then turned on the login page's dev toggle
+		 *
+		 * @return The browser
+		 */
+		async function suspiciousAda(): Promise<Browser>
+		{
+			const ada = new Browser();
+
+			assert.strictEqual((await logIn(ada, PASSWORD)).status, 200);
+			ada.cookies.set(DEV_SUSPICIOUS_COOKIE, '1');
+
+			return(ada);
+		}
+
+		/**
+		 * Asks for a code to reset the password of Ada's address from a browser
+		 *
+		 * @param browser The browser
+		 * @return The answer
+		 */
+		function sendAdaCode(browser: Browser): Promise<{ status: number; body: unknown }>
+		{
+			return(browser.send<unknown>('POST', AUTH_CODE_PATH, {
+				purpose: 'resetPassword',
+				email: 'ada@example.com',
+				locale: 'en'
+			}));
+		}
+
+		afterEach(() =>
+		{
+			setDevTools(false);
+		});
+
+		it('is asked for a check at its first login and code while dev tools are on, though it has logged in to the account', async () =>
+		{
+			const ada = await suspiciousAda();
+
+			setDevTools(true);
+			assertCheckNeeded(await logIn(ada, PASSWORD), 'login');
+			assert.strictEqual((await logIn(ada, PASSWORD, 'pass-login')).status, 200);
+			assertCheckNeeded(await sendAdaCode(ada), 'email-code');
+		});
+
+		it('keeps a logged-in player\'s password dialogs unchecked', async () =>
+		{
+			const ada = await suspiciousAda();
+
+			setDevTools(true);
+			assert.strictEqual((await ada.send<unknown>('POST', AUTH_PASSWORD_CHANGE_PATH, {
+				currentPassword: PASSWORD,
+				newPassword: 'a new passphrase for ada',
+				locale: 'en'
+			})).status, 204);
+		});
+
+		it('changes nothing while dev tools are off', async () =>
+		{
+			const ada = await suspiciousAda();
+			const stranger = new Browser();
+
+			stranger.cookies.set(DEV_SUSPICIOUS_COOKIE, '1');
+			assert.strictEqual((await logIn(ada, PASSWORD)).status, 200);
+			assert.strictEqual((await logIn(stranger, PASSWORD)).status, 200);
+			assert.strictEqual((await sendAdaCode(ada)).status, 204);
+			assert.deepStrictEqual(await checkEvents(), []);
 		});
 	});
 

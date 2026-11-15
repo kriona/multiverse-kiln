@@ -2,6 +2,9 @@
  * The cookies the server gives browsers. Each has the __Host- prefix, which makes browsers refuse it
  * unless it is Secure, has Path=/ and no Domain, so it can only have been set by this host over HTTPS.
  * Each is HttpOnly, so page scripts can't read it, and SameSite=Strict
+ *
+ * Development builds of the login page set one more themselves, DEV_SUSPICIOUS_COOKIE
+ * (shared/src/botChecks.ts), which the server reads only while dev tools are on (auth/devSuspicious.ts)
  */
 import type { Response } from 'express';
 

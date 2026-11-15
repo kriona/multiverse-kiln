@@ -20,6 +20,7 @@
 import type { Request, Response } from 'express';
 import { BOT_CHECK_MESSAGES, MAX_BOT_CHECK_TOKEN_LENGTH, type BotCheckAction } from '@multiverse-kiln/shared';
 
+import { isDevSuspicious } from '../auth/devSuspicious.js';
 import { hashAddress } from '../auth/keyedHashes.js';
 import { takePasswordAttempt, type PasswordAttemptSubjects } from '../auth/rateLimits.js';
 import { botCheckVerifier, type TokenOutcome } from '../auth/turnstile.js';
@@ -102,7 +103,8 @@ function botCheckTokenOf(request: Request): string | undefined
  * @param request The request
  * @param action The action the request's checks are made for
  * @param coveredByEveryRequest Whether the admin setting that checks every request covers this one: not
- * for browsers that have logged in to the account, or logged-in players' password dialogs
+ * for browsers that have logged in to the account, or logged-in players' password dialogs. A browser
+ * acting suspicious for testing (isDevSuspicious()) is checked as if the setting were on
  * @param now The time now
  * @return The check
  */
@@ -132,7 +134,7 @@ export async function readBotCheck(request: Request, action: BotCheckAction, cov
 		state: {
 			available,
 			passed: false,
-			checkEveryRequest: (available && coveredByEveryRequest && (await findSiteSettings()).botCheckEveryRequest)
+			checkEveryRequest: (available && coveredByEveryRequest && (isDevSuspicious(request) || (await findSiteSettings()).botCheckEveryRequest))
 		},
 		token: botCheckTokenOf(request),
 		tokenOutcome: undefined,
