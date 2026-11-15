@@ -491,6 +491,8 @@ export class BotCheck
 
 		if (this.shown && window.turnstile && !this.box.hidden)
 		{
+			// Nothing is being sent until the player tries again
+			this.status.textContent = '';
 			this.showProblem(undefined);
 			window.turnstile.reset(this.shown.id);
 		}
