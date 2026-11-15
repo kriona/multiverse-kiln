@@ -173,6 +173,9 @@ export class TileReplaceDialog
 	 */
 	private shownCount = '';
 
+	/**
+	 * Sets up the dialog's tracking of changes, its Cancel button, the Replace All list and its submit
+	 */
 	constructor()
 	{
 		this.changes = new ChangeTracker({ root: this.form });
