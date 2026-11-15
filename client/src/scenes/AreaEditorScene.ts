@@ -473,6 +473,8 @@ export class AreaEditorScene extends Phaser.Scene
 	 */
 	update(): void
 	{
+		this.keepAreaInView();
+
 		const view = this.cameras.main.worldView;
 
 		this.areaRenderer?.update(view);
@@ -761,12 +763,7 @@ export class AreaEditorScene extends Phaser.Scene
 	 */
 	viewCells(): AreaBounds
 	{
-		// The camera zooms around the middle of its view, which is half its size past its scroll
-		const camera = this.cameras.main;
-		const width = camera.width / camera.zoom;
-		const height = camera.height / camera.zoom;
-		const left = camera.scrollX + ((camera.width - width) / 2);
-		const top = camera.scrollY + ((camera.height - height) / 2);
+		const { left, top, width, height } = this.viewRect();
 
 		return({
 			minColumn: Math.floor(left / GRID_CELL_SIZE),
@@ -774,6 +771,44 @@ export class AreaEditorScene extends Phaser.Scene
 			maxColumn: Math.floor((left + width) / GRID_CELL_SIZE),
 			maxRow: Math.floor((top + height) / GRID_CELL_SIZE)
 		});
+	}
+
+	/**
+	 * Where the camera's view is in the world, worked out from its scroll and zoom as they are now
+	 *
+	 * @return The view's left and top edges, width and height
+	 */
+	private viewRect(): { left: number; top: number; width: number; height: number }
+	{
+		// The camera zooms around the middle of its view, which is half its size past its scroll
+		const camera = this.cameras.main;
+		const width = camera.width / camera.zoom;
+		const height = camera.height / camera.zoom;
+
+		return({
+			left: camera.scrollX + ((camera.width - width) / 2),
+			top: camera.scrollY + ((camera.height - height) / 2),
+			width,
+			height
+		});
+	}
+
+	/**
+	 * Keeps at least one cell of the area in view, scrolling the camera back when looking around, zooming
+	 * or anything else took it further away
+	 */
+	private keepAreaInView(): void
+	{
+		const camera = this.cameras.main;
+		const { minColumn, minRow, maxColumn, maxRow } = this.area.bounds;
+		const { left, top, width, height } = this.viewRect();
+		const keptLeft = keepOverlapping(left, width, minColumn * GRID_CELL_SIZE, (maxColumn + 1) * GRID_CELL_SIZE);
+		const keptTop = keepOverlapping(top, height, minRow * GRID_CELL_SIZE, (maxRow + 1) * GRID_CELL_SIZE);
+
+		if ((keptLeft !== left) || (keptTop !== top))
+		{
+			camera.setScroll(camera.scrollX + (keptLeft - left), camera.scrollY + (keptTop - top));
+		}
 	}
 
 	/**
@@ -1280,6 +1315,23 @@ export class AreaEditorScene extends Phaser.Scene
 			}
 		}
 	}
+}
+
+/**
+ * Where a view's edge along one axis may be so the view keeps at least a cell of the area in it, or as
+ * much of a cell as fits when the view is smaller than one
+ *
+ * @param start The view's edge
+ * @param size The view's size
+ * @param areaStart The area's edge
+ * @param areaEnd The area's far edge
+ * @return The view's edge, moved as little as that needs
+ */
+function keepOverlapping(start: number, size: number, areaStart: number, areaEnd: number): number
+{
+	const overlap = Math.min(GRID_CELL_SIZE, size, (areaEnd - areaStart));
+
+	return(Phaser.Math.Clamp(start, (areaStart + overlap - size), (areaEnd - overlap)));
 }
 
 /**

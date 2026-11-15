@@ -60,6 +60,12 @@ export class AreaCanvas
 	private painting = false;
 
 	/**
+	 * Whether a press of the pointer on the area is under way, which focuses the area without the
+	 * keyboard
+	 */
+	private pressing = false;
+
+	/**
 	 * @param parent The element the canvas goes in, which takes focus for the keyboard
 	 * @param width The canvas's width in pixels
 	 * @param height The canvas's height in pixels
@@ -68,6 +74,7 @@ export class AreaCanvas
 	{
 		parent.addEventListener('keydown', this.onKeyDown);
 		parent.addEventListener('keyup', this.onKeyUp);
+		parent.addEventListener('pointerdown', this.onPointerDown);
 		parent.addEventListener('focus', this.onFocus);
 		parent.addEventListener('blur', this.stopPainting);
 		parent.addEventListener('wheel', this.onWheel, { passive: false });
@@ -288,12 +295,40 @@ export class AreaCanvas
 	}
 
 	/**
+	 * Notes that the pointer is pressing on the area, until the press has focused it
+	 */
+	private readonly onPointerDown = (): void =>
+	{
+		this.pressing = true;
+		window.setTimeout(() =>
+		{
+			this.pressing = false;
+		});
+	};
+
+	/**
 	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the cell in the middle
-	 * of the view, so focus doesn't move the view
+	 * of the view, so focus doesn't move the view. Focus from pressing the pointer leaves the view where
+	 * the player is looking, with the cursor in the middle of it, inside the area
 	 */
 	private readonly onFocus = (): void =>
 	{
-		this.moveCursor((this.cursor ?? this.current?.middleCell() ?? { column: 0, row: 0 }));
+		const middle = (this.current?.middleCell() ?? { column: 0, row: 0 });
+
+		if (this.pressing)
+		{
+			const bounds = this.bounds;
+
+			this.cursor = (bounds
+				? {
+					column: Phaser.Math.Clamp(middle.column, bounds.minColumn, bounds.maxColumn),
+					row: Phaser.Math.Clamp(middle.row, bounds.minRow, bounds.maxRow)
+				}
+				: middle);
+			return;
+		}
+
+		this.moveCursor((this.cursor ?? middle));
 	};
 
 	/**
