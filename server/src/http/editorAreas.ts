@@ -356,7 +356,8 @@ export async function parentPlace(transaction: Executor, areas: ReadonlyMap<stri
 
 /**
  * Deletes an area, unless it is the universe's lobby or starting area. The areas inside it take its
- * parents in its place, beside their other parents
+ * parents in its place, beside their other parents. A builder needs the areas it neighbors and links
+ * to or from within their assignments
  *
  * @param context The save
  * @param areaId The area
@@ -376,20 +377,21 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 		});
 	}
 
-	await context.places.requireWithin({ kind: 'area', id: area.id });
+	// Its neighbors are left with an edge where it was, so a builder needs them within their assignments too
+	const neighbors = (await findEditorArea(area.id, transaction))?.area.neighbors;
+	const neighborIds = (neighbors ? NEIGHBOR_SIDES
+		.map((side) => neighbors[side])
+		.filter((neighborId) => (neighborId !== null)) : []);
+
+	await context.places.requireWithin({ kind: 'area', id: area.id }, ...neighborIds.map((id): PlaceRef => ({ kind: 'area', id })));
 	await context.places.requireLinksWithin(area.id);
 
 	// The links leading here go with it, so the areas they're on are read again
 	const linkingAreaIds = await listAreasLinkingTo([area.id], transaction);
 
-	// Its neighbors are left with an edge where it was
-	const neighbors = (await findEditorArea(area.id, transaction))?.area.neighbors;
-
-	if (neighbors && hasNeighbors(neighbors))
+	if (neighborIds.length > 0)
 	{
-		context.places.noteNeighbors(NEIGHBOR_SIDES
-			.map((side) => neighbors[side])
-			.filter((neighborId) => (neighborId !== null)));
+		context.places.noteNeighbors(neighborIds);
 	}
 
 	for (const child of (await context.places.load()).deleteArea(area.id))

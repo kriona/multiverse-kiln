@@ -243,6 +243,39 @@ describe('Neighboring areas in the world editor', () =>
 		assert.strictEqual(within.status, 200, JSON.stringify(within.body));
 	});
 
+	it('refuses a builder deleting an area with a neighbor outside their assignments', async () =>
+	{
+		const bea = await logIn('Bea');
+		const town = await addSquare('Town');
+		const forest = await addSquare('Forest');
+		const meadow = await addSquare('Meadow');
+
+		// Assigned before the other top-level region is added, which assignToWorld() could take for World
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+		await assignToWorld(ada, universeId, [bea.playerId]);
+
+		const grass = (await findDefaultTileIds('pf1e')).get('grass') ?? null;
+		const ids = await saveAll(ada, universeId, [{ kind: 'createRegion', ref: 'new:other', region: { name: 'Elsewhere', parents: [], enabled: null, indoors: false, lightLevel: null, defaultTileId: grass, passageOfTime: 'flows_normally', faerieMorning: null, fogOfWar: true } }]);
+		const elsewhere = await addSquare('Far Away', { parents: [{ kind: 'region', id: ids['new:other'] }] });
+
+		await saveAll(ada, universeId, [
+			{ kind: 'setNeighbor', areaId: elsewhere, side: 'east', neighborId: town },
+			{ kind: 'setNeighbor', areaId: forest, side: 'east', neighborId: meadow }
+		]);
+
+		// Deleting it would leave the area outside them with an edge where it was
+		const outside = await saveChanges(bea, universeId, [{ kind: 'deleteArea', areaId: town }]);
+
+		assert.strictEqual(outside.status, 403, JSON.stringify(outside.body));
+		assert.strictEqual(outside.body.error.id, 'error.outsideAssignments');
+		assert.strictEqual((await neighborsOf(elsewhere))?.east, town);
+
+		const within = await saveChanges(bea, universeId, [{ kind: 'deleteArea', areaId: meadow }]);
+
+		assert.strictEqual(within.status, 200, JSON.stringify(within.body));
+		assert.strictEqual((await neighborsOf(forest))?.east, null);
+	});
+
 	it('leaves an area\'s neighbors with an edge when it is deleted, telling the rooms', async () =>
 	{
 		const town = await addSquare('Town');
