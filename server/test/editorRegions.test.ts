@@ -6,7 +6,7 @@ import { createAreaLink, listAreaLinks, loadArea } from '../src/db/areaRepo.js';
 import { listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addArea, addCharacter, addGroup, addPlayableUniverse, assignToTestRegion, defaultTileId, TEST_LOBBY_REGION_NAME, TEST_REGION_NAME, testRegionId, withoutLobby } from './db/fixtures.js';
+import { addArea, addCharacter, addGroup, addPlayableUniverse, assignToTestRegion, defaultTileId, TEST_LOBBY_REGION_NAME, TEST_REGION_NAME, testLobbyRegionId, testRegionId, withoutLobby } from './db/fixtures.js';
 import { createUniverse, logIn, saveAll, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -424,6 +424,38 @@ describe('Regions', () =>
 		await setUniverseAccess(universeId, bea.playerId, { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false } });
 		assert.strictEqual(await statusOf(bea, { kind: 'createTile', ref: 'new:moss', settings: moss }), 200);
 		assert.strictEqual(await statusOf(carl, { kind: 'updateArea', areaId: mine, update: { name: 'Carl\'s' } }), 403);
+	});
+
+	it('leaves deleting the lobby region, which clears the Lobby tab\'s settings, to creators, even below a builder\'s assignment', async () =>
+	{
+		const { universeId, squareAreaId, houseAreaId } = await addPlayableUniverse();
+		const bea = await logIn('Bea');
+		const lobbyRegion = await testLobbyRegionId(universeId);
+		const lobbyOf = async (): Promise<string | null> => (await send<AreaListPayload>(ada, 'GET', `/${universeId}/areas`)).body.lobbyRegionId;
+
+		await setUniverseRole(universeId, ada.playerId, 'creator');
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+
+		const ids = await saveAll(ada, universeId, [
+			{ kind: 'universe', update: { requireBuilderDraft: false } },
+			newRegion('everything', 'Everything', [], { indoors: false, lightLevel: 'lit', defaultTileId: await defaultTileId('grass'), passageOfTime: 'flows_normally', fogOfWar: true }),
+			{ kind: 'updateRegion', regionId: lobbyRegion, update: { parents: [inRegion('new:everything')] } },
+			{ kind: 'assignBuilders', regionId: 'new:everything', builderIds: [bea.playerId] }
+		]);
+		const everything = String(ids['new:everything']);
+		const deletion: EditorChange[] = [
+			{ kind: 'updateArea', areaId: squareAreaId, update: { parents: [inRegion(lobbyRegion), inRegion(everything)] } },
+			{ kind: 'updateArea', areaId: houseAreaId, update: { parents: [inRegion(lobbyRegion), inRegion(everything)] } },
+			{ kind: 'deleteRegion', regionId: lobbyRegion }
+		];
+		const refused = await saveChanges(bea, universeId, deletion);
+
+		assert.strictEqual(refused.status, 403, JSON.stringify(refused.body));
+		assert.strictEqual(refused.body.error.id, 'region.lobbyDeletionLocked');
+		assert.strictEqual(await lobbyOf(), lobbyRegion);
+
+		assert.strictEqual((await saveChanges(ada, universeId, deletion)).status, 200);
+		assert.strictEqual(await lobbyOf(), null);
 	});
 
 	it('refuses a builder a resize discarding links on or leading to areas outside their assignments', async () =>

@@ -9,6 +9,7 @@
  * a conflict or a missing value
  */
 import type { NeighborSide } from './areaNeighbors.js';
+import { defineMessages, type MessageDescriptor } from './localization.js';
 import type { AreaLightLevel, FaerieMorning, PassageOfTime } from './universes.js';
 
 /**
@@ -871,6 +872,19 @@ export function isInLobby(graph: PlaceGraph, place: PlaceRef, lobbyRegionId: str
 
 	return(samePlace(place, lobbyRegion) || graph.isBelow(place, lobbyRegion));
 }
+
+/**
+ * Why a builder can't delete the lobby region: deleting it clears the Lobby tab's lobby region and
+ * starting square, which only roles that may change the universe's settings change. Shown in the Delete
+ * Region dialog and given by the server when it refuses
+ */
+export const LOBBY_REGION_DELETION_LOCKED: MessageDescriptor = defineMessages({
+	lobbyRegionDeletionLocked: {
+		id: 'region.lobbyDeletionLocked',
+		defaultMessage: 'Only the universe\'s creators can delete the lobby region.',
+		description: 'In the Delete Region dialog, for a builder deleting the lobby region or a region that would take it with it, and why the world editor refused a builder\'s save doing so: deleting the lobby region clears the lobby region and starting square chosen on the Lobby tab, which only creators change'
+	}
+}).lobbyRegionDeletionLocked;
 
 /**
  * The lobby areas: every area below the lobby region, at any depth

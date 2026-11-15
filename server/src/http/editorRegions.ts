@@ -2,7 +2,7 @@
  * Saving changes to a universe's regions and the builders assigned to them (see Regions in
  * STRUCTURE-OVERVIEW.md, and editorChanges.ts)
  */
-import { editsEveryPlace, type AreaEvacuations, type MessageDescriptor, type NewRef, type NewRegionChange, type PlaceNode, type PlaceRef, type RegionChangeUpdate, type RegionSettings, type StringRef } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, editsEveryPlace, LOBBY_REGION_DELETION_LOCKED, type AreaEvacuations, type MessageDescriptor, type NewRef, type NewRegionChange, type PlaceNode, type PlaceRef, type RegionChangeUpdate, type RegionSettings, type StringRef } from '@multiverse-kiln/shared';
 
 import { countRegions, createRegion, deleteRegion, findLiveRegionId, listRegionBuilderIds, setRegionAssignments, setRegionParents, updateRegionSettings } from '../db/regionRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
@@ -172,7 +172,8 @@ export async function updateRegionChange(context: ChangeContext, regionId: Strin
 /**
  * Deletes a region. What it holds loses it as a parent; the save moves or deletes what has no other
  * parent with changes before this one, and is refused when it leaves an area in no region. Deleting the
- * lobby region leaves the universe without a lobby region or starting square
+ * lobby region leaves the universe without a lobby region or starting square, which are Lobby tab
+ * settings, so only roles that may change the universe's settings delete it
  *
  * @param context The save
  * @param regionId The region
@@ -192,6 +193,11 @@ export async function deleteRegionChange(context: ChangeContext, regionId: Strin
 	// The universe has no lobby to walk in until another region is chosen on the Lobby tab
 	if (region.id === context.universe.lobbyRegionId)
 	{
+		if (!canEditUniverseSettings(context.role))
+		{
+			refuse(403, LOBBY_REGION_DELETION_LOCKED);
+		}
+
 		await updateUniverseSettings(context.version, {
 			lobbyRegionId: null,
 			lobbyAreaId: null,

@@ -8359,6 +8359,10 @@
 		"defaultMessage": "Download everything kept about you as a file, or delete your account and everything in it.",
 		"description": "Under the Your data heading on the player's own profile page, above the buttons that download their data and delete their account"
 	},
+	"region.lobbyDeletionLocked": {
+		"defaultMessage": "Only the universe's creators can delete the lobby region.",
+		"description": "In the Delete Region dialog, for a builder deleting the lobby region or a region that would take it with it, and why the world editor refused a builder's save doing so: deleting the lobby region clears the lobby region and starting square chosen on the Lobby tab, which only creators change"
+	},
 	"sf1e.ability.charisma": {
 		"defaultMessage": "Charisma",
 		"description": "Name of a character's ability score in Starfinder: force of personality"

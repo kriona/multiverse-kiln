@@ -1,4 +1,4 @@
-import { PlaceGraph, placeKey, resolveAreaSettings, samePlace, type AreaNode, type EditorRegion, type PlaceNode, type PlaceRef, type PlaceWorld } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, LOBBY_REGION_DELETION_LOCKED, PlaceGraph, placeKey, resolveAreaSettings, samePlace, type AreaNode, type EditorRegion, type PlaceNode, type PlaceRef, type PlaceWorld } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { getElement, setOptions, showMessage } from '../dom';
@@ -10,7 +10,8 @@ import { describeProblem, problemPlaces } from './places';
  * and areas whose only parent is the region, moved to another region or deleted with everything inside
  * them, and to those with other parents too, left with them or given another region. It checks that what
  * is left still has a value for each setting before it goes on, then stages it all with the region's
- * deletion until the Areas tab is saved
+ * deletion until the Areas tab is saved. Only roles that may change the universe's settings delete the
+ * lobby region: for the others it says so in place of the choices, or when their choices would delete it
  */
 export class RegionDeleteDialog
 {
@@ -18,6 +19,7 @@ export class RegionDeleteDialog
 	private readonly form = getElement('region-delete-form', HTMLFormElement);
 	private readonly title = getElement('region-delete-title', HTMLElement);
 	private readonly lobby = getElement('region-delete-lobby', HTMLElement);
+	private readonly locked = getElement('region-delete-locked', HTMLElement);
 	private readonly only = getElement('region-delete-only', HTMLElement);
 	private readonly onlyIntro = getElement('region-delete-only-intro', HTMLElement);
 	private readonly onlyList = getElement('region-delete-only-list', HTMLUListElement);
@@ -29,6 +31,7 @@ export class RegionDeleteDialog
 	private readonly add = getElement('region-delete-add', HTMLInputElement);
 	private readonly addTo = getElement('region-delete-add-to', HTMLSelectElement);
 	private readonly problems = getElement('region-delete-problems', HTMLElement);
+	private readonly submit = getElement('region-delete-submit', HTMLButtonElement);
 
 	/**
 	 * The region being deleted
@@ -74,6 +77,8 @@ export class RegionDeleteDialog
 		const names = this.host.names();
 		const { only, shared } = this.childrenOf(world, graph, place);
 		const below = new Set([placeKey(place), ...graph.descendantsOf(place).map(placeKey)]);
+		const isLobby = (region.id === this.host.lobbyRegionId());
+		const locked = (isLobby && !this.mayDeleteLobbyRegion());
 
 		// The region's parents first, then the others it doesn't hold
 		const regions = [
@@ -95,7 +100,10 @@ export class RegionDeleteDialog
 
 		this.region = region;
 		this.form.reset();
-		this.lobby.hidden = (region.id !== this.host.lobbyRegionId());
+		this.lobby.hidden = (!isLobby || locked);
+		this.locked.hidden = !locked;
+		this.locked.textContent = t(LOBBY_REGION_DELETION_LOCKED);
+		this.submit.hidden = locked;
 		this.title.textContent = t({
 			id: 'editor.regionDelete.title',
 			defaultMessage: 'Delete {region}',
@@ -103,7 +111,7 @@ export class RegionDeleteDialog
 		}, {
 			region: region.name
 		});
-		this.only.hidden = (only.length === 0);
+		this.only.hidden = ((only.length === 0) || locked);
 		this.onlyIntro.textContent = t({
 			id: 'editor.regionDelete.onlyIntro',
 			defaultMessage: '{count, plural, one {This is inside nothing but {region}:} other {These are inside nothing but {region}:}}',
@@ -124,7 +132,7 @@ export class RegionDeleteDialog
 				})
 			}
 		]);
-		this.shared.hidden = (shared.length === 0);
+		this.shared.hidden = ((shared.length === 0) || locked);
 		this.sharedIntro.textContent = t({
 			id: 'editor.regionDelete.sharedIntro',
 			defaultMessage: '{count, plural, one {This is also inside other regions or areas:} other {These are also inside other regions or areas:}}',
@@ -137,6 +145,19 @@ export class RegionDeleteDialog
 		this.add.disabled = (options.length === 0);
 		showMessage(this.problems, undefined);
 		this.dialog.showModal();
+	}
+
+	/**
+	 * Whether the player's role may delete the lobby region, which clears the Lobby tab's lobby region and
+	 * starting square
+	 *
+	 * @return True for roles that may change the universe's settings
+	 */
+	private mayDeleteLobbyRegion(): boolean
+	{
+		const universe = this.host.universe();
+
+		return((universe !== undefined) && canEditUniverseSettings(universe.role));
 	}
 
 	/**
@@ -224,6 +245,14 @@ export class RegionDeleteDialog
 
 				moves.set(placeKey(child), { place: child, parents });
 			}
+		}
+
+		const lobbyRegionId = this.host.lobbyRegionId();
+
+		if ((lobbyRegionId !== null) && deleted.has(placeKey({ kind: 'region', id: lobbyRegionId })) && !this.mayDeleteLobbyRegion())
+		{
+			showMessage(this.problems, t(LOBBY_REGION_DELETION_LOCKED));
+			return;
 		}
 
 		const after = this.simulate(world, moves, deleted);

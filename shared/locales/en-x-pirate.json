@@ -8359,6 +8359,10 @@
 		"message": "Haul everything kept about ye ashore as a file, or scuttle yer account and all in it.",
 		"source": "Download everything kept about you as a file, or delete your account and everything in it."
 	},
+	"region.lobbyDeletionLocked": {
+		"message": "Only the universe's captains can scuttle the tavern's sea.",
+		"source": "Only the universe's creators can delete the lobby region."
+	},
 	"sf1e.ability.charisma": {
 		"message": "Swagger",
 		"source": "Charisma"
