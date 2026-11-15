@@ -256,10 +256,7 @@ export class BotCheck
 	 */
 	cancel(): void
 	{
-		const waiting = this.waiting;
-
 		this.stop();
-		waiting?.reject(waiting.refusal);
 	}
 
 	/**
@@ -324,6 +321,9 @@ export class BotCheck
 
 		return(await new Promise<string>((resolve, reject) =>
 		{
+			// One request waits at a time, such as when a form's other button is used while it waits: the
+			// one before fails with its answer, so its form can be sent again
+			this.waiting?.reject(this.waiting.refusal);
 			this.waiting = {
 				resolve,
 				reject,
@@ -489,16 +489,20 @@ export class BotCheck
 	}
 
 	/**
-	 * Hides the check once a request went through, or the check stopped
+	 * Hides the check once a request went through, or the check stopped: a request still waiting for it
+	 * fails with the server's answer that asked for it
 	 */
 	private stop(): void
 	{
+		const waiting = this.waiting;
+
 		this.waiting = undefined;
 		this.token = undefined;
 		this.removeWidget();
 		this.showProblem(undefined);
 		this.status.textContent = '';
 		this.box.hidden = true;
+		waiting?.reject(waiting.refusal);
 	}
 
 	/**
