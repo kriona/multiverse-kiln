@@ -396,21 +396,21 @@ function describeBlockedArrival(problem: BlockedArrival, names: PlaceNames, tile
 		case 'universe':
 			return(t({
 				id: 'editor.place.universeStartBlocked',
-				defaultMessage: '{area}: the universe\'s starting square at {column}, {row} is {tile}, which can\'t be walked on',
+				defaultMessage: '{area}: the universe\'s starting square at {column}, {row} is {tile}, which is impassable',
 				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters start (chosen on the Characters tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
 			}, values));
 
 		case 'lobby':
 			return(t({
 				id: 'editor.place.lobbyStartBlocked',
-				defaultMessage: '{area}: the lobby\'s starting square at {column}, {row} is {tile}, which can\'t be walked on',
+				defaultMessage: '{area}: the lobby\'s starting square at {column}, {row} is {tile}, which is impassable',
 				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where players start in the lobby (chosen on the Lobby tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
 			}, values));
 
 		case 'race':
 			return(t({
 				id: 'editor.place.raceStartBlocked',
-				defaultMessage: '{area}: the starting square of {race} at {column}, {row} is {tile}, which can\'t be walked on',
+				defaultMessage: '{area}: the starting square of {race} at {column}, {row} is {tile}, which is impassable',
 				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a race start (chosen in the race editor) is on a tile nobody can walk on; {area} is the area, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
 			}, {
 				...values,
@@ -420,7 +420,7 @@ function describeBlockedArrival(problem: BlockedArrival, names: PlaceNames, tile
 		case 'class':
 			return(t({
 				id: 'editor.place.classStartBlocked',
-				defaultMessage: '{area}: the starting square of {class} at {column}, {row} is {tile}, which can\'t be walked on',
+				defaultMessage: '{area}: the starting square of {class} at {column}, {row} is {tile}, which is impassable',
 				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class start (chosen in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
 			}, {
 				...values,
@@ -430,7 +430,7 @@ function describeBlockedArrival(problem: BlockedArrival, names: PlaceNames, tile
 		case 'classRace':
 			return(t({
 				id: 'editor.place.classRaceStartBlocked',
-				defaultMessage: '{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which can\'t be walked on',
+				defaultMessage: '{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which is impassable',
 				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class and race start (chosen for that race in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
 			}, {
 				...values,
@@ -441,7 +441,7 @@ function describeBlockedArrival(problem: BlockedArrival, names: PlaceNames, tile
 		default:
 			return(t({
 				id: 'editor.place.linkBlocked',
-				defaultMessage: '{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and can\'t be walked on',
+				defaultMessage: '{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and is impassable',
 				description: 'A problem keeping a save, shown by the area editor and the Areas tab: a link leads to a square on a tile nobody can walk on; {linkArea} is the area the link is on, {linkColumn} and {linkRow} the link\'s cell, {area} the area it leads to, {column} and {row} the square there, and {tile} the tile\'s name, such as Water, or Unexplored'
 			}, {
 				...values,

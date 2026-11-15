@@ -3471,15 +3471,18 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	showRefusal(refusal: SaveRefusal, fallback: Parameters<typeof describeEditorError>[1], values: MessageValues | undefined, error: HTMLElement, problemList: HTMLElement, problems: HTMLElement): void
 	{
-		showMessage(error, describeEditorError(refusal.error, fallback, values));
-
-		if (refusal.placeProblems)
+		// The list names each problem, so the message saying the same in general isn't shown beside it
+		if (refusal.placeProblems && (refusal.placeProblems.problems.length > 0))
 		{
 			const named = refusal.placeProblems.names;
 			const ours = this.names();
 
+			showMessage(error, undefined);
 			this.listProblems(refusal.placeProblems.problems, (place) => (named[placeKey(place)] ?? ours(place)), problemList, problems, (this.universeOpen?.ruleset ?? 'pf1e'));
+			return;
 		}
+
+		showMessage(error, describeEditorError(refusal.error, fallback, values));
 	}
 
 	/**
@@ -3656,11 +3659,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (areaId === this.area?.id)
 			{
-				showMessage(this.error, describeEditorError(refusal.error, {
+				this.showRefusal(refusal, {
 					id: 'editor.area.cellsSaveFailed',
 					defaultMessage: 'Could not save the area\'s cells.',
 					description: 'Shown in the area editor when the server refused the painting on the area\'s cells, its new size or its links, followed by why; nothing was saved'
-				}));
+				}, undefined, this.error, this.problemList, this.problems);
 			}
 			else
 			{

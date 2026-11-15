@@ -575,7 +575,7 @@
 											<button id="area-overall-map" type="button" class="secondary" data-shortcut="Alt+V" data-message="editor.area.overallMap" data-translation-context="Button in the area editor that opens a dialog drawing the whole grid of neighboring areas the area is in, zoomed out"><!-- icon ph:map-trifold -->See Overall Map</button>
 										</div>
 									</div>
-									<div id="area-problems" class="place-problems" hidden>
+									<div id="area-problems" class="place-problems save-problems" hidden>
 										<p data-message="editor.place.problemsHeading" data-translation-context="Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them">These keep your changes from saving:</p>
 										<ul id="area-problem-list"></ul>
 									</div>
@@ -641,7 +641,7 @@
 								<div class="area-status">
 									<span id="area-save-status" role="status"></span>
 									<span id="area-pick-status" role="status"></span>								</div>
-								<p class="hint" data-message="editor.area.help" data-translation-context="Explains how to use the area editor's cells with the mouse and keyboard">Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.</p>
+								<p class="hint" data-message="editor.area.help" data-translation-context="Explains how to use the area editor's cells with the mouse and keyboard">Drag with the right mouse button to look around. Zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.</p>
 								<p id="area-keyboard-help" class="hint" data-message="editor.area.keyboardHelp" data-translation-context="Explains how to use the area editor's cells with only the keyboard; the keys are the same in every language">With the cells focused, the arrow keys move the cursor, 10 cells at a time with Shift. Space or Enter paints, fills from the cell with the Fill tool, or opens the cell's link with the Links tool; hold Space while moving to keep painting. P chooses the cell's tile in the Tile list. + and - zoom, and Home goes back to the center cell.</p>
 								<p id="area-cells-error" class="form-error" role="alert" hidden></p>
 							</section>
@@ -720,7 +720,7 @@
 										<p data-message="editor.region.warningsHeading" data-translation-context="Heads the list of settings a region inherits different values for from the regions above it, in the region editor. They don't keep it from saving: only areas are checked, and an area below it may set its own value or find one nearer">Different values from above, which the areas in this region must settle:</p>
 										<ul id="region-warning-list"></ul>
 									</div>
-									<div id="region-problems" class="place-problems" hidden>
+									<div id="region-problems" class="place-problems save-problems" hidden>
 										<p data-message="editor.place.problemsHeading" data-translation-context="Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them">These keep your changes from saving:</p>
 										<ul id="region-problem-list"></ul>
 									</div>

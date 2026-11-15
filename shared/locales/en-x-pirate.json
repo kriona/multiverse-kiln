@@ -1400,8 +1400,8 @@
 		"source": "Cells"
 	},
 	"editor.area.help": {
-		"message": "Drag with the right mouse button to look about, and hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to take up its tile in the Tile list. With the Flood tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Passages tool, click a cell to add or change its passage.",
-		"source": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link."
+		"message": "Drag with the right mouse button to look about. Hold Ctrl while spinnin' the mouse wheel to zoom. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to take up its tile in the Tile list. With the Flood tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Passages tool, click a cell to add or change its passage.",
+		"source": "Drag with the right mouse button to look around. Zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link."
 	},
 	"editor.area.keyboardHelp": {
 		"message": "With the cells in hand, the arrow keys steer the cursor, 10 cells at a time with Shift. Space or Enter paints, floods from the cell with the Flood tool, or opens the cell's passage with the Passages tool; hold Space while steerin' to keep paintin'. P takes up the cell's tile in the Tile list. + and - zoom, and Home sails back to the center cell.",
@@ -3053,11 +3053,11 @@
 	},
 	"editor.place.classRaceStartBlocked": {
 		"message": "{area}: the home port o' {class} for {race} at {column}, {row} be {tile}, where no hand can set foot",
-		"source": "{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which can't be walked on"
+		"source": "{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which is impassable"
 	},
 	"editor.place.classStartBlocked": {
 		"message": "{area}: the home port o' {class} at {column}, {row} be {tile}, where no hand can set foot",
-		"source": "{area}: the starting square of {class} at {column}, {row} is {tile}, which can't be walked on"
+		"source": "{area}: the starting square of {class} at {column}, {row} is {tile}, which is impassable"
 	},
 	"editor.place.conflict": {
 		"message": "{area}: {setting} be {values}",
@@ -3113,7 +3113,7 @@
 	},
 	"editor.place.linkBlocked": {
 		"message": "{linkArea}: the passage at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which be {tile} where no hand can set foot",
-		"source": "{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and can't be walked on"
+		"source": "{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and is impassable"
 	},
 	"editor.place.lobbyFaerieLoops": {
 		"message": "{area}: the tavern's hours pass the faerie way, so it can't loop",
@@ -3141,7 +3141,7 @@
 	},
 	"editor.place.lobbyStartBlocked": {
 		"message": "{area}: the tavern's moorin' spot at {column}, {row} be {tile}, where no hand can set foot",
-		"source": "{area}: the lobby's starting square at {column}, {row} is {tile}, which can't be walked on"
+		"source": "{area}: the lobby's starting square at {column}, {row} is {tile}, which is impassable"
 	},
 	"editor.place.lobbyStartingArea": {
 		"message": "{area}: hands set sail from here, so it can't be part o' the tavern",
@@ -3193,7 +3193,7 @@
 	},
 	"editor.place.raceStartBlocked": {
 		"message": "{area}: the home port o' {race} at {column}, {row} be {tile}, where no hand can set foot",
-		"source": "{area}: the starting square of {race} at {column}, {row} is {tile}, which can't be walked on"
+		"source": "{area}: the starting square of {race} at {column}, {row} is {tile}, which is impassable"
 	},
 	"editor.place.removeParent": {
 		"message": "Cast off",
@@ -3213,7 +3213,7 @@
 	},
 	"editor.place.universeStartBlocked": {
 		"message": "{area}: the universe's home port at {column}, {row} be {tile}, where no hand can set foot",
-		"source": "{area}: the universe's starting square at {column}, {row} is {tile}, which can't be walked on"
+		"source": "{area}: the universe's starting square at {column}, {row} is {tile}, which is impassable"
 	},
 	"editor.place.valueIn": {
 		"message": "{value} in {place}",

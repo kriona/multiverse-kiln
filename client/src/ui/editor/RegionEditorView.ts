@@ -658,11 +658,16 @@ export class RegionEditorView
 			return(false);
 		}
 
-		showMessage(this.error, describeEditorError(refusal.error, fallback, values));
-
-		if (refusal.placeProblems)
+		// The list names each problem, so the message saying the same in general isn't shown beside it
+		if (!refusal.placeProblems || (refusal.placeProblems.problems.length === 0))
+		{
+			showMessage(this.error, describeEditorError(refusal.error, fallback, values));
+		}
+		else
 		{
 			const universe = this.host.universe();
+
+			showMessage(this.error, undefined);
 			const named = refusal.placeProblems.names;
 			const ours = this.host.names();
 

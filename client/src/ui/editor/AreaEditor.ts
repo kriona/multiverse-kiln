@@ -490,6 +490,16 @@ export class AreaEditor
 			this.setFullPage(!this.fullPage);
 		});
 
+		// The full page cell editor covers the area editor's other cards, so focus reaching one of them,
+		// such as a save's problem in the area's settings, puts the cell editor back in the page
+		getElement('area-editor-view', HTMLElement).addEventListener('focusin', (event) =>
+		{
+			if (this.fullPage && (event.target instanceof Node) && !this.section.contains(event.target))
+			{
+				this.setFullPage(false);
+			}
+		});
+
 		// What the last pick said no longer goes with the tile chosen
 		this.tile.addEventListener('change', () =>
 		{

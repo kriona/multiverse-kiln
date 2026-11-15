@@ -1400,7 +1400,7 @@
 		"description": "Name of the area's cell editor (the card holding the area's cells and the tools that paint them), for screen readers"
 	},
 	"editor.area.help": {
-		"defaultMessage": "Drag with the right mouse button to look around, and zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.",
+		"defaultMessage": "Drag with the right mouse button to look around. Zoom by holding Ctrl and turning the mouse wheel. Ctrl+Z undoes and Ctrl+Y redoes. Click a cell with the middle mouse button to choose its tile in the Tile list. With the Fill tool, click a cell to paint it and every cell joined to it that holds the same tile. With the Links tool, click a cell to add or change its link.",
 		"description": "Explains how to use the area editor's cells with the mouse and keyboard"
 	},
 	"editor.area.keyboardHelp": {
@@ -3052,11 +3052,11 @@
 		"description": "Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"
 	},
 	"editor.place.classRaceStartBlocked": {
-		"defaultMessage": "{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which can't be walked on",
+		"defaultMessage": "{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which is impassable",
 		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class and race start (chosen for that race in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.classStartBlocked": {
-		"defaultMessage": "{area}: the starting square of {class} at {column}, {row} is {tile}, which can't be walked on",
+		"defaultMessage": "{area}: the starting square of {class} at {column}, {row} is {tile}, which is impassable",
 		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class start (chosen in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.conflict": {
@@ -3112,7 +3112,7 @@
 		"description": "A problem keeping a save, shown by the region and area editors: following a region's or area's parents up leads back to it; {place} is its name"
 	},
 	"editor.place.linkBlocked": {
-		"defaultMessage": "{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and can't be walked on",
+		"defaultMessage": "{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and is impassable",
 		"description": "A problem keeping a save, shown by the area editor and the Areas tab: a link leads to a square on a tile nobody can walk on; {linkArea} is the area the link is on, {linkColumn} and {linkRow} the link's cell, {area} the area it leads to, {column} and {row} the square there, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.lobbyFaerieLoops": {
@@ -3140,7 +3140,7 @@
 		"description": "A problem keeping a save, shown by the region and area editors and the Areas tab: the area holding the lobby's starting square (chosen on the Lobby tab) would no longer be below the lobby region; {area} is the area"
 	},
 	"editor.place.lobbyStartBlocked": {
-		"defaultMessage": "{area}: the lobby's starting square at {column}, {row} is {tile}, which can't be walked on",
+		"defaultMessage": "{area}: the lobby's starting square at {column}, {row} is {tile}, which is impassable",
 		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where players start in the lobby (chosen on the Lobby tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.lobbyStartingArea": {
@@ -3192,7 +3192,7 @@
 		"description": "Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them"
 	},
 	"editor.place.raceStartBlocked": {
-		"defaultMessage": "{area}: the starting square of {race} at {column}, {row} is {tile}, which can't be walked on",
+		"defaultMessage": "{area}: the starting square of {race} at {column}, {row} is {tile}, which is impassable",
 		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a race start (chosen in the race editor) is on a tile nobody can walk on; {area} is the area, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.removeParent": {
@@ -3212,7 +3212,7 @@
 		"description": "A problem keeping a save, shown by the region and area editors: regions and areas nest at most ten levels deep along their longest path; {place} is the region or area past the tenth level"
 	},
 	"editor.place.universeStartBlocked": {
-		"defaultMessage": "{area}: the universe's starting square at {column}, {row} is {tile}, which can't be walked on",
+		"defaultMessage": "{area}: the universe's starting square at {column}, {row} is {tile}, which is impassable",
 		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters start (chosen on the Characters tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.valueIn": {
