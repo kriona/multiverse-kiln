@@ -1263,6 +1263,10 @@
 		"message": "Back to the Tavern",
 		"source": "Back to Lobby"
 	},
+	"editor.area.blockedSquare": {
+		"message": "No hand can set foot on {tile}. Pick another square.",
+		"source": "Nobody can walk on {tile}. Choose another square."
+	},
 	"editor.area.brush.circle": {
 		"message": "round as a cannonball",
 		"source": "circle"
@@ -1606,6 +1610,10 @@
 	"editor.area.unexplored": {
 		"message": "📜Uncharted Waters",
 		"source": "📜Unexplored"
+	},
+	"editor.area.unexploredTile": {
+		"message": "Uncharted Waters",
+		"source": "Unexplored"
 	},
 	"editor.area.unknownTile": {
 		"message": "mystery tile",
@@ -3043,6 +3051,14 @@
 		"message": "Add Mother",
 		"source": "Add Parent"
 	},
+	"editor.place.classRaceStartBlocked": {
+		"message": "{area}: the home port o' {class} for {race} at {column}, {row} be {tile}, where no hand can set foot",
+		"source": "{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which can't be walked on"
+	},
+	"editor.place.classStartBlocked": {
+		"message": "{area}: the home port o' {class} at {column}, {row} be {tile}, where no hand can set foot",
+		"source": "{area}: the starting square of {class} at {column}, {row} is {tile}, which can't be walked on"
+	},
 	"editor.place.conflict": {
 		"message": "{area}: {setting} be {values}",
 		"source": "{area}: {setting} is {values}"
@@ -3095,6 +3111,10 @@
 		"message": "{place} be inside its own hold",
 		"source": "{place} is inside itself"
 	},
+	"editor.place.linkBlocked": {
+		"message": "{linkArea}: the passage at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which be {tile} where no hand can set foot",
+		"source": "{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and can't be walked on"
+	},
 	"editor.place.lobbyFaerieLoops": {
 		"message": "{area}: the tavern's hours pass the faerie way, so it can't loop",
 		"source": "{area}: the lobby's passage of time is faerie, so it can't loop"
@@ -3118,6 +3138,10 @@
 	"editor.place.lobbySquareOutside": {
 		"message": "{area}: the tavern's moorin' spot be here, so it must stay part o' the tavern",
 		"source": "{area}: the lobby's starting square is here, so it must stay part of the lobby"
+	},
+	"editor.place.lobbyStartBlocked": {
+		"message": "{area}: the tavern's moorin' spot at {column}, {row} be {tile}, where no hand can set foot",
+		"source": "{area}: the lobby's starting square at {column}, {row} is {tile}, which can't be walked on"
 	},
 	"editor.place.lobbyStartingArea": {
 		"message": "{area}: hands set sail from here, so it can't be part o' the tavern",
@@ -3167,6 +3191,10 @@
 		"message": "These troubles keep yer changes from bein' stowed:",
 		"source": "These keep your changes from saving:"
 	},
+	"editor.place.raceStartBlocked": {
+		"message": "{area}: the home port o' {race} at {column}, {row} be {tile}, where no hand can set foot",
+		"source": "{area}: the starting square of {race} at {column}, {row} is {tile}, which can't be walked on"
+	},
 	"editor.place.removeParent": {
 		"message": "Cast off",
 		"source": "Remove"
@@ -3182,6 +3210,10 @@
 	"editor.place.tooDeep": {
 		"message": "{place} be stowed more than ten holds deep",
 		"source": "{place} is nested more than ten levels deep"
+	},
+	"editor.place.universeStartBlocked": {
+		"message": "{area}: the universe's home port at {column}, {row} be {tile}, where no hand can set foot",
+		"source": "{area}: the universe's starting square at {column}, {row} is {tile}, which can't be walked on"
 	},
 	"editor.place.valueIn": {
 		"message": "{value} in {place}",
@@ -5142,6 +5174,10 @@
 	"error.areaLinkLimit": {
 		"message": "An area can hold at most {max, plural, one {# passage} other {# passages}}.",
 		"source": "An area can have at most {max, plural, one {# link} other {# links}}."
+	},
+	"error.arrivalProblems": {
+		"message": "Some home ports or passages would land hands on squares they can't set foot on.",
+		"source": "Some starting squares or links would send characters to squares they can't walk on."
 	},
 	"error.auth.adminKeepsTwoFactor": {
 		"message": "The ship's officers must keep two-factor authentication raised. To lower it, have another officer strip ye of yer rank first.",

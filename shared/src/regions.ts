@@ -10,6 +10,7 @@
  */
 import { isInBounds, type AreaBounds } from './areaCells.js';
 import type { NeighborSide } from './areaNeighbors.js';
+import type { BlockedArrival } from './arrivals.js';
 import { defineMessages, type MessageDescriptor } from './localization.js';
 import type { AreaLightLevel, FaerieMorning, PassageOfTime } from './universes.js';
 
@@ -245,6 +246,8 @@ export interface PlaceWorld
  * - neighborSides: the area and its neighbor on a side touch along sides of different lengths
  * - neighborGrid: going one way then the other from the area reaches a different area than going the
  *   other way round (see neighborProblems() in shared/src/areaNeighbors.ts)
+ * - arrivalBlocked: a starting square or link sends characters to a square of the area nobody can walk on
+ *   (see blockedArrivals() in shared/src/arrivals.ts)
  */
 export type PlaceProblem =
 	| { kind: 'conflict'; areaId: string; setting: InheritedSetting; values: { place: PlaceRef; value: InheritedValues[InheritedSetting] }[] }
@@ -262,7 +265,8 @@ export type PlaceProblem =
 	| { kind: 'neighborTooSmall'; areaId: string }
 	| { kind: 'neighborOneWay'; areaId: string; side: NeighborSide; neighborAreaId: string }
 	| { kind: 'neighborSides'; areaId: string; side: NeighborSide; neighborAreaId: string }
-	| { kind: 'neighborGrid'; areaId: string; first: NeighborSide; second: NeighborSide; firstReached: string; secondReached: string };
+	| { kind: 'neighborGrid'; areaId: string; first: NeighborSide; second: NeighborSide; firstReached: string; secondReached: string }
+	| BlockedArrival;
 
 /**
  * A link between two areas, as far as the lobby region's edge goes: the area it is on and the area it

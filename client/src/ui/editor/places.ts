@@ -3,10 +3,12 @@
  * world it works their settings out from, staged changes included, and how a worked-out setting and a
  * problem read
  */
-import { AREA_LIGHT_LEVEL_NAMES, defineMessages, FAERIE_MORNING_NAMES, MIN_NEIGHBOR_AREA_SIDE, PASSAGE_OF_TIME_NAMES, placeKey, type AreaLightLevel, type EditorTile, type FaerieMorning, type InheritedSetting, type InheritedValues, type MessageDescriptor, type PassageOfTime, type PlaceProblem, type PlaceRef, type Ruleset, type SettingResolution } from '@multiverse-kiln/shared';
+import { AREA_LIGHT_LEVEL_NAMES, defineMessages, FAERIE_MORNING_NAMES, MIN_NEIGHBOR_AREA_SIDE, PASSAGE_OF_TIME_NAMES, placeKey, type AreaLightLevel, type BlockedArrival, type EditorTile, type FaerieMorning, type InheritedSetting, type InheritedValues, type MessageDescriptor, type PassageOfTime, type PlaceProblem, type PlaceRef, type Ruleset, type SettingResolution } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
+import { className, raceName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
+import { areaEditorMessages } from './areaEditorMessages';
 
 /**
  * Names a region or area by its key (placeKey()), for describing them
@@ -363,6 +365,90 @@ export function describeProblem(problem: PlaceProblem, names: PlaceNames, tiles:
 				firstReached: names({ kind: 'area', id: problem.firstReached }),
 				secondReached: names({ kind: 'area', id: problem.secondReached })
 			}));
+
+		case 'arrivalBlocked':
+			return(describeBlockedArrival(problem, names, tiles, ruleset));
+	}
+}
+
+/**
+ * What a problem with a starting square or link sending characters to a square nobody can walk on says
+ *
+ * @param problem The problem
+ * @param names Names the areas
+ * @param tiles The tiles the universe can use
+ * @param ruleset The universe's ruleset
+ * @return The message
+ */
+function describeBlockedArrival(problem: BlockedArrival, names: PlaceNames, tiles: readonly EditorTile[], ruleset: Ruleset): string
+{
+	const tile = tiles.find((each) => (each.id === problem.tileId));
+	const values = {
+		area: names({ kind: 'area', id: problem.areaId }),
+		column: problem.column,
+		row: problem.row,
+		tile: ((problem.tileId === null) ? t(areaEditorMessages.unexploredTile) : ((tile === undefined) ? String(problem.tileId) : tileName(tile, ruleset)))
+	};
+	const { source } = problem;
+
+	switch (source.kind)
+	{
+		case 'universe':
+			return(t({
+				id: 'editor.place.universeStartBlocked',
+				defaultMessage: '{area}: the universe\'s starting square at {column}, {row} is {tile}, which can\'t be walked on',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters start (chosen on the Characters tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
+			}, values));
+
+		case 'lobby':
+			return(t({
+				id: 'editor.place.lobbyStartBlocked',
+				defaultMessage: '{area}: the lobby\'s starting square at {column}, {row} is {tile}, which can\'t be walked on',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where players start in the lobby (chosen on the Lobby tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
+			}, values));
+
+		case 'race':
+			return(t({
+				id: 'editor.place.raceStartBlocked',
+				defaultMessage: '{area}: the starting square of {race} at {column}, {row} is {tile}, which can\'t be walked on',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a race start (chosen in the race editor) is on a tile nobody can walk on; {area} is the area, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
+			}, {
+				...values,
+				race: raceName(source.race, ruleset)
+			}));
+
+		case 'class':
+			return(t({
+				id: 'editor.place.classStartBlocked',
+				defaultMessage: '{area}: the starting square of {class} at {column}, {row} is {tile}, which can\'t be walked on',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class start (chosen in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
+			}, {
+				...values,
+				class: className(source.characterClass, ruleset)
+			}));
+
+		case 'classRace':
+			return(t({
+				id: 'editor.place.classRaceStartBlocked',
+				defaultMessage: '{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which can\'t be walked on',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class and race start (chosen for that race in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile\'s name, such as Water, or Unexplored'
+			}, {
+				...values,
+				class: className(source.characterClass, ruleset),
+				race: raceName(source.race, ruleset)
+			}));
+
+		default:
+			return(t({
+				id: 'editor.place.linkBlocked',
+				defaultMessage: '{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and can\'t be walked on',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: a link leads to a square on a tile nobody can walk on; {linkArea} is the area the link is on, {linkColumn} and {linkRow} the link\'s cell, {area} the area it leads to, {column} and {row} the square there, and {tile} the tile\'s name, such as Water, or Unexplored'
+			}, {
+				...values,
+				linkArea: names({ kind: 'area', id: source.areaId }),
+				linkColumn: source.column,
+				linkRow: source.row
+			}));
 	}
 }
 
@@ -390,6 +476,8 @@ export function problemPlaces(problem: PlaceProblem): PlaceRef[]
 		case 'insideItself':
 		case 'tooDeep':
 			return([problem.place]);
+		case 'arrivalBlocked':
+			return([...((problem.source.kind === 'link') ? [{ kind: 'area' as const, id: problem.source.areaId }] : []), { kind: 'area', id: problem.areaId }]);
 		default:
 			return([{ kind: 'area', id: problem.areaId }]);
 	}

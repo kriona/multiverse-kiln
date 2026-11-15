@@ -1017,6 +1017,46 @@ export class AreaEditor
 	}
 
 	/**
+	 * What a cell of the area open holds, with the painting not yet saved
+	 *
+	 * @param areaId The area's ID
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return A tile ID, DEFAULT_TILE_CELL or VOID_CELL; undefined when the area isn't open, or for a cell
+	 * outside it or whose chunk hasn't loaded
+	 */
+	cellValueAt(areaId: string, column: number, row: number): number | undefined
+	{
+		const open = this.open;
+
+		return(((open?.area.id === areaId) ? open.cells.valueAt(column, row) : undefined));
+	}
+
+	/**
+	 * Moves the view and the keyboard's cursor to a cell of the area open, focusing its cells
+	 *
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 */
+	showCell(column: number, row: number): void
+	{
+		this.canvas.focusCell({ column, row });
+	}
+
+	/**
+	 * Moves the view and the keyboard's cursor to a cell of the area open, and opens its link in the link
+	 * dialog
+	 *
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 */
+	showLink(column: number, row: number): void
+	{
+		this.showCell(column, row);
+		this.openLinkDialog(column, row);
+	}
+
+	/**
 	 * Gives areas added since the Areas tab was last saved the IDs the server saved them with, wherever
 	 * the open area, the areas left with changes or the links not yet saved name them
 	 *

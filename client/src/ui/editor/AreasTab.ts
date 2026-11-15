@@ -1,4 +1,4 @@
-import { areasChangedByDeleting, canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, changedSeams, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, otherChainEnd, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { areasChangedByDeleting, blockedArrivals, canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, changedSeams, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, otherChainEnd, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, universeArrivals, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -46,6 +46,11 @@ const messages = defineMessages({
 		description: 'Button in the area editor\'s Neighbors section, beside a neighboring area or the side chosen to add one on, that opens a dialog for choosing the area next to it on that side, walked across without a link'
 	}
 });
+
+/**
+ * How long painting pauses before the area editor lists its problems again, in milliseconds
+ */
+const AREA_PROBLEMS_DELAY_MS = 200;
 
 /**
  * How a save names a region or area: a saved one by its ID, and one added since the tab was last saved
@@ -442,7 +447,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * Every region and area of the universe, its lobby region and starting square, its starting areas and
 	 * its links between areas, as last loaded
 	 */
-	private loaded: AreaListPayload = { regions: [], areas: [], lobbyRegionId: null, lobbyAreaId: null, startingAreaId: null, startingAreaIds: [], links: [] };
+	private loaded: AreaListPayload = { regions: [], areas: [], lobbyRegionId: null, lobbyAreaId: null, startingAreaId: null, startingAreaIds: [], links: [], arrivals: [] };
+
+	/**
+	 * Lists the area open's problems again once painting pauses (queueAreaProblems())
+	 */
+	private areaProblemsTimer: number | undefined;
 
 	/**
 	 * The universe the regions and areas, and the tiles, were last loaded for, as the editor had it open
@@ -543,6 +553,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			this.cellsUnsaved = unsaved;
 			this.areaChanges.check();
 			this.keptChanges.check();
+			this.queueAreaProblems();
 		}, {
 			grid: () => this.neighborGrid(),
 			area: (areaId) => this.neighborArea(areaId),
@@ -2884,9 +2895,87 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const resolution = resolveAreaSettings(world);
 		const below = new Set([placeKey(place), ...resolution.graph.descendantsOf(place).map(placeKey)]);
 		const names = this.names();
-		const problems = [...resolution.problems, ...this.lobbyProblemsIn(world), ...neighborProblems(this.neighborGrid())].filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
+		const arrivals = (((place.kind === 'area') && (place.id === this.area?.id)) ? this.openAreaArrivalProblems(resolution.stored.get(place.id)?.defaultTileId) : []);
+		const problems = [...resolution.problems, ...this.lobbyProblemsIn(world), ...neighborProblems(this.neighborGrid()), ...arrivals].filter((problem) => problemPlaces(problem).some((each) => below.has(placeKey(each))));
 
 		this.listProblems(problems, names, list, container, (universe?.ruleset ?? 'pf1e'));
+	}
+
+	/**
+	 * The squares of the area open that starting squares and links send characters to and nobody can walk
+	 * on, with the painting, size and tiles not yet saved. Squares whose chunks haven't loaded are left to
+	 * the server, which checks them as it saves
+	 *
+	 * @param defaultTileId The area's default tile, as its settings not yet saved work it out, if they do
+	 * @return The problems
+	 */
+	private openAreaArrivalProblems(defaultTileId: number | undefined): PlaceProblem[]
+	{
+		const area = this.area;
+		const universe = this.universeOpen;
+
+		if (!area || !universe)
+		{
+			return([]);
+		}
+
+		const arrivals = [...universeArrivals(universe), ...this.loaded.arrivals].filter((arrival) => (arrival.areaId === area.id));
+		const areas = new Map([[area.id, { bounds: area.bounds, defaultTileId: (defaultTileId ?? area.resolved.defaultTileId) }]]);
+
+		return(blockedArrivals(arrivals, areas, (areaId, column, row) => this.areaEditor.cellValueAt(areaId, column, row), new Map(this.tileList.map((tile) => [tile.id, tile.walkSeconds]))));
+	}
+
+	/**
+	 * Lists the area open's problems again once painting pauses, since painting can leave a starting
+	 * square or a link's destination on a tile nobody can walk on
+	 */
+	private queueAreaProblems(): void
+	{
+		window.clearTimeout(this.areaProblemsTimer);
+		this.areaProblemsTimer = window.setTimeout(() =>
+		{
+			if (this.area)
+			{
+				this.problemsFor({ kind: 'area', id: this.area.id }, this.areaOverride(), this.problemList, this.problems);
+			}
+		}, AREA_PROBLEMS_DELAY_MS);
+	}
+
+	/**
+	 * Opens what a problem is about. For a square nobody can walk on, that is the area with the square,
+	 * shown at the square, or the area with the link, with the link open
+	 *
+	 * @param problem The problem
+	 */
+	private async showProblem(problem: PlaceProblem): Promise<void>
+	{
+		if (problem.kind !== 'arrivalBlocked')
+		{
+			this.open(problemPlaces(problem)[0]);
+			return;
+		}
+
+		const { source } = problem;
+		const areaId = ((source.kind === 'link') ? source.areaId : problem.areaId);
+
+		if (this.area?.id !== areaId)
+		{
+			await this.openArea(areaId);
+		}
+
+		if (this.area?.id !== areaId)
+		{
+			return;
+		}
+
+		if (source.kind === 'link')
+		{
+			this.areaEditor.showLink(source.column, source.row);
+		}
+		else
+		{
+			this.areaEditor.showCell(problem.column, problem.row);
+		}
 	}
 
 	/**
@@ -2903,7 +2992,6 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		list.replaceChildren(...problems.map((problem) =>
 		{
 			const item = document.createElement('li');
-			const place = problemPlaces(problem)[0];
 			const button = document.createElement('button');
 
 			button.type = 'button';
@@ -2911,7 +2999,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			button.textContent = describeProblem(problem, names, this.tileList, ruleset);
 			button.addEventListener('click', () =>
 			{
-				this.open(place);
+				void this.showProblem(problem);
 			});
 			item.append(button);
 

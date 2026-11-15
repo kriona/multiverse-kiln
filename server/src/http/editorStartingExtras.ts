@@ -42,8 +42,9 @@ export interface StartingReferences
 
 /**
  * Refuses starting settings that name an area that isn't one of the universe's, or an item the universe
- * can't use. A starting area below the lobby region is refused once the save's changes are made, so one
- * save can move the lobby and the starting areas past each other
+ * can't use. A starting area below the lobby region, and a starting square nobody can walk on, are
+ * refused once the save's changes are made, so one save can move the lobby and the starting areas past
+ * each other, or repaint a starting square as it moves there
  *
  * @param context The save
  * @param references The areas and items the settings name
@@ -63,6 +64,7 @@ export async function checkStartingReferences(context: ChangeContext, references
 		}
 
 		context.places.checkLobby();
+		context.places.noteArrivals(areaIds);
 	}
 
 	if (itemIds.length > 0)

@@ -386,8 +386,9 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				draftApplied: false
 			};
 
-			// The last change that touched the regions, areas, tiles' kinds, links, starting areas or the lobby,
-			// which a refusal of the settings they leave the areas with, or of the lobby's edge, names
+			// The last change that touched the regions, areas, cells, tiles, links, starting squares or the lobby,
+			// which a refusal of the settings they leave the areas with, of the lobby's edge, or of a square
+			// nobody can walk on, names
 			let lastPlaceChange = -1;
 
 			const audit = new SaveAudit(saving);
@@ -420,12 +421,13 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 
 				const touches = places.touches;
 				const lobbyChecks = places.lobbyChecks;
+				const arrivalChecks = places.arrivalChecks;
 
 				await audit.describe(change);
 				await applyChange(saving, change);
 				applied.push(change);
 
-				if ((places.touches !== touches) || (places.lobbyChecks !== lobbyChecks))
+				if ((places.touches !== touches) || (places.lobbyChecks !== lobbyChecks) || (places.arrivalChecks !== arrivalChecks))
 				{
 					lastPlaceChange = current;
 				}

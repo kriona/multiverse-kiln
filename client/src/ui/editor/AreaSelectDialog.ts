@@ -1,4 +1,4 @@
-import { isInBounds, lobbyAreaIds, parentAreas, PlaceGraph, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
+import { arrivalSquare, isInBounds, lobbyAreaIds, parentAreas, PlaceGraph, type EditableUniverse, type EditorTile, type EditorArea, type EditorAreaSummary, type StartingCell } from '@multiverse-kiln/shared';
 
 import { AreaCanvas, editorAreaPayload } from '../../editor/AreaCanvas';
 import { AreaCells } from '../../editor/AreaCells';
@@ -10,7 +10,7 @@ import { getElement, showMessage } from '../dom';
 import { addKeyHelp } from '../shortcuts';
 import { areaEditorMessages } from './areaEditorMessages';
 import type { AreaSource } from './areaSource';
-import { describeCell } from './cellDescription';
+import { blockedSquareMessage, describeCell } from './cellDescription';
 import { editorMessages } from './editorMessages';
 import type { StagedTiles } from './stagedChanges';
 
@@ -178,8 +178,13 @@ export class AreaSelectDialog
 			event.preventDefault();
 
 			const area = this.areas.find((candidate) => (candidate.id === this.chosenAreaId));
+			const blocked = ((area && (this.preview?.area.id === area.id)) ? this.blockedMessage(this.chosenCell) : undefined);
 
-			if (area)
+			if (blocked !== undefined)
+			{
+				showMessage(this.error, blocked);
+			}
+			else if (area)
 			{
 				this.finish({ area, cell: this.chosenCell });
 				this.dialog.close();
@@ -390,6 +395,7 @@ export class AreaSelectDialog
 			this.chosenAreaId = area.id;
 			this.chosenCell = MIDDLE_CELL;
 			this.submit.disabled = false;
+			showMessage(this.error, undefined);
 			void this.showPreview();
 		});
 
@@ -497,8 +503,15 @@ export class AreaSelectDialog
 			{
 				if (this.preview && !this.neighborMode && isInBounds(this.preview.area.bounds, column, row))
 				{
-					this.chosenCell = { column, row };
-					this.showCell();
+					const blocked = this.blockedMessage({ column, row });
+
+					showMessage(this.error, blocked);
+
+					if (blocked === undefined)
+					{
+						this.chosenCell = { column, row };
+						this.showCell();
+					}
 				}
 			},
 			hover: () => undefined,
@@ -541,6 +554,32 @@ export class AreaSelectDialog
 			row: this.chosenCell.row
 		});
 		this.canvas.scene?.setHighlights([{ ...this.chosenCell, color: STARTING_CELL_COLOR }]);
+	}
+
+	/**
+	 * Why a square of the preview's area can't be chosen for characters to start on, when nobody can
+	 * walk on it
+	 *
+	 * @param cell The square, which counts as the nearest cell of the area when it is outside it
+	 * @return The message, or undefined for a square that can be chosen or hasn't loaded
+	 */
+	private blockedMessage(cell: StartingCell): string | undefined
+	{
+		const preview = this.preview;
+		const universe = this.universe;
+		const square = (preview ? arrivalSquare({ source: { kind: 'universe' }, areaId: preview.area.id, ...cell }, preview.area.bounds) : undefined);
+
+		if (!preview || !universe || !square)
+		{
+			return(undefined);
+		}
+
+		return(blockedSquareMessage({
+			cells: preview.cells,
+			defaultTileId: preview.area.resolved.defaultTileId,
+			tiles: this.tiles,
+			ruleset: universe.ruleset
+		}, square));
 	}
 
 	/**

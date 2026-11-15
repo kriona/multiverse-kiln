@@ -14,7 +14,7 @@ import { SearchSelect } from '../SearchSelect';
 import { addKeyHelp } from '../shortcuts';
 import { areaEditorMessages } from './areaEditorMessages';
 import type { AreaSource, LinkChange } from './areaSource';
-import { describeCell } from './cellDescription';
+import { blockedSquareMessage, describeCell } from './cellDescription';
 import { FollowedDialog } from './otherSaves';
 
 /**
@@ -324,6 +324,7 @@ export class LinkDialog
 		const loader = new ChunkLoader((range) => target.source.loadChunks(area.id, range), cells, (chunkKeys) =>
 		{
 			this.canvas.scene?.refreshChunks(chunkKeys);
+			this.showBlockedDestination();
 		}, (error) =>
 		{
 			showMessage(this.error, describeEditorError(error, areaEditorMessages.loadFailed));
@@ -395,6 +396,15 @@ export class LinkDialog
 				}
 				else
 				{
+					const blocked = this.blockedMessage({ column, row });
+
+					showMessage(this.error, blocked);
+
+					if (blocked !== undefined)
+					{
+						return;
+					}
+
 					this.destination = { column, row };
 				}
 
@@ -497,6 +507,14 @@ export class LinkDialog
 			return;
 		}
 
+		const blocked = this.blockedMessage(destination);
+
+		if (blocked !== undefined)
+		{
+			showMessage(this.error, blocked);
+			return;
+		}
+
 		if (this.addReturn.checked && !this.returnCell)
 		{
 			showMessage(this.error, t({
@@ -592,6 +610,45 @@ export class LinkDialog
 		this.changes.markSaved();
 		this.dialog.close();
 		target?.onChanged(changes);
+	}
+
+	/**
+	 * Says why the destination can't be kept when nobody can walk on it, such as on a link whose square
+	 * has been painted over
+	 */
+	private showBlockedDestination(): void
+	{
+		const blocked = (this.destination ? this.blockedMessage(this.destination) : undefined);
+
+		// Chunks keep loading, so the message is only shown once
+		if ((blocked !== undefined) && (this.error.textContent !== blocked))
+		{
+			showMessage(this.error, blocked);
+		}
+	}
+
+	/**
+	 * Why a square of the preview's area can't be the link's destination, when nobody can walk on it
+	 *
+	 * @param cell The square
+	 * @return The message, or undefined for a square that can be chosen or hasn't loaded
+	 */
+	private blockedMessage(cell: BrushCell): string | undefined
+	{
+		const preview = this.preview;
+		const target = this.target;
+
+		if (!preview || !target)
+		{
+			return(undefined);
+		}
+
+		return(blockedSquareMessage({
+			cells: preview.cells,
+			defaultTileId: preview.area.resolved.defaultTileId,
+			tiles: target.tiles,
+			ruleset: target.ruleset
+		}, cell));
 	}
 
 	/**

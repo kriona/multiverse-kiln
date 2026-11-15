@@ -6,13 +6,13 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, editsEveryPlace, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type PlaceRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, editsEveryPlace, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type PlaceRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDismissedNotices, findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
 import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
-import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
+import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, loadUniverseTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
@@ -454,6 +454,16 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 	}
 
 	const { startingAreaId, startingItems } = update;
+	const arrivalAreaIds = [
+		...(((startingAreaId !== undefined) || (update.startingColumn !== undefined) || (update.startingRow !== undefined)) ? [startingAreaId ?? universe.startingAreaId] : []),
+		...(((lobbyAreaId !== universe.lobbyAreaId) || (update.lobbyColumn !== undefined) || (update.lobbyRow !== undefined)) ? [lobbyAreaId] : [])
+	].filter((areaId): areaId is string => (areaId !== null));
+
+	// Whether the starting squares are ones characters can walk on is checked once every change is made
+	if (arrivalAreaIds.length > 0)
+	{
+		context.places.noteArrivals(arrivalAreaIds);
+	}
 
 	// Deleting an item waits for the universe's lock too, so an item can't be deleted as it is added here
 	await checkStartingReferences(context, {
@@ -654,6 +664,7 @@ export async function saveTileChange(context: ChangeContext, id: NumberRef, sett
 
 	const tile = await withUniverseGraphic(context, settings);
 	const { name } = tile;
+	const walkSecondsBefore = (await loadUniverseTiles(version, universe.ruleset, transaction)).find((each) => (each.id === tileId))?.walkSeconds;
 
 	if ((kind === 'default') && !tile.enabled && await isDefaultAreaTileId(universe.ruleset, tileId, transaction))
 	{
@@ -676,6 +687,12 @@ export async function saveTileChange(context: ChangeContext, id: NumberRef, sett
 	// The kinds of area a tile is for decide which areas it can be the default tile of
 	await context.places.refreshTiles(true);
 	context.published.push({ kind: 'tiles', universeId: universe.id });
+
+	// No starting square or link may be left on a tile nobody can walk on
+	if ((tile.walkSeconds === IMPASSABLE_WALK_SECONDS) && (walkSecondsBefore !== IMPASSABLE_WALK_SECONDS))
+	{
+		context.places.noteArrivals();
+	}
 }
 
 /**
@@ -765,10 +782,20 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 
 	if (kind === 'default')
 	{
+		const walkSecondsOf = async (): Promise<number | undefined> => (await loadUniverseTiles(version, universe.ruleset, transaction)).find((each) => (each.id === tileId))?.walkSeconds;
+		const walkSecondsBefore = await walkSecondsOf();
+
 		await restoreDefaultTile(version, tileId, transaction);
 		await deleteUniverseTextOf(version, 'tile', tileId, transaction);
 		await context.places.refreshTiles(true);
 		context.published.push({ kind: 'tiles', universeId: universe.id });
+
+		// The default tile's own walk time may be one nobody can walk on
+		if ((walkSecondsBefore !== IMPASSABLE_WALK_SECONDS) && (await walkSecondsOf() === IMPASSABLE_WALK_SECONDS))
+		{
+			context.places.noteArrivals();
+		}
+
 		return;
 	}
 
@@ -811,6 +838,12 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	}
 
 	context.published.push({ kind: 'tiles', universeId: universe.id });
+
+	// The tile painted in its place may be one nobody can walk on
+	if (changedAreas.length > 0)
+	{
+		context.places.noteArrivals(changedAreas);
+	}
 }
 
 /**

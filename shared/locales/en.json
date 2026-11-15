@@ -1263,6 +1263,10 @@
 		"defaultMessage": "Back to Lobby",
 		"description": "Button in the area editor, shown while the area is below the lobby region, and in the region editor, shown while the region is the lobby region, that closes the editor and goes to the editor's Lobby tab"
 	},
+	"editor.area.blockedSquare": {
+		"defaultMessage": "Nobody can walk on {tile}. Choose another square.",
+		"description": "Shown in the dialog for choosing a starting area, and in the link dialog, when the square clicked on the area preview for characters to start on or for a link to lead to is a tile nobody can walk on, such as a wall or water; {tile} is the tile's name, or Unexplored for a cell holding nothing"
+	},
 	"editor.area.brush.circle": {
 		"defaultMessage": "circle",
 		"description": "Shape of the Draw tool's brush"
@@ -1606,6 +1610,10 @@
 	"editor.area.unexplored": {
 		"defaultMessage": "📜Unexplored",
 		"description": "A cell with nothing in it, drawn as blank map paper like the parts of an area players haven't explored, which can't be walked into; also a choice of what to paint"
+	},
+	"editor.area.unexploredTile": {
+		"defaultMessage": "Unexplored",
+		"description": "Takes the place of a tile's name when a square holds nothing at all (an Unexplored cell, drawn as blank map paper): in a problem the editor lists about a starting square or link, and when such a square is clicked in the dialog for choosing a starting area or in the link dialog"
 	},
 	"editor.area.unknownTile": {
 		"defaultMessage": "unknown tile",
@@ -3043,6 +3051,14 @@
 		"defaultMessage": "Add Parent",
 		"description": "Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"
 	},
+	"editor.place.classRaceStartBlocked": {
+		"defaultMessage": "{area}: the starting square of {class} for {race} at {column}, {row} is {tile}, which can't be walked on",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class and race start (chosen for that race in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
+	},
+	"editor.place.classStartBlocked": {
+		"defaultMessage": "{area}: the starting square of {class} at {column}, {row} is {tile}, which can't be walked on",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a class start (chosen in the class editor) is on a tile nobody can walk on; {area} is the area, {class} the class, such as Fighter, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
+	},
 	"editor.place.conflict": {
 		"defaultMessage": "{area}: {setting} is {values}",
 		"description": "A problem keeping a save, shown by the region and area editors: the regions or areas an area inherits a setting from give it different values; {area} is the area, {setting} the setting, and {values} the values with where each comes from, joined, e.g. \"Market District: passage of time is Always noon in Capitol City but Always dusk in Bea's areas\""
@@ -3095,6 +3111,10 @@
 		"defaultMessage": "{place} is inside itself",
 		"description": "A problem keeping a save, shown by the region and area editors: following a region's or area's parents up leads back to it; {place} is its name"
 	},
+	"editor.place.linkBlocked": {
+		"defaultMessage": "{linkArea}: the link at {linkColumn}, {linkRow} leads to {area} at {column}, {row}, which is {tile} and can't be walked on",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: a link leads to a square on a tile nobody can walk on; {linkArea} is the area the link is on, {linkColumn} and {linkRow} the link's cell, {area} the area it leads to, {column} and {row} the square there, and {tile} the tile's name, such as Water, or Unexplored"
+	},
 	"editor.place.lobbyFaerieLoops": {
 		"defaultMessage": "{area}: the lobby's passage of time is faerie, so it can't loop",
 		"description": "A problem keeping a save, shown by the region and area editors and the Areas tab: an area below the lobby region loops while the Lobby tab's passage of time is faerie; {area} is the area"
@@ -3118,6 +3138,10 @@
 	"editor.place.lobbySquareOutside": {
 		"defaultMessage": "{area}: the lobby's starting square is here, so it must stay part of the lobby",
 		"description": "A problem keeping a save, shown by the region and area editors and the Areas tab: the area holding the lobby's starting square (chosen on the Lobby tab) would no longer be below the lobby region; {area} is the area"
+	},
+	"editor.place.lobbyStartBlocked": {
+		"defaultMessage": "{area}: the lobby's starting square at {column}, {row} is {tile}, which can't be walked on",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where players start in the lobby (chosen on the Lobby tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.lobbyStartingArea": {
 		"defaultMessage": "{area}: characters start here, so it can't be part of the lobby",
@@ -3167,6 +3191,10 @@
 		"defaultMessage": "These keep your changes from saving:",
 		"description": "Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them"
 	},
+	"editor.place.raceStartBlocked": {
+		"defaultMessage": "{area}: the starting square of {race} at {column}, {row} is {tile}, which can't be walked on",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters of a race start (chosen in the race editor) is on a tile nobody can walk on; {area} is the area, {race} the race, such as Dwarf, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
+	},
 	"editor.place.removeParent": {
 		"defaultMessage": "Remove",
 		"description": "Button beside one of a region's or area's parents in its editor, which takes it out of that parent"
@@ -3182,6 +3210,10 @@
 	"editor.place.tooDeep": {
 		"defaultMessage": "{place} is nested more than ten levels deep",
 		"description": "A problem keeping a save, shown by the region and area editors: regions and areas nest at most ten levels deep along their longest path; {place} is the region or area past the tenth level"
+	},
+	"editor.place.universeStartBlocked": {
+		"defaultMessage": "{area}: the universe's starting square at {column}, {row} is {tile}, which can't be walked on",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the square where characters start (chosen on the Characters tab) is on a tile nobody can walk on; {area} is the area, {column} and {row} the square, and {tile} the tile's name, such as Water, or Unexplored"
 	},
 	"editor.place.valueIn": {
 		"defaultMessage": "{value} in {place}",
@@ -5134,6 +5166,10 @@
 	"error.areaParents": {
 		"defaultMessage": "An area must be in at least one region or area, and inside at most one area.",
 		"description": "Why an area's parents were refused: every area has at least one parent (a region it is in, or an area it is inside), and at most one of them is an area"
+	},
+	"error.arrivalProblems": {
+		"defaultMessage": "Some starting squares or links would send characters to squares they can't walk on.",
+		"description": "Why the world editor couldn't save: a starting square (the universe's, the lobby's, a race's or a class's) or the square a link leads to would be on a tile nobody can walk on, such as a wall or water, or on an Unexplored cell; the editor lists each one"
 	},
 	"error.assignNonBuilder": {
 		"defaultMessage": "Only the universe's builders can be assigned to regions.",

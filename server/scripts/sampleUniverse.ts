@@ -12,9 +12,10 @@
  *   #  stone wall    w  wood wall     h  hedge      (tiles of this universe's own)
  *   (space)  void
  *
- * Digits mark cells that links start from or arrive at. Each area says which tile its digits are
+ * Digits mark cells that links start from or arrive at, and the starting squares. Each area says which
+ * tile its digits are
  */
-import { IMPASSABLE_WALK_SECONDS, type PassageOfTime, type UniverseStage, type AreaLightLevel, type AreaLinkMode } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, type AreaBounds, type PassageOfTime, type UniverseStage, type AreaLightLevel, type AreaLinkMode } from '@multiverse-kiln/shared';
 
 /**
  * A region to create. Settings left out inherit
@@ -113,7 +114,18 @@ export const sampleUniverse = {
 	stage: 'let_there_be_light' as UniverseStage,
 	lobbyRegion: 'lobby',
 	lobbyArea: 'lobby',
-	startingArea: 'kingdom'
+
+	/**
+	 * The digit marking the lobby's starting square in its area
+	 */
+	lobbySquare: '1',
+
+	startingArea: 'kingdom',
+
+	/**
+	 * The digit marking the universe's starting square in its starting area
+	 */
+	startingSquare: '3'
 };
 
 /**
@@ -185,7 +197,7 @@ export const sampleAreas: SampleArea[] = [
 		name: 'Lobby',
 		regions: ['lobby'],
 		defaultTile: 'grass',
-		markers: {},
+		markers: { 1: 'grass' },
 		cells: [
 			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
 			'^^ff.....................fff..^^',
@@ -197,7 +209,7 @@ export const sampleAreas: SampleArea[] = [
 			'^...f..................~~~.....^',
 			'^..............................^',
 			'^.........dddd.hhhhhhh.........^',
-			'^........ddddddh.....h.........^',
+			'^........ddddddh..1..h.........^',
 			'^.....ff..dddd.h.....h.ff......^',
 			'^....ffff......hhh.hhhffff.....^',
 			'^.....ff...~~..........ff......^',
@@ -217,7 +229,7 @@ export const sampleAreas: SampleArea[] = [
 		indoors: false,
 		loopsEastWest: true,
 		neighbors: { east: 'northeast-march', south: 'southwestern-downs' },
-		markers: { 1: 'desert', 2: 'grass' },
+		markers: { 1: 'desert', 2: 'grass', 3: 'grass' },
 		cells: [
 			'^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^',
 			'^^^^......fff..........^^^^.........^^^^',
@@ -234,7 +246,7 @@ export const sampleAreas: SampleArea[] = [
 			'.....fffff........^^......ffff..........',
 			'......fff........^^^^......ff...........',
 			'..................^^....................',
-			'........................................',
+			'....................3...................',
 			'~~~~~~~~~~~~~~~~~~..~~~~~~~~~~~~~~~~~~~~',
 			'~~~~~~~~~~~~~~~~~~..~~~~~~~~~~~~~~~~~~~~',
 			'........................................',
@@ -449,3 +461,168 @@ export const sampleLinks: SampleLink[] = [
 	{ from: ['shop', '3'], to: ['cellar', '6'], mode: 'manual' },
 	{ from: ['cellar', '6'], to: ['shop', '3'], mode: 'manual' }
 ];
+
+/**
+ * Which tile each character of a drawing stands for, besides `.`, space and an area's digits
+ */
+export const TILE_CHARACTERS: Record<string, string> = {
+	'g': 'grass',
+	'f': 'forest',
+	'd': 'desert',
+	'^': 'mountains',
+	'~': 'water',
+	'=': 'wood_floor',
+	...Object.fromEntries(Object.entries(sampleTiles).map(([character, tile]) => [character, tile.key]))
+};
+
+/**
+ * An area's cells, read from its drawing
+ */
+export interface ParsedArea
+{
+	bounds: AreaBounds;
+
+	/**
+	 * The chunks that hold anything but the default tile, by chunkKey()
+	 */
+	chunks: Map<string, { chunkColumn: number; chunkRow: number; cells: number[] }>;
+
+	/**
+	 * The cell each digit marks
+	 */
+	markers: Map<string, { column: number; row: number }>;
+}
+
+/**
+ * Reads an area's drawing into cells, centered on column 0, row 0
+ *
+ * @param area The area
+ * @param tileIds Every tile's ID, by key
+ * @return The area's cells
+ */
+export function parseArea(area: SampleArea, tileIds: Map<string, number>): ParsedArea
+{
+	const width = area.cells[0].length;
+	const height = area.cells.length;
+	const bounds = {
+		minColumn: -Math.floor(width / 2),
+		minRow: -Math.floor(height / 2),
+		maxColumn: (width - 1) - Math.floor(width / 2),
+		maxRow: (height - 1) - Math.floor(height / 2)
+	};
+	const chunks: ParsedArea['chunks'] = new Map();
+	const markers: ParsedArea['markers'] = new Map();
+
+	area.cells.forEach((line, rowIndex) =>
+	{
+		if (line.length !== width)
+		{
+			throw new Error(`${area.key}: row ${rowIndex} is ${line.length} cells wide, not ${width}`);
+		}
+
+		[...line].forEach((character, columnIndex) =>
+		{
+			const column = bounds.minColumn + columnIndex;
+			const row = bounds.minRow + rowIndex;
+			const value = cellValue(area, character, tileIds);
+
+			if (character in area.markers)
+			{
+				markers.set(character, { column, row });
+			}
+
+			if (value === DEFAULT_TILE_CELL)
+			{
+				return;
+			}
+
+			const chunkColumn = chunkCoordinate(column);
+			const chunkRow = chunkCoordinate(row);
+			const key = chunkKey(chunkColumn, chunkRow);
+			let chunk = chunks.get(key);
+
+			if (!chunk)
+			{
+				chunk = {
+					chunkColumn,
+					chunkRow,
+					cells: new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL)
+				};
+				chunks.set(key, chunk);
+			}
+
+			chunk.cells[cellIndexInChunk(column, row)] = value;
+		});
+	});
+
+	return({ bounds, chunks, markers });
+}
+
+/**
+ * The value stored for one character of a drawing
+ *
+ * @param area The area being read
+ * @param character The character
+ * @param tileIds Every tile's ID, by key
+ * @return A tile ID, DEFAULT_TILE_CELL or VOID_CELL
+ */
+function cellValue(area: SampleArea, character: string, tileIds: Map<string, number>): number
+{
+	if (character === '.')
+	{
+		return(DEFAULT_TILE_CELL);
+	}
+
+	if (character === ' ')
+	{
+		return(VOID_CELL);
+	}
+
+	const tileKey = (area.markers[character] ?? TILE_CHARACTERS[character]);
+
+	if (tileKey === undefined)
+	{
+		throw new Error(`${area.key}: "${character}" isn't a tile or one of the area's markers`);
+	}
+
+	return(requireTile(tileIds, tileKey));
+}
+
+/**
+ * Looks a tile up by key
+ *
+ * @param tileIds Every tile's ID, by key
+ * @param key The tile's key
+ * @return The tile's ID
+ */
+export function requireTile(tileIds: Map<string, number>, key: string): number
+{
+	const id = tileIds.get(key);
+
+	if (id === undefined)
+	{
+		throw new Error(`There is no tile "${key}". Have the migrations been run?`);
+	}
+
+	return(id);
+}
+
+/**
+ * Looks up the cell a digit marks in an area
+ *
+ * @param parsedAreas Every area's cells, by area key
+ * @param area The area's key
+ * @param marker The digit
+ * @return The cell
+ */
+export function requireMarker(parsedAreas: Map<string, ParsedArea>, area: string, marker: string): { column: number; row: number }
+{
+	const cell = parsedAreas.get(area)?.markers.get(marker);
+
+	if (!cell)
+	{
+		throw new Error(`${area} has no cell marked ${marker}`);
+	}
+
+	return(cell);
+}

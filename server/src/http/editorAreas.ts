@@ -5,6 +5,7 @@
 import express, { type Request, type Response } from 'express';
 import { canEditWorld, changedSeams, DEFAULT_TILE_CELL, editsEveryPlace, hasNeighbors, isInBounds, isNewRef, MAX_AREA_LINKS, NEIGHBOR_SIDES, NEW_AREA_BOUNDS, oppositeSide, otherChainEnd, VOID_CELL, type GridArea, type NeighborSide, type AreaChangeUpdate, type AreaEvacuations, type AreaNode, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type PlaceRef, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
+import { listArrivals } from '../db/arrivalRepo.js';
 import type { Executor } from '../db/client.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
@@ -97,7 +98,8 @@ async function listAreasRoute(request: Request, response: Response): Promise<voi
 		lobbyAreaId: universe.lobbyAreaId,
 		startingAreaId: universe.startingAreaId,
 		startingAreaIds: await listStartingAreaIds(version),
-		links: await listLinkEnds(version)
+		links: await listLinkEnds(version),
+		arrivals: await listArrivals(version, universe.ruleset, undefined)
 	};
 
 	response.json(payload);
@@ -566,6 +568,10 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 	{
 		context.places.checkLobby();
 	}
+
+	// A starting square outside the area counts as the nearest cell inside it, which may be one nobody
+	// can walk on
+	context.places.noteArrivals([area.id]);
 }
 
 /**
@@ -652,6 +658,10 @@ export async function editCellsChange(context: ChangeContext, areaId: StringRef,
 	}
 
 	context.published.push({ kind: 'cells', areaId: area.id, chunkKeys: [...chunksOfChanges(resolved).keys()] });
+
+	// No starting square or link may be left on a square nobody can walk on, which is checked once the
+	// save's changes are made
+	context.places.noteArrivals([area.id]);
 }
 
 /**
@@ -731,6 +741,7 @@ export async function saveLinkChange(context: ChangeContext, areaId: StringRef, 
 
 	await saveAreaLink(area.id, column, row, { ...target, targetAreaId }, transaction);
 	context.places.checkLobby();
+	context.places.noteArrivals([targetAreaId]);
 	context.published.push({ kind: 'area', areaId: area.id });
 }
 

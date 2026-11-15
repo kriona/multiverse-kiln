@@ -10,6 +10,7 @@ import type { OptionName } from './characters.js';
 import type { LocalizedMessage } from './localization.js';
 import type { AreaBounds } from './areaCells.js';
 import type { AreaNeighbors, NeighborSide } from './areaNeighbors.js';
+import type { Arrival } from './arrivals.js';
 import type { AreaChunk } from './messages.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import type { Ability, ClassRules, RaceRules, Size } from './racesAndClasses.js';
@@ -1969,6 +1970,12 @@ export interface AreaListPayload
 	 * connected to the rest of the world
 	 */
 	links: AreaLinkEnd[];
+
+	/**
+	 * Every square the races', classes' and links' characters are sent to, so the editor can show those
+	 * nobody can walk on; the universe's and the lobby's starting squares are in its settings
+	 */
+	arrivals: Arrival[];
 }
 
 /**

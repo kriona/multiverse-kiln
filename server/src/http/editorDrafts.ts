@@ -3,7 +3,7 @@
  * Universe versions in STRUCTURE-OVERVIEW.md). They come after the save's other changes, so starting a
  * draft copies them and applying one includes them
  */
-import { universeSlug, type DraftApplyChoices } from '@multiverse-kiln/shared';
+import { placeKey, universeSlug, type DraftApplyChoices } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
@@ -18,6 +18,7 @@ import { liveVersion } from '../db/universeVersions.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { SaveDisablings } from './editorDisablings.js';
+import { arrivalRefusal, findBlockedArrivals } from './editorPlaces.js';
 import { errorMessages } from './errors.js';
 
 /**
@@ -143,6 +144,15 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		.filter((area) => !area.resolved.lobby)
 		.map((area) => area.id));
 	const areasAfter = await listAreas(live, transaction);
+
+	// A save to the draft checks only the squares it may have changed, so every square is checked before
+	// players reach them
+	const blocked = await findBlockedArrivals(live, after, undefined, transaction);
+
+	if (blocked.length > 0)
+	{
+		throw arrivalRefusal(blocked, Object.fromEntries(areasAfter.map((area) => [placeKey({ kind: 'area', id: area.id }), area.name])));
+	}
 
 	await disablings.finish(liveContext, {
 		disabled: areasAfter

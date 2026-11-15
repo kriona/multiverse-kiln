@@ -3,11 +3,14 @@
  * changes make them, so each change is checked against how the changes before it left them and against
  * what a builder may edit, then every area's settings worked out and stored once every change is made
  */
-import { editsEveryPlace, isWithinAssignments, lobbyProblems, neighborPairs, neighborProblems, placeKey, type GridArea, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
+import { arrivalSquare, blockedArrivals, editsEveryPlace, isWithinAssignments, lobbyProblems, neighborPairs, neighborProblems, placeKey, universeArrivals, type BlockedArrival, type EditableUniverseDetails, type GridArea, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
 
+import type { Executor } from '../db/client.js';
+import { cellValueKey, listArrivals, loadArrivalAreas, loadCellValues } from '../db/arrivalRepo.js';
 import { listAreaLinks, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadNeighborGrid, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
 import { listAssignedRegionIds } from '../db/regionRepo.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
+import type { UniverseVersion } from '../db/universeVersions.js';
 import { PlaceModel } from '../logic/placeModel.js';
 import { ChangeRefusal, refuse, resolveStringRef, type ChangeContext } from './editorChangeContext.js';
 import { errorMessages } from './errors.js';
@@ -80,6 +83,18 @@ export class SavePlaces
 	 * The areas those changes touched
 	 */
 	private readonly neighborAreaIds = new Set<string>();
+
+	/**
+	 * How many changes may have sent characters to a square nobody can walk on (see noteArrivals()), so
+	 * the save knows which change last may have
+	 */
+	arrivalChecks = 0;
+
+	/**
+	 * The areas whose squares those changes may have made ones nobody can walk on, or undefined for every
+	 * area's
+	 */
+	private arrivalAreaIds: Set<string> | undefined = new Set();
 
 	/**
 	 * The version's areas as the grid of neighbors sees them, read once the save's changes are made
@@ -159,6 +174,30 @@ export class SavePlaces
 		for (const areaId of areaIds)
 		{
 			this.neighborAreaIds.add(areaId);
+		}
+	}
+
+	/**
+	 * Notes that a change may have sent characters to a square nobody can walk on: painted or resized an
+	 * area, changed its default tile, moved a starting square or a link's destination into it, or made a
+	 * tile one nobody can walk on. Once the save's changes are made, the squares in these areas are
+	 * checked (blockedArrivals())
+	 *
+	 * @param areaIds The areas, or undefined for every area, as when a tile changes
+	 */
+	noteArrivals(areaIds?: Iterable<string>): void
+	{
+		this.arrivalChecks++;
+
+		if (areaIds === undefined)
+		{
+			this.arrivalAreaIds = undefined;
+			return;
+		}
+
+		for (const areaId of areaIds)
+		{
+			this.arrivalAreaIds?.add(areaId);
 		}
 	}
 
@@ -325,7 +364,8 @@ export class SavePlaces
 	 * Once every change is made: works out the settings of every area of the version, refuses the save
 	 * when an area is left with a conflict or a missing value or anything is nested wrongly, and stores the
 	 * settings that changed, telling the rooms about the areas whose settings changed. Then refuses the
-	 * save when it leaves the lobby areas connected to the rest of the world, or the lobby unable to work
+	 * save when it leaves the lobby areas connected to the rest of the world, or the lobby unable to work,
+	 * and when it sends characters to a square nobody can walk on
 	 *
 	 * @return The areas the save disables, and those it puts below the lobby region
 	 */
@@ -341,6 +381,11 @@ export class SavePlaces
 		if (this.lobbyChecks > 0)
 		{
 			await this.checkLobbyEdge();
+		}
+
+		if (this.arrivalChecks > 0)
+		{
+			await this.checkArrivals();
 		}
 
 		const stored = [...(resolution?.stored ?? [])];
@@ -400,6 +445,22 @@ export class SavePlaces
 				problems,
 				names: this.placeNames(problems)
 			});
+		}
+	}
+
+	/**
+	 * Refuses the save when it leaves a starting square or link, in the areas noted (noteArrivals()),
+	 * sending characters to a square nobody can walk on
+	 */
+	private async checkArrivals(): Promise<void>
+	{
+		const { universe, version, transaction } = this.context;
+		const problems = await findBlockedArrivals(version, universe, this.arrivalAreaIds, transaction);
+
+		if (problems.length > 0)
+		{
+			await this.load();
+			throw arrivalRefusal(problems, this.placeNames(problems));
 		}
 	}
 
@@ -508,6 +569,12 @@ export class SavePlaces
 			{
 				changed.set(areaId, settings);
 			}
+
+			// The cells holding the default tile take the new one
+			if (stored && (stored.defaultTileId !== settings.defaultTileId))
+			{
+				this.noteArrivals([areaId]);
+			}
 		}
 
 		await storeResolvedSettings(changed, context.transaction);
@@ -599,10 +666,73 @@ export class SavePlaces
 			{
 				name(problem.place);
 			}
+			else if ((problem.kind === 'arrivalBlocked') && (problem.source.kind === 'link'))
+			{
+				name({ kind: 'area', id: problem.source.areaId });
+			}
 		}
 
 		return(names);
 	}
+}
+
+/**
+ * The starting squares and links of a version that send characters to a square nobody can walk on, as
+ * the database holds them
+ *
+ * @param version The universe's live version or draft
+ * @param universe The version's settings, with its own starting square and the lobby's
+ * @param areaIds Only the squares in these areas, or undefined for every square
+ * @param executor The database, or a transaction
+ * @return The problems: the universe's and the lobby's, then those listArrivals() finds, in its order
+ */
+export async function findBlockedArrivals(version: UniverseVersion, universe: EditableUniverseDetails, areaIds: ReadonlySet<string> | undefined, executor: Executor): Promise<BlockedArrival[]>
+{
+	// A transaction runs one query at a time, so they are read in turn
+	const arrivals = [
+		...universeArrivals(universe).filter((arrival) => ((areaIds === undefined) || areaIds.has(arrival.areaId))),
+		...await listArrivals(version, universe.ruleset, ((areaIds === undefined) ? undefined : [...areaIds]), executor)
+	];
+
+	if (arrivals.length === 0)
+	{
+		return([]);
+	}
+
+	const areas = await loadArrivalAreas(arrivals.map((arrival) => arrival.areaId), executor);
+	const squares = arrivals.flatMap((arrival) =>
+	{
+		const area = areas.get(arrival.areaId);
+		const square = (area ? arrivalSquare(arrival, area.bounds) : undefined);
+
+		return((square ? [{ areaId: arrival.areaId, ...square }] : []));
+	});
+	const values = await loadCellValues(squares, executor);
+	const tiles = await loadUniverseTiles(version, universe.ruleset, executor);
+
+	return(blockedArrivals(arrivals, areas, (areaId, column, row) => values.get(cellValueKey(areaId, column, row)), new Map(tiles.map((tile) => [tile.id, tile.walkSeconds]))));
+}
+
+/**
+ * Why a save was refused for sending characters to squares nobody can walk on
+ *
+ * @param problems The squares
+ * @param names The names of the areas they name, by placeKey()
+ * @return The refusal
+ */
+export function arrivalRefusal(problems: readonly BlockedArrival[], names: Record<string, string>): ChangeRefusal
+{
+	return(new ChangeRefusal({
+		status: 409,
+		message: {
+			id: 'error.arrivalProblems',
+			defaultMessage: 'Some starting squares or links would send characters to squares they can\'t walk on.',
+			description: 'Why the world editor couldn\'t save: a starting square (the universe\'s, the lobby\'s, a race\'s or a class\'s) or the square a link leads to would be on a tile nobody can walk on, such as a wall or water, or on an Unexplored cell; the editor lists each one'
+		}
+	}, undefined, undefined, {
+		problems: [...problems],
+		names
+	}));
 }
 
 /**

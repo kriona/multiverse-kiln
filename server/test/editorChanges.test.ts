@@ -76,8 +76,9 @@ describe('Saving editor changes', () =>
 		assert.ok(startingAreaId);
 
 		const worldId = await worldRegionId(ada, universeId);
+		// Characters start on the lava and a link leads onto it, so they can walk on it here
 		const ids = await saveAll(ada, universeId, [
-			{ kind: 'createTile', ref: 'new:lava', settings: lava },
+			{ kind: 'createTile', ref: 'new:lava', settings: { ...lava, walkSeconds: 600 } },
 			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', defaultTileId: 'new:lava', parents: [{ kind: 'region', id: worldId }] } },
 			{ kind: 'createArea', ref: 'new:grotto', area: { name: 'Grotto', parents: [{ kind: 'area', id: 'new:cave' }] } },
 			{ kind: 'editCells', areaId: startingAreaId, changes: [[0, 0, 'new:lava']] },

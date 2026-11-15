@@ -16,7 +16,7 @@
  * The account must exist already: register it first
  */
 import { parseArgs } from 'node:util';
-import { areasWithMisalignedLoops, CHUNK_SIZE, DEFAULT_TILE_CELL, VOID_CELL, cellIndexInChunk, chunkCoordinate, chunkKey, neighborProblems, resolveAreaSettings, type AreaBounds, type NeighborSide, type PlaceRef, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { areasWithMisalignedLoops, neighborProblems, resolveAreaSettings, type NeighborSide, type PlaceRef, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { db, pool, type Executor } from '../src/db/client.js';
 import { findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
@@ -25,177 +25,13 @@ import { listTileGraphicStorageKeys } from '../src/db/tileGraphicRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { discardDraft } from '../src/db/universeDraftRepo.js';
-import { createUniverse, deleteUniverseWorld, findUniverse, hasDraft, setUniverseAreas, updateUniverseSettings } from '../src/db/universeRepo.js';
+import { createUniverse, deleteUniverseWorld, findEditableUniverse, findUniverse, hasDraft, setUniverseAreas, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { createArea, createAreaLink, loadNeighborGrid, loadPlaceWorld, saveGroundChunk, setAreaNeighbor, setAreaParents, storeResolvedSettings } from '../src/db/areaRepo.js';
 import { createRegion, setRegionParents } from '../src/db/regionRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
+import { findBlockedArrivals } from '../src/http/editorPlaces.js';
 import { deleteObjects } from '../src/storage/objectStorage.js';
-import { SAMPLE_UNIVERSE_ID, sampleLinks, sampleRegions, sampleTiles, sampleUniverse, sampleAreas, type SampleArea } from './sampleUniverse.js';
-
-/**
- * Which tile each character of a drawing stands for, besides `.`, space and an area's digits
- */
-const TILE_CHARACTERS: Record<string, string> = {
-	'g': 'grass',
-	'f': 'forest',
-	'd': 'desert',
-	'^': 'mountains',
-	'~': 'water',
-	'=': 'wood_floor',
-	...Object.fromEntries(Object.entries(sampleTiles).map(([character, tile]) => [character, tile.key]))
-};
-
-/**
- * An area's cells, read from its drawing
- */
-interface ParsedArea
-{
-	bounds: AreaBounds;
-
-	/**
-	 * The chunks that hold anything but the default tile, by chunkKey()
-	 */
-	chunks: Map<string, { chunkColumn: number; chunkRow: number; cells: number[] }>;
-
-	/**
-	 * The cell each digit marks
-	 */
-	markers: Map<string, { column: number; row: number }>;
-}
-
-/**
- * Reads an area's drawing into cells, centered on column 0, row 0
- *
- * @param area The area
- * @param tileIds Every tile's ID, by key
- * @return The area's cells
- */
-function parseArea(area: SampleArea, tileIds: Map<string, number>): ParsedArea
-{
-	const width = area.cells[0].length;
-	const height = area.cells.length;
-	const bounds = {
-		minColumn: -Math.floor(width / 2),
-		minRow: -Math.floor(height / 2),
-		maxColumn: (width - 1) - Math.floor(width / 2),
-		maxRow: (height - 1) - Math.floor(height / 2)
-	};
-	const chunks: ParsedArea['chunks'] = new Map();
-	const markers: ParsedArea['markers'] = new Map();
-
-	area.cells.forEach((line, rowIndex) =>
-	{
-		if (line.length !== width)
-		{
-			throw new Error(`${area.key}: row ${rowIndex} is ${line.length} cells wide, not ${width}`);
-		}
-
-		[...line].forEach((character, columnIndex) =>
-		{
-			const column = bounds.minColumn + columnIndex;
-			const row = bounds.minRow + rowIndex;
-			const value = cellValue(area, character, tileIds);
-
-			if (character in area.markers)
-			{
-				markers.set(character, { column, row });
-			}
-
-			if (value === DEFAULT_TILE_CELL)
-			{
-				return;
-			}
-
-			const chunkColumn = chunkCoordinate(column);
-			const chunkRow = chunkCoordinate(row);
-			const key = chunkKey(chunkColumn, chunkRow);
-			let chunk = chunks.get(key);
-
-			if (!chunk)
-			{
-				chunk = {
-					chunkColumn,
-					chunkRow,
-					cells: new Array<number>(CHUNK_SIZE * CHUNK_SIZE).fill(DEFAULT_TILE_CELL)
-				};
-				chunks.set(key, chunk);
-			}
-
-			chunk.cells[cellIndexInChunk(column, row)] = value;
-		});
-	});
-
-	return({ bounds, chunks, markers });
-}
-
-/**
- * The value stored for one character of a drawing
- *
- * @param area The area being read
- * @param character The character
- * @param tileIds Every tile's ID, by key
- * @return A tile ID, DEFAULT_TILE_CELL or VOID_CELL
- */
-function cellValue(area: SampleArea, character: string, tileIds: Map<string, number>): number
-{
-	if (character === '.')
-	{
-		return(DEFAULT_TILE_CELL);
-	}
-
-	if (character === ' ')
-	{
-		return(VOID_CELL);
-	}
-
-	const tileKey = (area.markers[character] ?? TILE_CHARACTERS[character]);
-
-	if (tileKey === undefined)
-	{
-		throw new Error(`${area.key}: "${character}" isn't a tile or one of the area's markers`);
-	}
-
-	return(requireTile(tileIds, tileKey));
-}
-
-/**
- * Looks a tile up by key
- *
- * @param tileIds Every tile's ID, by key
- * @param key The tile's key
- * @return The tile's ID
- */
-function requireTile(tileIds: Map<string, number>, key: string): number
-{
-	const id = tileIds.get(key);
-
-	if (id === undefined)
-	{
-		throw new Error(`There is no tile "${key}". Have the migrations been run?`);
-	}
-
-	return(id);
-}
-
-/**
- * Looks up the cell a digit marks in an area
- *
- * @param parsedAreas Every area's cells, by area key
- * @param area The area's key
- * @param marker The digit
- * @return The cell
- */
-function requireMarker(parsedAreas: Map<string, ParsedArea>, area: string, marker: string): { column: number; row: number }
-{
-	const cell = parsedAreas.get(area)?.markers.get(marker);
-
-	if (!cell)
-	{
-		throw new Error(`${area} has no cell marked ${marker}`);
-	}
-
-	return(cell);
-}
+import { SAMPLE_UNIVERSE_ID, parseArea, requireMarker, requireTile, sampleLinks, sampleRegions, sampleTiles, sampleUniverse, sampleAreas, type ParsedArea } from './sampleUniverse.js';
 
 /**
  * Looks up an area's ID by key
@@ -382,6 +218,16 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 		startingAreaId: requireArea(areaIds, sampleUniverse.startingArea)
 	}, executor);
 
+	const lobbySquare = requireMarker(parsedAreas, sampleUniverse.lobbyArea, sampleUniverse.lobbySquare);
+	const startingSquare = requireMarker(parsedAreas, sampleUniverse.startingArea, sampleUniverse.startingSquare);
+
+	await updateUniverseSettings(version, {
+		lobbyColumn: lobbySquare.column,
+		lobbyRow: lobbySquare.row,
+		startingColumn: startingSquare.column,
+		startingRow: startingSquare.row
+	}, executor);
+
 	// Every area's settings come from its own and its regions', as a save in the editor works them out
 	const { world } = await loadPlaceWorld(version, 'pf1e', lobbyRegionId, executor);
 	const resolution = resolveAreaSettings(world);
@@ -431,6 +277,14 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 	if (misaligned.length > 0)
 	{
 		throw new Error(`The sample world's rows or columns of neighboring areas don't loop alike: ${misaligned.map((areaId) => sampleAreas.find((area) => (areaIds.get(area.key) === areaId))?.key ?? areaId).join(', ')}`);
+	}
+
+	const universe = await findEditableUniverse(version, executor);
+	const blocked = (universe ? await findBlockedArrivals(version, universe, undefined, executor) : []);
+
+	if (blocked.length > 0)
+	{
+		throw new Error(`The sample world's starting squares or links send characters to squares they can't walk on: ${JSON.stringify(blocked)}`);
 	}
 
 	console.log(`Created ${sampleUniverse.name} with ${sampleRegions.length} regions, ${sampleAreas.length} areas and ${sampleLinks.length} links`);

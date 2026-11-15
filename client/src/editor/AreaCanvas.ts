@@ -268,6 +268,26 @@ export class AreaCanvas
 	}
 
 	/**
+	 * Moves the camera and the keyboard's cursor to a cell and focuses the area, which reads the cell out
+	 *
+	 * @param cell The cell
+	 */
+	focusCell(cell: BrushCell): void
+	{
+		this.cursor = cell;
+		this.current?.centerOnCell(cell.column, cell.row);
+
+		if (document.activeElement === this.parent)
+		{
+			this.moveCursor(cell);
+		}
+		else
+		{
+			this.parent.focus();
+		}
+	}
+
+	/**
 	 * Puts the keyboard's cursor on the area when it takes focus: where it was, or the cell in the middle
 	 * of the view, so focus doesn't move the view
 	 */

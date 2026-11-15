@@ -885,10 +885,11 @@ describe('World editor API', () =>
 			const universe = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 			const tileId = (await createIn(ada, universeId, 'Tile', lava)).body.id;
 
-			await editCells(ada, universeId, universe.lobbyAreaId, [[0, 0, tileId]]);
+			// Beside the lobby's starting square, since nobody can walk on lava
+			await editCells(ada, universeId, universe.lobbyAreaId, [[1, 0, tileId]]);
 			assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId)).status, 409);
 
-			await editCells(ada, universeId, universe.lobbyAreaId, [[0, 0, DEFAULT_TILE_CELL]]);
+			await editCells(ada, universeId, universe.lobbyAreaId, [[1, 0, DEFAULT_TILE_CELL]]);
 			assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId)).status, 200);
 			assert.strictEqual((await removeFrom(ada, universeId, 'Tile', tileId)).status, 404);
 		});
@@ -905,7 +906,8 @@ describe('World editor API', () =>
 			const grassId = await defaultTileId('grass');
 			const changes: AreaChange[] = [];
 
-			await editCells(ada, universeId, lobbyAreaId, [[0, 0, tileId]]);
+			// Beside the lobby's starting square, since nobody can walk on lava
+			await editCells(ada, universeId, lobbyAreaId, [[1, 0, tileId]]);
 
 			const usage = (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).body;
 
@@ -1789,7 +1791,8 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const grassId = await defaultTileId('grass');
 
-			await saveIn(ada, universeId, 'Tile', grassId, lava);
+			// Characters start on grass, so it stays a tile they can walk on
+			await saveIn(ada, universeId, 'Tile', grassId, { ...lava, walkSeconds: 600 });
 			await removeFrom(ada, universeId, 'Tile', grassId);
 			await createIn(ada, universeId, 'Tile', { ...lava, walkSeconds: MAX_WALK_SECONDS + 1 });
 
