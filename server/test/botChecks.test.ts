@@ -34,6 +34,11 @@ class StubVerifier implements BotCheckVerifier
 	probes = 0;
 	readonly verified: string[] = [];
 
+	/**
+	 * Whether checks are on: while a site key is set and Cloudflare is reachable
+	 *
+	 * @return Whether they are
+	 */
 	available(): boolean
 	{
 		return((this.siteKey !== undefined) && this.reachable);
@@ -68,6 +73,13 @@ class StubVerifier implements BotCheckVerifier
 		return(Promise.resolve(this.available()));
 	}
 
+	/**
+	 * Notes a token it was sent, which passes when it is 'pass-' and its action
+	 *
+	 * @param token The token
+	 * @param action The action the request's checks are made for
+	 * @return 'passed' or 'failed', or 'unreachable' while checks are off
+	 */
 	verify(token: string, action: BotCheckAction): Promise<TokenOutcome>
 	{
 		this.verified.push(token);
