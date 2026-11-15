@@ -257,6 +257,13 @@ describe('botChecks', () =>
 				...codes({}),
 				sent: [new Date(NOW.getTime() - 60000)]
 			}, ON, NOW), { kind: 'allow' });
+			assert.deepStrictEqual(decideCodeSend({
+				...codes({ wrongGuesses: MAX_WRONG_GUESSES_PER_ADDRESS_DAY }),
+				checkedWhileBlocked: [new Date(NOW.getTime() - 10000)]
+			}, PASSED, NOW), {
+				kind: 'refused',
+				retryAt: new Date(NOW.getTime() + 50000)
+			});
 		});
 
 		it('refuses the address\'s 6th code in an hour while checks are off, until the oldest is an hour old', () =>

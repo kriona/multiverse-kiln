@@ -287,7 +287,7 @@ export function decideCodeSend(attempts: CodeSendAttempts, check: BotCheckState,
 	}
 
 	// Still one code a minute, however it was sent
-	const lastSent = Math.max(0, ...[...attempts.sent, ...attempts.checkedSent].map((time) => time.getTime()));
+	const lastSent = Math.max(0, ...[...attempts.sent, ...attempts.checkedSent, ...attempts.checkedWhileBlocked].map((time) => time.getTime()));
 
 	if ((now.getTime() - lastSent) < EMAIL_CODE_RESEND_MS)
 	{
