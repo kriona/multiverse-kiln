@@ -141,9 +141,44 @@ Then copy the hex values the root `.env` shares with `server/.env`: put `KILN_AP
 | `SMTP_URL`, `EMAIL_FROM` | `server/.env` | Where the server sends email, and the address it comes from. Locally Mailpit (`smtp://127.0.0.1:1025`); in production a real SMTP service, over TLS (`smtps://user:password@host:465`). |
 | `SITE_URL` | `server/.env` | The client's address, `https://` with nothing after the host and port: `https://www.multiversekiln.localhost:5173` locally. Required: emails link to its pages, and Google and Discord send players back to `<SITE_URL>/login`. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | `server/.env` | Logging in with Google and Discord, each offered once both its values are set. Make a Google OAuth client (web application) at https://console.cloud.google.com/apis/credentials and a Discord application at https://discord.com/developers/applications, each with `<SITE_URL>/login` as a redirect URI. Leave them empty to offer only email logins. |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | `server/.env` | Cloudflare Turnstile's keys, for bot checks. Set both or neither: leave both empty to turn checks off. See [Bot checks](#bot-checks-optional) below. |
 | `DEV_SSL_KEY_FILE`, `DEV_SSL_CERT_FILE` | `client/.env` | Local certificate for the HTTPS dev server (required). The example values point at `certs/` (see step 5). |
 
 `.env` files are git-ignored. Never commit them; when you add a variable, add it to the matching `.env.example` too.
+
+#### Bot checks (optional)
+
+The server asks a browser to pass a Cloudflare Turnstile check after many login tries or emailed codes (see Bot checks in `STRUCTURE-OVERVIEW.md`). Checks are off until both keys are set in `server/.env`. The client needs no settings: the server sends it the site key when it asks for a check.
+
+**On your own computer**, use Cloudflare's [test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/). The server only accepts them with `ENABLE_DEV_TOOLS=true`, since they let every check pass.
+
+```bash
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+```
+
+| Site key | What the check does |
+|---|---|
+| `1x00000000000000000000AA` | Always passes |
+| `2x00000000000000000000AB` | Always fails |
+| `3x00000000000000000000FF` | Asks the player to tick a box |
+
+| Secret key | What the server decides |
+|---|---|
+| `1x0000000000000000000000000000000AA` | Every token passes |
+| `2x0000000000000000000000000000000AA` | Every token fails |
+
+To see a check without making many tries, log in as a server admin, open `/admin/settings` and turn on **Ask for a bot check at every login and emailed code**. Browsers that have logged in to the account are still not asked, so use a private window.
+
+**On a real site:**
+
+1. In the Cloudflare dashboard, open [Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) and add a widget.
+2. Add the site's hostname, the host in `SITE_URL`. The server refuses tokens made for any other hostname.
+3. Choose **Managed** mode.
+4. Put the site key in `TURNSTILE_SITE_KEY` and the secret key in `TURNSTILE_SECRET_KEY`. On Colyseus Cloud, set them in the dashboard.
+5. Restart the server.
+
+The server refuses to start with only one key set, or with a test secret key while dev tools are off. If the server can't reach Cloudflare, it turns checks off until it can: requests under the limits go through, and requests past them are refused.
 
 ### 5. Create a local HTTPS certificate
 
