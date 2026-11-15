@@ -4,6 +4,11 @@
 		"ask": [
 			"Bash(git commit:*)",
 			"Bash(git push:*)"
+		],
+		"allow": [
+			"Bash(npm run *)",
+			"Bash(npx eslint *)",
+			"Bash(git add *)"
 		]
 	},
 	"attribution": {
