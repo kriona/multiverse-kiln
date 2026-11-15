@@ -14,7 +14,6 @@ import type { AreaEditorHost, CameraState, NeighborPreview, PointerMode } from '
 import { announce } from '../announcer';
 import { askToConfirm } from '../confirmDialog';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
-import { formMessages } from '../formMessages';
 import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
 import { areaEditorMessages } from './areaEditorMessages';
@@ -323,7 +322,6 @@ export class AreaEditor
 	private readonly section = getElement('area-cells-editor', HTMLElement);
 	private readonly fullPageButton = getElement('area-full-page', HTMLButtonElement);
 	private readonly cursor = getElement('area-cursor', HTMLElement);
-	private readonly saveStatus = getElement('area-save-status', HTMLElement);
 	private readonly pickStatus = getElement('area-pick-status', HTMLElement);
 	private readonly error = getElement('area-cells-error', HTMLElement);
 	private readonly canvasElement = getElement('area-canvas', HTMLElement);
@@ -1247,7 +1245,6 @@ export class AreaEditor
 
 		this.collected = { areas, links };
 		this.pendingSaves++;
-		this.updateSaveStatus();
 		this.updateButtons();
 		save.onFinished(() =>
 		{
@@ -1542,11 +1539,10 @@ export class AreaEditor
 	}
 
 	/**
-	 * Shows whether the area has unsaved painting or growth, and tells the area editor
+	 * Tells the area editor whether the area has unsaved painting or growth
 	 */
 	private unsavedChanged(): void
 	{
-		this.updateSaveStatus();
 		this.onUnsavedChanged(this.hasUnsavedChanges());
 	}
 
@@ -2653,29 +2649,6 @@ export class AreaEditor
 		this.onBoundsChanged(bounds);
 		this.unsavedChanged();
 		await this.startScene(this.canvas.scene?.cameraState());
-	}
-
-	/**
-	 * Shows whether painting is being saved or hasn't been saved yet
-	 */
-	private updateSaveStatus(): void
-	{
-		if (this.pendingSaves > 0)
-		{
-			this.saveStatus.textContent = t(formMessages.saving);
-		}
-		else if (this.hasUnsavedChanges())
-		{
-			this.saveStatus.textContent = t({
-				id: 'editor.area.unsaved',
-				defaultMessage: 'Area changes not saved yet',
-				description: 'Shown under the area editor\'s cells while they have painting, a change of size or links that the editor\'s Save button hasn\'t stored yet'
-			});
-		}
-		else
-		{
-			this.saveStatus.textContent = '';
-		}
 	}
 
 	/**

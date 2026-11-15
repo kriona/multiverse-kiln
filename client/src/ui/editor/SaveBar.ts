@@ -645,6 +645,10 @@ export class SaveBar
 		{
 			this.status.textContent = this.failure;
 		}
+		else if (this.saving)
+		{
+			this.status.textContent = t(formMessages.saving);
+		}
 		else if (unsaved)
 		{
 			this.status.textContent = t(changeMessages.unsavedChanges);

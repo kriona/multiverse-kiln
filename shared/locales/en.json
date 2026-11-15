@@ -1619,10 +1619,6 @@
 		"defaultMessage": "unknown tile",
 		"description": "What the cell under the pointer holds, when it is a tile the editor doesn't know"
 	},
-	"editor.area.unsaved": {
-		"defaultMessage": "Area changes not saved yet",
-		"description": "Shown under the area editor's cells while they have painting, a change of size or links that the editor's Save button hasn't stored yet"
-	},
 	"editor.areaAdd.hint": {
 		"defaultMessage": "The new area inherits its settings from what it's inside until you set its own.",
 		"description": "Explains the Add Area dialog: a new area's settings start as inherited from what it is inside"
@@ -3188,7 +3184,7 @@
 		"description": "Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab's table listing them; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.place.problemsHeading": {
-		"defaultMessage": "These keep your changes from saving:",
+		"defaultMessage": "The following issues need to be fixed:",
 		"description": "Heads the list of problems the region or area editor shows as changes are made, which keep the changes from being saved until they are fixed: areas left without a setting, or with different values from the places above them"
 	},
 	"editor.place.raceStartBlocked": {

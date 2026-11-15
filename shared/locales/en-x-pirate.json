@@ -1619,10 +1619,6 @@
 		"message": "mystery tile",
 		"source": "unknown tile"
 	},
-	"editor.area.unsaved": {
-		"message": "Area changes not stowed yet",
-		"source": "Area changes not saved yet"
-	},
 	"editor.areaAdd.hint": {
 		"message": "The new area takes what's handed down from what it sails in, till ye set its own.",
 		"source": "The new area inherits its settings from what it's inside until you set its own."
@@ -3188,8 +3184,8 @@
 		"source": "Parents"
 	},
 	"editor.place.problemsHeading": {
-		"message": "These troubles keep yer changes from bein' stowed:",
-		"source": "These keep your changes from saving:"
+		"message": "These here troubles need mendin':",
+		"source": "The following issues need to be fixed:"
 	},
 	"editor.place.raceStartBlocked": {
 		"message": "{area}: the home port o' {race} at {column}, {row} be {tile}, where no hand can set foot",
