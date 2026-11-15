@@ -34,7 +34,7 @@ import { accountCreatedEmail, providerLinkedEmail } from '../email/authEmails.js
 import { sendEmailInBackground } from '../email/mailer.js';
 import { CONTINUATION_LIFETIME_MS } from '../logic/emailCodes.js';
 import { displayText } from '../rooms/payloads.js';
-import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { authMessages, checkDisplayName, checkUsername, checkUsernameFree, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { takePasswordTry } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, PROVIDER_START_COOKIE, readCookie, setCookie } from './cookies.js';
@@ -675,7 +675,8 @@ async function linkToSession(request: Request, response: Response, playerId: str
 
 /**
  * POST AUTH_PROVIDER_REGISTER_PATH: creates an account for the provider login this browser came back
- * with, when no account has its email address, and logs the browser in
+ * with, when no account has its email address, and logs the browser in. The username counts as one of
+ * the network's username checks (checkUsernameFree())
  *
  * @param request The request, with a ProviderRegisterRequest
  * @param response The response: 204 with the session cookie
@@ -715,6 +716,14 @@ async function registerRoute(request: Request, response: Response): Promise<void
 				status: 403,
 				message: providerMessages.startAgain
 			});
+		}
+
+		// Before creating the account, since a username taken there ends the transaction without counting the check
+		const usernameProblem = await checkUsernameFree(request, response, username, now, executor);
+
+		if (usernameProblem)
+		{
+			return(usernameProblem);
 		}
 
 		let playerId: string;
