@@ -70,7 +70,7 @@ export function describeValue<Setting extends InheritedSetting>(setting: Setting
 		}
 
 		case 'fogOfWar':
-			return(t(FOG_OF_WAR_NAMES[value ? 'on' : 'off']));
+			return(t(FOG_OF_WAR_NAMES[(value ? 'on' : 'off')]));
 
 		default:
 		{

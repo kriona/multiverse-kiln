@@ -53,7 +53,7 @@ function isEditorPlace(state: unknown): state is EditorPlace
 
 	const { tab, areaId, regionId } = state as Record<string, unknown>;
 
-	return(isEditorTab(typeof tab === 'string' ? tab : undefined) && ((areaId === undefined) || (typeof areaId === 'string')) && ((regionId === undefined) || (typeof regionId === 'string')));
+	return(isEditorTab(((typeof tab === 'string') ? tab : undefined)) && ((areaId === undefined) || (typeof areaId === 'string')) && ((regionId === undefined) || (typeof regionId === 'string')));
 }
 
 /**
