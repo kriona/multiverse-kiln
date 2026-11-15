@@ -223,7 +223,7 @@ export class ProviderLinkDialog
 	{
 		const email = (this.account.email ?? '');
 
-		await this.botCheck.send((botCheckToken) => this.api.sendCode({
+		await this.botCheck.send('email-code', (botCheckToken) => this.api.sendCode({
 			purpose: 'linkLogin',
 			email,
 			locale: currentLocale(),
@@ -260,7 +260,7 @@ export class ProviderLinkDialog
 			this.emailCode.disabled = true;
 		}
 
-		const url = await this.botCheck.send((botCheckToken) => this.api.startProviderLogin({
+		const url = await this.botCheck.send('password', (botCheckToken) => this.api.startProviderLogin({
 			provider: this.provider,
 			rememberMe: false,
 			link: {

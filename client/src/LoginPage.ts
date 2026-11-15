@@ -555,7 +555,7 @@ export class LoginPage
 	 */
 	private async sendLogin(check: BotCheck): Promise<LoginPayload['outcome']>
 	{
-		return(await check.send((botCheckToken) => this.api.logIn({
+		return(await check.send('login', (botCheckToken) => this.api.logIn({
 			email: this.loginEmail.value.trim(),
 			password: this.loginPassword.value,
 			rememberMe: this.loginRemember.checked,
@@ -854,7 +854,7 @@ export class LoginPage
 	 */
 	private async linkWithPassword(): Promise<void>
 	{
-		await this.finishOrSetUpTwoFactor(await this.providerLinkCheck.send((botCheckToken) => this.api.linkProvider({
+		await this.finishOrSetUpTwoFactor(await this.providerLinkCheck.send('login', (botCheckToken) => this.api.linkProvider({
 			password: this.providerLinkPassword.value,
 			locale: currentLocale(),
 			twoFactorCode: (this.providerLinkTwoFactorField.hidden ? null : this.providerLinkTwoFactorCode.value),
@@ -879,7 +879,7 @@ export class LoginPage
 
 		try
 		{
-			await this.providerLinkCheck.send((botCheckToken) => this.api.sendCode({
+			await this.providerLinkCheck.send('email-code', (botCheckToken) => this.api.sendCode({
 				purpose: 'linkLogin',
 				email: link.email,
 				locale: currentLocale(),
@@ -952,7 +952,7 @@ export class LoginPage
 	{
 		const email = this.emailAddress.value.trim();
 
-		await this.emailCheck.send((botCheckToken) => this.api.sendCode({
+		await this.emailCheck.send('email-code', (botCheckToken) => this.api.sendCode({
 			purpose: this.purpose,
 			email,
 			locale: currentLocale(),
@@ -1038,7 +1038,7 @@ export class LoginPage
 			}
 			else
 			{
-				await this.codeCheck.send((botCheckToken) => this.api.sendCode({
+				await this.codeCheck.send('email-code', (botCheckToken) => this.api.sendCode({
 					purpose: this.purpose,
 					email: this.email,
 					locale: currentLocale(),

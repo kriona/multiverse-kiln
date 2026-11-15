@@ -208,7 +208,7 @@ export class TwoFactorConfirmDialog
 			else if (this.change === 'turnOff')
 			{
 				await this.emailCode.check();
-				await this.botCheck.send((botCheckToken) => this.api.disableTwoFactor({
+				await this.botCheck.send('password', (botCheckToken) => this.api.disableTwoFactor({
 					password,
 					code: this.code.value,
 					locale: currentLocale(),
@@ -222,7 +222,7 @@ export class TwoFactorConfirmDialog
 			{
 				await this.emailCode.check();
 
-				const codes = await this.botCheck.send((botCheckToken) => this.api.replaceRecoveryCodes({
+				const codes = await this.botCheck.send('password', (botCheckToken) => this.api.replaceRecoveryCodes({
 					password,
 					code: this.code.value,
 					locale: currentLocale(),

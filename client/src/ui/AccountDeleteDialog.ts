@@ -313,7 +313,7 @@ export class AccountDeleteDialog
 
 		try
 		{
-			await this.botCheck.send((botCheckToken) => this.authApi.sendCode({
+			await this.botCheck.send('email-code', (botCheckToken) => this.authApi.sendCode({
 				purpose: 'deleteAccount',
 				email,
 				locale: currentLocale(),
@@ -493,7 +493,7 @@ export class AccountDeleteDialog
 				this.emailCode.disabled = true;
 			}
 
-			await this.botCheck.send((botCheckToken) => this.authApi.deleteAccount({
+			await this.botCheck.send('password', (botCheckToken) => this.authApi.deleteAccount({
 				password: (deletion.hasPassword ? this.password.value : null),
 				twoFactorCode: (deletion.twoFactor ? this.code.value : null),
 				username: (deletion.hasPassword ? null : this.username.value),

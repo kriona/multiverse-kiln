@@ -1,5 +1,5 @@
 import arrowClockwiseIcon from 'virtual:icon/ph:arrow-clockwise';
-import { defineMessages, isBotCheckNeeded, type BotCheckChallenge } from '@multiverse-kiln/shared';
+import { defineMessages, isBotCheckNeeded, type BotCheckAction, type BotCheckChallenge } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { EditorApiError } from '../network/editorApi';
@@ -168,9 +168,10 @@ export class BotCheck
 	private shown: { id: string; challenge: BotCheckChallenge } | undefined;
 
 	/**
-	 * A token the widget made that no request has used yet
+	 * A token the widget made that no request has used yet, and the action it was made for, since the
+	 * server refuses a token made for another action
 	 */
-	private token: string | undefined;
+	private token: { value: string; action: BotCheckAction } | undefined;
 
 	/**
 	 * The request waiting for a token, and the answer that asked for it, which it fails with if the check stops
@@ -213,15 +214,18 @@ export class BotCheck
 	 * Sends a request, showing the check and sending it again with the check's token whenever the
 	 * server asks for one
 	 *
+	 * @param action The action the server checks the request's tokens were made for: 'email-code' for
+	 * sending an email code, 'login' for logging in with a password, and 'password' for a logged-in
+	 * account's password given again
 	 * @param request Sends the request with a check's token, or none
 	 * @return What the request answered
 	 * @throws What the request threw when it isn't asking for a check; EditorApiError saying so when the
 	 * check couldn't load; and the server's answer asking for a check when the check stops, such as when
 	 * its dialog closes
 	 */
-	async send<T>(request: (botCheckToken: string | undefined) => Promise<T>): Promise<T>
+	async send<T>(action: BotCheckAction, request: (botCheckToken: string | undefined) => Promise<T>): Promise<T>
 	{
-		let token = this.takeToken();
+		let token = this.takeToken(action);
 
 		for (;;)
 		{
@@ -259,17 +263,24 @@ export class BotCheck
 	}
 
 	/**
-	 * The token the widget made that no request has used yet, if any, which the next request uses
+	 * The token the widget made that no request has used yet, when it was made for the action, which the
+	 * next request for that action uses
 	 *
-	 * @return The token
+	 * @param action The request's action
+	 * @return The token, or undefined when there is none for the action
 	 */
-	private takeToken(): string | undefined
+	private takeToken(action: BotCheckAction): string | undefined
 	{
 		const token = this.token;
 
+		if (token?.action !== action)
+		{
+			return(undefined);
+		}
+
 		this.token = undefined;
 
-		return(token);
+		return(token.value);
 	}
 
 	/**
@@ -281,9 +292,9 @@ export class BotCheck
 	 */
 	private async waitForToken(challenge: BotCheckChallenge, refusal: EditorApiError): Promise<string>
 	{
-		const ready = this.takeToken();
+		const ready = this.takeToken(challenge.action);
 
-		if ((ready !== undefined) && (this.shown?.challenge.action === challenge.action) && (this.shown.challenge.siteKey === challenge.siteKey))
+		if ((ready !== undefined) && (this.shown?.challenge.siteKey === challenge.siteKey))
 		{
 			// The widget already made a new one after the last answer
 			return(ready);
@@ -336,6 +347,8 @@ export class BotCheck
 			return;
 		}
 
+		// A token the widget shown made, for another action
+		this.token = undefined;
 		this.removeWidget();
 
 		const id = turnstile.render(this.widget, {
@@ -422,9 +435,12 @@ export class BotCheck
 			}));
 			waiting.resolve(token);
 		}
-		else
+		else if (this.shown)
 		{
-			this.token = token;
+			this.token = {
+				value: token,
+				action: this.shown.challenge.action
+			};
 		}
 	}
 

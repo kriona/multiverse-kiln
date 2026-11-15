@@ -176,7 +176,7 @@ export class TwoFactorEmailCode
 		const { note, input } = this.elements;
 		const email = (this.email ?? '');
 
-		await check.send((botCheckToken) => this.api.sendCode({
+		await check.send('email-code', (botCheckToken) => this.api.sendCode({
 			purpose: this.use.purpose,
 			email,
 			locale: currentLocale(),

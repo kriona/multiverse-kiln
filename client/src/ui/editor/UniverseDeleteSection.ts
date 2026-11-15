@@ -447,7 +447,7 @@ export class UniverseDeleteSection
 				locale: currentLocale()
 			};
 
-			await this.botCheck.send((botCheckToken) => (deletion.asAdmin
+			await this.botCheck.send('password', (botCheckToken) => (deletion.asAdmin
 				? this.adminApi.deleteUniverse(universe.id, {
 					...request,
 					botCheckToken

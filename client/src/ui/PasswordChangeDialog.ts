@@ -91,7 +91,7 @@ export class PasswordChangeDialog
 
 		try
 		{
-			await this.botCheck.send((botCheckToken) => this.api.changePassword({
+			await this.botCheck.send('password', (botCheckToken) => this.api.changePassword({
 				currentPassword: this.current.value,
 				newPassword: this.next.value,
 				locale: currentLocale(),

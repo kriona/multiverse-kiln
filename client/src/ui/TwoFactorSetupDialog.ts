@@ -272,7 +272,7 @@ export class TwoFactorSetupDialog
 	{
 		await this.emailCode.check();
 
-		const setup = await this.botCheck.send((botCheckToken) => this.api.setUpTwoFactor({
+		const setup = await this.botCheck.send('password', (botCheckToken) => this.api.setUpTwoFactor({
 			password: (this.emailCode.asked ? null : this.password.value),
 			botCheckToken
 		}));

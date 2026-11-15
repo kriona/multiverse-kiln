@@ -280,7 +280,7 @@ export class EmailChangeDialog
 	{
 		const email = (this.account.email ?? '');
 
-		await this.botCheck.send((botCheckToken) => this.api.sendCode({
+		await this.botCheck.send('email-code', (botCheckToken) => this.api.sendCode({
 			purpose: 'confirmEmailChange',
 			email,
 			locale: currentLocale(),
@@ -329,7 +329,7 @@ export class EmailChangeDialog
 			this.currentCode.disabled = true;
 		}
 
-		await this.botCheck.send((botCheckToken) => this.api.sendCode({
+		await this.botCheck.send('email-code', (botCheckToken) => this.api.sendCode({
 			purpose: 'changeEmail',
 			email,
 			locale: currentLocale(),
@@ -368,7 +368,7 @@ export class EmailChangeDialog
 			this.code.disabled = true;
 		}
 
-		await this.botCheck.send((botCheckToken) => this.api.changeEmail({
+		await this.botCheck.send('password', (botCheckToken) => this.api.changeEmail({
 			email,
 			locale: currentLocale(),
 			currentPassword: (this.account.hasPassword ? this.password.value : null),
