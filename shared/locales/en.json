@@ -6892,7 +6892,7 @@
 		"description": "Checkbox on the screen that asks for the code from the player's authenticator app at login: this browser won't ask for the code again for a number of days"
 	},
 	"login.trustBrowserHint": {
-		"defaultMessage": "Only on a browser that no one else uses. Your password is still asked for.",
+		"defaultMessage": "Only check this on a browser that no one else uses.",
 		"description": "Under the checkbox that stops this browser asking for the authenticator code at login"
 	},
 	"login.twoFactorCode": {

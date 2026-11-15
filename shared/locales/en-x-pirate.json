@@ -6892,8 +6892,8 @@
 		"source": "Don't ask again on this browser for {days, plural, one {# day} other {# days}}"
 	},
 	"login.trustBrowserHint": {
-		"message": "Only on a browser no other soul uses. Yer password be still asked for.",
-		"source": "Only on a browser that no one else uses. Your password is still asked for."
+		"message": "Only check this on a browser no other soul uses.",
+		"source": "Only check this on a browser that no one else uses."
 	},
 	"login.twoFactorCode": {
 		"message": "Authenticator code",
