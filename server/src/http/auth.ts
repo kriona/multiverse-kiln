@@ -38,7 +38,7 @@ import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
 import { addAccountDeletionRoutes } from './accountDeletion.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
-import { botCheckRefusal, confirmBotChecks, readBotCheck, recordBotCheckEvents, takeAccountPasswordTry, takePasswordTry, type RequestBotCheck } from './botChecks.js';
+import { botCheckRefusal, readBotCheck, recordBotCheckEvents, settleBotCheck, takeAccountPasswordTry, takePasswordTry, type RequestBotCheck } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
@@ -292,7 +292,7 @@ async function confirmedChangeToken(request: Request, playerId: string, now: Dat
  *
  * @param request The request
  * @param response The response, which gets a Retry-After header when a limit is reached
- * @param check The request's bot check (readBotCheck()), or undefined for a dormant account's login code,
+ * @param check The request's bot check (readBotCheck() and settleBotCheck()), or undefined for a dormant account's login code,
  * which is never checked on its own
  * @param addressHash The keyed hash of the address the code goes to
  * @param ownerId The account with the address, if one, for the check's auth events
@@ -596,7 +596,7 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 	const exempt = ((knownOwnerId !== undefined) && ((session?.playerId === knownOwnerId) || (knownBrowserHash(request, knownOwnerId, now) !== undefined)));
 	const check = await readBotCheck(request, 'email-code', !exempt, now);
 
-	await confirmBotChecks(check, async () => ((await takeCodeSend(networkHash, addressHash, check.state, now, undefined)).kind === 'checkNeeded'), now);
+	await settleBotCheck(check, async () => ((await takeCodeSend(networkHash, addressHash, check.state, now, undefined)).kind === 'checkNeeded'), now);
 
 	const outcome = await inTransaction(async (executor): Promise<CodeOutcome> =>
 	{

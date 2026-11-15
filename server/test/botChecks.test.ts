@@ -197,6 +197,25 @@ describe('bot checks', () =>
 			assertCheckNeeded(await logIn(new Browser(), PASSWORD, 'pass-email-code'), 'login');
 			assert.strictEqual((await logIn(new Browser(), PASSWORD, 'pass-login')).status, 200);
 			assert.deepStrictEqual(await checkEvents(), ['botCheckAsked', 'botCheckAsked', 'botCheckFailed', 'botCheckPassed']);
+			assert.deepStrictEqual(verifier.verified, ['pass-email-code', 'pass-login']);
+		});
+
+		it('sends Cloudflare no token from a try that needs no check', async () =>
+		{
+			assert.strictEqual((await logIn(new Browser(), PASSWORD, 'pass-login')).status, 200);
+			assert.strictEqual((await logIn(new Browser(), 'guess', 'wrong')).status, 401);
+			assert.deepStrictEqual(verifier.verified, []);
+			assert.deepStrictEqual(await checkEvents(), []);
+		});
+
+		it('sends Cloudflare no token from a browser that has logged in to the account', async () =>
+		{
+			const ada = new Browser();
+
+			assert.strictEqual((await logIn(ada, PASSWORD)).status, 200);
+			await pastAttempts('addressLoginAttempt', 'ada@example.com', MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR);
+			assert.strictEqual((await logIn(ada, PASSWORD, 'pass-login')).status, 200);
+			assert.deepStrictEqual(verifier.verified, []);
 		});
 
 		it('doesn\'t count tries refused for want of a check against the address, so a bot can\'t use up its tries', async () =>
@@ -234,7 +253,7 @@ describe('bot checks', () =>
 			assert.strictEqual((await logIn(new Browser(), PASSWORD, 'pass-login')).status, 429);
 		});
 
-		it('records no bot check events for tries the hard limits refuse', async () =>
+		it('records no bot check events for tries the hard limits refuse, and sends Cloudflare none of their tokens', async () =>
 		{
 			await pastAttempts('addressLoginAttempt', 'ada@example.com', MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR);
 			await pastAttempts('addressCheckedLoginAttempt', 'ada@example.com', MAX_CHECKED_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR);
@@ -245,6 +264,7 @@ describe('bot checks', () =>
 			}
 
 			assert.deepStrictEqual(await checkEvents(), []);
+			assert.deepStrictEqual(verifier.verified, []);
 		});
 
 		it('never asks a browser that has logged in to the account', async () =>
@@ -350,6 +370,15 @@ describe('bot checks', () =>
 			assert.deepStrictEqual(emails, []);
 			assert.strictEqual((await sendCode('ada@example.com', 'pass-email-code')).status, 204);
 			await waitUntil(() => (emails.length === 1));
+			assert.deepStrictEqual(verifier.verified, ['pass-email-code']);
+		});
+
+		it('sends Cloudflare no token from a code request that needs no check', async () =>
+		{
+			assert.strictEqual((await sendCode('ada@example.com', 'pass-email-code')).status, 204);
+			await waitUntil(() => (emails.length === 1));
+			assert.deepStrictEqual(verifier.verified, []);
+			assert.deepStrictEqual(await checkEvents(), []);
 		});
 
 		it('sends a few more codes past the address\'s hourly limit with a check each', async () =>
@@ -366,7 +395,7 @@ describe('bot checks', () =>
 			assert.strictEqual((await sendCode('nobody@example.com', 'pass-email-code')).status, 429);
 		});
 
-		it('records no bot check events for codes the hard limits refuse', async () =>
+		it('records no bot check events for codes the hard limits refuse, and sends Cloudflare none of their tokens', async () =>
 		{
 			await pastAttempts('addressCodeSent', 'ada@example.com', MAX_EMAIL_CODES_PER_ADDRESS_HOUR);
 			await pastAttempts('addressCheckedCodeSent', 'ada@example.com', MAX_CHECKED_CODES_PER_ADDRESS_HOUR);
@@ -378,6 +407,7 @@ describe('bot checks', () =>
 
 			assert.deepStrictEqual(await checkEvents(), []);
 			assert.deepStrictEqual(emails, []);
+			assert.deepStrictEqual(verifier.verified, []);
 		});
 
 		it('sends a player whose codes others\' wrong guesses blocked a few more codes with a check each', async () =>
