@@ -426,7 +426,11 @@ export class TileReplaceDialog
 
 		if (inherited.every((each) => ((each.tileId === first.tileId) && (each.from.map(placeKey).join() === first.from.map(placeKey).join()))))
 		{
-			return(inheritLabel('defaultTileId', { kind: 'inherited', value: first.tileId, from: first.from }, names, places.tiles(), universe.ruleset, false));
+			return(inheritLabel('defaultTileId', {
+				kind: 'inherited',
+				value: first.tileId,
+				from: first.from
+			}, names, places.tiles(), universe.ruleset, false));
 		}
 
 		const tileNamed = (tileId: number): string =>

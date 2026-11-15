@@ -473,13 +473,30 @@ async function areaImpacts(universe: EditableUniverseDetails, changes: readonly 
 			{
 				const characters = (counts.get(id) ?? 0);
 
-				return(((characters > 0) ? [{ changeIndex, kind: 'area', id, name: nameOfArea(id), characters, hasParent: (enabledAncestor(byId, id) !== undefined) }] : []));
+				return(((characters > 0)
+					? [{
+						changeIndex,
+						kind: 'area',
+						id,
+						name: nameOfArea(id),
+						characters,
+						hasParent: (enabledAncestor(byId, id) !== undefined)
+					}]
+					: []));
 			}),
 		...[...enteredAt].flatMap(([id, changeIndex]): ChangeImpact[] =>
 		{
 			const characters = (counts.get(id) ?? 0);
 
-			return(((characters > 0) ? [{ changeIndex, kind: 'lobbyArea', id, name: nameOfArea(id), characters }] : []));
+			return(((characters > 0)
+				? [{
+					changeIndex,
+					kind: 'lobbyArea',
+					id,
+					name: nameOfArea(id),
+					characters
+				}]
+				: []));
 		})
 	]);
 }

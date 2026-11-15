@@ -567,7 +567,13 @@ export class AreaSelectDialog
 	{
 		const preview = this.preview;
 		const universe = this.universe;
-		const square = (preview ? arrivalSquare({ source: { kind: 'universe' }, areaId: preview.area.id, ...cell }, preview.area.bounds) : undefined);
+		const square = (preview
+			? arrivalSquare({
+				source: { kind: 'universe' },
+				areaId: preview.area.id,
+				...cell
+			}, preview.area.bounds)
+			: undefined);
 
 		if (!preview || !universe || !square)
 		{

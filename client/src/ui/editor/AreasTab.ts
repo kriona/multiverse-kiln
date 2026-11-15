@@ -580,7 +580,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * Every region and area of the universe, its lobby region and starting square, its starting areas and
 	 * its links between areas, as last loaded
 	 */
-	private loaded: AreaListPayload = { regions: [], areas: [], lobbyRegionId: null, lobbyAreaId: null, startingAreaId: null, startingAreaIds: [], links: [], arrivals: [] };
+	private loaded: AreaListPayload = {
+		regions: [],
+		areas: [],
+		lobbyRegionId: null,
+		lobbyAreaId: null,
+		startingAreaId: null,
+		startingAreaIds: [],
+		links: [],
+		arrivals: []
+	};
 
 	/**
 	 * Lists the area open's problems again once painting pauses (queueAreaProblems())
@@ -614,7 +623,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * saved and its settings as the form showed them, the settings of the areas left with changes, and the
 	 * openVersion when the save started
 	 */
-	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; kept: ReadonlyMap<string, KeptSettings>; version: number } = { createdIds: [], area: undefined, shown: undefined, kept: new Map(), version: -1 };
+	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; kept: ReadonlyMap<string, KeptSettings>; version: number } = {
+		createdIds: [],
+		area: undefined,
+		shown: undefined,
+		kept: new Map(),
+		version: -1
+	};
 
 	/**
 	 * The area the editor is showing
@@ -1284,7 +1299,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (kept.changes.parents)
 			{
-				this.keptSettings.set(keptId, { ...kept, changes: { ...kept.changes, parents: withoutParent(kept.changes.parents, place, parents) } });
+				this.keptSettings.set(keptId, {
+					...kept,
+					changes: { ...kept.changes, parents: withoutParent(kept.changes.parents, place, parents) }
+				});
 			}
 		}
 
@@ -2119,7 +2137,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 */
 	world(override?: PlaceOverride): PlaceWorld
 	{
-		const paint = (kind: PlaceKind, settings: PlaceNode): PlaceSettings => ({ ...settings, defaultTileId: this.defaultTileFor({ kind, id: settings.id }, settings.defaultTileId) });
+		const paint = (kind: PlaceKind, settings: PlaceNode): PlaceSettings => ({
+			...settings,
+			defaultTileId: this.defaultTileFor({ kind, id: settings.id }, settings.defaultTileId)
+		});
 		let regions: PlaceNode[] = this.regions().map(({ builderIds: _builderIds, ...region }) => ({ ...region, ...paint('region', region) }));
 		let areas: AreaNode[] = this.areas().map(({ resolved: _resolved, ...area }) => ({ ...area, ...paint('area', area) }));
 
@@ -2187,7 +2208,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		for (const change of this.areaEditor.stagedLinkChanges())
 		{
-			targets.set(keyOf(change), ((change.target === null) ? null : { areaId: change.areaId, targetAreaId: change.target.targetAreaId }));
+			targets.set(keyOf(change), ((change.target === null)
+				? null
+				: {
+					areaId: change.areaId,
+					targetAreaId: change.target.targetAreaId
+				}));
 		}
 
 		return([...targets.values()].filter((link) => (link !== null)));
@@ -3053,7 +3079,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		const arrivals = [...universeArrivals(universe), ...this.loaded.arrivals].filter((arrival) => (arrival.areaId === area.id));
-		const areas = new Map([[area.id, { bounds: area.bounds, defaultTileId: (defaultTileId ?? area.resolved.defaultTileId) }]]);
+		const areas = new Map([[area.id, {
+			bounds: area.bounds,
+			defaultTileId: (defaultTileId ?? area.resolved.defaultTileId)
+		}]]);
 
 		return(blockedArrivals(arrivals, areas, (areaId, column, row) => this.areaEditor.cellValueAt(areaId, column, row), new Map(this.tileList.map((tile) => [tile.id, tile.walkSeconds]))));
 	}
@@ -3727,8 +3756,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		for (const { place, parents } of this.staged.movedPlaces())
 		{
 			save.add(((place.kind === 'region')
-				? { kind: 'updateRegion', regionId: place.id, update: { parents: refParents(parents) } }
-				: { kind: 'updateArea', areaId: place.id, update: { parents: refParents(parents) } }), onRefused(regionFallback));
+				? {
+					kind: 'updateRegion',
+					regionId: place.id,
+					update: { parents: refParents(parents) }
+				}
+				: {
+					kind: 'updateArea',
+					areaId: place.id,
+					update: { parents: refParents(parents) }
+				}), onRefused(regionFallback));
 		}
 
 		for (const areaId of this.staged.deletedIds())
@@ -3775,7 +3812,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			// A neighbor Add Neighbor made is as large as its row and column, and every new area starts out the same size
 			if (!sameBoundsAs(newArea.bounds, NEW_AREA_BOUNDS))
 			{
-				save.add({ kind: 'resizeArea', areaId: newRef('', newArea.id), bounds: newArea.bounds, discard: false }, onRefused(neighborFallback));
+				save.add({
+					kind: 'resizeArea',
+					areaId: newRef('', newArea.id),
+					bounds: newArea.bounds,
+					discard: false
+				}, onRefused(neighborFallback));
 			}
 		}
 
@@ -3857,7 +3899,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				}));
 			}
 
-			saved = { ...area, ...settings, defaultTileId: this.defaultTileFor({ kind: 'area', id: area.id }, settings.defaultTileId) };
+			saved = {
+				...area,
+				...settings,
+				defaultTileId: this.defaultTileFor({ kind: 'area', id: area.id }, settings.defaultTileId)
+			};
 		}
 
 		// The sizes a resize carried the rest of the row or column to, which the warning in Edit Size covered
@@ -3890,7 +3936,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 				if (neighborId !== before[side])
 				{
-					save.add({ kind: 'setNeighbor', areaId: placeRef(areaId), side, neighborId: ((neighborId === null) ? null : placeRef(neighborId)) }, onRefused(neighborFallback));
+					save.add({
+						kind: 'setNeighbor',
+						areaId: placeRef(areaId),
+						side,
+						neighborId: ((neighborId === null) ? null : placeRef(neighborId))
+					}, onRefused(neighborFallback));
 				}
 			}
 		}
@@ -4307,7 +4358,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (kept.changes.parents)
 			{
-				this.keptSettings.set(areaId, { ...kept, changes: { ...kept.changes, parents: kept.changes.parents.map((parent) => (samePlace(parent, place) ? { ...parent, id: savedId } : parent)) } });
+				this.keptSettings.set(areaId, {
+					...kept,
+					changes: {
+						...kept.changes,
+						parents: kept.changes.parents.map((parent) => (samePlace(parent, place) ? { ...parent, id: savedId } : parent))
+					}
+				});
 			}
 		}
 

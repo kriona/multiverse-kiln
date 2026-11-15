@@ -1143,7 +1143,11 @@ class ImportPlanner
 
 			if (current && (current.name.toLowerCase() !== region.name.toLowerCase()) && finalNames.has(current.name.toLowerCase()))
 			{
-				this.add({ kind: 'updateRegion', regionId: target, update: { name: region.id } }, `region ${region.id}`);
+				this.add({
+					kind: 'updateRegion',
+					regionId: target,
+					update: { name: region.id }
+				}, `region ${region.id}`);
 			}
 		}
 

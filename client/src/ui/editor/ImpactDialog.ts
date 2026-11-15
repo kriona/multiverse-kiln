@@ -390,7 +390,10 @@ function withAnswer(change: EditorChange, impact: ChangeImpact, answer: string):
 		case 'updateArea':
 		case 'deleteArea':
 			return((impact.kind === 'area')
-				? { ...change, moveTo: { ...change.moveTo, [impact.id]: ((answer === 'parent') ? 'parent' : 'start') } }
+				? {
+					...change,
+					moveTo: { ...change.moveTo, [impact.id]: ((answer === 'parent') ? 'parent' : 'start') }
+				}
 				: change);
 		case 'universe':
 			return(((impact.kind === 'groupSize') ? { ...change, largerGroups: groupAnswer(answer) } : change));

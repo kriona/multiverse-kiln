@@ -210,7 +210,10 @@ export class PlaceFields
 
 		// Enabled works as a gate, so inheriting it shows nothing but whether anything above is off
 		setOptions(this.enabled, [
-			{ value: '', label: inheritLabel('indoors', { kind: 'ignored' }, view.names, view.tiles, view.ruleset, view.topLevel) },
+			{
+				value: '',
+				label: inheritLabel('indoors', { kind: 'ignored' }, view.names, view.tiles, view.ruleset, view.topLevel)
+			},
 			{ value: 'on', label: on },
 			{ value: 'off', label: off }
 		]);

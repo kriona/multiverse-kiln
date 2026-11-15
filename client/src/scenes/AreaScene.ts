@@ -921,7 +921,12 @@ export class AreaScene extends Phaser.Scene
 
 		if (isInBounds(bounds, areaColumn, areaRow))
 		{
-			return({ areaId: this.area.areaId, column: areaColumn, row: areaRow, key: visionKey(areaColumn, areaRow) });
+			return({
+				areaId: this.area.areaId,
+				column: areaColumn,
+				row: areaRow,
+				key: visionKey(areaColumn, areaRow)
+			});
 		}
 
 		const found = (this.hasSeams() ? locateCell(this.seamLookup, this.area.areaId, localColumn, localRow) : undefined);

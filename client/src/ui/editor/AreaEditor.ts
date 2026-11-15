@@ -669,7 +669,15 @@ export class AreaEditor
 			this.keep();
 			this.kept.delete(area.id);
 			this.neighborCells.clear();
-			kept.open = { ...kept.open, universe, area: { ...area, bounds: kept.open.area.bounds }, tiles, areas, links, editable };
+			kept.open = {
+				...kept.open,
+				universe,
+				area: { ...area, bounds: kept.open.area.bounds },
+				tiles,
+				areas,
+				links,
+				editable
+			};
 			this.work = kept;
 			this.unsavedChanged();
 		}
@@ -1246,11 +1254,22 @@ export class AreaEditor
 
 			if (change.target === null)
 			{
-				save.add({ kind: 'deleteLink', areaId: areaRef(change.areaId), column: change.column, row: change.row }, refused);
+				save.add({
+					kind: 'deleteLink',
+					areaId: areaRef(change.areaId),
+					column: change.column,
+					row: change.row
+				}, refused);
 			}
 			else
 			{
-				save.add({ kind: 'saveLink', areaId: areaRef(change.areaId), column: change.column, row: change.row, target: { ...change.target, targetAreaId: areaRef(change.target.targetAreaId) } }, refused);
+				save.add({
+					kind: 'saveLink',
+					areaId: areaRef(change.areaId),
+					column: change.column,
+					row: change.row,
+					target: { ...change.target, targetAreaId: areaRef(change.target.targetAreaId) }
+				}, refused);
 			}
 		}
 
@@ -2784,7 +2803,10 @@ export class AreaEditor
 
 		if (open)
 		{
-			this.fillTiles(open.universe, { ...open.area, resolved: { ...open.area.resolved, indoors } }, open.tiles, true);
+			this.fillTiles(open.universe, {
+				...open.area,
+				resolved: { ...open.area.resolved, indoors }
+			}, open.tiles, true);
 		}
 	}
 

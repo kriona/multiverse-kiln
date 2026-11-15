@@ -449,7 +449,14 @@ export class RegionEditorView
 		{
 			const found = view.resolved[setting];
 
-			return(((found.kind === 'conflict') ? [describeProblem({ kind: 'conflict', areaId: '', setting, values: found.values }, (place) => ((place.id === '') ? override.node.name : names(place)), this.host.tiles(), universe.ruleset)] : []));
+			return(((found.kind === 'conflict')
+				? [describeProblem({
+					kind: 'conflict',
+					areaId: '',
+					setting,
+					values: found.values
+				}, (place) => ((place.id === '') ? override.node.name : names(place)), this.host.tiles(), universe.ruleset)]
+				: []));
 		});
 
 		this.warningList.replaceChildren(...conflicts.map((text) =>
