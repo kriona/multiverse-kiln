@@ -54,9 +54,10 @@ If you use Claude Code, also run this once from the repository root:
 ```bash
 npx skills add colyseus/skill
 npx skills add phaserjs/phaser
+npx skills add GoogleChrome/modern-web-guidance --skill modern-web-guidance
 ```
 
-These are the official agent skills (documentation written for AI coding agents) for [Colyseus](https://github.com/colyseus/skill) and [Phaser](https://github.com/phaserjs/phaser/tree/master/skills). They're committed in `.agents/skills/`, and `CLAUDE.md` tells Claude to read them. These commands also link them into `.claude/skills/` (git-ignored) so Claude Code loads them automatically.
+These are the official agent skills (documentation written for AI coding agents) for [Colyseus](https://github.com/colyseus/skill) and [Phaser](https://github.com/phaserjs/phaser/tree/master/skills), and Chrome's [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) for the pages' HTML, CSS and DOM code. They're committed in `.agents/skills/`, and `CLAUDE.md` tells Claude to read them. These commands also link them into `.claude/skills/` (git-ignored) so Claude Code loads them automatically.
 
 ### 3. Point the dev hostname at your machine
 
