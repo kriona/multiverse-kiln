@@ -3,7 +3,7 @@
  */
 import { and, count, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { compareNumbers, isRulebookOn, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -35,6 +35,11 @@ export interface FoundItem
 	 * Whether the universe has it enabled
 	 */
 	enabled: boolean;
+
+	/**
+	 * The book a default item comes from; null for an item the universe added
+	 */
+	rulebook: string | null;
 }
 
 /**
@@ -196,6 +201,7 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			key: items.key,
 			name: items.name,
 			type: items.type,
+			rulebook: items.rulebook,
 			enabled: items.enabled
 		})
 		.from(items)
@@ -230,6 +236,7 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				name: (custom ? row.name : (copy?.name ?? null)),
 				type: settings.type,
 				enabled: settings.enabled,
+				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined)
 			};
@@ -291,6 +298,7 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 			&& ((query.category === undefined) || (itemCategory(ruleset, item.type) === query.category))
 			&& ((query.type === undefined) || (item.type === query.type))
 			&& ((ids === undefined) || ids.has(item.id))
+			&& ((query.rulebooks === undefined) || isRulebookOn(query.rulebooks, item.rulebook))
 		);
 	});
 	const offset = (query.offset ?? 0);
@@ -327,6 +335,7 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 	const [row] = await executor
 		.select({
 			universeId: items.universeId,
+			rulebook: items.rulebook,
 			enabled: items.enabled,
 			copyEnabled: copies.enabled
 		})
@@ -353,7 +362,8 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 
 	return({
 		kind: ((row.universeId === null) ? 'default' : 'custom'),
-		enabled: (row.copyEnabled ?? row.enabled)
+		enabled: (row.copyEnabled ?? row.enabled),
+		rulebook: row.rulebook
 	});
 }
 

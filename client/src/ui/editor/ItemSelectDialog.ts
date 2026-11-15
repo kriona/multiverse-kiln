@@ -9,6 +9,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldError
 import { formMessages } from '../formMessages';
 import { createItemIcon, itemName, itemTypeName } from '../itemNames';
 import { editorMessages } from './editorMessages';
+import type { RulebookChoice } from './rulebookChoice';
 
 /**
  * Most items the dialog lists at once; typing narrows them down
@@ -80,8 +81,9 @@ export class ItemSelectDialog
 
 	/**
 	 * @param api The editor's API
+	 * @param rulebooks The books on, whose items the search finds
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly rulebooks: RulebookChoice)
 	{
 		this.search.setAttribute('data-untracked', '');
 
@@ -181,6 +183,7 @@ export class ItemSelectDialog
 		{
 			items = (await this.api.listItems(universe.id, {
 				name: (this.search.value.trim() || undefined),
+				rulebooks: [...this.rulebooks.rulebooks()],
 				limit: MAX_RESULTS
 			})).items;
 		}
@@ -225,7 +228,7 @@ export class ItemSelectDialog
 		const description = document.createElement('span');
 		const notes = [itemTypeName(item.type, universe.ruleset)];
 
-		if (!item.enabled)
+		if (!item.enabled || !this.rulebooks.shows(item.rulebook))
 		{
 			notes.push(t(editorMessages.disabled));
 		}

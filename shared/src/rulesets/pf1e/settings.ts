@@ -1,12 +1,13 @@
 /**
  * The settings on a Pathfinder 1E universe's Ruleset tab (see STRUCTURE-OVERVIEW.md, Tab: Ruleset)
  */
+import type { RulebookSettings } from '../../rulebooks.js';
 import type { Pf1eStatMethod } from './statMethods.js';
 
 /**
- * How a PF1E universe plays
+ * How a PF1E universe plays, and which books it uses
  */
-export interface Pf1eSettings
+export interface Pf1eSettings extends RulebookSettings
 {
 	/**
 	 * How characters get their ability scores
@@ -42,5 +43,7 @@ export const DEFAULT_PF1E_SETTINGS: Pf1eSettings = {
 	customPointBuyBudget: 15,
 	needsSleep: false,
 	coinsHaveWeight: false,
-	tracksAmmo: false
+	tracksAmmo: false,
+	rulebooks: [],
+	barredRulebooks: []
 };

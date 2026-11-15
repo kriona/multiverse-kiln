@@ -4,17 +4,37 @@ import { barredOptionsOf, characterBar, NOTHING_BARRED } from '@multiverse-kiln/
 describe('characterBar', () =>
 {
 	const barred = barredOptionsOf([
-		{ id: 1, enabled: true, keepPlaying: false },
-		{ id: 2, enabled: false, keepPlaying: true },
-		{ id: 3, enabled: false, keepPlaying: false }
+		{ id: 1, enabled: true, keepPlaying: false, rulebook: 'core' },
+		{ id: 2, enabled: false, keepPlaying: true, rulebook: null },
+		{ id: 3, enabled: false, keepPlaying: false, rulebook: null }
 	], [
-		{ id: 10, enabled: false, keepPlaying: false }
-	]);
+		{ id: 10, enabled: false, keepPlaying: false, rulebook: 'core' }
+	], {
+		rulebooks: [],
+		barredRulebooks: []
+	});
 
 	it('bars only the races and classes disabled without letting their characters keep playing', () =>
 	{
 		assert.deepStrictEqual([...barred.raceIds], [3]);
 		assert.deepStrictEqual([...barred.classIds], [10]);
+	});
+
+	it('bars the races and classes of books turned off without letting their characters keep playing', () =>
+	{
+		const books = barredOptionsOf([
+			{ id: 1, enabled: true, keepPlaying: true, rulebook: 'arg' },
+			{ id: 2, enabled: true, keepPlaying: true, rulebook: 'apg' },
+			{ id: 3, enabled: true, keepPlaying: true, rulebook: 'acg' }
+		], [
+			{ id: 10, enabled: true, keepPlaying: true, rulebook: 'arg' }
+		], {
+			rulebooks: ['acg'],
+			barredRulebooks: ['arg']
+		});
+
+		assert.deepStrictEqual([...books.raceIds], [1]);
+		assert.deepStrictEqual([...books.classIds], [10]);
 	});
 
 	it('says which bars a character, the race before the class', () =>

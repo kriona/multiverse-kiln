@@ -547,6 +547,30 @@ function pick(thing: Record<string, unknown>, fields: readonly string[]): Record
 }
 
 /**
+ * A file's ruleset settings, with only the core rulebook on when the file was exported before universes
+ * chose their books
+ *
+ * @param rulesetSettings The ruleset settings, as the file holds them
+ * @return The settings to save, which the save checks
+ */
+function withCoreRulebookOnly(rulesetSettings: unknown): unknown
+{
+	if ((typeof rulesetSettings !== 'object') || (rulesetSettings === null) || !('settings' in rulesetSettings) || (typeof rulesetSettings.settings !== 'object') || (rulesetSettings.settings === null))
+	{
+		return(rulesetSettings);
+	}
+
+	return({
+		...rulesetSettings,
+		settings: {
+			rulebooks: [],
+			barredRulebooks: [],
+			...rulesetSettings.settings
+		}
+	});
+}
+
+/**
  * The settings a change gives one of the draft's things that differ from those it has. The import leaves
  * out a change with none, so the save checks a builder's assignments and permissions only against what
  * the import changes
@@ -1522,7 +1546,7 @@ class ImportPlanner
 				startingAreaId: ((startingAreaId === null) ? null : savedString(ids, startingAreaId))
 			}
 		}), 'settings');
-		this.add({ kind: 'ruleset', settings: this.manifest.rulesetSettings }, 'ruleset settings');
+		this.add({ kind: 'ruleset', settings: withCoreRulebookOnly(this.manifest.rulesetSettings) }, 'ruleset settings');
 		this.planDifficultyLevels();
 		this.planRaces();
 		this.planClasses();

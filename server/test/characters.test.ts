@@ -210,7 +210,9 @@ describe('Character routes', () =>
 					customPointBuyBudget: 15,
 					needsSleep: false,
 					coinsHaveWeight: false,
-					tracksAmmo: false
+					tracksAmmo: false,
+					rulebooks: [],
+					barredRulebooks: []
 				}
 			}
 		});

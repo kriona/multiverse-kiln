@@ -584,9 +584,10 @@ function changesRoomText(change: EditorChange): boolean
 }
 
 /**
- * The kinds of change that can bar characters of a race or class from playing, or let them play again
+ * The kinds of change that can bar characters of a race or class from playing, or let them play again:
+ * changes to races and classes, and turning their books off or on
  */
-const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass']);
+const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass', 'ruleset']);
 
 /**
  * The first change a player's role doesn't let them make, of those given as changes; one a function
@@ -649,7 +650,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			context.universe = (await findEditableUniverse(context.version, context.transaction) ?? context.universe);
 			return;
 		case 'ruleset':
-			return(applyRulesetChange(context, change.settings));
+			return(applyRulesetChange(context, change.settings, (change.whenRulebooksOff ?? {})));
 		case 'uploadTileGraphic':
 			return(uploadTileGraphicChange(context, change.ref, change.upload));
 		case 'deleteTileGraphic':

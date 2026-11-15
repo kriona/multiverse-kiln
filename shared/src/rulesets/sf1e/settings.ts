@@ -1,11 +1,12 @@
 /**
  * The settings on a Starfinder 1E universe's Ruleset tab (see STRUCTURE-OVERVIEW.md, Tab: Ruleset)
  */
+import type { RulebookSettings } from '../../rulebooks.js';
 
 /**
- * How an SF1E universe plays
+ * How an SF1E universe plays, and which books it uses
  */
-export interface Sf1eSettings
+export interface Sf1eSettings extends RulebookSettings
 {
 	/**
 	 * The ability points players spend on their characters' ability scores, from SF1E_MIN_ABILITY_POINTS
@@ -30,5 +31,7 @@ export interface Sf1eSettings
 export const DEFAULT_SF1E_SETTINGS: Sf1eSettings = {
 	abilityPoints: 10,
 	needsSleep: false,
-	tracksAmmo: false
+	tracksAmmo: false,
+	rulebooks: [],
+	barredRulebooks: []
 };

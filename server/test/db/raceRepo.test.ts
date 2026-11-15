@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACE_RULEBOOKS, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findEditorRace, findRaceKind, findRaceStart, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
@@ -86,9 +86,10 @@ describe('raceRepo', () =>
 					startingColumn: 0,
 					startingRow: 0,
 					rules: pf1eRaceRules(PF1E_RACES[key]),
+					rulebook: PF1E_RACE_RULEBOOKS[key],
 					custom: false,
 					edited: false
-				}, `${key} differs from PF1E_RACES`);
+				}, `${key} differs from PF1E_RACES or PF1E_RACE_RULEBOOKS`);
 			}
 		});
 	});
@@ -103,7 +104,7 @@ describe('raceRepo', () =>
 		assert.strictEqual(await findRaceKind(liveVersion(universeId), 'pf1e', raceId), 'custom');
 		assert.strictEqual(await findRaceKind(liveVersion(await addUniverse('Other')), 'pf1e', raceId), undefined);
 		assert.strictEqual(await countCustomRaces(liveVersion(universeId)), 1);
-		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...lizardfolk, custom: true, edited: false });
+		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...lizardfolk, rulebook: null, custom: true, edited: false });
 
 		const changed: CustomRaceSettings = {
 			...lizardfolk,
@@ -125,7 +126,7 @@ describe('raceRepo', () =>
 		};
 
 		await inTransaction((transaction) => updateCustomRace(liveVersion(universeId), 'pf1e', raceId, changed, transaction));
-		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...changed, custom: true, edited: false });
+		assert.deepStrictEqual(await findRace(universeId, raceId), { id: raceId, key: null, ...changed, rulebook: null, custom: true, edited: false });
 		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), true);
 
 		await deleteCustomRace(liveVersion(universeId), raceId);

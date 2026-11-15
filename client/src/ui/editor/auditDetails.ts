@@ -1,10 +1,11 @@
-import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
 import { itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
+import { rulebookName } from '../rulebookNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { BUILDER_PERMISSION_NAMES } from './editorMessages';
@@ -144,6 +145,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.ruleset.tracksAmmo',
 		defaultMessage: 'Track ammunition',
 		description: 'Checkbox for whether arrows and other ammunition are used up when fired; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	rulebooks: {
+		id: 'editor.rulebooks.heading',
+		defaultMessage: 'Rulebooks',
+		description: 'Heading of the part of the editor\'s Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	role: {
 		id: 'editor.editors.role',
@@ -606,6 +612,9 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(t(UNIVERSE_ROLE_NAMES[change.value]));
 		case 'languages':
 			return(listOrNone(change.value.map((language) => languageName(language))));
+		case 'rulebooks':
+			// The core rulebook is always on, so it is listed first though never saved
+			return(listOrNone([CORE_RULEBOOK, ...change.value].map((rulebook) => rulebookName(ruleset, rulebook))));
 		case 'color':
 			return(colorToHex(change.value));
 		case 'graphic':

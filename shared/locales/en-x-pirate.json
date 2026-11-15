@@ -2711,6 +2711,34 @@
 		"message": "Put hands ashore, the newest aboard first, till the crew fits",
 		"source": "Take out members, those who joined most recently first, until they fit"
 	},
+	"editor.impact.rulebookItems": {
+		"message": "Shuttin' {rulebook}: hands carry its booty",
+		"source": "Turning off {rulebook}: characters carry its items"
+	},
+	"editor.impact.rulebookKeepItems": {
+		"message": "Let 'em keep it; no new copies be made",
+		"source": "Let them keep using them; no new copies are made"
+	},
+	"editor.impact.rulebookKeepPlaying": {
+		"message": "Let 'em keep sailin'; only new hands can't choose 'em",
+		"source": "Let them keep playing; only new characters can't choose them"
+	},
+	"editor.impact.rulebookOption": {
+		"message": "{name} ({count, plural, one {# hand} other {# hands}})",
+		"source": "{name} ({count, plural, one {# character} other {# characters}})"
+	},
+	"editor.impact.rulebookPlaying": {
+		"message": "Shuttin' {rulebook}: hands be its folk an' callin's",
+		"source": "Turning off {rulebook}: characters are its races and classes"
+	},
+	"editor.impact.rulebookPreventPlaying": {
+		"message": "Keep 'em in port till the book be opened again",
+		"source": "Stop them playing until the book is turned on again"
+	},
+	"editor.impact.rulebookRemoveItems": {
+		"message": "Take it from 'em; they get it back if the book be opened again",
+		"source": "Take them away; they get them back if the book is turned on again"
+	},
 	"editor.impact.title": {
 		"message": "Sailors Be Caught Up in This",
 		"source": "Players Are Affected"
@@ -3638,6 +3666,82 @@
 	"editor.role": {
 		"message": "Yer rank: {role}",
 		"source": "Your role: {role}"
+	},
+	"editor.rulebook.classes": {
+		"message": "Callin's",
+		"source": "Classes"
+	},
+	"editor.rulebook.hint": {
+		"message": "The folk an' callin's the book brings aboard while it be open. Close each one on the Crew tab.",
+		"source": "The races and classes the book brings to the universe while it is on. Disable each one on the Characters tab."
+	},
+	"editor.rulebook.loadFailed": {
+		"message": "Couldn't haul up what the book brings.",
+		"source": "Could not list what the book brings."
+	},
+	"editor.rulebook.loading": {
+		"message": "Haulin' it up...",
+		"source": "Loading..."
+	},
+	"editor.rulebook.races": {
+		"message": "Folk",
+		"source": "Races"
+	},
+	"editor.rulebook.themes": {
+		"message": "Yarns",
+		"source": "Themes"
+	},
+	"editor.rulebooks.actionsColumn": {
+		"message": "Orders",
+		"source": "Actions"
+	},
+	"editor.rulebooks.alwaysOn": {
+		"message": "Always open",
+		"source": "Always on"
+	},
+	"editor.rulebooks.bookColumn": {
+		"message": "Book",
+		"source": "Book"
+	},
+	"editor.rulebooks.contents": {
+		"message": "What's Inside",
+		"source": "Contents"
+	},
+	"editor.rulebooks.disable": {
+		"message": "Close",
+		"source": "Disable"
+	},
+	"editor.rulebooks.enable": {
+		"message": "Open",
+		"source": "Enable"
+	},
+	"editor.rulebooks.heading": {
+		"message": "Books o' the Code",
+		"source": "Rulebooks"
+	},
+	"editor.rulebooks.hint": {
+		"message": "The books the universe's folk, callin's an' booty come from. While a book be open, what it brings shows on the Crew an' Booty tabs. Ye can still close each one there.",
+		"source": "The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there."
+	},
+	"editor.rulebooks.off": {
+		"message": "Closed",
+		"source": "Off"
+	},
+	"editor.rulebooks.offWhenSaved": {
+		"message": "Closed once stowed",
+		"source": "Off when saved"
+	},
+	"editor.rulebooks.on": {
+		"message": "Open",
+		"source": "On"
+	},
+	"editor.rulebooks.onWhenSaved": {
+		"message": "Open once stowed",
+		"source": "On when saved"
+	},
+	"editor.rulebooks.statusColumn": {
+		"message": "How She Stands",
+		"source": "Status"
 	},
 	"editor.ruleset.abilityPoints": {
 		"message": "Doubloons for knacks",
@@ -5779,6 +5883,18 @@
 		"message": "Yer rank in this universe don't allow that.",
 		"source": "Your role in this universe doesn't allow that."
 	},
+	"error.rulebookLeavesNoClass": {
+		"message": "Closin' the book leaves no open callin' for new hands. Open a callin' from another book first.",
+		"source": "Turning off the book leaves no enabled class for new characters. Enable a class from another book first."
+	},
+	"error.rulebookLeavesNoRace": {
+		"message": "Closin' the book leaves no open folk for new hands. Open a folk from another book first.",
+		"source": "Turning off the book leaves no enabled race for new characters. Enable a race from another book first."
+	},
+	"error.rulebookLeavesNoTheme": {
+		"message": "Closin' the book leaves no open yarn for new hands. Open a yarn from another book first.",
+		"source": "Turning off the book leaves no enabled theme for new characters. Enable a theme from another book first."
+	},
 	"error.saveConflicts": {
 		"message": "Other hands changed some o' the same settings since ye loaded 'em. Choose whose t' keep, then stow again.",
 		"source": "Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again."
@@ -7159,6 +7275,10 @@
 		"message": "Powder Monkey",
 		"source": "Alchemist"
 	},
+	"pf1e.class.arcanist": {
+		"message": "Arcanist",
+		"source": "Arcanist"
+	},
 	"pf1e.class.barbarian": {
 		"message": "Berserker",
 		"source": "Barbarian"
@@ -7166,6 +7286,14 @@
 	"pf1e.class.bard": {
 		"message": "Shanty Singer",
 		"source": "Bard"
+	},
+	"pf1e.class.bloodrager": {
+		"message": "Bloodrager",
+		"source": "Bloodrager"
+	},
+	"pf1e.class.brawler": {
+		"message": "Tavern Brawler",
+		"source": "Brawler"
 	},
 	"pf1e.class.cavalier": {
 		"message": "Cavalier",
@@ -7183,9 +7311,17 @@
 		"message": "Cutthroat",
 		"source": "Fighter"
 	},
+	"pf1e.class.hunter": {
+		"message": "Hunter",
+		"source": "Hunter"
+	},
 	"pf1e.class.inquisitor": {
 		"message": "Inquisitor",
 		"source": "Inquisitor"
+	},
+	"pf1e.class.investigator": {
+		"message": "Bilge Sleuth",
+		"source": "Investigator"
 	},
 	"pf1e.class.monk": {
 		"message": "Monk",
@@ -7207,6 +7343,18 @@
 		"message": "Scallywag",
 		"source": "Rogue"
 	},
+	"pf1e.class.shaman": {
+		"message": "Sea Shaman",
+		"source": "Shaman"
+	},
+	"pf1e.class.skald": {
+		"message": "War Shanty Singer",
+		"source": "Skald"
+	},
+	"pf1e.class.slayer": {
+		"message": "Headhunter",
+		"source": "Slayer"
+	},
 	"pf1e.class.sorcerer": {
 		"message": "Sorcerer",
 		"source": "Sorcerer"
@@ -7214,6 +7362,14 @@
 	"pf1e.class.summoner": {
 		"message": "Summoner",
 		"source": "Summoner"
+	},
+	"pf1e.class.swashbuckler": {
+		"message": "Swashbuckler",
+		"source": "Swashbuckler"
+	},
+	"pf1e.class.warpriest": {
+		"message": "Battle Chaplain",
+		"source": "Warpriest"
 	},
 	"pf1e.class.witch": {
 		"message": "Sea Witch",
@@ -7343,13 +7499,29 @@
 		"message": "torch",
 		"source": "torch"
 	},
+	"pf1e.race.aasimar": {
+		"message": "Aasimar",
+		"source": "Aasimar"
+	},
 	"pf1e.race.catfolk": {
 		"message": "Ship's Cat",
 		"source": "Catfolk"
 	},
+	"pf1e.race.changeling": {
+		"message": "Changeling",
+		"source": "Changeling"
+	},
+	"pf1e.race.dhampir": {
+		"message": "Dhampir",
+		"source": "Dhampir"
+	},
 	"pf1e.race.drow": {
 		"message": "Drow",
 		"source": "Drow"
+	},
+	"pf1e.race.duergar": {
+		"message": "Duergar",
+		"source": "Duergar"
 	},
 	"pf1e.race.dwarf": {
 		"message": "Dwarf",
@@ -7359,6 +7531,14 @@
 		"message": "Elf",
 		"source": "Elf"
 	},
+	"pf1e.race.fetchling": {
+		"message": "Fetchling",
+		"source": "Fetchling"
+	},
+	"pf1e.race.gillman": {
+		"message": "Gill-Man",
+		"source": "Gillman"
+	},
 	"pf1e.race.gnome": {
 		"message": "Gnome",
 		"source": "Gnome"
@@ -7366,6 +7546,10 @@
 	"pf1e.race.goblin": {
 		"message": "Goblin",
 		"source": "Goblin"
+	},
+	"pf1e.race.grippli": {
+		"message": "Bog Frog",
+		"source": "Grippli"
 	},
 	"pf1e.race.half_elf": {
 		"message": "Half-Elf",
@@ -7387,9 +7571,97 @@
 		"message": "Landlubber",
 		"source": "Human"
 	},
+	"pf1e.race.ifrit": {
+		"message": "Ifrit",
+		"source": "Ifrit"
+	},
+	"pf1e.race.kitsune": {
+		"message": "Kitsune",
+		"source": "Kitsune"
+	},
+	"pf1e.race.kobold": {
+		"message": "Kobold",
+		"source": "Kobold"
+	},
+	"pf1e.race.merfolk": {
+		"message": "Merfolk",
+		"source": "Merfolk"
+	},
+	"pf1e.race.nagaji": {
+		"message": "Nagaji",
+		"source": "Nagaji"
+	},
+	"pf1e.race.orc": {
+		"message": "Orc",
+		"source": "Orc"
+	},
+	"pf1e.race.oread": {
+		"message": "Oread",
+		"source": "Oread"
+	},
 	"pf1e.race.ratfolk": {
 		"message": "Bilge Rat",
 		"source": "Ratfolk"
+	},
+	"pf1e.race.samsaran": {
+		"message": "Samsaran",
+		"source": "Samsaran"
+	},
+	"pf1e.race.strix": {
+		"message": "Strix",
+		"source": "Strix"
+	},
+	"pf1e.race.suli": {
+		"message": "Suli",
+		"source": "Suli"
+	},
+	"pf1e.race.svirfneblin": {
+		"message": "Svirfneblin",
+		"source": "Svirfneblin"
+	},
+	"pf1e.race.sylph": {
+		"message": "Sylph",
+		"source": "Sylph"
+	},
+	"pf1e.race.tengu": {
+		"message": "Crow",
+		"source": "Tengu"
+	},
+	"pf1e.race.tiefling": {
+		"message": "Tiefling",
+		"source": "Tiefling"
+	},
+	"pf1e.race.undine": {
+		"message": "Undine",
+		"source": "Undine"
+	},
+	"pf1e.race.vanara": {
+		"message": "Vanara",
+		"source": "Vanara"
+	},
+	"pf1e.race.vishkanya": {
+		"message": "Vishkanya",
+		"source": "Vishkanya"
+	},
+	"pf1e.race.wayang": {
+		"message": "Wayang",
+		"source": "Wayang"
+	},
+	"pf1e.rulebook.acg": {
+		"message": "Advanced Class Guide",
+		"source": "Advanced Class Guide"
+	},
+	"pf1e.rulebook.apg": {
+		"message": "Advanced Player's Guide",
+		"source": "Advanced Player's Guide"
+	},
+	"pf1e.rulebook.arg": {
+		"message": "Advanced Race Guide",
+		"source": "Advanced Race Guide"
+	},
+	"pf1e.rulebook.core": {
+		"message": "Core Rulebook",
+		"source": "Core Rulebook"
 	},
 	"pf1e.size.colossal": {
 		"message": "Kraken-sized",
@@ -8630,6 +8902,10 @@
 	"sf1e.race.ysoki": {
 		"message": "Ysoki",
 		"source": "Ysoki"
+	},
+	"sf1e.rulebook.core": {
+		"message": "Starfinder Core Rulebook",
+		"source": "Starfinder Core Rulebook"
 	},
 	"sf1e.size.colossal": {
 		"message": "Kraken-sized",

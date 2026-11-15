@@ -103,8 +103,8 @@ describe('itemRepo', () =>
 			const [mine] = await loadEditorItems(liveVersion(universeId), 'pf1e');
 			const [theirs] = await loadEditorItems(liveVersion(otherId), 'pf1e');
 
-			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, custom: false, edited: true });
-			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, custom: false, edited: false });
+			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, rulebook: 'core', custom: false, edited: true });
+			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, rulebook: 'core', custom: false, edited: false });
 		});
 	});
 
@@ -210,8 +210,8 @@ describe('itemRepo', () =>
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
 			const theirsId = await createCustomItem(liveVersion(otherId), 'pf1e', torch);
 
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true, rulebook: 'core' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true, rulebook: null });
 			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', theirsId), undefined);
 			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', 2147483647), undefined);
 		});
@@ -224,11 +224,11 @@ describe('itemRepo', () =>
 			const dagger = await daggerId();
 
 			await saveEditedDefaultItem(liveVersion(otherId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true, rulebook: 'core' });
 
 			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false, rulebook: 'core' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false, rulebook: null });
 		});
 	});
 
@@ -259,7 +259,7 @@ describe('itemRepo', () =>
 			assert.strictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0].enabled, false);
 
 			await restoreDefaultItem(liveVersion(universeId), id);
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, type: 'dagger', enabled: true, custom: false, edited: false });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, type: 'dagger', enabled: true, rulebook: 'core', custom: false, edited: false });
 		});
 	});
 });

@@ -6,12 +6,13 @@
  * affects nobody, and something disabled more than once does what the last change chose, once. The
  * impact route (editorImpact.ts) warns about the same things, at the change whose choice is used
  */
-import type { AreaEvacuation, AreaEvacuations, GroupSizeLowering, ItemDisabling } from '@multiverse-kiln/shared';
+import { isUsable, type AreaEvacuation, type AreaEvacuations, type GroupSizeLowering, type ItemDisabling } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
 import { clearGroupStartingAreas, deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
+import { loadRulebookSettings } from '../db/rulesetRepo.js';
 import { areasById, areasInTree, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
 import { groupChanges } from '../players/groupChanges.js';
 import type { AreaPlace } from '../world/areaChanges.js';
@@ -67,10 +68,10 @@ export class SaveDisablings
 	private groupSize: { before: number; choice: GroupSizeLowering | undefined } | undefined;
 
 	/**
-	 * Notes a change to an item that enables or disables it, or restores it
+	 * Notes a change to an item that enables or disables it, restores it, or turns its book on or off
 	 *
 	 * @param itemId The item
-	 * @param wasEnabled Whether it is enabled before the change
+	 * @param wasEnabled Whether it is usable before the change: enabled, with its book on
 	 * @param whenDisabled What the change chose for the characters carrying it, when it disables it
 	 */
 	item(itemId: number, wasEnabled: boolean, whenDisabled?: ItemDisabling): void
@@ -149,18 +150,20 @@ export class SaveDisablings
 
 		// An item the save deleted isn't listed, and nobody carries it
 		const { items } = await listEditorItems(context.version, universe.ruleset, { ids: [...this.items.keys()] }, transaction);
+		const { rulebooks } = await loadRulebookSettings(context.version, universe.ruleset, transaction);
 		const taken: number[] = [];
 		const givenBack: number[] = [];
 
 		for (const item of items)
 		{
 			const noted = this.items.get(item.id);
+			const usable = isUsable(item, rulebooks);
 
-			if (noted?.wasEnabled && !item.enabled && (noted.choice === 'remove'))
+			if (noted?.wasEnabled && !usable && (noted.choice === 'remove'))
 			{
 				taken.push(item.id);
 			}
-			else if ((noted !== undefined) && !noted.wasEnabled && item.enabled)
+			else if ((noted !== undefined) && !noted.wasEnabled && usable)
 			{
 				givenBack.push(item.id);
 			}

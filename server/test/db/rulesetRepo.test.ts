@@ -12,7 +12,9 @@ const pointBuy: Pf1eSettings = {
 	customPointBuyBudget: 40,
 	needsSleep: true,
 	coinsHaveWeight: false,
-	tracksAmmo: true
+	tracksAmmo: true,
+	rulebooks: ['apg', 'acg'],
+	barredRulebooks: ['arg']
 };
 
 describe('rulesetRepo', () =>

@@ -165,10 +165,12 @@ export const PF1E_ITEM_TYPE_NAMES: Record<Pf1eItemType, MessageDescriptor> = def
 /**
  * Each default item's name, by the item's key. The database stores each name's English text
  */
-export const PF1E_DEFAULT_ITEM_NAMES: Record<string, MessageDescriptor> = defineMessages({
+export const PF1E_DEFAULT_ITEM_NAMES = defineMessages({
 	dagger: {
 		id: 'item.pf1e.dagger',
 		defaultMessage: 'dagger',
 		description: 'Name of an item in Pathfinder: a short blade for stabbing or throwing'
 	}
 });
+
+export type Pf1eDefaultItemKey = keyof typeof PF1E_DEFAULT_ITEM_NAMES;

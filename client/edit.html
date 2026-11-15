@@ -198,6 +198,21 @@
 							</fieldset>
 						</form>
 
+						<section id="ruleset-rulebooks" class="panel rulebooks" aria-labelledby="rulebooks-heading">
+							<h2 id="rulebooks-heading" data-message="editor.rulebooks.heading" data-translation-context="Heading of the part of the editor's Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor's Audit tab">Rulebooks</h2>
+							<p id="rulebooks-hint" class="hint" data-message="editor.rulebooks.hint" data-translation-context="Explains the Rulebooks table on the editor's Ruleset tab">The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there.</p>
+							<table class="item-table rulebook-table" aria-labelledby="rulebooks-heading" aria-describedby="rulebooks-hint">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.rulebooks.bookColumn" data-translation-context="Heading of the column of book names in the Rulebooks table on the editor's Ruleset tab">Book</th>
+										<th scope="col" data-message="editor.rulebooks.statusColumn" data-translation-context="Heading of the column in the Rulebooks table on the editor's Ruleset tab saying whether each book is on or off">Status</th>
+										<th scope="col"><span class="visually-hidden" data-message="editor.rulebooks.actionsColumn" data-translation-context="Heading of the column of buttons in the Rulebooks table on the editor's Ruleset tab, read only by screen readers">Actions</span></th>
+									</tr>
+								</thead>
+								<tbody id="rulebook-rows"></tbody>
+							</table>
+						</section>
+
 						<section id="ruleset-coins" class="panel coins" aria-labelledby="coins-heading">
 							<h2 id="coins-heading" data-message="editor.coins.heading" data-translation-context="Heading of the part of the editor's Ruleset tab where the universe gives each coin a name and abbreviation of its own">Coins</h2>
 							<form id="coins-form" class="form">
@@ -1241,6 +1256,15 @@
 							</div>
 						</fieldset>
 					</form>
+				</dialog>
+				<dialog id="rulebook-dialog" class="panel dialog rulebook-dialog" aria-labelledby="rulebook-dialog-title">
+					<h2 id="rulebook-dialog-title"></h2>
+					<p class="hint" data-message="editor.rulebook.hint" data-translation-context="Explains the dialog listing the races and classes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab">The races and classes the book brings to the universe while it is on. Disable each one on the Characters tab.</p>
+					<p id="rulebook-dialog-status" role="status"></p>
+					<div id="rulebook-contents" class="rulebook-contents"></div>
+					<div class="dialog-buttons">
+						<button id="rulebook-dialog-close" type="button" class="secondary" autofocus data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
+					</div>
 				</dialog>
 				<dialog id="tile-dialog" class="panel dialog" aria-labelledby="tile-dialog-title">
 					<form id="tile-form" class="form">

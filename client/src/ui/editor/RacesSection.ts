@@ -7,6 +7,7 @@ import { raceName } from '../raceAndClassNames';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { OptionList } from './OptionList';
 import { RaceDialog } from './RaceDialog';
+import type { RulebookChoice } from './rulebookChoice';
 import type { AreaSelectDialog } from './AreaSelectDialog';
 
 /**
@@ -19,8 +20,9 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing a race's starting area
 	 * @param itemSelect The dialog for choosing a race's starting equipment
+	 * @param rulebooks The books on, whose races the list shows
 	 */
-	constructor(api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, rulebooks: RulebookChoice)
 	{
 		const dialog = new RaceDialog(api, areaSelect, itemSelect);
 
@@ -28,6 +30,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 			addButton: getElement('race-add', HTMLButtonElement),
 			rows: getElement('race-rows', HTMLTableSectionElement),
 			error: getElement('race-list-error', HTMLElement),
+			rulebooks,
 			listFailed: {
 				id: 'editor.races.listFailed',
 				defaultMessage: 'Could not list the races.',
@@ -40,6 +43,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 				id,
 				key: null,
 				...settings,
+				rulebook: null,
 				custom: true,
 				edited: false
 			}),
@@ -62,7 +66,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
  * @param ruleset The universe's ruleset
  * @return The summary
  */
-function describeRace(race: EditorRace, ruleset: Ruleset): string
+export function describeRace(race: EditorRace, ruleset: Ruleset): string
 {
 	const { rules } = race;
 	const { abilityModifiers, floatingBonus, darkvision, lightSensitivity, size } = rules;

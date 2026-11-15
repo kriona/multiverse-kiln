@@ -246,6 +246,7 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 			overridesClassId: classes.overridesClassId,
 			key: classes.key,
 			name: classes.name,
+			rulebook: classes.rulebook,
 			enabled: classes.enabled,
 			keepPlaying: classes.keepPlaying,
 			startingPlatinum: classes.startingPlatinum,
@@ -294,6 +295,7 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 				startingRow: settings.startingRow,
 				raceAreas: (raceAreas.get(settings.id) ?? []),
 				rules: classRules,
+				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined)
 			});
@@ -302,25 +304,33 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 
 /**
  * The classes whose characters can't play in a universe: those it has disabled without letting the
- * characters already of them keep playing
+ * characters already of them keep playing, and the default classes of the books it has turned off that way
  *
  * @param version The universe's live version or draft
+ * @param barredRulebooks The books turned off without letting their characters keep playing
  * @param executor The database, or a transaction
  * @return The classes, by the IDs characters hold (a default class's own ID for an edited copy)
  */
-export async function listBarredClassIds(version: UniverseVersion, executor: Executor = db): Promise<Set<number>>
+export async function listBarredClassIds(version: UniverseVersion, barredRulebooks: readonly { ruleset: Ruleset; rulebooks: readonly string[] }[], executor: Executor = db): Promise<Set<number>>
 {
-	// Default classes are always enabled, so only the universe's own rows can bar anyone
+	// Default classes are always enabled, so only the universe's own rows can bar anyone that way
 	const rows = await executor
 		.select({
 			id: classes.id,
 			overridesClassId: classes.overridesClassId
 		})
 		.from(classes)
-		.where(and(
-			inVersion(classes, version),
-			eq(classes.enabled, false),
-			eq(classes.keepPlaying, false)
+		.where(or(
+			and(
+				inVersion(classes, version),
+				eq(classes.enabled, false),
+				eq(classes.keepPlaying, false)
+			),
+			...barredRulebooks.map(({ ruleset, rulebooks }) => and(
+				isNull(classes.universeId),
+				eq(classes.ruleset, ruleset),
+				inArray(classes.rulebook, [...rulebooks])
+			))
 		));
 
 	return(new Set(rows.map((row) => (row.overridesClassId ?? row.id))));

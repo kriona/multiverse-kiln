@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_CLASSES, type ClassListPayload, type ClassSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfClass } from '../db/characterRepo.js';
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, loadEditorClasses, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass } from '../db/classRepo.js';
@@ -12,6 +12,7 @@ import { loadEditorRaces } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
+import { savedRulebooks } from './editorRulebooks.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 
 /**
@@ -165,8 +166,9 @@ export async function removeClassChange(context: ChangeContext, id: NumberRef): 
 	}
 
 	const others = (await loadEditorClasses(version, universe.ruleset, transaction)).filter((characterClass) => (characterClass.id !== classId));
+	const rulebooks = await savedRulebooks(context);
 
-	if (!others.some((characterClass) => characterClass.enabled))
+	if (!others.some((characterClass) => isUsable(characterClass, rulebooks)))
 	{
 		refuse(409, messages.noEnabledClass);
 	}
@@ -209,7 +211,14 @@ async function checkClass(context: ChangeContext, classId: number | undefined, s
 		}
 	}
 
-	if (!settings.enabled && !(await loadEditorClasses(version, universe.ruleset, transaction)).some((characterClass) => ((characterClass.id !== classId) && characterClass.enabled)))
+	if (settings.enabled)
+	{
+		return;
+	}
+
+	const rulebooks = await savedRulebooks(context);
+
+	if (!(await loadEditorClasses(version, universe.ruleset, transaction)).some((characterClass) => ((characterClass.id !== classId) && isUsable(characterClass, rulebooks))))
 	{
 		refuse(409, messages.noEnabledClass);
 	}

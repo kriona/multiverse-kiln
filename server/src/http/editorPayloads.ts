@@ -6,7 +6,7 @@
  * need the database (such as whether a tile belongs to the universe) are made as each change is saved
  */
 import { z } from 'zod';
-import { AREA_EVACUATIONS, NEIGHBOR_SIDES, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, hasLinkLikeText, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, MAX_PLACE_PARENTS, MAX_REGION_BUILDERS, MAX_REGION_NAME_LENGTH, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type AreaBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
+import { AREA_EVACUATIONS, optionalRulebooks, NEIGHBOR_SIDES, GROUP_SIZE_LOWERINGS, ITEM_DISABLINGS, DARKVISIONS, DEFAULT_RACE_NAMES, DISALLOWED_TEXT_CHARACTERS, EDITOR_CHARACTER_SORT_COLUMNS, hasIdShapedSlug, hasLinkLikeText, MAX_CHARACTER_SEARCH_LENGTH, MAX_CHARACTERS_PER_PAGE, type EditorCharacterListQuery, MAX_UNIVERSE_EDITS_PER_PAGE, type UniverseEditListQuery, TILE_USED_IN,DISPLAY_TIMES,FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, isRulesetMoney, COIN_ABBREVIATIONS, duplicateCoinAbbreviation, isValidCoinAbbreviation, RULESET_COINS, shownCoinAbbreviations, ITEM_SORT_COLUMNS, MAX_CELL_CHANGES, MAX_CHUNKS_PER_REQUEST, MAX_CLASS_NAME_LENGTH, MAX_COINS, MAX_COIN_NAME_LENGTH, MAX_CUSTOM_RACES, MAX_DIFFICULTY_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_ITEM_NAME_LENGTH, MAX_ITEM_QUANTITY, MAX_ITEMS_PER_PAGE, MAX_LONG_DESCRIPTION_LENGTH, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, MAX_THEME_NAME_LENGTH, MAX_TILE_GRAPHIC_BYTES, MAX_TILE_GRAPHIC_DRAW_ORDER, MAX_TILE_GRAPHIC_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_TILES_PER_PAGE, MAX_WALK_SECONDS, MIN_TILE_GRAPHIC_DRAW_ORDER,MAX_UNIVERSE_NAME_LENGTH, MAX_AREA_NAME_LENGTH, MIN_GROUP_SIZE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, SORT_DIRECTIONS, TILE_GRAPHIC_FORMATS, TILE_GRAPHIC_KEYS, TILE_SORT_COLUMNS, UNIVERSE_STAGES, universeSlug, VOID_CELL, AREA_LIGHT_LEVELS, AREA_LINK_MODES, MAX_PLACE_PARENTS, MAX_REGION_BUILDERS, MAX_REGION_NAME_LENGTH, MAX_CHANGES_PER_SAVE, MAX_LOCALE_LENGTH, MAX_TRANSLATOR_LANGUAGES, MAX_UNIVERSE_LANGUAGES, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KIND_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_TEXT_SORT_COLUMNS, type UniverseTextListQuery, type UniverseTextRef, MAX_PLAYER_NAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PLAYER_SEARCH_LENGTH, parsePlayerSearch, UNIVERSE_ROLES, type PlayerSearchQuery, type EditorRoleSettings, type NewRef, type SaveChangesRequest, type TileChangeSettings, type ChunkRange, type ClassSettings, type DifficultyLevelSettings, type ItemListQuery, type ItemSettings, type AreaBounds, type NewUniverseRequest, type RaceSettings, type Ruleset, type RulesetSettings, type ThemeSettings, type TileGraphicUploadRequest, type TileListQuery, type UniverseSettingsUpdate, type AreaLinkTarget } from '@multiverse-kiln/shared';
 
 import { displayText } from '../rooms/payloads.js';
 
@@ -14,6 +14,11 @@ import { displayText } from '../rooms/payloads.js';
  * The longest window ID a save may name: an editor room session ID, which Colyseus keeps far shorter
  */
 const MAX_WINDOW_ID_LENGTH = 64;
+
+/**
+ * The longest list of books an item list query may filter by, far longer than any ruleset's keys need
+ */
+const MAX_RULEBOOK_LIST_LENGTH = 200;
 
 /**
  * The settings a change was made from, as the editor loaded them (LoadedSettings). They are only compared
@@ -300,6 +305,21 @@ const universeSettingsUpdate = byRuleset((ruleset) => z.object({
 }) satisfies z.ZodType<UniverseSettingsUpdate>);
 
 /**
+ * Some of a ruleset's optional books, by key, each once
+ *
+ * @param ruleset The ruleset
+ * @return The validator
+ */
+function rulebookKeys(ruleset: Ruleset)
+{
+	const optional = optionalRulebooks(ruleset);
+
+	return(z.array(z.string().refine((rulebook) => optional.includes(rulebook)))
+		.max(optional.length)
+		.refine((rulebooks) => (new Set(rulebooks).size === rulebooks.length)));
+}
+
+/**
  * RulesetSettings
  */
 const rulesetSettings = z.discriminatedUnion('ruleset', [
@@ -310,7 +330,9 @@ const rulesetSettings = z.discriminatedUnion('ruleset', [
 			customPointBuyBudget: z.number().int().min(PF1E_MIN_POINT_BUY_BUDGET).max(PF1E_MAX_POINT_BUY_BUDGET),
 			needsSleep: z.boolean(),
 			coinsHaveWeight: z.boolean(),
-			tracksAmmo: z.boolean()
+			tracksAmmo: z.boolean(),
+			rulebooks: rulebookKeys('pf1e'),
+			barredRulebooks: rulebookKeys('pf1e')
 		})
 	}),
 	z.object({
@@ -318,10 +340,25 @@ const rulesetSettings = z.discriminatedUnion('ruleset', [
 		settings: z.object({
 			abilityPoints: z.number().int().min(SF1E_MIN_ABILITY_POINTS).max(SF1E_MAX_ABILITY_POINTS),
 			needsSleep: z.boolean(),
-			tracksAmmo: z.boolean()
+			tracksAmmo: z.boolean(),
+			rulebooks: rulebookKeys('sf1e'),
+			barredRulebooks: rulebookKeys('sf1e')
 		})
 	})
 ]) satisfies z.ZodType<RulesetSettings>;
+
+/**
+ * What happens to the items of each book a change turns off, by the book's key
+ *
+ * @param ruleset The universe's ruleset
+ * @return The validator
+ */
+function rulebookChoices<Choice extends z.ZodType>(ruleset: Ruleset, choice: Choice)
+{
+	const optional = optionalRulebooks(ruleset);
+
+	return(z.record(z.string().refine((rulebook) => optional.includes(rulebook)), choice));
+}
 
 /**
  * A database ID that is a whole number, in a request body
@@ -407,6 +444,10 @@ export const itemListQuery = z.object({
 	ids: z.string()
 		.transform((text) => text.split(',').map(Number))
 		.pipe(z.array(z.number().int().min(1).max(2147483647)).min(1).max(MAX_STARTING_ITEMS))
+		.optional(),
+	rulebooks: z.string()
+		.max(MAX_RULEBOOK_LIST_LENGTH)
+		.transform((text) => ((text === '') ? [] : text.split(',')))
 		.optional(),
 	...sortParameters(ITEM_SORT_COLUMNS),
 	offset: z.coerce.number().int().min(0).default(0),
@@ -747,7 +788,8 @@ export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', 
 	z.object({
 		kind: z.literal('ruleset'),
 		settings: rulesetSettings,
-		loaded: loadedSettings
+		loaded: loadedSettings,
+		whenRulebooksOff: rulebookChoices(ruleset, z.enum(ITEM_DISABLINGS)).optional()
 	}),
 	z.object({
 		kind: z.literal('uploadTileGraphic'),
@@ -918,7 +960,11 @@ export const editorChange = byRuleset((ruleset) => z.discriminatedUnion('kind', 
 			classes: z.record(numericIdKey, z.boolean()),
 			items: z.record(numericIdKey, z.enum(ITEM_DISABLINGS)),
 			areas: z.record(z.uuid(), z.enum(AREA_EVACUATIONS)),
-			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional()
+			largerGroups: z.enum(GROUP_SIZE_LOWERINGS).optional(),
+			rulebooks: rulebookChoices(ruleset, z.object({
+				keepPlaying: z.boolean(),
+				items: z.enum(ITEM_DISABLINGS)
+			})).optional()
 		})
 	}),
 	z.object({

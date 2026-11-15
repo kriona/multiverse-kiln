@@ -22,6 +22,7 @@ export * from './money.js';
 export * from './names.js';
 export * from './profiles.js';
 export * from './racesAndClasses.js';
+export * from './rulebooks.js';
 export * from './rulesets/pf1e/index.js';
 export * from './rulesets/sf1e/index.js';
 export * from './siteSettings.js';

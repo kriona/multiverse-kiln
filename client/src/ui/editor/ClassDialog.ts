@@ -17,6 +17,7 @@ import { startingAreaMessages } from './startingAreaMessages';
 import { StartingItemsField } from './StartingItemsField';
 import { AreaChoice } from './AreaChoice';
 import type { AreaSelectDialog } from './AreaSelectDialog';
+import type { RulebookChoice } from './rulebookChoice';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -106,8 +107,9 @@ export class ClassDialog
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing starting areas
 	 * @param itemSelect The dialog for choosing the starting equipment
+	 * @param rulebooks The books on, whose races get a starting area of their own
 	 */
-	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(private readonly api: EditorApi, private readonly areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, private readonly rulebooks: RulebookChoice)
 	{
 		this.name.maxLength = MAX_CLASS_NAME_LENGTH;
 		setOptions(this.primaryAbility, namedOptions(PF1E_ABILITIES, PF1E_ABILITY_NAMES));
@@ -306,8 +308,8 @@ export class ClassDialog
 	}
 
 	/**
-	 * Lists where each race's members of the class start: every enabled race, and any disabled race the
-	 * class has an area for
+	 * Lists where each race's members of the class start: every enabled race of a book that is on, and
+	 * any other race the class has an area for
 	 *
 	 * @param universe The universe
 	 * @param races The universe's races
@@ -317,7 +319,7 @@ export class ClassDialog
 	{
 		const universeAreaName = ((universe.startingAreaId === null) ? '' : (this.areaNames.get(universe.startingAreaId) ?? ''));
 		const listed = races
-			.filter((race) => (race.enabled || this.raceAreas.has(race.id)))
+			.filter((race) => ((race.enabled && this.rulebooks.shows(race.rulebook)) || this.raceAreas.has(race.id)))
 			.map((race) => ({
 				race,
 				name: raceName(race, universe.ruleset)

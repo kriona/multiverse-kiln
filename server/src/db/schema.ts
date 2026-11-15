@@ -413,7 +413,13 @@ export const pf1eSettings = pgTable('pf1e_settings', {
 
 	needsSleep: boolean('needs_sleep').notNull().default(DEFAULT_PF1E_SETTINGS.needsSleep),
 	coinsHaveWeight: boolean('coins_have_weight').notNull().default(DEFAULT_PF1E_SETTINGS.coinsHaveWeight),
-	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_PF1E_SETTINGS.tracksAmmo)
+	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_PF1E_SETTINGS.tracksAmmo),
+
+	/**
+	 * The optional books turned on, and those turned off whose characters can't play (RulebookSettings in /shared)
+	 */
+	rulebooks: text('rulebooks').array().notNull().default(sql`'{}'`),
+	barredRulebooks: text('barred_rulebooks').array().notNull().default(sql`'{}'`)
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.draft] }),
 	check('pf1e_settings_custom_point_buy_budget_range', sql`${table.customPointBuyBudget} BETWEEN ${sql.raw(String(PF1E_MIN_POINT_BUY_BUDGET))} AND ${sql.raw(String(PF1E_MAX_POINT_BUY_BUDGET))}`)
@@ -432,7 +438,13 @@ export const sf1eSettings = pgTable('sf1e_settings', {
 	abilityPoints: smallint('ability_points').notNull().default(DEFAULT_SF1E_SETTINGS.abilityPoints),
 
 	needsSleep: boolean('needs_sleep').notNull().default(DEFAULT_SF1E_SETTINGS.needsSleep),
-	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_SF1E_SETTINGS.tracksAmmo)
+	tracksAmmo: boolean('tracks_ammo').notNull().default(DEFAULT_SF1E_SETTINGS.tracksAmmo),
+
+	/**
+	 * The optional books turned on, and those turned off whose characters can't play (RulebookSettings in /shared)
+	 */
+	rulebooks: text('rulebooks').array().notNull().default(sql`'{}'`),
+	barredRulebooks: text('barred_rulebooks').array().notNull().default(sql`'{}'`)
 }, (table) => [
 	primaryKey({ columns: [table.universeId, table.draft] }),
 	check('sf1e_settings_ability_points_range', sql`${table.abilityPoints} BETWEEN ${sql.raw(String(SF1E_MIN_ABILITY_POINTS))} AND ${sql.raw(String(SF1E_MAX_ABILITY_POINTS))}`)
@@ -770,10 +782,16 @@ export const items = pgTable('items', {
 	 */
 	type: text('type').notNull(),
 
+	/**
+	 * The book a default item comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
+	 */
+	rulebook: text('rulebook'),
+
 	enabled: boolean('enabled').notNull().default(true),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('items_ruleset_key_unique').on(table.ruleset, table.key),
+	check('items_rulebook_on_defaults', sql`(${table.universeId} IS NULL) = (${table.rulebook} IS NOT NULL)`),
 	unique('items_universe_overrides_unique').on(table.universeId, table.draft, table.overridesItemId),
 	index('items_universe_id_index').on(table.universeId),
 	index('items_overrides_item_id_index').on(table.overridesItemId),
@@ -827,6 +845,11 @@ export const races = pgTable('races', {
 	 */
 	name: text('name'),
 
+	/**
+	 * The book a default race comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
+	 */
+	rulebook: text('rulebook'),
+
 	enabled: boolean('enabled').notNull().default(true),
 
 	/**
@@ -858,6 +881,7 @@ export const races = pgTable('races', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
+	check('races_rulebook_on_defaults', sql`(${table.universeId} IS NULL) = (${table.rulebook} IS NOT NULL)`),
 	unique('races_universe_overrides_unique').on(table.universeId, table.draft, table.overridesRaceId),
 	index('races_universe_id_index').on(table.universeId),
 	index('races_overrides_race_id_index').on(table.overridesRaceId),
@@ -985,6 +1009,11 @@ export const classes = pgTable('classes', {
 	 */
 	name: text('name'),
 
+	/**
+	 * The book a default class comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
+	 */
+	rulebook: text('rulebook'),
+
 	enabled: boolean('enabled').notNull().default(true),
 
 	/**
@@ -1016,6 +1045,7 @@ export const classes = pgTable('classes', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('classes_ruleset_key_unique').on(table.ruleset, table.key),
+	check('classes_rulebook_on_defaults', sql`(${table.universeId} IS NULL) = (${table.rulebook} IS NOT NULL)`),
 	unique('classes_universe_overrides_unique').on(table.universeId, table.draft, table.overridesClassId),
 	index('classes_universe_id_index').on(table.universeId),
 	index('classes_overrides_class_id_index').on(table.overridesClassId),
@@ -1090,10 +1120,16 @@ export const themes = pgTable('themes', {
 	 */
 	name: text('name'),
 
+	/**
+	 * The book a default theme comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
+	 */
+	rulebook: text('rulebook'),
+
 	enabled: boolean('enabled').notNull().default(true),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('themes_ruleset_key_unique').on(table.ruleset, table.key),
+	check('themes_rulebook_on_defaults', sql`(${table.universeId} IS NULL) = (${table.rulebook} IS NOT NULL)`),
 	unique('themes_universe_overrides_unique').on(table.universeId, table.draft, table.overridesThemeId),
 	index('themes_universe_id_index').on(table.universeId),
 	index('themes_overrides_theme_id_index').on(table.overridesThemeId),

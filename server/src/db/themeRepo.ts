@@ -156,6 +156,7 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 			overridesThemeId: themes.overridesThemeId,
 			key: themes.key,
 			name: themes.name,
+			rulebook: themes.rulebook,
 			enabled: themes.enabled,
 			ability: sf1eThemes.ability
 		})
@@ -183,6 +184,7 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 				rules: {
 					ability: settings.ability
 				},
+				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined)
 			});

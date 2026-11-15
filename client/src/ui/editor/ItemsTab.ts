@@ -11,6 +11,7 @@ import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
 import type { EditorSave, SavedIds } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import type { RulebookChoice } from './rulebookChoice';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -89,13 +90,19 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * @param api The editor's API
+	 * @param rulebooks The books on, whose items the list shows
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly rulebooks: RulebookChoice)
 	{
 		this.sorter = new TableSorter(getElement('item-table', HTMLTableElement), ITEM_SORT_COLUMNS, {
 			column: 'name',
 			direction: 'ascending'
 		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+		rulebooks.subscribe(() =>
 		{
 			this.offset = 0;
 			void this.refresh();
@@ -325,6 +332,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
+			rulebooks: [...this.rulebooks.rulebooks()],
 			sort: this.sorter.order.column,
 			direction: this.sorter.order.direction,
 			offset: this.offset,
@@ -403,6 +411,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			id,
 			key: null,
 			...settings,
+			rulebook: null,
 			custom: true,
 			edited: false
 		}));
@@ -430,7 +439,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 		if (!known)
 		{
-			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, custom: true, edited: false });
+			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, rulebook: null, custom: true, edited: false });
 		}
 
 		return({ ...known, ...settings });

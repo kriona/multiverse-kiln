@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_CLASS_NAMES, emptyMoney, NEW_PF1E_CLASS_RULES, PF1E_CLASSES, type ClassSettings, type EditorClass } from '@multiverse-kiln/shared';
+import { DEFAULT_CLASS_NAMES, emptyMoney, NEW_PF1E_CLASS_RULES, PF1E_CLASS_RULEBOOKS, PF1E_CLASSES, type ClassSettings, type EditorClass } from '@multiverse-kiln/shared';
 
 import { countCustomClasses, createCustomClass, deleteCustomClass, findClassKind, findClassStart, findDefaultClassIds, findEditorClass, isClassStartingItem, loadClassNames, loadEditorClasses, loadLiveClassNames, restoreDefaultClass, saveEditedDefaultClass, updateCustomClass, type CustomClassSettings } from '../../src/db/classRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
@@ -87,9 +87,10 @@ describe('classRepo', () =>
 					startingRow: 0,
 					raceAreas: [],
 					rules: { ...PF1E_CLASSES[key] },
+					rulebook: PF1E_CLASS_RULEBOOKS[key],
 					custom: false,
 					edited: false
-				});
+				}, `${key} differs from PF1E_CLASSES or PF1E_CLASS_RULEBOOKS`);
 			}
 		});
 	});
@@ -105,7 +106,7 @@ describe('classRepo', () =>
 		assert.strictEqual(await findClassKind(liveVersion(universeId), 'pf1e', classId), 'custom');
 		assert.strictEqual(await findClassKind(liveVersion(await addUniverse('Other')), 'pf1e', classId), undefined);
 		assert.strictEqual(await countCustomClasses(liveVersion(universeId)), 1);
-		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...gunslinger, custom: true, edited: false });
+		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...gunslinger, rulebook: null, custom: true, edited: false });
 
 		const changed: CustomClassSettings = {
 			...gunslinger,
@@ -123,7 +124,7 @@ describe('classRepo', () =>
 		};
 
 		await inTransaction((transaction) => updateCustomClass(liveVersion(universeId), 'pf1e', classId, changed, transaction));
-		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...changed, custom: true, edited: false });
+		assert.deepStrictEqual(await findClass(universeId, classId), { id: classId, key: null, ...changed, rulebook: null, custom: true, edited: false });
 		assert.strictEqual(await isClassStartingItem(liveVersion(universeId), daggerId), true);
 
 		// Deleting an area drops the per-race entries that start there

@@ -1,8 +1,9 @@
 /**
  * Pathfinder 1E's default classes, which a universe can edit, disable or add to
  *
- * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook and Advanced Player's Guide, used
- * under the Open Game License 1.0a (client/license.html)
+ * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook, Advanced Player's Guide and
+ * Advanced Class Guide, used under the Open Game License 1.0a (client/license.html). Each class's book is
+ * in rulebooks.ts
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 import type { Pf1eAbility } from './abilities.js';
@@ -87,7 +88,8 @@ export const NEW_PF1E_CLASS_RULES: Readonly<Pf1eClassRules> = {
 };
 
 /**
- * The default classes by key. The alchemist's extracts count as arcane and prepared
+ * The default classes by key. The alchemist's and investigator's extracts count as arcane and prepared,
+ * and the arcanist, who prepares spells but casts them from slots, as prepared
  */
 export const PF1E_CLASSES = {
 	alchemist: {
@@ -173,6 +175,56 @@ export const PF1E_CLASSES = {
 	wizard: {
 		primaryAbility: 'intelligence',
 		tradition: 'arcane',
+		castingStyle: 'prepared'
+	},
+	arcanist: {
+		primaryAbility: 'intelligence',
+		tradition: 'arcane',
+		castingStyle: 'prepared'
+	},
+	bloodrager: {
+		primaryAbility: 'strength',
+		tradition: 'arcane',
+		castingStyle: 'spontaneous'
+	},
+	brawler: {
+		primaryAbility: 'strength',
+		tradition: 'none',
+		castingStyle: 'none'
+	},
+	hunter: {
+		primaryAbility: 'wisdom',
+		tradition: 'divine',
+		castingStyle: 'spontaneous'
+	},
+	investigator: {
+		primaryAbility: 'intelligence',
+		tradition: 'arcane',
+		castingStyle: 'prepared'
+	},
+	shaman: {
+		primaryAbility: 'wisdom',
+		tradition: 'divine',
+		castingStyle: 'prepared'
+	},
+	skald: {
+		primaryAbility: 'charisma',
+		tradition: 'arcane',
+		castingStyle: 'spontaneous'
+	},
+	slayer: {
+		primaryAbility: 'dexterity',
+		tradition: 'none',
+		castingStyle: 'none'
+	},
+	swashbuckler: {
+		primaryAbility: 'dexterity',
+		tradition: 'none',
+		castingStyle: 'none'
+	},
+	warpriest: {
+		primaryAbility: 'wisdom',
+		tradition: 'divine',
 		castingStyle: 'prepared'
 	}
 } as const satisfies Record<string, Pf1eClassRules>;
@@ -267,5 +319,55 @@ export const PF1E_CLASS_NAMES: Record<Pf1eClassKey, MessageDescriptor> = defineM
 		id: 'pf1e.class.wizard',
 		defaultMessage: 'Wizard',
 		description: 'Name of a character class in Pathfinder: casts spells learned from study and a spellbook. Singular, used as a label'
+	},
+	arcanist: {
+		id: 'pf1e.class.arcanist',
+		defaultMessage: 'Arcanist',
+		description: 'Name of a character class in Pathfinder: a scholar who prepares spells but shapes them freely as they cast. Singular, used as a label'
+	},
+	bloodrager: {
+		id: 'pf1e.class.bloodrager',
+		defaultMessage: 'Bloodrager',
+		description: 'Name of a character class in Pathfinder: a warrior whose rage awakens magic in their blood. Singular, used as a label'
+	},
+	brawler: {
+		id: 'pf1e.class.brawler',
+		defaultMessage: 'Brawler',
+		description: 'Name of a character class in Pathfinder: a fighter who wins with fists and quick adaptation. Singular, used as a label'
+	},
+	hunter: {
+		id: 'pf1e.class.hunter',
+		defaultMessage: 'Hunter',
+		description: 'Name of a character class in Pathfinder: a wilderness spellcaster who fights alongside an animal companion. Singular, used as a label'
+	},
+	investigator: {
+		id: 'pf1e.class.investigator',
+		defaultMessage: 'Investigator',
+		description: 'Name of a character class in Pathfinder: a detective who solves mysteries with keen wits and alchemy. Singular, used as a label'
+	},
+	shaman: {
+		id: 'pf1e.class.shaman',
+		defaultMessage: 'Shaman',
+		description: 'Name of a character class in Pathfinder: casts spells granted by spirits through a spirit animal. Singular, used as a label'
+	},
+	skald: {
+		id: 'pf1e.class.skald',
+		defaultMessage: 'Skald',
+		description: 'Name of a character class in Pathfinder: a warrior poet whose songs stir allies into a rage. Singular, used as a label'
+	},
+	slayer: {
+		id: 'pf1e.class.slayer',
+		defaultMessage: 'Slayer',
+		description: 'Name of a character class in Pathfinder: a hunter of people who studies a target to strike it down. Singular, used as a label'
+	},
+	swashbuckler: {
+		id: 'pf1e.class.swashbuckler',
+		defaultMessage: 'Swashbuckler',
+		description: 'Name of a character class in Pathfinder: a daring sword fighter who relies on flair and nimble moves. Singular, used as a label'
+	},
+	warpriest: {
+		id: 'pf1e.class.warpriest',
+		defaultMessage: 'Warpriest',
+		description: 'Name of a character class in Pathfinder: a warrior who fights for their faith and casts divine spells. Singular, used as a label'
 	}
 });

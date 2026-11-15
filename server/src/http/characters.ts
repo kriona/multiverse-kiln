@@ -9,7 +9,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
@@ -18,7 +18,7 @@ import { findMembership } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItemsIn } from '../db/itemRepo.js';
 import { findEditorRace, loadEditorRaces } from '../db/raceRepo.js';
-import { findPf1eSettings, findSf1eSettings } from '../db/rulesetRepo.js';
+import { findPf1eSettings, findSf1eSettings, loadRulebookSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { findEditorTheme, loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -271,13 +271,14 @@ async function listRoute(request: Request, response: Response): Promise<void>
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [characters, races, classes, translator] = await Promise.all([
+	const [characters, races, classes, rulebooks, translator] = await Promise.all([
 		listCharacters(playerId, universe.id),
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
 		loadTranslator(request, universe, ['race', 'class'])
 	]);
-	const barred = barredOptionsOf(races, classes);
+	const barred = barredOptionsOf(races, classes, rulebooks);
 	const lastPlayedId = await findLastPlayedCharacterId(playerId, universe.id, barred);
 	const raceNames = new Map(races.map(({ id, key, name }) => [id, translator.name('race', id, { key, name })]));
 	const classNames = new Map(classes.map(({ id, key, name }) => [id, translator.name('class', id, { key, name })]));
@@ -315,12 +316,13 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, membership, races, classes, themes, siteSettings] = await Promise.all([
+	const [character, membership, races, classes, themes, rulebooks, siteSettings] = await Promise.all([
 		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
 		findMembership(characterId),
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
 		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
 		findSiteSettings()
 	]);
 
@@ -381,7 +383,7 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 				groupId: membership.groupId,
 				isAnchor: membership.isAnchor
 			}),
-		barredBy: characterBar(character, barredOptionsOf(races, classes)),
+		barredBy: characterBar(character, barredOptionsOf(races, classes, rulebooks)),
 		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
 		darkvision: (race?.rules.darkvision ?? NEW_RACE_RULES[universe.ruleset].darkvision),
 		lightSensitivity: (race?.rules.lightSensitivity ?? NEW_RACE_RULES[universe.ruleset].lightSensitivity),
@@ -635,11 +637,12 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [abilities, races, classes, themes, characterCount, siteSettings, storedDraft, translator] = await Promise.all([
+	const [abilities, races, classes, themes, { rulebooks }, characterCount, siteSettings, storedDraft, translator] = await Promise.all([
 		offerAbilities(universe, playerId),
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
 		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
 		countCharacters(playerId, universe.id),
 		findSiteSettings(),
 		findCharacterDraft(playerId, universe.id),
@@ -653,13 +656,13 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 		ruleset: universe.ruleset,
 		abilities,
 		races: races
-			.filter((race) => race.enabled)
+			.filter((race) => isUsable(race, rulebooks))
 			.map(({ id, key, name, rules }) => translator.name('race', id, { id, key, name, rules })),
 		classes: classes
-			.filter((characterClass) => characterClass.enabled)
+			.filter((characterClass) => isUsable(characterClass, rulebooks))
 			.map(({ id, key, name, rules }) => translator.name('class', id, { id, key, name, rules })),
 		themes: themes
-			.filter((theme) => theme.enabled)
+			.filter((theme) => isUsable(theme, rulebooks))
 			.map(({ id, key, name, rules }) => translator.name('theme', id, { id, key, name, rules })),
 		characterCount,
 		characterLimit: siteSettings.charactersPerUniverse,
@@ -809,9 +812,10 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			});
 		}
 
+		const { rulebooks } = await loadRulebookSettings(liveVersion(universeId), universe.ruleset, transaction);
 		const race = await findEditorRace(liveVersion(universeId), universe.ruleset, raceId, transaction);
 
-		if (!race?.enabled)
+		if (!race || !isUsable(race, rulebooks))
 		{
 			return({
 				status: 409,
@@ -821,7 +825,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 
 		const characterClass = await findEditorClass(liveVersion(universeId), universe.ruleset, classId, transaction);
 
-		if (!characterClass?.enabled)
+		if (!characterClass || !isUsable(characterClass, rulebooks))
 		{
 			return({
 				status: 409,
@@ -833,7 +837,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			? await findEditorTheme(liveVersion(universeId), universe.ruleset, themeId, transaction)
 			: undefined);
 
-		if (rulesetHasThemes(universe.ruleset) ? !theme?.enabled : (themeId !== null))
+		if (rulesetHasThemes(universe.ruleset) ? (!theme || !isUsable(theme, rulebooks)) : (themeId !== null))
 		{
 			return({
 				status: 409,
@@ -861,7 +865,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 
 		const startingItems = [universe.startingItems, race.startingItems, characterClass.startingItems];
 		const enabledItemIds = new Set((await loadEditorItemsIn(liveVersion(universeId), universe.ruleset, startingItems.flat().map((item) => item.itemId), transaction))
-			.filter((item) => item.enabled)
+			.filter((item) => isUsable(item, rulebooks))
 			.map((item) => item.id));
 		const characterId = await createCharacter({
 			playerId,

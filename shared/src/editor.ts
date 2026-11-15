@@ -906,6 +906,7 @@ export const AUDIT_FIELDS = [
 	'needsSleep',
 	'coinsHaveWeight',
 	'tracksAmmo',
+	'rulebooks',
 	'role',
 	'languages',
 	'indoors',
@@ -1032,6 +1033,11 @@ export interface AuditFieldValues
 	needsSleep: boolean;
 	coinsHaveWeight: boolean;
 	tracksAmmo: boolean;
+
+	/**
+	 * The optional books turned on, by key (RULESET_RULEBOOKS)
+	 */
+	rulebooks: string[];
 	role: UniverseRole;
 
 	/**
@@ -1537,6 +1543,11 @@ export interface EditorItem extends ItemSettings
 	key: string | null;
 
 	/**
+	 * The book a default item comes from (RULESET_RULEBOOKS); null for an item the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the item, rather than it being one of the ruleset's default items
 	 */
 	custom: boolean;
@@ -1582,6 +1593,13 @@ export interface ItemListQuery
 	 * Only these items, by ID, up to MAX_STARTING_ITEMS of them (a comma-separated list in the query string)
 	 */
 	ids?: number[];
+
+	/**
+	 * Only the items of the core rulebook and these optional books, and those the universe added (a
+	 * comma-separated list in the query string, empty for the core rulebook alone). The editor sends the
+	 * books as its Ruleset tab has them, before they are saved
+	 */
+	rulebooks?: string[];
 
 	/**
 	 * The column to sort the matches by before paging, with items that tie sorted by name. Names sort in
@@ -1712,6 +1730,11 @@ export interface EditorRace extends RaceSettings
 	key: string | null;
 
 	/**
+	 * The book a default race comes from (RULESET_RULEBOOKS); null for a race the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the race, rather than it being one of the ruleset's default races
 	 */
 	custom: boolean;
@@ -1804,6 +1827,11 @@ export interface EditorClass extends ClassSettings
 	key: string | null;
 
 	/**
+	 * The book a default class comes from (RULESET_RULEBOOKS); null for a class the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the class, rather than it being one of the ruleset's default classes
 	 */
 	custom: boolean;
@@ -1859,6 +1887,11 @@ export interface EditorTheme extends ThemeSettings
 	 * the universe added
 	 */
 	key: string | null;
+
+	/**
+	 * The book a default theme comes from (RULESET_RULEBOOKS); null for a theme the universe added
+	 */
+	rulebook: string | null;
 
 	/**
 	 * Whether the universe added the theme, rather than it being one of the ruleset's default themes

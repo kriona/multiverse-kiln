@@ -4,13 +4,14 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
 import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
+import { savedRulebooks } from './editorRulebooks.js';
 import { checkStartingReferences } from './editorStartingExtras.js';
 
 /**
@@ -163,8 +164,9 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 	}
 
 	const others = (await loadEditorRaces(version, universe.ruleset, transaction)).filter((race) => (race.id !== raceId));
+	const rulebooks = await savedRulebooks(context);
 
-	if (!others.some((race) => race.enabled))
+	if (!others.some((race) => isUsable(race, rulebooks)))
 	{
 		refuse(409, messages.noEnabledRace);
 	}
@@ -190,7 +192,14 @@ async function checkRace(context: ChangeContext, raceId: number | undefined, set
 		itemIds: settings.startingItems.map(({ itemId }) => itemId)
 	});
 
-	if (!settings.enabled && !(await loadEditorRaces(version, universe.ruleset, transaction)).some((race) => ((race.id !== raceId) && race.enabled)))
+	if (settings.enabled)
+	{
+		return;
+	}
+
+	const rulebooks = await savedRulebooks(context);
+
+	if (!(await loadEditorRaces(version, universe.ruleset, transaction)).some((race) => ((race.id !== raceId) && isUsable(race, rulebooks))))
 	{
 		refuse(409, messages.noEnabledRace);
 	}

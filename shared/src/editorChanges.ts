@@ -142,6 +142,28 @@ export interface DraftApplyChoices
 	items: Record<string, ItemDisabling>;
 	areas: Record<string, AreaEvacuation>;
 	largerGroups?: GroupSizeLowering;
+
+	/**
+	 * What happens to the players using each book the draft turns off, by the book's key
+	 */
+	rulebooks?: Record<string, RulebookTurnOff>;
+}
+
+/**
+ * What turning off a book does to the players using it (see Disabling things players are using in
+ * STRUCTURE-OVERVIEW.md)
+ */
+export interface RulebookTurnOff
+{
+	/**
+	 * Whether the characters of its races and classes keep playing while it is off
+	 */
+	keepPlaying: boolean;
+
+	/**
+	 * What happens to its items that characters carry
+	 */
+	items: ItemDisabling;
 }
 
 /**
@@ -163,7 +185,10 @@ export interface EditorRoleSettings
  *   take it away. Anyone may remove themself, leaving the universe; a save that would leave the universe
  *   without a creator is refused
  * - universe, ruleset: change the universe's settings, or how it plays under its ruleset. A universe
- *   change lowering the group size says what happens to larger groups with largerGroups, keep when left out
+ *   change lowering the group size says what happens to larger groups with largerGroups, keep when left out.
+ *   A ruleset change turning a book off says whether its races' and classes' characters may play in its
+ *   settings (barredRulebooks), and what happens to the characters carrying its items with
+ *   whenRulebooksOff, by book, keep when left out. Turning a book on again gives back the copies taken
  * - uploadTileGraphic, deleteTileGraphic: upload a tileset, or delete one and its image
  * - tiles: removeTile with replaceWith paints the areas using the tile with that one first
  * - items, races, classes, themes and difficulty levels. A saveItem disabling an item says what happens to
@@ -223,7 +248,7 @@ export type EditorChange =
 	| { kind: 'saveEditor'; playerId: string; settings: EditorRoleSettings; loaded?: LoadedSettings }
 	| { kind: 'removeEditor'; playerId: string }
 	| { kind: 'universe'; update: UniverseSettingsUpdate; loaded?: LoadedSettings; largerGroups?: GroupSizeLowering }
-	| { kind: 'ruleset'; settings: RulesetSettings; loaded?: LoadedSettings }
+	| { kind: 'ruleset'; settings: RulesetSettings; loaded?: LoadedSettings; whenRulebooksOff?: Record<string, ItemDisabling> }
 	| { kind: 'uploadTileGraphic'; ref: NewRef; upload: TileGraphicUploadRequest }
 	| { kind: 'deleteTileGraphic'; graphicId: string }
 	| { kind: 'createTile'; ref: NewRef; settings: TileChangeSettings }
@@ -546,12 +571,25 @@ export interface SaveConflictText
  * - lobbyArea: it puts an area group characters are in, playing there or saved there by their group,
  *   below the lobby region, so they go back to where their group starts
  * - groupSize: it lowers the group size below the size of some groups
+ * - rulebook: it turns off a book whose races and classes characters are, or whose items they carry,
+ *   with each of those that is enabled on its own and how many characters use it
  */
 export type ChangeImpact =
 	| { changeIndex: number; kind: 'race' | 'class' | 'item'; id: number; name: OptionName; characters: number }
+	| { changeIndex: number; kind: 'rulebook'; rulebook: string; races: ImpactedOption[]; classes: ImpactedOption[]; items: ImpactedOption[] }
 	| { changeIndex: number; kind: 'area'; id: string; name: string; characters: number; hasParent: boolean }
 	| { changeIndex: number; kind: 'lobbyArea'; id: string; name: string; characters: number }
 	| { changeIndex: number; kind: 'groupSize'; groupSize: number; groups: number };
+
+/**
+ * A race, class or item a change stops characters from using, and how many characters use it
+ */
+export interface ImpactedOption
+{
+	id: number;
+	name: OptionName;
+	characters: number;
+}
 
 /**
  * Response of POST EDITOR_UNIVERSES_PATH/:universeId/changes/impact: each change that would affect

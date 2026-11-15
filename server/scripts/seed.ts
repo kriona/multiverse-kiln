@@ -20,6 +20,7 @@ import { areasWithMisalignedLoops, neighborProblems, resolveAreaSettings, type N
 
 import { db, pool, type Executor } from '../src/db/client.js';
 import { findPlayerByUsername, type PlayerProfile } from '../src/db/playerRepo.js';
+import { findPf1eSettings, savePf1eSettings } from '../src/db/rulesetRepo.js';
 import { addDefaultStartingItems } from '../src/db/startingItemRepo.js';
 import { listTileGraphicStorageKeys } from '../src/db/tileGraphicRepo.js';
 import { createTile, findDefaultTileIds } from '../src/db/tileRepo.js';
@@ -138,6 +139,12 @@ async function seed(executor: Executor, creator: PlayerProfile | undefined): Pro
 		}, executor);
 		await addDefaultStartingItems(universeId, 'pf1e', executor);
 	}
+
+	await savePf1eSettings(version, {
+		...await findPf1eSettings(version, executor),
+		rulebooks: sampleUniverse.rulebooks,
+		barredRulebooks: []
+	}, executor);
 
 	const tileIds = await findDefaultTileIds('pf1e', executor);
 

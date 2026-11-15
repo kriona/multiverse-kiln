@@ -24,6 +24,7 @@
 import { UNIVERSES_PATH } from './constants.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
+import { isRulebookBarred, type RulebookSettings } from './rulebooks.js';
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { Ruleset } from './universes.js';
@@ -95,12 +96,14 @@ export const NOTHING_BARRED: BarredOptions = {
  *
  * @param races The races the universe can use
  * @param classes The classes it can use
- * @return Those disabled without letting the characters already of them keep playing
+ * @param rulebooks The books the universe uses
+ * @return Those disabled, or whose book is turned off, without letting the characters already of them
+ * keep playing
  */
-export function barredOptionsOf(races: readonly BarringOption[], classes: readonly BarringOption[]): BarredOptions
+export function barredOptionsOf(races: readonly BarringOption[], classes: readonly BarringOption[], rulebooks: RulebookSettings): BarredOptions
 {
 	const barredIds = (options: readonly BarringOption[]): Set<number> => new Set(options
-		.filter((option) => (!option.enabled && !option.keepPlaying))
+		.filter((option) => ((!option.enabled && !option.keepPlaying) || isRulebookBarred(rulebooks, option.rulebook)))
 		.map((option) => option.id));
 
 	return({
@@ -117,6 +120,11 @@ export interface BarringOption
 	id: number;
 	enabled: boolean;
 	keepPlaying: boolean;
+
+	/**
+	 * Its book, or null for one the universe added
+	 */
+	rulebook: string | null;
 }
 
 /**

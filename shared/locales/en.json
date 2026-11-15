@@ -2711,6 +2711,34 @@
 		"defaultMessage": "Take out members, those who joined most recently first, until they fit",
 		"description": "Choice in the dialog the editor's Save opens, for a group size smaller than some groups: members leave, newest first, never the character the group is centered on (its anchor being)"
 	},
+	"editor.impact.rulebookItems": {
+		"defaultMessage": "Turning off {rulebook}: characters carry its items",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a book of game rules being turned off whose items characters carry; {rulebook} is the book's name. The items are listed under it"
+	},
+	"editor.impact.rulebookKeepItems": {
+		"defaultMessage": "Let them keep using them; no new copies are made",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose items characters carry: they keep them, and nobody new is given them"
+	},
+	"editor.impact.rulebookKeepPlaying": {
+		"defaultMessage": "Let them keep playing; only new characters can't choose them",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose races and classes characters are: they can still play, and only new characters can't choose the book's races and classes"
+	},
+	"editor.impact.rulebookOption": {
+		"defaultMessage": "{name} ({count, plural, one {# character} other {# characters}})",
+		"description": "One race, class or item in the list under a choice in the dialog the editor's Save opens, for a book of game rules being turned off; {name} is its name and {count} how many characters are it or carry it"
+	},
+	"editor.impact.rulebookPlaying": {
+		"defaultMessage": "Turning off {rulebook}: characters are its races and classes",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a book of game rules being turned off whose races and classes characters are; {rulebook} is the book's name. The races and classes are listed under it"
+	},
+	"editor.impact.rulebookPreventPlaying": {
+		"defaultMessage": "Stop them playing until the book is turned on again",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose races and classes characters are: they are turned out of the lobby and their groups, and can't play until the book is turned on again"
+	},
+	"editor.impact.rulebookRemoveItems": {
+		"defaultMessage": "Take them away; they get them back if the book is turned on again",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose items characters carry: the items are taken away from them, and given back if the book is turned on again"
+	},
 	"editor.impact.title": {
 		"defaultMessage": "Players Are Affected",
 		"description": "Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them"
@@ -3638,6 +3666,82 @@
 	"editor.role": {
 		"defaultMessage": "Your role: {role}",
 		"description": "In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder"
+	},
+	"editor.rulebook.classes": {
+		"defaultMessage": "Classes",
+		"description": "Heading of the list of character classes in the dialog listing what a book of game rules brings"
+	},
+	"editor.rulebook.hint": {
+		"defaultMessage": "The races and classes the book brings to the universe while it is on. Disable each one on the Characters tab.",
+		"description": "Explains the dialog listing the races and classes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab"
+	},
+	"editor.rulebook.loadFailed": {
+		"defaultMessage": "Could not list what the book brings.",
+		"description": "Shown in the dialog listing what a book of game rules brings when its races and classes couldn't be loaded"
+	},
+	"editor.rulebook.loading": {
+		"defaultMessage": "Loading...",
+		"description": "Shown in the dialog listing what a book of game rules brings while its races and classes load"
+	},
+	"editor.rulebook.races": {
+		"defaultMessage": "Races",
+		"description": "Heading of the list of races in the dialog listing what a book of game rules brings"
+	},
+	"editor.rulebook.themes": {
+		"defaultMessage": "Themes",
+		"description": "Heading of the list of themes (a Starfinder character's background) in the dialog listing what a book of game rules brings"
+	},
+	"editor.rulebooks.actionsColumn": {
+		"defaultMessage": "Actions",
+		"description": "Heading of the column of buttons in the Rulebooks table on the editor's Ruleset tab, read only by screen readers"
+	},
+	"editor.rulebooks.alwaysOn": {
+		"defaultMessage": "Always on",
+		"description": "Status of the core rulebook in the Rulebooks table on the editor's Ruleset tab: it can't be turned off"
+	},
+	"editor.rulebooks.bookColumn": {
+		"defaultMessage": "Book",
+		"description": "Heading of the column of book names in the Rulebooks table on the editor's Ruleset tab"
+	},
+	"editor.rulebooks.contents": {
+		"defaultMessage": "Contents",
+		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that opens a dialog listing the races and classes the book brings"
+	},
+	"editor.rulebooks.disable": {
+		"defaultMessage": "Disable",
+		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that turns the book off; saved with the Save button"
+	},
+	"editor.rulebooks.enable": {
+		"defaultMessage": "Enable",
+		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that turns the book on; saved with the Save button"
+	},
+	"editor.rulebooks.heading": {
+		"defaultMessage": "Rulebooks",
+		"description": "Heading of the part of the editor's Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.rulebooks.hint": {
+		"defaultMessage": "The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there.",
+		"description": "Explains the Rulebooks table on the editor's Ruleset tab"
+	},
+	"editor.rulebooks.off": {
+		"defaultMessage": "Off",
+		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab: the universe doesn't use its races, classes and items"
+	},
+	"editor.rulebooks.offWhenSaved": {
+		"defaultMessage": "Off when saved",
+		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab that was turned off, which isn't saved yet"
+	},
+	"editor.rulebooks.on": {
+		"defaultMessage": "On",
+		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab: the universe uses its races, classes and items"
+	},
+	"editor.rulebooks.onWhenSaved": {
+		"defaultMessage": "On when saved",
+		"description": "Status of a book in the Rulebooks table on the editor's Ruleset tab that was turned on, which isn't saved yet"
+	},
+	"editor.rulebooks.statusColumn": {
+		"defaultMessage": "Status",
+		"description": "Heading of the column in the Rulebooks table on the editor's Ruleset tab saying whether each book is on or off"
 	},
 	"editor.ruleset.abilityPoints": {
 		"defaultMessage": "Ability points",
@@ -5779,6 +5883,18 @@
 		"defaultMessage": "Your role in this universe doesn't allow that.",
 		"description": "Why an editor change was refused: the player's role, such as beta tester, can't make it"
 	},
+	"error.rulebookLeavesNoClass": {
+		"defaultMessage": "Turning off the book leaves no enabled class for new characters. Enable a class from another book first.",
+		"description": "Why a book of game rules (such as the Advanced Player's Guide) couldn't be turned off on the Ruleset tab: its classes are the only ones new characters can choose"
+	},
+	"error.rulebookLeavesNoRace": {
+		"defaultMessage": "Turning off the book leaves no enabled race for new characters. Enable a race from another book first.",
+		"description": "Why a book of game rules (such as the Advanced Race Guide) couldn't be turned off on the Ruleset tab: its races are the only ones new characters can choose"
+	},
+	"error.rulebookLeavesNoTheme": {
+		"defaultMessage": "Turning off the book leaves no enabled theme for new characters. Enable a theme from another book first.",
+		"description": "Why a book of game rules couldn't be turned off on the Ruleset tab: its themes are the only ones new characters can choose"
+	},
 	"error.saveConflicts": {
 		"defaultMessage": "Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again.",
 		"description": "Why the world editor couldn't save: another editor saved different values for settings the player also changed; the editor then lists each one, to keep the player's value or take the other editor's"
@@ -7159,6 +7275,10 @@
 		"defaultMessage": "Alchemist",
 		"description": "Name of a character class in Pathfinder: brews potions, bombs and magical extracts. Singular, used as a label"
 	},
+	"pf1e.class.arcanist": {
+		"defaultMessage": "Arcanist",
+		"description": "Name of a character class in Pathfinder: a scholar who prepares spells but shapes them freely as they cast. Singular, used as a label"
+	},
 	"pf1e.class.barbarian": {
 		"defaultMessage": "Barbarian",
 		"description": "Name of a character class in Pathfinder: a warrior who fights in a rage. Singular, used as a label"
@@ -7166,6 +7286,14 @@
 	"pf1e.class.bard": {
 		"defaultMessage": "Bard",
 		"description": "Name of a character class in Pathfinder: a performer whose music and words are magic. Singular, used as a label"
+	},
+	"pf1e.class.bloodrager": {
+		"defaultMessage": "Bloodrager",
+		"description": "Name of a character class in Pathfinder: a warrior whose rage awakens magic in their blood. Singular, used as a label"
+	},
+	"pf1e.class.brawler": {
+		"defaultMessage": "Brawler",
+		"description": "Name of a character class in Pathfinder: a fighter who wins with fists and quick adaptation. Singular, used as a label"
 	},
 	"pf1e.class.cavalier": {
 		"defaultMessage": "Cavalier",
@@ -7183,9 +7311,17 @@
 		"defaultMessage": "Fighter",
 		"description": "Name of a character class in Pathfinder: a trained warrior skilled with weapons and armor. Singular, used as a label"
 	},
+	"pf1e.class.hunter": {
+		"defaultMessage": "Hunter",
+		"description": "Name of a character class in Pathfinder: a wilderness spellcaster who fights alongside an animal companion. Singular, used as a label"
+	},
 	"pf1e.class.inquisitor": {
 		"defaultMessage": "Inquisitor",
 		"description": "Name of a character class in Pathfinder: a hunter of a faith's enemies. Singular, used as a label"
+	},
+	"pf1e.class.investigator": {
+		"defaultMessage": "Investigator",
+		"description": "Name of a character class in Pathfinder: a detective who solves mysteries with keen wits and alchemy. Singular, used as a label"
 	},
 	"pf1e.class.monk": {
 		"defaultMessage": "Monk",
@@ -7207,6 +7343,18 @@
 		"defaultMessage": "Rogue",
 		"description": "Name of a character class in Pathfinder: a sneaky, skilled thief or scout. Singular, used as a label"
 	},
+	"pf1e.class.shaman": {
+		"defaultMessage": "Shaman",
+		"description": "Name of a character class in Pathfinder: casts spells granted by spirits through a spirit animal. Singular, used as a label"
+	},
+	"pf1e.class.skald": {
+		"defaultMessage": "Skald",
+		"description": "Name of a character class in Pathfinder: a warrior poet whose songs stir allies into a rage. Singular, used as a label"
+	},
+	"pf1e.class.slayer": {
+		"defaultMessage": "Slayer",
+		"description": "Name of a character class in Pathfinder: a hunter of people who studies a target to strike it down. Singular, used as a label"
+	},
 	"pf1e.class.sorcerer": {
 		"defaultMessage": "Sorcerer",
 		"description": "Name of a character class in Pathfinder: casts magic that comes from their bloodline. Singular, used as a label"
@@ -7214,6 +7362,14 @@
 	"pf1e.class.summoner": {
 		"defaultMessage": "Summoner",
 		"description": "Name of a character class in Pathfinder: bonded to a summoned creature from another plane. Singular, used as a label"
+	},
+	"pf1e.class.swashbuckler": {
+		"defaultMessage": "Swashbuckler",
+		"description": "Name of a character class in Pathfinder: a daring sword fighter who relies on flair and nimble moves. Singular, used as a label"
+	},
+	"pf1e.class.warpriest": {
+		"defaultMessage": "Warpriest",
+		"description": "Name of a character class in Pathfinder: a warrior who fights for their faith and casts divine spells. Singular, used as a label"
 	},
 	"pf1e.class.witch": {
 		"defaultMessage": "Witch",
@@ -7343,13 +7499,29 @@
 		"defaultMessage": "torch",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a burning stick that gives light"
 	},
+	"pf1e.race.aasimar": {
+		"defaultMessage": "Aasimar",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of celestial, angelic blood. Singular, used as a label"
+	},
 	"pf1e.race.catfolk": {
 		"defaultMessage": "Catfolk",
 		"description": "Name of a playable race in Pathfinder: curious, agile people who look like cats standing upright"
 	},
+	"pf1e.race.changeling": {
+		"defaultMessage": "Changeling",
+		"description": "Name of a playable race in Pathfinder: daughters of hags raised among humans, with eyes of two colors. Singular, used as a label"
+	},
+	"pf1e.race.dhampir": {
+		"defaultMessage": "Dhampir",
+		"description": "Name of a playable race in Pathfinder: people with one human and one vampire parent. Singular, used as a label"
+	},
 	"pf1e.race.drow": {
 		"defaultMessage": "Drow",
 		"description": "Name of a playable race in Pathfinder: dark elves who live underground"
+	},
+	"pf1e.race.duergar": {
+		"defaultMessage": "Duergar",
+		"description": "Name of a playable race in Pathfinder: gray dwarves who live deep underground. Singular, used as a label"
 	},
 	"pf1e.race.dwarf": {
 		"defaultMessage": "Dwarf",
@@ -7359,6 +7531,14 @@
 		"defaultMessage": "Elf",
 		"description": "Name of a playable race in Pathfinder: long-lived, graceful people. Singular, used as a label"
 	},
+	"pf1e.race.fetchling": {
+		"defaultMessage": "Fetchling",
+		"description": "Name of a playable race in Pathfinder: pale, shadowy descendants of humans who lived on a plane of shadow. Singular, used as a label"
+	},
+	"pf1e.race.gillman": {
+		"defaultMessage": "Gillman",
+		"description": "Name of a playable race in Pathfinder: humans with gills, who breathe both air and water. Singular, used as a label"
+	},
 	"pf1e.race.gnome": {
 		"defaultMessage": "Gnome",
 		"description": "Name of a playable race in Pathfinder: small, whimsical people with fey ancestry. Singular, used as a label"
@@ -7366,6 +7546,10 @@
 	"pf1e.race.goblin": {
 		"defaultMessage": "Goblin",
 		"description": "Name of a playable race in Pathfinder: small, mischievous, fire-loving people. Singular, used as a label"
+	},
+	"pf1e.race.grippli": {
+		"defaultMessage": "Grippli",
+		"description": "Name of a playable race in Pathfinder: small frog people of the swamps and jungles. Singular, used as a label"
 	},
 	"pf1e.race.half_elf": {
 		"defaultMessage": "Half-Elf",
@@ -7387,9 +7571,97 @@
 		"defaultMessage": "Human",
 		"description": "Name of a playable race in Pathfinder: humans. Singular, used as a label"
 	},
+	"pf1e.race.ifrit": {
+		"defaultMessage": "Ifrit",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of fire spirits. Singular, used as a label"
+	},
+	"pf1e.race.kitsune": {
+		"defaultMessage": "Kitsune",
+		"description": "Name of a playable race in Pathfinder: fox people who can take human form. Singular, used as a label"
+	},
+	"pf1e.race.kobold": {
+		"defaultMessage": "Kobold",
+		"description": "Name of a playable race in Pathfinder: small, scaly people who believe they descend from dragons. Singular, used as a label"
+	},
+	"pf1e.race.merfolk": {
+		"defaultMessage": "Merfolk",
+		"description": "Name of a playable race in Pathfinder: sea people with a fish's tail in place of legs"
+	},
+	"pf1e.race.nagaji": {
+		"defaultMessage": "Nagaji",
+		"description": "Name of a playable race in Pathfinder: scaled, snake-like people created to serve nagas. Singular, used as a label"
+	},
+	"pf1e.race.orc": {
+		"defaultMessage": "Orc",
+		"description": "Name of a playable race in Pathfinder: strong, brutal people who live by raiding. Singular, used as a label"
+	},
+	"pf1e.race.oread": {
+		"defaultMessage": "Oread",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of earth spirits. Singular, used as a label"
+	},
 	"pf1e.race.ratfolk": {
 		"defaultMessage": "Ratfolk",
 		"description": "Name of a playable race in Pathfinder: small, clever people who look like rats standing upright"
+	},
+	"pf1e.race.samsaran": {
+		"defaultMessage": "Samsaran",
+		"description": "Name of a playable race in Pathfinder: blue-skinned people who are reborn and remember past lives. Singular, used as a label"
+	},
+	"pf1e.race.strix": {
+		"defaultMessage": "Strix",
+		"description": "Name of a playable race in Pathfinder: winged, dark-skinned people of the mountains. Singular, used as a label"
+	},
+	"pf1e.race.suli": {
+		"defaultMessage": "Suli",
+		"description": "Name of a playable race in Pathfinder: humans descended from genies of all four elements. Singular, used as a label"
+	},
+	"pf1e.race.svirfneblin": {
+		"defaultMessage": "Svirfneblin",
+		"description": "Name of a playable race in Pathfinder: deep gnomes who live underground. Singular, used as a label"
+	},
+	"pf1e.race.sylph": {
+		"defaultMessage": "Sylph",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of air spirits. Singular, used as a label"
+	},
+	"pf1e.race.tengu": {
+		"defaultMessage": "Tengu",
+		"description": "Name of a playable race in Pathfinder: crow-like bird people. Singular, used as a label"
+	},
+	"pf1e.race.tiefling": {
+		"defaultMessage": "Tiefling",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of fiendish, demonic blood. Singular, used as a label"
+	},
+	"pf1e.race.undine": {
+		"defaultMessage": "Undine",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of water spirits. Singular, used as a label"
+	},
+	"pf1e.race.vanara": {
+		"defaultMessage": "Vanara",
+		"description": "Name of a playable race in Pathfinder: monkey people of the jungles. Singular, used as a label"
+	},
+	"pf1e.race.vishkanya": {
+		"defaultMessage": "Vishkanya",
+		"description": "Name of a playable race in Pathfinder: graceful, scaled people whose blood is poison. Singular, used as a label"
+	},
+	"pf1e.race.wayang": {
+		"defaultMessage": "Wayang",
+		"description": "Name of a playable race in Pathfinder: small, shadowy people who live in darkness. Singular, used as a label"
+	},
+	"pf1e.rulebook.acg": {
+		"defaultMessage": "Advanced Class Guide",
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one"
+	},
+	"pf1e.rulebook.apg": {
+		"defaultMessage": "Advanced Player's Guide",
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one"
+	},
+	"pf1e.rulebook.arg": {
+		"defaultMessage": "Advanced Race Guide",
+		"description": "Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one"
+	},
+	"pf1e.rulebook.core": {
+		"defaultMessage": "Core Rulebook",
+		"description": "Name of the main rulebook of Pathfinder First Edition, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one, such as the German \"Grundregelwerk\""
 	},
 	"pf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -8630,6 +8902,10 @@
 	"sf1e.race.ysoki": {
 		"defaultMessage": "Ysoki",
 		"description": "Name of a playable race in Starfinder: small, clever people who look like rats standing upright. Singular, used as a label"
+	},
+	"sf1e.rulebook.core": {
+		"defaultMessage": "Starfinder Core Rulebook",
+		"description": "Name of the main rulebook of Starfinder First Edition, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one, such as the German \"Starfinder Grundregelwerk\""
 	},
 	"sf1e.size.colossal": {
 		"defaultMessage": "Colossal",

@@ -507,7 +507,7 @@ The card is a table of the ruleset's books. Each row has:
 - the book's name. Book names are messages, translated with the official title of the book's translated edition where there is one (such as the German "Grundregelwerk")
 - its status: On, Off, or Always on for the core rulebook
 - an Enable or Disable button. The core rulebook has none, since it can't be turned off
-- a Contents button, which opens a dialog listing what the book brings: a table each for its races, classes and items, with their default names, summaries, descriptions (races and classes) and whether each is enabled in this universe
+- a Contents button, which opens a dialog listing what the book brings: a table each for its races and classes, with their default names, summaries, descriptions and whether each is enabled in this universe. Its items aren't listed, since a book can bring too many
 
 Changes not saved yet are noted as in the other tables. The books are saved with the rest of the tab as `rulebooks`, and like the rest of the tab, only creators can change them. Only the core rulebook is on in a new universe.
 

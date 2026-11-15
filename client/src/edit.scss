@@ -678,10 +678,11 @@ form > .changed-since,
 	}
 }
 
-// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the coins and difficulty levels cards on the Ruleset tab
+// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the rulebooks, coins and difficulty levels cards on the Ruleset tab
 .races,
 .classes,
 .themes,
+.rulebooks,
 .coins,
 .difficulty-levels
 {
@@ -1214,6 +1215,46 @@ form > .changed-since,
 	{
 		min-width: 4em;
 		color: $text-muted;
+	}
+}
+
+// The rulebooks on the Ruleset tab, each named in its row's heading, with its buttons at the end
+.rulebook-table
+{
+	tbody th
+	{
+		color: inherit;
+	}
+
+	.row-buttons
+	{
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+}
+
+// The races, classes and items a book brings, a table for each
+.rulebook-dialog
+{
+	max-width: min(960px, calc(100vw - 32px));
+}
+
+.rulebook-contents
+{
+	overflow: auto;
+	max-height: 60vh;
+
+	h3
+	{
+		margin: 16px 0 4px;
+		font-size: 1em;
+	}
+
+	tbody th
+	{
+		color: inherit;
 	}
 }
 

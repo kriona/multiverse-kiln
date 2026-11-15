@@ -2,7 +2,7 @@
  * How each universe plays under its ruleset: the only module that reads or writes the pf1e_settings and
  * sf1e_settings tables
  */
-import { DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, type Pf1eSettings, type Ruleset, type RulesetSettings, type Sf1eSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, type Pf1eSettings, type RulebookSettings, type Ruleset, type RulesetSettings, type Sf1eSettings } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { pf1eSettings, sf1eSettings } from './schema.js';
@@ -32,6 +32,55 @@ export async function loadRulesetSettings(version: UniverseVersion, ruleset: Rul
 				settings: await findSf1eSettings(version, executor)
 			});
 	}
+}
+
+/**
+ * Which books a universe uses
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param executor The database, or a transaction
+ * @return The optional books it has on, and those off whose characters can't play
+ */
+export async function loadRulebookSettings(version: UniverseVersion, ruleset: Ruleset, executor: Executor = db): Promise<RulebookSettings>
+{
+	const { settings } = await loadRulesetSettings(version, ruleset, executor);
+
+	return({
+		rulebooks: settings.rulebooks,
+		barredRulebooks: settings.barredRulebooks
+	});
+}
+
+/**
+ * The books a universe has turned off without letting their characters keep playing, whatever its
+ * ruleset
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The books, with the ruleset they belong to; none when the universe has never saved its settings
+ */
+export async function findBarredRulebooks(version: UniverseVersion, executor: Executor = db): Promise<{ ruleset: Ruleset; rulebooks: string[] }[]>
+{
+	const pf1eRows = await executor
+		.select({
+			rulebooks: pf1eSettings.barredRulebooks
+		})
+		.from(pf1eSettings)
+		.where(inVersion(pf1eSettings, version))
+		.limit(1);
+	const sf1eRows = await executor
+		.select({
+			rulebooks: sf1eSettings.barredRulebooks
+		})
+		.from(sf1eSettings)
+		.where(inVersion(sf1eSettings, version))
+		.limit(1);
+
+	return([
+		...pf1eRows.map((row) => ({ ruleset: 'pf1e' as const, rulebooks: row.rulebooks })),
+		...sf1eRows.map((row) => ({ ruleset: 'sf1e' as const, rulebooks: row.rulebooks }))
+	].filter((row) => (row.rulebooks.length > 0)));
 }
 
 /**
@@ -70,13 +119,15 @@ export async function findPf1eSettings(version: UniverseVersion, executor: Execu
 			customPointBuyBudget: pf1eSettings.customPointBuyBudget,
 			needsSleep: pf1eSettings.needsSleep,
 			coinsHaveWeight: pf1eSettings.coinsHaveWeight,
-			tracksAmmo: pf1eSettings.tracksAmmo
+			tracksAmmo: pf1eSettings.tracksAmmo,
+			rulebooks: pf1eSettings.rulebooks,
+			barredRulebooks: pf1eSettings.barredRulebooks
 		})
 		.from(pf1eSettings)
 		.where(inVersion(pf1eSettings, version))
 		.limit(1);
 
-	return((row ?? { ...DEFAULT_PF1E_SETTINGS }));
+	return((row ?? { ...DEFAULT_PF1E_SETTINGS, rulebooks: [], barredRulebooks: [] }));
 }
 
 /**
@@ -114,13 +165,15 @@ export async function findSf1eSettings(version: UniverseVersion, executor: Execu
 		.select({
 			abilityPoints: sf1eSettings.abilityPoints,
 			needsSleep: sf1eSettings.needsSleep,
-			tracksAmmo: sf1eSettings.tracksAmmo
+			tracksAmmo: sf1eSettings.tracksAmmo,
+			rulebooks: sf1eSettings.rulebooks,
+			barredRulebooks: sf1eSettings.barredRulebooks
 		})
 		.from(sf1eSettings)
 		.where(inVersion(sf1eSettings, version))
 		.limit(1);
 
-	return((row ?? { ...DEFAULT_SF1E_SETTINGS }));
+	return((row ?? { ...DEFAULT_SF1E_SETTINGS, rulebooks: [], barredRulebooks: [] }));
 }
 
 /**

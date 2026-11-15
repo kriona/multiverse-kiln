@@ -5,7 +5,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { lobbyAreaIds, mayMakeChange, PlaceGraph, type ChangeImpact, type EditableUniverseDetails, type EditorChange, type OptionName, type Ruleset, type SaveImpactPayload } from '@multiverse-kiln/shared';
+import { lobbyAreaIds, mayMakeChange, normalizedRulebooks, PlaceGraph, type ChangeImpact, type EditableUniverseDetails, type EditorChange, type ImpactedOption, type OptionName, type Ruleset, type SaveImpactPayload } from '@multiverse-kiln/shared';
 
 import { listAreas, loadPlaceWorld } from '../db/areaRepo.js';
 import { countCharactersCarrying, countCharactersOfClasses, countCharactersOfRaces } from '../db/characterRepo.js';
@@ -13,6 +13,7 @@ import { loadEditorClasses } from '../db/classRepo.js';
 import { countGroupsLargerThan, listMembersInAreas } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
+import { loadRulebookSettings } from '../db/rulesetRepo.js';
 import { areas, classes, items, races } from '../db/schema.js';
 import { findDraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
@@ -86,7 +87,8 @@ interface Disabling<Id>
 
 /**
  * What changes to the live version would do to players, compared with it as it is saved now: the races,
- * classes, items and areas they disable that characters are using, and a group size smaller than some groups
+ * classes, items and areas they disable that characters are using, the books they turn off whose races,
+ * classes and items characters are using, and a group size smaller than some groups
  *
  * @param universe The universe, with its live version's settings
  * @param changes The changes
@@ -99,7 +101,8 @@ export async function findImpacts(universe: EditableUniverseDetails, changes: re
 		classImpacts(universe, changes),
 		itemImpacts(universe, changes),
 		areaImpacts(universe, changes),
-		groupSizeImpacts(universe, changes)
+		groupSizeImpacts(universe, changes),
+		rulebookImpacts(universe, changes)
 	])).flat();
 
 	return(impacts.sort((first, second) => (first.changeIndex - second.changeIndex)));
@@ -132,8 +135,111 @@ async function draftImpacts(universeId: string, ruleset: Ruleset, changeIndex: n
 		draftOptionImpacts('class', universeId, changeIndex, (version) => loadEditorClasses(version, ruleset), classes, countCharactersOfClasses),
 		draftOptionImpacts('item', universeId, changeIndex, (version) => loadEditorItems(version, ruleset), items, countCharactersCarrying),
 		draftAreaImpacts(liveUniverse, changeIndex),
-		draftGroupSizeImpacts(liveUniverse, draftUniverse, changeIndex)
+		draftGroupSizeImpacts(liveUniverse, draftUniverse, changeIndex),
+		draftRulebookImpacts(universeId, ruleset, changeIndex)
 	])).flat());
+}
+
+/**
+ * The books a ruleset change turns off whose races, classes or items characters use. A save uses its
+ * last ruleset change, so the impact is found at that one
+ *
+ * @param universe The universe
+ * @param changes The changes
+ * @return An impact for each such book
+ */
+async function rulebookImpacts(universe: EditableUniverseDetails, changes: readonly EditorChange[]): Promise<ChangeImpact[]>
+{
+	const changeIndex = changes.findLastIndex((change) => (change.kind === 'ruleset'));
+	const change = changes.at(changeIndex);
+
+	if ((changeIndex < 0) || (change?.kind !== 'ruleset'))
+	{
+		return([]);
+	}
+
+	const before = await loadRulebookSettings(liveVersion(universe.id), universe.ruleset);
+	const after = normalizedRulebooks(universe.ruleset, change.settings.settings);
+	const turnedOff = before.rulebooks.filter((rulebook) => !after.rulebooks.includes(rulebook));
+
+	return(rulebookOffImpacts(universe.id, universe.ruleset, turnedOff, changeIndex));
+}
+
+/**
+ * The books a universe's draft turns off whose races, classes or items characters use
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @param changeIndex The applyDraft change's place in the save
+ * @return An impact for each such book, at the applyDraft change
+ */
+async function draftRulebookImpacts(universeId: string, ruleset: Ruleset, changeIndex: number): Promise<ChangeImpact[]>
+{
+	const [live, draft] = await Promise.all([
+		loadRulebookSettings(liveVersion(universeId), ruleset),
+		loadRulebookSettings(draftVersion(universeId), ruleset)
+	]);
+	const turnedOff = live.rulebooks.filter((rulebook) => !draft.rulebooks.includes(rulebook));
+
+	return(rulebookOffImpacts(universeId, ruleset, turnedOff, changeIndex));
+}
+
+/**
+ * What turning books off would do to the players using the live version's races, classes and items of
+ * them: those enabled on their own that characters are or carry, by book
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset
+ * @param turnedOff The books turned off
+ * @param changeIndex The change that turns them off
+ * @return An impact for each book whose races, classes or items characters use
+ */
+async function rulebookOffImpacts(universeId: string, ruleset: Ruleset, turnedOff: readonly string[], changeIndex: number): Promise<ChangeImpact[]>
+{
+	if (turnedOff.length === 0)
+	{
+		return([]);
+	}
+
+	const live = liveVersion(universeId);
+	const inBooks = <Option extends { enabled: boolean; rulebook: string | null }>(options: readonly Option[]): Option[] => options.filter((option) => (option.enabled && (option.rulebook !== null) && turnedOff.includes(option.rulebook)));
+	const [liveRaces, liveClasses, liveItems] = await Promise.all([
+		loadEditorRaces(live, ruleset),
+		loadEditorClasses(live, ruleset),
+		loadEditorItems(live, ruleset)
+	]);
+	const bookRaces = inBooks(liveRaces);
+	const bookClasses = inBooks(liveClasses);
+	const bookItems = inBooks(liveItems);
+	const [raceCounts, classCounts, itemCounts] = await Promise.all([
+		countCharactersOfRaces(universeId, bookRaces.map(({ id }) => id)),
+		countCharactersOfClasses(universeId, bookClasses.map(({ id }) => id)),
+		countCharactersCarrying(universeId, bookItems.map(({ id }) => id))
+	]);
+	const impacted = (options: readonly (OptionName & { id: number; rulebook: string | null })[], counts: ReadonlyMap<number, number>, rulebook: string): ImpactedOption[] => options
+		.filter((option) => ((option.rulebook === rulebook) && ((counts.get(option.id) ?? 0) > 0)))
+		.map((option) => ({
+			id: option.id,
+			name: {
+				key: option.key,
+				name: option.name
+			},
+			characters: (counts.get(option.id) ?? 0)
+		}));
+
+	return(turnedOff.flatMap((rulebook): ChangeImpact[] =>
+	{
+		const impact: ChangeImpact = {
+			changeIndex,
+			kind: 'rulebook',
+			rulebook,
+			races: impacted(bookRaces, raceCounts, rulebook),
+			classes: impacted(bookClasses, classCounts, rulebook),
+			items: impacted(bookItems, itemCounts, rulebook)
+		};
+
+		return((((impact.races.length + impact.classes.length + impact.items.length) > 0) ? [impact] : []));
+	}));
 }
 
 /**

@@ -6,6 +6,7 @@ import { showMessage } from '../dom';
 import { TableSorter } from '../tableSorter';
 import { createOptionRow, optionTags } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
+import type { RulebookChoice } from './rulebookChoice';
 import { ChangedSinceNotes, DialogFollower, type FollowingDialog, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedTag, stagedView, type StagedChange, type StagedEdit, type StagedState } from './stagedChanges';
@@ -19,6 +20,12 @@ export interface EditorOption
 	id: number;
 	key: string | null;
 	enabled: boolean;
+
+	/**
+	 * The book a default comes from; null for one the universe added
+	 */
+	rulebook: string | null;
+
 	custom: boolean;
 	edited: boolean;
 }
@@ -31,6 +38,11 @@ export interface OptionListSetup<T extends EditorOption, S>
 	addButton: HTMLButtonElement;
 	rows: HTMLTableSectionElement;
 	error: HTMLElement;
+
+	/**
+	 * The books on, as the Ruleset tab shows them: the list shows only the defaults of books that are on
+	 */
+	rulebooks: RulebookChoice;
 
 	/**
 	 * Shown when the list couldn't be loaded, e.g. "Could not list the races."
@@ -191,6 +203,10 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 		{
 			this.openOption(undefined);
 		});
+		setup.rulebooks.subscribe(() =>
+		{
+			this.render();
+		});
 	}
 
 	/**
@@ -337,7 +353,7 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 	}
 
 	/**
-	 * Shows the options, sorted by the column chosen, with options that tie by name
+	 * Shows the options of the books that are on, sorted by the column chosen, with options that tie by name
 	 */
 	private render(): void
 	{
@@ -348,12 +364,14 @@ export class OptionList<T extends EditorOption & S, S> implements SavableTab, Fo
 			return;
 		}
 
-		const rows = this.view().map((entry) => ({
-			...entry,
-			name: this.setup.name(entry.item, universe.ruleset),
-			// An option added since the last save is already tagged custom
-			notes: joinTags(optionTags(entry.item), ((entry.state === 'new') ? undefined : stagedTag(entry.state, !entry.item.custom)))
-		}));
+		const rows = this.view()
+			.filter(({ item }) => this.setup.rulebooks.shows(item.rulebook))
+			.map((entry) => ({
+				...entry,
+				name: this.setup.name(entry.item, universe.ruleset),
+				// An option added since the last save is already tagged custom
+				notes: joinTags(optionTags(entry.item), ((entry.state === 'new') ? undefined : stagedTag(entry.state, !entry.item.custom)))
+			}));
 		const byName = sortRows(rows, rowComparers, {
 			column: 'name',
 			direction: 'ascending'

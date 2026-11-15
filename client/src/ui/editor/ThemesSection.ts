@@ -5,6 +5,7 @@ import type { EditorApi } from '../../network/editorApi';
 import { getElement } from '../dom';
 import { themeName } from '../raceAndClassNames';
 import { OptionList } from './OptionList';
+import type { RulebookChoice } from './rulebookChoice';
 import { ThemeDialog } from './ThemeDialog';
 
 /**
@@ -18,8 +19,9 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 
 	/**
 	 * @param api The editor's API
+	 * @param rulebooks The books on, whose themes the list shows
 	 */
-	constructor(api: EditorApi)
+	constructor(api: EditorApi, rulebooks: RulebookChoice)
 	{
 		const dialog = new ThemeDialog();
 
@@ -27,6 +29,7 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 			addButton: getElement('theme-add', HTMLButtonElement),
 			rows: getElement('theme-rows', HTMLTableSectionElement),
 			error: getElement('theme-list-error', HTMLElement),
+			rulebooks,
 			listFailed: {
 				id: 'editor.themes.listFailed',
 				defaultMessage: 'Could not list the themes.',
@@ -39,6 +42,7 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 				id,
 				key: null,
 				...settings,
+				rulebook: null,
 				custom: true,
 				edited: false
 			}),
@@ -72,7 +76,7 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
  * @param theme The theme
  * @return The summary, e.g. "Dexterity +1"
  */
-function describeTheme(theme: EditorTheme): string
+export function describeTheme(theme: EditorTheme): string
 {
 	return(t({
 		id: 'editor.themes.ability',

@@ -1,9 +1,10 @@
-import { type AreaEvacuation, type ChangeImpact, type DraftApplyChoices, type EditorChange, type GroupSizeLowering, type ItemDisabling, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
+import { optionalRulebooks, withRulebooks, type AreaEvacuation, type ChangeImpact, type DraftApplyChoices, type EditorChange, type GroupSizeLowering, type ImpactedOption, type ItemDisabling, type MessageDescriptor, type OptionName, type Ruleset } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
+import { formatList, t } from '../../localization';
 import { getElement } from '../dom';
 import { itemName } from '../itemNames';
 import { className, raceName } from '../raceAndClassNames';
+import { rulebookName } from '../rulebookNames';
 
 /**
  * One answer the dialog offers for an impact
@@ -15,8 +16,35 @@ interface ImpactOption
 }
 
 /**
+ * One question the dialog asks about an impact: most impacts ask one, and a book turned off asks about
+ * its races and classes and about its items
+ */
+interface ImpactQuestion
+{
+	/**
+	 * Which of the impact's questions it is, naming its answer: answer, or playing and items for a book
+	 */
+	key: string;
+
+	legend: string;
+
+	/**
+	 * What the question is about, such as the races and classes of a book turned off
+	 */
+	details?: string;
+
+	options: readonly ImpactOption[];
+
+	/**
+	 * The answer chosen to begin with
+	 */
+	chosen: string;
+}
+
+/**
  * Whether a change could affect players, so the editor asks the server before saving it: one that
- * disables a race, class, item or area, sets the group size, or applies the universe's draft
+ * disables a race, class, item or area, sets the group size, leaves a book off, or applies the
+ * universe's draft
  *
  * @param change The change
  * @return True when it could
@@ -33,12 +61,58 @@ export function mayAffectPlayers(change: EditorChange): boolean
 			return(change.update.enabled === false);
 		case 'universe':
 			return(change.update.groupSize !== undefined);
+		case 'ruleset':
+			return(optionalRulebooks(change.settings.ruleset).some((rulebook) => !change.settings.settings.rulebooks.includes(rulebook)));
 		case 'applyDraft':
 			return(true);
 		default:
 			return(false);
 	}
 }
+
+/**
+ * The answers about a book's races and classes when it is turned off
+ */
+const RULEBOOK_PLAYING_ANSWERS: ImpactOption[] = [
+	{
+		value: 'keep',
+		label: {
+			id: 'editor.impact.rulebookKeepPlaying',
+			defaultMessage: 'Let them keep playing; only new characters can\'t choose them',
+			description: 'Choice in the dialog the editor\'s Save opens, for a book of game rules being turned off whose races and classes characters are: they can still play, and only new characters can\'t choose the book\'s races and classes'
+		}
+	},
+	{
+		value: 'prevent',
+		label: {
+			id: 'editor.impact.rulebookPreventPlaying',
+			defaultMessage: 'Stop them playing until the book is turned on again',
+			description: 'Choice in the dialog the editor\'s Save opens, for a book of game rules being turned off whose races and classes characters are: they are turned out of the lobby and their groups, and can\'t play until the book is turned on again'
+		}
+	}
+];
+
+/**
+ * The answers about a book's items when it is turned off
+ */
+const RULEBOOK_ITEM_ANSWERS: ImpactOption[] = [
+	{
+		value: 'keep',
+		label: {
+			id: 'editor.impact.rulebookKeepItems',
+			defaultMessage: 'Let them keep using them; no new copies are made',
+			description: 'Choice in the dialog the editor\'s Save opens, for a book of game rules being turned off whose items characters carry: they keep them, and nobody new is given them'
+		}
+	},
+	{
+		value: 'remove',
+		label: {
+			id: 'editor.impact.rulebookRemoveItems',
+			defaultMessage: 'Take them away; they get them back if the book is turned on again',
+			description: 'Choice in the dialog the editor\'s Save opens, for a book of game rules being turned off whose items characters carry: the items are taken away from them, and given back if the book is turned on again'
+		}
+	}
+];
 
 /**
  * The answers to a race's or class's impact: keepPlaying's two values
@@ -153,7 +227,8 @@ const GROUP_ANSWERS: { value: GroupSizeLowering; label: MessageDescriptor }[] = 
 /**
  * Asks what should happen to the characters and groups a save affects, before it is saved: one choice
  * for each race, class, item or area it disables that characters are using, and for a group size
- * smaller than some groups (see Disabling things players are using in STRUCTURE-OVERVIEW.md)
+ * smaller than some groups. A book turned off asks once about its races and classes, and once about its
+ * items (see Disabling things players are using in STRUCTURE-OVERVIEW.md)
  */
 export class ImpactDialog
 {
@@ -175,7 +250,7 @@ export class ImpactDialog
 	{
 		const groups = impacts.map((impact, index) => this.renderImpact(impact, index, ruleset));
 
-		this.choices.replaceChildren(...groups.map(({ fieldset }) => fieldset));
+		this.choices.replaceChildren(...groups.flatMap(({ fieldsets }) => fieldsets));
 
 		return(new Promise((resolve) =>
 		{
@@ -229,54 +304,144 @@ export class ImpactDialog
 	}
 
 	/**
-	 * The choice for one impact: what it affects, and the answers
+	 * The choices for one impact: what each question affects, and its answers
 	 *
 	 * @param impact The impact
 	 * @param position The impact's place in the dialog, which names its radio buttons
 	 * @param ruleset The universe's ruleset
-	 * @return The choice's fieldset, and the answer chosen in it once the dialog is submitted
+	 * @return A fieldset for each question, and the answers chosen in them once the dialog is submitted,
+	 * by question
 	 */
-	private renderImpact(impact: ChangeImpact, position: number, ruleset: Ruleset): { fieldset: HTMLFieldSetElement; answer: () => string }
+	private renderImpact(impact: ChangeImpact, position: number, ruleset: Ruleset): { fieldsets: HTMLFieldSetElement[]; answer: () => ImpactAnswers }
 	{
-		const { legend, options, chosen } = describeImpact(impact, ruleset);
-		const fieldset = document.createElement('fieldset');
-		const heading = document.createElement('legend');
-		const name = `impact-${position}`;
-		const inputs = options.map((option) =>
+		const questions = describeImpact(impact, ruleset).map((question) =>
 		{
-			const label = document.createElement('label');
-			const input = document.createElement('input');
+			const { key, legend, details, options, chosen } = question;
+			const fieldset = document.createElement('fieldset');
+			const heading = document.createElement('legend');
+			const name = `impact-${position}-${key}`;
+			const inputs = options.map((option) =>
+			{
+				const label = document.createElement('label');
+				const input = document.createElement('input');
 
-			input.type = 'radio';
-			input.name = name;
-			input.value = option.value;
-			input.checked = (option.value === chosen);
-			label.className = 'checkbox';
-			label.append(input, ' ', t(option.label));
-			fieldset.append(label);
+				input.type = 'radio';
+				input.name = name;
+				input.value = option.value;
+				input.checked = (option.value === chosen);
+				label.className = 'checkbox';
+				label.append(input, ' ', t(option.label));
+				fieldset.append(label);
 
-			return(input);
+				return(input);
+			});
+
+			heading.textContent = legend;
+			fieldset.className = 'choice';
+
+			if (details !== undefined)
+			{
+				const paragraph = document.createElement('p');
+
+				paragraph.className = 'hint';
+				paragraph.textContent = details;
+				fieldset.prepend(paragraph);
+			}
+
+			fieldset.prepend(heading);
+
+			return({
+				fieldset,
+				answer: (): [string, string] => [key, (inputs.find((input) => input.checked)?.value ?? chosen)]
+			});
 		});
 
-		heading.textContent = legend;
-		fieldset.className = 'choice';
-		fieldset.prepend(heading);
-
 		return({
-			fieldset,
-			answer: () => (inputs.find((input) => input.checked)?.value ?? chosen)
+			fieldsets: questions.map(({ fieldset }) => fieldset),
+			answer: () => Object.fromEntries(questions.map(({ answer }) => answer()))
 		});
 	}
 }
 
 /**
- * What an impact says, the answers it offers and the one chosen to begin with
+ * The answers chosen for one impact, by question (ImpactQuestion's key)
+ */
+type ImpactAnswers = Record<string, string>;
+
+/**
+ * The questions an impact asks: one, or for a book turned off, one about its races and classes and one
+ * about its items, each only when characters use them
+ *
+ * @param impact The impact
+ * @param ruleset The universe's ruleset
+ * @return The questions
+ */
+function describeImpact(impact: ChangeImpact, ruleset: Ruleset): ImpactQuestion[]
+{
+	if (impact.kind !== 'rulebook')
+	{
+		return([{ key: 'answer', ...describeSingleImpact(impact, ruleset) }]);
+	}
+
+	const rulebook = rulebookName(ruleset, impact.rulebook);
+	const listed = (options: readonly ImpactedOption[], nameOf: (name: OptionName) => string): string => formatList(options.map((option) => t({
+		id: 'editor.impact.rulebookOption',
+		defaultMessage: '{name} ({count, plural, one {# character} other {# characters}})',
+		description: 'One race, class or item in the list under a choice in the dialog the editor\'s Save opens, for a book of game rules being turned off; {name} is its name and {count} how many characters are it or carry it'
+	}, {
+		name: nameOf(option.name),
+		count: option.characters
+	})));
+	const questions: ImpactQuestion[] = [];
+
+	if ((impact.races.length + impact.classes.length) > 0)
+	{
+		questions.push({
+			key: 'playing',
+			legend: t({
+				id: 'editor.impact.rulebookPlaying',
+				defaultMessage: 'Turning off {rulebook}: characters are its races and classes',
+				description: 'Heading of a choice in the dialog the editor\'s Save opens, for a book of game rules being turned off whose races and classes characters are; {rulebook} is the book\'s name. The races and classes are listed under it'
+			}, {
+				rulebook
+			}),
+			details: formatList([
+				...((impact.races.length > 0) ? [listed(impact.races, (name) => raceName(name, ruleset))] : []),
+				...((impact.classes.length > 0) ? [listed(impact.classes, (name) => className(name, ruleset))] : [])
+			]),
+			options: RULEBOOK_PLAYING_ANSWERS,
+			chosen: 'keep'
+		});
+	}
+
+	if (impact.items.length > 0)
+	{
+		questions.push({
+			key: 'items',
+			legend: t({
+				id: 'editor.impact.rulebookItems',
+				defaultMessage: 'Turning off {rulebook}: characters carry its items',
+				description: 'Heading of a choice in the dialog the editor\'s Save opens, for a book of game rules being turned off whose items characters carry; {rulebook} is the book\'s name. The items are listed under it'
+			}, {
+				rulebook
+			}),
+			details: listed(impact.items, (name) => itemName(name, ruleset)),
+			options: RULEBOOK_ITEM_ANSWERS,
+			chosen: 'keep'
+		});
+	}
+
+	return(questions);
+}
+
+/**
+ * What an impact other than a book's says, the answers it offers and the one chosen to begin with
  *
  * @param impact The impact
  * @param ruleset The universe's ruleset
  * @return The choice's heading, answers and first answer
  */
-function describeImpact(impact: ChangeImpact, ruleset: Ruleset): { legend: string; options: readonly ImpactOption[]; chosen: string }
+function describeSingleImpact(impact: Exclude<ChangeImpact, { kind: 'rulebook' }>, ruleset: Ruleset): Omit<ImpactQuestion, 'key'>
 {
 	switch (impact.kind)
 	{
@@ -366,19 +531,43 @@ function describeImpact(impact: ChangeImpact, ruleset: Ruleset): { legend: strin
 }
 
 /**
- * A change with the answer to one of its impacts
+ * A change with the answers to one of its impacts
  *
  * @param change The change
  * @param impact The impact answered
- * @param answer The answer chosen
+ * @param answers The answers chosen, by question
  * @return The change to save
  */
-function withAnswer(change: EditorChange, impact: ChangeImpact, answer: string): EditorChange
+function withAnswer(change: EditorChange, impact: ChangeImpact, answers: ImpactAnswers): EditorChange
 {
+	const answer = (answers.answer ?? '');
+
 	switch (change.kind)
 	{
 		case 'applyDraft':
-			return({ ...change, choices: withDraftAnswer(change.choices, impact, answer) });
+			return({ ...change, choices: withDraftAnswer(change.choices, impact, answers) });
+		case 'ruleset':
+		{
+			if (impact.kind !== 'rulebook')
+			{
+				return(change);
+			}
+
+			const { settings } = change.settings;
+			const barredRulebooks = settings.barredRulebooks.filter((rulebook) => (rulebook !== impact.rulebook));
+
+			return({
+				...change,
+				settings: withRulebooks(change.settings, {
+					rulebooks: settings.rulebooks,
+					barredRulebooks: ((answers.playing === 'prevent') ? [...barredRulebooks, impact.rulebook] : barredRulebooks)
+				}),
+				whenRulebooksOff: {
+					...change.whenRulebooksOff,
+					[impact.rulebook]: ((answers.items === 'remove') ? 'remove' : 'keep')
+				}
+			});
+		}
 		case 'saveRace':
 			return({ ...change, settings: { ...change.settings, keepPlaying: (answer === 'keep') } });
 		case 'saveClass':
@@ -403,18 +592,31 @@ function withAnswer(change: EditorChange, impact: ChangeImpact, answer: string):
 }
 
 /**
- * The choices of a change applying the universe's draft, with the answer to one of its impacts, which
+ * The choices of a change applying the universe's draft, with the answers to one of its impacts, which
  * names what it is about by its live ID
  *
  * @param choices The choices so far
  * @param impact The impact answered
- * @param answer The answer chosen
+ * @param answers The answers chosen, by question
  * @return The choices
  */
-function withDraftAnswer(choices: DraftApplyChoices, impact: ChangeImpact, answer: string): DraftApplyChoices
+function withDraftAnswer(choices: DraftApplyChoices, impact: ChangeImpact, answers: ImpactAnswers): DraftApplyChoices
 {
+	const answer = (answers.answer ?? '');
+
 	switch (impact.kind)
 	{
+		case 'rulebook':
+			return({
+				...choices,
+				rulebooks: {
+					...choices.rulebooks,
+					[impact.rulebook]: {
+						keepPlaying: (answers.playing !== 'prevent'),
+						items: ((answers.items === 'remove') ? 'remove' : 'keep')
+					}
+				}
+			});
 		case 'race':
 			return({ ...choices, races: { ...choices.races, [impact.id]: (answer === 'keep') } });
 		case 'class':

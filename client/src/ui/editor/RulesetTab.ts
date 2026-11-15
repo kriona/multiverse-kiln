@@ -7,13 +7,15 @@ import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import type { EditorSave } from './editorSave';
+import type { RulebookChoice } from './rulebookChoice';
+import { RulebooksSection } from './RulebooksSection';
 import type { SavableTab } from './SaveBar';
 
 /**
  * The Ruleset tab: how the universe plays under its ruleset. For Pathfinder 1E, how ability scores
  * are made, and whether characters need sleep, coins have weight and ammunition is tracked. For
  * Starfinder 1E, how many ability points characters spend, and whether characters need sleep and
- * ammunition is tracked
+ * ammunition is tracked. Both choose the books the universe uses, on the Rulebooks card
  */
 export class RulesetTab implements SavableTab
 {
@@ -33,9 +35,14 @@ export class RulesetTab implements SavableTab
 	private readonly error = getElement('ruleset-error', HTMLElement);
 
 	/**
-	 * Whether the form has changes that haven't been saved
+	 * The Rulebooks card, whose books are saved with the form
 	 */
-	readonly changes = new ChangeTracker({ root: this.form });
+	private readonly rulebooks: RulebooksSection;
+
+	/**
+	 * Whether the form or the books have changes that haven't been saved
+	 */
+	readonly changes: ChangeTracker;
 
 	private universe: EditableUniverse | undefined;
 
@@ -56,9 +63,18 @@ export class RulesetTab implements SavableTab
 
 	/**
 	 * @param api The editor's API
+	 * @param rulebookChoice The books on, as the Rulebooks card shows them, which the other tabs follow
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, rulebookChoice: RulebookChoice)
 	{
+		this.changes = new ChangeTracker({
+			root: this.form,
+			state: () => rulebookChoice.rulebooks()
+		});
+		this.rulebooks = new RulebooksSection(api, rulebookChoice, () =>
+		{
+			this.changes.check();
+		});
 		this.budget.min = String(PF1E_MIN_POINT_BUY_BUDGET);
 		this.budget.max = String(PF1E_MAX_POINT_BUY_BUDGET);
 		this.abilityPoints.min = String(SF1E_MIN_ABILITY_POINTS);
@@ -95,6 +111,7 @@ export class RulesetTab implements SavableTab
 		this.coinsHaveWeightField.hidden = (universe.ruleset !== 'pf1e');
 		this.sf1eStats.hidden = (universe.ruleset !== 'sf1e');
 		this.fields.disabled = true;
+		this.rulebooks.open(universe, undefined, false);
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
 
@@ -146,6 +163,10 @@ export class RulesetTab implements SavableTab
 		this.needsSleep.checked = ruleset.settings.needsSleep;
 		this.tracksAmmo.checked = ruleset.settings.tracksAmmo;
 		this.fields.disabled = !canEditUniverseSettings(universe.role);
+		this.rulebooks.open(universe, {
+			rulebooks: ruleset.settings.rulebooks,
+			barredRulebooks: ruleset.settings.barredRulebooks
+		}, canEditUniverseSettings(universe.role));
 		this.loaded = loadedFrom(ruleset.settings);
 		this.changes.markSaved();
 	}
@@ -206,7 +227,13 @@ export class RulesetTab implements SavableTab
 
 		if (collected && this.changes.changedSince(collected.form))
 		{
+			const { rulebooks, barredRulebooks } = collected.settings.settings;
+
 			this.loaded = loadedFrom(collected.settings.settings);
+			this.rulebooks.markSaved({
+				rulebooks,
+				barredRulebooks
+			});
 			this.changes.markSaved(collected.form);
 			return;
 		}
@@ -242,7 +269,8 @@ export class RulesetTab implements SavableTab
 				settings: {
 					abilityPoints,
 					needsSleep: this.needsSleep.checked,
-					tracksAmmo: this.tracksAmmo.checked
+					tracksAmmo: this.tracksAmmo.checked,
+					...this.rulebooks.read()
 				}
 			});
 		}
@@ -263,7 +291,8 @@ export class RulesetTab implements SavableTab
 				customPointBuyBudget: budget,
 				needsSleep: this.needsSleep.checked,
 				coinsHaveWeight: this.coinsHaveWeight.checked,
-				tracksAmmo: this.tracksAmmo.checked
+				tracksAmmo: this.tracksAmmo.checked,
+				...this.rulebooks.read()
 			}
 		});
 	}

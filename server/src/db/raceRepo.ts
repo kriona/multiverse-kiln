@@ -230,6 +230,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 			overridesRaceId: races.overridesRaceId,
 			key: races.key,
 			name: races.name,
+			rulebook: races.rulebook,
 			enabled: races.enabled,
 			keepPlaying: races.keepPlaying,
 			startingPlatinum: races.startingPlatinum,
@@ -276,6 +277,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				startingColumn: settings.startingColumn,
 				startingRow: settings.startingRow,
 				rules: raceRules,
+				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined)
 			});
@@ -302,25 +304,33 @@ export async function loadRaceSight(universeId: string, ruleset: Ruleset, execut
 
 /**
  * The races whose characters can't play in a universe: those it has disabled without letting the
- * characters already of them keep playing
+ * characters already of them keep playing, and the default races of the books it has turned off that way
  *
  * @param version The universe's live version or draft
+ * @param barredRulebooks The books turned off without letting their characters keep playing
  * @param executor The database, or a transaction
  * @return The races, by the IDs characters hold (a default race's own ID for an edited copy)
  */
-export async function listBarredRaceIds(version: UniverseVersion, executor: Executor = db): Promise<Set<number>>
+export async function listBarredRaceIds(version: UniverseVersion, barredRulebooks: readonly { ruleset: Ruleset; rulebooks: readonly string[] }[], executor: Executor = db): Promise<Set<number>>
 {
-	// Default races are always enabled, so only the universe's own rows can bar anyone
+	// Default races are always enabled, so only the universe's own rows can bar anyone that way
 	const rows = await executor
 		.select({
 			id: races.id,
 			overridesRaceId: races.overridesRaceId
 		})
 		.from(races)
-		.where(and(
-			inVersion(races, version),
-			eq(races.enabled, false),
-			eq(races.keepPlaying, false)
+		.where(or(
+			and(
+				inVersion(races, version),
+				eq(races.enabled, false),
+				eq(races.keepPlaying, false)
+			),
+			...barredRulebooks.map(({ ruleset, rulebooks }) => and(
+				isNull(races.universeId),
+				eq(races.ruleset, ruleset),
+				inArray(races.rulebook, [...rulebooks])
+			))
 		));
 
 	return(new Set(rows.map((row) => (row.overridesRaceId ?? row.id))));

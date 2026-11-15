@@ -4,13 +4,14 @@
  */
 import type express from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import { canEditWorld, defineMessages, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type NumberRef, type ThemeListPayload, type ThemeSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_THEMES, rulesetHasThemes, type NewRef, type NumberRef, type ThemeListPayload, type ThemeSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfTheme } from '../db/characterRepo.js';
 import { countCustomThemes, createCustomTheme, deleteCustomTheme, findThemeKind, loadEditorThemes, restoreDefaultTheme, saveEditedDefaultTheme, updateCustomTheme } from '../db/themeRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
+import { savedRulebooks } from './editorRulebooks.js';
 import { sendError } from './errors.js';
 
 /**
@@ -208,8 +209,9 @@ export async function removeThemeChange(context: ChangeContext, id: NumberRef): 
 	}
 
 	const others = (await loadEditorThemes(version, universe.ruleset, transaction)).filter((theme) => (theme.id !== themeId));
+	const rulebooks = await savedRulebooks(context);
 
-	if (!others.some((theme) => theme.enabled))
+	if (!others.some((theme) => isUsable(theme, rulebooks)))
 	{
 		refuse(409, messages.noEnabledTheme);
 	}
@@ -229,7 +231,14 @@ async function checkTheme(context: ChangeContext, themeId: number | undefined, s
 {
 	const { universe, version, transaction } = context;
 
-	if (!settings.enabled && !(await loadEditorThemes(version, universe.ruleset, transaction)).some((theme) => ((theme.id !== themeId) && theme.enabled)))
+	if (settings.enabled)
+	{
+		return;
+	}
+
+	const rulebooks = await savedRulebooks(context);
+
+	if (!(await loadEditorThemes(version, universe.ruleset, transaction)).some((theme) => ((theme.id !== themeId) && isUsable(theme, rulebooks))))
 	{
 		refuse(409, messages.noEnabledTheme);
 	}
