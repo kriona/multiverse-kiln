@@ -18,7 +18,7 @@
  * browser could pass a check, so that attempt is decided with checks off
  */
 import type { Request, Response } from 'express';
-import { BOT_CHECK_MESSAGES, MAX_BOT_CHECK_TOKEN_LENGTH, type BotCheckAction } from '@multiverse-kiln/shared';
+import { MAX_BOT_CHECK_TOKEN_LENGTH, type BotCheckAction } from '@multiverse-kiln/shared';
 
 import { isDevSuspicious } from '../auth/devSuspicious.js';
 import { hashAddress } from '../auth/keyedHashes.js';
@@ -235,7 +235,11 @@ export function botCheckRefusal(check: RequestBotCheck): AuthRefusal<never>
 {
 	return({
 		status: 403,
-		message: BOT_CHECK_MESSAGES.needed,
+		message: {
+			id: 'error.auth.botCheckNeeded',
+			defaultMessage: 'Show that you aren\'t a bot to continue.',
+			description: 'Why logging in, giving the account\'s password again or sending an email code was paused: there were many tries for this address or from this network, so the site asks the browser to pass a bot check (Cloudflare Turnstile) first. The page shows the check with this message and sends the request again once it is passed'
+		},
 		botCheck: {
 			siteKey: (botCheckVerifier().siteKey ?? ''),
 			action: check.action

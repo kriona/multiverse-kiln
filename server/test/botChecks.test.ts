@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_CHANGE_PATH, BOT_CHECK_MESSAGES, DEV_SUSPICIOUS_COOKIE, isBotCheckNeeded, type BotCheckAction } from '@multiverse-kiln/shared';
+import { AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_CHANGE_PATH, DEV_SUSPICIOUS_COOKIE, isBotCheckNeeded, type BotCheckAction } from '@multiverse-kiln/shared';
 
 import { watchQueries } from '../scripts/benchmarks/queries.js';
 import { hashAddress } from '../src/auth/keyedHashes.js';
@@ -188,7 +188,7 @@ describe('bot checks', () =>
 
 		const { error, botCheck } = answer.body;
 
-		assert.strictEqual(error.id, BOT_CHECK_MESSAGES.needed.id);
+		assert.strictEqual(error.id, 'error.auth.botCheckNeeded');
 		assert.deepStrictEqual(botCheck, {
 			siteKey: SITE_KEY,
 			action

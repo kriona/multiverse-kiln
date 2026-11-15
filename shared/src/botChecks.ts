@@ -3,7 +3,7 @@
  * guessing passwords for an address, is asked to pass a Cloudflare Turnstile check before the server
  * takes its request, rather than being refused
  */
-import { defineMessages, type LocalizedMessage } from './localization.js';
+import type { LocalizedMessage } from './localization.js';
 
 /**
  * The Turnstile actions, one for each kind of request a check is asked for: logging in with a
@@ -26,17 +26,6 @@ export const MAX_BOT_CHECK_TOKEN_LENGTH = 2048;
  * (server/src/auth/devSuspicious.ts)
  */
 export const DEV_SUSPICIOUS_COOKIE = '__Host-kiln-dev-suspicious';
-
-/**
- * The error a request needing a check is refused with (BotCheckNeededPayload)
- */
-export const BOT_CHECK_MESSAGES = defineMessages({
-	needed: {
-		id: 'error.auth.botCheckNeeded',
-		defaultMessage: 'Show that you aren\'t a bot to continue.',
-		description: 'Why logging in, giving the account\'s password again or sending an email code was paused: there were many tries for this address or from this network, so the site asks the browser to pass a bot check (Cloudflare Turnstile) first. The page shows the check with this message and sends the request again once it is passed'
-	}
-});
 
 /**
  * What a request that can need a check carries: the token of a check the browser passed, made for the
