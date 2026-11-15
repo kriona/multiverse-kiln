@@ -166,7 +166,7 @@ export interface PasswordAttemptSubjects
  * @param check Whether checks are on and the request passed one
  * @param now The time now
  * @param executor A transaction, which must be committed even when the try is refused, so it counts; or
- * undefined to only decide, without locking or counting anything, before the transaction (settleBotCheck())
+ * undefined to only decide, without locking or counting anything, before the transaction (verifyBotCheckToken())
  * @return What to do
  */
 export async function takePasswordAttempt(subjects: PasswordAttemptSubjects, check: BotCheckState, now: Date, executor: Executor | undefined): Promise<BotCheckDecision>

@@ -38,7 +38,7 @@ import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
 import { addAccountDeletionRoutes } from './accountDeletion.js';
 import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
-import { botCheckRefusal, readBotCheck, recordBotCheckEvents, settleBotCheck, takeAccountPasswordTry, takePasswordTry, type RequestBotCheck } from './botChecks.js';
+import { botCheckRefusal, confirmBeforeAsking, inBotCheckTransaction, readBotCheck, recordBotCheckEvents, takeAccountPasswordTry, takePasswordTry, verifyBotCheckToken, type RequestBotCheck } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie } from './cookies.js';
 import { refuseWritesFromOtherOrigins } from './editorAccess.js';
@@ -288,11 +288,13 @@ async function confirmedChangeToken(request: Request, playerId: string, now: Dat
 
 /**
  * Counts an email code about to be sent against the network's limit and the address's, with its bot check
- * (takeCodeSend() in rateLimits.ts), locking both until the transaction ends
+ * (takeCodeSend() in rateLimits.ts), locking both until the transaction ends. With a check, the
+ * transaction is run by inBotCheckTransaction(), since asking for one may roll it back first
+ * (confirmBeforeAsking())
  *
  * @param request The request
  * @param response The response, which gets a Retry-After header when a limit is reached
- * @param check The request's bot check (readBotCheck() and settleBotCheck()), or undefined for a dormant account's login code,
+ * @param check The request's bot check (readBotCheck() and verifyBotCheckToken()), or undefined for a dormant account's login code,
  * which is never checked on its own
  * @param addressHash The keyed hash of the address the code goes to
  * @param ownerId The account with the address, if one, for the check's auth events
@@ -316,6 +318,11 @@ async function takeCodeSendTry(request: Request, response: Response, check: Requ
 	}
 
 	const asked = (decision.kind === 'checkNeeded');
+
+	if (check && asked)
+	{
+		confirmBeforeAsking(check, now);
+	}
 
 	if (check && (asked || (check.tokenOutcome === 'passed') || (check.tokenOutcome === 'failed')))
 	{
@@ -596,9 +603,9 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 	const exempt = ((knownOwnerId !== undefined) && ((session?.playerId === knownOwnerId) || (knownBrowserHash(request, knownOwnerId, now) !== undefined)));
 	const check = await readBotCheck(request, 'email-code', !exempt, now);
 
-	await settleBotCheck(check, async () => ((await takeCodeSend(networkHash, addressHash, check.state, now, undefined)).kind === 'checkNeeded'), now);
+	await verifyBotCheckToken(check, async () => ((await takeCodeSend(networkHash, addressHash, check.state, now, undefined)).kind === 'checkNeeded'), now);
 
-	const outcome = await inTransaction(async (executor): Promise<CodeOutcome> =>
+	const outcome = await inBotCheckTransaction(check, now, async (executor): Promise<CodeOutcome> =>
 	{
 		const ownerId = await findPlayerIdByEmail(email, executor);
 		const refusal = await takeCodeSendTry(request, response, check, addressHash, (ownerId ?? null), now, executor);

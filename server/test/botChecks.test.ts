@@ -1,6 +1,7 @@
 import assert from 'assert';
 import { AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_CHANGE_PATH, BOT_CHECK_MESSAGES, isBotCheckNeeded, type BotCheckAction } from '@multiverse-kiln/shared';
 
+import { watchQueries } from '../scripts/benchmarks/queries.js';
 import { hashAddress } from '../src/auth/keyedHashes.js';
 import { hashPassword } from '../src/auth/passwords.js';
 import { setPwnedRangeFetch } from '../src/auth/pwnedPasswords.js';
@@ -22,12 +23,15 @@ const SITE_KEY = 'site-key-for-tests';
 
 /**
  * A stand-in for Cloudflare: a token passes when it is 'pass-' and its action, and Cloudflare can be made
- * unreachable
+ * unreachable, now or when the server next checks it can reach it
  */
 class StubVerifier implements BotCheckVerifier
 {
 	siteKey: string | undefined = SITE_KEY;
 	reachable = true;
+	reached = false;
+	probeFails = false;
+	probes = 0;
 	readonly verified: string[] = [];
 
 	available(): boolean
@@ -35,13 +39,32 @@ class StubVerifier implements BotCheckVerifier
 		return((this.siteKey !== undefined) && this.reachable);
 	}
 
+	/**
+	 * Whether Cloudflare was reached recently
+	 *
+	 * @return Whether a check that it can be reached has found it so
+	 */
 	reachedRecently(): boolean
 	{
-		return(false);
+		return(this.reached);
 	}
 
+	/**
+	 * Counts a check that Cloudflare can be reached, which finds it unreachable while probeFails is set
+	 *
+	 * @return Whether checks are on
+	 */
 	confirmAvailable(): Promise<boolean>
 	{
+		this.probes++;
+
+		if (this.probeFails)
+		{
+			this.reachable = false;
+		}
+
+		this.reached = this.available();
+
 		return(Promise.resolve(this.available()));
 	}
 
@@ -113,6 +136,19 @@ describe('bot checks', () =>
 		{
 			await pool.query('INSERT INTO rate_limit_events (kind, subject_hash, occurred_at) VALUES ($1, $2, $3)', [kind, hashAddress(email), new Date(Date.now() - (minutesAgo * 60000) - attempt)]);
 		}
+	}
+
+	/**
+	 * How many attempts of a kind are counted, for every subject
+	 *
+	 * @param kind The rate limit's kind
+	 * @return The count
+	 */
+	async function countOf(kind: string): Promise<number>
+	{
+		const result = await pool.query<{ count: string }>('SELECT COUNT(*) AS count FROM rate_limit_events WHERE kind = $1', [kind]);
+
+		return(Number(result.rows[0].count));
 	}
 
 	/**
@@ -424,6 +460,76 @@ describe('bot checks', () =>
 			await pastAttempts('addressCheckedCodeWhileBlocked', 'ada@example.com', MAX_CHECKED_CODES_PER_BLOCKED_ADDRESS_DAY - 1, 120);
 			await pool.query('UPDATE rate_limit_events SET occurred_at = occurred_at - interval \'2 minutes\'');
 			assert.strictEqual((await sendCode('ada@example.com', 'pass-email-code')).status, 429);
+		});
+	});
+
+	describe('while the server hasn\'t heard from Cloudflare recently', () =>
+	{
+		it('reads the counts of a login and a code request that need no check only in their transactions, and doesn\'t call Cloudflare', async () =>
+		{
+			const queries = watchQueries({ slowMs: 0 });
+
+			/**
+			 * Sends a request, counting its reads of the rate limit counts
+			 *
+			 * @param send Sends the request
+			 * @return The answer's status and how many reads it made
+			 */
+			async function readsOf(send: () => Promise<{ status: number; body: unknown }>): Promise<[number, number]>
+			{
+				queries.reset();
+
+				const { status } = await send();
+
+				return([status, queries.slowQueries.filter((query) => (/^\s*select/i.test(query.text) && query.text.includes('rate_limit_events'))).length]);
+			}
+
+			try
+			{
+				assert.deepStrictEqual(await readsOf(() => logIn(new Browser(), PASSWORD)), [200, 1]);
+				assert.deepStrictEqual(await readsOf(() => sendCode('ada@example.com')), [204, 1]);
+			}
+			finally
+			{
+				queries.restore();
+			}
+
+			assert.strictEqual(verifier.probes, 0);
+		});
+
+		it('asks for a check at a soft limit once Cloudflare is found reachable, counting the request once', async () =>
+		{
+			await pastAttempts('addressLoginAttempt', 'ada@example.com', LOGIN_CHECK_FROM_ADDRESS_ATTEMPT - 1);
+			assertCheckNeeded(await logIn(new Browser(), PASSWORD), 'login');
+			assert.strictEqual(verifier.probes, 1);
+			assert.strictEqual(await countOf('networkLoginAttempt'), 1);
+
+			await pastAttempts('addressCodeSent', 'ada@example.com', CODE_CHECK_FROM_ADDRESS_SEND - 1);
+			assertCheckNeeded(await sendCode('ada@example.com'), 'email-code');
+			assert.strictEqual(await countOf('networkCodeRequest'), 1);
+
+			// Reached a moment ago, so the code request didn't call Cloudflare again
+			assert.strictEqual(verifier.probes, 1);
+			assert.deepStrictEqual(await checkEvents(), ['botCheckAsked', 'botCheckAsked']);
+		});
+
+		it('asks for no check at a soft limit when Cloudflare can\'t be reached, counting the request once', async () =>
+		{
+			verifier.probeFails = true;
+			await pastAttempts('addressLoginAttempt', 'ada@example.com', LOGIN_CHECK_FROM_ADDRESS_ATTEMPT - 1);
+			assert.strictEqual((await logIn(new Browser(), PASSWORD)).status, 200);
+			assert.strictEqual(verifier.probes, 1);
+			assert.strictEqual(await countOf('networkLoginAttempt'), 1);
+			assert.strictEqual(await countOf('addressLoginAttempt'), LOGIN_CHECK_FROM_ADDRESS_ATTEMPT);
+
+			verifier.reachable = true;
+			await pastAttempts('addressCodeSent', 'ada@example.com', CODE_CHECK_FROM_ADDRESS_SEND - 1);
+			assert.strictEqual((await sendCode('ada@example.com')).status, 204);
+			await waitUntil(() => (emails.length === 1));
+			assert.strictEqual(verifier.probes, 2);
+			assert.strictEqual(await countOf('networkCodeRequest'), 1);
+			assert.strictEqual(await countOf('addressCodeSent'), CODE_CHECK_FROM_ADDRESS_SEND);
+			assert.deepStrictEqual(await checkEvents(), []);
 		});
 	});
 });

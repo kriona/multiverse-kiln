@@ -2,14 +2,20 @@
  * Bot checks in the auth routes (see Bot checks in STRUCTURE-OVERVIEW.md): reading and verifying the
  * token a request sends, asking for a check, and recording what became of each as auth events
  *
- * Each attempt is decided twice (takePasswordAttempt() and takeCodeSend() in rateLimits.ts): first
- * without a transaction, from the counts as they stand, to find whether it would need a check, and then in
- * the transaction that counts it, under the same locks as the counts. A token is verified with Cloudflare
- * between the two, only when the first decision needs a check, so a network call never holds a transaction
- * open, and the limits bound how often the server calls Cloudflare: a request they refuse, or one that
- * needs no check, never sends its token there. The transaction's decision is the one that counts, so when
- * the counts change between the two and it finds a check needed after all, a request whose token wasn't
- * verified is asked for a check again
+ * Each attempt is decided in the transaction that counts it, under the same locks as the counts
+ * (takePasswordAttempt() and takeCodeSend() in rateLimits.ts), and Cloudflare is never called while a
+ * transaction is open. An attempt that sends a token is first decided without a transaction too, from the
+ * counts as they stand, and its token is verified with Cloudflare only when that decision needs a check,
+ * so the limits bound how often the server calls Cloudflare: a request they refuse, or one that needs no
+ * check, never sends its token there. Tokens only come from browsers that were asked for a check, so
+ * other attempts are decided once. The transaction's decision is the one that counts, so when the counts
+ * change between the two and it finds a check needed after all, a request whose token wasn't verified is
+ * asked for a check again
+ *
+ * Before a browser is asked for a check, the server makes sure it can still reach Cloudflare when it
+ * hasn't heard from it for a while: the transaction rolls back, Cloudflare is called with no transaction
+ * open, and the attempt is decided again in a new one (inBotCheckTransaction()). During an outage no
+ * browser could pass a check, so that attempt is decided with checks off
  */
 import type { Request, Response } from 'express';
 import { BOT_CHECK_MESSAGES, MAX_BOT_CHECK_TOKEN_LENGTH, type BotCheckAction } from '@multiverse-kiln/shared';
@@ -43,9 +49,30 @@ export interface RequestBotCheck
 
 	/**
 	 * What became of the token, or undefined when it wasn't verified: none was sent, checks are off, or the
-	 * attempt didn't need a check (settleBotCheck())
+	 * attempt didn't need a check (verifyBotCheckToken())
 	 */
 	tokenOutcome: TokenOutcome | undefined;
+
+	/**
+	 * Whether Cloudflare was called for the request, verifying its token or making sure it can be reached,
+	 * so a check can be asked for without calling it again
+	 */
+	cloudflareAsked: boolean;
+}
+
+/**
+ * Thrown in a transaction whose decision needs a check before the server has made sure it can reach
+ * Cloudflare, rolling back what the transaction counted (confirmBeforeAsking(), inBotCheckTransaction())
+ */
+class UnconfirmedBotCheck extends Error
+{
+	/**
+	 * Makes the error
+	 */
+	constructor()
+	{
+		super('A bot check would be asked for before Cloudflare was found reachable');
+	}
 }
 
 /**
@@ -70,7 +97,7 @@ function botCheckTokenOf(request: Request): string | undefined
 
 /**
  * Reads the token a request sent, if any, and whether checks are on. The token is verified by
- * settleBotCheck(), only when the attempt needs a check
+ * verifyBotCheckToken(), only when the attempt needs a check
  *
  * @param request The request
  * @param action The action the request's checks are made for
@@ -93,7 +120,8 @@ export async function readBotCheck(request: Request, action: BotCheckAction, cov
 				checkEveryRequest: false
 			},
 			token: undefined,
-			tokenOutcome: undefined
+			tokenOutcome: undefined,
+			cloudflareAsked: false
 		});
 	}
 
@@ -107,45 +135,92 @@ export async function readBotCheck(request: Request, action: BotCheckAction, cov
 			checkEveryRequest: (available && coveredByEveryRequest && (await findSiteSettings()).botCheckEveryRequest)
 		},
 		token: botCheckTokenOf(request),
-		tokenOutcome: undefined
+		tokenOutcome: undefined,
+		cloudflareAsked: false
 	});
 }
 
 /**
- * Asks Cloudflare what it needs to before the transaction that counts the attempt, only when the attempt
- * would need a check, which wouldNeedCheck() finds out by looking at the counts without taking the
- * attempt. A token the request sent is verified then, and only then. Without one, it makes sure
- * Cloudflare can still be reached before a browser is asked for a check, when the server hasn't heard
- * from it for a while: during an outage no browser could pass one, so checks are turned off instead
+ * Verifies the token a request sent with Cloudflare before the transaction that counts the attempt, only
+ * when the attempt would need a check, which wouldNeedCheck() finds out by looking at the counts without
+ * taking the attempt. A request without a token is left to the transaction
  *
  * @param check The request's check (readBotCheck()), whose state and token outcome are updated
  * @param wouldNeedCheck Whether the attempt would need a check without a passed one, as things stand
  * @param now The time now
  */
-export async function settleBotCheck(check: RequestBotCheck, wouldNeedCheck: () => Promise<boolean>, now: Date): Promise<void>
+export async function verifyBotCheckToken(check: RequestBotCheck, wouldNeedCheck: () => Promise<boolean>, now: Date): Promise<void>
 {
-	const verifier = botCheckVerifier();
-
-	if (!check.state.available || ((check.token === undefined) && verifier.reachedRecently(now)) || !(await wouldNeedCheck()))
+	if (!check.state.available || (check.token === undefined) || !(await wouldNeedCheck()))
 	{
 		return;
 	}
 
-	if (check.token === undefined)
-	{
-		check.state.available = await verifier.confirmAvailable(now);
-	}
-	else
-	{
-		check.tokenOutcome = await verifier.verify(check.token, check.action, now);
-		check.state.passed = (check.tokenOutcome === 'passed');
-		check.state.available = verifier.available(now);
-	}
+	const verifier = botCheckVerifier();
+
+	check.tokenOutcome = await verifier.verify(check.token, check.action, now);
+	check.cloudflareAsked = true;
+	check.state.passed = (check.tokenOutcome === 'passed');
+	check.state.available = verifier.available(now);
 
 	if (!check.state.available)
 	{
 		check.state.checkEveryRequest = false;
 	}
+}
+
+/**
+ * Called in the transaction whose decision needs a check, before anything about it is recorded: when
+ * Cloudflare wasn't called for the request and the server hasn't heard from it for a while, throws,
+ * rolling the transaction back, so inBotCheckTransaction() can make sure it can be reached and decide
+ * again
+ *
+ * @param check The request's check
+ * @param now The time now
+ * @throws UnconfirmedBotCheck when Cloudflare has to be reached first
+ */
+export function confirmBeforeAsking(check: RequestBotCheck, now: Date): void
+{
+	if (!check.cloudflareAsked && !botCheckVerifier().reachedRecently(now))
+	{
+		throw new UnconfirmedBotCheck();
+	}
+}
+
+/**
+ * Runs the transaction that counts a request's attempt. When its decision needs a check before the server
+ * has made sure it can reach Cloudflare (confirmBeforeAsking()), the transaction rolls back, so nothing it
+ * counted stays, Cloudflare is called with no transaction open, and work runs again in a new one: with
+ * checks off when Cloudflare can't be reached, since during an outage no browser could pass one
+ *
+ * @param check The request's check, whose state is updated when Cloudflare is called
+ * @param now The time now
+ * @param work The transaction's calls, which call confirmBeforeAsking() before asking for a check
+ * @return What work resolves with
+ */
+export async function inBotCheckTransaction<T>(check: RequestBotCheck, now: Date, work: (executor: Executor) => Promise<T>): Promise<T>
+{
+	try
+	{
+		return(await inTransaction(work));
+	}
+	catch (error)
+	{
+		if (!(error instanceof UnconfirmedBotCheck))
+		{
+			throw error;
+		}
+	}
+
+	check.state.available = await botCheckVerifier().confirmAvailable(now);
+	check.cloudflareAsked = true;
+
+	if (!check.state.available)
+	{
+		check.state.checkEveryRequest = false;
+	}
+
+	return(await inTransaction(work));
 }
 
 /**
@@ -225,10 +300,10 @@ export async function takePasswordTry(request: Request, response: Response, sour
 	// A browser that has logged in to the account is never asked for a check, so nothing is asked of Cloudflare
 	if (source !== 'knownBrowser')
 	{
-		await settleBotCheck(check, async () => ((await takePasswordAttempt(subjects, check.state, now, undefined)).kind === 'checkNeeded'), now);
+		await verifyBotCheckToken(check, async () => ((await takePasswordAttempt(subjects, check.state, now, undefined)).kind === 'checkNeeded'), now);
 	}
 
-	return(await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
+	return(await inBotCheckTransaction(check, now, async (executor): Promise<AuthRefusal | undefined> =>
 	{
 		const decision = await takePasswordAttempt(subjects, check.state, now, executor);
 
@@ -239,6 +314,11 @@ export async function takePasswordTry(request: Request, response: Response, sour
 		}
 
 		const asked = (decision.kind === 'checkNeeded');
+
+		if (asked)
+		{
+			confirmBeforeAsking(check, now);
+		}
 
 		if (asked || (check.tokenOutcome === 'passed') || (check.tokenOutcome === 'failed'))
 		{
