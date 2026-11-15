@@ -665,7 +665,9 @@ export class TileDialog
 			return;
 		}
 
-		this.deleteDialog.open(universe, tile, (tileId) => this.deletions.isRemoved(tileId), (replacementId) =>
+		const places = this.deletions.places();
+
+		this.deleteDialog.open(universe, tile, (tileId) => this.deletions.isRemoved(tileId), places, (replacementId) =>
 		{
 			const deleteTile = (changes: readonly PlaceTileChange[]): void =>
 			{
@@ -674,7 +676,6 @@ export class TileDialog
 				this.deletions.setReplacement(tile.id, replacementId);
 				this.close();
 			};
-			const places = this.deletions.places();
 
 			// The places taking the tile as their default tile choose another before it goes
 			if (places)

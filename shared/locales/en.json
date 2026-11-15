@@ -3959,6 +3959,14 @@
 		"defaultMessage": "Choose a tile",
 		"description": "First choice in the list of tiles to replace a tile being deleted, before one is chosen"
 	},
+	"editor.tileDelete.creatorOnly": {
+		"defaultMessage": "Only a creator can delete this tile.",
+		"description": "Shown in the dialog before deleting a tile when Delete is pressed while areas outside the builder's assignments use the tile"
+	},
+	"editor.tileDelete.outside": {
+		"defaultMessage": "{count, plural, one {{areas} is} other {{areas} are}} outside the regions you're assigned. Only a creator can paint {count, plural, one {it} other {them}} with another tile.",
+		"description": "Shown in the dialog before deleting a tile, when areas a builder can't edit use the tile, so only a creator can delete it; {areas} lists those areas' names, and {count} is how many there are"
+	},
 	"editor.tileDelete.question": {
 		"defaultMessage": "Delete the tile \"{name}\" when the Tilesets tab is saved?",
 		"description": "Asked in the dialog before deleting a tile; {name} is the tile's name. Nothing is deleted until the tab is saved"

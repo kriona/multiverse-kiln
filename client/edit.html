@@ -1470,7 +1470,10 @@
 						<p id="tile-delete-status" class="hint" role="status"></p>
 						<div id="tile-delete-replacement-field" hidden>
 							<p id="tile-delete-usage"></p>
-							<label data-message="editor.tileDelete.replaceWith" data-translation-context="Label of the list of tiles to paint the areas with in place of a tile being deleted">
+							<div id="tile-delete-outside" class="place-problems" hidden>
+								<p id="tile-delete-outside-text"></p>
+							</div>
+							<label id="tile-delete-replacement-label" data-message="editor.tileDelete.replaceWith" data-translation-context="Label of the list of tiles to paint the areas with in place of a tile being deleted">
 								Replace it with
 								<select id="tile-delete-replacement" required></select>
 							</label>
@@ -1478,7 +1481,7 @@
 						<p id="tile-delete-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="tile-delete-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="tile-delete-submit" type="submit" class="danger" aria-describedby="tile-delete-error" data-message="editor.tileDelete.submit" data-translation-context="Button in the dialog that asks before deleting a tile: marks the tile to delete when the Tilesets tab is saved"><!-- icon ph:trash -->Delete</button>
+							<button id="tile-delete-submit" type="submit" class="danger" aria-describedby="tile-delete-outside-text tile-delete-error" data-message="editor.tileDelete.submit" data-translation-context="Button in the dialog that asks before deleting a tile: marks the tile to delete when the Tilesets tab is saved"><!-- icon ph:trash -->Delete</button>
 						</div>
 					</form>
 				</dialog>

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import type { AreaListPayload, ChangeImpact, EditableUniverse, EditorArea, EditorChange, PlaceRef, PlaceSettings, ResolvedAreaSettings, SaveImpactPayload, SaveRefusedPayload, TileSettings } from '@multiverse-kiln/shared';
+import type { AreaListPayload, ChangeImpact, EditableUniverse, EditorArea, EditorChange, PlaceRef, PlaceSettings, ResolvedAreaSettings, SaveImpactPayload, SaveRefusedPayload, TileSettings, TileUsagePayload } from '@multiverse-kiln/shared';
 
 import { watchQueries } from '../scripts/benchmarks/queries.js';
 import { createAreaLink, listAreaLinks, loadArea } from '../src/db/areaRepo.js';
@@ -456,6 +456,44 @@ describe('Regions', () =>
 
 		assert.strictEqual((await saveChanges(ada, universeId, deletion)).status, 200);
 		assert.strictEqual(await lobbyOf(), null);
+	});
+
+	it('lets a builder replace a tile only when every area painted with it is within their assignments', async () =>
+	{
+		const { universeId, squareAreaId } = await addPlayableUniverse();
+		const bea = await logIn('Bea');
+		const grassId = await defaultTileId('grass');
+
+		await setUniverseRole(universeId, ada.playerId, 'creator');
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+
+		const ids = await saveAll(ada, universeId, [
+			{ kind: 'universe', update: { requireBuilderDraft: false } },
+			newRegion('beas', 'Bea\'s Regions', [await testRegionId(universeId)]),
+			newArea('mine', 'Mine', [inRegion('new:beas')]),
+			{ kind: 'assignBuilders', regionId: 'new:beas', builderIds: [bea.playerId] },
+			{ kind: 'createTile', ref: 'new:moss', settings: moss }
+		]);
+		const mine = String(ids['new:mine']);
+		const mossId = Number(ids['new:moss']);
+		const replaceMoss: EditorChange = { kind: 'removeTile', id: mossId, replaceWith: grassId };
+		const areasUsing = async (tileId: number): Promise<string[]> => (await send<TileUsagePayload>(ada, 'GET', `/${universeId}/tiles/${tileId}/usage`)).body.areas
+			.map((area) => area.id)
+			.sort();
+
+		await setUniverseAccess(universeId, bea.playerId, { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false } });
+		await saveAll(ada, universeId, [
+			{ kind: 'editCells', areaId: mine, changes: [[0, 0, mossId]] },
+			{ kind: 'editCells', areaId: squareAreaId, changes: [[0, 0, mossId]] }
+		]);
+
+		// Replacing it would paint the square, outside their assignments, which is left to creators
+		assert.strictEqual((await saveChanges(bea, universeId, [replaceMoss])).status, 403);
+		assert.deepStrictEqual(await areasUsing(mossId), [mine, squareAreaId].sort());
+
+		await saveAll(ada, universeId, [{ kind: 'editCells', areaId: squareAreaId, changes: [[0, 0, grassId]] }]);
+		assert.strictEqual((await saveChanges(bea, universeId, [replaceMoss])).status, 200);
+		assert.ok((await areasUsing(grassId)).includes(mine));
 	});
 
 	it('refuses a builder a resize discarding links on or leading to areas outside their assignments', async () =>

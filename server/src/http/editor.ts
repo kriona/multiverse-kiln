@@ -6,7 +6,7 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, editsEveryPlace, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type PlaceRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDismissedNotices, findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
@@ -745,7 +745,8 @@ async function tileUsage(request: Request, response: Response): Promise<void>
 /**
  * Deletes one of the universe's own tiles, or restores a default tile the universe has edited. A tile an
  * area uses is refused, unless replaceWith names another of the universe's tiles: then the areas are
- * painted with that tile in its place first
+ * painted with that tile in its place first, which a builder may do only when every area painted with
+ * it is within their assignments
  *
  * @param context The save
  * @param id The tile
@@ -776,6 +777,13 @@ export async function removeTileChange(context: ChangeContext, id: NumberRef, re
 	if ((replacementId !== undefined) && ((replacementId === tileId) || (await findTileKind(version, universe.ruleset, replacementId, transaction) === undefined)))
 	{
 		refuse(400, messages.noSuchReplacementTile);
+	}
+
+	if ((replacementId !== undefined) && !editsEveryPlace(context.role))
+	{
+		const painted = await findAreasUsingTile(version, tileId, transaction);
+
+		await context.places.requireWithin(...painted.map((area): PlaceRef => ({ kind: 'area', id: area.id })));
 	}
 
 	// Painting waits for the universe's lock too, so the tile can't come into use before it is deleted

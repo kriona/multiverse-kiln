@@ -3959,6 +3959,14 @@
 		"message": "Pick a tile",
 		"source": "Choose a tile"
 	},
+	"editor.tileDelete.creatorOnly": {
+		"message": "Only a captain can scuttle this tile.",
+		"source": "Only a creator can delete this tile."
+	},
+	"editor.tileDelete.outside": {
+		"message": "{count, plural, one {{areas} lies} other {{areas} lie}} outside the seas ye be posted to. Only a captain can paint {count, plural, one {it} other {'em}} with another tile.",
+		"source": "{count, plural, one {{areas} is} other {{areas} are}} outside the regions you're assigned. Only a creator can paint {count, plural, one {it} other {them}} with another tile."
+	},
 	"editor.tileDelete.question": {
 		"message": "Scuttle the tile \"{name}\" when the Tilesets tab be saved?",
 		"source": "Delete the tile \"{name}\" when the Tilesets tab is saved?"
