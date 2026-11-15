@@ -1,9 +1,14 @@
 import assert from 'assert';
-import type { EditorCharacterListPayload, RaceListPayload } from '@multiverse-kiln/shared';
+import { randomUUID } from 'crypto';
+import type { CharacterDeletionPayload, CharacterSheet, EditorCharacterListPayload, RaceListPayload } from '@multiverse-kiln/shared';
 
+import { adminDb } from '../src/db/adminClient.js';
+import { findCharacterPlayerId } from '../src/db/characterRepo.js';
+import { findMembership } from '../src/db/groupRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { addCharacter } from './db/fixtures.js';
+import { setUniverseDisabled } from '../src/db/universeRepo.js';
+import { addCharacter, addGroup } from './db/fixtures.js';
 import { createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
@@ -90,5 +95,101 @@ describe('The editor\'s list of a universe\'s characters', () =>
 		assert.strictEqual((await send(ada, 'GET', `/${universeId}/characters?sort=race`)).status, 400);
 		assert.strictEqual((await send(ada, 'GET', `/${universeId}/characters?raceId=elf`)).status, 400);
 		assert.strictEqual((await send(ada, 'GET', `/${universeId}/characters?limit=100000`)).status, 400);
+	});
+});
+
+describe('A character\'s sheet in the editor', () =>
+{
+	let ada: Editor;
+	let grace: Editor;
+	let universeId: string;
+	let characterId: string;
+
+	before(async () =>
+	{
+		await getTestServer();
+	});
+
+	beforeEach(async () =>
+	{
+		ada = await logIn('Ada');
+		grace = await logIn('Grace');
+		universeId = await createUniverse(ada);
+		characterId = await addCharacter(grace.playerId, universeId, 'Dain');
+	});
+
+	it('shows any player\'s character to creators and builders', async () =>
+	{
+		const response = await send<CharacterSheet>(ada, 'GET', `/${universeId}/characters/${characterId}`);
+
+		assert.strictEqual(response.status, 200, JSON.stringify(response.body));
+		assert.strictEqual(response.body.name, 'Dain');
+		assert.deepStrictEqual(response.body.race, { key: 'dwarf', name: null });
+		assert.strictEqual(response.body.group, null);
+
+		const linus = await logIn('Linus');
+
+		for (const [role, status] of [['beta_tester', 403], ['translator', 403], ['builder', 200]] as const)
+		{
+			await setUniverseRole(universeId, linus.playerId, role);
+			assert.strictEqual((await send(linus, 'GET', `/${universeId}/characters/${characterId}`)).status, status, role);
+		}
+
+		assert.strictEqual((await send(ada, 'GET', `/${universeId}/characters/${randomUUID()}`)).status, 404);
+		assert.strictEqual((await send(ada, 'GET', `/${universeId}/characters/not-an-id`)).status, 404);
+	});
+
+	it('lets creators delete a player\'s character, but not builders', async () =>
+	{
+		const linus = await logIn('Linus');
+
+		await setUniverseRole(universeId, linus.playerId, 'builder');
+		assert.strictEqual((await send(linus, 'DELETE', `/${universeId}/characters/${characterId}`)).status, 403);
+		assert.strictEqual((await send(linus, 'PUT', `/${universeId}/characters/${characterId}/deletion`)).status, 403);
+
+		const deleted = await send(ada, 'DELETE', `/${universeId}/characters/${characterId}`);
+
+		assert.strictEqual(deleted.status, 204, JSON.stringify(deleted.body));
+		assert.strictEqual(await findCharacterPlayerId(universeId, characterId), undefined);
+		assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/characters/${characterId}`)).status, 404);
+	});
+
+	it('lets creators give a character their last rites and restore them', async () =>
+	{
+		const scheduled = await send<CharacterDeletionPayload>(ada, 'PUT', `/${universeId}/characters/${characterId}/deletion`);
+
+		assert.strictEqual(scheduled.status, 200, JSON.stringify(scheduled.body));
+		assert.ok(Date.parse(scheduled.body.deleteAt) > Date.now());
+		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', `/${universeId}/characters/${characterId}`)).body.deleteAt, scheduled.body.deleteAt);
+
+		assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/characters/${characterId}/deletion`)).status, 204);
+		assert.strictEqual((await send<CharacterSheet>(ada, 'GET', `/${universeId}/characters/${characterId}`)).body.deleteAt, null);
+	});
+
+	it('takes a character out of their group before they can be deleted', async () =>
+	{
+		const groupId = await addGroup(universeId, characterId, null);
+		const sheet = await send<CharacterSheet>(ada, 'GET', `/${universeId}/characters/${characterId}`);
+
+		assert.deepStrictEqual(sheet.body.group, { groupId, isAnchor: true });
+		assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/characters/${characterId}`)).status, 409);
+
+		const left = await send(ada, 'POST', `/${universeId}/groups/${groupId}/leave`, { body: { characterId } });
+
+		assert.strictEqual(left.status, 204, JSON.stringify(left.body));
+		assert.strictEqual(await findMembership(characterId), undefined);
+		assert.strictEqual((await send(ada, 'POST', `/${universeId}/groups/${groupId}/leave`, { body: { characterId } })).status, 404);
+		assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/characters/${characterId}`)).status, 204);
+	});
+
+	it('doesn\'t change characters while the universe is disabled', async () =>
+	{
+		await setUniverseDisabled(universeId, {
+			reason: 'Spam',
+			preventDeletion: false
+		}, adminDb);
+
+		assert.strictEqual((await send(ada, 'DELETE', `/${universeId}/characters/${characterId}`)).status, 403);
+		assert.notStrictEqual(await findCharacterPlayerId(universeId, characterId), undefined);
 	});
 });

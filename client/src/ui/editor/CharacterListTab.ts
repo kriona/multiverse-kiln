@@ -1,8 +1,9 @@
-import { canEditWorld, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, type EditableUniverse, type EditorCharacter, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorCharacterSortColumn, type EditorClass, type EditorRace } from '@multiverse-kiln/shared';
+import { canEditWorld, canManageCharacters, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, type EditableUniverse, type EditorCharacter, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorCharacterSortColumn, type EditorClass, type EditorRace } from '@multiverse-kiln/shared';
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { characterMessages } from '../characterMessages';
+import { CharacterSheetDialog } from '../CharacterSheetDialog';
 import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
 import { announceListPage, showPageRange } from '../pager';
@@ -19,8 +20,9 @@ const SEARCH_DELAY_MS = 250;
 /**
  * The Character List tab: every character players have made in the universe, with their race and
  * class, player, when they were made and whether they are in a group or waiting to be deleted. The
- * server searches, filters, sorts and pages them. Characters belong to their players, so the tab only
- * lists them and has nothing to save
+ * server searches, filters, sorts and pages them. A character's name opens their sheet, where creators
+ * can delete them as their player can. Characters belong to their players rather than the universe, so
+ * the sheet changes them immediately and the tab has nothing to save
  */
 export class CharacterListTab
 {
@@ -34,6 +36,7 @@ export class CharacterListTab
 	private readonly previousButton = getElement('character-list-previous', HTMLButtonElement);
 	private readonly nextButton = getElement('character-list-next', HTMLButtonElement);
 	private readonly sorter: TableSorter<EditorCharacterSortColumn>;
+	private readonly sheet: CharacterSheetDialog;
 
 	private universe: EditableUniverse | undefined;
 
@@ -65,6 +68,11 @@ export class CharacterListTab
 		}, () =>
 		{
 			this.reload(false);
+		});
+
+		this.sheet = new CharacterSheetDialog(api, api, () =>
+		{
+			void this.refresh();
 		});
 
 		setOptions(this.groupFilter, [
@@ -334,8 +342,8 @@ export class CharacterListTab
 	}
 
 	/**
-	 * A character's row: their name, race and class, player (linking to their profile), when they were
-	 * made, and whether they are in a group or waiting to be deleted
+	 * A character's row: their name (opening their sheet), race and class, player (linking to their
+	 * profile), when they were made, and whether they are in a group or waiting to be deleted
 	 *
 	 * @param character The character
 	 * @param universe The universe they are in
@@ -345,13 +353,25 @@ export class CharacterListTab
 	{
 		const row = document.createElement('tr');
 		const name = document.createElement('td');
+		const nameButton = document.createElement('button');
 		const description = document.createElement('td');
 		const created = document.createElement('td');
 		const notes = document.createElement('td');
 
+		nameButton.type = 'button';
+		nameButton.className = 'link-button';
+
 		// Names players write aren't translated
-		name.textContent = character.name;
-		name.translate = false;
+		nameButton.textContent = character.name;
+		nameButton.translate = false;
+		nameButton.addEventListener('click', () =>
+		{
+			// The role the editor has now, which may have changed since the list was loaded
+			const role = (this.universe?.role ?? universe.role);
+
+			void this.sheet.open(universe.id, character.id, character.name, canManageCharacters(role));
+		});
+		name.append(nameButton);
 		description.textContent = characterDescription(character, universe.ruleset);
 		created.textContent = formatDateTime(character.createdAt);
 		notes.textContent = joinTags(

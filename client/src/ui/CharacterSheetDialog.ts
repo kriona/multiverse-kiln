@@ -19,6 +19,12 @@ import { characterDescription, themeName } from './raceAndClassNames';
 export type LeaveGroup = (universeId: string, groupId: string, characterId: string) => Promise<void>;
 
 /**
+ * The routes that load and delete the characters a sheet shows: the player's own (CharacterApi), or
+ * any player's for the editor's Character List tab (EditorApi)
+ */
+export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter'>;
+
+/**
  * A dialog showing one of the player's characters: their race and class, ability scores, size,
  * darkvision, light sensitivity, money and equipment (pages that use it include partials/character-sheet.html)
  *
@@ -28,7 +34,8 @@ export type LeaveGroup = (universeId: string, groupId: string, characterId: stri
  * is 0). A character given their last rites can be restored from their sheet until then. A character in
  * a group can't be deleted, so for them Delete says so and offers to take them out of the group, going on
  * to the first question once they have left. A character in a group who can't play, because their race
- * or class is disabled, can also leave the group from their sheet
+ * or class is disabled, can also leave the group from their sheet. The editor's Character List tab
+ * shows any player's character in it, offering the same to creators and nothing to change to builders
  */
 export class CharacterSheetDialog
 {
@@ -62,9 +69,10 @@ export class CharacterSheetDialog
 	private readonly farewellCancelButton = getElement('character-farewell-cancel', HTMLButtonElement);
 
 	/**
-	 * The character shown, once loaded, and the universe they are in
+	 * The character shown, once loaded, the universe they are in, and whether the sheet offers to delete,
+	 * restore them and take them out of their group
 	 */
-	private current: { universeId: string; sheet: CharacterSheet } | undefined;
+	private current: { universeId: string; sheet: CharacterSheet; canChange: boolean } | undefined;
 
 	/**
 	 * Whether a deletion or restoration has been sent and the server hasn't answered
@@ -88,14 +96,14 @@ export class CharacterSheetDialog
 	private readonly leaveGroup: LeaveGroup;
 
 	/**
-	 * @param api The player's characters
+	 * @param api The routes for the characters shown
 	 * @param groupApi The routes that take characters out of groups
 	 * @param charactersChanged Called after a character is deleted, given their last rites, restored or
 	 * taken out of their group
 	 * @param leaveGroup Takes a character out of their group, for a page that does more when one leaves,
 	 * such as the game's page playing them in it; by default the group's route only
 	 */
-	constructor(private readonly api: CharacterApi, groupApi: GroupApi, private readonly charactersChanged: () => void, leaveGroup?: LeaveGroup)
+	constructor(private readonly api: CharacterSheetApi, groupApi: Pick<GroupApi, 'leaveGroup'>, private readonly charactersChanged: () => void, leaveGroup?: LeaveGroup)
 	{
 		this.leaveGroup = (leaveGroup ?? ((universeId, groupId, characterId) => takeOutOfGroup(groupApi, universeId, groupId, characterId)));
 
@@ -193,8 +201,9 @@ export class CharacterSheetDialog
 	 * @param universeId The universe the character is in
 	 * @param characterId The character's ID
 	 * @param name The character's name, shown while the rest loads
+	 * @param canChange Whether to offer to delete, restore the character and take them out of their group
 	 */
-	async open(universeId: string, characterId: string, name: string): Promise<void>
+	async open(universeId: string, characterId: string, name: string, canChange = true): Promise<void>
 	{
 		const version = ++this.version;
 
@@ -240,9 +249,10 @@ export class CharacterSheetDialog
 		{
 			this.current = {
 				universeId,
-				sheet
+				sheet,
+				canChange
 			};
-			this.show(sheet);
+			this.show(sheet, canChange);
 		}
 	}
 
@@ -250,8 +260,9 @@ export class CharacterSheetDialog
 	 * Fills the dialog with a character
 	 *
 	 * @param sheet The character
+	 * @param canChange Whether to offer to delete, restore the character and take them out of their group
 	 */
-	private show(sheet: CharacterSheet): void
+	private show(sheet: CharacterSheet, canChange: boolean): void
 	{
 		this.title.textContent = sheet.name;
 		this.summary.textContent = characterDescription(sheet, sheet.ruleset);
@@ -259,7 +270,7 @@ export class CharacterSheetDialog
 		this.showAbilities(sheet);
 		this.showTraits(sheet);
 		this.showItems(sheet);
-		this.showDeletion(sheet);
+		this.showDeletion(sheet, canChange);
 		this.body.hidden = false;
 	}
 
@@ -270,8 +281,9 @@ export class CharacterSheetDialog
 	 * disabled can't leave their group from it, so their sheet offers Leave group
 	 *
 	 * @param sheet The character
+	 * @param canChange Whether to offer the buttons, or only say when the character will be deleted
 	 */
-	private showDeletion(sheet: CharacterSheet): void
+	private showDeletion(sheet: CharacterSheet, canChange: boolean): void
 	{
 		const waiting = (sheet.deleteAt !== null);
 
@@ -286,9 +298,9 @@ export class CharacterSheetDialog
 			})
 			: '');
 		this.pending.hidden = !waiting;
-		this.restoreButton.hidden = !waiting;
-		this.deleteButton.hidden = false;
-		this.leaveButton.hidden = ((sheet.group === null) || (sheet.barredBy === null));
+		this.restoreButton.hidden = (!canChange || !waiting);
+		this.deleteButton.hidden = !canChange;
+		this.leaveButton.hidden = (!canChange || (sheet.group === null) || (sheet.barredBy === null));
 
 		if (sheet.group)
 		{
@@ -374,7 +386,7 @@ export class CharacterSheetDialog
 				...current.sheet,
 				group: null
 			};
-			this.showDeletion(current.sheet);
+			this.showDeletion(current.sheet, current.canChange);
 
 			if (this.deletingAfterLeaving)
 			{
@@ -536,7 +548,7 @@ export class CharacterSheetDialog
 				...current.sheet,
 				deleteAt
 			};
-			this.showDeletion(current.sheet);
+			this.showDeletion(current.sheet, current.canChange);
 			announce(this.pending.textContent ?? '');
 		}
 
@@ -585,7 +597,7 @@ export class CharacterSheetDialog
 				...current.sheet,
 				deleteAt: null
 			};
-			this.showDeletion(current.sheet);
+			this.showDeletion(current.sheet, current.canChange);
 			this.deleteButton.focus();
 		}
 

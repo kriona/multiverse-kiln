@@ -9,9 +9,9 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, type CharacterDetails } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { findMembership } from '../db/groupRepo.js';
@@ -316,15 +316,7 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const [character, membership, races, classes, themes, rulebooks, siteSettings] = await Promise.all([
-		findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId),
-		findMembership(characterId),
-		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
-		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
-		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
-		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
-		findSiteSettings()
-	]);
+	const character = await findCharacterDetails(playerIdOf(request), universe.id, universe.ruleset, characterId);
 
 	if (!character)
 	{
@@ -332,11 +324,31 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
+	response.json(await characterSheetOf(universe, character, (kinds) => loadTranslator(request, universe, kinds)));
+}
+
+/**
+ * A character as their sheet shows them, with the universe's live version's races, classes, themes and
+ * items
+ *
+ * @param universe The universe's live version
+ * @param character The character
+ * @param loadTexts Loads the translator for the kinds of universe text the sheet shows
+ * @return The sheet
+ */
+export async function characterSheetOf(universe: PlayableUniverse, character: CharacterDetails, loadTexts: (kinds: readonly WantedText[]) => Promise<UniverseTextTranslator>): Promise<CharacterSheet>
+{
 	// Only the character's own items and their names' translations, of the thousands a universe can have
 	const itemIds = character.items.map((item) => item.itemId);
-	const [items, translator] = await Promise.all([
+	const [membership, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
+		findMembership(character.id),
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
+		findSiteSettings(),
 		loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, itemIds),
-		loadTranslator(request, universe, [
+		loadTexts([
 			{
 				kind: 'race',
 				thingIds: [character.raceId]
@@ -415,7 +427,7 @@ async function sheetRoute(request: Request, response: Response): Promise<void>
 		})
 	};
 
-	response.json(payload);
+	return(payload);
 }
 
 /**
@@ -462,19 +474,20 @@ function characterIdOf(request: Request, response: Response): string | undefined
  * Refuses to delete a character who isn't the player's or is in a group. It locks the player's
  * characters first, so the character can't join a group before the transaction deletes them
  *
- * @param playerId The player's ID
+ * @param playerId The character's player's ID
  * @param universeId The universe's ID
  * @param characterId The character's ID
+ * @param noSuchCharacter Why a character who isn't the player's can't be deleted
  * @param transaction The transaction that deletes the character
  * @return Why the character can't be deleted, or undefined when they can
  */
-async function refuseDeletion(playerId: string, universeId: string, characterId: string, transaction: Executor): Promise<Refusal | undefined>
+async function refuseDeletion(playerId: string, universeId: string, characterId: string, noSuchCharacter: MessageDescriptor, transaction: Executor): Promise<Refusal | undefined>
 {
 	await lockPlayer(playerId, transaction);
 
 	if (!await findOwnCharacter(playerId, universeId, characterId, transaction))
 	{
-		return({ status: 404, message: messages.noSuchCharacter });
+		return({ status: 404, message: noSuchCharacter });
 	}
 
 	if (await findMembership(characterId, transaction))
@@ -494,17 +507,37 @@ async function refuseDeletion(playerId: string, universeId: string, characterId:
 async function deleteRoute(request: Request, response: Response): Promise<void>
 {
 	const characterId = characterIdOf(request, response);
-	const playerId = playerIdOf(request);
-	const universeId = universeOf(request).id;
 
 	if (characterId === undefined)
 	{
 		return;
 	}
 
+	const refusal = await deleteCharacterNow(playerIdOf(request), universeOf(request).id, characterId, messages.noSuchCharacter);
+
+	if (refusal)
+	{
+		sendError(response, refusal.status, refusal.message, refusal.values);
+		return;
+	}
+
+	response.sendStatus(204);
+}
+
+/**
+ * Deletes a character immediately, unless they are in a group, and tells the rooms
+ *
+ * @param playerId The character's player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param noSuchCharacter Why a character who isn't the player's can't be deleted
+ * @return Why the character wasn't deleted, or undefined once they are
+ */
+export async function deleteCharacterNow(playerId: string, universeId: string, characterId: string, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+{
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
-		const reason = await refuseDeletion(playerId, universeId, characterId, transaction);
+		const reason = await refuseDeletion(playerId, universeId, characterId, noSuchCharacter, transaction);
 
 		if (reason)
 		{
@@ -515,19 +548,17 @@ async function deleteRoute(request: Request, response: Response): Promise<void>
 		return(undefined);
 	});
 
-	if (refusal)
+	if (!refusal)
 	{
-		sendError(response, refusal.status, refusal.message, refusal.values);
-		return;
+		characterChanges.publish({
+			kind: 'removed',
+			playerId,
+			universeId,
+			characterId
+		});
 	}
 
-	characterChanges.publish({
-		kind: 'removed',
-		playerId,
-		universeId,
-		characterId
-	});
-	response.sendStatus(204);
+	return(refusal);
 }
 
 /**
@@ -541,25 +572,48 @@ async function deleteRoute(request: Request, response: Response): Promise<void>
 async function scheduleDeletionRoute(request: Request, response: Response): Promise<void>
 {
 	const characterId = characterIdOf(request, response);
-	const playerId = playerIdOf(request);
-	const universeId = universeOf(request).id;
 
 	if (characterId === undefined)
 	{
 		return;
 	}
 
+	const result = await giveLastRites(playerIdOf(request), universeOf(request).id, characterId, messages.noSuchCharacter);
+
+	if (!(result instanceof Date))
+	{
+		sendError(response, result.status, result.message, result.values);
+		return;
+	}
+
+	const payload: CharacterDeletionPayload = { deleteAt: result.toISOString() };
+
+	response.json(payload);
+}
+
+/**
+ * Gives a character their last rites, to be deleted the site's characterDeletionDays from now, and
+ * tells the rooms; refuses while it is 0 or the character is in a group. A character already given
+ * them keeps their time
+ *
+ * @param playerId The character's player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param noSuchCharacter Why a character who isn't the player's can't be deleted
+ * @return When the character will be deleted, or why they weren't given their last rites
+ */
+export async function giveLastRites(playerId: string, universeId: string, characterId: string, noSuchCharacter: MessageDescriptor): Promise<Refusal | Date>
+{
 	const { characterDeletionDays } = await findSiteSettings();
 
 	if (characterDeletionDays === 0)
 	{
-		sendError(response, 409, messages.lastRitesOff);
-		return;
+		return({ status: 409, message: messages.lastRitesOff });
 	}
 
 	const result = await inTransaction(async (transaction): Promise<Refusal | Date> =>
 	{
-		const reason = await refuseDeletion(playerId, universeId, characterId, transaction);
+		const reason = await refuseDeletion(playerId, universeId, characterId, noSuchCharacter, transaction);
 
 		if (reason)
 		{
@@ -568,27 +622,20 @@ async function scheduleDeletionRoute(request: Request, response: Response): Prom
 
 		const scheduled = await scheduleCharacterDeletion(playerId, universeId, characterId, new Date(Date.now() + (characterDeletionDays * 24 * 60 * 60 * 1000)), transaction);
 
-		return(scheduled ?? { status: 404, message: messages.noSuchCharacter });
+		return(scheduled ?? { status: 404, message: noSuchCharacter });
 	});
 
-	if (!(result instanceof Date))
+	if (result instanceof Date)
 	{
-		sendError(response, result.status, result.message, result.values);
-		return;
+		characterChanges.publish({
+			kind: 'removed',
+			playerId,
+			universeId,
+			characterId
+		});
 	}
 
-	const deleteAt = result;
-
-	characterChanges.publish({
-		kind: 'removed',
-		playerId,
-		universeId,
-		characterId
-	});
-
-	const payload: CharacterDeletionPayload = { deleteAt: deleteAt.toISOString() };
-
-	response.json(payload);
+	return(result);
 }
 
 /**
@@ -600,20 +647,36 @@ async function scheduleDeletionRoute(request: Request, response: Response): Prom
 async function restoreRoute(request: Request, response: Response): Promise<void>
 {
 	const characterId = characterIdOf(request, response);
-	const playerId = playerIdOf(request);
-	const universeId = universeOf(request).id;
 
 	if (characterId === undefined)
 	{
 		return;
 	}
 
+	if (!await restoreCharacterOf(playerIdOf(request), universeOf(request).id, characterId))
+	{
+		sendError(response, 404, messages.noSuchCharacter);
+		return;
+	}
+
+	response.sendStatus(204);
+}
+
+/**
+ * Restores a character given their last rites, and tells the rooms
+ *
+ * @param playerId The character's player's ID
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return Whether the character was restored: false when the player has no such character waiting
+ */
+export async function restoreCharacterOf(playerId: string, universeId: string, characterId: string): Promise<boolean>
+{
 	const character = await restoreCharacter(playerId, universeId, characterId);
 
 	if (!character)
 	{
-		sendError(response, 404, messages.noSuchCharacter);
-		return;
+		return(false);
 	}
 
 	characterChanges.publish({
@@ -623,7 +686,8 @@ async function restoreRoute(request: Request, response: Response): Promise<void>
 		character,
 		inGroup: (await findMembership(characterId) !== undefined)
 	});
-	response.sendStatus(204);
+
+	return(true);
 }
 
 /**

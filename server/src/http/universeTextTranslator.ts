@@ -61,6 +61,16 @@ export class UniverseTextTranslator
 	}
 
 	/**
+	 * A translator that shows the source text, as the editor's routes do
+	 *
+	 * @return The translator
+	 */
+	static sourceText(): UniverseTextTranslator
+	{
+		return(new UniverseTextTranslator(undefined, new Map()));
+	}
+
+	/**
 	 * Loads several universes' translations for the languages a request asks for, in one query
 	 *
 	 * @param universes The universes and their languages

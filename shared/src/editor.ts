@@ -38,6 +38,11 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
  * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
  * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
+ * - GET    /:universeId/characters/:characterId    CharacterSheet: any player's character in the universe, with the source text (canEditWorld())
+ * - DELETE /:universeId/characters/:characterId    deletes the character immediately, unless they are in a group (canManageCharacters())
+ * - PUT    /:universeId/characters/:characterId/deletion  -> CharacterDeletionPayload: gives the character their last rites (canManageCharacters())
+ * - DELETE /:universeId/characters/:characterId/deletion  restores a character given their last rites (canManageCharacters())
+ * - POST   /:universeId/groups/:groupId/leave      GroupCharacterRequest: takes any player's character out of their group, disbanding it for the anchor being (canManageCharacters())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload (canEditWorld())
@@ -56,7 +61,9 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * Every route except the list and create needs a role in the universe. The routes for what only the
  * tabs of roles that change the world show answer 403 to other roles, such as beta testers and
  * translators. Every change to a universe is saved through /:universeId/changes, which checks the
- * player's role for each change
+ * player's role for each change. Characters belong to their players rather than the universe, so the
+ * character and group routes change them immediately, and refuse while the universe is disabled except
+ * for a server admin
  */
 export const EDITOR_UNIVERSES_PATH = '/editor/universes';
 

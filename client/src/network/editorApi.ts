@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type CharacterDeletionPayload, type CharacterSheet, type GroupCharacterRequest, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -287,6 +287,68 @@ export class EditorApi
 	async listCharacters(universeId: string, query: EditorCharacterListQuery): Promise<EditorCharacterListPayload>
 	{
 		return(this.send<EditorCharacterListPayload>('GET', `${universePath(universeId)}/characters?${queryString(query)}`));
+	}
+
+	/**
+	 * Any player's character in a universe, as their character sheet shows them
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @return The character, with the universe's source text
+	 */
+	async getCharacterSheet(universeId: string, characterId: string): Promise<CharacterSheet>
+	{
+		return(this.send<CharacterSheet>('GET', editorCharacterPath(universeId, characterId)));
+	}
+
+	/**
+	 * Deletes a player's character in a universe immediately, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 */
+	async deleteCharacter(universeId: string, characterId: string): Promise<void>
+	{
+		await this.send('DELETE', editorCharacterPath(universeId, characterId));
+	}
+
+	/**
+	 * Gives a player's character in a universe their last rites, as one of its creators. Refused while the
+	 * site sets characterDeletionDays to 0
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @return When the character is deleted, as an ISO 8601 time
+	 */
+	async scheduleCharacterDeletion(universeId: string, characterId: string): Promise<string>
+	{
+		return((await this.send<CharacterDeletionPayload>('PUT', `${editorCharacterPath(universeId, characterId)}/deletion`)).deleteAt);
+	}
+
+	/**
+	 * Restores a player's character in a universe given their last rites, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 */
+	async restoreCharacter(universeId: string, characterId: string): Promise<void>
+	{
+		await this.send('DELETE', `${editorCharacterPath(universeId, characterId)}/deletion`);
+	}
+
+	/**
+	 * Takes a player's character in a universe out of their group, disbanding it when they are its anchor
+	 * being, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param groupId The group's ID
+	 * @param characterId The character's ID
+	 */
+	async leaveGroup(universeId: string, groupId: string, characterId: string): Promise<void>
+	{
+		const request: GroupCharacterRequest = { characterId };
+
+		await this.send('POST', `${universePath(universeId)}/groups/${encodeURIComponent(groupId)}/leave`, request);
 	}
 
 	/**
@@ -593,6 +655,18 @@ export async function sendRequest<T = unknown>(client: Client, method: HttpMetho
 function universePath(universeId: string): string
 {
 	return(`/${encodeURIComponent(universeId)}`);
+}
+
+/**
+ * The path of a character in a universe, under EDITOR_UNIVERSES_PATH
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return The path
+ */
+function editorCharacterPath(universeId: string, characterId: string): string
+{
+	return(`${universePath(universeId)}/characters/${encodeURIComponent(characterId)}`);
 }
 
 /**

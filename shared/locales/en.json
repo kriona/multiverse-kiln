@@ -5519,6 +5519,10 @@
 		"defaultMessage": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.",
 		"description": "Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn't; {universe} is the universe's name. Buttons to turn it on, leave the universe and go back to Home follow"
 	},
+	"error.editorNoSuchCharacter": {
+		"defaultMessage": "The character doesn't exist any more.",
+		"description": "Why the editor's Character List tab couldn't show or change a character: their player deleted them, or their last rites are over"
+	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
 		"description": "Why an area can't both have faerie time and wrap around at its edges: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings"
@@ -5958,6 +5962,10 @@
 	"error.universeDeletion.wrongUsername": {
 		"defaultMessage": "Type your username exactly as it is to confirm.",
 		"description": "Shown under the username field when deleting a universe from an account that has no password: what was typed isn't the account's username"
+	},
+	"error.universeDisabledCharacters": {
+		"defaultMessage": "The site's admins have disabled this universe, so its characters can't be changed.",
+		"description": "Why a character couldn't be deleted, restored or taken out of their group from the editor's Character List tab: one of the site's admins disabled the universe"
 	},
 	"error.universeDisabledSave": {
 		"defaultMessage": "The site's admins have disabled this universe, so changes to it can't be saved.",

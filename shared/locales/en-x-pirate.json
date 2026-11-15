@@ -5519,6 +5519,10 @@
 		"message": "{universe} demands her officers raise two-factor authentication. Raise it to open the universe in the editor.",
 		"source": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor."
 	},
+	"error.editorNoSuchCharacter": {
+		"message": "That hand be lost at sea.",
+		"source": "The character doesn't exist any more."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
@@ -5958,6 +5962,10 @@
 	"error.universeDeletion.wrongUsername": {
 		"message": "Write yer username exactly as it be to swear to it.",
 		"source": "Type your username exactly as it is to confirm."
+	},
+	"error.universeDisabledCharacters": {
+		"message": "The ship's officers have laid up this universe, so its hands can't be meddled with.",
+		"source": "The site's admins have disabled this universe, so its characters can't be changed."
 	},
 	"error.universeDisabledSave": {
 		"message": "The ship's officers have laid up this universe, so changes to it can't be stowed.",

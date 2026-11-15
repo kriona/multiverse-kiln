@@ -416,6 +416,73 @@ export async function setCharacterVisibility(playerId: string, characterId: stri
  */
 export async function findCharacterDetails(playerId: string, universeId: string, ruleset: Ruleset, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
 {
+	return(findDetails(ownCharacter(playerId, universeId, characterId), ruleset, characterId, executor));
+}
+
+/**
+ * Any player's character in a universe, with their ability scores, money and items, for the editor
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset, whose table holds the ability scores
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when the universe has no such character
+ */
+export async function findUniverseCharacterDetails(universeId: string, ruleset: Ruleset, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
+{
+	return(findDetails(universeCharacter(universeId, characterId), ruleset, characterId, executor));
+}
+
+/**
+ * The player of a character in a universe, whose last rites aren't over
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The player's ID, or undefined when the universe has no such character
+ */
+export async function findCharacterPlayerId(universeId: string, characterId: string, executor: Executor = db): Promise<string | undefined>
+{
+	const [row] = await executor
+		.select({
+			playerId: characters.playerId
+		})
+		.from(characters)
+		.where(and(
+			universeCharacter(universeId, characterId),
+			notExpired
+		))
+		.limit(1);
+
+	return(row?.playerId);
+}
+
+/**
+ * Matches a character in a universe, whoever their player is
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return The condition
+ */
+function universeCharacter(universeId: string, characterId: string): SQL | undefined
+{
+	return(and(
+		eq(characters.id, characterId),
+		eq(characters.universeId, universeId)
+	));
+}
+
+/**
+ * A character a condition matches, with their ability scores, money and items
+ *
+ * @param condition Which character: one with characterId's ID, and whatever else it must be
+ * @param ruleset The universe's ruleset, whose table holds the ability scores
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when none matches or their last rites are over
+ */
+async function findDetails(condition: SQL | undefined, ruleset: Ruleset, characterId: string, executor: Executor): Promise<CharacterDetails | undefined>
+{
 	const [row] = await executor
 		.select({
 			id: characters.id,
@@ -431,7 +498,7 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 		})
 		.from(characters)
 		.where(and(
-			ownCharacter(playerId, universeId, characterId),
+			condition,
 			notExpired
 		))
 		.limit(1);

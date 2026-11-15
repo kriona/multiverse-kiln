@@ -1,6 +1,7 @@
 // The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the area editor and its cells
 
 @use 'shared' as *;
+@use 'characterSheet';
 
 .markdown-editor
 {
