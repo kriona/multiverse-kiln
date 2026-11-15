@@ -2987,6 +2987,10 @@
 		"defaultMessage": "Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter.",
 		"description": "Explains the Overall Map dialog: each area of the grid of neighboring areas is drawn in its place, and opening one goes to its editor"
 	},
+	"editor.overallMap.keys.moveDescription": {
+		"defaultMessage": "Move to the nearest area in the arrow's direction",
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on the Overall Map, the dialog drawing the whole grid of neighboring areas an area is in: move the focus from one area to the nearest area up, down, left or right of it"
+	},
 	"editor.overallMap.loop": {
 		"defaultMessage": "{side, select, north {north} east {east} south {south} other {west}} to {target}",
 		"description": "One edge of an area on the Overall Map that loops, in the list screen readers hear for the area: {side} is the edge, and {target} the area at the other end of its row or column, where walking off the edge comes back on, which may be the same area"

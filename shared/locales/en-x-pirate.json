@@ -2987,6 +2987,10 @@
 		"message": "Every area be drawn next to its neighbors, an' the one ye have open be marked. To chart an area, click it, or sail to it with the arrow keys an' press Enter.",
 		"source": "Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter."
 	},
+	"editor.overallMap.keys.moveDescription": {
+		"message": "Sail to the nearest area the way the arrow points",
+		"source": "Move to the nearest area in the arrow's direction"
+	},
 	"editor.overallMap.loop": {
 		"message": "{side, select, north {north} east {east} south {south} other {west}} round to {target}",
 		"source": "{side, select, north {north} east {east} south {south} other {west}} to {target}"
