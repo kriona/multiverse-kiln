@@ -587,7 +587,12 @@ async function sendCodeRoute(request: Request, response: Response): Promise<void
 	const now = new Date();
 	const addressHash = hashAddress(email);
 	const networkHash = clientNetworkHash(request);
-	const check = await readBotCheck(request, 'email-code', true, now);
+
+	// The admin setting that checks every request leaves out, as for logins, a browser that has logged in
+	// to the address's account and a logged-in player's own address, whose codes stand in for the password
+	const knownOwnerId = ((session || hasKnownBrowserCookie(request)) ? await findPlayerIdByEmail(email) : undefined);
+	const exempt = ((knownOwnerId !== undefined) && ((session?.playerId === knownOwnerId) || (knownBrowserHash(request, knownOwnerId, now) !== undefined)));
+	const check = await readBotCheck(request, 'email-code', !exempt, now);
 
 	await confirmBotChecks(check, async () => ((await takeCodeSend(networkHash, addressHash, check.state, now, undefined)).kind === 'checkNeeded'), now);
 

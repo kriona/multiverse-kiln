@@ -277,7 +277,7 @@ describe('bot checks', () =>
 			assert.deepStrictEqual(await checkEvents(), []);
 		});
 
-		it('asks for a check at every login while the admin setting is on, except from a browser that has logged in', async () =>
+		it('asks for a check at every login and code while the admin setting is on, except from a browser that has logged in', async () =>
 		{
 			const ada = new Browser();
 
@@ -290,6 +290,11 @@ describe('bot checks', () =>
 			assertCheckNeeded(await logIn(new Browser(), PASSWORD), 'login');
 			assert.strictEqual((await logIn(ada, PASSWORD)).status, 200);
 			assertCheckNeeded(await sendCode('ada@example.com'), 'email-code');
+			assert.strictEqual((await ada.send<unknown>('POST', AUTH_CODE_PATH, {
+				purpose: 'resetPassword',
+				email: 'ada@example.com',
+				locale: 'en'
+			})).status, 204);
 
 			// Nothing is checked while checks are off, whatever the setting says
 			verifier.reachable = false;
