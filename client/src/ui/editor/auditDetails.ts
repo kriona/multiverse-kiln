@@ -8,7 +8,7 @@ import { className, raceName, themeName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { BUILDER_PERMISSION_NAMES } from './editorMessages';
-import { FOG_OF_WAR_NAMES } from './places';
+import { FAERIE_TIME_MESSAGE, FOG_OF_WAR_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
 /**
@@ -473,11 +473,6 @@ const VALUE_MESSAGES = defineMessages({
 		defaultMessage: '{count, plural, one {# character} other {# characters}}',
 		description: 'The value of a universe\'s long description in the editor\'s Audit tab\'s list of what a save changed: how many characters (letters, spaces and so on) the description has, rather than its text, e.g. "Long description (Markdown) (1,204 characters)"'
 	},
-	faerieTime: {
-		id: 'editor.audit.value.faerieTime',
-		defaultMessage: '{time}, morning: {morning}',
-		description: 'The value of a passage of time setting in the editor\'s Audit tab\'s list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north'
-	},
 	place: {
 		id: 'editor.audit.value.place',
 		defaultMessage: '{area} at {column}, {row}',
@@ -731,7 +726,7 @@ function describePassageOfTime(passage: AuditPassageOfTime): string
 		return(time);
 	}
 
-	return(t(VALUE_MESSAGES.faerieTime, {
+	return(t(FAERIE_TIME_MESSAGE, {
 		time,
 		morning: t(FAERIE_MORNING_NAMES[passage.morning])
 	}));

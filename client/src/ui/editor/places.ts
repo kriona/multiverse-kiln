@@ -33,6 +33,17 @@ export const FOG_OF_WAR_NAMES: Record<'on' | 'off', MessageDescriptor> = defineM
 });
 
 /**
+ * A faerie passage of time with where morning is, as the region and area editors and the Audit tab show it
+ */
+export const FAERIE_TIME_MESSAGE: MessageDescriptor = defineMessages({
+	faerieTime: {
+		id: 'editor.faerieTime',
+		defaultMessage: '{time}, morning: {morning}',
+		description: 'A passage of time when it is faerie time, with where morning is: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north. Shown in the region and area editors, as the value a setting set to inherit takes and in problems with it, and as the value of a region\'s, area\'s or the lobby\'s passage of time in the editor\'s Audit tab\'s list of what a save changed'
+	}
+}).faerieTime;
+
+/**
  * How the value of an inherited setting reads
  *
  * @param setting The setting
@@ -97,11 +108,7 @@ export function describePassage(passage: PassageOfTime, morning: FaerieMorning |
 		return(name);
 	}
 
-	return(t({
-		id: 'editor.place.faerieTime',
-		defaultMessage: '{time}, morning: {morning}',
-		description: 'A passage of time in the region and area editors, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north'
-	}, {
+	return(t(FAERIE_TIME_MESSAGE, {
 		time: name,
 		morning: t(FAERIE_MORNING_NAMES[morning])
 	}));

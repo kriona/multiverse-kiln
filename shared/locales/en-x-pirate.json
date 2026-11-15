@@ -1899,10 +1899,6 @@
 		"message": "{coin}: {text}",
 		"source": "{coin}: {text}"
 	},
-	"editor.audit.value.faerieTime": {
-		"message": "{time}, mornin' be {morning}",
-		"source": "{time}, morning: {morning}"
-	},
 	"editor.audit.value.inherit": {
 		"message": "handed down",
 		"source": "inherit"
@@ -2595,6 +2591,10 @@
 		"message": "Where be the mornin'?",
 		"source": "Where is morning?"
 	},
+	"editor.faerieTime": {
+		"message": "{time}, mornin' be {morning}",
+		"source": "{time}, morning: {morning}"
+	},
 	"editor.filter.custom": {
 		"message": "Custom",
 		"source": "Custom"
@@ -3054,10 +3054,6 @@
 	"editor.place.faerieLoops": {
 		"message": "{area}: its hours pass the faerie way, so it can't loop",
 		"source": "{area}: its passage of time is faerie, so it can't loop"
-	},
-	"editor.place.faerieTime": {
-		"message": "{time}, mornin': {morning}",
-		"source": "{time}, morning: {morning}"
 	},
 	"editor.place.fogOfWar": {
 		"message": "Sea fog",

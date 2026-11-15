@@ -1899,10 +1899,6 @@
 		"defaultMessage": "{coin}: {text}",
 		"description": "One coin in the value of the universe's Coin names or Coin abbreviations setting, in the editor's Audit tab's list of what a save changed: {coin} is the coin's name in the rules, as a label, and {text} the name or abbreviation the universe gives it, e.g. \"Copper pieces: bronze kits\" or \"Copper pieces: bk\""
 	},
-	"editor.audit.value.faerieTime": {
-		"defaultMessage": "{time}, morning: {morning}",
-		"description": "The value of a passage of time setting in the editor's Audit tab's list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
-	},
 	"editor.audit.value.inherit": {
 		"defaultMessage": "inherit",
 		"description": "The value of a region's or area's setting a save left to the regions and areas above it, in the editor's Audit tab's list of what a save changed, e.g. \"Default tile: inherit\""
@@ -2595,6 +2591,10 @@
 		"defaultMessage": "Where is morning?",
 		"description": "Label of the field for which side of an area has morning when the passage of time is faerie, in the region and area editors, where a region sets it for the areas inside it, and on the Lobby tab"
 	},
+	"editor.faerieTime": {
+		"defaultMessage": "{time}, morning: {morning}",
+		"description": "A passage of time when it is faerie time, with where morning is: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north. Shown in the region and area editors, as the value a setting set to inherit takes and in problems with it, and as the value of a region's, area's or the lobby's passage of time in the editor's Audit tab's list of what a save changed"
+	},
 	"editor.filter.custom": {
 		"defaultMessage": "Custom",
 		"description": "Label of the filter on the Items and Tilesets tabs for whether an item or tile was made for this universe, rather than coming with the ruleset"
@@ -3054,10 +3054,6 @@
 	"editor.place.faerieLoops": {
 		"defaultMessage": "{area}: its passage of time is faerie, so it can't loop",
 		"description": "A problem keeping a save, shown by the region and area editors: an area that loops takes faerie time from above it; {area} is the area"
-	},
-	"editor.place.faerieTime": {
-		"defaultMessage": "{time}, morning: {morning}",
-		"description": "A passage of time in the region and area editors, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
 	},
 	"editor.place.fogOfWar": {
 		"defaultMessage": "Fog of war",
