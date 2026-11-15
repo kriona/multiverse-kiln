@@ -3319,6 +3319,10 @@
 		"message": "No shipwrights be posted to this sea.",
 		"source": "No builders are assigned to this region."
 	},
+	"editor.region.removeBuilder": {
+		"message": "Discharge",
+		"source": "Remove"
+	},
 	"editor.region.saveFailed": {
 		"message": "Couldn't stow the sea.",
 		"source": "Could not save the region."

@@ -1257,7 +1257,7 @@
 	},
 	"editor.area.back": {
 		"defaultMessage": "Back to Areas",
-		"description": "Button that closes the area editor and goes back to the list of areas"
+		"description": "Button in the area and region editors that closes the editor and goes back to the Areas tab's list of regions and areas"
 	},
 	"editor.area.backToLobby": {
 		"defaultMessage": "Back to Lobby",
@@ -1337,7 +1337,7 @@
 	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
-		"description": "Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for the tile an area is filled with where nothing else is painted, in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.delete": {
 		"defaultMessage": "Delete Area",
@@ -1453,7 +1453,7 @@
 	},
 	"editor.area.lightLevel": {
 		"defaultMessage": "Light level",
-		"description": "Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for how light indoor areas are at any time of day, lit or dark, in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.links": {
 		"defaultMessage": "Links",
@@ -2605,7 +2605,7 @@
 	},
 	"editor.faerieMorning": {
 		"defaultMessage": "Where is morning?",
-		"description": "Label of the field for which side of an area has morning, when the passage of time is faerie"
+		"description": "Label of the field for which side of an area has morning when the passage of time is faerie, in the region and area editors, where a region sets it for the areas inside it, and on the Lobby tab"
 	},
 	"editor.filter.custom": {
 		"defaultMessage": "Custom",
@@ -3041,7 +3041,7 @@
 	},
 	"editor.passageOfTime": {
 		"defaultMessage": "Passage of time",
-		"description": "Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for how the time of day changes, in the region and area editors, where a region sets it for the areas inside it, and on the Lobby tab for the universe's lobby; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.place.addParent": {
 		"defaultMessage": "Add Parent",
@@ -3406,6 +3406,10 @@
 	"editor.region.noBuilders": {
 		"defaultMessage": "No builders are assigned to this region.",
 		"description": "Shown in the region editor in place of the list of builders assigned to the region, when it has none"
+	},
+	"editor.region.removeBuilder": {
+		"defaultMessage": "Remove",
+		"description": "Button beside one of the builders assigned to a region in the region editor, which unassigns them from it"
 	},
 	"editor.region.saveFailed": {
 		"defaultMessage": "Could not save the region.",
@@ -5977,15 +5981,15 @@
 	},
 	"form.enabled": {
 		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
-		"description": "Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor's checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.indoorsOrOutdoors": {
 		"defaultMessage": "Indoors or outdoors",
-		"description": "Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Heading of the choice between indoors and outdoors in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.invalidText": {
 		"defaultMessage": "Use letters, numbers, spaces or punctuation.",
@@ -6001,11 +6005,11 @@
 	},
 	"form.name": {
 		"defaultMessage": "Name",
-		"description": "Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.outdoors": {
 		"defaultMessage": "Outdoors",
-		"description": "Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor's checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.save": {
 		"defaultMessage": "Save",

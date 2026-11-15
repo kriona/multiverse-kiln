@@ -50,12 +50,12 @@ export function describeValue<Setting extends InheritedSetting>(setting: Setting
 				? t({
 					id: 'form.indoors',
 					defaultMessage: 'Indoors',
-					description: 'Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+					description: 'Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 				})
 				: t({
 					id: 'form.outdoors',
 					defaultMessage: 'Outdoors',
-					description: 'Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+					description: 'Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 				})));
 
 		case 'lightLevel':

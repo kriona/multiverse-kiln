@@ -371,9 +371,9 @@ export class RegionEditorView
 			remove.className = 'secondary';
 			remove.hidden = this.assignments.disabled;
 			remove.textContent = t({
-				id: 'editor.place.removeParent',
+				id: 'editor.region.removeBuilder',
 				defaultMessage: 'Remove',
-				description: 'Button beside one of a region\'s or area\'s parents in its editor, which takes it out of that parent'
+				description: 'Button beside one of the builders assigned to a region in the region editor, which unassigns them from it'
 			});
 			remove.addEventListener('click', () =>
 			{
