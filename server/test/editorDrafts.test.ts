@@ -226,8 +226,8 @@ describe('Universe drafts', () =>
 	it('keeps the items the draft deleted that characters carry, disabled, and deletes the rest', async () =>
 	{
 		const created = await saveAll(ada, universe.universeId, [
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } },
-			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', type: 'rope', enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', category: 'gear', types: ['torch'], enabled: true } },
+			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', category: 'gear', types: ['rope'], enabled: true } }
 		]);
 		const torchId = Number(created['new:torch']);
 		const ropeId = Number(created['new:rope']);

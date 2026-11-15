@@ -2,14 +2,13 @@
  * Each ruleset's kinds of item and default items, which the migrations in server/drizzle add to the database
  */
 import type { MessageDescriptor } from './localization.js';
-import { CORE_RULEBOOK } from './rulebooks.js';
-import { PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_CATEGORIES, PF1E_ITEM_CATEGORY_NAMES, PF1E_ITEM_TYPE_NAMES, PF1E_ITEM_TYPES } from './rulesets/pf1e/items.js';
-import { PF1E_ITEM_TYPE_RULEBOOKS } from './rulesets/pf1e/rulebooks.js';
-import { SF1E_DEFAULT_ITEM_NAMES, SF1E_ITEM_CATEGORIES, SF1E_ITEM_CATEGORY_NAMES, SF1E_ITEM_TYPE_NAMES, SF1E_ITEM_TYPES } from './rulesets/sf1e/items.js';
+import { PF1E_DEFAULT_ITEM_KINDS, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_CATEGORIES, PF1E_ITEM_CATEGORY_NAMES, PF1E_ITEM_TYPE_NAMES, PF1E_ITEM_TYPES } from './rulesets/pf1e/items.js';
+import { SF1E_DEFAULT_ITEM_KINDS, SF1E_DEFAULT_ITEM_NAMES, SF1E_ITEM_CATEGORIES, SF1E_ITEM_CATEGORY_NAMES, SF1E_ITEM_TYPE_NAMES, SF1E_ITEM_TYPES } from './rulesets/sf1e/items.js';
 import type { Ruleset } from './universes.js';
 
 /**
- * A ruleset's kinds of item: broad categories, each holding types, and every item has one type
+ * A ruleset's kinds of item: broad categories, each holding types. Every item is in one category, and has
+ * any number of that category's types, or none
  */
 export interface ItemKinds
 {
@@ -26,11 +25,23 @@ export interface ItemKinds
 	types: Readonly<Record<string, string>>;
 
 	typeNames: Record<string, MessageDescriptor>;
+}
+
+/**
+ * An item's category and types
+ */
+export interface ItemKind
+{
+	/**
+	 * One of the ruleset's item categories (ITEM_KINDS), e.g. weapon
+	 */
+	category: string;
 
 	/**
-	 * The book each type an optional book brings comes from, by the type's key; the rest are the core rulebook's
+	 * Some of the category's types (ITEM_KINDS), in the order the ruleset lists them, e.g. light blades
+	 * and thrown for a dagger; none for an item of no type
 	 */
-	typeRulebooks: Readonly<Record<string, string>>;
+	types: readonly string[];
 }
 
 /**
@@ -41,16 +52,22 @@ export const ITEM_KINDS: Record<Ruleset, ItemKinds> = {
 		categories: PF1E_ITEM_CATEGORIES,
 		categoryNames: PF1E_ITEM_CATEGORY_NAMES,
 		types: PF1E_ITEM_TYPES,
-		typeNames: PF1E_ITEM_TYPE_NAMES,
-		typeRulebooks: PF1E_ITEM_TYPE_RULEBOOKS
+		typeNames: PF1E_ITEM_TYPE_NAMES
 	},
 	sf1e: {
 		categories: SF1E_ITEM_CATEGORIES,
 		categoryNames: SF1E_ITEM_CATEGORY_NAMES,
 		types: SF1E_ITEM_TYPES,
-		typeNames: SF1E_ITEM_TYPE_NAMES,
-		typeRulebooks: {}
+		typeNames: SF1E_ITEM_TYPE_NAMES
 	}
+};
+
+/**
+ * Each default item's category and types, by ruleset and the item's key
+ */
+export const DEFAULT_ITEM_KINDS: Record<Ruleset, Record<string, ItemKind>> = {
+	pf1e: PF1E_DEFAULT_ITEM_KINDS,
+	sf1e: SF1E_DEFAULT_ITEM_KINDS
 };
 
 /**
@@ -80,37 +97,62 @@ export const DEFAULT_STARTING_ITEMS: Record<Ruleset, readonly { key: string; qua
 };
 
 /**
- * Whether a ruleset has an item type
+ * Whether a ruleset has an item category
  *
  * @param ruleset The ruleset
- * @param type The type's key
+ * @param category The category's key
  * @return True when it does
  */
-export function isItemType(ruleset: Ruleset, type: string): boolean
+export function isItemCategory(ruleset: Ruleset, category: string): boolean
 {
-	return(Object.hasOwn(ITEM_KINDS[ruleset].types, type));
+	return(ITEM_KINDS[ruleset].categories.includes(category));
 }
 
 /**
- * The category an item type is in
+ * A category's item types, in the order the ruleset lists them
  *
  * @param ruleset The ruleset
- * @param type The type's key
- * @return The category's key, or undefined when the ruleset has no such type
+ * @param category The category's key
+ * @return The types' keys
  */
-export function itemCategory(ruleset: Ruleset, type: string): string | undefined
+export function categoryItemTypes(ruleset: Ruleset, category: string): string[]
 {
-	return((isItemType(ruleset, type) ? ITEM_KINDS[ruleset].types[type] : undefined));
+	return(Object.entries(ITEM_KINDS[ruleset].types)
+		.filter(([, typeCategory]) => (typeCategory === category))
+		.map(([type]) => type));
 }
 
 /**
- * The book an item type comes from, which decides whether the editor offers it
+ * Whether an item's category and types are the ruleset's: a category it has, and types of that category,
+ * each once, in the order the ruleset lists them
  *
  * @param ruleset The ruleset
- * @param type The type's key
- * @return The book's key: the core rulebook for every type an optional book doesn't bring
+ * @param kind The item's category and types
+ * @return True when they are
  */
-export function itemTypeRulebook(ruleset: Ruleset, type: string): string
+export function isItemKind(ruleset: Ruleset, kind: ItemKind): boolean
 {
-	return((ITEM_KINDS[ruleset].typeRulebooks[type] ?? CORE_RULEBOOK));
+	if (!isItemCategory(ruleset, kind.category))
+	{
+		return(false);
+	}
+
+	const types = categoryItemTypes(ruleset, kind.category);
+	const positions = kind.types.map((type) => types.indexOf(type));
+
+	return(positions.every((position, index) => ((position >= 0) && ((index === 0) || (position > positions[index - 1])))));
+}
+
+/**
+ * Some item types in the order the ruleset lists them, each once
+ *
+ * @param ruleset The ruleset
+ * @param types The types' keys
+ * @return The types the ruleset has, sorted
+ */
+export function sortedItemTypes(ruleset: Ruleset, types: Iterable<string>): string[]
+{
+	const chosen = new Set(types);
+
+	return(Object.keys(ITEM_KINDS[ruleset].types).filter((type) => chosen.has(type)));
 }

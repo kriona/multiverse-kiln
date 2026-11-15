@@ -1065,7 +1065,7 @@ export class CharacterSheetDialog
 				item: name,
 				quantity: item.quantity
 			});
-			row.append(createItemIcon(item.type, sheet.ruleset), text);
+			row.append(createItemIcon(item.category, sheet.ruleset), text);
 
 			if (canChange)
 			{

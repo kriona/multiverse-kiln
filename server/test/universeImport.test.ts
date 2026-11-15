@@ -371,7 +371,7 @@ describe('importing a universe', () =>
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, uploadedGraphicId: 'new:mossy' } },
 			{ kind: 'editCells', areaId: caveId, changes: [[0, 0, 'new:moss'], [12, -3, VOID_CELL]] },
 			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
-			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', type: 'torch', enabled: true } },
+			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', category: 'gear', types: ['torch'], enabled: true } },
 			{ kind: 'saveTranslatorNote', text: { kind: 'area', thingId: caveId, field: 'name' }, note: 'A dark place' },
 			{ kind: 'saveNoTranslation', text: { kind: 'universe', thingId: kilnhavenId, field: 'name' }, noTranslation: true }
 		]);
@@ -807,6 +807,26 @@ describe('importing a universe', () =>
 				request.destroy();
 			}
 		}
+	});
+
+	it('gives the items of a file exported when items had one type each a category and types', async () =>
+	{
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const otherId = await createUniverse(ada, 'Otherhaven');
+
+		contents.items = contents.items?.map(({ category, types, ...item }) => ((item.name === 'Lantern')
+			? { ...item, type: 'quarterstaff' } as unknown as EditorItem
+			: { ...item, category, types }));
+
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const imported = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const lantern = (await draftOf(ada, otherId)).items?.find((item) => (item.name === 'Lantern'));
+
+		assert.deepStrictEqual([lantern?.category, lantern?.types], ['weapon', ['double', 'monk']]);
 	});
 
 	it('refuses a file whose content a save wouldn\'t take, saving none of it', async () =>

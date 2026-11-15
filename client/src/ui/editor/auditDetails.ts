@@ -2,7 +2,7 @@ import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES,
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
-import { itemName, itemTypeName } from '../itemNames';
+import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
@@ -201,10 +201,15 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Existing characters keep playing while disabled',
 		description: 'Names a race\'s or class\'s setting in the list of what a save changed, on the editor\'s Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can\'t play until it is enabled again (no). Chosen in the dialog the editor\'s Save opens when disabling a race or class characters are'
 	},
-	type: {
-		id: 'editor.item.type',
-		defaultMessage: 'Type',
-		description: 'An item\'s type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab\'s filter; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	category: {
+		id: 'editor.items.category',
+		defaultMessage: 'Kind',
+		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab\'s filter for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	types: {
+		id: 'editor.item.types',
+		defaultMessage: 'Types',
+		description: 'Heading of the item editor\'s checkboxes for an item\'s types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	abilityModifiers: {
 		id: 'editor.race.abilityModifiers',
@@ -619,8 +624,10 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(colorToHex(change.value));
 		case 'graphic':
 			return(describeGraphic(change.value));
-		case 'type':
-			return(itemTypeName(change.value, ruleset));
+		case 'category':
+			return(itemCategoryName(change.value, ruleset));
+		case 'types':
+			return(listOrNone(change.value.map((type) => itemTypeName(type, ruleset))));
 		case 'abilityModifiers':
 		{
 			const modifiers = change.value;

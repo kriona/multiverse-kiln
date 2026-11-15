@@ -741,6 +741,15 @@ form > .changed-since,
 	}
 }
 
+// The item editor's type checkboxes, in columns that wrap, since a category can have many types
+.item-types
+{
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+	gap: 8px 16px;
+	width: 100%;
+}
+
 .swatch
 {
 	display: inline-block;

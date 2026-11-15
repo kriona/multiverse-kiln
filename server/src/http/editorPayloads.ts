@@ -21,6 +21,12 @@ const MAX_WINDOW_ID_LENGTH = 64;
 const MAX_RULEBOOK_LIST_LENGTH = 200;
 
 /**
+ * The most types an item's settings may list, far more than any ruleset's categories have. Whether the
+ * ruleset has them is checked as they are saved
+ */
+const MAX_ITEM_TYPE_LIST_LENGTH = 100;
+
+/**
  * The settings a change was made from, as the editor loaded them (LoadedSettings). They are only compared
  * with what is saved, never saved themselves, so any object will do
  */
@@ -427,7 +433,8 @@ export const tileListQuery = z.object({
  */
 const itemSettings = z.object({
 	name: displayText(MAX_ITEM_NAME_LENGTH).nullable(),
-	type: itemKindKey,
+	category: itemKindKey,
+	types: z.array(itemKindKey).max(MAX_ITEM_TYPE_LIST_LENGTH),
 	enabled: z.boolean()
 }) satisfies z.ZodType<ItemSettings>;
 

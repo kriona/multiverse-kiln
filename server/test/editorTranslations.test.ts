@@ -103,7 +103,7 @@ describe('Translations tab', () =>
 			{ kind: 'saveRace', id: elf.id, settings: { ...elf, enabled: false } },
 			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, name: 'Shiv' } },
 			{ kind: 'saveTile', id: grass.id, settings: { ...grass, walkSeconds: 9 } },
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', category: 'gear', types: ['torch'], enabled: true } }
 		]);
 
 		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));

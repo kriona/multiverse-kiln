@@ -37,7 +37,8 @@ const lava: TileSettings = {
 
 const torch: ItemSettings = {
 	name: 'torch',
-	type: 'torch',
+	category: 'gear',
+	types: ['torch'],
 	enabled: true
 };
 
@@ -1128,7 +1129,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
-			const rusty = { name: 'rusty dagger', type: 'dagger', enabled: false };
+			const rusty = { name: 'rusty dagger', category: 'weapon', types: ['blades_light'], enabled: false };
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, rusty)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...rusty, rulebook: 'core', custom: false, edited: true, editedSettings: true }]);
@@ -1151,18 +1152,33 @@ describe('World editor API', () =>
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', itemId)).status, 404);
 		});
 
-		it('refuses an unknown type, a custom item without a name and invalid settings', async () =>
+		it('refuses an unknown category or type, a type of another category, a custom item without a name and invalid settings', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const itemId = (await createIn(ada, universeId, 'Item', torch)).body.id;
+			const invalid = [
+				{ ...torch, category: 'spaceship' },
+				{ ...torch, types: ['lightsaber'] },
+				{ ...torch, types: ['bows'] },
+				{ ...torch, types: ['torch', 'torch'] },
+				{ ...torch, category: 'weapon', types: ['thrown', 'blades_light'] },
+				{ ...torch, types: 'torch' },
+				{ ...torch, name: null },
+				{ ...torch, name: '' },
+				{ ...torch, enabled: 'yes' }
+			];
 
-			for (const body of [{ ...torch, type: 'lightsaber' }, { ...torch, name: null }, { ...torch, name: '' }, { ...torch, enabled: 'yes' }])
+			for (const body of invalid)
 			{
 				assert.strictEqual((await createIn(ada, universeId, 'Item', body)).status, 400, JSON.stringify(body));
 			}
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, name: null })).status, 400);
-			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, type: 'lightsaber' })).status, 400);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, types: ['lightsaber'] })).status, 400);
+
+			// An item can have no type, or several of its category's
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, types: [] })).status, 200);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, category: 'weapon', types: ['blades_light', 'thrown'] })).status, 200);
 		});
 
 		it('lets builders with the permission change items, but not beta testers', async () =>

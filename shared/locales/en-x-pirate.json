@@ -2823,6 +2823,10 @@
 		"message": "Sort",
 		"source": "Type"
 	},
+	"editor.item.types": {
+		"message": "Sorts",
+		"source": "Types"
+	},
 	"editor.itemSelect.chosen": {
 		"message": "In the hold",
 		"source": "Chosen"
@@ -6044,8 +6048,8 @@
 		"source": "The universe isn't disabled."
 	},
 	"error.unknownItemType": {
-		"message": "The universe's ruleset knows no such sort o' booty.",
-		"source": "The universe's ruleset has no such type of item."
+		"message": "The universe's ruleset knows no such kind or sort o' booty.",
+		"source": "The universe's ruleset has no such kind or type of item."
 	},
 	"error.unknownRaceArea": {
 		"message": "A home port be chosen for folk this universe doesn't have.",
@@ -6599,17 +6603,13 @@
 		"message": "Who can use the summons",
 		"source": "Who can use the link"
 	},
-	"item.pf1e.arcanist_kit": {
-		"message": "arcanist's ditty bag",
-		"source": "arcanist's kit"
+	"item.pf1e.book_of_puzzles": {
+		"message": "book o' riddles",
+		"source": "book of puzzles"
 	},
-	"item.pf1e.bloodrager_kit": {
-		"message": "bloodrager's ditty bag",
-		"source": "bloodrager's kit"
-	},
-	"item.pf1e.brawler_kit": {
-		"message": "tavern brawler's ditty bag",
-		"source": "brawler's kit"
+	"item.pf1e.book_of_war_prayers": {
+		"message": "book o' battle prayers",
+		"source": "book of war prayers"
 	},
 	"item.pf1e.cestus": {
 		"message": "knuckle-duster",
@@ -6619,13 +6619,9 @@
 		"message": "dirk",
 		"source": "dagger"
 	},
-	"item.pf1e.hunter_kit": {
-		"message": "hunter's ditty bag",
-		"source": "hunter's kit"
-	},
-	"item.pf1e.investigator_kit": {
-		"message": "bilge sleuth's ditty bag",
-		"source": "investigator's kit"
+	"item.pf1e.footprints_cast": {
+		"message": "bootprint cast",
+		"source": "footprints cast"
 	},
 	"item.pf1e.kobold_long_lash": {
 		"message": "long lash tail rig",
@@ -6635,6 +6631,10 @@
 		"message": "spiked tail rig",
 		"source": "spiked tail attachment"
 	},
+	"item.pf1e.light_fire_ink": {
+		"message": "flash-fire ink",
+		"source": "light fire ink"
+	},
 	"item.pf1e.quilted_cloth": {
 		"message": "quilted sailcloth",
 		"source": "quilted cloth"
@@ -6643,29 +6643,13 @@
 		"message": "bilge rat tailblade",
 		"source": "ratfolk tailblade"
 	},
-	"item.pf1e.shaman_kit": {
-		"message": "sea shaman's ditty bag",
-		"source": "shaman's kit"
-	},
-	"item.pf1e.skald_kit": {
-		"message": "war shanty singer's ditty bag",
-		"source": "skald's kit"
-	},
-	"item.pf1e.slayer_kit": {
-		"message": "headhunter's ditty bag",
-		"source": "slayer's kit"
-	},
-	"item.pf1e.swashbuckler_kit": {
-		"message": "swashbuckler's ditty bag",
-		"source": "swashbuckler's kit"
-	},
 	"item.pf1e.sword_cane": {
 		"message": "sword cane",
 		"source": "sword cane"
 	},
-	"item.pf1e.warpriest_kit": {
-		"message": "battle chaplain's ditty bag",
-		"source": "warpriest's kit"
+	"item.pf1e.tome_of_epics": {
+		"message": "tome o' legends",
+		"source": "tome of epics"
 	},
 	"item.pf1e.wooden_armor": {
 		"message": "plank armor",
@@ -7532,112 +7516,88 @@
 		"source": "Gear"
 	},
 	"pf1e.itemCategory.weapon": {
-		"message": "Arms",
-		"source": "Weapons"
+		"message": "Armament",
+		"source": "Weapon"
 	},
-	"pf1e.itemType.arrows": {
-		"message": "arrows",
-		"source": "arrows"
+	"pf1e.itemType.axes": {
+		"message": "hatchets",
+		"source": "axes"
 	},
-	"pf1e.itemType.cestus": {
-		"message": "knuckle-duster",
-		"source": "cestus"
+	"pf1e.itemType.blades_heavy": {
+		"message": "big blades",
+		"source": "heavy blades"
 	},
-	"pf1e.itemType.chain_shirt": {
-		"message": "chain shirt",
-		"source": "chain shirt"
+	"pf1e.itemType.blades_light": {
+		"message": "wee blades",
+		"source": "light blades"
 	},
-	"pf1e.itemType.club": {
-		"message": "belayin' pin",
-		"source": "club"
+	"pf1e.itemType.bows": {
+		"message": "bows",
+		"source": "bows"
 	},
-	"pf1e.itemType.crossbow_bolts": {
-		"message": "crossbow bolts",
-		"source": "crossbow bolts"
+	"pf1e.itemType.close": {
+		"message": "close quarters",
+		"source": "close"
 	},
-	"pf1e.itemType.dagger": {
-		"message": "dirk",
-		"source": "dagger"
+	"pf1e.itemType.crossbows": {
+		"message": "crossbows",
+		"source": "crossbows"
 	},
-	"pf1e.itemType.heavy_shield": {
-		"message": "heavy shield",
-		"source": "heavy shield"
+	"pf1e.itemType.double": {
+		"message": "double-enders",
+		"source": "double"
 	},
-	"pf1e.itemType.kobold_long_lash": {
-		"message": "long lash tail rig",
-		"source": "long lash tail attachment"
+	"pf1e.itemType.flails": {
+		"message": "flails",
+		"source": "flails"
 	},
-	"pf1e.itemType.kobold_spiked_tail": {
-		"message": "spiked tail rig",
-		"source": "spiked tail attachment"
+	"pf1e.itemType.hammers": {
+		"message": "cudgels",
+		"source": "hammers"
 	},
-	"pf1e.itemType.leather_armor": {
-		"message": "leather armor",
-		"source": "leather armor"
+	"pf1e.itemType.heavy_armor": {
+		"message": "heavy armor",
+		"source": "heavy armor"
 	},
-	"pf1e.itemType.light_crossbow": {
-		"message": "light crossbow",
-		"source": "light crossbow"
+	"pf1e.itemType.light_armor": {
+		"message": "light armor",
+		"source": "light armor"
 	},
-	"pf1e.itemType.light_shield": {
-		"message": "buckler",
-		"source": "light shield"
+	"pf1e.itemType.medium_armor": {
+		"message": "middlin' armor",
+		"source": "medium armor"
 	},
-	"pf1e.itemType.longbow": {
-		"message": "longbow",
-		"source": "longbow"
+	"pf1e.itemType.monk": {
+		"message": "monk's arms",
+		"source": "monk"
 	},
-	"pf1e.itemType.longsword": {
-		"message": "broadsword",
-		"source": "longsword"
+	"pf1e.itemType.natural": {
+		"message": "fists an' claws",
+		"source": "natural"
 	},
-	"pf1e.itemType.other_gear": {
-		"message": "odds an' ends",
-		"source": "other gear"
-	},
-	"pf1e.itemType.padded_armor": {
-		"message": "padded armor",
-		"source": "padded armor"
-	},
-	"pf1e.itemType.quarterstaff": {
-		"message": "quarterstaff",
-		"source": "quarterstaff"
-	},
-	"pf1e.itemType.quilted_cloth": {
-		"message": "quilted sailcloth",
-		"source": "quilted cloth"
-	},
-	"pf1e.itemType.ratfolk_tailblade": {
-		"message": "tailblade",
-		"source": "tailblade"
+	"pf1e.itemType.polearms": {
+		"message": "long poles",
+		"source": "polearms"
 	},
 	"pf1e.itemType.rope": {
 		"message": "line",
 		"source": "rope"
 	},
-	"pf1e.itemType.short_sword": {
-		"message": "cutlass",
-		"source": "short sword"
+	"pf1e.itemType.shields": {
+		"message": "shields",
+		"source": "shields"
 	},
-	"pf1e.itemType.shortbow": {
-		"message": "shortbow",
-		"source": "shortbow"
+	"pf1e.itemType.spears": {
+		"message": "boardin' pikes",
+		"source": "spears"
 	},
-	"pf1e.itemType.spear": {
-		"message": "boardin' pike",
-		"source": "spear"
-	},
-	"pf1e.itemType.sword_cane": {
-		"message": "sword cane",
-		"source": "sword cane"
+	"pf1e.itemType.thrown": {
+		"message": "throwin'",
+		"source": "thrown"
 	},
 	"pf1e.itemType.torch": {
 		"message": "torch",
 		"source": "torch"
-	},
-	"pf1e.itemType.wooden_armor": {
-		"message": "plank armor",
-		"source": "wooden armor"
 	},
 	"pf1e.race.aasimar": {
 		"message": "Aasimar",
@@ -8956,8 +8916,8 @@
 		"source": "Gear"
 	},
 	"sf1e.itemCategory.weapon": {
-		"message": "Arms",
-		"source": "Weapons"
+		"message": "Armament",
+		"source": "Weapon"
 	},
 	"sf1e.itemType.battery": {
 		"message": "powder charge",
@@ -8990,10 +8950,6 @@
 	"sf1e.itemType.light_armor": {
 		"message": "light armor",
 		"source": "light armor"
-	},
-	"sf1e.itemType.other_gear": {
-		"message": "other stores",
-		"source": "other gear"
 	},
 	"sf1e.itemType.second_skin": {
 		"message": "second hide",

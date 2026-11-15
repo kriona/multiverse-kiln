@@ -390,9 +390,9 @@ export interface CharacterSheetItem extends OptionName
 	id: number;
 
 	/**
-	 * The item's type, a key of the ruleset's ITEM_KINDS
+	 * The item's category, a key of the ruleset's ITEM_KINDS
 	 */
-	type: string;
+	category: string;
 
 	quantity: number;
 }

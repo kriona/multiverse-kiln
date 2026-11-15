@@ -2821,7 +2821,11 @@
 	},
 	"editor.item.type": {
 		"defaultMessage": "Type",
-		"description": "An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the Items tab's filter for items of one type, such as light blades or light armor"
+	},
+	"editor.item.types": {
+		"defaultMessage": "Types",
+		"description": "Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.itemSelect.chosen": {
 		"defaultMessage": "Chosen",
@@ -2869,7 +2873,7 @@
 	},
 	"editor.items.category": {
 		"defaultMessage": "Kind",
-		"description": "Label of the filter for an item's broad kind, such as weapons or armor"
+		"description": "An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.items.icon": {
 		"defaultMessage": "Icon",
@@ -6044,8 +6048,8 @@
 		"description": "Why a universe couldn't be enabled on the Universes admin page: it isn't disabled, perhaps because another admin enabled it a moment ago"
 	},
 	"error.unknownItemType": {
-		"defaultMessage": "The universe's ruleset has no such type of item.",
-		"description": "Why an item couldn't be saved: the type chosen for it isn't one of the game rules' item types"
+		"defaultMessage": "The universe's ruleset has no such kind or type of item.",
+		"description": "Why an item couldn't be saved: the kind (such as weapons) or a type (such as light blades) chosen for it isn't one of the game rules', or a type isn't of its kind"
 	},
 	"error.unknownRaceArea": {
 		"defaultMessage": "A starting area is chosen for a race this universe doesn't have.",
@@ -6599,17 +6603,13 @@
 		"defaultMessage": "Who can use the link",
 		"description": "Label of the choice of how many characters can join the group with an invite link"
 	},
-	"item.pf1e.arcanist_kit": {
-		"defaultMessage": "arcanist's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear an arcanist (a spellcasting class) sets out with"
+	"item.pf1e.book_of_puzzles": {
+		"defaultMessage": "book of puzzles",
+		"description": "Name of an item in Pathfinder: a book of brainteasers that train the mind of whoever solves them"
 	},
-	"item.pf1e.bloodrager_kit": {
-		"defaultMessage": "bloodrager's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a bloodrager (a raging, spellcasting warrior class) sets out with"
-	},
-	"item.pf1e.brawler_kit": {
-		"defaultMessage": "brawler's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a brawler (an unarmed fighter class) sets out with"
+	"item.pf1e.book_of_war_prayers": {
+		"defaultMessage": "book of war prayers",
+		"description": "Name of an item in Pathfinder: a small book of prayers read aloud before a battle to hearten allies"
 	},
 	"item.pf1e.cestus": {
 		"defaultMessage": "cestus",
@@ -6619,13 +6619,9 @@
 		"defaultMessage": "dagger",
 		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
 	},
-	"item.pf1e.hunter_kit": {
-		"defaultMessage": "hunter's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a hunter (a wilderness class with an animal companion) sets out with"
-	},
-	"item.pf1e.investigator_kit": {
-		"defaultMessage": "investigator's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear an investigator (a detective class) sets out with"
+	"item.pf1e.footprints_cast": {
+		"defaultMessage": "footprints cast",
+		"description": "Name of an item in Pathfinder: a quick-drying plaster for taking a copy of footprints to study later"
 	},
 	"item.pf1e.kobold_long_lash": {
 		"defaultMessage": "long lash tail attachment",
@@ -6635,6 +6631,10 @@
 		"defaultMessage": "spiked tail attachment",
 		"description": "Name of an item in Pathfinder: a spiked weight a kobold straps to the end of its tail"
 	},
+	"item.pf1e.light_fire_ink": {
+		"defaultMessage": "light fire ink",
+		"description": "Name of an item in Pathfinder: an ink for secret messages that bursts into flame once light falls on it"
+	},
 	"item.pf1e.quilted_cloth": {
 		"defaultMessage": "quilted cloth",
 		"description": "Name of an item in Pathfinder: light armor of layered, padded cloth worn as clothing"
@@ -6643,29 +6643,13 @@
 		"defaultMessage": "ratfolk tailblade",
 		"description": "Name of an item in Pathfinder: a small blade a ratfolk straps to its tail"
 	},
-	"item.pf1e.shaman_kit": {
-		"defaultMessage": "shaman's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a shaman (a class that casts spells granted by spirits) sets out with"
-	},
-	"item.pf1e.skald_kit": {
-		"defaultMessage": "skald's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a skald (a warrior poet class) sets out with"
-	},
-	"item.pf1e.slayer_kit": {
-		"defaultMessage": "slayer's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a slayer (a class that hunts people) sets out with"
-	},
-	"item.pf1e.swashbuckler_kit": {
-		"defaultMessage": "swashbuckler's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a swashbuckler (a daring sword fighter class) sets out with"
-	},
 	"item.pf1e.sword_cane": {
 		"defaultMessage": "sword cane",
 		"description": "Name of an item in Pathfinder: a thin blade hidden in a walking stick"
 	},
-	"item.pf1e.warpriest_kit": {
-		"defaultMessage": "warpriest's kit",
-		"description": "Name of an item in Pathfinder: a pack of the gear a warpriest (a warrior class that casts divine spells) sets out with"
+	"item.pf1e.tome_of_epics": {
+		"defaultMessage": "tome of epics",
+		"description": "Name of an item in Pathfinder: a heavy illustrated book of heroic tales that inspires its reader"
 	},
 	"item.pf1e.wooden_armor": {
 		"defaultMessage": "wooden armor",
@@ -7525,119 +7509,95 @@
 	},
 	"pf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: armor and shields"
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: armor and shields"
 	},
 	"pf1e.itemCategory.gear": {
 		"defaultMessage": "Gear",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: adventuring equipment such as rope and torches"
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: adventuring equipment such as rope and torches"
 	},
 	"pf1e.itemCategory.weapon": {
-		"defaultMessage": "Weapons",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: swords, bows, ammunition and the like"
+		"defaultMessage": "Weapon",
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: swords, bows, ammunition and the like"
 	},
-	"pf1e.itemType.arrows": {
-		"defaultMessage": "arrows",
-		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a bow"
+	"pf1e.itemType.axes": {
+		"defaultMessage": "axes",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: battleaxes, handaxes, picks and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.cestus": {
-		"defaultMessage": "cestus",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a studded leather glove for punching"
+	"pf1e.itemType.blades_heavy": {
+		"defaultMessage": "heavy blades",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: longswords, scimitars, greatswords and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.chain_shirt": {
-		"defaultMessage": "chain shirt",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor, a shirt of metal rings"
+	"pf1e.itemType.blades_light": {
+		"defaultMessage": "light blades",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: daggers, short swords, rapiers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.club": {
-		"defaultMessage": "club",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a wooden cudgel"
+	"pf1e.itemType.bows": {
+		"defaultMessage": "bows",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: shortbows and longbows. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.crossbow_bolts": {
-		"defaultMessage": "crossbow bolts",
-		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a crossbow"
+	"pf1e.itemType.close": {
+		"defaultMessage": "close",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.dagger": {
-		"defaultMessage": "dagger",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a short blade for stabbing or throwing"
+	"pf1e.itemType.crossbows": {
+		"defaultMessage": "crossbows",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: light, heavy and hand crossbows. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.heavy_shield": {
-		"defaultMessage": "heavy shield",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a large shield held with the whole arm"
+	"pf1e.itemType.double": {
+		"defaultMessage": "double",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons with a striking end at each end, such as a quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.kobold_long_lash": {
-		"defaultMessage": "long lash tail attachment",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a whip-like blade a kobold straps to the end of its tail"
+	"pf1e.itemType.flails": {
+		"defaultMessage": "flails",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: flails, chains and whips. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.kobold_spiked_tail": {
-		"defaultMessage": "spiked tail attachment",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a spiked weight a kobold straps to the end of its tail"
+	"pf1e.itemType.hammers": {
+		"defaultMessage": "hammers",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: clubs, maces, warhammers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.leather_armor": {
-		"defaultMessage": "leather armor",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of stiffened leather"
+	"pf1e.itemType.heavy_armor": {
+		"defaultMessage": "heavy armor",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as full plate, which slows its wearer the most"
 	},
-	"pf1e.itemType.light_crossbow": {
-		"defaultMessage": "light crossbow",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a crossbow drawn back by hand"
+	"pf1e.itemType.light_armor": {
+		"defaultMessage": "light armor",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as leather armor or a chain shirt, which barely slows its wearer"
 	},
-	"pf1e.itemType.light_shield": {
-		"defaultMessage": "light shield",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a small shield strapped to the forearm"
+	"pf1e.itemType.medium_armor": {
+		"defaultMessage": "medium armor",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as hide or a breastplate, which slows its wearer"
 	},
-	"pf1e.itemType.longbow": {
-		"defaultMessage": "longbow",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a bow about as tall as its archer"
+	"pf1e.itemType.monk": {
+		"defaultMessage": "monk",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: the weapons monks train with, such as a kama or quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.longsword": {
-		"defaultMessage": "longsword",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a straight one-handed sword"
+	"pf1e.itemType.natural": {
+		"defaultMessage": "natural",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: unarmed strikes and natural weapons such as claws. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.other_gear": {
-		"defaultMessage": "other gear",
-		"description": "Type of item in Pathfinder, shown beside an item's name: equipment that is none of the other types"
-	},
-	"pf1e.itemType.padded_armor": {
-		"defaultMessage": "padded armor",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of quilted cloth"
-	},
-	"pf1e.itemType.quarterstaff": {
-		"defaultMessage": "quarterstaff",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a long wooden staff used as a weapon"
-	},
-	"pf1e.itemType.quilted_cloth": {
-		"defaultMessage": "quilted cloth",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of layered, padded cloth worn as clothing"
-	},
-	"pf1e.itemType.ratfolk_tailblade": {
-		"defaultMessage": "tailblade",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a small blade a ratfolk straps to its tail"
+	"pf1e.itemType.polearms": {
+		"defaultMessage": "polearms",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: halberds, glaives and other blades on long poles. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.rope": {
 		"defaultMessage": "rope",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a length of rope"
 	},
-	"pf1e.itemType.short_sword": {
-		"defaultMessage": "short sword",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a light one-handed sword"
+	"pf1e.itemType.shields": {
+		"defaultMessage": "shields",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: shields of every size, from bucklers to tower shields"
 	},
-	"pf1e.itemType.shortbow": {
-		"defaultMessage": "shortbow",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a small bow"
+	"pf1e.itemType.spears": {
+		"defaultMessage": "spears",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: spears, javelins, lances and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.spear": {
-		"defaultMessage": "spear",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a pole with a pointed head"
-	},
-	"pf1e.itemType.sword_cane": {
-		"defaultMessage": "sword cane",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a thin blade hidden in a walking stick"
+	"pf1e.itemType.thrown": {
+		"defaultMessage": "thrown",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.torch": {
 		"defaultMessage": "torch",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a burning stick that gives light"
-	},
-	"pf1e.itemType.wooden_armor": {
-		"defaultMessage": "wooden armor",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of wooden plates bound together"
 	},
 	"pf1e.race.aasimar": {
 		"defaultMessage": "Aasimar",
@@ -8949,15 +8909,15 @@
 	},
 	"sf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: armor suits"
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: armor suits"
 	},
 	"sf1e.itemCategory.gear": {
 		"defaultMessage": "Gear",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: equipment such as comm units and flashlights"
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: equipment such as comm units and flashlights"
 	},
 	"sf1e.itemCategory.weapon": {
-		"defaultMessage": "Weapons",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: knives, guns, grenades, ammunition and the like"
+		"defaultMessage": "Weapon",
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: knives, guns, grenades, ammunition and the like"
 	},
 	"sf1e.itemType.battery": {
 		"defaultMessage": "battery",
@@ -8990,10 +8950,6 @@
 	"sf1e.itemType.light_armor": {
 		"defaultMessage": "light armor",
 		"description": "Type of item in Starfinder, shown beside an item's name: armor that is light enough to move freely in, other than a second skin"
-	},
-	"sf1e.itemType.other_gear": {
-		"defaultMessage": "other gear",
-		"description": "Type of item in Starfinder, shown beside an item's name: equipment that is none of the other types"
 	},
 	"sf1e.itemType.second_skin": {
 		"defaultMessage": "second skin",

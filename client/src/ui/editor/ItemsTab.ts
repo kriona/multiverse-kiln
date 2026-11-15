@@ -1,10 +1,10 @@
-import { canEditWorld, canEditItemsOpen, differsBeyondEnabling, ITEM_KINDS, itemTypeRulebook, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, categoryItemTypes, differsBeyondEnabling, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { createItemIcon, itemCategoryName, itemName, itemTypeName, itemTypesText } from '../itemNames';
 import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { afterSwitchSlides } from '../toggleSwitch';
@@ -106,11 +106,6 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		});
 		rulebooks.subscribe(() =>
 		{
-			if (this.universe)
-			{
-				this.showTypeOptions(this.universe.ruleset);
-			}
-
 			this.offset = 0;
 			void this.refresh();
 		});
@@ -293,8 +288,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Offers the types in the category chosen, or every type when none is, of the books that are on,
-	 * keeping the type chosen if it is still offered
+	 * Offers the types in the category chosen, or every type when none is, keeping the type chosen if it
+	 * is still offered
 	 *
 	 * @param ruleset The universe's ruleset
 	 */
@@ -302,9 +297,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		const category = this.categoryFilter.value;
 		const chosen = this.typeFilter.value;
-		const types = Object.entries(ITEM_KINDS[ruleset].types)
-			.filter(([type, typeCategory]) => (((category === '') || (typeCategory === category)) && this.rulebooks.shows(itemTypeRulebook(ruleset, type))))
-			.map(([type]) => type);
+		const types = ((category === '') ? Object.keys(ITEM_KINDS[ruleset].types) : categoryItemTypes(ruleset, category));
 
 		setOptions(this.typeFilter, [
 			anyOption(),
@@ -475,7 +468,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
-		return(saved.editedSettings || differsBeyondEnabling({ name: saved.name, type: saved.type }, { name: item.name, type: item.type }));
+		return(saved.editedSettings || differsBeyondEnabling({ name: saved.name, category: saved.category, types: saved.types }, { name: item.name, category: item.category, types: item.types }));
 	}
 
 	/**
@@ -505,10 +498,10 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			stagedTag(state, !item.custom)
 		];
 		const cells = [
-			createItemIcon(item.type, universe.ruleset),
+			createItemIcon(item.category, universe.ruleset),
 			nameButton,
 			enabledSwitch,
-			itemTypeName(item.type, universe.ruleset),
+			itemTypesText(item.types, universe.ruleset),
 			joinTags(...tags)
 		];
 
@@ -556,7 +549,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		this.changes.edit(item.id, loadedFrom(this.known.get(item.id))).apply({
 			name: item.name,
-			type: item.type,
+			category: item.category,
+			types: item.types,
 			enabled
 		});
 		afterSwitchSlides(() =>
@@ -585,7 +579,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			this.dialog.open(this.universe, item, this.changes.edit(item?.id, loadedFrom((item === undefined) ? undefined : this.known.get(item.id))), () =>
 			{
 				this.render();
-			}, this.rulebooks);
+			});
 		}
 	}
 }

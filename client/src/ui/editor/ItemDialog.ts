@@ -1,4 +1,4 @@
-import { canEditItemsOpen, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, itemTypeRulebook, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditItemsOpen, categoryItemTypes, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
@@ -8,11 +8,10 @@ import { formMessages } from '../formMessages';
 import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { editorMessages } from './editorMessages';
 import { FollowedDialog } from './otherSaves';
-import type { RulebookChoice } from './rulebookChoice';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
- * The item editor: a dialog for an item's name, type and whether it is enabled
+ * The item editor: a dialog for an item's name, kind, types and whether it is enabled
  *
  * Applying keeps the changes on the Items tab until it is saved; for a default item, saving stores the
  * universe's edited copy of it. The dialog can also delete a custom item, or restore an edited default
@@ -24,7 +23,9 @@ export class ItemDialog
 	private readonly form = getElement('item-form', HTMLFormElement);
 	private readonly title = getElement('item-dialog-title', HTMLElement);
 	private readonly name = getElement('item-name', HTMLInputElement);
-	private readonly type = getElement('item-type', HTMLSelectElement);
+	private readonly category = getElement('item-category', HTMLSelectElement);
+	private readonly typesField = getElement('item-types-field', HTMLFieldSetElement);
+	private readonly types = getElement('item-types', HTMLElement);
 	private readonly enabled = getElement('item-enabled', HTMLInputElement);
 	private readonly error = getElement('item-error', HTMLElement);
 	private readonly removeButton = getElement('item-remove', HTMLButtonElement);
@@ -67,6 +68,14 @@ export class ItemDialog
 			setFieldError(this.name, undefined);
 		});
 
+		this.category.addEventListener('change', () =>
+		{
+			if (this.universe)
+			{
+				this.showTypes(this.universe.ruleset, []);
+			}
+		});
+
 		this.changes.guardDialog(this.dialog);
 
 		this.cancelButton.addEventListener('click', () =>
@@ -96,9 +105,8 @@ export class ItemDialog
 	 * @param item The item, or undefined to add one
 	 * @param edit Where the dialog's changes go
 	 * @param onChanged Called after the item's changes are applied, or it is marked to delete or restore
-	 * @param rulebooks The books on, whose item types the dialog offers
 	 */
-	open(universe: EditableUniverse, item: EditorItem | undefined, edit: StagedEdit<ItemSettings>, onChanged: () => void, rulebooks: RulebookChoice): void
+	open(universe: EditableUniverse, item: EditorItem | undefined, edit: StagedEdit<ItemSettings>, onChanged: () => void): void
 	{
 		const canEdit = canEditItemsOpen(universe);
 		const editable = (canEdit && !edit.removed);
@@ -131,18 +139,24 @@ export class ItemDialog
 			this.title.textContent = name;
 		}
 
-		this.showTypeOptions(universe.ruleset, rulebooks, item?.type);
+		setOptions(this.category, ITEM_KINDS[universe.ruleset].categories.map((category) => ({
+			value: category,
+			label: itemCategoryName(category, universe.ruleset)
+		})));
+		this.category.value = (item?.category ?? ITEM_KINDS[universe.ruleset].categories[0]);
 		this.name.value = name;
-		this.type.value = (item?.type ?? Object.keys(ITEM_KINDS[universe.ruleset].types)[0]);
 		this.enabled.checked = (item?.enabled ?? true);
 		this.saveButton.hidden = !editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.type, this.enabled])
+		for (const input of [this.name, this.category, this.enabled])
 		{
 			input.disabled = !editable;
 		}
+
+		this.typesField.disabled = !editable;
+		this.showTypes(universe.ruleset, (item?.types ?? []));
 
 		this.removeButton.hidden = (!canEdit || !item || (!item.custom && !item.edited));
 		labelRemoveButton(this.removeButton, edit, !item?.custom, (item?.custom
@@ -159,28 +173,29 @@ export class ItemDialog
 	}
 
 	/**
-	 * Offers the ruleset's item types of the books that are on, and the type the item has, grouped by category
+	 * Shows a checkbox for each type of the category chosen, hiding the types when it has none
 	 *
 	 * @param ruleset The universe's ruleset
-	 * @param rulebooks The books on
-	 * @param current The item's type, offered whatever its book, or undefined for a new item
+	 * @param checked The types to check
 	 */
-	private showTypeOptions(ruleset: Ruleset, rulebooks: RulebookChoice, current: string | undefined): void
+	private showTypes(ruleset: Ruleset, checked: readonly string[]): void
 	{
-		const kinds = ITEM_KINDS[ruleset];
+		const types = categoryItemTypes(ruleset, this.category.value);
 
-		setOptions(this.type, []);
-
-		for (const category of kinds.categories)
+		this.types.replaceChildren(...types.map((type) =>
 		{
-			const group = document.createElement('optgroup');
+			const label = document.createElement('label');
+			const input = document.createElement('input');
 
-			group.label = itemCategoryName(category, ruleset);
-			group.append(...Object.entries(kinds.types)
-				.filter(([type, typeCategory]) => ((typeCategory === category) && ((type === current) || rulebooks.shows(itemTypeRulebook(ruleset, type)))))
-				.map(([type]) => new Option(itemTypeName(type, ruleset), type)));
-			this.type.append(group);
-		}
+			input.type = 'checkbox';
+			input.value = type;
+			input.checked = checked.includes(type);
+			label.className = 'checkbox';
+			label.append(input, itemTypeName(type, ruleset));
+
+			return(label);
+		}));
+		this.typesField.hidden = (types.length === 0);
 	}
 
 	/**
@@ -207,7 +222,8 @@ export class ItemDialog
 
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
-			type: this.type.value,
+			category: this.category.value,
+			types: [...this.types.querySelectorAll<HTMLInputElement>('input:checked')].map((input) => input.value),
 			enabled: this.enabled.checked
 		});
 		this.close();

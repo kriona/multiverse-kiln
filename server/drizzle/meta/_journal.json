@@ -876,6 +876,20 @@
       "when": 1794763196169,
       "tag": "0124_pf1e_rulebook_items",
       "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "7",
+      "when": 1794773116185,
+      "tag": "0125_item_categories_and_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "7",
+      "when": 1794773182013,
+      "tag": "0126_drop_item_type",
+      "breakpoints": true
     }
   ]
 }

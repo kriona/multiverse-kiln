@@ -798,7 +798,7 @@ It needs a filter control that includes:
 - "is custom" toggle
 - "is edited from default" toggle
 - toggles for each property
-	- for example, a toggle for `weapons`, and then a toggle for `longswords`
+	- for example, a toggle for `weapons`, and then a toggle for `light blades`
 	- note that these toggles will be based on the ruleset
 - pagination (500 by default)
 
@@ -806,7 +806,7 @@ the table contains:
 - icon
 - name, links to the [item editor](#editor-item)
 - an Enabled switch, which does what the item editor's Enabled checkbox does
-- summary (item type, properties, etc)
+- summary (item types, properties, etc)
 - notes: custom, edited, and changes not saved yet. A default item only disabled isn't noted as edited, and a disabled item's row is struck through
 
 The table is sorted by name until the Name, Enabled or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, enabled items before disabled ones, and notes by the items' flags, with items that have none first, then edited and custom ones. Items that tie are sorted by name.
@@ -815,17 +815,17 @@ For PF1E, the Core Rulebook's only default item for now is a dagger; for SF1E, a
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 
-Each ruleset groups its item types into categories, which the filters use. For PF1E:
-- `weapons`: dagger, club, quarterstaff, spear, short sword, longsword, shortbow, longbow, light crossbow, arrows, crossbow bolts
-- `armor`: padded armor, leather armor, chain shirt, light shield, heavy shield
-- `gear`: rope, torch
+Each item is in one of the ruleset's categories (its kind), and has any number of that category's types, or none. The filters use both: the Kind filter matches an item's category, and the Type filter matches an item with that type among its others. For PF1E:
+- `weapons`: the fighter's weapon groups from the Core Rulebook's Weapon Training: axes, heavy blades, light blades, bows, close, crossbows, double, flails, hammers, monk, natural, polearms, spears and thrown. A weapon has every group it is in, such as light blades and thrown for a dagger. A weapon in no group, such as a kobold's tail attachment, and ammunition have no type. Firearms, siege engines and tribal come from books the engine doesn't have yet
+- `armor`: light armor, medium armor, heavy armor and shields
+- `gear`: rope, torch. Other gear has no type
 
-Each optional PF1E [rulebook](#rulebooks) adds a few items from its equipment. Its gear is the "other gear" type, and its weapons and armor have types of their own. The filters and the [item editor](#editor-item)'s type list show the types of books that are on, and a type an item already has.
-- Advanced Player's Guide: the cestus and sword cane (weapons), and wooden armor and quilted cloth (armor)
-- Advanced Race Guide: the long lash and spiked tail attachments and the ratfolk tailblade (weapons)
-- Advanced Class Guide: a kit for each of its classes, such as the arcanist's kit (gear)
+Each optional PF1E [rulebook](#rulebooks) adds a few items from its equipment, of the types above:
+- Advanced Player's Guide: the cestus (close, monk) and sword cane (light blades), and wooden armor and quilted cloth (light armor)
+- Advanced Race Guide: the long lash and spiked tail attachments (no type) and the ratfolk tailblade (light blades)
+- Advanced Class Guide: a book of puzzles, a book of war prayers, a footprints cast, light fire ink and a tome of epics (gear). Its class kits aren't items: each is a list of other gear
 
-For SF1E:
+For SF1E, each type is still one kind of item:
 - `weapons`: survival knife, tactical baton, laser pistol, semi-auto pistol, laser rifle, frag grenade, battery, small arm rounds
 - `armor`: second skin, light armor, heavy armor
 - `gear`: comm unit, flashlight
@@ -967,7 +967,8 @@ modal dialog, lets you type to search, shows you the top results, with name + st
 
 ## Editor: Item
 - name
-- type (e.g., "longsword"), one of the ruleset's item types
+- kind (e.g., "Weapon"), one of the ruleset's item categories
+- types: a checkbox for each of the kind's types (e.g., "light blades" and "thrown" for a dagger). Any number can be checked, or none. Changing the kind clears them
 - a checkbox for "Enabled?", checked by default
 
 ## Selection: Area

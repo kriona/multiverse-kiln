@@ -7,7 +7,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemName, itemTypeName } from '../itemNames';
+import { createItemIcon, itemName, itemTypesText } from '../itemNames';
 import { editorMessages } from './editorMessages';
 import type { RulebookChoice } from './rulebookChoice';
 
@@ -261,7 +261,8 @@ export class ItemSelectDialog
 		const text = document.createElement('span');
 		const name = document.createElement('span');
 		const description = document.createElement('span');
-		const notes = [itemTypeName(item.type, universe.ruleset)];
+		const types = itemTypesText(item.types, universe.ruleset);
+		const notes = ((types === '') ? [] : [types]);
 
 		const live = this.options.liveRulebooks;
 		const rulebookOn = ((live === undefined) ? this.rulebooks.shows(item.rulebook) : isRulebookOn(live, item.rulebook));
@@ -281,7 +282,7 @@ export class ItemSelectDialog
 		description.className = 'choice-description';
 		description.textContent = notes.join(' - ');
 		text.append(name, description);
-		label.append(input, createItemIcon(item.type, universe.ruleset), text);
+		label.append(input, createItemIcon(item.category, universe.ruleset), text);
 
 		input.addEventListener('change', () =>
 		{
@@ -396,7 +397,7 @@ export class ItemSelectDialog
 				setFieldError(field, undefined);
 			});
 			label.className = 'item-quantity';
-			label.append(createItemIcon(item.type, universe.ruleset), name, field);
+			label.append(createItemIcon(item.category, universe.ruleset), name, field);
 			removeButton.type = 'button';
 			removeButton.className = 'secondary';
 			setButtonLabel(removeButton, removeIcon, t({

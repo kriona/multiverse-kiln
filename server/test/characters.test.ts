@@ -329,7 +329,7 @@ describe('Character routes', () =>
 			coinAbbreviations: {}
 		});
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
-		assert.deepStrictEqual(items.map(({ key, type, quantity }) => ({ key, type, quantity })), [{ key: 'dagger', type: 'dagger', quantity: 1 }]);
+		assert.deepStrictEqual(items.map(({ key, category, quantity }) => ({ key, category, quantity })), [{ key: 'dagger', category: 'weapon', quantity: 1 }]);
 
 		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'prologue' } });
 

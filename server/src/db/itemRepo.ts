@@ -3,7 +3,7 @@
  */
 import { and, count, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { compareEnabled, compareNumbers, isRulebookOn, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { compareEnabled, compareNumbers, isRulebookOn, sameValue, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -12,7 +12,7 @@ import { inVersion, type UniverseVersion } from './universeVersions.js';
 /**
  * What a new item needs
  */
-export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'type' | 'enabled'>;
+export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'enabled'>;
 
 /**
  * The settings of an item a universe added, which always has a name of its own
@@ -200,7 +200,8 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			overridesItemId: items.overridesItemId,
 			key: items.key,
 			name: items.name,
-			type: items.type,
+			category: items.category,
+			types: items.types,
 			rulebook: items.rulebook,
 			enabled: items.enabled
 		})
@@ -234,12 +235,13 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
-				type: settings.type,
+				category: settings.category,
+				types: settings.types,
 				enabled: settings.enabled,
 				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined),
-				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.type !== row.type)))
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.category !== row.category) || !sameValue(copy.types, row.types)))
 			};
 
 			return({
@@ -297,8 +299,8 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 			&& ((query.enabled === undefined) || (item.enabled === query.enabled))
 			&& ((query.custom === undefined) || (item.custom === query.custom))
 			&& ((query.edited === undefined) || (item.editedSettings === query.edited))
-			&& ((query.category === undefined) || (itemCategory(ruleset, item.type) === query.category))
-			&& ((query.type === undefined) || (item.type === query.type))
+			&& ((query.category === undefined) || (item.category === query.category))
+			&& ((query.type === undefined) || item.types.includes(query.type))
 			&& ((ids === undefined) || ids.has(item.id))
 			&& ((query.rulebooks === undefined) || isRulebookOn(query.rulebooks, item.rulebook))
 		);

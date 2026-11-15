@@ -778,9 +778,15 @@ export const items = pgTable('items', {
 	name: text('name'),
 
 	/**
-	 * One of the ruleset's item types (ITEM_KINDS in /shared), e.g. dagger
+	 * One of the ruleset's item categories (ITEM_KINDS in /shared), e.g. weapon
 	 */
-	type: text('type').notNull(),
+	category: text('category').notNull(),
+
+	/**
+	 * Some of the category's item types (ITEM_KINDS in /shared), in the order the ruleset lists them, e.g.
+	 * light blades and thrown; empty for an item of no type
+	 */
+	types: text('types').array().notNull().default(sql`'{}'`),
 
 	/**
 	 * The book a default item comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows

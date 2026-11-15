@@ -931,7 +931,8 @@ export const AUDIT_FIELDS = [
 	'walkSeconds',
 	'enabled',
 	'keepPlaying',
-	'type',
+	'category',
+	'types',
 	'abilityModifiers',
 	'floatingBonus',
 	'darkvision',
@@ -1083,9 +1084,14 @@ export interface AuditFieldValues
 	keepPlaying: boolean;
 
 	/**
-	 * An item type's key (ITEM_KINDS)
+	 * An item category's key (ITEM_KINDS)
 	 */
-	type: string;
+	category: string;
+
+	/**
+	 * Item types' keys (ITEM_KINDS)
+	 */
+	types: string[];
 	abilityModifiers: Partial<Record<Ability, number>>;
 	floatingBonus: boolean;
 	darkvision: Darkvision;
@@ -1530,9 +1536,15 @@ export interface ItemSettings
 	name: string | null;
 
 	/**
-	 * One of the ruleset's item types (ITEM_KINDS), e.g. dagger
+	 * One of the ruleset's item categories (ITEM_KINDS), e.g. weapon
 	 */
-	type: string;
+	category: string;
+
+	/**
+	 * Some of the category's types (ITEM_KINDS), in the order the ruleset lists them, e.g. light blades
+	 * and thrown; none for an item of no type
+	 */
+	types: string[];
 
 	/**
 	 * Whether characters can be given the item
@@ -1609,7 +1621,7 @@ export interface ItemListQuery
 	category?: string;
 
 	/**
-	 * One of the ruleset's item types, e.g. dagger
+	 * One of the ruleset's item types, e.g. light blades: only items of that type, among others
 	 */
 	type?: string;
 

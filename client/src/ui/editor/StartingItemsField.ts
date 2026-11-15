@@ -144,7 +144,7 @@ export class StartingItemsField
 
 			if (item)
 			{
-				row.append(createItemIcon(item.type, ruleset));
+				row.append(createItemIcon(item.category, ruleset));
 			}
 
 			row.append(t({

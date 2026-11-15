@@ -440,7 +440,7 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 				id: itemId,
 				key: (item?.key ?? null),
 				name: (item?.name ?? null),
-				type: (item?.type ?? ''),
+				category: (item?.category ?? ''),
 				quantity
 			}));
 		})
