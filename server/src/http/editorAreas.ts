@@ -3,14 +3,14 @@
  * shared/src/editor.ts), and saving changes to them (see editorChanges.ts)
  */
 import express, { type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_TILE_CELL, editsEveryPlace, hasNeighbors, isInBounds, isNewRef, MAX_AREA_LINKS, NEIGHBOR_SIDES, NEW_AREA_BOUNDS, oppositeSide, VOID_CELL, type NeighborSide, type AreaChangeUpdate, type AreaEvacuations, type AreaNode, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type PlaceRef, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, changedSeams, DEFAULT_TILE_CELL, editsEveryPlace, hasNeighbors, isInBounds, isNewRef, MAX_AREA_LINKS, NEIGHBOR_SIDES, NEW_AREA_BOUNDS, oppositeSide, otherChainEnd, VOID_CELL, type GridArea, type NeighborSide, type AreaChangeUpdate, type AreaEvacuations, type AreaNode, type CellChange, type CellChangeRef, type ChunkListPayload, type EditorArea, type FaerieMorning, type AreaBounds, type NewAreaChange, type NewRef, type PlaceRef, type StringRef, type UniverseSettings, type MessageDescriptor, type AreaLinkListPayload, type AreaLinkTarget, type AreaListPayload, type AreaSettings, type AreaSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { listRegions } from '../db/regionRepo.js';
-import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadChunks, lockAreas, resizeArea, saveAreaLink, setAreaNeighbor, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
+import { countAreaLinksBesides, countAreas, createArea, deleteArea, deleteAreaLink, editCells, findEditorArea, listAreaLinks, listAreas, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadChunks, loadNeighborChains, lockAreas, resizeArea, saveAreaLink, setAreaNeighbor, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../db/areaRepo.js';
 import { arrivalCell, enabledAncestor, type AreaInTree, type LinkInto } from '../logic/disabling.js';
 import { chunksOfChanges } from '../logic/areaEdits.js';
 import { isSameVersion } from '../db/universeVersions.js';
@@ -197,6 +197,86 @@ async function areaNodeOf(context: ChangeContext, ref: StringRef): Promise<AreaN
 }
 
 /**
+ * The rows and columns of some areas, as the grid of neighbors sees them (see loadNeighborChains())
+ *
+ * @param context The save
+ * @param areaIds The areas
+ * @return Every area of their rows and columns, by ID
+ */
+async function chainsOf(context: ChangeContext, areaIds: readonly string[]): Promise<Map<string, GridArea>>
+{
+	const grid = new Map<string, GridArea>();
+
+	// A transaction runs one query at a time, so they are read in turn
+	for (const areaId of new Set(areaIds))
+	{
+		for (const [id, area] of await loadNeighborChains(context.version, areaId, context.transaction))
+		{
+			grid.set(id, area);
+		}
+	}
+
+	return(grid);
+}
+
+/**
+ * Makes a change to neighbors, refusing a builder's change when it changes where walking off a side of an
+ * area outside their assignments leads, such as the far end of a looping row that the change leaves
+ * looping onto another area, or not looping at all
+ *
+ * @param context The save
+ * @param areaIds The areas whose neighbors the change sets or takes away
+ * @param change The change
+ * @return What the change returns
+ */
+async function requireSeamsWithin<T>(context: ChangeContext, areaIds: readonly string[], change: () => Promise<T>): Promise<T>
+{
+	if (editsEveryPlace(context.role))
+	{
+		return(await change());
+	}
+
+	const before = await chainsOf(context, areaIds);
+	const result = await change();
+	const after = await chainsOf(context, areaIds);
+
+	await context.places.requireWithin(...changedSeams(before, after, areaIds).map((id): PlaceRef => ({ kind: 'area', id })));
+
+	return(result);
+}
+
+/**
+ * Refuses a builder's changing whether an area at one end of a row or column loops along it, unless the
+ * area at the other end is within their assignments too: the row or column loops only when both its ends
+ * do, so the setting is both ends'
+ *
+ * @param context The save
+ * @param area The area, as the changes before this one left it
+ * @param update The settings to change
+ */
+async function requireLoopEndsWithin(context: ChangeContext, area: AreaNode, update: Pick<AreaChangeUpdate, 'loopsEastWest' | 'loopsNorthSouth'>): Promise<void>
+{
+	const axes = (['eastWest', 'northSouth'] as const).filter((axis) =>
+	{
+		const loops = ((axis === 'eastWest') ? update.loopsEastWest : update.loopsNorthSouth);
+
+		return((loops !== undefined) && (loops !== ((axis === 'eastWest') ? area.loopsEastWest : area.loopsNorthSouth)));
+	});
+
+	if (editsEveryPlace(context.role) || (axes.length === 0))
+	{
+		return;
+	}
+
+	const grid = await loadNeighborChains(context.version, area.id, context.transaction);
+	const ends = axes
+		.map((axis) => otherChainEnd(grid, area.id, axis))
+		.filter((endId) => (endId !== undefined));
+
+	await context.places.requireWithin(...ends.map((id): PlaceRef => ({ kind: 'area', id })));
+}
+
+/**
  * An area's own settings in a save with the default tile it names, as saved
  *
  * @param context The save
@@ -285,6 +365,7 @@ export async function updateAreaChange(context: ChangeContext, areaId: StringRef
 	const updated: AreaNode = { ...area, ...resolved, parents };
 
 	await context.places.requireWithin(place);
+	await requireLoopEndsWithin(context, area, resolved);
 	await requireParentChangesWithin(context, place, area.parents, parents);
 	await checkOwnSettings(context, updated);
 
@@ -357,7 +438,7 @@ export async function parentPlace(transaction: Executor, areas: ReadonlyMap<stri
 /**
  * Deletes an area, unless it is the universe's lobby or starting area. The areas inside it take its
  * parents in its place, beside their other parents. A builder needs the areas it neighbors and links
- * to or from within their assignments
+ * to or from within their assignments, and the far ends of its rows and columns when they loop
  *
  * @param context The save
  * @param areaId The area
@@ -402,7 +483,16 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 
 	context.places.touch();
 	context.disablings.areas(moveTo);
-	await deleteArea(area.id, transaction);
+
+	if (neighborIds.length > 0)
+	{
+		await requireSeamsWithin(context, [area.id, ...neighborIds], () => deleteArea(area.id, transaction));
+	}
+	else
+	{
+		await deleteArea(area.id, transaction);
+	}
+
 	await deleteUniverseTextOf(version, 'area', area.id, context.transaction);
 	context.published.push({ kind: 'deleted', areaId: area.id });
 
@@ -481,7 +571,8 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 /**
  * Makes an area another's neighbor on a side, both ways, or makes its neighbor there no longer one. The
  * grid as a whole is checked once the save's changes are made. A builder needs every area whose
- * neighbors the change sets or takes away within their assignments
+ * neighbors the change sets or takes away within their assignments, and the far ends of the rows or
+ * columns it changes when they loop
  *
  * @param context The save
  * @param areaId The area
@@ -513,7 +604,8 @@ export async function setNeighborChange(context: ChangeContext, areaId: StringRe
 		}
 	}
 
-	const changed = await setAreaNeighbor(area.id, side, (neighbor?.id ?? null), context.transaction);
+	const touched = [area.id, neighbor?.id, previous, theirs].filter((id) => ((id !== null) && (id !== undefined)));
+	const changed = await requireSeamsWithin(context, touched, () => setAreaNeighbor(area.id, side, (neighbor?.id ?? null), context.transaction));
 
 	context.places.noteNeighbors([...changed, area.id]);
 }

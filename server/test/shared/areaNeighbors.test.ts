@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { areasWithMisalignedLoops, canSee, carriedResizes, chainLoops, chainOf, createVisionArea, halfLoopingEnd, locateCell, loopPlace, misalignedLoops, neighborProblems, neighborRefusal, newNeighbor, NO_NEIGHBORS, overallMapLayout, seamSides, seamSlots, visibleCells, windowsAcrossSeams, withNeighbors, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type SeamLookup } from '@multiverse-kiln/shared';
+import { areasWithMisalignedLoops, canSee, carriedResizes, chainLoops, chainOf, changedSeams, createVisionArea, halfLoopingEnd, locateCell, loopPlace, misalignedLoops, neighborProblems, neighborRefusal, newNeighbor, NO_NEIGHBORS, otherChainEnd, overallMapLayout,seamSides, seamSlots, visibleCells, windowsAcrossSeams, withNeighbors, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type SeamLookup } from '@multiverse-kiln/shared';
 
 /**
  * A square area of 32 x 32 cells, the smallest that can have neighbors, centered on column 0, row 0
@@ -224,6 +224,39 @@ describe('neighboring areas', () =>
 
 			// An area alone that loops leads back onto itself
 			assert.deepStrictEqual(seamSides(gridOf(area('Town', { south: 'Fields' }, { loopsEastWest: true }), area('Fields', { north: 'Town' })), 'Town'), { north: null, east: 'Town', south: 'Fields', west: 'Town' });
+		});
+
+		it('finds the other end of a chain from either end, and none from its middle or a ring', () =>
+		{
+			const row = gridOf(
+				area('West', { east: 'Middle' }),
+				area('Middle', { west: 'West', east: 'East' }),
+				area('East', { west: 'Middle' })
+			);
+
+			assert.strictEqual(otherChainEnd(row, 'West', 'eastWest'), 'East');
+			assert.strictEqual(otherChainEnd(row, 'East', 'eastWest'), 'West');
+			assert.strictEqual(otherChainEnd(row, 'Middle', 'eastWest'), undefined);
+			assert.strictEqual(otherChainEnd(row, 'West', 'northSouth'), undefined);
+			assert.strictEqual(otherChainEnd(gridOf(
+				area('Town', { east: 'Forest', west: 'Forest' }),
+				area('Forest', { west: 'Town', east: 'Town' })
+			), 'Town', 'eastWest'), undefined);
+		});
+
+		it('finds the areas whose sides lead elsewhere after a change, the far end of a looping row included', () =>
+		{
+			const looping = twoByTwo(true);
+			const added = withNeighbors(looping, 'Plains', new Map([['west', 'Forest']]), area('Plains'));
+
+			// Plains ends the row, which stops it looping, so walking off Town's west edge is an edge. Plains
+			// itself is new, so it isn't one of them
+			assert.deepStrictEqual(changedSeams(looping, added).toSorted(), ['Forest', 'Town']);
+			assert.deepStrictEqual(changedSeams(looping, added, ['Forest']).toSorted(), ['Forest', 'Town']);
+
+			// A row that doesn't loop leaves its far end alone
+			assert.deepStrictEqual(changedSeams(twoByTwo(), withNeighbors(twoByTwo(), 'Plains', new Map([['west', 'Forest']]), area('Plains'))), ['Forest']);
+			assert.deepStrictEqual(changedSeams(looping, looping), []);
 		});
 	});
 

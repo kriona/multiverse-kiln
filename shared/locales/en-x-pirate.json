@@ -1483,6 +1483,10 @@
 		"message": "{place, select, ring {Its {axis, select, eastWest {row} other {column}} o' neighbors comes round to meet itself. It always wraps {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east an' west} other {north an' south}}. Only the areas at the ends o' its {axis, select, eastWest {row} other {column}} say whether it wraps.}}",
 		"source": "{place, select, ring {Its {axis, select, eastWest {row} other {column}} of neighbors joins back onto itself. It always loops {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east and west} other {north and south}}. Only the areas at the ends of its {axis, select, eastWest {row} other {column}} decide whether it loops.}}"
 	},
+	"editor.area.loopOutsideAssignments": {
+		"message": "Only a creator can change whether its {axis, select, eastWest {row} other {column}} o' neighbors wraps {axis, select, eastWest {east-west} other {north-south}}. {area} at the far end be outside the seas ye be charged with.",
+		"source": "Only a creator can change whether its {axis, select, eastWest {row} other {column}} of neighbors loops {axis, select, eastWest {east-west} other {north-south}}. {area} at the other end is outside the regions you're assigned."
+	},
 	"editor.area.loopsEastWest": {
 		"message": "Wraps east-west",
 		"source": "Loops east-west"
@@ -1508,8 +1512,8 @@
 		"source": "{area}: {cell}"
 	},
 	"editor.area.neighborRefusal": {
-		"message": "{reason, select, itself {This very area} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already be moored to another on that side} size {A side touchin' here be a different length} lobby {On the far side o' the tavern's edge} assignments {Outside the seas ye be charged with} other {It wouldn't fit the rest o' the grid}}",
-		"source": "{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby's edge} assignments {Outside the regions you're assigned} other {It wouldn't fit the rest of the grid}}"
+		"message": "{reason, select, itself {This very area} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already be moored to another on that side} size {A side touchin' here be a different length} lobby {On the far side o' the tavern's edge} assignments {Outside the seas ye be charged with} loopsOutside {It would change how an area outside the seas ye be charged with wraps} other {It wouldn't fit the rest o' the grid}}",
+		"source": "{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby's edge} assignments {Outside the regions you're assigned} loopsOutside {It would change how an area outside the regions you're assigned loops} other {It wouldn't fit the rest of the grid}}"
 	},
 	"editor.area.neighborRemoved": {
 		"message": "{area} be cast off, no longer a neighbor.",
@@ -2938,6 +2942,10 @@
 	"editor.neighborAdd.hint": {
 		"message": "The new area lies {side, select, north {north} east {east} south {south} other {west}} o' {area}. It be in the same seas an' areas, has the same settings, an' be painted with its default tile. It be stowed with the rest o' yer changes.",
 		"source": "The new area goes {side, select, north {north} east {east} south {south} other {west}} of {area}. It's in the same regions and areas, has the same settings, and is painted with its default tile. It's saved with the rest of your changes."
+	},
+	"editor.neighborAdd.loopsOutside": {
+		"message": "A new area there would change how an area outside the seas ye be charged with wraps.",
+		"source": "A new area there would change how an area outside the regions you're assigned loops."
 	},
 	"editor.neighborAdd.outsideAssignments": {
 		"message": "An area next to that spot be outside the seas ye be charged with. A new area can't be moored there.",

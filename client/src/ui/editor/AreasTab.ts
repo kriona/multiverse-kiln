@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, changedSeams, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, otherChainEnd, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -88,6 +88,11 @@ const BLANK_SETTINGS: PlaceSettings = {
  * What a save changes on the tab, as the Audit tab names it
  */
 const AREA_SUBJECTS: ReadonlySet<AuditSubject> = new Set(['region', 'area', 'cells', 'links']);
+
+/**
+ * The ID the Add Neighbor dialog gives the area it would add, to try it in the grid before it is staged
+ */
+const NEW_NEIGHBOR_ID = 'neighbor-to-add';
 
 /**
  * Whether a save's detail is painting the cell editor takes into its cells as they are: painting that names
@@ -2298,7 +2303,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			}));
 		}
 
-		if (editable && this.canEditPlace({ kind: 'area', id: neighborId }))
+		if (editable && this.canEditPlace({ kind: 'area', id: neighborId }) && !this.changesSeamsOutside(this.neighborGrid(), withoutNeighbor(this.neighborGrid(), areaId, side)))
 		{
 			item.append(this.neighborButton(t({
 				id: 'editor.area.removeNeighbor',
@@ -2417,6 +2422,26 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
+	 * Whether a change to the grid of neighbors would change where walking off a side of an area the
+	 * player can't change leads, such as the far end of a row that loops, which the server refuses
+	 *
+	 * @param before The areas before the change
+	 * @param after The areas after it
+	 * @return True when it would
+	 */
+	private changesSeamsOutside(before: NeighborGrid, after: NeighborGrid): boolean
+	{
+		const universe = this.universeOpen;
+
+		if (universe && editsEveryPlace(universe.role))
+		{
+			return(false);
+		}
+
+		return(changedSeams(before, after).some((id) => !this.canEditPlace({ kind: 'area', id })));
+	}
+
+	/**
 	 * Why an area can't be the area open's neighbor on a side, in words, or undefined when it can be
 	 *
 	 * @param grid The areas
@@ -2441,6 +2466,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			reason = 'assignments';
 		}
+		else if ((reason === undefined) && this.changesSeamsOutside(grid, withNeighbors(grid, candidateId, joins)))
+		{
+			reason = 'loopsOutside';
+		}
 
 		if (reason === undefined)
 		{
@@ -2449,8 +2478,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		return(t({
 			id: 'editor.area.neighborRefusal',
-			defaultMessage: '{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby\'s edge} assignments {Outside the regions you\'re assigned} other {It wouldn\'t fit the rest of the grid}}',
-			description: 'Under an area in the dialog for choosing the area editor\'s neighbor on a side, when it can\'t be chosen; {reason} is why: it is the area itself, it is smaller than {cells} cells each way, a side that would join here has another neighbor, sides that would touch are of different lengths, it is across the lobby region\'s edge (the lobby is never connected to the rest of the world), it is outside the regions a builder is assigned, or joining it would break the grid of neighbors elsewhere'
+			defaultMessage: '{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby\'s edge} assignments {Outside the regions you\'re assigned} loopsOutside {It would change how an area outside the regions you\'re assigned loops} other {It wouldn\'t fit the rest of the grid}}',
+			description: 'Under an area in the dialog for choosing the area editor\'s neighbor on a side, when it can\'t be chosen; {reason} is why: it is the area itself, it is smaller than {cells} cells each way, a side that would join here has another neighbor, sides that would touch are of different lengths, it is across the lobby region\'s edge (the lobby is never connected to the rest of the world), it is outside the regions a builder is assigned, it would change where walking off the end of a looping row or column of neighbors leads for an area outside a builder\'s regions, or joining it would break the grid of neighbors elsewhere'
 		}, {
 			reason,
 			cells: MIN_NEIGHBOR_AREA_SIDE
@@ -2583,6 +2612,24 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				id: 'editor.neighborAdd.outsideAssignments',
 				defaultMessage: 'An area next to that spot is outside the regions you\'re assigned. A new area can\'t be added there.',
 				description: 'Shown in the Add Neighbor dialog to a builder when the new area would be the neighbor of an area outside the regions assigned to them, which they can\'t change'
+			}));
+			return;
+		}
+
+		const proposed: GridArea = {
+			id: NEW_NEIGHBOR_ID,
+			bounds: placed.bounds,
+			neighbors: { ...NO_NEIGHBORS },
+			loopsEastWest: false,
+			loopsNorthSouth: false
+		};
+
+		if (this.changesSeamsOutside(grid, withNeighbors(grid, proposed.id, placed.joins, proposed)))
+		{
+			reportFieldError(this.neighborName, t({
+				id: 'editor.neighborAdd.loopsOutside',
+				defaultMessage: 'A new area there would change how an area outside the regions you\'re assigned loops.',
+				description: 'Shown in the Add Neighbor dialog to a builder when the new area would go at the end of a row or column of neighboring areas that loops, whose other end is outside the regions assigned to them: walking off that end would no longer lead where it did'
 			}));
 			return;
 		}
@@ -2962,7 +3009,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
-	 * Disables the loop checkboxes that don't matter for an area with neighbors, saying why, and warns
+	 * Disables the loop checkboxes that don't matter for an area with neighbors, and those of a builder's
+	 * area whose row or column ends outside their assignments, saying why, and warns
 	 * about a row or column that doesn't loop because only one of its ends is checked, naming the other end,
 	 * and one that loops unlike the row or column beside it, naming the areas beside it
 	 *
@@ -2979,15 +3027,31 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		const grid = this.neighborGrid();
+		const editable = (this.canEditPlace({ kind: 'area', id: area.id }) && !this.staged.isDeleted(area.id));
 
 		for (const [axis, checkbox] of [['eastWest', this.loopsEastWest], ['northSouth', this.loopsNorthSouth]] as const)
 		{
 			const place = loopPlace(grid, area.id, axis);
 			const otherEnd = ((place === 'end') ? halfLoopingEnd(grid, area.id, axis) : undefined);
+			// A row or column loops only when both its ends do, so a builder changes an end's checkbox only
+			// with the other end within their assignments too
+			const farEnd = ((place === 'end') ? otherChainEnd(grid, area.id, axis) : undefined);
+			const farEndOutside = (editable && (farEnd !== undefined) && !this.canEditPlace({ kind: 'area', id: farEnd }));
 
-			checkbox.disabled = (faerie || (place !== 'end'));
+			checkbox.disabled = (faerie || (place !== 'end') || farEndOutside);
 
-			if (place !== 'end')
+			if (farEndOutside)
+			{
+				notes.push(t({
+					id: 'editor.area.loopOutsideAssignments',
+					defaultMessage: 'Only a creator can change whether its {axis, select, eastWest {row} other {column}} of neighbors loops {axis, select, eastWest {east-west} other {north-south}}. {area} at the other end is outside the regions you\'re assigned.',
+					description: 'Beside the area editor\'s loop checkboxes, which are disabled, for a builder editing an area at one end of a row or column of neighboring areas (walked across without links) whose other end is outside the regions assigned to them: a row or column loops only when both ends are checked, so they can\'t change it; {axis} is which way (eastWest or northSouth) and {area} the name of the area at the other end'
+				}, {
+					axis,
+					area: this.names()({ kind: 'area', id: farEnd })
+				}));
+			}
+			else if (place !== 'end')
 			{
 				notes.push(t({
 					id: 'editor.area.loopNotHere',

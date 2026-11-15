@@ -1483,6 +1483,10 @@
 		"defaultMessage": "{place, select, ring {Its {axis, select, eastWest {row} other {column}} of neighbors joins back onto itself. It always loops {axis, select, eastWest {east-west} other {north-south}}.} other {It has neighbors to the {axis, select, eastWest {east and west} other {north and south}}. Only the areas at the ends of its {axis, select, eastWest {row} other {column}} decide whether it loops.}}",
 		"description": "Beside the area editor's loop checkboxes, which are disabled, for an area with neighboring areas (walked across without links): {place} is \"ring\" when its row or column of neighbors joins back onto itself, which always loops, and otherwise the area has neighbors on both sides, so only the ends' checkboxes count; {axis} is which way (eastWest or northSouth)"
 	},
+	"editor.area.loopOutsideAssignments": {
+		"defaultMessage": "Only a creator can change whether its {axis, select, eastWest {row} other {column}} of neighbors loops {axis, select, eastWest {east-west} other {north-south}}. {area} at the other end is outside the regions you're assigned.",
+		"description": "Beside the area editor's loop checkboxes, which are disabled, for a builder editing an area at one end of a row or column of neighboring areas (walked across without links) whose other end is outside the regions assigned to them: a row or column loops only when both ends are checked, so they can't change it; {axis} is which way (eastWest or northSouth) and {area} the name of the area at the other end"
+	},
 	"editor.area.loopsEastWest": {
 		"defaultMessage": "Loops east-west",
 		"description": "Checkbox for an area that wraps around, so walking off the east edge comes back on the west; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -1508,8 +1512,8 @@
 		"description": "Under the area editor's cells, a cell of a neighboring area shown dimmed past the area's edge (walked across without a link), under the pointer or the keyboard's cursor: {area} is the neighbor's name and {cell} the cell in it and what it holds, e.g. \"3, -2: Grass\""
 	},
 	"editor.area.neighborRefusal": {
-		"defaultMessage": "{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby's edge} assignments {Outside the regions you're assigned} other {It wouldn't fit the rest of the grid}}",
-		"description": "Under an area in the dialog for choosing the area editor's neighbor on a side, when it can't be chosen; {reason} is why: it is the area itself, it is smaller than {cells} cells each way, a side that would join here has another neighbor, sides that would touch are of different lengths, it is across the lobby region's edge (the lobby is never connected to the rest of the world), it is outside the regions a builder is assigned, or joining it would break the grid of neighbors elsewhere"
+		"defaultMessage": "{reason, select, itself {This area itself} tooSmall {Smaller than {cells, number} cells each way} taken {It or an area next to here already has a neighbor on that side} size {A side touching here is a different length} lobby {On the other side of the lobby's edge} assignments {Outside the regions you're assigned} loopsOutside {It would change how an area outside the regions you're assigned loops} other {It wouldn't fit the rest of the grid}}",
+		"description": "Under an area in the dialog for choosing the area editor's neighbor on a side, when it can't be chosen; {reason} is why: it is the area itself, it is smaller than {cells} cells each way, a side that would join here has another neighbor, sides that would touch are of different lengths, it is across the lobby region's edge (the lobby is never connected to the rest of the world), it is outside the regions a builder is assigned, it would change where walking off the end of a looping row or column of neighbors leads for an area outside a builder's regions, or joining it would break the grid of neighbors elsewhere"
 	},
 	"editor.area.neighborRemoved": {
 		"defaultMessage": "{area} is no longer a neighbor.",
@@ -2938,6 +2942,10 @@
 	"editor.neighborAdd.hint": {
 		"defaultMessage": "The new area goes {side, select, north {north} east {east} south {south} other {west}} of {area}. It's in the same regions and areas, has the same settings, and is painted with its default tile. It's saved with the rest of your changes.",
 		"description": "In the Add Neighbor dialog of the area editor: {side} is the side of the area being edited the new area goes on, walked across without a link, and {area} the area being edited"
+	},
+	"editor.neighborAdd.loopsOutside": {
+		"defaultMessage": "A new area there would change how an area outside the regions you're assigned loops.",
+		"description": "Shown in the Add Neighbor dialog to a builder when the new area would go at the end of a row or column of neighboring areas that loops, whose other end is outside the regions assigned to them: walking off that end would no longer lead where it did"
 	},
 	"editor.neighborAdd.outsideAssignments": {
 		"defaultMessage": "An area next to that spot is outside the regions you're assigned. A new area can't be added there.",

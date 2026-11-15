@@ -425,6 +425,29 @@ export function halfLoopingEnd(grid: NeighborGrid, areaId: string, axis: Neighbo
 }
 
 /**
+ * The area at the other end of an area's row or column, whose checkbox for looping along the axis
+ * decides with the area's own whether the row or column loops
+ *
+ * @param grid The areas
+ * @param areaId The area's ID
+ * @param axis The axis
+ * @return The other end's ID, or undefined when the area isn't an end of a chain of two or more
+ */
+export function otherChainEnd(grid: NeighborGrid, areaId: string, axis: NeighborAxis): string | undefined
+{
+	const chain = chainOf(grid, areaId, axis);
+	const firstId = chain.areaIds[0];
+	const lastId = chain.areaIds[chain.areaIds.length - 1];
+
+	if (chain.ring || (chain.areaIds.length < 2) || ((areaId !== firstId) && (areaId !== lastId)))
+	{
+		return(undefined);
+	}
+
+	return(((areaId === firstId) ? lastId : firstId));
+}
+
+/**
  * The areas beside an area, in the rows or columns next to its own, that loop along an axis unlike its
  * row or column: one loops and the other doesn't, or both loop with their ends not lined up. Where such
  * rows meet, going along then across reaches a different area than going across then along, so walking
@@ -510,6 +533,114 @@ export function seamSides(grid: NeighborGrid, areaId: string): AreaNeighbors
 	}
 
 	return(sides);
+}
+
+/**
+ * Where walking off the two sides along an axis leads, for every area of an area's row or column, as
+ * seamSides() works it out
+ *
+ * @param grid The areas
+ * @param areaId The area's ID
+ * @param axis The axis
+ * @return The area beyond each area's west and east sides (or north and south), or null for an edge, by ID
+ */
+function chainSeams(grid: NeighborGrid, areaId: string, axis: NeighborAxis): Map<string, [string | null, string | null]>
+{
+	const [back, forward] = sidesOf(axis);
+	const chain = chainOf(grid, areaId, axis);
+	const wraps = (!chain.ring && chainLoops(grid, areaId, axis));
+	const first = chain.areaIds[0];
+	const last = chain.areaIds[chain.areaIds.length - 1];
+
+	return(new Map(chain.areaIds.map((id) => [id, [
+		(stepTo(grid, id, back) ?? (wraps ? last : null)),
+		(stepTo(grid, id, forward) ?? (wraps ? first : null))
+	]])));
+}
+
+/**
+ * The areas where walking off a side leads somewhere else after a change to the grid than before it:
+ * those whose neighbors the change set or took away, and those at the far ends of the rows and columns
+ * it changed, when a row or column loops onto another area or stops looping. Only the rows and columns of
+ * the areas the change touched are compared, so each grid needs only those (see loadNeighborChains())
+ *
+ * @param before The areas before the change
+ * @param after The areas after it
+ * @param areaIds The areas the change touched, or every area whose neighbors or looping differ between
+ * the grids when left out
+ * @return The IDs of the areas, of those in both grids
+ */
+export function changedSeams(before: NeighborGrid, after: NeighborGrid, areaIds?: Iterable<string>): string[]
+{
+	const touched = [...(areaIds ?? [...after.values()]
+		.filter((area) => !sameGridArea(area, before.get(area.id)))
+		.map((area) => area.id))];
+	const changed = new Set<string>();
+
+	for (const axis of ['eastWest', 'northSouth'] as const)
+	{
+		const reached = new Set<string>();
+		const seamsBefore = new Map<string, [string | null, string | null]>();
+		const seamsAfter = new Map<string, [string | null, string | null]>();
+
+		for (const areaId of touched)
+		{
+			for (const grid of [before, after])
+			{
+				if (grid.has(areaId))
+				{
+					for (const id of chainOf(grid, areaId, axis).areaIds)
+					{
+						reached.add(id);
+					}
+				}
+			}
+		}
+
+		for (const id of reached)
+		{
+			if (!before.has(id) || !after.has(id) || changed.has(id))
+			{
+				continue;
+			}
+
+			for (const [grid, seams] of [[before, seamsBefore], [after, seamsAfter]] as const)
+			{
+				if (!seams.has(id))
+				{
+					for (const [chainId, sides] of chainSeams(grid, id, axis))
+					{
+						seams.set(chainId, sides);
+					}
+				}
+			}
+
+			const was = seamsBefore.get(id);
+			const now = seamsAfter.get(id);
+
+			if ((was?.[0] !== now?.[0]) || (was?.[1] !== now?.[1]))
+			{
+				changed.add(id);
+			}
+		}
+	}
+
+	return([...changed]);
+}
+
+/**
+ * Whether an area has the same neighbors and looping in two grids
+ *
+ * @param area The area in one grid
+ * @param other The area in the other, if it is there
+ * @return True when they are the same
+ */
+function sameGridArea(area: GridArea, other: GridArea | undefined): boolean
+{
+	return((other !== undefined)
+		&& (area.loopsEastWest === other.loopsEastWest)
+		&& (area.loopsNorthSouth === other.loopsNorthSouth)
+		&& NEIGHBOR_SIDES.every((side) => (area.neighbors[side] === other.neighbors[side])));
 }
 
 /**

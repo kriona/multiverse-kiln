@@ -276,6 +276,84 @@ describe('Neighboring areas in the world editor', () =>
 		assert.strictEqual((await neighborsOf(forest))?.east, null);
 	});
 
+	it('refuses a builder changing whether a row loops when its other end is outside their assignments', async () =>
+	{
+		const bea = await logIn('Bea');
+		const town = await addSquare('Town');
+		const forest = await addSquare('Forest');
+		const meadow = await addSquare('Meadow');
+
+		// Assigned before the other top-level region is added, which assignToWorld() could take for World
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+		await assignToWorld(ada, universeId, [bea.playerId]);
+
+		const grass = (await findDefaultTileIds('pf1e')).get('grass') ?? null;
+		const ids = await saveAll(ada, universeId, [{ kind: 'createRegion', ref: 'new:other', region: { name: 'Elsewhere', parents: [], enabled: null, indoors: false, lightLevel: null, defaultTileId: grass, passageOfTime: 'flows_normally', faerieMorning: null, fogOfWar: true } }]);
+		const elsewhere = await addSquare('Far Away', { parents: [{ kind: 'region', id: ids['new:other'] }] });
+
+		await saveAll(ada, universeId, [
+			{ kind: 'setNeighbor', areaId: elsewhere, side: 'east', neighborId: town },
+			{ kind: 'setNeighbor', areaId: forest, side: 'east', neighborId: meadow },
+			{ kind: 'updateArea', areaId: elsewhere, update: { loopsEastWest: true } }
+		]);
+
+		// Checking Town would make walking off Far Away's west edge come back on at Town
+		const outside = await saveChanges(bea, universeId, [{ kind: 'updateArea', areaId: town, update: { loopsEastWest: true } }]);
+
+		assert.strictEqual(outside.status, 403, JSON.stringify(outside.body));
+		assert.strictEqual(outside.body.error.id, 'error.outsideAssignments');
+		assert.strictEqual((await findEditorArea(town))?.area.loopsEastWest, false);
+
+		// Its other setting, and the row all within them, are theirs to change
+		const otherAxis = await saveChanges(bea, universeId, [{ kind: 'updateArea', areaId: town, update: { loopsNorthSouth: true } }]);
+
+		assert.strictEqual(otherAxis.status, 200, JSON.stringify(otherAxis.body));
+
+		const within = await saveChanges(bea, universeId, [
+			{ kind: 'updateArea', areaId: forest, update: { loopsEastWest: true } },
+			{ kind: 'updateArea', areaId: meadow, update: { loopsEastWest: true } }
+		]);
+
+		assert.strictEqual(within.status, 200, JSON.stringify(within.body));
+		assert.strictEqual((await findEditorArea(meadow))?.area.loopsEastWest, true);
+	});
+
+	it('refuses a builder changing where a looping row comes back on at an end outside their assignments', async () =>
+	{
+		const bea = await logIn('Bea');
+		const town = await addSquare('Town');
+		const hills = await addSquare('Hills');
+
+		// Assigned before the other top-level region is added, which assignToWorld() could take for World
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+		await assignToWorld(ada, universeId, [bea.playerId]);
+
+		const grass = (await findDefaultTileIds('pf1e')).get('grass') ?? null;
+		const ids = await saveAll(ada, universeId, [{ kind: 'createRegion', ref: 'new:other', region: { name: 'Elsewhere', parents: [], enabled: null, indoors: false, lightLevel: null, defaultTileId: grass, passageOfTime: 'flows_normally', faerieMorning: null, fogOfWar: true } }]);
+		const elsewhere = await addSquare('Far Away', { parents: [{ kind: 'region', id: ids['new:other'] }] });
+
+		await saveAll(ada, universeId, [
+			{ kind: 'setNeighbor', areaId: elsewhere, side: 'east', neighborId: town },
+			{ kind: 'updateArea', areaId: elsewhere, update: { loopsEastWest: true } },
+			{ kind: 'updateArea', areaId: town, update: { loopsEastWest: true } }
+		]);
+
+		// Hills east of Town would end the row instead, which stops it looping
+		const added = await saveChanges(bea, universeId, [{ kind: 'setNeighbor', areaId: town, side: 'east', neighborId: hills }]);
+
+		assert.strictEqual(added.status, 403, JSON.stringify(added.body));
+		assert.strictEqual(added.body.error.id, 'error.outsideAssignments');
+		assert.strictEqual((await neighborsOf(town))?.east, null);
+
+		// Once the row doesn't loop, walking off Far Away's west edge is an edge either way
+		await saveAll(ada, universeId, [{ kind: 'updateArea', areaId: elsewhere, update: { loopsEastWest: false } }]);
+
+		const notLooping = await saveChanges(bea, universeId, [{ kind: 'setNeighbor', areaId: town, side: 'east', neighborId: hills }]);
+
+		assert.strictEqual(notLooping.status, 200, JSON.stringify(notLooping.body));
+		assert.strictEqual((await neighborsOf(town))?.east, hills);
+	});
+
 	it('leaves an area\'s neighbors with an edge when it is deleted, telling the rooms', async () =>
 	{
 		const town = await addSquare('Town');
