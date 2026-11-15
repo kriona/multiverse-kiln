@@ -1,4 +1,4 @@
-import { canEditWorld, differsBeyondEnabling, loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, compareEnabled, differsBeyondEnabling, loadedFrom, sortRows, type AuditSubject, type EditableUniverse, type MessageDescriptor, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -139,20 +139,21 @@ const LIST_SUBJECTS: Readonly<Record<OptionListSetup<EditorOption, unknown>['lis
 /**
  * The columns a list of races, classes or themes can be sorted by
  */
-const OPTION_SORT_COLUMNS = ['name', 'notes'] as const;
+const OPTION_SORT_COLUMNS = ['name', 'enabled', 'notes'] as const;
 
 type OptionSortColumn = typeof OPTION_SORT_COLUMNS[number];
 
 /**
  * How the columns compare rows, in the player's language
  */
-const rowComparers: RowComparers<{ name: string; notes: string }, OptionSortColumn> = {
+const rowComparers: RowComparers<{ name: string; item: { enabled: boolean }; notes: string }, OptionSortColumn> = {
 	name: (first, second) => first.name.localeCompare(second.name, currentLocale()),
+	enabled: (first, second) => compareEnabled(first.item, second.item),
 	notes: (first, second) => first.notes.localeCompare(second.notes, currentLocale())
 };
 
 /**
- * A list of races, classes or themes on an editor tab, sorted by name or notes (see TableSorter), opening
+ * A list of races, classes or themes on an editor tab, sorted by name, enabled or notes (see TableSorter), opening
  * the editor dialog of each. Changes made in the dialog wait on the page until the tab is saved
  */
 export class OptionList<T extends EditorOption & S, S extends { enabled: boolean }> implements SavableTab, FollowsOtherSaves

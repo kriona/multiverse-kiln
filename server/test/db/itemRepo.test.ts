@@ -185,7 +185,7 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(page.items.map((item) => item.id), [torchId]);
 		});
 
-		it('sorts by name or notes before paging, breaking ties by name', async () =>
+		it('sorts by name, enabled or notes before paging, breaking ties by name', async () =>
 		{
 			const universeId = await addUniverse();
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
@@ -203,6 +203,10 @@ describe('itemRepo', () =>
 			// with the same notes go by name
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes' }), [dagger, axeId, swordId, torchId]);
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes', direction: 'descending' }), [axeId, swordId, torchId, dagger]);
+
+			// Enabled items first, each group by name
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'enabled' }), [axeId, torchId, dagger, swordId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'enabled', direction: 'descending' }), [dagger, swordId, axeId, torchId]);
 		});
 	});
 

@@ -1567,7 +1567,7 @@ export interface EditorItem extends ItemSettings
 /**
  * The columns the Items tab can sort its items by
  */
-export const ITEM_SORT_COLUMNS = ['name', 'notes'] as const;
+export const ITEM_SORT_COLUMNS = ['name', 'enabled', 'notes'] as const;
 
 export type ItemSortColumn = typeof ITEM_SORT_COLUMNS[number];
 
@@ -1613,8 +1613,8 @@ export interface ItemListQuery
 
 	/**
 	 * The column to sort the matches by before paging, with items that tie sorted by name. Names sort in
-	 * English, as the name filter matches them, and notes by the items' flags: those with none first, then
-	 * edited (editedSettings) and custom ones. Left out, the items come by ID
+	 * English, as the name filter matches them, enabled with enabled items first, and notes by the items'
+	 * flags: those with none first, then edited (editedSettings) and custom ones. Left out, the items come by ID
 	 */
 	sort?: ItemSortColumn;
 

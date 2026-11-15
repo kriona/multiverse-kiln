@@ -3,7 +3,7 @@
  */
 import { and, count, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { compareNumbers, isRulebookOn, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { compareEnabled, compareNumbers, isRulebookOn, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -259,6 +259,7 @@ const nameCollator = new Intl.Collator('en', { sensitivity: 'base' });
  */
 const itemComparers: RowComparers<{ item: EditorItem; englishName: string }, ItemSortColumn> = {
 	name: (first, second) => nameCollator.compare(first.englishName, second.englishName),
+	enabled: (first, second) => compareEnabled(first.item, second.item),
 	notes: (first, second) => compareNumbers(notesSortKey(first.item), notesSortKey(second.item))
 };
 
