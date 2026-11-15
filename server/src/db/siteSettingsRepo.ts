@@ -1,10 +1,17 @@
 /**
  * Settings for the whole site: the only module that reads or writes the site_settings table
  */
+import { sql } from 'drizzle-orm';
 import { DEFAULT_SITE_SETTINGS, type SiteSettings } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { siteSettings } from './schema.js';
+
+/**
+ * The transaction-level advisory lock that makes saves of the site's settings take turns (see
+ * lockSiteSettings()). Any number no other lock uses
+ */
+const SITE_SETTINGS_LOCK = 2_604_583;
 
 /**
  * The site's settings
@@ -33,6 +40,7 @@ export async function findSiteSettings(executor: Executor = db): Promise<SiteSet
 		areasPerUniverse: row.areasPerUniverse,
 		charactersPerUniverse: row.charactersPerUniverse,
 		characterDeletionDays: row.characterDeletionDays,
+		botCheckEveryRequest: row.botCheckEveryRequest,
 		socials: {
 			discord: row.discordUrl,
 			facebook: row.facebookUrl,
@@ -43,6 +51,21 @@ export async function findSiteSettings(executor: Executor = db): Promise<SiteSet
 		},
 		privacyContact: row.privacyContact
 	});
+}
+
+/**
+ * Makes transactions that save the site's settings wait for each other until the transaction ends, then
+ * reads the settings, so each save sees what the one before it saved. An advisory lock rather than a lock
+ * on the row, which doesn't exist until the settings are first saved
+ *
+ * @param executor One of the admin role's transactions (inAdminTransaction())
+ * @return Its settings, as findSiteSettings() reads them
+ */
+export async function lockSiteSettings(executor: Executor): Promise<SiteSettings>
+{
+	await executor.execute(sql`SELECT pg_advisory_xact_lock(${SITE_SETTINGS_LOCK})`);
+
+	return(await findSiteSettings(executor));
 }
 
 /**
@@ -60,6 +83,7 @@ export async function saveSiteSettings(settings: SiteSettings, executor: Executo
 		areasPerUniverse: settings.areasPerUniverse,
 		charactersPerUniverse: settings.charactersPerUniverse,
 		characterDeletionDays: settings.characterDeletionDays,
+		botCheckEveryRequest: settings.botCheckEveryRequest,
 		discordUrl: settings.socials.discord,
 		facebookUrl: settings.socials.facebook,
 		instagramUrl: settings.socials.instagram,

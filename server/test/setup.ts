@@ -80,6 +80,10 @@ process.env.SSL_KEY_FILE = '';
 process.env.SSL_CERT_FILE = '';
 process.env.ENABLE_DEV_TOOLS = '';
 process.env.ENABLE_DEV_CODES = '';
+
+// Bot checks are off unless a test turns them on with a verifier of its own
+process.env.TURNSTILE_SITE_KEY = '';
+process.env.TURNSTILE_SECRET_KEY = '';
 process.env.ALLOWED_ORIGINS = allowedTestOrigin;
 process.env.SITE_URL = testSiteUrl;
 process.env.DATABASE_URL = processDatabaseUrl('TEST_DATABASE_URL');

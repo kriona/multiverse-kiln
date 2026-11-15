@@ -657,7 +657,8 @@ export interface AccountExport
 	 */
 	adminEvents: {
 		/**
-		 * What was done: adminAdded, adminRemoved, universeDisabled, universeEnabled or universeDeleted
+		 * What was done: adminAdded, adminRemoved, universeDisabled, universeEnabled, universeDeleted,
+		 * botCheckEveryRequestOn or botCheckEveryRequestOff
 		 */
 		kind: string;
 

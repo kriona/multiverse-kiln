@@ -155,6 +155,13 @@ export interface SiteSettings
 	characterDeletionDays: number;
 
 	/**
+	 * Whether every login with a password and every email code sent needs a bot check, for while the site
+	 * is under attack, except from browsers that have logged in to the account (see Bot checks in
+	 * STRUCTURE-OVERVIEW.md). Has no effect while bot checks aren't configured
+	 */
+	botCheckEveryRequest: boolean;
+
+	/**
 	 * The site's own pages on social sites, which every page's footer links to
 	 */
 	socials: SiteSocialLinks;
@@ -164,6 +171,15 @@ export interface SiteSettings
 	 * (isPrivacyContact), or null to leave that line out of the policy
 	 */
 	privacyContact: string | null;
+}
+
+/**
+ * Response of GET SITE_SETTINGS_PATH: the settings, and whether the server has bot checks configured
+ * (TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY), without which botCheckEveryRequest can't be turned on
+ */
+export interface AdminSiteSettingsPayload extends SiteSettings
+{
+	botChecksConfigured: boolean;
 }
 
 /**
@@ -180,6 +196,7 @@ export const DEFAULT_SITE_SETTINGS: Readonly<SiteSettings> = {
 	areasPerUniverse: 1000,
 	charactersPerUniverse: 20,
 	characterDeletionDays: 7,
+	botCheckEveryRequest: false,
 	socials: {
 		discord: null,
 		facebook: null,

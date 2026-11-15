@@ -12,6 +12,7 @@ import type { Request, Response } from 'express';
 
 import { KNOWN_BROWSER_COOKIE, readCookie, setCookie } from '../http/cookies.js';
 import { DAY_MS } from '../logic/emailCodes.js';
+import { isDevSuspicious } from './devSuspicious.js';
 import { hashesMatch, keyedHash } from './keyedHashes.js';
 import { createToken, isTokenForm } from './tokens.js';
 
@@ -62,7 +63,8 @@ export function hasKnownBrowserCookie(request: Request): boolean
 
 /**
  * What a known browser's login tries are counted under: a keyed hash of its ID, when its cookie was
- * made for the account and hasn't ended
+ * made for the account and hasn't ended. A browser acting suspicious for testing bot checks
+ * (isDevSuspicious()) is known to no account, so it is limited and checked as any other browser
  *
  * @param request The request
  * @param playerId The account the login is for
@@ -71,6 +73,11 @@ export function hasKnownBrowserCookie(request: Request): boolean
  */
 export function knownBrowserHash(request: Request, playerId: string, now: Date): Buffer | undefined
 {
+	if (isDevSuspicious(request))
+	{
+		return(undefined);
+	}
+
 	const [id, expires, mac, extra] = (readCookie(request.headers.cookie, KNOWN_BROWSER_COOKIE) ?? '').split('.');
 	const expiresAt = Number(expires);
 

@@ -58,6 +58,60 @@ export async function findRateLimitTimes(kind: RateLimitKind, subjectHash: Uint8
 }
 
 /**
+ * One list findRateLimitTimesByKind() finds: when a subject made each attempt of a kind since a time
+ */
+export interface RateLimitTimesQuery
+{
+	kind: RateLimitKind;
+
+	/**
+	 * Keyed hash of the subject
+	 */
+	subjectHash: Uint8Array;
+
+	/**
+	 * The start of the window counted
+	 */
+	since: Date;
+}
+
+/**
+ * Finds several lists of attempt times in one query, each with its own kind, subject and window, so a
+ * caller holding the subjects' locks waits on one round trip
+ *
+ * @param queries The lists to find
+ * @param executor The database, or a transaction
+ * @return Each list's times, oldest first, in the order of the queries
+ */
+export async function findRateLimitTimesByKind(queries: readonly RateLimitTimesQuery[], executor: Executor = db): Promise<Date[][]>
+{
+	if (queries.length === 0)
+	{
+		return([]);
+	}
+
+	const oldest = new Date(Math.min(...queries.map((query) => query.since.getTime())));
+	const rows = await executor
+		.select({
+			kind: rateLimitEvents.kind,
+			subjectHash: rateLimitEvents.subjectHash,
+			occurredAt: rateLimitEvents.occurredAt
+		})
+		.from(rateLimitEvents)
+		.where(and(
+			inArray(rateLimitEvents.kind, queries.map((query) => query.kind)),
+			inArray(rateLimitEvents.subjectHash, queries.map((query) => query.subjectHash)),
+			gt(rateLimitEvents.occurredAt, oldest)
+		))
+		.orderBy(rateLimitEvents.occurredAt);
+
+	// The rows cover every kind with every subject since the oldest start, so each list takes its own
+	return(queries.map(({ kind, subjectHash, since }) => rows
+		.filter((row) => ((row.kind === kind) && (Buffer.compare(row.subjectHash, subjectHash) === 0) && (row.occurredAt.getTime() > since.getTime())))
+		.map((row) => row.occurredAt)));
+}
+
+/**
  * Records an attempt
  *
  * @param kind What is counted

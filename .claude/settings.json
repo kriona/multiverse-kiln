@@ -1,0 +1,23 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"permissions": {
+		"ask": [
+			"Bash(git push:*)",
+			"PowerShell(git push *)"
+		],
+		"allow": [
+			"Bash(npm run *)",
+			"Bash(npx eslint *)",
+			"Bash(git add *)",
+			"Bash(git commit:*)",
+			"PowerShell(npm run *)",
+			"PowerShell(npx eslint *)",
+			"PowerShell(git add *)",
+			"PowerShell(git commit *)"
+		]
+	},
+	"attribution": {
+		"commit": "",
+		"pr": ""
+	}
+}

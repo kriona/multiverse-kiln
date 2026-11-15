@@ -21,6 +21,12 @@ main
 	width: min(460px, 100%);
 }
 
+// The dev toggle under the login card (ui/devSuspicious.ts), only in development builds
+.dev-suspicious
+{
+	margin: 12px 0 0;
+}
+
 .auth-panel h1
 {
 	margin: 0;
