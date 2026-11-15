@@ -55,7 +55,7 @@ Each phase ends with a "Done when" check. Tick boxes as work completes and keep 
 
 ## Phase 4: Repository security
 
-- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP (Phase 18) doesn't need `'unsafe-inline'`
+- [✅] Move the inline `<style>` in `client/index.html` to a CSS file so the CSP doesn't need `'unsafe-inline'`
 - [✅] In the GitHub repository's Settings > Advanced Security, turn on Dependabot alerts, Dependabot security updates and secret scanning with push protection (`.github/dependabot.yml` already configures version updates, and gitleaks runs in the pre-commit hook)
 - [✅] Add a `docker-compose` entry to `.github/dependabot.yml`
 - [ ] Add a `github-actions` entry to `.github/dependabot.yml` once there are workflows
@@ -109,7 +109,7 @@ Built in four steps: the server API, the editor pages, the area editor's cells, 
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 20). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 21). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its cells are the next item
 - [✅] Area cells editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller area clears the undo history
@@ -215,7 +215,7 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
-- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 20. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 21. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
@@ -241,14 +241,14 @@ Decided:
 
 Decided:
 - Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
-- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 18's hosting choice has to keep.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 19's hosting choice has to keep.
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
-- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 18), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 18 sets them for the host.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 19), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 19 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now; Phase 17 adds bot checks for suspicious logins.
@@ -474,7 +474,7 @@ The login and email code limits (Phase 14) stop guessing, but their only answer 
 
 Decided:
 - Cloudflare Turnstile, not reCAPTCHA: it has no image puzzles, so it works with a keyboard and a screen reader (Cloudflare states WCAG 2.1 AA), it is free without a monthly limit, and it doesn't send players to Google. It is a widget and one server-side check, so it doesn't need the site behind Cloudflare's proxy.
-- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 18); it would change `CLIENT_ADDRESS_HEADER`.
+- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 19); it would change `CLIENT_ADDRESS_HEADER`.
 - What a check promises: a request past the soft limit goes through only once a check has been passed, so every guess costs something. It doesn't promise to stop every bot: services that solve checks for money exist, so the limits stay the real defense, and a check only slows guessing and makes it cost more.
 - Only suspicious requests are checked: past a soft limit, below the hard limit that refuses them today. Most players never see one, and their browser never contacts Cloudflare: the page loads Turnstile's script only when the server asks for a check.
 - Which requests: logging in with a password, the wrong passwords typed while logged in that count against the same limits (a logged-in player is asked too, once someone else's guesses have passed the address's soft limit), and sending an email code (registering, resetting a password, changing an email address, linking a login). Google and Discord logins aren't checked: the provider checks them. A dormant account's code isn't checked on its own: only someone who has just given the right password gets one, in a login that was checked if it needed to be, and "send another code" sends the password again, so it is a login try.
@@ -511,7 +511,54 @@ Steps:
 
 **Done when:** a browser that guesses wrong passwords for an address is asked to show it isn't a bot, and once it does can keep trying a little longer while the account's own browsers log in as before; a bot that doesn't pass checks can't use up the address's tries; a player whose address was used up by someone else's guesses still gets a code after passing a check, unless the guesser keeps passing checks too; and a player who logs in normally never loads anything from Cloudflare.
 
-## Phase 18: Cloud deployment
+## Phase 18: Rulebooks
+
+A ruleset's races, classes and items come from its books. A universe chooses which books it uses on the Ruleset tab. The core rulebook is always on, and the others start off. What a book brings shows on the Characters and Items tabs only while the book is on, and acts as disabled while it is off. Later, books will bring more than races, classes and items. See Rulebooks in `STRUCTURE-OVERVIEW.md`.
+
+Decided:
+- PF1E's books are the Core Rulebook, the Advanced Player's Guide, the Advanced Race Guide and the Advanced Class Guide. SF1E has only the Starfinder Core Rulebook for now. Its other books come later.
+- Which book each race and class is from:
+	- Core Rulebook: dwarf, elf, gnome, half-elf, half-orc, halfling and human; barbarian, bard, cleric, druid, fighter, monk, paladin, ranger, rogue, sorcerer and wizard
+	- Advanced Player's Guide: alchemist, cavalier, inquisitor, oracle, summoner and witch. It has no races
+	- Advanced Race Guide: all of its featured and uncommon races. Catfolk, drow, goblin, hobgoblin and ratfolk are in the engine already. This phase adds aasimar, dhampir, fetchling, ifrit, kobold, orc, oread, sylph, tengu, tiefling and undine (featured), and changeling, duergar, gillman, grippli, kitsune, merfolk, nagaji, samsaran, strix, suli, svirfneblin, vanara, vishkanya and wayang (uncommon). Only what the race editor models comes over: ability modifiers, floating bonus, darkvision, light sensitivity and size. Flying, swimming and the like wait until movement has them
+	- Advanced Class Guide: arcanist, bloodrager, brawler, hunter, investigator, shaman, skald, slayer, swashbuckler and warpriest, all added in this phase, each with a primary ability, magic tradition and spellcasting style
+	- every SF1E race, class and theme is from the Starfinder Core Rulebook
+- Every default item names its book too. Today's items are all from the core rulebooks.
+- Races, classes, themes and items a universe adds belong to no book. They always show.
+- A race, class or item is usable only while its book is on and its own Enabled box is checked. The two are separate. Turning a book on shows its races and classes as they were left, enabled unless an editor disabled them. Turning it off keeps their edits (starting money, equipment and areas) for when it comes back.
+- While a book is off, what it brings is hidden from the Characters tab's tables, the Items tab, item selection, Create Character and a class's starting areas by race. It still shows where it is already in use, as a disabled race, class or item does: characters keep their race and class on the character sheet and in the lobby, the Character List's filters list them, and starting equipment shows the book's items marked as disabled.
+- Turning off a book players are using asks on Save once for the whole book. The dialog lists the races and classes characters are and the items characters have, and offers the choices for disabling them one at a time: keep playing or prevent playing for races and classes, keep using or remove for items. The answers are kept with the book while it is off.
+- The rule that a universe needs at least one enabled race and class counts books. A save that turns off the Advanced Player's Guide while the witch is the only enabled class is refused.
+- Only the core rulebook is on in a new universe, and in every universe that exists when the migration runs. A universe export names its books. An export made before this phase imports with only the core rulebook. The seed's sample universe turns on the Advanced Player's Guide.
+- A universe's books are saved with the ruleset's settings (`rulebooks`). They are staged like the rest of the editor and sent with Save, only creators can change them, and they reach players when the draft is applied.
+- Every race and class gets a description, edited in the race and class editors. A default's description is a message written for the engine: a sentence or two, with no Golarion names. An edited or added one is universe text, translated on the Translations tab. Emptying an edited default's description gives back the engine's. Create Character shows the chosen race's and class's description, and so does the book's Contents dialog.
+- Book names are messages. Their descriptions ask translators to use the official title of the book's translated edition where there is one, such as the German "Grundregelwerk".
+- The Advanced Class Guide's copyright notice goes on the license page with the other books'.
+
+Still to decide:
+- Which items each optional book adds. Today's item types are all from the core rulebooks, so a book's items may need new types.
+
+Steps:
+- [ ] Each ruleset's books in `/shared` (`shared/src/rulesets/<ruleset>/rulebooks.ts`): a key, a name message and whether it is always on, and the book of each default race, class, theme and item beside their data
+- [ ] The Advanced Race Guide's 25 races and the Advanced Class Guide's 10 classes in `/shared`, with names and summaries, each checked against the books on Archives of Nethys, and a custom migration adding their default rows
+- [ ] A `rulebook` column on the default races, classes, themes and items (null on what a universe adds), set by the migrations that add them, so the server can filter by it in SQL: the Items tab pages and filters on the server
+- [ ] The optional books' items, once decided
+- [ ] Descriptions: a column on races and classes (null keeps the default's), the defaults' descriptions as messages in `/shared`, a field with a length limit in the race and class editors, Create Character, the Translations tab, the audit, export and import
+- [ ] `rulebooks` in each ruleset's settings: the optional books turned on, and the answers kept for each book turned off. The server checks it (known keys, the core rulebook always on), with tests
+- [ ] What is usable as one pure function, given a race's, class's or item's own state and its book's, used by Create Character, the lobby, starting equipment, starting areas and the check that refuses a save leaving no enabled race or class. Unit tests
+- [ ] Hiding the races, classes and items of books that are off from the Characters tab, the Items tab, item selection, Create Character and a class's starting areas by race, while the Character List's filters and character sheets keep them
+- [ ] The Rulebooks card on the Ruleset tab, after the settings card: a table of the ruleset's books, each with its name, its status (On, Off, or Always on for the core rulebook), an Enable or Disable button (none for the core rulebook) and a Contents button. Changes not saved yet are noted as in the other tables
+- [ ] The Contents dialog: a table each for the book's races, classes and items, with their default names, summaries, descriptions (races and classes) and whether each is enabled in this universe
+- [ ] Turning off a book in use: one dialog for the book on Save, through the same check that asks about disabled races, classes and items
+- [ ] The audit ("Rulebooks" under "Changed the ruleset"), export and import of the books
+- [ ] The seed's sample universe turns on the Advanced Player's Guide
+- [ ] License page: the Advanced Class Guide's copyright notice
+- [ ] Pirate translation of the new messages
+- [ ] Check the card, the dialogs and Create Character with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
+
+**Done when:** a new universe offers only the core races and classes; turning on the Advanced Player's Guide and saving adds the witch and the guide's other classes to the Classes table and Create Character, where each can be disabled on its own; turning the guide off again asks once what happens to the players using it; and each book's Contents dialog shows what it brings.
+
+## Phase 19: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -534,7 +581,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 19: Robustness and polish
+## Phase 20: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -548,11 +595,11 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 20: Images and moderation
+## Phase 21: Images and moderation
 
 Needed before universes are open to the public.
 
-- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 18)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 19)
 - [ ] "I have the rights to use this image" on every upload (tilesets have it)
 - [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
@@ -560,7 +607,7 @@ Needed before universes are open to the public.
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 21: Messages
+## Phase 22: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -603,21 +650,21 @@ Needed before universes are open to the public.
 - How groups are listed in the lobby (Phase 11)
 - How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
 - Auth approach, account linking and the email sending service (Phase 14)
-- Which S3-compatible service stores uploads in production, and its bucket (Phase 18)
-- Telling users with the same name apart (Phase 21)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 19)
+- Telling users with the same name apart (Phase 22)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 19)
+- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 20)
 - Whether to offer machine translation of chat (later)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
 - Whether players are shown the name of the area they are in (on screen, or when they go into another area or cross a seam into a neighbor); it is only read out to screen readers so far
-- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 18). The host's proxies decide which forwarding header the server trusts for clients' addresses
-- Client host, and a subdomain or separate domain for QA/staging (Phase 18)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 19). The host's proxies decide which forwarding header the server trusts for clients' addresses
+- Client host, and a subdomain or separate domain for QA/staging (Phase 19)
 
 ---
 
 ## TODO
 
-- [ ] Confirm the client address header on the game server's host (Phase 18; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+- [ ] Confirm the client address header on the game server's host (Phase 19; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
 	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
 	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
 	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header
