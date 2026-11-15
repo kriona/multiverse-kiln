@@ -877,8 +877,24 @@ export class AreaEditorScene extends Phaser.Scene
 		this.pointerOver = true;
 		this.keyboardCursor = false;
 
-		// A neighbor shown past the edge opens when clicked, like a link; empty leaves the stylesheet's crosshair
-		this.game.canvas.style.cursor = ((this.isPreviewCell(cell) && !this.lastDab && !this.panStart) ? 'pointer' : '');
+		// A neighbor shown past the edge opens when clicked, like a link, and nothing else past the edges can
+		// be painted, so the pointer there is the usual arrow; empty leaves the stylesheet's crosshair. Looking
+		// around and painting keep the pointer they started with
+		if (!this.panStart && !this.lastDab)
+		{
+			if (this.isPreviewCell(cell))
+			{
+				this.game.canvas.style.cursor = 'pointer';
+			}
+			else if (!isInBounds(this.area.bounds, cell.column, cell.row))
+			{
+				this.game.canvas.style.cursor = 'default';
+			}
+			else
+			{
+				this.game.canvas.style.cursor = '';
+			}
+		}
 
 		if (this.panStart)
 		{
@@ -1236,7 +1252,8 @@ export class AreaEditorScene extends Phaser.Scene
 		const mode = this.host.pointerMode();
 
 		// A neighbor shown past the edge isn't painted, so the pointer over it shows no brush, and the
-		// keyboard's cursor there is one cell
+		// keyboard's cursor there is one cell. Nor is anything past the area's edges, where the pointer
+		// shows no brush either
 		if (this.hovered && this.isPreviewCell(this.hovered))
 		{
 			if (this.keyboardCursor)
@@ -1245,7 +1262,7 @@ export class AreaEditorScene extends Phaser.Scene
 				overlay.strokeRect(this.hovered.column * GRID_CELL_SIZE, this.hovered.row * GRID_CELL_SIZE, GRID_CELL_SIZE, GRID_CELL_SIZE);
 			}
 		}
-		else if (this.hovered && (mode !== 'none'))
+		else if (this.hovered && (mode !== 'none') && isInBounds(this.area.bounds, this.hovered.column, this.hovered.row))
 		{
 			const { size, shape } = ((mode === 'paint') ? this.host.brush() : { size: 1, shape: 'square' as const });
 			const origin = brushOrigin(this.hovered.column, this.hovered.row, size);
