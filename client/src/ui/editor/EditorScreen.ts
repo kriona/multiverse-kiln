@@ -427,6 +427,7 @@ export class EditorScreen
 			getElement('editor-tab-lobby', HTMLButtonElement).focus();
 		});
 		this.tilesetsTab.setPlaces(this.areasTab);
+		this.translationTable.setPlaces(this.areasTab);
 		this.itemsTab = new ItemsTab(api);
 		this.editorsTab = new EditorsTab(api, {
 			ownRoleChanged: () =>
