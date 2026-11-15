@@ -244,7 +244,7 @@ export class SavePlaces
 			return;
 		}
 
-		const linking = await listAreasLinkingTo(areaId, this.context.transaction);
+		const linking = await listAreasLinkingTo([areaId], this.context.transaction);
 
 		await this.requireWithin(...linking.map((id): PlaceRef => ({ kind: 'area', id })));
 	}
@@ -502,7 +502,7 @@ export class SavePlaces
 
 		await storeResolvedSettings(changed, context.transaction);
 
-		let enablingChanged = false;
+		const enablingChangedIds: string[] = [];
 
 		for (const [areaId, settings] of changed)
 		{
@@ -518,20 +518,21 @@ export class SavePlaces
 
 			context.published.push({ kind: 'area', areaId });
 
-			// Players aren't told about links to disabled areas, so the areas with links leading here are read again
 			if ((stored !== undefined) && (stored.enabled !== settings.enabled))
 			{
-				enablingChanged = true;
-
-				for (const linkingAreaId of await listAreasLinkingTo(areaId, context.transaction))
-				{
-					context.published.push({ kind: 'area', areaId: linkingAreaId });
-				}
+				enablingChangedIds.push(areaId);
 			}
 		}
 
-		if (enablingChanged)
+		// Players aren't told about links to disabled areas, so the areas with links leading to those
+		// enabled or disabled are read again
+		if (enablingChangedIds.length > 0)
 		{
+			for (const linkingAreaId of await listAreasLinkingTo(enablingChangedIds, context.transaction))
+			{
+				context.published.push({ kind: 'area', areaId: linkingAreaId });
+			}
+
 			context.published.push({ kind: 'text', universeId: context.universe.id });
 		}
 

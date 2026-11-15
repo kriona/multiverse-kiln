@@ -1,10 +1,12 @@
 import assert from 'assert';
 import type { AreaListPayload, ChangeImpact, EditableUniverse, EditorArea, EditorChange, PlaceRef, PlaceSettings, ResolvedAreaSettings, SaveImpactPayload, SaveRefusedPayload, TileSettings } from '@multiverse-kiln/shared';
 
-import { loadArea } from '../src/db/areaRepo.js';
+import { watchQueries } from '../scripts/benchmarks/queries.js';
+import { createAreaLink, loadArea } from '../src/db/areaRepo.js';
 import { listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { addCharacter, addGroup, addPlayableUniverse, assignToTestRegion, defaultTileId, TEST_LOBBY_REGION_NAME, TEST_REGION_NAME, testRegionId, withoutLobby } from './db/fixtures.js';
+import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
+import { addArea, addCharacter, addGroup, addPlayableUniverse, assignToTestRegion, defaultTileId, TEST_LOBBY_REGION_NAME, TEST_REGION_NAME, testRegionId, withoutLobby } from './db/fixtures.js';
 import { createUniverse, logIn, saveAll, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -451,6 +453,49 @@ describe('Regions', () =>
 
 		assert.strictEqual(member?.characterId, brokkId);
 		assert.strictEqual((await loadArea(houseAreaId))?.area.enabled, false);
+	});
+
+	it('reads again the areas linking into those a disabled region disables, looking the links up once', async () =>
+	{
+		const universe = await addPlayableUniverse();
+		const { universeId, houseAreaId, squareAreaId, fieldAreaId } = universe;
+		const cellarId = await addArea(universeId, 'Cellar');
+
+		await withoutLobby(universe);
+		await setUniverseRole(universeId, ada.playerId, 'creator');
+		await createAreaLink({ areaId: fieldAreaId, column: 1, row: 1, targetAreaId: cellarId, targetColumn: 0, targetRow: 0, mode: 'automatic', requiresWholeGroup: false });
+
+		const ids = await saveAll(ada, universeId, [newRegion('inn', 'Inn', [await testRegionId(universeId)])]);
+		const innId = String(ids['new:inn']);
+
+		await saveAll(ada, universeId, [
+			{ kind: 'updateArea', areaId: houseAreaId, update: { parents: [inRegion(innId)] } },
+			{ kind: 'updateArea', areaId: cellarId, update: { parents: [inRegion(innId)] } }
+		]);
+
+		const published: AreaChange[] = [];
+		const stop = areaChanges.onChange((change) =>
+		{
+			published.push(change);
+		});
+		const queries = watchQueries({ slowMs: 0 });
+
+		try
+		{
+			await saveAll(ada, universeId, [{ kind: 'updateRegion', regionId: innId, update: { enabled: false } }]);
+		}
+		finally
+		{
+			queries.restore();
+			stop();
+		}
+
+		const linkLookups = queries.slowQueries.filter((query) => query.text.startsWith('select distinct "area_id" from "area_links" where ("area_links"."target_area_id"'));
+		const readAgain = published.flatMap((change) => ((change.kind === 'area') ? [change.areaId] : []));
+
+		assert.strictEqual(linkLookups.length, 1);
+		assert.deepStrictEqual(new Set(readAgain), new Set([houseAreaId, cellarId, squareAreaId, fieldAreaId]));
+		assert.ok(published.some((change) => (change.kind === 'text')));
 	});
 
 	it('moves nobody when a region is disabled in the draft, until the draft is applied', async () =>

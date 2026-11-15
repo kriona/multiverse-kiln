@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, tileIdAt, VOID_CELL, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, tileIdAt, VOID_CELL, type AreaLinkTarget, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { watchQueries } from '../../scripts/benchmarks/queries.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
@@ -95,7 +95,7 @@ describe('areaRepo', () =>
 			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetAreaId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
 			assert.deepStrictEqual((await loadArea(insideId))?.links, []);
 			assert.deepStrictEqual([...(loaded?.closedTargetIds ?? [])], []);
-			assert.deepStrictEqual(await listAreasLinkingTo(insideId), [areaId]);
+			assert.deepStrictEqual(await listAreasLinkingTo([insideId]), [areaId]);
 
 			await storeResolvedSettings(new Map([[insideId, await workedOut({ enabled: false })]]));
 			assert.deepStrictEqual([...((await loadArea(areaId))?.closedTargetIds ?? [])], [insideId]);
@@ -420,6 +420,32 @@ describe('areaRepo', () =>
 			assert.strictEqual(await deleteAreaLink(areaId, 1, 1), true);
 			assert.strictEqual(await deleteAreaLink(areaId, 1, 1), false);
 			assert.strictEqual((await listAreaLinks(areaId)).length, 1);
+		});
+
+		it('lists the areas linking to any of some areas once each, leaving out links within an area', async () =>
+		{
+			const universeId = await addUniverse();
+			const outsideId = await addArea(universeId, 'Outside');
+			const houseId = await addArea(universeId, 'House');
+			const cellarId = await addArea(universeId, 'Cellar');
+			const towerId = await addArea(universeId, 'Tower');
+			const target = (targetAreaId: string): AreaLinkTarget => ({
+				targetAreaId,
+				targetColumn: 0,
+				targetRow: 0,
+				mode: 'automatic',
+				requiresWholeGroup: false
+			});
+
+			await saveAreaLink(outsideId, 0, 0, target(houseId));
+			await saveAreaLink(outsideId, 1, 0, target(cellarId));
+			await saveAreaLink(houseId, 0, 0, target(cellarId));
+			await saveAreaLink(houseId, 1, 0, target(houseId));
+			await saveAreaLink(towerId, 0, 0, target(outsideId));
+
+			assert.deepStrictEqual((await listAreasLinkingTo([houseId, cellarId])).sort(), [outsideId, houseId].sort());
+			assert.deepStrictEqual(await listAreasLinkingTo([houseId]), [outsideId]);
+			assert.deepStrictEqual(await listAreasLinkingTo([]), []);
 		});
 	});
 

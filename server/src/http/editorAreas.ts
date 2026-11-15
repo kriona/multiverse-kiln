@@ -380,7 +380,7 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 	await context.places.requireLinksWithin(area.id);
 
 	// The links leading here go with it, so the areas they're on are read again
-	const linkingAreaIds = await listAreasLinkingTo(area.id, transaction);
+	const linkingAreaIds = await listAreasLinkingTo([area.id], transaction);
 
 	// Its neighbors are left with an edge where it was
 	const neighbors = (await findEditorArea(area.id, transaction))?.area.neighbors;

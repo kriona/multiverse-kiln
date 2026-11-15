@@ -1296,18 +1296,26 @@ export async function listStartingAreaIds(version: UniverseVersion, executor: Ex
 }
 
 /**
- * The areas with links leading to an area, other than the area itself
+ * The areas with links leading to any of some areas, leaving out each area's links to itself
  *
- * @param areaId The area's ID
+ * @param areaIds The areas' IDs
  * @param executor The database, or a transaction
- * @return The areas' IDs
+ * @return The IDs of the areas linking to them, each once
  */
-export async function listAreasLinkingTo(areaId: string, executor: Executor = db): Promise<string[]>
+export async function listAreasLinkingTo(areaIds: readonly string[], executor: Executor = db): Promise<string[]>
 {
+	if (areaIds.length === 0)
+	{
+		return([]);
+	}
+
 	const rows = await executor
 		.selectDistinct({ areaId: areaLinks.areaId })
 		.from(areaLinks)
-		.where(and(eq(areaLinks.targetAreaId, areaId), ne(areaLinks.areaId, areaId)));
+		.where(and(
+			inArray(areaLinks.targetAreaId, [...areaIds]),
+			ne(areaLinks.areaId, areaLinks.targetAreaId)
+		));
 
 	return(rows.map((row) => row.areaId));
 }
