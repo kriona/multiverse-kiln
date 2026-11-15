@@ -1911,14 +1911,6 @@
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "One item in the value of a starting equipment setting, in the editor's Audit tab's list of what a save changed: the item's name, with how many when there is more than one, e.g. \"Arrow x20\""
 	},
-	"editor.audit.value.items": {
-		"defaultMessage": "items",
-		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
-	},
-	"editor.audit.value.mobs": {
-		"defaultMessage": "mobs",
-		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
-	},
 	"editor.audit.value.neighbor": {
 		"defaultMessage": "{side, select, north {North} east {East} south {South} other {West}}: {area}",
 		"description": "The value of an area's neighbor in the list of what a save changed, on the editor's Audit tab: {side} is which side of the area, and {area} the neighboring area's name, or \"none\" when it has none there any more"
@@ -1938,10 +1930,6 @@
 	"editor.audit.value.raceArea": {
 		"defaultMessage": "{race}: {place}",
 		"description": "One race in the value of a class's Starting area by race setting, in the editor's Audit tab's list of what a save changed: {race} is the race's name and {place} where the class's members of that race start, e.g. \"Elf: Meadow at 3, 4\""
-	},
-	"editor.audit.value.tiles": {
-		"defaultMessage": "tiles",
-		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.audit.value.yes": {
 		"defaultMessage": "yes",
@@ -2461,7 +2449,7 @@
 	},
 	"editor.editors.items": {
 		"defaultMessage": "items",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's items"
+		"description": "One of the things a builder may edit besides their regions: the universe's items. Listed in the Notes column of a builder's row on the editor's Editors tab, e.g. \"Also edits: tiles and items\", and in the value of a builder's permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.editors.languages": {
 		"defaultMessage": "Languages",
@@ -2505,7 +2493,7 @@
 	},
 	"editor.editors.mobs": {
 		"defaultMessage": "mobs",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's mobs"
+		"description": "One of the things a builder may edit besides their regions: the universe's mobs (monsters and enemies). Listed in the Notes column of a builder's row on the editor's Editors tab, e.g. \"Also edits: tiles and items\", and in the value of a builder's permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.editors.none": {
 		"defaultMessage": "none",
@@ -2569,7 +2557,7 @@
 	},
 	"editor.editors.tiles": {
 		"defaultMessage": "tiles",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's tiles"
+		"description": "One of the things a builder may edit besides their regions: the universe's tiles. Listed in the Notes column of a builder's row on the editor's Editors tab, e.g. \"Also edits: tiles and items\", and in the value of a builder's permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.editors.translatorLanguages": {
 		"defaultMessage": "Languages: {languages}",

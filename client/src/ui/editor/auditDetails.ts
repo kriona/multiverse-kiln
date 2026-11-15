@@ -7,6 +7,7 @@ import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
+import { BUILDER_PERMISSION_NAMES } from './editorMessages';
 import { FOG_OF_WAR_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
@@ -462,21 +463,6 @@ const VALUE_MESSAGES = defineMessages({
 		defaultMessage: 'inherit',
 		description: 'The value of a region\'s or area\'s setting a save left to the regions and areas above it, in the editor\'s Audit tab\'s list of what a save changed, e.g. "Default tile: inherit"'
 	},
-	tiles: {
-		id: 'editor.audit.value.tiles',
-		defaultMessage: 'tiles',
-		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
-	},
-	items: {
-		id: 'editor.audit.value.items',
-		defaultMessage: 'items',
-		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
-	},
-	mobs: {
-		id: 'editor.audit.value.mobs',
-		defaultMessage: 'mobs',
-		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
-	},
 	none: {
 		id: 'editor.audit.value.none',
 		defaultMessage: 'none',
@@ -667,9 +653,9 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(listOrNone(change.value));
 		case 'permissions':
 			return(listOrNone([
-				...(change.value.canEditTiles ? [t(VALUE_MESSAGES.tiles)] : []),
-				...(change.value.canEditItems ? [t(VALUE_MESSAGES.items)] : []),
-				...(change.value.canEditMobs ? [t(VALUE_MESSAGES.mobs)] : [])
+				...(change.value.canEditTiles ? [t(BUILDER_PERMISSION_NAMES.canEditTiles)] : []),
+				...(change.value.canEditItems ? [t(BUILDER_PERMISSION_NAMES.canEditItems)] : []),
+				...(change.value.canEditMobs ? [t(BUILDER_PERMISSION_NAMES.canEditMobs)] : [])
 			]));
 		case 'indoorsOrOutdoors':
 			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AUDIT_FIELD_NAMES[(change.value ? 'indoors' : 'outdoors')])));

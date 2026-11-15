@@ -1911,14 +1911,6 @@
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
 	},
-	"editor.audit.value.items": {
-		"message": "booty",
-		"source": "items"
-	},
-	"editor.audit.value.mobs": {
-		"message": "scallywags",
-		"source": "mobs"
-	},
 	"editor.audit.value.neighbor": {
 		"message": "{side, select, north {Nor'ard} east {East'ard} south {Sou'ard} other {West'ard}}: {area}",
 		"source": "{side, select, north {North} east {East} south {South} other {West}}: {area}"
@@ -1938,10 +1930,6 @@
 	"editor.audit.value.raceArea": {
 		"message": "{race}: {place}",
 		"source": "{race}: {place}"
-	},
-	"editor.audit.value.tiles": {
-		"message": "tiles",
-		"source": "tiles"
 	},
 	"editor.audit.value.yes": {
 		"message": "aye",

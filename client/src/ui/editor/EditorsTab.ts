@@ -8,6 +8,7 @@ import { refreshUnsavedWork, watchUnsavedWork } from '../changeTracker';
 import { askToConfirm, type Confirmation } from '../confirmDialog';
 import { getElement, showMessage } from '../dom';
 import { EditorDialog } from './EditorDialog';
+import { BUILDER_PERMISSION_NAMES } from './editorMessages';
 import type { EditorSave } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
 import type { SavableTab } from './SaveBar';
@@ -753,27 +754,9 @@ export class EditorsTab implements SavableTab, ChangeSource, FollowsOtherSaves
 	{
 		const notes: string[] = [];
 		const permissions = [
-			(editor.permissions.canEditTiles
-				? t({
-					id: 'editor.editors.tiles',
-					defaultMessage: 'tiles',
-					description: 'On the editor\'s Editors tab, in a builder\'s row: they may edit the universe\'s tiles'
-				})
-				: undefined),
-			(editor.permissions.canEditItems
-				? t({
-					id: 'editor.editors.items',
-					defaultMessage: 'items',
-					description: 'On the editor\'s Editors tab, in a builder\'s row: they may edit the universe\'s items'
-				})
-				: undefined),
-			(editor.permissions.canEditMobs
-				? t({
-					id: 'editor.editors.mobs',
-					defaultMessage: 'mobs',
-					description: 'On the editor\'s Editors tab, in a builder\'s row: they may edit the universe\'s mobs'
-				})
-				: undefined)
+			(editor.permissions.canEditTiles ? t(BUILDER_PERMISSION_NAMES.canEditTiles) : undefined),
+			(editor.permissions.canEditItems ? t(BUILDER_PERMISSION_NAMES.canEditItems) : undefined),
+			(editor.permissions.canEditMobs ? t(BUILDER_PERMISSION_NAMES.canEditMobs) : undefined)
 		].filter((each) => (each !== undefined));
 		const universe = this.universe;
 
