@@ -49,15 +49,17 @@ npm install
 
 Always run `npm install` from the **repository root**, never from inside `client`, `server`, or `shared`. The root install sets up all three packages and links `shared` into the others.
 
-If you use Claude Code, also run this once from the repository root:
+The repository's agent skills (documentation written for AI coding agents) are committed in `.agents/skills/`: the official ones for [Colyseus](https://github.com/colyseus/skill) and [Phaser](https://github.com/phaserjs/phaser/tree/master/skills), Chrome's [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) for the pages' HTML, CSS and DOM code, and the project's own. `npm install` links each of them into `.claude/skills/` (git-ignored), where Claude Code loads them, so every clone and worktree gets them. Run `npm run skills:link` to link them again, such as after adding a skill.
+
+The third-party skills were installed with these commands, which also update them:
 
 ```bash
-npx skills add colyseus/skill
-npx skills add phaserjs/phaser
-npx skills add GoogleChrome/modern-web-guidance --skill modern-web-guidance
+npx skills@1.7.2 add colyseus/skill
+npx skills@1.7.2 add phaserjs/phaser
+npx skills@1.7.2 add GoogleChrome/modern-web-guidance --skill modern-web-guidance
 ```
 
-These are the official agent skills (documentation written for AI coding agents) for [Colyseus](https://github.com/colyseus/skill) and [Phaser](https://github.com/phaserjs/phaser/tree/master/skills), and Chrome's [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) for the pages' HTML, CSS and DOM code. They're committed in `.agents/skills/`, and `CLAUDE.md` tells Claude to read them. These commands also link them into `.claude/skills/` (git-ignored) so Claude Code loads them automatically.
+Version 1.7.2 keeps `skills-lock.json` in the format it's in; later versions rewrite the whole file. If the command puts a copy of a skill in `.claude/skills/` instead of `.agents/skills/`, move it to `.agents/skills/` and run `npm run skills:link`.
 
 ### 3. Point the dev hostname at your machine
 

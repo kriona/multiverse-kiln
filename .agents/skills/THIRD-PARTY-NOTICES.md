@@ -249,4 +249,4 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## Adding or updating skills
 
-When a skill is added with `npx skills add`, check its license and record it here. If the skill's folder doesn't include its license, copy the license text into this file.
+When a skill is added with `npx skills add`, check its license and record it here, then run `npm run skills:link` so Claude Code loads it. If the skill's folder doesn't include its license, copy the license text into this file.

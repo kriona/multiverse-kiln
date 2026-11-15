@@ -83,6 +83,8 @@ An engine for making multiplayer browser-based role-playing games.
                      test language). The client's dev server writes en-XA.json, the pseudo-language's
                      (git-ignored)
   scripts/           the message extractor (extractMessages.ts), run by `npm run messages` and the client's dev server
+/scripts         linkSkills.mjs: links each agent skill in .agents/skills/ into .claude/skills/ (git-ignored), where
+                 Claude Code loads them; npm install runs it, and `npm run skills:link` runs it again
 docker-compose.yml   local Postgres and object storage (SeaweedFS)
 /scratchpad      scratch work (git-ignored): benchmarks, review notes and plans worth keeping
   temp/            throwaway files that may be deleted: one-off scripts, test, lint and build output, patches

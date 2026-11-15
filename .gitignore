@@ -15,8 +15,8 @@ dist/
 certs/
 *.pem
 
-# Agent skills: the skills live in .agents/skills/ (committed); `npx skills` links them into
-# .claude/skills/ per machine, and the link uses an absolute path that breaks in other clones
+# Agent skills: the skills live in .agents/skills/ (committed); npm install links them into
+# .claude/skills/ (scripts/linkSkills.mjs), and on Windows the links hold absolute paths that break in other clones
 .claude/skills/
 
 # Colyseus
