@@ -376,6 +376,14 @@ export class BotCheck
 			'expired-callback': () =>
 			{
 				this.token = undefined;
+
+				// A token kept for the next try is dropped quietly, so a player still typing isn't
+				// interrupted: the next request is asked for a new check
+				if (!this.waiting)
+				{
+					return;
+				}
+
 				this.failed(t({
 					id: 'botCheck.expired',
 					defaultMessage: 'The bot check expired. Try it again.',
