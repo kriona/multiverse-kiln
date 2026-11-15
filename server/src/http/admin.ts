@@ -19,7 +19,7 @@ import { recordAdminEvent } from '../db/adminEventRepo.js';
 import { findPlayerByUsername, listPlayersForAdmin } from '../db/playerRepo.js';
 import { addServerAdmin, isServerAdmin, listServerAdmins, removeServerAdmin, searchPlayersToMakeAdmin } from '../db/serverAdminRepo.js';
 import { deletePlayerSessions, listActiveSessions, listSessionsOfPlayers } from '../db/sessionRepo.js';
-import { findSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
+import { findSiteSettings, lockSiteSettings, saveSiteSettings } from '../db/siteSettingsRepo.js';
 import { hasTwoFactor } from '../db/twoFactorRepo.js';
 import { listUniversesForAdmin, lockUniverse, setUniverseDisabled } from '../db/universeRepo.js';
 import { sessionExpiresAt } from '../logic/sessionLifetimes.js';
@@ -294,7 +294,8 @@ async function updateSiteSettings(request: Request, response: Response): Promise
 
 	await inAdminTransaction(async (transaction) =>
 	{
-		const previous = await findSiteSettings(transaction);
+		// Two admins saving at once take turns, so the events record the changes in the order they're saved
+		const previous = await lockSiteSettings(transaction);
 
 		// Checking every request can't be changed while bot checks aren't configured: it is kept as it was
 		const botCheckEveryRequest = (botChecksConfigured ? body.data.botCheckEveryRequest : previous.botCheckEveryRequest);
