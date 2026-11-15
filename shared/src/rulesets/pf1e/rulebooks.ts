@@ -4,7 +4,7 @@
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 import type { Pf1eClassKey } from './classes.js';
-import type { Pf1eDefaultItemKey } from './items.js';
+import type { Pf1eDefaultItemKey, Pf1eItemType } from './items.js';
 import type { Pf1eRaceKey } from './races.js';
 
 /**
@@ -117,8 +117,38 @@ export const PF1E_CLASS_RULEBOOKS: Record<Pf1eClassKey, Pf1eRulebook> = {
 };
 
 /**
- * The book each default item comes from
+ * The book each default item comes from (scratchpad/rulebooks-rules.md has the source of each)
  */
 export const PF1E_ITEM_RULEBOOKS: Record<Pf1eDefaultItemKey, Pf1eRulebook> = {
-	dagger: 'core'
+	dagger: 'core',
+	cestus: 'apg',
+	sword_cane: 'apg',
+	wooden_armor: 'apg',
+	quilted_cloth: 'apg',
+	kobold_long_lash: 'arg',
+	kobold_spiked_tail: 'arg',
+	ratfolk_tailblade: 'arg',
+	arcanist_kit: 'acg',
+	bloodrager_kit: 'acg',
+	brawler_kit: 'acg',
+	hunter_kit: 'acg',
+	investigator_kit: 'acg',
+	shaman_kit: 'acg',
+	skald_kit: 'acg',
+	slayer_kit: 'acg',
+	swashbuckler_kit: 'acg',
+	warpriest_kit: 'acg'
+};
+
+/**
+ * The book each item type an optional book brings comes from. The other types are the Core Rulebook's
+ */
+export const PF1E_ITEM_TYPE_RULEBOOKS: Partial<Record<Pf1eItemType, Pf1eRulebook>> = {
+	cestus: 'apg',
+	sword_cane: 'apg',
+	wooden_armor: 'apg',
+	quilted_cloth: 'apg',
+	kobold_long_lash: 'arg',
+	kobold_spiked_tail: 'arg',
+	ratfolk_tailblade: 'arg'
 };

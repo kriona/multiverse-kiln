@@ -1,4 +1,4 @@
-import { canEditItemsOpen, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditItemsOpen, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, itemTypeRulebook, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
@@ -8,6 +8,7 @@ import { formMessages } from '../formMessages';
 import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
 import { editorMessages } from './editorMessages';
 import { FollowedDialog } from './otherSaves';
+import type { RulebookChoice } from './rulebookChoice';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
@@ -95,8 +96,9 @@ export class ItemDialog
 	 * @param item The item, or undefined to add one
 	 * @param edit Where the dialog's changes go
 	 * @param onChanged Called after the item's changes are applied, or it is marked to delete or restore
+	 * @param rulebooks The books on, whose item types the dialog offers
 	 */
-	open(universe: EditableUniverse, item: EditorItem | undefined, edit: StagedEdit<ItemSettings>, onChanged: () => void): void
+	open(universe: EditableUniverse, item: EditorItem | undefined, edit: StagedEdit<ItemSettings>, onChanged: () => void, rulebooks: RulebookChoice): void
 	{
 		const canEdit = canEditItemsOpen(universe);
 		const editable = (canEdit && !edit.removed);
@@ -129,7 +131,7 @@ export class ItemDialog
 			this.title.textContent = name;
 		}
 
-		this.showTypeOptions(universe.ruleset);
+		this.showTypeOptions(universe.ruleset, rulebooks, item?.type);
 		this.name.value = name;
 		this.type.value = (item?.type ?? Object.keys(ITEM_KINDS[universe.ruleset].types)[0]);
 		this.enabled.checked = (item?.enabled ?? true);
@@ -157,11 +159,13 @@ export class ItemDialog
 	}
 
 	/**
-	 * Offers the ruleset's item types, grouped by category
+	 * Offers the ruleset's item types of the books that are on, and the type the item has, grouped by category
 	 *
 	 * @param ruleset The universe's ruleset
+	 * @param rulebooks The books on
+	 * @param current The item's type, offered whatever its book, or undefined for a new item
 	 */
-	private showTypeOptions(ruleset: Ruleset): void
+	private showTypeOptions(ruleset: Ruleset, rulebooks: RulebookChoice, current: string | undefined): void
 	{
 		const kinds = ITEM_KINDS[ruleset];
 
@@ -173,7 +177,7 @@ export class ItemDialog
 
 			group.label = itemCategoryName(category, ruleset);
 			group.append(...Object.entries(kinds.types)
-				.filter(([, typeCategory]) => (typeCategory === category))
+				.filter(([type, typeCategory]) => ((typeCategory === category) && ((type === current) || rulebooks.shows(itemTypeRulebook(ruleset, type)))))
 				.map(([type]) => new Option(itemTypeName(type, ruleset), type)));
 			this.type.append(group);
 		}

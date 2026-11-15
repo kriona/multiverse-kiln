@@ -869,6 +869,13 @@
       "when": 1794759803181,
       "tag": "0123_pf1e_rulebook_races_and_classes",
       "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1794763196169,
+      "tag": "0124_pf1e_rulebook_items",
+      "breakpoints": true
     }
   ]
 }

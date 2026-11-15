@@ -1105,18 +1105,21 @@ describe('World editor API', () =>
 
 			assert.strictEqual(created.status, 200);
 
+			// The editor asks for the items of the books on: with rulebooks empty, the core rulebook's alone
 			const custom = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body;
-			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon`)).body;
-			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1`)).body;
+			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon&rulebooks=`)).body;
+			const apgWeapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon&rulebooks=apg`)).body;
+			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1&rulebooks=`)).body;
 
 			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, rulebook: null, custom: true, edited: false, editedSettings: false }]);
 
 			// Default items that keep their names are named by their keys, in the player's language
 			assert.deepStrictEqual(weapons.items.map((item) => (item.name ?? item.key)), ['dagger']);
+			assert.deepStrictEqual(apgWeapons.items.map((item) => (item.name ?? item.key)), ['dagger', 'cestus', 'sword_cane']);
 			assert.strictEqual(page.total, 2);
 			assert.deepStrictEqual(page.items.map((item) => item.id), [created.body.id]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?enabled=yes`)).status, 400);
-			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending`)).body.items.map((item) => item.id), [created.body.id, (await findDefaultItemIds('pf1e')).get('dagger')]);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending&rulebooks=`)).body.items.map((item) => item.id), [created.body.id, (await findDefaultItemIds('pf1e')).get('dagger')]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?sort=summary`)).status, 400);
 		});
 

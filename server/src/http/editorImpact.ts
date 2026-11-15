@@ -175,10 +175,9 @@ async function rulebookImpacts(universe: EditableUniverseDetails, changes: reado
  */
 async function draftRulebookImpacts(universeId: string, ruleset: Ruleset, changeIndex: number): Promise<ChangeImpact[]>
 {
-	const [live, draft] = await Promise.all([
-		loadRulebookSettings(liveVersion(universeId), ruleset),
-		loadRulebookSettings(draftVersion(universeId), ruleset)
-	]);
+	// One after another, since the draft's other impacts are being found at the same time
+	const live = await loadRulebookSettings(liveVersion(universeId), ruleset);
+	const draft = await loadRulebookSettings(draftVersion(universeId), ruleset);
 	const turnedOff = live.rulebooks.filter((rulebook) => !draft.rulebooks.includes(rulebook));
 
 	return(rulebookOffImpacts(universeId, ruleset, turnedOff, changeIndex));
@@ -203,19 +202,13 @@ async function rulebookOffImpacts(universeId: string, ruleset: Ruleset, turnedOf
 
 	const live = liveVersion(universeId);
 	const inBooks = <Option extends { enabled: boolean; rulebook: string | null }>(options: readonly Option[]): Option[] => options.filter((option) => (option.enabled && (option.rulebook !== null) && turnedOff.includes(option.rulebook)));
-	const [liveRaces, liveClasses, liveItems] = await Promise.all([
-		loadEditorRaces(live, ruleset),
-		loadEditorClasses(live, ruleset),
-		loadEditorItems(live, ruleset)
-	]);
-	const bookRaces = inBooks(liveRaces);
-	const bookClasses = inBooks(liveClasses);
-	const bookItems = inBooks(liveItems);
-	const [raceCounts, classCounts, itemCounts] = await Promise.all([
-		countCharactersOfRaces(universeId, bookRaces.map(({ id }) => id)),
-		countCharactersOfClasses(universeId, bookClasses.map(({ id }) => id)),
-		countCharactersCarrying(universeId, bookItems.map(({ id }) => id))
-	]);
+	// One after another, so finding a save's impacts doesn't take more of the pool than it did
+	const bookRaces = inBooks(await loadEditorRaces(live, ruleset));
+	const bookClasses = inBooks(await loadEditorClasses(live, ruleset));
+	const bookItems = inBooks(await loadEditorItems(live, ruleset));
+	const raceCounts = await countCharactersOfRaces(universeId, bookRaces.map(({ id }) => id));
+	const classCounts = await countCharactersOfClasses(universeId, bookClasses.map(({ id }) => id));
+	const itemCounts = await countCharactersCarrying(universeId, bookItems.map(({ id }) => id));
 	const impacted = (options: readonly (OptionName & { id: number; rulebook: string | null })[], counts: ReadonlyMap<number, number>, rulebook: string): ImpactedOption[] => options
 		.filter((option) => ((option.rulebook === rulebook) && ((counts.get(option.id) ?? 0) > 0)))
 		.map((option) => ({

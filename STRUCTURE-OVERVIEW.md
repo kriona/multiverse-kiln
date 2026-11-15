@@ -811,7 +811,7 @@ the table contains:
 
 The table is sorted by name until the Name, Enabled or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, enabled items before disabled ones, and notes by the items' flags, with items that have none first, then edited and custom ones. Items that tie are sorted by name.
 
-For PF1E, the only default item for now is a dagger; for SF1E, a survival knife.
+For PF1E, the Core Rulebook's only default item for now is a dagger; for SF1E, a survival knife. The optional PF1E books add theirs (below).
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 
@@ -821,6 +821,9 @@ Each ruleset groups its item types into categories, which the filters use. For P
 - `gear`: rope, torch
 
 Each optional PF1E [rulebook](#rulebooks) adds a few items from its equipment. Its gear is the "other gear" type, and its weapons and armor have types of their own. The filters and the [item editor](#editor-item)'s type list show the types of books that are on, and a type an item already has.
+- Advanced Player's Guide: the cestus and sword cane (weapons), and wooden armor and quilted cloth (armor)
+- Advanced Race Guide: the long lash and spiked tail attachments and the ratfolk tailblade (weapons)
+- Advanced Class Guide: a kit for each of its classes, such as the arcanist's kit (gear)
 
 For SF1E:
 - `weapons`: survival knife, tactical baton, laser pistol, semi-auto pistol, laser rifle, frag grenade, battery, small arm rounds

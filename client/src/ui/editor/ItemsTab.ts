@@ -1,4 +1,4 @@
-import { canEditWorld, canEditItemsOpen, differsBeyondEnabling, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, differsBeyondEnabling, ITEM_KINDS, itemTypeRulebook, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -106,6 +106,11 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		});
 		rulebooks.subscribe(() =>
 		{
+			if (this.universe)
+			{
+				this.showTypeOptions(this.universe.ruleset);
+			}
+
 			this.offset = 0;
 			void this.refresh();
 		});
@@ -288,8 +293,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Offers the types in the category chosen, or every type when none is, keeping the type chosen if
-	 * it is still offered
+	 * Offers the types in the category chosen, or every type when none is, of the books that are on,
+	 * keeping the type chosen if it is still offered
 	 *
 	 * @param ruleset The universe's ruleset
 	 */
@@ -298,7 +303,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		const category = this.categoryFilter.value;
 		const chosen = this.typeFilter.value;
 		const types = Object.entries(ITEM_KINDS[ruleset].types)
-			.filter(([, typeCategory]) => ((category === '') || (typeCategory === category)))
+			.filter(([type, typeCategory]) => (((category === '') || (typeCategory === category)) && this.rulebooks.shows(itemTypeRulebook(ruleset, type))))
 			.map(([type]) => type);
 
 		setOptions(this.typeFilter, [
@@ -580,7 +585,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			this.dialog.open(this.universe, item, this.changes.edit(item?.id, loadedFrom((item === undefined) ? undefined : this.known.get(item.id))), () =>
 			{
 				this.render();
-			});
+			}, this.rulebooks);
 		}
 	}
 }

@@ -6535,9 +6535,77 @@
 		"message": "Who can use the summons",
 		"source": "Who can use the link"
 	},
+	"item.pf1e.arcanist_kit": {
+		"message": "arcanist's ditty bag",
+		"source": "arcanist's kit"
+	},
+	"item.pf1e.bloodrager_kit": {
+		"message": "bloodrager's ditty bag",
+		"source": "bloodrager's kit"
+	},
+	"item.pf1e.brawler_kit": {
+		"message": "tavern brawler's ditty bag",
+		"source": "brawler's kit"
+	},
+	"item.pf1e.cestus": {
+		"message": "knuckle-duster",
+		"source": "cestus"
+	},
 	"item.pf1e.dagger": {
 		"message": "dirk",
 		"source": "dagger"
+	},
+	"item.pf1e.hunter_kit": {
+		"message": "hunter's ditty bag",
+		"source": "hunter's kit"
+	},
+	"item.pf1e.investigator_kit": {
+		"message": "bilge sleuth's ditty bag",
+		"source": "investigator's kit"
+	},
+	"item.pf1e.kobold_long_lash": {
+		"message": "long lash tail rig",
+		"source": "long lash tail attachment"
+	},
+	"item.pf1e.kobold_spiked_tail": {
+		"message": "spiked tail rig",
+		"source": "spiked tail attachment"
+	},
+	"item.pf1e.quilted_cloth": {
+		"message": "quilted sailcloth",
+		"source": "quilted cloth"
+	},
+	"item.pf1e.ratfolk_tailblade": {
+		"message": "bilge rat tailblade",
+		"source": "ratfolk tailblade"
+	},
+	"item.pf1e.shaman_kit": {
+		"message": "sea shaman's ditty bag",
+		"source": "shaman's kit"
+	},
+	"item.pf1e.skald_kit": {
+		"message": "war shanty singer's ditty bag",
+		"source": "skald's kit"
+	},
+	"item.pf1e.slayer_kit": {
+		"message": "headhunter's ditty bag",
+		"source": "slayer's kit"
+	},
+	"item.pf1e.swashbuckler_kit": {
+		"message": "swashbuckler's ditty bag",
+		"source": "swashbuckler's kit"
+	},
+	"item.pf1e.sword_cane": {
+		"message": "sword cane",
+		"source": "sword cane"
+	},
+	"item.pf1e.warpriest_kit": {
+		"message": "battle chaplain's ditty bag",
+		"source": "warpriest's kit"
+	},
+	"item.pf1e.wooden_armor": {
+		"message": "plank armor",
+		"source": "wooden armor"
 	},
 	"item.sf1e.survival_knife": {
 		"message": "boardin' knife",
@@ -7407,6 +7475,10 @@
 		"message": "arrows",
 		"source": "arrows"
 	},
+	"pf1e.itemType.cestus": {
+		"message": "knuckle-duster",
+		"source": "cestus"
+	},
 	"pf1e.itemType.chain_shirt": {
 		"message": "chain shirt",
 		"source": "chain shirt"
@@ -7426,6 +7498,14 @@
 	"pf1e.itemType.heavy_shield": {
 		"message": "heavy shield",
 		"source": "heavy shield"
+	},
+	"pf1e.itemType.kobold_long_lash": {
+		"message": "long lash tail rig",
+		"source": "long lash tail attachment"
+	},
+	"pf1e.itemType.kobold_spiked_tail": {
+		"message": "spiked tail rig",
+		"source": "spiked tail attachment"
 	},
 	"pf1e.itemType.leather_armor": {
 		"message": "leather armor",
@@ -7459,6 +7539,14 @@
 		"message": "quarterstaff",
 		"source": "quarterstaff"
 	},
+	"pf1e.itemType.quilted_cloth": {
+		"message": "quilted sailcloth",
+		"source": "quilted cloth"
+	},
+	"pf1e.itemType.ratfolk_tailblade": {
+		"message": "tailblade",
+		"source": "tailblade"
+	},
 	"pf1e.itemType.rope": {
 		"message": "line",
 		"source": "rope"
@@ -7475,9 +7563,17 @@
 		"message": "boardin' pike",
 		"source": "spear"
 	},
+	"pf1e.itemType.sword_cane": {
+		"message": "sword cane",
+		"source": "sword cane"
+	},
 	"pf1e.itemType.torch": {
 		"message": "torch",
 		"source": "torch"
+	},
+	"pf1e.itemType.wooden_armor": {
+		"message": "plank armor",
+		"source": "wooden armor"
 	},
 	"pf1e.race.aasimar": {
 		"message": "Aasimar",

@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_NAMES, ITEM_KINDS, itemTypeRulebook, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_RULEBOOKS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
 import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
@@ -47,7 +47,8 @@ function englishName(item: EditorItem): string | undefined
 }
 
 /**
- * The IDs of the items a filter lists
+ * The IDs of the items a filter lists, of the core rulebook and the universe's own unless the filter
+ * names other books, as the editor of a universe with only the core rulebook asks for them
  *
  * @param universeId The universe's ID
  * @param query The filters
@@ -55,7 +56,18 @@ function englishName(item: EditorItem): string | undefined
  */
 async function listedIds(universeId: string, query: ItemListQuery): Promise<number[]>
 {
-	return((await listEditorItems(liveVersion(universeId), 'pf1e', query)).items.map((item) => item.id));
+	return((await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], ...query })).items.map((item) => item.id));
+}
+
+/**
+ * The items of the core rulebook and the universe's own, leaving out those of the optional books
+ *
+ * @param items The items
+ * @return Those items
+ */
+function coreAndOwn(items: readonly EditorItem[]): EditorItem[]
+{
+	return(items.filter((item) => ((item.rulebook === null) || (item.rulebook === 'core'))));
 }
 
 describe('itemRepo', () =>
@@ -64,17 +76,26 @@ describe('itemRepo', () =>
 	{
 		it('finds the Pathfinder 1E default items the migrations add', async () =>
 		{
-			assert.deepStrictEqual([...(await findDefaultItemIds('pf1e')).keys()], ['dagger']);
+			assert.deepStrictEqual([...(await findDefaultItemIds('pf1e')).keys()].sort(), Object.keys(PF1E_DEFAULT_ITEM_NAMES).sort());
 		});
 
-		it('gives every default item a name message and a type of the ruleset', async () =>
+		it('gives every default item a name message, a type of the ruleset and its book', async () =>
 		{
 			const universeId = await addUniverse();
 
 			for (const item of await loadEditorItems(liveVersion(universeId), 'pf1e'))
 			{
+				const key = item.key as keyof typeof PF1E_ITEM_RULEBOOKS;
+
 				assert.ok(item.key && DEFAULT_ITEM_NAMES.pf1e[item.key], `${item.key} has no name message`);
 				assert.ok(Object.hasOwn(ITEM_KINDS.pf1e.types, item.type), `${item.key} has an unknown type`);
+				assert.strictEqual(item.rulebook, PF1E_ITEM_RULEBOOKS[key], `${item.key} has another book than PF1E_ITEM_RULEBOOKS`);
+
+				// A type an optional book brings is only that book's items'
+				if (itemTypeRulebook('pf1e', item.type) !== 'core')
+				{
+					assert.strictEqual(itemTypeRulebook('pf1e', item.type), item.rulebook, `${item.key}'s type is another book's`);
+				}
 			}
 		});
 	});
@@ -89,7 +110,7 @@ describe('itemRepo', () =>
 			await createCustomItem(liveVersion(universeId), 'pf1e', torch);
 			await createCustomItem(liveVersion(otherId), 'pf1e', { ...torch, name: 'Lantern' });
 
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['dagger', 'torch']);
+			assert.deepStrictEqual(coreAndOwn(await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['dagger', 'torch']);
 		});
 
 		it('gives an edited default item the universe\'s settings under the default item\'s ID, for that universe only', async () =>
@@ -179,10 +200,22 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'torch' }), [torchId]);
 			assert.deepStrictEqual(await listedIds(universeId, { category: 'armor' }), []);
 
-			const page = await listEditorItems(liveVersion(universeId), 'pf1e', { offset: 1, limit: 1 });
+			const page = await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], offset: 1, limit: 1 });
 
 			assert.strictEqual(page.total, 3);
 			assert.deepStrictEqual(page.items.map((item) => item.id), [torchId]);
+		});
+
+		it('lists the items of the core rulebook, the books asked for and the universe\'s own', async () =>
+		{
+			const universeId = await addUniverse();
+			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
+			const ids = await findDefaultItemIds('pf1e');
+			const keysOf = async (rulebooks: string[] | undefined): Promise<(string | number)[]> => (await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks })).items.map((item) => (item.key ?? item.id));
+
+			assert.deepStrictEqual(await keysOf([]), ['dagger', torchId]);
+			assert.deepStrictEqual(await keysOf(['apg']), ['dagger', 'cestus', 'sword_cane', 'wooden_armor', 'quilted_cloth', torchId]);
+			assert.strictEqual((await keysOf(undefined)).length, (ids.size + 1));
 		});
 
 		it('sorts by name, enabled or notes before paging, breaking ties by name', async () =>
@@ -252,7 +285,7 @@ describe('itemRepo', () =>
 			assert.strictEqual(await countCustomItems(liveVersion(universeId)), 1);
 
 			await updateCustomItem(liveVersion(universeId), torchId, { ...torch, name: 'everburning torch' });
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['rusty dagger', 'everburning torch']);
+			assert.deepStrictEqual(coreAndOwn(await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['rusty dagger', 'everburning torch']);
 
 			await deleteCustomItem(liveVersion(universeId), torchId);
 			assert.strictEqual(await countCustomItems(liveVersion(universeId)), 0);

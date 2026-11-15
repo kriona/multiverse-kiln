@@ -2,7 +2,9 @@
  * Each ruleset's kinds of item and default items, which the migrations in server/drizzle add to the database
  */
 import type { MessageDescriptor } from './localization.js';
+import { CORE_RULEBOOK } from './rulebooks.js';
 import { PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_CATEGORIES, PF1E_ITEM_CATEGORY_NAMES, PF1E_ITEM_TYPE_NAMES, PF1E_ITEM_TYPES } from './rulesets/pf1e/items.js';
+import { PF1E_ITEM_TYPE_RULEBOOKS } from './rulesets/pf1e/rulebooks.js';
 import { SF1E_DEFAULT_ITEM_NAMES, SF1E_ITEM_CATEGORIES, SF1E_ITEM_CATEGORY_NAMES, SF1E_ITEM_TYPE_NAMES, SF1E_ITEM_TYPES } from './rulesets/sf1e/items.js';
 import type { Ruleset } from './universes.js';
 
@@ -24,6 +26,11 @@ export interface ItemKinds
 	types: Readonly<Record<string, string>>;
 
 	typeNames: Record<string, MessageDescriptor>;
+
+	/**
+	 * The book each type an optional book brings comes from, by the type's key; the rest are the core rulebook's
+	 */
+	typeRulebooks: Readonly<Record<string, string>>;
 }
 
 /**
@@ -34,13 +41,15 @@ export const ITEM_KINDS: Record<Ruleset, ItemKinds> = {
 		categories: PF1E_ITEM_CATEGORIES,
 		categoryNames: PF1E_ITEM_CATEGORY_NAMES,
 		types: PF1E_ITEM_TYPES,
-		typeNames: PF1E_ITEM_TYPE_NAMES
+		typeNames: PF1E_ITEM_TYPE_NAMES,
+		typeRulebooks: PF1E_ITEM_TYPE_RULEBOOKS
 	},
 	sf1e: {
 		categories: SF1E_ITEM_CATEGORIES,
 		categoryNames: SF1E_ITEM_CATEGORY_NAMES,
 		types: SF1E_ITEM_TYPES,
-		typeNames: SF1E_ITEM_TYPE_NAMES
+		typeNames: SF1E_ITEM_TYPE_NAMES,
+		typeRulebooks: {}
 	}
 };
 
@@ -92,4 +101,16 @@ export function isItemType(ruleset: Ruleset, type: string): boolean
 export function itemCategory(ruleset: Ruleset, type: string): string | undefined
 {
 	return((isItemType(ruleset, type) ? ITEM_KINDS[ruleset].types[type] : undefined));
+}
+
+/**
+ * The book an item type comes from, which decides whether the editor offers it
+ *
+ * @param ruleset The ruleset
+ * @param type The type's key
+ * @return The book's key: the core rulebook for every type an optional book doesn't bring
+ */
+export function itemTypeRulebook(ruleset: Ruleset, type: string): string
+{
+	return((ITEM_KINDS[ruleset].typeRulebooks[type] ?? CORE_RULEBOOK));
 }

@@ -6535,9 +6535,77 @@
 		"defaultMessage": "Who can use the link",
 		"description": "Label of the choice of how many characters can join the group with an invite link"
 	},
+	"item.pf1e.arcanist_kit": {
+		"defaultMessage": "arcanist's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear an arcanist (a spellcasting class) sets out with"
+	},
+	"item.pf1e.bloodrager_kit": {
+		"defaultMessage": "bloodrager's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a bloodrager (a raging, spellcasting warrior class) sets out with"
+	},
+	"item.pf1e.brawler_kit": {
+		"defaultMessage": "brawler's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a brawler (an unarmed fighter class) sets out with"
+	},
+	"item.pf1e.cestus": {
+		"defaultMessage": "cestus",
+		"description": "Name of an item in Pathfinder: a studded leather glove for punching"
+	},
 	"item.pf1e.dagger": {
 		"defaultMessage": "dagger",
 		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
+	},
+	"item.pf1e.hunter_kit": {
+		"defaultMessage": "hunter's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a hunter (a wilderness class with an animal companion) sets out with"
+	},
+	"item.pf1e.investigator_kit": {
+		"defaultMessage": "investigator's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear an investigator (a detective class) sets out with"
+	},
+	"item.pf1e.kobold_long_lash": {
+		"defaultMessage": "long lash tail attachment",
+		"description": "Name of an item in Pathfinder: a whip-like blade a kobold straps to the end of its tail"
+	},
+	"item.pf1e.kobold_spiked_tail": {
+		"defaultMessage": "spiked tail attachment",
+		"description": "Name of an item in Pathfinder: a spiked weight a kobold straps to the end of its tail"
+	},
+	"item.pf1e.quilted_cloth": {
+		"defaultMessage": "quilted cloth",
+		"description": "Name of an item in Pathfinder: light armor of layered, padded cloth worn as clothing"
+	},
+	"item.pf1e.ratfolk_tailblade": {
+		"defaultMessage": "ratfolk tailblade",
+		"description": "Name of an item in Pathfinder: a small blade a ratfolk straps to its tail"
+	},
+	"item.pf1e.shaman_kit": {
+		"defaultMessage": "shaman's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a shaman (a class that casts spells granted by spirits) sets out with"
+	},
+	"item.pf1e.skald_kit": {
+		"defaultMessage": "skald's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a skald (a warrior poet class) sets out with"
+	},
+	"item.pf1e.slayer_kit": {
+		"defaultMessage": "slayer's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a slayer (a class that hunts people) sets out with"
+	},
+	"item.pf1e.swashbuckler_kit": {
+		"defaultMessage": "swashbuckler's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a swashbuckler (a daring sword fighter class) sets out with"
+	},
+	"item.pf1e.sword_cane": {
+		"defaultMessage": "sword cane",
+		"description": "Name of an item in Pathfinder: a thin blade hidden in a walking stick"
+	},
+	"item.pf1e.warpriest_kit": {
+		"defaultMessage": "warpriest's kit",
+		"description": "Name of an item in Pathfinder: a pack of the gear a warpriest (a warrior class that casts divine spells) sets out with"
+	},
+	"item.pf1e.wooden_armor": {
+		"defaultMessage": "wooden armor",
+		"description": "Name of an item in Pathfinder: light armor of wooden plates bound together"
 	},
 	"item.sf1e.survival_knife": {
 		"defaultMessage": "survival knife",
@@ -7407,6 +7475,10 @@
 		"defaultMessage": "arrows",
 		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a bow"
 	},
+	"pf1e.itemType.cestus": {
+		"defaultMessage": "cestus",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a studded leather glove for punching"
+	},
 	"pf1e.itemType.chain_shirt": {
 		"defaultMessage": "chain shirt",
 		"description": "Type of item in Pathfinder, shown beside an item's name: light armor, a shirt of metal rings"
@@ -7426,6 +7498,14 @@
 	"pf1e.itemType.heavy_shield": {
 		"defaultMessage": "heavy shield",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a large shield held with the whole arm"
+	},
+	"pf1e.itemType.kobold_long_lash": {
+		"defaultMessage": "long lash tail attachment",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a whip-like blade a kobold straps to the end of its tail"
+	},
+	"pf1e.itemType.kobold_spiked_tail": {
+		"defaultMessage": "spiked tail attachment",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a spiked weight a kobold straps to the end of its tail"
 	},
 	"pf1e.itemType.leather_armor": {
 		"defaultMessage": "leather armor",
@@ -7459,6 +7539,14 @@
 		"defaultMessage": "quarterstaff",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a long wooden staff used as a weapon"
 	},
+	"pf1e.itemType.quilted_cloth": {
+		"defaultMessage": "quilted cloth",
+		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of layered, padded cloth worn as clothing"
+	},
+	"pf1e.itemType.ratfolk_tailblade": {
+		"defaultMessage": "tailblade",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a small blade a ratfolk straps to its tail"
+	},
 	"pf1e.itemType.rope": {
 		"defaultMessage": "rope",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a length of rope"
@@ -7475,9 +7563,17 @@
 		"defaultMessage": "spear",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a pole with a pointed head"
 	},
+	"pf1e.itemType.sword_cane": {
+		"defaultMessage": "sword cane",
+		"description": "Type of item in Pathfinder, shown beside an item's name: a thin blade hidden in a walking stick"
+	},
 	"pf1e.itemType.torch": {
 		"defaultMessage": "torch",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a burning stick that gives light"
+	},
+	"pf1e.itemType.wooden_armor": {
+		"defaultMessage": "wooden armor",
+		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of wooden plates bound together"
 	},
 	"pf1e.race.aasimar": {
 		"defaultMessage": "Aasimar",
