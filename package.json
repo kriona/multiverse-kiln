@@ -12,7 +12,8 @@
 		"node": ">= 24.22.1"
 	},
 	"scripts": {
-		"prepare": "husky",
+		"prepare": "husky && npm run skills:link",
+		"skills:link": "node scripts/linkSkills.mjs",
 		"lint": "npm run build -w shared && npm run messages:check -w shared && eslint .",
 		"messages": "npm run messages -w shared",
 		"lint:fix": "npm run build -w shared && eslint . --fix",

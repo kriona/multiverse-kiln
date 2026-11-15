@@ -97,6 +97,12 @@
       "skillPath": "skills/loading-assets/SKILL.md",
       "computedHash": "ad170c148ff69639aa3307879f6c392ee55f45beadbae30f724f478abf98a951"
     },
+    "modern-web-guidance": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "3eeead58b609ef1587927559438a7b54333011f01c7c4f319b3a7c6f0c88f74c"
+    },
     "particles": {
       "source": "phaserjs/phaser",
       "sourceType": "github",
