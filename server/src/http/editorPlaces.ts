@@ -5,7 +5,7 @@
  */
 import { editsEveryPlace, isWithinAssignments, lobbyProblems, neighborPairs, neighborProblems, placeKey, type GridArea, type MessageDescriptor, type PlaceKind, type PlaceProblem, type PlaceRef, type PlaceSettings, type ResolvedAreaSettings, type WorldResolution } from '@multiverse-kiln/shared';
 
-import { listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadNeighborGrid, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
+import { listAreaLinks, listAreasLinkingTo, listLinkEnds, listStartingAreaIds, loadNeighborGrid, loadPlaceWorld, storeResolvedSettings } from '../db/areaRepo.js';
 import { listAssignedRegionIds } from '../db/regionRepo.js';
 import { loadUniverseTiles } from '../db/tileRepo.js';
 import { PlaceModel } from '../logic/placeModel.js';
@@ -232,8 +232,8 @@ export class SavePlaces
 	}
 
 	/**
-	 * Refuses a builder's deleting an area that areas outside their assignments link into, since deleting
-	 * it deletes those links
+	 * Refuses a builder's deleting an area that areas outside their assignments link into, or that links
+	 * to areas outside them, since deleting it deletes those links
 	 *
 	 * @param areaId The area's ID
 	 */
@@ -245,8 +245,9 @@ export class SavePlaces
 		}
 
 		const linking = await listAreasLinkingTo([areaId], this.context.transaction);
+		const linked = (await listAreaLinks(areaId, this.context.transaction)).map((link) => link.targetAreaId);
 
-		await this.requireWithin(...linking.map((id): PlaceRef => ({ kind: 'area', id })));
+		await this.requireWithin(...[...linking, ...linked].map((id): PlaceRef => ({ kind: 'area', id })));
 	}
 
 	/**

@@ -1102,6 +1102,11 @@ export interface ResizeResult
 	discardedLinks: number;
 
 	/**
+	 * The other areas those links are on or lead to, whether or not it was resized
+	 */
+	linkedAreaIds: string[];
+
+	/**
 	 * The other areas whose links into those cells were deleted; empty when it wasn't resized
 	 */
 	linkingAreaIds: string[];
@@ -1184,16 +1189,24 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 			outsideBounds(areaLinks.targetColumn, areaLinks.targetRow, bounds)
 		)
 	);
-	const [{ total: discardedLinks }] = await executor
+	// Counted by their two ends, which gives the other areas they are on or lead to too
+	const discardedLinkEnds = await executor
 		.select({
+			areaId: areaLinks.areaId,
+			targetAreaId: areaLinks.targetAreaId,
 			total: count()
 		})
 		.from(areaLinks)
-		.where(discardedLinkCondition);
+		.where(discardedLinkCondition)
+		.groupBy(areaLinks.areaId, areaLinks.targetAreaId);
+	const discardedLinks = discardedLinkEnds.reduce((total, ends) => (total + ends.total), 0);
+	const linkedAreaIds = [...new Set(discardedLinkEnds
+		.map((ends) => ((ends.areaId === areaId) ? ends.targetAreaId : ends.areaId))
+		.filter((linkedAreaId) => (linkedAreaId !== areaId)))];
 
 	if (!discard && ((discardedCells > 0) || (discardedLinks > 0)))
 	{
-		return({ resized: false, discardedCells, discardedLinks, linkingAreaIds: [] });
+		return({ resized: false, discardedCells, discardedLinks, linkedAreaIds, linkingAreaIds: [] });
 	}
 
 	await storeGroundChunks(areaId, clipped, executor);
@@ -1216,7 +1229,7 @@ export async function resizeArea(areaId: string, bounds: AreaBounds, discard: bo
 		.map((link) => link.areaId)
 		.filter((linkAreaId) => (linkAreaId !== areaId)));
 
-	return({ resized: true, discardedCells, discardedLinks, linkingAreaIds: [...linkingAreaIds] });
+	return({ resized: true, discardedCells, discardedLinks, linkedAreaIds, linkingAreaIds: [...linkingAreaIds] });
 }
 
 /**

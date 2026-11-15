@@ -2,7 +2,7 @@ import assert from 'assert';
 import type { AreaListPayload, ChangeImpact, EditableUniverse, EditorArea, EditorChange, PlaceRef, PlaceSettings, ResolvedAreaSettings, SaveImpactPayload, SaveRefusedPayload, TileSettings } from '@multiverse-kiln/shared';
 
 import { watchQueries } from '../scripts/benchmarks/queries.js';
-import { createAreaLink, loadArea } from '../src/db/areaRepo.js';
+import { createAreaLink, listAreaLinks, loadArea } from '../src/db/areaRepo.js';
 import { listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { setUniverseAccess, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
@@ -424,6 +424,54 @@ describe('Regions', () =>
 		await setUniverseAccess(universeId, bea.playerId, { role: 'builder', languages: [], permissions: { canEditTiles: true, canEditItems: false, canEditMobs: false } });
 		assert.strictEqual(await statusOf(bea, { kind: 'createTile', ref: 'new:moss', settings: moss }), 200);
 		assert.strictEqual(await statusOf(carl, { kind: 'updateArea', areaId: mine, update: { name: 'Carl\'s' } }), 403);
+	});
+
+	it('refuses a builder a resize discarding links on or leading to areas outside their assignments', async () =>
+	{
+		const universe = await addPlayableUniverse();
+		const { universeId, squareAreaId, houseAreaId } = universe;
+		const bea = await logIn('Bea');
+		const testRegion = await testRegionId(universeId);
+		const shrunk = { minColumn: -15, minRow: -8, maxColumn: 2, maxRow: 2 };
+
+		await withoutLobby(universe);
+		await setUniverseRole(universeId, ada.playerId, 'creator');
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+
+		const ids = await saveAll(ada, universeId, [
+			{ kind: 'universe', update: { requireBuilderDraft: false } },
+			newRegion('beas', 'Bea\'s Regions', [testRegion]),
+			newArea('mine', 'Mine', [inRegion('new:beas')]),
+			newArea('deep', 'Deep', [inRegion('new:beas')]),
+			newArea('cave', 'Cave', [inRegion('new:beas')]),
+			{ kind: 'assignBuilders', regionId: 'new:beas', builderIds: [bea.playerId] },
+			{ kind: 'saveLink', areaId: houseAreaId, column: 1, row: 1, target: { targetAreaId: 'new:deep', targetColumn: 10, targetRow: 5, mode: 'manual', requiresWholeGroup: false } },
+			{ kind: 'saveLink', areaId: 'new:mine', column: 10, row: 5, target: { targetAreaId: squareAreaId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false } },
+			{ kind: 'saveLink', areaId: 'new:cave', column: 10, row: 5, target: { targetAreaId: 'new:deep', targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false } },
+			{ kind: 'saveLink', areaId: 'new:deep', column: 1, row: 0, target: { targetAreaId: 'new:cave', targetColumn: 10, targetRow: 6, mode: 'manual', requiresWholeGroup: false } }
+		]);
+		const mine = String(ids['new:mine']);
+		const deep = String(ids['new:deep']);
+		const cave = String(ids['new:cave']);
+		const statusOf = async (editor: Editor, change: EditorChange): Promise<number> => (await saveChanges(editor, universeId, [change])).status;
+		const houseLinksToDeep = async (): Promise<boolean> => (await listAreaLinks(houseAreaId)).some((link) => (link.targetAreaId === deep));
+
+		// A link on an area outside them into the cells it loses, and its own link to an area outside them
+		assert.strictEqual(await statusOf(bea, { kind: 'resizeArea', areaId: deep, bounds: shrunk, discard: true }), 403);
+		assert.strictEqual(await statusOf(bea, { kind: 'resizeArea', areaId: mine, bounds: shrunk, discard: true }), 403);
+		assert.strictEqual(await statusOf(bea, { kind: 'deleteArea', areaId: mine }), 403);
+		assert.ok(await houseLinksToDeep());
+		assert.strictEqual((await listAreaLinks(mine)).length, 1);
+
+		// Links between areas within them are discarded once the builder agrees to
+		assert.strictEqual(await statusOf(bea, { kind: 'resizeArea', areaId: cave, bounds: shrunk, discard: false }), 409);
+		assert.strictEqual(await statusOf(bea, { kind: 'resizeArea', areaId: cave, bounds: shrunk, discard: true }), 200);
+		assert.deepStrictEqual(await listAreaLinks(cave), []);
+		assert.deepStrictEqual(await listAreaLinks(deep), []);
+
+		// Creators discard any link
+		assert.strictEqual(await statusOf(ada, { kind: 'resizeArea', areaId: deep, bounds: shrunk, discard: true }), 200);
+		assert.ok(!(await houseLinksToDeep()));
 	});
 
 	it('moves the characters out of the areas a disabled region disables, as each change chose', async () =>

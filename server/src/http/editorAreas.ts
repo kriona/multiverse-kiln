@@ -411,7 +411,8 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 }
 
 /**
- * Gives an area new bounds
+ * Gives an area new bounds. A builder can't discard a link on or leading to an area outside their
+ * assignments, which only creators delete
  *
  * @param context The save
  * @param areaId The area
@@ -421,7 +422,17 @@ export async function deleteAreaChange(context: ChangeContext, areaId: StringRef
 export async function resizeAreaChange(context: ChangeContext, areaId: StringRef, bounds: AreaBounds, discard: boolean): Promise<void>
 {
 	const area = await areaOf(context, areaId);
-	const result = await resizeArea(area.id, bounds, discard, context.transaction);
+	const checksLinks = (discard && !editsEveryPlace(context.role));
+
+	// A builder's resize is tried without discarding first, so the links it would discard are checked
+	// before any is deleted
+	let result = await resizeArea(area.id, bounds, (discard && !checksLinks), context.transaction);
+
+	if (checksLinks && result && !result.resized)
+	{
+		await context.places.requireWithin(...result.linkedAreaIds.map((id): PlaceRef => ({ kind: 'area', id })));
+		result = await resizeArea(area.id, bounds, true, context.transaction);
+	}
 
 	if (!result)
 	{
