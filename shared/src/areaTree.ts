@@ -1,110 +1,20 @@
 /**
- * How a universe's areas nest inside each other, as the Areas tab and the area editor show them
- *
- * Each function stops at an area it has already visited, so a parent loop in the data can't make it run forever
+ * The area each area is inside, for the dialogs that choose an area to show beside its name. How regions
+ * and areas nest as a whole is in regions.ts
  */
+import type { PlaceRef } from './regions.js';
 
 /**
- * An area and the area it is inside
+ * An area and its parents
  */
 export interface AreaTreeNode
 {
 	id: string;
 
 	/**
-	 * null for a top-level area
+	 * The regions it is in and at most one area it is inside
 	 */
-	parentAreaId: string | null;
-}
-
-/**
- * What the Areas tab lists
- */
-export interface AreasTabListing<T extends AreaTreeNode>
-{
-	/**
-	 * Areas the listing passed through because each was the only one at its level, outermost first
-	 */
-	path: T[];
-
-	/**
-	 * The areas at the level the listing stopped at
-	 */
-	areas: T[];
-}
-
-/**
- * The areas the Areas tab lists: the top-level areas, the lobby's included, except that while there is
- * only one area at a level and it has areas inside it, those are listed instead
- *
- * @param areas Every area of the universe, in the order to list them
- * @return The areas passed through and the areas listed
- */
-export function areasTabListing<T extends AreaTreeNode>(areas: readonly T[]): AreasTabListing<T>
-{
-	const path: T[] = [];
-	const visited = new Set<string>();
-	let level = areas.filter((area) => (area.parentAreaId === null));
-
-	while ((level.length === 1) && !visited.has(level[0].id))
-	{
-		const only = level[0];
-		const children = childAreas(areas, only.id);
-
-		if (children.length === 0)
-		{
-			break;
-		}
-
-		visited.add(only.id);
-		path.push(only);
-		level = children;
-	}
-
-	return({ path, areas: level });
-}
-
-/**
- * The areas directly inside an area
- *
- * @param areas Every area of the universe, in the order to list them
- * @param areaId The area
- * @return Its children, in the same order
- */
-export function childAreas<T extends AreaTreeNode>(areas: readonly T[], areaId: string): T[]
-{
-	return(areas.filter((area) => (area.parentAreaId === areaId)));
-}
-
-/**
- * The areas an area is inside
- *
- * @param areas Every area of the universe
- * @param areaId The area
- * @return Its parent, its parent's parent and so on, nearest first
- */
-export function ancestorAreas<T extends AreaTreeNode>(areas: readonly T[], areaId: string): T[]
-{
-	const byId = new Map(areas.map((area) => [area.id, area]));
-	const ancestors: T[] = [];
-	const visited = new Set<string>([areaId]);
-	let parentId = (byId.get(areaId)?.parentAreaId ?? null);
-
-	while ((parentId !== null) && !visited.has(parentId))
-	{
-		const parent = byId.get(parentId);
-
-		if (!parent)
-		{
-			break;
-		}
-
-		visited.add(parentId);
-		ancestors.push(parent);
-		parentId = parent.parentAreaId;
-	}
-
-	return(ancestors);
+	parents: readonly PlaceRef[];
 }
 
 /**
@@ -112,8 +22,8 @@ export function ancestorAreas<T extends AreaTreeNode>(areas: readonly T[], areaI
  * areas once per area
  *
  * @param areas Every area of the universe
- * @return Each area's parent by the area's ID, leaving out top-level areas and areas whose parent isn't
- * among the areas or is the area itself
+ * @return Each area's parent area by the area's ID, leaving out areas inside no area and areas whose
+ * parent isn't among the areas or is the area itself
  */
 export function parentAreas<T extends AreaTreeNode>(areas: readonly T[]): Map<string, T>
 {
@@ -122,7 +32,8 @@ export function parentAreas<T extends AreaTreeNode>(areas: readonly T[]): Map<st
 
 	for (const area of areas)
 	{
-		const parent = ((area.parentAreaId === null) ? undefined : byId.get(area.parentAreaId));
+		const parentId = area.parents.find((parent) => (parent.kind === 'area'))?.id;
+		const parent = ((parentId === undefined) ? undefined : byId.get(parentId));
 
 		if ((parent !== undefined) && (parent.id !== area.id))
 		{
@@ -131,33 +42,4 @@ export function parentAreas<T extends AreaTreeNode>(areas: readonly T[]): Map<st
 	}
 
 	return(parents);
-}
-
-/**
- * Every area inside an area, however deep
- *
- * @param areas Every area of the universe
- * @param areaId The area
- * @return The IDs of the areas inside it, not including itself
- */
-export function descendantAreaIds(areas: readonly AreaTreeNode[], areaId: string): Set<string>
-{
-	const descendants = new Set<string>();
-	const waiting = [areaId];
-
-	while (waiting.length > 0)
-	{
-		const current = waiting.pop() as string;
-
-		for (const child of childAreas(areas, current))
-		{
-			if ((child.id !== areaId) && !descendants.has(child.id))
-			{
-				descendants.add(child.id);
-				waiting.push(child.id);
-			}
-		}
-	}
-
-	return(descendants);
 }

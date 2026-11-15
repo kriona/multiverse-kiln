@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type DifficultyLevelListPayload, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type DifficultyLevelListPayload, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -8,7 +8,7 @@ import { listTranslations } from '../src/db/universeTextRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { hashSourceText } from '../src/http/editorTranslations.js';
 import { UniverseTextTranslator } from '../src/http/universeTextTranslator.js';
-import { createArea, createUniverse, logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
+import { assignToWorld, createArea, createUniverse, logIn, saveAll, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { getTestServer } from './testServer.js';
 
 /**
@@ -303,7 +303,7 @@ describe('Translations tab', () =>
 
 		await saveAll(ada, universeId, [{ kind: 'startDraft' }]);
 
-		const added = await send<SaveChangesPayload>(ada, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave' } }] } });
+		const added = await send<SaveChangesPayload>(ada, 'POST', `/${universeId}/changes?version=draft`, { body: { changes: [{ kind: 'createArea', ref: 'new:area', area: { name: 'Cave', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId, 'draft') }] } }] } });
 
 		assert.strictEqual(added.status, 200, JSON.stringify(added.body));
 
@@ -382,6 +382,7 @@ describe('Translations tab', () =>
 		await setUniverseAccess(universeId, grace.playerId, { role: 'translator', languages: ['de'] });
 		await setUniverseRole(universeId, bob.playerId, 'builder');
 		await setUniverseRole(universeId, tess.playerId, 'beta_tester');
+		await assignToWorld(ada, universeId, [bob.playerId]);
 
 		assert.strictEqual((await listText(grace, universeId, 'language=de')).status, 200);
 		assert.strictEqual((await listText(grace, universeId, 'language=fr')).status, 403);
@@ -394,6 +395,32 @@ describe('Translations tab', () =>
 
 		assert.deepStrictEqual([await translate(grace, 'de'), await translate(grace, 'fr'), await translate(bob, 'de')], [200, 403, 403]);
 		assert.deepStrictEqual([await note(bob), await note(grace)], [200, 403]);
+	});
+
+	it('lets a builder write and delete notes on the names of areas within their assignments only', async () =>
+	{
+		const { universeId, areaId, ada } = await translatableUniverse();
+		const bea = await logIn('Bea');
+		const meadow: UniverseTextRef = { kind: 'area', thingId: areaId, field: 'name' };
+
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+
+		const ids = await saveAll(ada, universeId, [
+			{ kind: 'createRegion', ref: 'new:beas', region: { name: 'Bea\'s Regions', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId) }], enabled: null, indoors: null, lightLevel: null, defaultTileId: null, passageOfTime: null, faerieMorning: null, fogOfWar: null } },
+			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', parents: [{ kind: 'region', id: 'new:beas' }] } },
+			{ kind: 'assignBuilders', regionId: 'new:beas', builderIds: [bea.playerId] },
+			{ kind: 'saveTranslatorNote', text: meadow, note: 'Ada\'s note' }
+		]);
+		const cave: UniverseTextRef = { kind: 'area', thingId: String(ids['new:cave']), field: 'name' };
+		const universeName: UniverseTextRef = { kind: 'universe', thingId: universeId, field: 'name' };
+		const note = (text: UniverseTextRef, written: string | null): Promise<number> => saveChanges(bea, universeId, [{ kind: 'saveTranslatorNote', text, note: written }]).then((answer) => answer.status);
+
+		assert.deepStrictEqual([await note(meadow, 'Bea\'s note'), await note(meadow, null)], [403, 403]);
+		assert.deepStrictEqual([await note(cave, 'Dark'), await note(cave, null), await note(universeName, 'A town')], [200, 200, 200]);
+
+		const rows = (await listText(ada, universeId, 'language=fr')).body.rows;
+
+		assert.strictEqual(rows.find((row) => (row.thingId === areaId))?.note, 'Ada\'s note');
 	});
 
 	it('lets translators and builders mark text as needing no translation, which players then see as written', async () =>

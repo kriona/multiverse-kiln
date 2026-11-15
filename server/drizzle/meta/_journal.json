@@ -820,6 +820,34 @@
       "when": 1794352287006,
       "tag": "0116_universe_require_builder_draft",
       "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1794455906307,
+      "tag": "0117_regions",
+      "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1794575736752,
+      "tag": "0118_fog_of_war",
+      "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1794618556635,
+      "tag": "0119_lobby_region",
+      "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1794622258759,
+      "tag": "0120_area_neighbors",
+      "breakpoints": true
     }
   ]
 }

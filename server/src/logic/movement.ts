@@ -62,10 +62,17 @@ export interface Grid
 	fullSpeedWalkSeconds: number;
 
 	/**
-	 * Whether a player who steps onto a cell inside the bounds stops there, even with a direction still
-	 * held, such as a cell that takes the player to another area
+	 * Whether a player who steps onto a cell stops there, even with a direction still held, such as a cell
+	 * that takes the player to another area, or one across a seam
 	 */
 	endsMovement: (cell: Cell) => boolean;
+
+	/**
+	 * For an area with neighbors, whether a cell outside the bounds is a cell of a neighboring area across
+	 * a seam, which players can step into (see Neighboring areas in STRUCTURE-OVERVIEW.md); walkSeconds()
+	 * gives its walk seconds. Without it, nothing outside the bounds can be entered
+	 */
+	crossesSeam?: (cell: Cell) => boolean;
 }
 
 /**
@@ -178,7 +185,9 @@ export const NO_PRESS: DirectionPress = {
  *
  * A step only starts into a free cell the player can enter, and a diagonal step also needs both cells
  * beside it free and enterable, so players can't pass through each other or cut past a wall at a
- * corner. When the diagonal step can't be taken, the horizontal and then the vertical part is tried
+ * corner, or step across a corner with no area diagonally across it. A step across a seam into a
+ * neighboring area ends the player's movement there, past the area's edge, for the room to move them
+ * into the neighbor. When the diagonal step can't be taken, the horizontal and then the vertical part is tried
  * instead; when nothing can, the player waits. A step into a cell slower to walk than the grid's fullSpeedWalkSeconds is slower, and
  * a step onto a cell that ends movement stops the player there
  *
@@ -316,7 +325,8 @@ export function findFreeCell(near: Cell, grid: Grid, isCellFree: IsCellFree, max
 			{
 				const cell = wrapCell({ column: near.column + columnOffset, row: near.row + rowOffset }, grid);
 
-				if (canStandIn(cell, grid, isCellFree))
+				// A player arrives in the area itself, never across a seam
+				if (isInBounds(grid.bounds, cell.column, cell.row) && canStandIn(cell, grid, isCellFree))
 				{
 					return(cellCenter(cell, grid));
 				}
@@ -444,11 +454,23 @@ function canEnter(from: Cell, to: Cell, grid: Grid, isCellFree: IsCellFree): boo
  * @param cell The cell, already wrapped
  * @param grid The grid
  * @param isCellFree Whether another player holds a cell
- * @return True when the cell is inside the area, can be entered, and nobody else holds it
+ * @return True when the cell is inside the area or across a seam, can be entered, and nobody else holds it
  */
 function canStandIn(cell: Cell, grid: Grid, isCellFree: IsCellFree): boolean
 {
-	return(isInBounds(grid.bounds, cell.column, cell.row) && (grid.walkSeconds(cell) !== IMPASSABLE_WALK_SECONDS) && isCellFree(cell));
+	return(isOnGrid(cell, grid) && (grid.walkSeconds(cell) !== IMPASSABLE_WALK_SECONDS) && isCellFree(cell));
+}
+
+/**
+ * Whether a cell is one players can be in: inside the area, or across a seam with a neighboring area
+ *
+ * @param cell The cell, already wrapped
+ * @param grid The grid
+ * @return True when it is
+ */
+export function isOnGrid(cell: Cell, grid: Grid): boolean
+{
+	return(isInBounds(grid.bounds, cell.column, cell.row) || (grid.crossesSeam?.(cell) ?? false));
 }
 
 /**
@@ -463,7 +485,7 @@ function canStandIn(cell: Cell, grid: Grid, isCellFree: IsCellFree): boolean
  */
 function speedInto(cell: Cell, grid: Grid, speed: number): number
 {
-	const seconds = (isInBounds(grid.bounds, cell.column, cell.row) ? grid.walkSeconds(cell) : IMPASSABLE_WALK_SECONDS);
+	const seconds = (isOnGrid(cell, grid) ? grid.walkSeconds(cell) : IMPASSABLE_WALK_SECONDS);
 
 	const fullSpeedSeconds = grid.fullSpeedWalkSeconds;
 

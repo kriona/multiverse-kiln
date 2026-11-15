@@ -26,6 +26,73 @@ export interface ChangeSource extends UnsavedWork
 }
 
 /**
+ * Changes not yet saved that their owner works out when asked, telling its listeners and the page when
+ * check() finds they have started or stopped
+ */
+export class CheckedChanges implements ChangeSource
+{
+	private unsaved = false;
+
+	private readonly listeners = new Set<(unsaved: boolean) => void>();
+
+	/**
+	 * @param read Whether there are changes not yet saved now
+	 */
+	constructor(private readonly read: () => boolean)
+	{
+		watchUnsavedWork(this);
+	}
+
+	/**
+	 * Whether there are changes not yet saved
+	 *
+	 * @return True when there are
+	 */
+	hasUnsavedChanges(): boolean
+	{
+		return(this.read());
+	}
+
+	/**
+	 * Hears when changes start or stop being unsaved
+	 *
+	 * @param listener Called with whether there are some
+	 * @return Stops listening
+	 */
+	subscribe(listener: (unsaved: boolean) => void): () => void
+	{
+		this.listeners.add(listener);
+
+		return(() =>
+		{
+			this.listeners.delete(listener);
+		});
+	}
+
+	/**
+	 * Works out whether there are changes not yet saved, and says so when that has changed. Call it after
+	 * anything that may have changed them
+	 */
+	check(): void
+	{
+		const unsaved = this.read();
+
+		if (unsaved === this.unsaved)
+		{
+			return;
+		}
+
+		this.unsaved = unsaved;
+		refreshUnsavedWork();
+
+		for (const listener of this.listeners)
+		{
+			listener(unsaved);
+		}
+	}
+}
+
+/**
  * The Tilesets tab's tiles as its changes make them (see TilesetsTab.withChanges), for the areas other
  * tabs and dialogs draw
  */
@@ -43,6 +110,14 @@ export interface StagedTiles
 	 * @return The tiles, and the tiles staged for deletion with the tiles chosen to replace them
 	 */
 	withChanges(saved: readonly EditorTile[]): { tiles: EditorTile[]; deleted: Map<number, number | undefined> };
+
+	/**
+	 * The default tiles regions and areas get in place of a tile being deleted or no longer for a kind of
+	 * area, from the dialog replacing a default tile
+	 *
+	 * @return Each place's change, by placeKey(), with the tile it replaces
+	 */
+	defaultTileChanges(): ReadonlyMap<string, { from: number; to: number | null }>;
 }
 
 /**
@@ -545,14 +620,16 @@ export class StagedChanges<S> implements ChangeSource
 	 * @param save The save
 	 * @param toChange The change the save sends for each one
 	 * @param onRefused Shows on the tab why the server refused one
+	 * @param addFirst Adds the changes the save needs just before one, if any
 	 * @return The changes added, for markSaved() once the save is saved
 	 */
-	collect(save: EditorSave, toChange: (change: StagedChange<S>) => EditorChange, onRefused: (change: StagedChange<S>, refusal: SaveRefusal) => void): readonly StagedChange<S>[]
+	collect(save: EditorSave, toChange: (change: StagedChange<S>) => EditorChange, onRefused: (change: StagedChange<S>, refusal: SaveRefusal) => void, addFirst?: (change: StagedChange<S>) => void): readonly StagedChange<S>[]
 	{
 		const collected = [...this.changes];
 
 		for (const change of collected)
 		{
+			addFirst?.(change);
 			save.add(toChange(change), (refusal) =>
 			{
 				onRefused(change, refusal);

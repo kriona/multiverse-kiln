@@ -700,7 +700,8 @@ export async function saveTranslationChange(context: ChangeContext, change: Extr
 }
 
 /**
- * Writes the note for translators on a piece of universe text, or deletes it
+ * Writes the note for translators on a piece of universe text, or deletes it. A builder's note on an
+ * area's name needs the area within their assignments
  *
  * @param context The save
  * @param change The change
@@ -713,6 +714,11 @@ export async function saveTranslatorNoteChange(context: ChangeContext, change: E
 		thingId: text.thingId,
 		field: text.field
 	};
+
+	if (ref.kind === 'area')
+	{
+		await context.places.requireWithin({ kind: 'area', id: ref.thingId });
+	}
 
 	saveTextState(context).changedNotes.add(textKey(ref));
 

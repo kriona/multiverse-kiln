@@ -5,10 +5,12 @@ import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage } from '../dom';
 import { tileName } from '../tileNames';
 import { isNewId } from './stagedChanges';
+import type { TilePlaces } from './TileReplaceDialog';
 
 /**
  * The dialog that asks before a tile is deleted. When areas use the tile, it lists them and asks
- * which tile to paint them with instead
+ * which tile to paint them with instead. When some are outside a builder's assignments, it says only a
+ * creator can delete the tile
  *
  * Like every change in the editor, the deletion waits for the Tilesets tab to be saved; saving paints
  * the areas with the replacement, then deletes the tile
@@ -21,6 +23,9 @@ export class TileDeleteDialog
 	private readonly status = getElement('tile-delete-status', HTMLElement);
 	private readonly replacementField = getElement('tile-delete-replacement-field', HTMLElement);
 	private readonly usage = getElement('tile-delete-usage', HTMLElement);
+	private readonly outside = getElement('tile-delete-outside', HTMLElement);
+	private readonly outsideText = getElement('tile-delete-outside-text', HTMLElement);
+	private readonly replacementLabel = getElement('tile-delete-replacement-label', HTMLElement);
 	private readonly replacement = getElement('tile-delete-replacement', HTMLSelectElement);
 	private readonly error = getElement('tile-delete-error', HTMLElement);
 	private readonly cancelButton = getElement('tile-delete-cancel', HTMLButtonElement);
@@ -31,6 +36,11 @@ export class TileDeleteDialog
 	 * player confirms
 	 */
 	private onConfirm: (replacementId: number | undefined) => void = () => undefined;
+
+	/**
+	 * Whether areas outside the builder's assignments use the tile, so only a creator can delete it
+	 */
+	private usedOutside = false;
 
 	/**
 	 * Changes each time the dialog opens, so what a request for an earlier opening brings back is ignored
@@ -61,14 +71,19 @@ export class TileDeleteDialog
 	 * @param universe The universe the tile belongs to
 	 * @param tile The tile
 	 * @param isRemoved Whether a tile is marked to delete already, so it can't replace this one
+	 * @param places The regions and areas, for which of the areas using the tile the player may paint
 	 * @param onConfirm Called with the tile to paint the areas with, or undefined when no area uses the tile
 	 */
-	open(universe: EditableUniverse, tile: EditorTile, isRemoved: (tileId: number) => boolean, onConfirm: (replacementId: number | undefined) => void): void
+	open(universe: EditableUniverse, tile: EditorTile, isRemoved: (tileId: number) => boolean, places: TilePlaces | undefined, onConfirm: (replacementId: number | undefined) => void): void
 	{
 		const version = ++this.openVersion;
 		const name = tileName(tile, universe.ruleset);
 
 		this.onConfirm = onConfirm;
+		this.usedOutside = false;
+		this.outside.hidden = true;
+		this.outsideText.textContent = '';
+		this.replacementLabel.hidden = false;
 		this.question.textContent = t({
 			id: 'editor.tileDelete.question',
 			defaultMessage: 'Delete the tile "{name}" when the Tilesets tab is saved?',
@@ -96,18 +111,20 @@ export class TileDeleteDialog
 			description: 'Shown in the dialog before deleting a tile while it finds out which areas use the tile'
 		});
 		this.submitButton.disabled = true;
-		void this.loadUsage(universe, tile, isRemoved, version);
+		void this.loadUsage(universe, tile, isRemoved, places, version);
 	}
 
 	/**
-	 * Shows which areas use the tile, and if any do, the tiles that can replace it
+	 * Shows which areas use the tile, and if any do, the tiles that can replace it, or that only a
+	 * creator can delete it when some are outside the builder's assignments
 	 *
 	 * @param universe The universe the tile belongs to
 	 * @param tile The tile
 	 * @param isRemoved Whether a tile is marked to delete already
+	 * @param places The regions and areas, for which areas the player may paint
 	 * @param version The opening it is for
 	 */
-	private async loadUsage(universe: EditableUniverse, tile: EditorTile, isRemoved: (tileId: number) => boolean, version: number): Promise<void>
+	private async loadUsage(universe: EditableUniverse, tile: EditorTile, isRemoved: (tileId: number) => boolean, places: TilePlaces | undefined, version: number): Promise<void>
 	{
 		let areas: { id: string; name: string }[];
 		let tiles: EditorTile[];
@@ -116,7 +133,8 @@ export class TileDeleteDialog
 		{
 			[areas, tiles] = await Promise.all([
 				this.api.tileUsage(universe.id, tile.id),
-				this.api.listAllTiles(universe.id)
+				this.api.listAllTiles(universe.id),
+				places?.loadPlaces()
 			]);
 		}
 		catch (error)
@@ -163,6 +181,27 @@ export class TileDeleteDialog
 			count: areas.length,
 			areas: formatList(areas.map((area) => area.name))
 		});
+		this.replacementField.hidden = false;
+
+		const outside = areas.filter((area) => ((places !== undefined) && !places.canEditPlace({ kind: 'area', id: area.id })));
+
+		// Deleting it paints every area using it, which a builder may do only within their assignments
+		if (outside.length > 0)
+		{
+			this.usedOutside = true;
+			this.outsideText.textContent = t({
+				id: 'editor.tileDelete.outside',
+				defaultMessage: '{count, plural, one {{areas} is} other {{areas} are}} outside the regions you\'re assigned. Only a creator can paint {count, plural, one {it} other {them}} with another tile.',
+				description: 'Shown in the dialog before deleting a tile, when areas a builder can\'t edit use the tile, so only a creator can delete it; {areas} lists those areas\' names, and {count} is how many there are'
+			}, {
+				count: outside.length,
+				areas: formatList(outside.map((area) => area.name))
+			});
+			this.outside.hidden = false;
+			this.replacementLabel.hidden = true;
+			return;
+		}
+
 		setOptions(this.replacement, [
 			{
 				value: '',
@@ -175,15 +214,25 @@ export class TileDeleteDialog
 			...replacements
 		]);
 		this.replacement.required = true;
-		this.replacementField.hidden = false;
 		this.replacement.focus();
 	}
 
 	/**
-	 * Marks the tile to delete, with the tile chosen to replace it if areas use it
+	 * Marks the tile to delete, with the tile chosen to replace it if areas use it, unless areas outside
+	 * the builder's assignments use it
 	 */
 	private confirm(): void
 	{
+		if (this.usedOutside)
+		{
+			showMessage(this.error, t({
+				id: 'editor.tileDelete.creatorOnly',
+				defaultMessage: 'Only a creator can delete this tile.',
+				description: 'Shown in the dialog before deleting a tile when Delete is pressed while areas outside the builder\'s assignments use the tile'
+			}));
+			return;
+		}
+
 		const replacementId = ((this.replacementField.hidden || (this.replacement.value === '')) ? undefined : Number(this.replacement.value));
 
 		this.dialog.close();

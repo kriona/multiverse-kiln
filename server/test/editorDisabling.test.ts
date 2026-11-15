@@ -1,16 +1,17 @@
 import assert from 'assert';
 import { charactersPath, type ChangeImpact, type CharacterListPayload, type EditorChange, type EditorItem, type EditorRace, type ItemListPayload, type RaceListPayload, type RaceSettings, type SaveImpactPayload } from '@multiverse-kiln/shared';
 
+import { watchQueries } from '../scripts/benchmarks/queries.js';
 import { loadBarredOptions } from '../src/db/barredOptions.js';
 import { createCharacter, findCharacterDetails, findLastPlayedCharacterId } from '../src/db/characterRepo.js';
-import { updateAreaSettings } from '../src/db/areaRepo.js';
+import { setAreaParents } from '../src/db/areaRepo.js';
 import { addGroupMember, findGroup, listGroupMembers, listMembersInAreas, moveMembers } from '../src/db/groupRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
 import { universeAccessChanges, type BarredChange } from '../src/players/universeAccess.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
+import { addArea, addCharacter, addGroup, addPlayableUniverse, defaultRaceId, dwarfFighter, testRegionId, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, send, type Editor } from './editorRequests.js';
 import { addPlayer, logInBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -231,11 +232,12 @@ describe('Disabling things players are using', () =>
 			published.push(change);
 		});
 
-		await updateAreaSettings(houseAreaId, { parentAreaId: squareAreaId });
+		await withoutLobby(universe);
+		await setAreaParents(houseAreaId, [{ kind: 'region', id: await testRegionId(universe.universeId) }, { kind: 'area', id: squareAreaId }]);
 		await addGroup(universe.universeId, brokkId, null);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
-		const disable: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'parent' };
+		const disable: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: { [houseAreaId]: 'parent' } };
 
 		assert.deepStrictEqual(await impactsOf([disable]), [{ changeIndex: 0, kind: 'area', id: houseAreaId, name: 'House', characters: 1, hasParent: true }]);
 
@@ -261,17 +263,56 @@ describe('Disabling things players are using', () =>
 	{
 		const { houseAreaId, fieldAreaId } = universe;
 
+		await withoutLobby(universe);
 		await addGroup(universe.universeId, brokkId, fieldAreaId);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
 		// The house is inside no other area, so the only way out is back to the start
 		assert.deepStrictEqual(await impactsOf([{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false } }]), [{ changeIndex: 0, kind: 'area', id: houseAreaId, name: 'House', characters: 1, hasParent: false }]);
 
-		await saveAll(ada, universe.universeId, [{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'start' }]);
+		await saveAll(ada, universe.universeId, [{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: { [houseAreaId]: 'start' } }]);
 
 		const [member] = await listGroupMembers((await listMembersInAreas([fieldAreaId]))[0]?.groupId ?? '');
 
 		assert.deepStrictEqual(member?.position, { areaId: fieldAreaId, column: 0, row: 0 });
+	});
+
+	it('moves the characters saved in several disabled areas, listing the areas\' members once', async () =>
+	{
+		const { universeId, squareAreaId, fieldAreaId } = universe;
+		const regionId = await testRegionId(universeId);
+		const caveId = await addArea(universeId, 'Cave');
+		const mineId = await addArea(universeId, 'Mine');
+		const dainId = await addCharacter(playerId, universeId, 'Dain');
+
+		await withoutLobby(universe);
+		await setAreaParents(caveId, [{ kind: 'region', id: regionId }, { kind: 'area', id: fieldAreaId }]);
+		const brokkGroupId = await addGroup(universeId, brokkId, squareAreaId);
+		const dainGroupId = await addGroup(universeId, dainId, squareAreaId);
+
+		await moveMembers([{ characterId: brokkId, areaId: caveId, column: 0, row: 0 }, { characterId: dainId, areaId: mineId, column: 1, row: 1 }]);
+
+		const queries = watchQueries({ slowMs: 0 });
+
+		try
+		{
+			await saveAll(ada, universeId, [
+				{ kind: 'updateArea', areaId: caveId, update: { enabled: false }, moveTo: { [caveId]: 'parent' } },
+				{ kind: 'updateArea', areaId: mineId, update: { enabled: false }, moveTo: { [mineId]: 'start' } }
+			]);
+		}
+		finally
+		{
+			queries.restore();
+		}
+
+		const memberLists = queries.slowQueries.filter((query) => query.text.startsWith('select "group_members"."character_id", "group_members"."group_id", "group_members"."area_id"'));
+		const [brokk] = await listGroupMembers(brokkGroupId);
+		const [dain] = await listGroupMembers(dainGroupId);
+
+		assert.strictEqual(memberLists.length, 1);
+		assert.strictEqual(brokk?.position?.areaId, fieldAreaId);
+		assert.deepStrictEqual(dain?.position, { areaId: squareAreaId, column: 0, row: 0 });
 	});
 
 	it('takes the newest members out of groups larger than a lowered group size, never the anchor being', async () =>
@@ -337,6 +378,7 @@ describe('Disabling things players are using', () =>
 		const { houseAreaId } = universe;
 		const areaOff: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: false } };
 
+		await withoutLobby(universe);
 		await addGroup(universe.universeId, brokkId, null);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
@@ -359,20 +401,21 @@ describe('Disabling things players are using', () =>
 		const enable: EditorChange = { kind: 'updateArea', areaId: houseAreaId, update: { enabled: true } };
 		const placeOfBrokk = async (): Promise<string | undefined> => (await listMembersInAreas([houseAreaId, squareAreaId])).find((member) => (member.characterId === brokkId))?.areaId;
 
-		await updateAreaSettings(houseAreaId, { parentAreaId: squareAreaId });
+		await withoutLobby(universe);
+		await setAreaParents(houseAreaId, [{ kind: 'region', id: await testRegionId(universe.universeId) }, { kind: 'area', id: squareAreaId }]);
 		await addGroup(universe.universeId, brokkId, null);
 		await moveMembers([{ characterId: brokkId, areaId: houseAreaId, column: 3, row: 3 }]);
 
 		try
 		{
-			await saveAll(ada, universe.universeId, [{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'start' }, enable]);
+			await saveAll(ada, universe.universeId, [{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: { [houseAreaId]: 'start' } }, enable]);
 			assert.strictEqual(await placeOfBrokk(), houseAreaId);
 			assert.ok(!published.some((change) => (change.kind === 'evacuated')));
 
 			await saveAll(ada, universe.universeId, [
-				{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'start' },
+				{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: { [houseAreaId]: 'start' } },
 				enable,
-				{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: 'parent' }
+				{ kind: 'updateArea', areaId: houseAreaId, update: { enabled: false }, moveTo: { [houseAreaId]: 'parent' } }
 			]);
 		}
 		finally

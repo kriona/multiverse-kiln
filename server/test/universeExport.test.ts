@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { AREA_LIGHT_LEVELS, AREA_LINK_MODES, AREA_PASSAGES_OF_TIME, CHUNK_SIZE, EDITOR_UNIVERSES_PATH, FAERIE_MORNINGS, MAX_AREA_LINKS, MAX_AREA_NAME_LENGTH, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorArea, type EditorAreaLink, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
+import { AREA_LIGHT_LEVELS, AREA_LINK_MODES, PASSAGES_OF_TIME, CHUNK_SIZE, EDITOR_UNIVERSES_PATH, FAERIE_MORNINGS, MAX_AREA_LINKS, MAX_AREA_NAME_LENGTH, MAX_PLACE_PARENTS, MAX_AREA_SIDE, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, sourceTextHash, TILE_GRAPHICS_PATH, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_FORMAT, UNIVERSE_EXPORT_FORMAT_VERSION, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_REGIONS, type ExportedRegion, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, VOID_CELL, type EditableUniverse, type EditorArea, type EditorAreaLink, type EditorClass, type EditorItem, type EditorRace, type ExportedArea, type ExportedLiveIds, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport } from '@multiverse-kiln/shared';
 
 import { readZip } from '../src/archives/zip.js';
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
@@ -117,17 +117,17 @@ describe('exporting a universe', () =>
 		universeId = await createUniverse(ada, 'Kilnhaven');
 		caveId = await createArea(ada, universeId, { name: 'Cave' });
 
-		const { lobbyAreaId } = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
+		const { startingAreaId } = (await send<EditableUniverse>(ada, 'GET', `/${universeId}`)).body;
 		const png = await solidPng();
 
-		assert.ok(lobbyAreaId);
+		assert.ok(startingAreaId);
 
 		const ids = await saveAll(ada, universeId, [
 			{ kind: 'universe', update: { translationLanguages: ['fr', 'de'] } },
 			{ kind: 'uploadTileGraphic', ref: 'new:mossy', upload: { name: 'Mossy', format: 'dualGrid', drawOrder: 35, image: png, rightsConfirmed: true } },
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, uploadedGraphicId: 'new:mossy' } },
 			{ kind: 'editCells', areaId: caveId, changes: [[0, 0, 'new:moss'], [12, -3, VOID_CELL]] },
-			{ kind: 'saveLink', areaId: lobbyAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
+			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
 			{ kind: 'saveTranslatorNote', text: { kind: 'area', thingId: caveId, field: 'name' }, note: 'A dark place' },
 			{ kind: 'saveNoTranslation', text: { kind: 'universe', thingId: universeId, field: 'name' }, noTranslation: true }
 		]);
@@ -195,9 +195,11 @@ describe('exporting a universe', () =>
 		const areas = areasOf(files);
 		const cave = areas.find((area) => (area.id === caveId));
 		const lobby = areas.find((area) => (area.name === 'Lobby'));
+		const start = areas.find((area) => (area.name === 'Starting Area'));
 
 		assert.deepStrictEqual(areas.map((area) => area.name), ['Cave', 'Lobby', 'Starting Area']);
-		assert.ok(cave && lobby);
+		assert.ok(cave && lobby && start);
+		assert.strictEqual(manifest.settings?.lobbyRegionId, jsonOf<ExportedRegion[]>(files, UNIVERSE_EXPORT_REGIONS)?.find((region) => (region.name === 'Lobby'))?.id);
 		assert.strictEqual(jsonOf<string[]>(files, UNIVERSE_EXPORT_AREAS)?.[0], `areas/${caveId}.json`);
 		assert.strictEqual(('areas' in manifest) || ('liveIds' in manifest), false);
 		assert.strictEqual(files.has(UNIVERSE_EXPORT_LIVE_IDS), false);
@@ -209,9 +211,10 @@ describe('exporting a universe', () =>
 		assert.match(legend, /^# Kilnhaven: area cells$/m);
 		assert.ok(legend.includes(`| ${mossId} | Moss | #2A7A30 |`), legend);
 		assert.ok(legend.includes(`| ${defaultTiles.get('grass')} | Grass |`), legend);
-		assert.ok(legend.includes('| -1 | Void (nothing) |  |'), legend);
+		assert.ok(legend.includes('| -1 | Unexplored (nothing) |  |'), legend);
 		assert.ok(legend.includes(`| \`${caveId}.json\` | Cave | Grass | Columns -15 to 15, rows -8 to 8 |`), legend);
-		assert.deepStrictEqual(lobby.links, [{ column: 1, row: 0, targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true }]);
+		assert.deepStrictEqual(start.links, [{ column: 1, row: 0, targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true }]);
+		assert.deepStrictEqual(lobby.links, []);
 
 		// The settings are indented like the manifest, then each row is on a line of its own, from the north-west corner
 		const { rows: lobbyRows, ...lobbySettings } = lobby;
@@ -349,15 +352,32 @@ describe('an exported area\'s file', () =>
 		const area: EditorArea = {
 			id: randomUUID(),
 			name: '龍'.repeat(MAX_AREA_NAME_LENGTH),
-			parentAreaId: randomUUID(),
+			parents: Array.from({ length: MAX_PLACE_PARENTS }, () => ({ kind: 'region', id: randomUUID() })),
 			enabled: false,
 			indoors: false,
 			lightLevel: longest(AREA_LIGHT_LEVELS),
 			defaultTileId: LARGEST_TILE_ID,
-			passageOfTime: longest(AREA_PASSAGES_OF_TIME),
+			passageOfTime: longest(PASSAGES_OF_TIME),
 			faerieMorning: longest(FAERIE_MORNINGS),
+			fogOfWar: false,
 			loopsEastWest: false,
 			loopsNorthSouth: false,
+			neighbors: {
+				north: randomUUID(),
+				east: randomUUID(),
+				south: randomUUID(),
+				west: randomUUID()
+			},
+			resolved: {
+				enabled: false,
+				indoors: true,
+				lightLevel: longest(AREA_LIGHT_LEVELS),
+				defaultTileId: LARGEST_TILE_ID,
+				passageOfTime: longest(PASSAGES_OF_TIME),
+				faerieMorning: longest(FAERIE_MORNINGS),
+				fogOfWar: false,
+				lobby: false
+			},
 			bounds: {
 				minColumn: -(width - 1),
 				minRow: -(height - 1),

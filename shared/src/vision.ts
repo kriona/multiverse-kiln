@@ -87,7 +87,7 @@ export interface VisionArea
 	loopsNorthSouth: boolean;
 
 	/**
-	 * Whether every cell's vision cost is 0, as in a lobby with no vision cost, so a cell is seen
+	 * Whether every cell's vision cost is 0, as in an area whose tiles have none, so a cell is seen
 	 * whenever it is near enough and no line to it needs walking
 	 */
 	clear: boolean;
@@ -101,6 +101,17 @@ export interface VisionArea
 	 * @return The vision cost
 	 */
 	visionCost: (column: number, row: number) => number;
+
+	/**
+	 * For an area with neighbors, the vision cost of a cell past its edges, in the neighboring area across
+	 * the seam (see Neighboring areas in STRUCTURE-OVERVIEW.md); undefined for a cell past an edge, which
+	 * can't be seen. Without it, nothing past the edges is seen
+	 *
+	 * @param column The cell's column, outside the bounds
+	 * @param row The cell's row, outside the bounds
+	 * @return The vision cost, or undefined
+	 */
+	beyond?: (column: number, row: number) => number | undefined;
 }
 
 /**
@@ -188,18 +199,12 @@ export const PLAIN_SIGHT: Readonly<Sight> = {
  *
  * @param light How light it is where the character is, from 0 in the dark to 1 in full daylight (see areaLight)
  * @param sight The character's darkvision and light sensitivity
- * @param fullVision Whether the area ignores the light (AreaPayload.fullVision)
  * @return The vision budget: NIGHT_VISION_SQUARES in the dark up to DAY_VISION_SQUARES in full
  * daylight, never under the darkvision's squares, and with light sensitivity down to
- * LIGHT_SENSITIVE_VISION_SHARE of that in full daylight; always DAY_VISION_SQUARES with full vision
+ * LIGHT_SENSITIVE_VISION_SHARE of that in full daylight
  */
-export function visionBudget(light: number, sight: Sight, fullVision: boolean): number
+export function visionBudget(light: number, sight: Sight): number
 {
-	if (fullVision)
-	{
-		return(DAY_VISION_SQUARES);
-	}
-
 	const budget = Math.max(NIGHT_VISION_SQUARES + ((DAY_VISION_SQUARES - NIGHT_VISION_SQUARES) * light), sight.darkvision);
 
 	return((sight.lightSensitivity ? budget * (1 - ((1 - LIGHT_SENSITIVE_VISION_SHARE) * light)) : budget));
@@ -212,12 +217,12 @@ export function visionBudget(light: number, sight: Sight, fullVision: boolean): 
  * @param to The cell to look at
  * @param budget The character's vision budget (visionBudget)
  * @param area The area
- * @return True when the cell is inside the area and seen (see isSeen); in an area that loops, along the
- * shorter way round
+ * @return True when the cell is inside the area, or across a seam with a neighbor, and seen (see isSeen);
+ * in an area that loops, along the shorter way round
  */
 export function canSee(from: VisionCell, to: VisionCell, budget: number, area: VisionArea): boolean
 {
-	if (!isInBounds(area.bounds, to.column, to.row))
+	if (!isInBounds(area.bounds, to.column, to.row) && (area.beyond?.(to.column, to.row) === undefined))
 	{
 		return(false);
 	}
@@ -239,7 +244,8 @@ export function canSee(from: VisionCell, to: VisionCell, budget: number, area: V
  * @param skip Which cells to leave out without looking at them, such as those a group has already seen,
  * given the cell inside the area; none when undefined
  * @return The cells, as "column,row" (visionKey); in an area that loops, as the cells inside the area,
- * each seen or not along the shorter way round, as canSee() looks at it
+ * each seen or not along the shorter way round, as canSee() looks at it. Cells across a seam with a
+ * neighbor are counted in the area's own columns and rows, outside its bounds
  */
 export function visibleCells(from: VisionCell, budget: number, area: VisionArea, skip?: (column: number, row: number) => boolean): Set<string>
 {
@@ -270,7 +276,7 @@ export function visibleCells(from: VisionCell, budget: number, area: VisionArea,
 			}
 
 			// Looking is what costs, so a skipped cell is left out before it
-			if (isInBounds(area.bounds, column, row) && !(skip?.(column, row) ?? false) && isSeen(columns, rows, budget, costAt))
+			if (isInArea(area, column, row) && !(skip?.(column, row) ?? false) && isSeen(columns, rows, budget, costAt))
 			{
 				visible.add(visionKey(column, row));
 			}
@@ -465,7 +471,7 @@ function isInSight(columns: number, rows: number, budget: number, costAt: CostAt
  * @param column The cell's column
  * @param row The cell's row
  * @param area The area
- * @return Its vision cost; OPAQUE_VISION_COST outside the area
+ * @return Its vision cost, across a seam in a neighboring area; OPAQUE_VISION_COST past an edge
  */
 function visionCostAt(column: number, row: number, area: VisionArea): number
 {
@@ -474,10 +480,23 @@ function visionCostAt(column: number, row: number, area: VisionArea): number
 
 	if (!isInBounds(area.bounds, wrappedColumn, wrappedRow))
 	{
-		return(OPAQUE_VISION_COST);
+		return(area.beyond?.(wrappedColumn, wrappedRow) ?? OPAQUE_VISION_COST);
 	}
 
 	return(area.visionCost(wrappedColumn, wrappedRow));
+}
+
+/**
+ * Whether a cell is part of what vision looks at: inside the area, or across a seam in a neighboring area
+ *
+ * @param area The area
+ * @param column The cell's column
+ * @param row The cell's row
+ * @return True when it is
+ */
+function isInArea(area: VisionArea, column: number, row: number): boolean
+{
+	return(isInBounds(area.bounds, column, row) || (area.beyond?.(column, row) !== undefined));
 }
 
 /**

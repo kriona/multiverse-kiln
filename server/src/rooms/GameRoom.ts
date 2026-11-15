@@ -1,5 +1,5 @@
 import { ErrorCode, Room, ServerError, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
+import { canViewUniverse, cellIndexInChunk, characterBar, chunkCoordinate, chunkKey, DEFAULT_TILE_CELL, GameMessageType, GameServerMessageType, GameState, GroupMember, MessageType, NOTHING_BARRED, NoticeReason, PATCH_INTERVAL_MS, PLAIN_SIGHT, ServerCloseCode, ServerMessageType, visibleCells, visionKey, type AreaCellRef, type BarredOptions, type CellsSeenPayload, type ChatAuthorDeletedPayload, type CellValue, type NoticePayload, type Sight, type StartingCell } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { loadBarredOptions } from '../db/barredOptions.js';
@@ -30,7 +30,7 @@ import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universe
 import { chatPayload, controlPayload, describeInvalidPayload, gameJoinOptions, movePayload } from './payloads.js';
 import { tryTakeChatMessage } from './rateLimiter.js';
 import { AreaCache, toLinkCells, type ActiveArea } from './areaCache.js';
-import { CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
+import { AREA_MESSAGE_OPTIONS, CHUNK_REFRESH_INTERVAL_MS, SIMULATION_TICK_RATE, AreaPlayers, type Appearance, type PlayerPosition } from './areaPlayers.js';
 
 /**
  * What onAuth found out about a client, available afterward as client.auth
@@ -157,12 +157,16 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private seenSaving: Promise<void> = Promise.resolve();
 
 	/**
-	 * Characters whose area is deleted go to the group's starting area. Everyone here is in the group,
-	 * so they see what any of them sees, and are sent only the cells the group has seen. A link that
-	 * needs the whole group is refused unless every member who can be played, and the anchor being, is
-	 * here together
+	 * Characters walk only the areas outside the lobby region, treating a lobby area as an edge, and go to
+	 * the group's starting area (startingPlace()) when their area is deleted or put below it. Everyone
+	 * here is in the group, so they see what any of them sees, and are sent only the cells the group has
+	 * seen. A link that needs the whole group is refused unless every member who can be played, and the
+	 * anchor being, is here together
 	 */
-	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, () => this.startingAreaId, {
+	private readonly areaPlayers = new AreaPlayers(this.state.players, this.areas, {
+		lobby: false,
+		fallback: () => this.startingPlace()
+	}, {
 		shared: true,
 		clockSeconds: () => this.state.clock,
 		memory: this.seen
@@ -219,7 +223,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private barred: BarredOptions = NOTHING_BARRED;
 
 	/**
-	 * Where each member last looked from and how far they saw (see explore), by character ID
+	 * Where each member last looked from, how far they saw and the areas' generation then (see explore),
+	 * by character ID
 	 */
 	private readonly lastSights = new Map<string, string>();
 
@@ -818,6 +823,30 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
+	 * Where a character is
+	 *
+	 * @param characterId The character's ID
+	 * @return Their area and cell, or undefined when the character isn't in play
+	 */
+	getPosition(characterId: string): PlayerPosition | undefined
+	{
+		return(this.areaPlayers.getPosition(characterId));
+	}
+
+	/**
+	 * The area and cell a cell past an area's edges is in, across its seams with the areas the room has loaded
+	 *
+	 * @param areaId The area the cell is counted from
+	 * @param column The cell's column
+	 * @param row The cell's row
+	 * @return The cell, or undefined past an edge or a seam into an area not loaded yet
+	 */
+	locate(areaId: string, column: number, row: number): AreaCellRef | undefined
+	{
+		return(this.areaPlayers.locate(areaId, column, row));
+	}
+
+	/**
 	 * Puts a player's playable characters who aren't in play into it, each where they were last, or
 	 * beside the anchor being when they have never been played in the group
 	 *
@@ -898,8 +927,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Where a member starts: where they were last, then beside the anchor being (where they
-	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone or
-	 * disabled is passed over, and a cell an area no longer holds since it was made smaller moves inside it
+	 * are now, or were last), then the group's starting cell of its starting area. An area that is gone,
+	 * disabled or a lobby area is passed over, and a cell an area no longer holds since it was made smaller
+	 * moves inside it
 	 *
 	 * @param member The member
 	 * @return The area and cell
@@ -917,7 +947,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		{
 			const area = (candidate ? await this.areas.load(candidate.areaId) : undefined);
 
-			if (candidate && area?.loaded.area.enabled)
+			if (candidate && area?.loaded.area.enabled && !area.loaded.area.lobby)
 			{
 				return({
 					area,
@@ -940,28 +970,62 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Loads the group's starting area, switching to the universe's when the group's own is gone
-	 * (useUniverseStartingArea())
+	 * Where members with nowhere else to be go: the starting cell of the group's starting area
+	 * (loadStartingArea())
 	 *
-	 * @return The area; undefined when neither exists
+	 * @return The place; undefined when there is no starting area
+	 */
+	private async startingPlace(): Promise<PlayerPosition | undefined>
+	{
+		const startingArea = await this.loadStartingArea();
+
+		return((startingArea
+			? {
+				areaId: startingArea.loaded.area.id,
+				...startingCellOn(startingArea.loaded.bounds, this.startingCell)
+			}
+			: undefined));
+	}
+
+	/**
+	 * Loads the group's starting area, switching to the universe's when the group's own is gone or is a
+	 * lobby area, which only the lobby walks (useUniverseStartingArea())
+	 *
+	 * @return The area; undefined when neither can be used
 	 */
 	private async loadStartingArea(): Promise<ActiveArea | undefined>
 	{
 		const startingArea = await this.areas.load(this.startingAreaId);
 
-		if (startingArea)
+		if (startingArea && !startingArea.loaded.area.lobby)
 		{
 			return(startingArea);
 		}
 
 		await this.useUniverseStartingArea();
 
-		return(this.areas.load(this.startingAreaId));
+		const universeArea = await this.areas.load(this.startingAreaId);
+
+		return((universeArea?.loaded.area.lobby ? undefined : universeArea));
+	}
+
+	/**
+	 * Reads the group's starting area again, switching to the universe's when the group no longer has
+	 * one of its own, such as after a save put it below the lobby region
+	 */
+	private async readGroupStartingArea(): Promise<void>
+	{
+		const group = await findGroup(this.groupId);
+
+		if (group && (group.startingAreaId === null))
+		{
+			await this.useUniverseStartingArea();
+		}
 	}
 
 	/**
 	 * Makes the universe's starting area and cell the group's, as they are for a room whose group has no
-	 * starting area of its own, for when the group's own has been deleted
+	 * starting area of its own, for when the group's own has been deleted or can't be used
 	 */
 	private async useUniverseStartingArea(): Promise<void>
 	{
@@ -1013,27 +1077,74 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Marks what each member in play sees as seen by the group, working it out again only for those
-	 * who have moved to another cell or whose sight has changed since the last tick, and only for the
-	 * cells the group hasn't seen yet
+	 * who have moved to another cell or whose sight has changed since the last tick, and for everyone
+	 * once the loaded areas change (AreaCache.generation()), as a neighbor loading or being enabled
+	 * changes what is seen across a seam. Only the cells the group hasn't seen yet are looked at. Cells
+	 * seen across a seam are marked in the neighboring area they are in. Nothing is recorded in an area
+	 * without fog of war
 	 */
 	private explore(): void
 	{
+		const generation = this.areas.generation();
+
 		for (const { playerId, area, cell, budget } of this.areaPlayers.sights())
 		{
 			const areaId = area.loaded.area.id;
 
-			// A tenth of a square, as the light changes around dawn and dusk, makes too little difference to look again
-			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)}`;
-
-			if (this.lastSights.get(playerId) !== key)
+			// An area with neighbors may see into areas with fog of war, whatever its own
+			if (!area.loaded.fogOfWar && !area.seams)
 			{
-				this.lastSights.set(playerId, key);
+				this.lastSights.delete(playerId);
+				continue;
+			}
 
-				const fresh = this.seen.mark(areaId, visibleCells(cell, budget, area.vision, (column, row) => this.seen.has(areaId, column, row)));
+			// A tenth of a square, as the light changes around dawn and dusk, makes too little difference to look again
+			const key = `${areaId};${cell.column},${cell.row};${Math.floor(budget * 10)};${generation}`;
 
-				if (fresh.length > 0)
+			if (this.lastSights.get(playerId) === key)
+			{
+				continue;
+			}
+
+			this.lastSights.set(playerId, key);
+
+			// Without fog of war in sight, every cell is known, so nothing would be recorded
+			if (!this.areas.fogWithinReach(area, cell, Math.floor(budget)))
+			{
+				continue;
+			}
+
+			const known = (column: number, row: number): boolean =>
+			{
+				const found = this.areaPlayers.locate(areaId, column, row);
+				const recorded = ((found !== undefined) && (this.areas.get(found.areaId)?.loaded.fogOfWar ?? false));
+
+				return(!found || !recorded || this.seen.has(found.areaId, found.column, found.row));
+			};
+			const byArea = new Map<string, string[]>();
+
+			for (const seenKey of visibleCells(cell, budget, area.vision, known))
+			{
+				const [column, row] = seenKey.split(',').map(Number);
+				const found = this.areaPlayers.locate(areaId, column, row);
+
+				if (found)
 				{
-					this.sendCellsSeen(area, fresh);
+					const keys = (byArea.get(found.areaId) ?? []);
+
+					keys.push(visionKey(found.column, found.row));
+					byArea.set(found.areaId, keys);
+				}
+			}
+
+			for (const [seenAreaId, keys] of byArea)
+			{
+				const seenArea = this.areas.get(seenAreaId);
+				const fresh = this.seen.mark(seenAreaId, keys);
+
+				if (seenArea && (fresh.length > 0))
+				{
+					this.sendCellsSeen(seenArea, fresh);
 				}
 			}
 		}
@@ -1086,7 +1197,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 				links: toLinkCells(area.loaded, (link) => revealed.has(`${link.column},${link.row}`))
 			};
 
-			client.send(GameServerMessageType.CellsSeen, payload);
+			client.send(GameServerMessageType.CellsSeen, payload, AREA_MESSAGE_OPTIONS);
 		}
 	}
 
@@ -1253,21 +1364,22 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Sends the members in an area that has been disabled elsewhere: those in play travel there, and
-	 * those out of it are put there for when they are next played
+	 * Sends the members in an area that has been disabled or put below the lobby region elsewhere: those
+	 * in play travel there, and those out of it are put there for when they are next played
 	 *
-	 * @param areaId The disabled area
+	 * @param areaId The area
 	 * @param destination Where they go, or null for the group's starting area
 	 */
 	private async evacuate(areaId: string, destination: AreaPlace | null): Promise<void>
 	{
-		const startingArea = (destination ? undefined : await this.loadStartingArea());
-		const target = (destination ?? (startingArea
-			? {
-				areaId: startingArea.loaded.area.id,
-				...startingCellOn(startingArea.loaded.bounds, this.startingCell)
-			}
-			: undefined));
+		// The save may have taken the area away as the group's starting area. The database says so at once,
+		// while this room may not have read the area as the save left it yet
+		if ((destination === null) && (areaId === this.startingAreaId))
+		{
+			await this.readGroupStartingArea();
+		}
+
+		const target = (destination ?? await this.startingPlace());
 
 		if (!target)
 		{

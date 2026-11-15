@@ -1,9 +1,9 @@
-import { canEditUniverseSettings, canEditWorld, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, REAL_TIME_NAME, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, canEditWorld, FAERIE_MORNING_NAMES, loadedFor, FAERIE_MORNINGS, LOBBY_PASSAGES_OF_TIME, lobbyAreaIds, lobbyProblems, MAX_LOBBY_DAY_HOURS, neighborPairs, MIN_LOBBY_DAY_HOURS, PASSAGE_OF_TIME_NAMES, PlaceGraph, REAL_TIME_NAME, type AreaListPayload, type EditableUniverse, type FaerieMorning, type LobbyPassageOfTime, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker, type FormSnapshot } from '../changeTracker';
-import { getElement, namedOptions, setOptions, showMessage } from '../dom';
+import { getElement, namedOptions, setOptions, showMessage, type SelectOption } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { AreaChoice } from './AreaChoice';
@@ -13,12 +13,13 @@ import type { SavableTab } from './SaveBar';
 import { startingAreaMessages } from './startingAreaMessages';
 
 /**
- * The Lobby tab's settings: the area players walk around in the lobby and the square they start on, how
- * the time of day changes in the lobby, and whether its tiles have a vision cost
+ * The Lobby tab's settings: the lobby region, whose areas players walk in the lobby, the square they
+ * start on, and how the time of day changes in the lobby
  */
 export class LobbyTab implements SavableTab
 {
 	private readonly form = getElement('lobby-form', HTMLFormElement);
+	private readonly region = getElement('lobby-region', HTMLSelectElement);
 	private readonly area: AreaChoice;
 	private readonly noAreaHint = getElement('lobby-no-area-hint', HTMLElement);
 	private readonly fields = getElement('lobby-fields', HTMLFieldSetElement);
@@ -28,7 +29,6 @@ export class LobbyTab implements SavableTab
 	private readonly dayHoursHint = getElement('lobby-day-hours-hint', HTMLElement);
 	private readonly faerieField = getElement('lobby-faerie-field', HTMLElement);
 	private readonly faerie = getElement('lobby-faerie', HTMLSelectElement);
-	private readonly noVisionCost = getElement('lobby-no-vision-cost', HTMLInputElement);
 	private readonly error = getElement('lobby-error', HTMLElement);
 
 	/**
@@ -40,6 +40,11 @@ export class LobbyTab implements SavableTab
 	 * The universe as it was last loaded or saved
 	 */
 	private universe: EditableUniverse | undefined;
+
+	/**
+	 * The universe's regions, areas, links and starting areas as saved, once they have loaded
+	 */
+	private list: AreaListPayload | undefined;
 
 	/**
 	 * The universe's disabled areas, once they have loaded
@@ -58,7 +63,7 @@ export class LobbyTab implements SavableTab
 
 	/**
 	 * @param api The editor's API
-	 * @param areaSelect The dialog for choosing the lobby's area
+	 * @param areaSelect The dialog for choosing the lobby's starting square
 	 * @param onSaved Called with the lobby settings saved, once they are
 	 */
 	constructor(private readonly api: EditorApi, areaSelect: AreaSelectDialog, private readonly onSaved: (update: UniverseSettingsUpdate) => void)
@@ -68,16 +73,16 @@ export class LobbyTab implements SavableTab
 			choose: getElement('lobby-area-choose', HTMLButtonElement),
 			clear: getElement('lobby-area-clear', HTMLButtonElement)
 		}, () => t({
-			id: 'editor.lobby.noArea',
+			id: 'editor.lobby.noSquare',
 			defaultMessage: 'None',
-			description: 'Shown on the editor\'s Lobby tab as the lobby\'s area when it has none, so the lobby has no area to walk around'
+			description: 'Shown on the editor\'s Lobby tab as the lobby\'s starting square when it has none, so the lobby has no area to walk around'
 		}), (area) =>
 		{
 			if (area)
 			{
 				const disabled = new Set(this.disabledAreaIds);
 
-				if (area.enabled)
+				if (area.resolved.enabled)
 				{
 					disabled.delete(area.id);
 				}
@@ -113,6 +118,11 @@ export class LobbyTab implements SavableTab
 			max: MAX_LOBBY_DAY_HOURS
 		});
 
+		this.region.addEventListener('change', () =>
+		{
+			this.regionChanged();
+		});
+
 		this.time.addEventListener('change', () =>
 		{
 			this.showTimeFields();
@@ -132,7 +142,10 @@ export class LobbyTab implements SavableTab
 	open(universe: EditableUniverse): void
 	{
 		this.universe = universe;
+		this.list = undefined;
 		this.disabledAreaIds = new Set();
+		this.fillRegions(universe.lobbyRegionId);
+		this.area.setLobbyRegion(universe.lobbyRegionId);
 		this.area.show(universe, universe.lobbyAreaId, {
 			column: universe.lobbyColumn,
 			row: universe.lobbyRow
@@ -142,8 +155,8 @@ export class LobbyTab implements SavableTab
 		this.time.value = universe.lobbyPassageOfTime;
 		this.dayHours.value = String(universe.lobbyDayHours);
 		this.faerie.value = (universe.lobbyFaerieMorning ?? FAERIE_MORNINGS[0]);
-		this.noVisionCost.checked = universe.lobbyNoVisionCost;
 		this.showTimeFields();
+		this.region.disabled = !this.canSave();
 		this.fields.disabled = !this.canSave();
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
@@ -151,7 +164,8 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
-	 * Loads the areas again, so the lobby's area shows its current name and whether it is disabled
+	 * Loads the areas again, so the lobby region and starting square show their current names, and which
+	 * regions can be the lobby region
 	 */
 	refreshAreas(): void
 	{
@@ -162,7 +176,18 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
-	 * Loads the areas' names, for the lobby's area, and which areas are disabled
+	 * The lobby region chosen
+	 *
+	 * @return Its ID, or null for none
+	 */
+	private regionValue(): string | null
+	{
+		return(((this.region.value === '') ? null : this.region.value));
+	}
+
+	/**
+	 * Loads the regions and areas: their names, which areas are disabled, and the links and starting areas
+	 * that keep regions from being the lobby region
 	 *
 	 * @param universe The universe
 	 */
@@ -178,15 +203,25 @@ export class LobbyTab implements SavableTab
 
 		try
 		{
-			const { areas } = await this.api.listAreas(universe.id);
+			const list = await this.api.listAreas(universe.id);
 
 			if (version === this.version)
 			{
-				this.disabledAreaIds = new Set(areas
-					.filter((area) => !area.enabled)
+				// A choice made while they loaded is kept, and so is whether it is saved
+				const unsaved = this.changes.hasUnsavedChanges();
+
+				this.list = list;
+				this.disabledAreaIds = new Set(list.areas
+					.filter((area) => !area.resolved.enabled)
 					.map((area) => area.id));
-				this.area.setAreaNames(new Map(areas.map((area) => [area.id, area.name])));
+				this.area.setAreaNames(new Map(list.areas.map((area) => [area.id, area.name])));
+				this.fillRegions(this.regionValue());
 				this.showNoAreaHint();
+
+				if (!unsaved)
+				{
+					this.changes.markSaved();
+				}
 			}
 		}
 		catch (error)
@@ -196,6 +231,96 @@ export class LobbyTab implements SavableTab
 				showMessage(this.error, describeEditorError(error, startingAreaMessages.loadFailed));
 			}
 		}
+	}
+
+	/**
+	 * Lists the regions that can be the lobby region, by name, after No Lobby Region. Those with a starting
+	 * area below them or links leading out of them are listed but can't be chosen, saying why; the one
+	 * saved stays a choice
+	 *
+	 * @param selected The region to choose, or null for none
+	 */
+	private fillRegions(selected: string | null): void
+	{
+		const list = this.list;
+		const saved = (this.universe?.lobbyRegionId ?? null);
+		const options: SelectOption[] = [{
+			value: '',
+			label: t({
+				id: 'editor.lobby.noRegion',
+				defaultMessage: 'No Lobby Region',
+				description: 'Choice of the lobby region on the editor\'s Lobby tab that leaves the universe without a lobby to walk in: players only chat and choose their characters'
+			})
+		}];
+
+		if (list)
+		{
+			const graph = new PlaceGraph(list.regions, list.areas);
+			const regions = [...list.regions].sort((first, second) => first.name.localeCompare(second.name));
+			const neighbors = neighborPairs(new Map(list.areas.map((area) => [area.id, area])));
+
+			for (const region of regions)
+			{
+				const problems = lobbyProblems(graph, { lobbyRegionId: region.id, lobbyAreaId: null, faerie: false }, list.links, list.startingAreaIds, neighbors);
+				let reason: string | undefined;
+
+				if (problems.some((problem) => (problem.kind === 'lobbyStartingArea')))
+				{
+					reason = 'starting';
+				}
+				else if (problems.some((problem) => (problem.kind === 'lobbyLink')))
+				{
+					reason = 'links';
+				}
+				else if (problems.some((problem) => (problem.kind === 'lobbyNeighbor')))
+				{
+					reason = 'neighbors';
+				}
+
+				options.push({
+					value: region.id,
+					label: ((reason === undefined)
+						? region.name
+						: t({
+							id: 'editor.lobby.regionLeftOut',
+							defaultMessage: '{region} ({reason, select, starting {characters start in an area below it} neighbors {its areas have neighbors outside it} other {links lead out of it}})',
+							description: 'A region in the editor Lobby tab\'s choice of the lobby region that can\'t be chosen, and why: {region} is its name, and {reason} is "starting" when characters start in an area below it, "neighbors" when its areas have neighboring areas (walked across without links) outside it, or otherwise links lead from its areas to areas outside it. The lobby areas are never connected to the rest of the world'
+						}, {
+							region: region.name,
+							reason
+						})),
+					disabled: ((reason !== undefined) && (region.id !== saved))
+				});
+			}
+		}
+		else if (selected !== null)
+		{
+			// Named once the regions load
+			options.push({ value: selected, label: '' });
+		}
+
+		setOptions(this.region, options);
+		this.region.value = (selected ?? '');
+	}
+
+	/**
+	 * Follows another lobby region being chosen: the starting square goes unless its area is below the
+	 * new one too
+	 */
+	private regionChanged(): void
+	{
+		const regionId = this.regionValue();
+		const areaId = this.area.value;
+
+		this.area.setLobbyRegion(regionId);
+
+		if ((areaId !== null) && (!this.list || !lobbyAreaIds(new PlaceGraph(this.list.regions, this.list.areas), regionId).has(areaId)))
+		{
+			this.area.clear();
+		}
+
+		this.showNoAreaHint();
+		this.changes.check();
 	}
 
 	/**
@@ -209,13 +334,17 @@ export class LobbyTab implements SavableTab
 	}
 
 	/**
-	 * Explains that the lobby has no area to walk around, while it has no area or its area is disabled
+	 * Explains that the lobby has no area to walk around, while it has no lobby region or starting square,
+	 * or the starting square's area is disabled
 	 */
 	private showNoAreaHint(): void
 	{
 		const areaId = this.area.value;
+		const reason = ((this.regionValue() === null) ? 'noRegion' : ((areaId === null) ? 'none' : (this.disabledAreaIds.has(areaId) ? 'disabled' : undefined)));
 
-		if ((areaId !== null) && !this.disabledAreaIds.has(areaId))
+		this.area.setEnabled(this.regionValue() !== null);
+
+		if (reason === undefined)
 		{
 			showMessage(this.noAreaHint, undefined);
 			return;
@@ -223,10 +352,10 @@ export class LobbyTab implements SavableTab
 
 		showMessage(this.noAreaHint, t({
 			id: 'editor.lobby.noAreaHint',
-			defaultMessage: '{reason, select, disabled {The lobby\'s area is disabled, so players only chat and choose their characters.} other {Without a lobby area, players only chat and choose their characters.}}',
-			description: 'Shown on the editor\'s Lobby tab when the lobby has no area to walk around: {reason} is "disabled" when its area is disabled, and otherwise it has no area'
+			defaultMessage: '{reason, select, noRegion {Without a lobby region, players only chat and choose their characters.} disabled {The area of the lobby\'s starting square is disabled, so players only chat and choose their characters.} other {Without a starting square, players only chat and choose their characters.}}',
+			description: 'Shown on the editor\'s Lobby tab when the lobby has no area to walk around: {reason} is "noRegion" when no lobby region is chosen, "disabled" when the area of its starting square is disabled, and otherwise it has no starting square'
 		}, {
-			reason: ((areaId === null) ? 'none' : 'disabled')
+			reason
 		}));
 	}
 
@@ -269,13 +398,13 @@ export class LobbyTab implements SavableTab
 			return(false);
 		}
 
-		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyAreaId' | 'lobbyColumn' | 'lobbyRow' | 'lobbyPassageOfTime' | 'lobbyFaerieMorning' | 'lobbyNoVisionCost'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'lobbyRegionId' | 'lobbyAreaId' | 'lobbyColumn' | 'lobbyRow' | 'lobbyPassageOfTime' | 'lobbyFaerieMorning'>> & Pick<UniverseSettingsUpdate, 'lobbyDayHours'> = {
+			lobbyRegionId: this.regionValue(),
 			lobbyAreaId: this.area.value,
 			lobbyColumn: this.area.cell.column,
 			lobbyRow: this.area.cell.row,
 			lobbyPassageOfTime,
 			lobbyFaerieMorning: ((lobbyPassageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
-			lobbyNoVisionCost: this.noVisionCost.checked,
 			// A day length typed while another passage of time is chosen isn't kept
 			...((lobbyPassageOfTime === 'real_time') ? { lobbyDayHours } : {})
 		};
@@ -322,6 +451,7 @@ export class LobbyTab implements SavableTab
 			}
 
 			this.onSaved(collected.update);
+			this.refreshAreas();
 		}
 	}
 }

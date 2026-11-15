@@ -69,9 +69,10 @@ export interface PlayerPosition
 	displayTime: DisplayTime;
 
 	/**
-	 * How many squares the player can see across open ground (visionBudget)
+	 * How many squares the player can see across open ground (visionBudget), or undefined in an area
+	 * without fog of war, where nothing near them is hidden
 	 */
-	sightSquares: number;
+	sightSquares: number | undefined;
 }
 
 /**
@@ -234,13 +235,19 @@ export class AreaAnnouncer
 			.sort((first, second) => (distance(first) - distance(second)))
 			.map((other) => describePlayer(other));
 		const time = describeTime(position);
-		const sight = t({
-			id: 'area.announce.sight',
-			defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
-			description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains'
-		}, {
-			squares: position.sightSquares
-		});
+		const sight = ((position.sightSquares === undefined)
+			? t({
+				id: 'area.announce.noFog',
+				defaultMessage: 'Nothing near you is hidden here.',
+				description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day, in an area without fog of war: they see everything near them and everyone in the area, whatever the time of day or the tiles'
+			})
+			: t({
+				id: 'area.announce.sight',
+				defaultMessage: 'You can see {squares, plural, one {# square} other {# squares}} across open ground.',
+				description: 'Read out by screen readers, and shown at the top of the page, when the player asks where they are, after the time of day: how far they can see, which is less at night unless their character has darkvision, less in bright light when they have light sensitivity, and less past forests and mountains'
+			}, {
+				squares: position.sightSquares
+			}));
 
 		const place = t({
 			id: 'area.announce.position',

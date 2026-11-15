@@ -25,7 +25,8 @@ export interface GroupRecord
 	name: string;
 
 	/**
-	 * Where members with nowhere else to be go, or null when the area was deleted
+	 * Where members with nowhere else to be go, or null when the area was deleted or put below the
+	 * lobby region
 	 */
 	startingAreaId: string | null;
 
@@ -712,7 +713,8 @@ export interface MemberInArea
 	areaId: string;
 
 	/**
-	 * The group's starting area and cell; the area is null when it was deleted, and the universe's is used
+	 * The group's starting area and cell; the area is null when it was deleted or put below the lobby
+	 * region, and the universe's is used
 	 */
 	groupStart: { areaId: string | null; column: number; row: number };
 }
@@ -770,6 +772,24 @@ export async function listMembersInAreas(areaIds: readonly string[], executor: E
 export async function moveMembers(positions: readonly MemberPosition[], executor: Executor = db): Promise<void>
 {
 	await updateMemberPositions(positions, undefined, executor);
+}
+
+/**
+ * Takes some areas away as groups' starting areas, as deleting them does, so those groups start in the
+ * universe's starting area instead
+ *
+ * @param areaIds The areas' IDs
+ * @param executor The database, or a transaction
+ */
+export async function clearGroupStartingAreas(areaIds: readonly string[], executor: Executor = db): Promise<void>
+{
+	if (areaIds.length > 0)
+	{
+		await executor
+			.update(groups)
+			.set({ startingAreaId: null })
+			.where(inArray(groups.startingAreaId, [...areaIds]));
+	}
 }
 
 /**

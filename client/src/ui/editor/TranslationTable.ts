@@ -1,4 +1,4 @@
-import { canEditVersionOpen, canEditWorld, canEditWorldOpen, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
+import { canEditVersionOpen, canEditWorld, canEditWorldOpen, canMarkNoTranslation, canonicalLanguage, canTranslate, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, isCoin, isValidCoinAbbreviation, languageName, MAX_TRANSLATION_FILE_BYTES, MAX_UNIVERSE_TEXT_PER_PAGE, maxUniverseTextLength, sourceTextHash, TRANSLATION_FILE_EXTENSIONS, TRANSLATION_FILE_FORMATS, TRANSLATION_FILE_TYPES, translationFileFormatOf, UNIVERSE_TEXT_SORT_COLUMNS, universeTextFileKey, writeTranslationFile, type AuditSubject, type EditableUniverse, type PlaceRef, type ReadTranslationFile, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -79,6 +79,25 @@ interface StagedMark
 {
 	ref: UniverseTextRef;
 	noTranslation: boolean;
+}
+
+/**
+ * The Areas tab's regions and areas, which tell the table whose areas' names a builder may write notes on
+ */
+export interface NotePlaces
+{
+	/**
+	 * Loads the regions and areas, unless they have loaded for the universe open
+	 */
+	loadPlaces(): Promise<void>;
+
+	/**
+	 * Whether the player may change a region or area
+	 *
+	 * @param place The region or area
+	 * @return True when they may
+	 */
+	canEditPlace(place: PlaceRef): boolean;
 }
 
 /**
@@ -177,6 +196,8 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	readonly changes: ChangeSource = this;
 
 	private universe: EditableUniverse | undefined;
+
+	private places: NotePlaces | undefined;
 
 	/**
 	 * The page of text shown, as it was last loaded
@@ -280,6 +301,16 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 				void this.importTranslations(file);
 			}
 		});
+	}
+
+	/**
+	 * Gives the table the regions and areas, which tell it whose areas' names a builder may write notes on
+	 *
+	 * @param places The Areas tab's regions and areas
+	 */
+	setPlaces(places: NotePlaces): void
+	{
+		this.places = places;
 	}
 
 	/**
@@ -720,7 +751,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 		placeButton.textContent = describeTextPlace(row);
 		placeButton.addEventListener('click', () =>
 		{
-			this.openRow(row);
+			void this.openRow(row);
 		});
 
 		if (shown.noTranslation)
@@ -971,16 +1002,53 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 	}
 
 	/**
+	 * Whether the player may write the note for translators on a piece of text: those who may edit the
+	 * world, and on an area's name, builders only when the area is within their assignments
+	 *
+	 * @param universe The universe
+	 * @param row The text
+	 * @return True when they may
+	 */
+	private async mayWriteNote(universe: EditableUniverse, row: UniverseTextRow): Promise<boolean>
+	{
+		if (!canEditWorldOpen(universe) || (row.kind !== 'area') || editsEveryPlace(universe.role) || !this.places)
+		{
+			return(canEditWorldOpen(universe));
+		}
+
+		try
+		{
+			await this.places.loadPlaces();
+		}
+		catch
+		{
+			// Without the areas the note stays open to write, and the save says when it is outside them
+			return(true);
+		}
+
+		return(this.places.canEditPlace({ kind: 'area', id: row.thingId }));
+	}
+
+	/**
 	 * Opens the translation dialog for a piece of text, keeping its changes in the table
 	 *
 	 * @param row The text as the server listed it
+	 * @return Once the dialog is open
 	 */
-	private openRow(row: UniverseTextRow): void
+	private async openRow(row: UniverseTextRow): Promise<void>
 	{
 		const universe = this.universe;
 		const language = this.language.value;
 
 		if (!universe)
+		{
+			return;
+		}
+
+		const mayWriteNote = await this.mayWriteNote(universe, row);
+
+		// The editor may have opened another universe or version while the areas loaded
+		if ((this.universe !== universe) || (this.language.value !== language))
 		{
 			return;
 		}
@@ -999,7 +1067,7 @@ export class TranslationTable implements SavableTab, ChangeSource, FollowsOtherS
 			noTranslation: shown.noTranslation,
 			outOfDate: shown.outOfDate,
 			mayTranslate: (canTranslate(universe, language) && canEditVersionOpen(universe)),
-			mayWriteNote: canEditWorldOpen(universe),
+			mayWriteNote,
 			mayMarkNoTranslation: (canMarkNoTranslation(universe) && canEditVersionOpen(universe)),
 			apply: (translation, note, noTranslation) =>
 			{

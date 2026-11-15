@@ -19,10 +19,20 @@ export const areaEditorMessages = defineMessages({
 		defaultMessage: 'Space / Enter',
 		description: 'In the list of keyboard shortcuts, the names of the Space and Enter keys'
 	},
-	void: {
-		id: 'editor.area.void',
-		defaultMessage: '🌃Void',
-		description: 'A cell with nothing in it, drawn black, which can\'t be walked into; also a choice of what to paint'
+	unexplored: {
+		id: 'editor.area.unexplored',
+		defaultMessage: '📜Unexplored',
+		description: 'A cell with nothing in it, drawn as blank map paper like the parts of an area players haven\'t explored, which can\'t be walked into; also a choice of what to paint'
+	},
+	unexploredTile: {
+		id: 'editor.area.unexploredTile',
+		defaultMessage: 'Unexplored',
+		description: 'Takes the place of a tile\'s name when a square holds nothing at all (an Unexplored cell, drawn as blank map paper): in a problem the editor lists about a starting square or link, and when such a square is clicked in the dialog for choosing a starting area or in the link dialog'
+	},
+	blockedSquare: {
+		id: 'editor.area.blockedSquare',
+		defaultMessage: 'Nobody can walk on {tile}. Choose another square.',
+		description: 'Shown in the dialog for choosing a starting area, and in the link dialog, when the square clicked on the area preview for characters to start on or for a link to lead to is a tile nobody can walk on, such as a wall or water; {tile} is the tile\'s name, or Unexplored for a cell holding nothing'
 	},
 	loadFailed: {
 		id: 'editor.area.loadFailed',

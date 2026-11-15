@@ -1,5 +1,5 @@
 import '@github/markdown-toolbar-element';
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, loadedFor, DISPLAY_TIMES, FAERIE_MORNING_NAMES, FAERIE_MORNINGS, hasIdShapedSlug, hasLinkLikeText,MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, PASSAGE_OF_TIME_NAMES, PASSAGES_OF_TIME, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type FaerieMorning, type PassageOfTime, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, loadedFor, DISPLAY_TIMES, hasIdShapedSlug, hasLinkLikeText,MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { formatToNodes, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
@@ -37,9 +37,6 @@ export class UniverseTab implements SavableTab
 	private readonly builderDraftField = getElement('universe-builder-draft-field', HTMLElement);
 	private readonly builderDraft = getElement('universe-require-builder-draft', HTMLInputElement);
 	private readonly builderDraftHint = getElement('universe-require-builder-draft-hint', HTMLElement);
-	private readonly time = getElement('universe-time', HTMLSelectElement);
-	private readonly faerieField = getElement('universe-faerie-field', HTMLElement);
-	private readonly faerie = getElement('universe-faerie', HTMLSelectElement);
 	private readonly displayTime = getElement('universe-display-time', HTMLSelectElement);
 	private readonly error = getElement('universe-error', HTMLElement);
 
@@ -72,8 +69,6 @@ export class UniverseTab implements SavableTab
 		this.shortDescription.maxLength = MAX_SHORT_DESCRIPTION_LENGTH;
 		this.longDescription.maxLength = MAX_LONG_DESCRIPTION_LENGTH;
 		this.stage.append(...UNIVERSE_STAGES.map((stage) => this.createStageChoice(stage)));
-		setOptions(this.time, namedOptions(PASSAGES_OF_TIME, PASSAGE_OF_TIME_NAMES));
-		setOptions(this.faerie, namedOptions(FAERIE_MORNINGS, FAERIE_MORNING_NAMES));
 		setOptions(this.displayTime, namedOptions(DISPLAY_TIMES, DISPLAY_TIME_NAMES));
 
 		this.longDescription.addEventListener('input', () =>
@@ -84,11 +79,6 @@ export class UniverseTab implements SavableTab
 		this.longDescription.addEventListener('keydown', (event) =>
 		{
 			this.applyShortcut(event);
-		});
-
-		this.time.addEventListener('change', () =>
-		{
-			this.faerieField.hidden = (this.time.value !== 'faerie');
 		});
 
 		this.stage.addEventListener('change', () =>
@@ -125,9 +115,6 @@ export class UniverseTab implements SavableTab
 		this.showStageWarning();
 		this.builderDraft.checked = universe.requireBuilderDraft;
 		this.showBuilderDraft();
-		this.time.value = universe.passageOfTime;
-		this.faerie.value = (universe.faerieMorning ?? FAERIE_MORNINGS[0]);
-		this.faerieField.hidden = (universe.passageOfTime !== 'faerie');
 		this.displayTime.value = universe.displayTime;
 		this.fields.disabled = !this.canSave();
 		// A disabled fieldset doesn't disable the toolbar's custom elements, so it's hidden instead
@@ -265,15 +252,12 @@ export class UniverseTab implements SavableTab
 			return(false);
 		}
 
-		const passageOfTime = this.time.value as PassageOfTime;
-		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'requireBuilderDraft' | 'passageOfTime' | 'faerieMorning' | 'displayTime'>> = {
+		const update: Required<Pick<UniverseSettingsUpdate, 'name' | 'shortDescription' | 'longDescription' | 'stage' | 'requireBuilderDraft' | 'displayTime'>> = {
 			name: this.name.value.trim(),
 			shortDescription: this.shortDescription.value.trim(),
 			longDescription: this.longDescription.value,
 			stage: (this.chosenStage() ?? universe.stage),
 			requireBuilderDraft: this.builderDraft.checked,
-			passageOfTime,
-			faerieMorning: ((passageOfTime === 'faerie') ? this.faerie.value as FaerieMorning : null),
 			displayTime: this.displayTime.value as DisplayTime
 		};
 

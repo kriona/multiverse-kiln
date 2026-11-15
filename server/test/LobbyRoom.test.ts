@@ -11,7 +11,7 @@ import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { createUniverse, setUniverseAreas, setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
-import { deleteArea, editCells, resizeArea, updateAreaSettings } from '../src/db/areaRepo.js';
+import { createAreaLink, deleteArea, editCells, resizeArea } from '../src/db/areaRepo.js';
 import { cellCenter } from '../src/logic/movement.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
@@ -22,7 +22,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
-import { addCharacter, addGroup, addPlayableUniverse, addArea,defaultClassId, defaultRaceId, defaultTileId, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addGroup, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, setWorkedOut, testLobbyRegionId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -438,8 +438,8 @@ describe('LobbyRoom', () =>
 			const forest = area.tiles.find((tile) => (tile.key === 'forest'));
 
 			assert.strictEqual(area.ruleset, 'pf1e');
-			assert.strictEqual(area.fullVision, true, 'the lobby sees as far as by day unless the universe gives it a vision cost');
-			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, impassable: false, visionCost: 0 },'the lobby has no vision cost unless the universe gives it one');
+			assert.strictEqual(area.fogOfWar, true);
+			assert.deepStrictEqual(forest, { id: forest?.id, key: 'forest', name: null, color: 0x00aa11, graphic: 'forest', uploadedGraphic: null, impassable: false, visionCost: 50 });
 			assert.strictEqual(area.tiles.find((tile) => (tile.key === 'mountains'))?.impassable, true, 'mountains can\'t be entered, so the client draws their peaks over players');
 			assert.strictEqual(area.tiles.some((tile) => (tile.name !== null)), false, 'default tiles are named by key, not in English');
 		});
@@ -523,7 +523,7 @@ describe('LobbyRoom', () =>
 
 			changeDuringNextLookup(areaPlayersOf(room), 'prepareStart', async () =>
 			{
-				await updateAreaSettings(squareAreaId, { enabled: false });
+				await setWorkedOut(squareAreaId, { enabled: false });
 				areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 				await waitUntil(() => !room.state.hasArea);
 			});
@@ -609,7 +609,7 @@ describe('LobbyRoom', () =>
 
 		it('shows each window only the players its character can see, not past mountains or beyond their sight', async () =>
 		{
-			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null, lobbyNoVisionCost: false });
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_noon', lobbyFaerieMorning: null });
 
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
@@ -646,6 +646,22 @@ describe('LobbyRoom', () =>
 
 			placeOnCell(playerOf(grace), 12, 10);
 			await waitUntil(() => ada.room.state.players.has(grace.playerId));
+		});
+
+		it('shows everyone in an area without fog of war, past mountains and at night', async () =>
+		{
+			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyPassageOfTime: 'always_midnight', lobbyFaerieMorning: null });
+			await setWorkedOut(universe.squareAreaId, { fogOfWar: false });
+
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).fogOfWar, false);
+
+			// The mountains at (12, 3) stand between them, and Grace is far past Ada's sight at night
+			placeOnCell(playerOf(ada), 13, 3);
+			placeOnCell(playerOf(grace), 31, 17);
+			await waitUntil(() => ada.room.state.players.has(grace.playerId) && grace.room.state.players.has(ada.playerId));
 		});
 
 		it('lists a player as here whichever area they are in', async () =>
@@ -836,16 +852,46 @@ describe('LobbyRoom', () =>
 			assert.strictEqual((await grace.inbox.take<PlayingAsPayload>(LobbyServerMessageType.PlayingAs)).characterId, null);
 		});
 
-		it('sends players in a disabled area to the lobby area, or where they are sent', async () =>
+		it('sends players in a disabled lobby area back to the starting square, wherever an editor sends them', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
 			const room = lobbyOf(ada);
 
-			areaChanges.publish({ kind: 'evacuated', areaId: universe.squareAreaId, destination: { areaId: universe.houseAreaId, column: 2, row: 2 } });
-			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.houseAreaId));
+			// The starting square's own area takes the lobby's area away instead
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.squareAreaId, destination: null });
+			await walkIntoHouse(ada);
 
-			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: null });
+			areaChanges.publish({ kind: 'evacuated', areaId: universe.houseAreaId, destination: { areaId: universe.fieldAreaId, column: 2, row: 2 } });
 			await waitUntil(() => (room.getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+
+		it('sends players in an area leaving the lobby region back to the starting square', async () =>
+		{
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+
+			await walkIntoHouse(ada);
+			await setWorkedOut(universe.houseAreaId, { passageOfTime: 'flows_normally', lobby: false });
+			areaChanges.publish({ kind: 'area', areaId: universe.houseAreaId });
+
+			await waitUntil(() => (lobbyOf(ada).getAreaId(ada.playerId) === universe.squareAreaId));
+		});
+
+		it('takes nobody through a link out of the lobby areas, and doesn\'t tell players about it', async () =>
+		{
+			await createAreaLink({ areaId: universe.squareAreaId, column: 2, row: 2, targetAreaId: universe.fieldAreaId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: false });
+
+			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
+
+			assert.ok(!area.links.some((link) => ((link.column === 2) && (link.row === 2))));
+
+			// A player setting out through a link stops, so walking on afterwards shows nobody went
+			placeOnCell(playerOf(ada), 2, 2);
+			ada.room.send(MessageType.TakeLink);
+			ada.room.send(MessageType.Move, { x: 1, y: 0 });
+			await waitUntil(() => (Math.floor(playerOf(ada).x / GRID_CELL_SIZE) === 3));
+			ada.room.send(MessageType.Move, { x: 0, y: 0 });
+			assert.strictEqual(lobbyOf(ada).getAreaId(ada.playerId), universe.squareAreaId);
 		});
 	});
 
@@ -888,7 +934,7 @@ describe('LobbyRoom', () =>
 			const room = lobbyOf(ada);
 
 			await ada.inbox.take(ServerMessageType.Area);
-			await updateAreaSettings(squareAreaId, { enabled: false });
+			await setWorkedOut(squareAreaId, { enabled: false });
 			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 			await waitUntil(() => !room.state.hasArea);
 			assert.strictEqual(room.state.players.size, 0);
@@ -899,7 +945,7 @@ describe('LobbyRoom', () =>
 			assert.strictEqual(grace.room.state.hasArea, false);
 			assert.ok(room.state.members.has(grace.playerId));
 
-			await updateAreaSettings(squareAreaId, { enabled: true });
+			await setWorkedOut(squareAreaId, { enabled: true });
 			areaChanges.publish({ kind: 'area', areaId: squareAreaId });
 			assert.strictEqual((await grace.inbox.take<AreaPayload>(ServerMessageType.Area)).areaId, squareAreaId);
 			await waitUntil(() => room.state.hasArea);
@@ -1280,11 +1326,16 @@ describe('LobbyRoom', () =>
 		{
 			// A long lobby, forest near the center and far to the east
 			const universeId = await createUniverse({ name: 'Long Universe', ruleset: 'pf1e', stage: 'let_there_be_light' });
-			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -10, minRow: -10, maxColumn: 500, maxRow: 10 } });
+			const areaId = await addArea(universeId, 'Road', { bounds: { minColumn: -10, minRow: -10, maxColumn: 500, maxRow: 10 }, lobby: true });
+			const fieldId = await addArea(universeId, 'Field');
 			const forest = await defaultTileId('forest');
 
 			await inTransaction((transaction) => editCells(areaId, [[1, 1, forest], [400, 1, forest]], transaction));
-			await setUniverseAreas(universeId, areaId, areaId);
+			await setUniverseAreas(universeId, {
+				lobbyRegionId: await testLobbyRegionId(universeId),
+				lobbyAreaId: areaId,
+				startingAreaId: fieldId
+			});
 
 			const ada = await joinAsNewPlayer(universeId, 'Ada');
 			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
@@ -1379,19 +1430,15 @@ describe('LobbyRoom', () =>
 			assert.deepStrictEqual(area.tiles.find((tile) => (tile.id === grass)), { id: grass, key: null, name: 'Autumn Grass', color: 0xc08030, graphic: 'grass', uploadedGraphic: null, impassable: false, visionCost: 0 });
 		});
 
-		it('sends the lobby again with its tiles\' vision costs once the universe gives it them', async () =>
+		it('sends the lobby again without fog of war once its area turns it off', async () =>
 		{
 			const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
-			const forest = await defaultTileId('forest');
 
-			await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-			await updateUniverseSettings(liveVersion(universe.universeId), { lobbyNoVisionCost: false });
-			areaChanges.publish({ kind: 'tiles', universeId: universe.universeId });
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).fogOfWar, true);
+			await setWorkedOut(universe.squareAreaId, { fogOfWar: false });
+			areaChanges.publish({ kind: 'area', areaId: universe.squareAreaId });
 
-			const area = await ada.inbox.take<AreaPayload>(ServerMessageType.Area);
-
-			assert.strictEqual(area.tiles.find((tile) => (tile.id === forest))?.visionCost, 50);
-			assert.strictEqual(area.fullVision, false);
+			assert.strictEqual((await ada.inbox.take<AreaPayload>(ServerMessageType.Area)).fogOfWar, false);
 		});
 
 		it('ignores changes to areas it hasn\'t loaded', async () =>

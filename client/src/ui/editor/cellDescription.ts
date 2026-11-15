@@ -1,4 +1,4 @@
-import { DEFAULT_TILE_CELL, isInBounds, VOID_CELL, type EditorTile, type EditorAreaLink, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_TILE_CELL, isBlockedCell, isInBounds, VOID_CELL, type EditorTile, type EditorAreaLink, type Ruleset } from '@multiverse-kiln/shared';
 
 import type { AreaCells } from '../../editor/AreaCells';
 import type { BrushCell } from '../../editor/brush';
@@ -56,7 +56,7 @@ export function describeCell(described: DescribedArea, cell: BrushCell): string
 
 	if (value === VOID_CELL)
 	{
-		contents = t(areaEditorMessages.void);
+		contents = t(areaEditorMessages.unexplored);
 	}
 	else if (tileId === undefined)
 	{
@@ -99,4 +99,30 @@ export function describeCell(described: DescribedArea, cell: BrushCell): string
 			row: cell.row,
 			contents
 		})));
+}
+
+/**
+ * Why a square can't be chosen for characters to start on or for a link to lead to, when nobody can walk
+ * on it (see shared/src/arrivals.ts)
+ *
+ * @param described The area
+ * @param cell The square
+ * @return The message, or undefined for a square that can be walked on or hasn't loaded
+ */
+export function blockedSquareMessage(described: Omit<DescribedArea, 'links'>, cell: BrushCell): string | undefined
+{
+	const value = described.cells.valueAt(cell.column, cell.row);
+	const walkSeconds = new Map(described.tiles.map((tile) => [tile.id, tile.walkSeconds]));
+
+	if ((value === undefined) || !isBlockedCell(value, described.defaultTileId, walkSeconds))
+	{
+		return(undefined);
+	}
+
+	const tileId = ((value === DEFAULT_TILE_CELL) ? described.defaultTileId : value);
+	const tile = described.tiles.find((candidate) => (candidate.id === tileId));
+
+	return(t(areaEditorMessages.blockedSquare, {
+		tile: ((value === VOID_CELL) ? t(areaEditorMessages.unexploredTile) : (tile ? tileName(tile, described.ruleset) : String(tileId)))
+	}));
 }

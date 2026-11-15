@@ -21,7 +21,7 @@ import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { EditorRoom } from '../src/rooms/EditorRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
 import { editorUpdates } from '../src/world/editorUpdates.js';
-import { createArea, createUniverse, logIn, saveChanges, send, type Editor } from './editorRequests.js';
+import { createArea, createUniverse, logIn, saveChanges, send, worldRegionId, type Editor } from './editorRequests.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
 import { loggedErrors } from './loggedErrors.js';
@@ -523,7 +523,7 @@ describe('EditorRoom', () =>
 			assert.strictEqual((await saveChanges(ada, universeId, [
 				{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, name: 'Stout' } },
 				{ kind: 'editCells', areaId, changes: [[0, 0, VOID_CELL]] },
-				{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave' } }
+				{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId) }] } }
 			])).status, 200);
 
 			const notice = await window.inbox.take<EditorSavedPayload>(EditorServerMessageType.Saved);

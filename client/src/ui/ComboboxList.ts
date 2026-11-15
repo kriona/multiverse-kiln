@@ -26,6 +26,11 @@ export interface ComboboxChoice
 	 * More words searching matches, such as cities in a time zone. The one that matched shows in the list
 	 */
 	keywords?: readonly string[];
+
+	/**
+	 * Whether the choice is listed but can't be chosen, its detail saying why
+	 */
+	disabled?: boolean;
 }
 
 /**
@@ -131,6 +136,7 @@ export class ComboboxList
 	open(): void
 	{
 		const query = normalize((this.options.query?.() ?? this.search.value).trim());
+		let disabledCount = 0;
 
 		this.matches = [];
 		this.listbox.replaceChildren(...this.options.choices().flatMap((choice) =>
@@ -142,6 +148,12 @@ export class ComboboxList
 				return([]);
 			}
 
+			// Listed, but neither among the matches the arrow keys move through nor chosen by a click
+			if (choice.disabled ?? false)
+			{
+				return([this.createOption(choice, keyword, `disabled-${disabledCount++}`)]);
+			}
+
 			const index = this.matches.length;
 
 			this.matches.push(choice);
@@ -149,7 +161,7 @@ export class ComboboxList
 			return([this.createOption(choice, keyword, index)]);
 		}));
 
-		if (this.matches.length === 0)
+		if ((this.matches.length === 0) && (disabledCount === 0))
 		{
 			const empty = document.createElement('li');
 
@@ -228,10 +240,10 @@ export class ComboboxList
 	 *
 	 * @param choice What it chooses
 	 * @param keyword The keyword that matched what was typed, to show before the detail, or undefined
-	 * @param index Where it is among the matches
+	 * @param index Where it is among the matches, or a name of its own for a choice that can't be chosen
 	 * @return The option
 	 */
-	private createOption(choice: ComboboxChoice, keyword: string | undefined, index: number): HTMLLIElement
+	private createOption(choice: ComboboxChoice, keyword: string | undefined, index: number | string): HTMLLIElement
 	{
 		const option = document.createElement('li');
 		const name = document.createElement('span');
@@ -250,6 +262,14 @@ export class ComboboxList
 			detail.className = 'combobox-detail';
 			detail.textContent = details.join(' · ');
 			option.append(' ', detail);
+		}
+
+		if (typeof index === 'string')
+		{
+			option.className = 'combobox-disabled';
+			option.setAttribute('aria-disabled', 'true');
+
+			return(option);
 		}
 
 		option.addEventListener('click', () =>

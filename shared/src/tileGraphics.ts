@@ -35,14 +35,16 @@ export const TILE_GRAPHIC_SIZES: Record<TileGraphicFormat, { width: number; heig
 /**
  * The corners each frame of a Dual-Grid sheet fills, in the sheet's order: left to right, top to bottom,
  * 4 frames to a row. A frame's corners are summed from top-left 1, top-right 2, bottom-left 4 and
- * bottom-right 8, so frame 0 fills none of them and is never drawn, and the last fills all 4. By rows:
+ * bottom-right 8. The order is the jess::codes dual-grid template's, whose frames join up into one
+ * shape across the sheet. The empty frame, first in the last row, is never drawn, and the full one,
+ * third in the second row, is what swatches show. By rows:
  *
- * - none, bottom-right, bottom-left, top-right
- * - bottom half, top-left and bottom-right, top half, top-right and bottom-left
- * - all but bottom-right, all but bottom-left, all but top-left, all but top-right
- * - right half, left half, top-left, all 4
+ * - bottom-left, right half, all but top-right, bottom half
+ * - top-left and bottom-right, all but top-left, all 4, all but bottom-right
+ * - top-right, top half, all but bottom-left, left half
+ * - none, bottom-right, top-right and bottom-left, top-left
  */
-export const DUAL_GRID_FRAME_CORNERS: readonly number[] = [0, 8, 4, 2, 12, 9, 3, 6, 7, 11, 14, 13, 10, 5, 1, 15];
+export const DUAL_GRID_FRAME_CORNERS: readonly number[] = [4, 10, 13, 12, 9, 14, 15, 7, 2, 3, 11, 5, 0, 8, 6, 1];
 
 /**
  * Each set of corners' frame in a Dual-Grid sheet, by the corners' sum

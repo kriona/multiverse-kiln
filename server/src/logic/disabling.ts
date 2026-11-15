@@ -2,6 +2,7 @@
  * Disabling things players are using (see STRUCTURE-OVERVIEW.md): who moves when an area is disabled,
  * who leaves a group when the group size is lowered, and how many characters a change affects
  */
+import type { PlaceRef } from '@multiverse-kiln/shared';
 
 /**
  * A cell of an area
@@ -31,6 +32,22 @@ export interface LinkInto
 	column: number;
 	row: number;
 	targetAreaId: string;
+}
+
+/**
+ * Areas as enabledAncestor() follows them: each with the area it is inside, past the regions it is in,
+ * and whether it is enabled as worked out from what is above it
+ *
+ * @param areas The areas, with their parents and worked-out settings
+ * @return The areas
+ */
+export function areasInTree(areas: readonly { id: string; parents: readonly PlaceRef[]; resolved: { enabled: boolean } }[]): AreaInTree[]
+{
+	return(areas.map((area) => ({
+		id: area.id,
+		parentAreaId: (area.parents.find((parent) => (parent.kind === 'area'))?.id ?? null),
+		enabled: area.resolved.enabled
+	})));
 }
 
 /**
@@ -107,7 +124,8 @@ export interface SavedMember
 	characterId: string;
 
 	/**
-	 * Their group's starting area and cell; the area is null when it was deleted
+	 * Their group's starting area and cell; the area is null when it was deleted or put below the lobby
+	 * region
 	 */
 	groupStart: { areaId: string | null; column: number; row: number };
 }
@@ -117,8 +135,8 @@ export interface SavedMember
  *
  * @param members The members
  * @param destination Where everyone goes, or null to send each to their group's starting area
- * @param universeStart The universe's starting area and cell, for a group whose starting area was
- * deleted; null when it has none
+ * @param universeStart The universe's starting area and cell, for a group with no starting area of its
+ * own; null when it has none
  * @return Each member's new place; members with nowhere to go are left out, and placed when next played
  */
 export function evacuatedPlaces(members: readonly SavedMember[], destination: Place | null, universeStart: Place | null): (Place & { characterId: string })[]

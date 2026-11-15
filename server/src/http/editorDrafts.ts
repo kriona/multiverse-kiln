@@ -3,7 +3,7 @@
  * Universe versions in STRUCTURE-OVERVIEW.md). They come after the save's other changes, so starting a
  * draft copies them and applying one includes them
  */
-import { universeSlug, type DraftApplyChoices } from '@multiverse-kiln/shared';
+import { placeKey, universeSlug, type DraftApplyChoices } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
@@ -18,6 +18,7 @@ import { liveVersion } from '../db/universeVersions.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { SaveDisablings } from './editorDisablings.js';
+import { arrivalRefusal, findBlockedArrivals } from './editorPlaces.js';
 import { errorMessages } from './errors.js';
 
 /**
@@ -93,10 +94,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		disablings.item(item.id, item.enabled, choices.items[String(item.id)]);
 	}
 
-	for (const area of areasBefore)
-	{
-		disablings.area(area.id, area.enabled, choices.areas[area.id]);
-	}
+	disablings.areas(choices.areas);
 
 	const removed = await applyDraft(universeId, transaction);
 	const applied = await findEditableUniverse(live, transaction);
@@ -138,7 +136,32 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		version: live
 	};
 
-	await disablings.finish(liveContext);
+	// The draft's areas come with the settings worked out for them when the draft was saved
+	const enabledBefore = new Set(areasBefore
+		.filter((area) => area.resolved.enabled)
+		.map((area) => area.id));
+	const outsideLobbyBefore = new Set(areasBefore
+		.filter((area) => !area.resolved.lobby)
+		.map((area) => area.id));
+	const areasAfter = await listAreas(live, transaction);
+
+	// A save to the draft checks only the squares it may have changed, so every square is checked before
+	// players reach them
+	const blocked = await findBlockedArrivals(live, after, undefined, transaction);
+
+	if (blocked.length > 0)
+	{
+		throw arrivalRefusal(blocked, Object.fromEntries(areasAfter.map((area) => [placeKey({ kind: 'area', id: area.id }), area.name])));
+	}
+
+	await disablings.finish(liveContext, {
+		disabled: areasAfter
+			.filter((area) => (enabledBefore.has(area.id) && !area.resolved.enabled))
+			.map((area) => area.id),
+		enteredLobby: areasAfter
+			.filter((area) => (outsideLobbyBefore.has(area.id) && area.resolved.lobby))
+			.map((area) => area.id)
+	});
 
 	const defaultLevel = await findDefaultDifficultyLevel(live, transaction);
 

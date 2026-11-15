@@ -425,6 +425,11 @@ export interface UniverseAccess
 	 * Language tags, such as de or pt-BR; empty for every role but translator
 	 */
 	languages: readonly string[];
+
+	/**
+	 * A builder's permissions; none when left out
+	 */
+	permissions?: Readonly<BuilderPermissions>;
 }
 
 /**
@@ -462,8 +467,36 @@ export const EDITOR_ROLE_NAMES: Record<EditorRole, MessageDescriptor> = {
 };
 
 /**
- * Someone's place in the editor: their role, ADMIN_ROLE included, and the languages a translator may
- * translate into
+ * What a builder may edit besides the areas and regions they are assigned (see Tab: Editors in
+ * STRUCTURE-OVERVIEW.md); never set for another role
+ */
+export interface BuilderPermissions
+{
+	/**
+	 * Tiles and uploaded tilesets
+	 */
+	canEditTiles: boolean;
+
+	canEditItems: boolean;
+
+	/**
+	 * Mobs, once there are any; stored, but nothing uses it yet
+	 */
+	canEditMobs: boolean;
+}
+
+/**
+ * A builder's permissions before any are given, and every other role's
+ */
+export const NO_BUILDER_PERMISSIONS: Readonly<BuilderPermissions> = {
+	canEditTiles: false,
+	canEditItems: false,
+	canEditMobs: false
+};
+
+/**
+ * Someone's place in the editor: their role, ADMIN_ROLE included, the languages a translator may
+ * translate into, and a builder's permissions
  */
 export interface EditorAccess
 {
@@ -473,6 +506,47 @@ export interface EditorAccess
 	 * Language tags, such as de or pt-BR; empty for every role but translator
 	 */
 	languages: readonly string[];
+
+	/**
+	 * A builder's permissions; none when left out
+	 */
+	permissions?: Readonly<BuilderPermissions>;
+}
+
+/**
+ * Whether someone may edit the universe's tiles and uploaded tilesets: creators and the site admin role,
+ * and builders given the permission
+ *
+ * @param access Their role in the editor, and a builder's permissions
+ * @return True when they may
+ */
+export function canEditTiles(access: Pick<EditorAccess, 'role' | 'permissions'>): boolean
+{
+	return(canEditWorld(access.role) && ((access.role !== 'builder') || (access.permissions?.canEditTiles ?? false)));
+}
+
+/**
+ * Whether someone may edit the universe's items: creators and the site admin role, and builders given
+ * the permission
+ *
+ * @param access Their role in the editor, and a builder's permissions
+ * @return True when they may
+ */
+export function canEditItems(access: Pick<EditorAccess, 'role' | 'permissions'>): boolean
+{
+	return(canEditWorld(access.role) && ((access.role !== 'builder') || (access.permissions?.canEditItems ?? false)));
+}
+
+/**
+ * Whether a role edits every region and area, rather than only those below the regions assigned to
+ * them, as builders do (see Assignments in STRUCTURE-OVERVIEW.md)
+ *
+ * @param role The user's role in the editor
+ * @return True for creators and the site admin role
+ */
+export function editsEveryPlace(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
 }
 
 /**

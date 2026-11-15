@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -197,18 +197,18 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();
-		this.addButton.hidden = !canEditWorldOpen(universe);
+		this.addButton.hidden = !canEditItemsOpen(universe);
 		void this.refresh();
 	}
 
 	/**
 	 * Whether the player may change the items
 	 *
-	 * @return True for a creator or builder, in a version they may change
+	 * @return True for a creator, or a builder who may edit items, in a version they may change
 	 */
 	canSave(): boolean
 	{
-		return((this.universe !== undefined) && canEditWorldOpen(this.universe));
+		return((this.universe !== undefined) && canEditItemsOpen(this.universe));
 	}
 
 	/**

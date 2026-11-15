@@ -454,12 +454,12 @@ export type SettingsForm = 'universe' | 'lobby' | 'characters' | 'coins' | 'tran
  */
 export const SETTINGS_FORMS: Readonly<Record<SettingsForm, { fields: ReadonlySet<AuditField>; keys: readonly (keyof UniverseSettings)[] }>> = {
 	universe: {
-		fields: new Set(['name', 'shortDescription', 'longDescription', 'stage', 'requireBuilderDraft', 'passageOfTime', 'displayTime']),
-		keys: ['name', 'shortDescription', 'longDescription', 'stage', 'requireBuilderDraft', 'passageOfTime', 'faerieMorning', 'displayTime']
+		fields: new Set(['name', 'shortDescription', 'longDescription', 'stage', 'requireBuilderDraft', 'displayTime']),
+		keys: ['name', 'shortDescription', 'longDescription', 'stage', 'requireBuilderDraft', 'displayTime']
 	},
 	lobby: {
-		fields: new Set(['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyNoVisionCost', 'lobbyArea']),
-		keys: ['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyNoVisionCost', 'lobbyAreaId', 'lobbyColumn', 'lobbyRow']
+		fields: new Set(['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyRegion', 'lobbyArea']),
+		keys: ['lobbyPassageOfTime', 'lobbyDayHours', 'lobbyFaerieMorning', 'lobbyRegionId', 'lobbyAreaId', 'lobbyColumn', 'lobbyRow']
 	},
 	coins: {
 		fields: new Set(['coinNames', 'coinAbbreviations']),

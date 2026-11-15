@@ -1,17 +1,40 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, tileIdAt, VOID_CELL } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, seamSides, tileIdAt, VOID_CELL, type AreaLinkTarget, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
+import { watchQueries } from '../../scripts/benchmarks/queries.js';
+import { db } from '../../src/db/client.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, loadNeighborChains, loadNeighborGrid, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, setAreaNeighbor, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { draftVersion, liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
-import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea } from './fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, addArea, defaultTileId, inTransactionWithoutWaiting, loadWholeArea, testLobbyRegionId, testRegionId } from './fixtures.js';
+
+/**
+ * The settings addArea() works out for a grass area, with some of them changed
+ *
+ * @param changes The settings to change
+ * @return The settings
+ */
+async function workedOut(changes: Partial<ResolvedAreaSettings>): Promise<ResolvedAreaSettings>
+{
+	return({
+		enabled: true,
+		indoors: false,
+		lightLevel: null,
+		defaultTileId: await defaultTileId('grass'),
+		passageOfTime: 'flows_normally',
+		faerieMorning: null,
+		fogOfWar: true,
+		lobby: false,
+		...changes
+	});
+}
 
 /**
  * A chunk of default cells with its first cell set
@@ -28,6 +51,47 @@ function chunkStartingWith(value: number): number[]
 	return(cells);
 }
 
+/**
+ * Adds a grid of areas joined as neighbors, each a chunk across
+ *
+ * @param universeId The universe's ID
+ * @param rows How many rows of areas
+ * @param columns How many columns of areas
+ * @return The areas' IDs, by row then column
+ */
+async function addNeighborGrid(universeId: string, rows: number, columns: number): Promise<string[][]>
+{
+	const bounds = {
+		minColumn: 0,
+		minRow: 0,
+		maxColumn: CHUNK_SIZE - 1,
+		maxRow: CHUNK_SIZE - 1
+	};
+	const ids: string[][] = [];
+
+	for (let row = 0; row < rows; row++)
+	{
+		ids.push([]);
+
+		for (let column = 0; column < columns; column++)
+		{
+			ids[row].push(await addArea(universeId, `Area ${row}, ${column}`, { bounds }));
+
+			if (column > 0)
+			{
+				await setAreaNeighbor(ids[row][column - 1], 'east', ids[row][column], db);
+			}
+
+			if (row > 0)
+			{
+				await setAreaNeighbor(ids[row - 1][column], 'south', ids[row][column], db);
+			}
+		}
+	}
+
+	return(ids);
+}
+
 describe('areaRepo', () =>
 {
 	describe('loadArea', () =>
@@ -40,7 +104,7 @@ describe('areaRepo', () =>
 			const loaded = await loadArea(areaId);
 
 			assert.ok(loaded);
-			assert.deepStrictEqual(loaded.area, { id: areaId, universeId, parentAreaId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'inherit' });
+			assert.deepStrictEqual(loaded.area, { id: areaId, universeId, parentAreaId: undefined, name: 'Meadow', enabled: true, indoors: false, passageOfTime: 'flows_normally', lobby: false });
 			assert.deepStrictEqual(loaded.bounds, { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 });
 			assert.strictEqual(loaded.defaultTileId, tileIds.get('grass'));
 			assert.strictEqual(loaded.loopsEastWest, false);
@@ -72,44 +136,53 @@ describe('areaRepo', () =>
 
 			assert.deepStrictEqual(loaded?.links, [{ column: 1, row: 0, targetAreaId: insideId, targetColumn: -1, targetRow: 1, mode: 'automatic', requiresWholeGroup: true }]);
 			assert.deepStrictEqual((await loadArea(insideId))?.links, []);
-			assert.deepStrictEqual([...(loaded?.disabledTargetIds ?? [])], []);
-			assert.deepStrictEqual(await listAreasLinkingTo(insideId), [areaId]);
+			assert.deepStrictEqual([...(loaded?.closedTargetIds ?? [])], []);
+			assert.deepStrictEqual(await listAreasLinkingTo([insideId]), [areaId]);
 
-			await updateAreaSettings(insideId, { enabled: false });
-			assert.deepStrictEqual([...((await loadArea(areaId))?.disabledTargetIds ?? [])], [insideId]);
+			await storeResolvedSettings(new Map([[insideId, await workedOut({ enabled: false })]]));
+			assert.deepStrictEqual([...((await loadArea(areaId))?.closedTargetIds ?? [])], [insideId]);
+
+			// Nobody goes across the lobby region's edge either way
+			await storeResolvedSettings(new Map([[insideId, await workedOut({ passageOfTime: null, lobby: true })]]));
+			assert.deepStrictEqual([...((await loadArea(areaId))?.closedTargetIds ?? [])], [insideId]);
 		});
 
-		it('follows inherit through the parent areas to the universe\'s passage of time', async () =>
+		it('plays the settings worked out for the area, not its own', async () =>
 		{
 			const universeId = await addUniverse();
-			const worldId = await addArea(universeId, 'World');
-			const regionId = await addArea(universeId, 'Region');
 			const townId = await addArea(universeId, 'Town');
-
-			await updateAreaSettings(regionId, { parentAreaId: worldId });
-			await updateAreaSettings(townId, { parentAreaId: regionId });
 
 			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'flows_normally' });
 
-			await updateAreaSettings(worldId, { passageOfTime: 'faerie', faerieMorning: 'north' });
-
+			await storeResolvedSettings(new Map([[townId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'north' })]]));
 			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'faerie', morning: 'north' });
 
-			await updateAreaSettings(regionId, { passageOfTime: 'always_dusk' });
+			await updateAreaSettings(townId, { passageOfTime: 'always_dusk', indoors: true });
 
-			assert.deepStrictEqual((await loadArea(townId))?.time, { passage: 'always_dusk' });
+			const loaded = await loadArea(townId);
+
+			assert.deepStrictEqual(loaded?.time, { passage: 'faerie', morning: 'north' });
+			assert.strictEqual(loaded.area.indoors, false);
 		});
 
-		it('gives the lobby\'s area the universe\'s lobby time', async () =>
+		it('gives a lobby area the universe\'s lobby time', async () =>
 		{
 			const universeId = await addUniverse();
-			const lobbyId = await addArea(universeId, 'Lobby');
+			const lobbyId = await addArea(universeId, 'Lobby', { lobby: true });
+			const houseId = await addArea(universeId, 'House', { lobby: true });
 			const startId = await addArea(universeId, 'Start');
 
-			await setUniverseAreas(universeId, lobbyId, startId);
+			await setUniverseAreas(universeId, {
+				lobbyRegionId: await testLobbyRegionId(universeId),
+				lobbyAreaId: lobbyId,
+				startingAreaId: startId
+			});
 			await updateAreaSettings(lobbyId, { passageOfTime: 'always_noon' });
 
 			assert.deepStrictEqual((await loadArea(lobbyId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
+			assert.deepStrictEqual((await loadArea(houseId))?.time, { passage: 'real_time', dayHours: DEFAULT_LOBBY_DAY_HOURS });
+			assert.strictEqual((await loadArea(houseId))?.area.lobby, true);
+			assert.strictEqual((await loadArea(startId))?.area.lobby, false);
 
 			await updateUniverseSettings(liveVersion(universeId), { lobbyPassageOfTime: 'faerie', lobbyFaerieMorning: 'horizon' });
 
@@ -119,6 +192,40 @@ describe('areaRepo', () =>
 		it('finds nothing for an unknown ID', async () =>
 		{
 			assert.strictEqual(await loadArea('00000000-0000-4000-8000-000000000000'), undefined);
+		});
+
+		it('works out where each side leads from the area\'s row and column, as the whole grid does', async () =>
+		{
+			const universeId = await addUniverse();
+			const ids = await addNeighborGrid(universeId, 3, 4);
+
+			await addArea(universeId, 'Apart');
+			await updateAreaSettings(ids[1][0], { loopsEastWest: true });
+			await updateAreaSettings(ids[1][3], { loopsEastWest: true });
+
+			const chains = await loadNeighborChains(liveVersion(universeId), ids[1][1]);
+			const grid = await loadNeighborGrid(liveVersion(universeId));
+
+			assert.deepStrictEqual([...chains.keys()].sort(), [...ids[1], ids[0][1], ids[2][1]].sort());
+
+			for (const id of ids.flat())
+			{
+				assert.deepStrictEqual((await loadArea(id))?.sides, seamSides(grid, id));
+			}
+
+			assert.deepStrictEqual((await loadArea(ids[1][0]))?.sides, { north: ids[0][0], east: ids[1][1], south: ids[2][0], west: ids[1][3] });
+			assert.strictEqual((await loadNeighborChains(draftVersion(universeId), ids[1][1])).size, 0);
+		});
+
+		it('works out where each side of an area in a ring leads', async () =>
+		{
+			const universeId = await addUniverse();
+			const [ring] = await addNeighborGrid(universeId, 1, 3);
+
+			await setAreaNeighbor(ring[2], 'east', ring[0], db);
+
+			assert.strictEqual((await loadNeighborChains(liveVersion(universeId), ring[0])).size, 3);
+			assert.deepStrictEqual((await loadArea(ring[0]))?.sides, { north: null, east: ring[1], south: null, west: ring[2] });
 		});
 	});
 
@@ -163,16 +270,28 @@ describe('areaRepo', () =>
 				area: {
 					id: areaId,
 					name: 'Village',
-					parentAreaId: null,
-					enabled: true,
-					indoors: false,
-					lightLevel: 'lit',
-					defaultTileId: grass,
-					passageOfTime: 'inherit',
+					parents: [{ kind: 'region', id: await testRegionId(universeId) }],
+					enabled: null,
+					indoors: null,
+					lightLevel: null,
+					defaultTileId: null,
+					passageOfTime: null,
 					faerieMorning: null,
+					fogOfWar: null,
 					loopsEastWest: false,
 					loopsNorthSouth: false,
-					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 }
+					resolved: {
+						enabled: true,
+						indoors: false,
+						lightLevel: null,
+						defaultTileId: grass,
+						passageOfTime: 'flows_normally',
+						faerieMorning: null,
+						fogOfWar: true,
+						lobby: false
+					},
+					bounds: { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 },
+					neighbors: NO_NEIGHBORS
 				}
 			});
 			assert.deepStrictEqual((await listAreas(liveVersion(universeId))).map((area) => area.name), ['Abbey', 'Village']);
@@ -301,7 +420,7 @@ describe('areaRepo', () =>
 			const areaId = await addArea(await addUniverse());
 			const bounds = { minColumn: -10, minRow: -10, maxColumn: 10, maxRow: 10 };
 
-			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, bounds, false, transaction)), { resized: true, discardedCells: 0, discardedLinks: 0, linkingAreaIds: [] });
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, bounds, false, transaction)), { resized: true, discardedCells: 0, discardedLinks: 0, linkedAreaIds: [], linkingAreaIds: [] });
 			assert.deepStrictEqual((await findEditorArea(areaId))?.area.bounds, bounds);
 		});
 
@@ -321,10 +440,10 @@ describe('areaRepo', () =>
 
 			const refused = await inTransaction((transaction) => resizeArea(areaId, narrow, false, transaction));
 
-			assert.deepStrictEqual(refused, { resized: false, discardedCells: 2, discardedLinks: 2, linkingAreaIds: [] });
+			assert.deepStrictEqual(refused, { resized: false, discardedCells: 2, discardedLinks: 2, linkedAreaIds: [otherId], linkingAreaIds: [] });
 			assert.deepStrictEqual((await findEditorArea(areaId))?.area.bounds, wide);
 
-			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, narrow, true, transaction)), { resized: true, discardedCells: 2, discardedLinks: 2, linkingAreaIds: [otherId] });
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, narrow, true, transaction)), { resized: true, discardedCells: 2, discardedLinks: 2, linkedAreaIds: [otherId], linkingAreaIds: [otherId] });
 			assert.deepStrictEqual(await listAreaLinks(areaId), []);
 			assert.deepStrictEqual((await listAreaLinks(otherId)).map((link) => link.column), [-1]);
 
@@ -346,7 +465,7 @@ describe('areaRepo', () =>
 
 			await inTransaction((transaction) => editCells(areaId, [[10, 10, forest], [35, 5, forest], [45, 5, forest], [100, 100, forest], [-10, 0, VOID_CELL]], transaction));
 
-			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, shrunk, true, transaction)), { resized: true, discardedCells: 3, discardedLinks: 0, linkingAreaIds: [] });
+			assert.deepStrictEqual(await inTransaction((transaction) => resizeArea(areaId, shrunk, true, transaction)), { resized: true, discardedCells: 3, discardedLinks: 0, linkedAreaIds: [], linkingAreaIds: [] });
 
 			const chunks = await loadChunks(areaId, { minChunkColumn: -2, minChunkRow: -2, maxChunkColumn: 3, maxChunkRow: 3 });
 			const edge = chunks.find((chunk) => ((chunk.chunkColumn === 1) && (chunk.chunkRow === 0)));
@@ -378,6 +497,32 @@ describe('areaRepo', () =>
 			assert.strictEqual(await deleteAreaLink(areaId, 1, 1), false);
 			assert.strictEqual((await listAreaLinks(areaId)).length, 1);
 		});
+
+		it('lists the areas linking to any of some areas once each, leaving out links within an area', async () =>
+		{
+			const universeId = await addUniverse();
+			const outsideId = await addArea(universeId, 'Outside');
+			const houseId = await addArea(universeId, 'House');
+			const cellarId = await addArea(universeId, 'Cellar');
+			const towerId = await addArea(universeId, 'Tower');
+			const target = (targetAreaId: string): AreaLinkTarget => ({
+				targetAreaId,
+				targetColumn: 0,
+				targetRow: 0,
+				mode: 'automatic',
+				requiresWholeGroup: false
+			});
+
+			await saveAreaLink(outsideId, 0, 0, target(houseId));
+			await saveAreaLink(outsideId, 1, 0, target(cellarId));
+			await saveAreaLink(houseId, 0, 0, target(cellarId));
+			await saveAreaLink(houseId, 1, 0, target(houseId));
+			await saveAreaLink(towerId, 0, 0, target(outsideId));
+
+			assert.deepStrictEqual((await listAreasLinkingTo([houseId, cellarId])).sort(), [outsideId, houseId].sort());
+			assert.deepStrictEqual(await listAreasLinkingTo([houseId]), [outsideId]);
+			assert.deepStrictEqual(await listAreasLinkingTo([]), []);
+		});
 	});
 
 	describe('lockAreas', () =>
@@ -408,17 +553,19 @@ describe('areaRepo', () =>
 
 	describe('updateAreaSettings and deleteArea', () =>
 	{
-		it('changes settings, and deleting an area leaves its children at the top level', async () =>
+		it('changes settings and parents, keeping the parents in the order they were added', async () =>
 		{
 			const universeId = await addUniverse();
+			const regionId = await testRegionId(universeId);
 			const parentId = await addArea(universeId, 'Kingdom');
 			const childId = await addArea(universeId, 'Castle');
 
-			await updateAreaSettings(childId, { parentAreaId: parentId, name: 'Royal Castle', passageOfTime: 'faerie', faerieMorning: 'east' });
+			await updateAreaSettings(childId, { name: 'Royal Castle', passageOfTime: 'faerie', faerieMorning: 'east' });
+			await setAreaParents(childId, [{ kind: 'region', id: regionId }, { kind: 'area', id: parentId }]);
 
 			let child = (await findEditorArea(childId))?.area;
 
-			assert.strictEqual(child?.parentAreaId, parentId);
+			assert.deepStrictEqual(child?.parents, [{ kind: 'region', id: regionId }, { kind: 'area', id: parentId }]);
 			assert.strictEqual(child.name, 'Royal Castle');
 			assert.strictEqual(child.faerieMorning, 'east');
 
@@ -427,14 +574,47 @@ describe('areaRepo', () =>
 			child = (await findEditorArea(childId))?.area;
 
 			assert.strictEqual(await findEditorArea(parentId), undefined);
-			assert.strictEqual(child?.parentAreaId, null);
+			assert.deepStrictEqual(child?.parents, [{ kind: 'region', id: regionId }]);
 		});
 
-		it('is refused by the database for a faerie area that loops', async () =>
+		it('is refused by the database for an area that loops with faerie time worked out for it', async () =>
 		{
 			const areaId = await addArea(await addUniverse());
 
-			await assert.rejects(updateAreaSettings(areaId, { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: true }));
+			await updateAreaSettings(areaId, { passageOfTime: 'faerie', faerieMorning: 'east', loopsEastWest: true });
+			await assert.rejects(storeResolvedSettings(new Map([[areaId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'east' })]])));
+		});
+	});
+
+	describe('storeResolvedSettings', () =>
+	{
+		it('stores every area\'s settings in one statement, leaving other areas alone', async () =>
+		{
+			const universeId = await addUniverse();
+			const cellarId = await addArea(universeId, 'Cellar');
+			const gladeId = await addArea(universeId, 'Glade');
+			const hallId = await addArea(universeId, 'Hall');
+			const fieldId = await addArea(universeId, 'Field');
+			const settings = new Map([
+				[cellarId, await workedOut({ indoors: true, lightLevel: 'dark', defaultTileId: await defaultTileId('forest'), fogOfWar: false })],
+				[gladeId, await workedOut({ passageOfTime: 'faerie', faerieMorning: 'north' })],
+				[hallId, await workedOut({ enabled: false, passageOfTime: null, lobby: true })]
+			]);
+			const queries = watchQueries({ slowMs: 0 });
+
+			try
+			{
+				await storeResolvedSettings(settings);
+			}
+			finally
+			{
+				queries.restore();
+			}
+
+			const stored = new Map((await listAreas(liveVersion(universeId))).map((area) => [area.id, area.resolved]));
+
+			assert.deepStrictEqual(stored, new Map([...settings, [fieldId, await workedOut({})]]));
+			assert.strictEqual(queries.slowQueries.filter((query) => query.text.startsWith('update "areas"')).length, 1);
 		});
 	});
 

@@ -8,7 +8,7 @@ import { createCharacter } from '../../src/db/characterRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addPlayer } from '../players.js';
-import { addUniverse, addArea, dwarfFighter, inTransactionWithoutWaiting } from './fixtures.js';
+import { addUniverse, addArea, dwarfFighter, inTransactionWithoutWaiting, testLobbyRegionId } from './fixtures.js';
 
 /**
  * Whether a query failed because it waited for a lock past inTransactionWithoutWaiting()'s timeout
@@ -35,7 +35,6 @@ describe('universeRepo', () =>
 			shortDescription: 'A small town.',
 			stage: 'in_the_beginning',
 			ruleset: 'pf1e',
-			passageOfTime: 'flows_normally',
 			lobbyAreaId: undefined,
 			lobbyColumn: 0,
 			lobbyRow: 0,
@@ -125,18 +124,24 @@ describe('universeRepo', () =>
 		assert.strictEqual(await findDisabledReason(universeId), null);
 	});
 
-	it('sets the lobby and starting areas', async () =>
+	it('sets the lobby region and the lobby and starting areas', async () =>
 	{
 		const universeId = await addUniverse();
-		const lobbyId = await addArea(universeId, 'Lobby');
+		const lobbyId = await addArea(universeId, 'Lobby', { lobby: true });
 		const startId = await addArea(universeId, 'Start');
+		const lobbyRegionId = await testLobbyRegionId(universeId);
 
-		await setUniverseAreas(universeId, lobbyId, startId);
+		await setUniverseAreas(universeId, {
+			lobbyRegionId,
+			lobbyAreaId: lobbyId,
+			startingAreaId: startId
+		});
 
 		const universe = await findUniverse(universeId);
 
 		assert.strictEqual(universe?.lobbyAreaId, lobbyId);
 		assert.strictEqual(universe?.startingAreaId, startId);
+		assert.strictEqual((await findEditableUniverse(liveVersion(universeId)))?.lobbyRegionId, lobbyRegionId);
 	});
 
 	it('finds a universe\'s details in any stage, with its stage', async () =>

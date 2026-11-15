@@ -20,7 +20,7 @@ import { turnOnTwoFactor } from './twoFactorAccounts.js';
  * A change to the world, which only creators and builders may make: deleting an uploaded tileset that
  * doesn't exist, so it is refused for that once the role allows it
  */
-const worldChange: EditorChange = { kind: 'deleteTileGraphic', graphicId: '00000000-0000-4000-8000-000000000009' };
+const worldChange: EditorChange = { kind: 'deleteLink', areaId: '00000000-0000-4000-8000-000000000009', column: 0, row: 0 };
 
 /**
  * The editors of a universe, as the Editors tab lists them

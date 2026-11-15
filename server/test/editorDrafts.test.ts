@@ -7,7 +7,7 @@ import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { deleteUniverse, hasDraft } from '../src/db/universeRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addCharacter, addPlayableUniverse, addUniverse, defaultRaceId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, assignToTestRegion, defaultRaceId, dwarfFighter, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, send, type Editor, type EditorResponse } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -115,7 +115,9 @@ describe('Universe drafts', () =>
 		const rename: EditorChange = { kind: 'updateArea', areaId: universe.houseAreaId, update: { name: 'Inn' } };
 		const saveLive = (changes: EditorChange[], editor: Editor) => send<SaveRefusedPayload>(editor, 'POST', `/${universe.universeId}/changes`, { body: { changes } });
 
+		await withoutLobby(universe);
 		await setUniverseRole(universe.universeId, bea.playerId, 'builder');
+		await assignToTestRegion(universe.universeId, [bea.playerId]);
 
 		const refused = await saveLive([rename], bea);
 

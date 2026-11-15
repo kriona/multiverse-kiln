@@ -2,12 +2,13 @@
  * What saving the editor's changes passes each change: the universe, the transaction they share, and
  * the IDs of the things made earlier in the same save (see editorChanges.ts)
  */
-import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type ResizeConflict, type SaveConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
+import { isNewRef, type EditableUniverseDetails, type MessageDescriptor, type MessageValues, type NewRef, type NumberRef, type PlaceProblem, type ResizeConflict, type SaveConflict, type StringRef, type EditorRole, type UniverseRole } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
 import type { AreaChange } from '../world/areaChanges.js';
 import type { SaveDisablings } from './editorDisablings.js';
+import type { SavePlaces } from './editorPlaces.js';
 import { errorMessages, type Refusal } from './errors.js';
 
 /**
@@ -85,6 +86,12 @@ export interface ChangeContext
 	readonly disablings: SaveDisablings;
 
 	/**
+	 * The version's regions and areas as the changes so far left them, whose settings the save works out
+	 * once every change is made, and what a builder may edit of them
+	 */
+	readonly places: SavePlaces;
+
+	/**
 	 * Images of deleted tilesets, removed from storage once the save commits
 	 */
 	readonly deletedImages: string[];
@@ -105,8 +112,10 @@ export class ChangeRefusal extends Error
 	 * @param refusal The status and the reason
 	 * @param resizeConflict For a resize refused because it would discard something, what it would discard
 	 * @param conflicts For a save refused because other editors changed settings it changes, each such setting
+	 * @param placeProblems For a save refused because it leaves areas' settings unworkable or places
+	 * nested wrongly, each problem, with the names of the places they name by placeKey()
 	 */
-	constructor(readonly refusal: Refusal, readonly resizeConflict?: ResizeConflict, readonly conflicts?: SaveConflict[])
+	constructor(readonly refusal: Refusal, readonly resizeConflict?: ResizeConflict, readonly conflicts?: SaveConflict[], readonly placeProblems?: { problems: PlaceProblem[]; names: Record<string, string> })
 	{
 		super(refusal.message.id);
 	}

@@ -1,13 +1,13 @@
 /**
  * Universes: the only module that reads or writes the universes table
  */
-import { and, count, eq, isNotNull, isNull, sql } from 'drizzle-orm';
-import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type PassageOfTime, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
+import { and, count, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { nameKey, UNIVERSE_ID_PATTERN, universeSlug, type AdminUniverseCreator, type EditableUniverseDetails, type Ruleset, type UniverseDetails, type UniverseSettingsUpdate, type UniverseStage, type UniverseSummary } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { fromCoinAbbreviationColumns, fromCoinColumns, fromCoinNameColumns, toCoinAbbreviationColumns, toCoinColumns, toCoinNameColumns } from './coinColumns.js';
 import { addDefaultDifficultyLevels } from './difficultyRepo.js';
-import { players, universeDrafts, universeEditors, universes } from './schema.js';
+import { areas, players, regions, tileGraphics, tiles, universeDrafts, universeEditors, universes, universeTranslations, universeTranslatorNotes } from './schema.js';
 import { loadStartingItems, replaceStartingItems } from './startingItemRepo.js';
 import { anyColumnContains } from './textSearch.js';
 import type { UniverseVersion } from './universeVersions.js';
@@ -142,15 +142,15 @@ export interface UniverseRecord
 	shortDescription: string;
 	stage: UniverseStage;
 	ruleset: Ruleset;
-	passageOfTime: PassageOfTime;
 
 	/**
-	 * Undefined until the universe's areas exist, and while it has no lobby area
+	 * The area of the lobby's starting square: undefined until the universe's areas exist, and while the
+	 * lobby has none
 	 */
 	lobbyAreaId: string | undefined;
 
 	/**
-	 * The cell of the lobby's area players start nearest
+	 * The cell of the lobby's starting square players start nearest
 	 */
 	lobbyColumn: number;
 
@@ -185,10 +185,10 @@ export interface UniverseRecord
 }
 
 /**
- * What a new universe needs. Its slug comes from its name, and its lobby and starting areas are set
- * once they exist (setUniverseAreas)
+ * What a new universe needs. Its slug comes from its name, and its lobby region and its lobby and
+ * starting areas are set once they exist (setUniverseAreas)
  */
-export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset' | 'passageOfTime'>;
+export type NewUniverse = Pick<typeof universes.$inferInsert, 'id' | 'name' | 'shortDescription' | 'longDescription' | 'sourceLanguage' | 'stage' | 'ruleset'>;
 
 /**
  * Adds a universe, with the default difficulty levels
@@ -217,21 +217,39 @@ export async function createUniverse(universe: NewUniverse, executor: Executor =
 }
 
 /**
- * Sets the area a universe's lobby is in and the area its groups start in
+ * The regions and areas a new universe's lobby and groups start in, for setUniverseAreas()
+ */
+export interface UniverseAreas
+{
+	/**
+	 * The region whose areas players walk in the lobby, or null for none
+	 */
+	lobbyRegionId: string | null;
+
+	/**
+	 * The area of the lobby's starting square, below the lobby region
+	 */
+	lobbyAreaId: string | null;
+
+	/**
+	 * The area groups start in, outside the lobby region
+	 */
+	startingAreaId: string;
+}
+
+/**
+ * Sets a universe's lobby region, the area of the lobby's starting square and the area its groups start
+ * in. The caller makes sure the lobby's area is below the lobby region and the starting area isn't
  *
  * @param universeId The universe's ID
- * @param lobbyAreaId The lobby's area
- * @param startingAreaId The area groups start in
+ * @param universeAreas The regions and areas
  * @param executor The database, or a transaction
  */
-export async function setUniverseAreas(universeId: string, lobbyAreaId: string, startingAreaId: string, executor: Executor = db): Promise<void>
+export async function setUniverseAreas(universeId: string, universeAreas: UniverseAreas, executor: Executor = db): Promise<void>
 {
 	await executor
 		.update(universes)
-		.set({
-			lobbyAreaId,
-			startingAreaId
-		})
+		.set(universeAreas)
 		.where(eq(universes.id, universeId));
 }
 
@@ -261,7 +279,6 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		shortDescription: row.shortDescription,
 		stage: row.stage,
 		ruleset: row.ruleset,
-		passageOfTime: row.passageOfTime,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
 		lobbyColumn: row.lobbyColumn,
 		lobbyRow: row.lobbyRow,
@@ -354,13 +371,11 @@ function versionSettingColumns(table: typeof universes | typeof universeDrafts)
 		longDescription: table.longDescription,
 		sourceLanguage: table.sourceLanguage,
 		translationLanguages: table.translationLanguages,
-		passageOfTime: table.passageOfTime,
-		faerieMorning: table.faerieMorning,
 		displayTime: table.displayTime,
 		lobbyPassageOfTime: table.lobbyPassageOfTime,
 		lobbyDayHours: table.lobbyDayHours,
 		lobbyFaerieMorning: table.lobbyFaerieMorning,
-		lobbyNoVisionCost: table.lobbyNoVisionCost,
+		lobbyRegionId: table.lobbyRegionId,
 		lobbyAreaId: table.lobbyAreaId,
 		lobbyColumn: table.lobbyColumn,
 		lobbyRow: table.lobbyRow,
@@ -782,4 +797,35 @@ export async function deleteUniverse(universeId: string, executor: Executor = db
 		.returning({ id: universes.id });
 
 	return(deleted.length > 0);
+}
+
+/**
+ * Deletes a universe's world, in both versions, keeping the universe and its characters, groups,
+ * editors and settings: its regions, areas (with their cells and links), its own tiles and uploaded
+ * tilesets, and the translations and notes of its areas and tiles. Groups and races left starting in an
+ * area that goes start in the universe's starting area, and members saved in one go there too. Call it
+ * with the universe's draft discarded first
+ *
+ * @param universeId The universe's ID
+ * @param executor A transaction
+ */
+export async function deleteUniverseWorld(universeId: string, executor: Executor): Promise<void>
+{
+	for (const table of [universeTranslations, universeTranslatorNotes])
+	{
+		await executor
+			.delete(table)
+			.where(and(
+				eq(table.universeId, universeId),
+				inArray(table.kind, ['area', 'tile'])
+			));
+	}
+
+	// Areas first, since they and regions name tiles that can't be deleted while named, and tiles name tilesets
+	for (const table of [areas, regions, tiles, tileGraphics])
+	{
+		await executor
+			.delete(table)
+			.where(eq(table.universeId, universeId));
+	}
 }

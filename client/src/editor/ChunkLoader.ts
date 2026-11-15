@@ -107,13 +107,41 @@ export class ChunkLoader
 	 */
 	async loadOutside(bounds: AreaBounds): Promise<void>
 	{
-		const area = this.cells.chunkRange;
 		const inner = {
 			minChunkColumn: chunkCoordinate(bounds.minColumn - 1) + 1,
 			minChunkRow: chunkCoordinate(bounds.minRow - 1) + 1,
 			maxChunkColumn: chunkCoordinate(bounds.maxColumn + 1) - 1,
 			maxChunkRow: chunkCoordinate(bounds.maxRow + 1) - 1
 		};
+
+		await this.loadBlocks((range) => (
+			(range.minChunkColumn >= inner.minChunkColumn) &&
+			(range.maxChunkColumn <= inner.maxChunkColumn) &&
+			(range.minChunkRow >= inner.minChunkRow) &&
+			(range.maxChunkRow <= inner.maxChunkRow)
+		));
+	}
+
+	/**
+	 * Loads every chunk of the area that hasn't loaded yet, a block at a time, such as for a fill reaching
+	 * cells the view hasn't
+	 *
+	 * @return Resolves once they have all loaded, or the loader has stopped; rejects when a block couldn't be loaded
+	 */
+	async loadAll(): Promise<void>
+	{
+		await this.loadBlocks(() => false);
+	}
+
+	/**
+	 * Loads the blocks of the area that haven't loaded yet, one at a time, leaving out those a check skips
+	 *
+	 * @param skip Whether to leave out a block, from the chunks of it in the area
+	 * @return Resolves once they have all loaded, or the loader has stopped; rejects when a block couldn't be loaded
+	 */
+	private async loadBlocks(skip: (range: ChunkRange) => boolean): Promise<void>
+	{
+		const area = this.cells.chunkRange;
 
 		for (let blockRow = Math.floor(area.minChunkRow / BLOCK_SIDE); blockRow <= Math.floor(area.maxChunkRow / BLOCK_SIDE); blockRow++)
 		{
@@ -125,14 +153,8 @@ export class ChunkLoader
 					maxChunkColumn: Math.min(((blockColumn + 1) * BLOCK_SIDE) - 1, area.maxChunkColumn),
 					maxChunkRow: Math.min(((blockRow + 1) * BLOCK_SIDE) - 1, area.maxChunkRow)
 				};
-				const insideOnly = (
-					(range.minChunkColumn >= inner.minChunkColumn) &&
-					(range.maxChunkColumn <= inner.maxChunkColumn) &&
-					(range.minChunkRow >= inner.minChunkRow) &&
-					(range.maxChunkRow <= inner.maxChunkRow)
-				);
 
-				if (this.stopped || insideOnly || this.isRangeLoaded(range))
+				if (this.stopped || skip(range) || this.isRangeLoaded(range))
 				{
 					continue;
 				}

@@ -6,7 +6,7 @@ import { findLastPlayedCharacterId, findOwnCharacter, listPlayableCharacters, ma
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
 import { db } from '../../src/db/client.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
-import { addGroupMember, countGroupMembers, countGroupsLargerThan, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listGroupsLargerThan, listMembersOfGroups, listPlayerGroupIds, moveMembers, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
+import { addGroupMember, clearGroupStartingAreas, countGroupMembers, countGroupsLargerThan, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listExpiredMemberships, listGroupMembers, listGroupsLargerThan, listMembersOfGroups, listPlayerGroupIds, moveMembers, purgeExpiredInvites, saveGroupClock, saveMemberPositions } from '../../src/db/groupRepo.js';
 import { addPlayer } from '../players.js';
 import { characters } from '../../src/db/schema.js';
 import { inTransaction } from '../../src/db/transactions.js';
@@ -105,6 +105,18 @@ describe('groupRepo', () =>
 			{ characterId: memberId, position: { areaId: universe.houseAreaId, column: 3, row: 4 } }
 		]);
 		assert.deepStrictEqual((await listGroupMembers(otherGroupId))[0]?.position, { areaId: universe.houseAreaId, column: 7, row: 8 });
+	});
+
+	it('takes areas away as groups\' starting areas, leaving the other groups\'', async () =>
+	{
+		const otherAnchorId = await addCharacter(playerId, universe.universeId, 'Other');
+		const otherGroupId = await addGroup(universe.universeId, otherAnchorId, universe.houseAreaId, 'The Others');
+
+		await clearGroupStartingAreas([universe.houseAreaId, universe.squareAreaId]);
+		await clearGroupStartingAreas([]);
+
+		assert.strictEqual((await findGroup(groupId))?.startingAreaId, universe.fieldAreaId);
+		assert.strictEqual((await findGroup(otherGroupId))?.startingAreaId, null);
 	});
 
 	it('marks a member given their last rites as not playable', async () =>

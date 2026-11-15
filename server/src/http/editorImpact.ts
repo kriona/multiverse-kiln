@@ -5,9 +5,9 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { isNewRef, mayMakeChange, type ChangeImpact, type EditableUniverseDetails, type EditorChange, type OptionName, type Ruleset, type SaveImpactPayload } from '@multiverse-kiln/shared';
+import { lobbyAreaIds, mayMakeChange, PlaceGraph, type ChangeImpact, type EditableUniverseDetails, type EditorChange, type OptionName, type Ruleset, type SaveImpactPayload } from '@multiverse-kiln/shared';
 
-import { listAreas } from '../db/areaRepo.js';
+import { listAreas, loadPlaceWorld } from '../db/areaRepo.js';
 import { countCharactersCarrying, countCharactersOfClasses, countCharactersOfRaces } from '../db/characterRepo.js';
 import { loadEditorClasses } from '../db/classRepo.js';
 import { countGroupsLargerThan, listMembersInAreas } from '../db/groupRepo.js';
@@ -17,7 +17,9 @@ import { areas, classes, items, races } from '../db/schema.js';
 import { findDraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse } from '../db/universeRepo.js';
 import { draftVersion, liveVersion, type UniverseVersion } from '../db/universeVersions.js';
-import { areasById, countCharactersInAreas, enabledAncestor } from '../logic/disabling.js';
+import { areasById, areasInTree, countCharactersInAreas, enabledAncestor } from '../logic/disabling.js';
+import { enabledAreaIds, findDisabledAreas, findLobbyEntries } from '../logic/placeChanges.js';
+import { PlaceModel } from '../logic/placeModel.js';
 import { areaOccupants } from '../world/areaOccupants.js';
 import { universeContextOf } from './editorAccess.js';
 import { saveChangesRequest } from './editorPayloads.js';
@@ -200,8 +202,8 @@ async function draftGroupSizeImpacts(liveUniverse: EditableUniverseDetails, draf
 }
 
 /**
- * The live areas other than the lobby's that a universe's draft disables or deletes, with characters in
- * them, playing or saved
+ * The live areas outside the lobby that a universe's draft disables or deletes, with characters in them,
+ * playing or saved, and those it puts below the lobby region with group characters in them
  *
  * @param liveUniverse The universe, with its live version's settings
  * @param changeIndex The applyDraft change's place in the save
@@ -217,34 +219,54 @@ async function draftAreaImpacts(liveUniverse: EditableUniverseDetails, changeInd
 	]);
 	const liveIdOf = (id: string): string => (origins.get(id) ?? id);
 
-	// The areas once the draft is applied, by their live IDs; those it deletes are there, disabled, so the
-	// parent of a deleted area can be found
-	const inDraft = new Map(draftAreas.map((area) => [liveIdOf(area.id), {
+	// The areas once the draft is applied, by their live IDs, enabled as worked out in the draft; those it
+	// deletes are there, disabled, so the parent of a deleted area can be found
+	const inDraft = new Map(areasInTree(draftAreas).map((area) => [liveIdOf(area.id), {
 		...area,
 		id: liveIdOf(area.id),
 		parentAreaId: ((area.parentAreaId === null) ? null : liveIdOf(area.parentAreaId))
 	}]));
-	const tree = areasById([...inDraft.values(), ...liveAreas
+	const draftNames = new Map(draftAreas.map((area) => [liveIdOf(area.id), area.name]));
+	const tree = areasById([...inDraft.values(), ...areasInTree(liveAreas)
 		.filter((area) => !inDraft.has(area.id))
 		.map((area) => ({ ...area, enabled: false }))]);
-	const disabled = liveAreas.filter((area) => (area.enabled && (area.id !== liveUniverse.lobbyAreaId) && !(inDraft.get(area.id)?.enabled ?? false)));
-	const areaIds = disabled.map(({ id }) => id);
+	const lobbyInDraft = new Set(draftAreas
+		.filter((area) => area.resolved.lobby)
+		.map((area) => liveIdOf(area.id)));
+	const entering = liveAreas.filter((area) => (!area.resolved.lobby && lobbyInDraft.has(area.id)));
+	const enteringIds = new Set(entering.map(({ id }) => id));
+	const disabled = liveAreas.filter((area) => (area.resolved.enabled && !area.resolved.lobby && !enteringIds.has(area.id) && !(inDraft.get(area.id)?.enabled ?? false)));
+	const areaIds = [...disabled, ...entering].map(({ id }) => id);
 	const saved = (await listMembersInAreas(areaIds)).map(({ characterId, areaId }) => ({ characterId, areaId }));
 	const counts = countCharactersInAreas(saved, areaOccupants.list(universeId), areaIds);
 
-	return(disabled.flatMap((area): ChangeImpact[] =>
-	{
-		const characters = (counts.get(area.id) ?? 0);
+	return([
+		...disabled.flatMap((area): ChangeImpact[] =>
+		{
+			const characters = (counts.get(area.id) ?? 0);
 
-		return(((characters > 0) ? [{
-			changeIndex,
-			kind: 'area',
-			id: area.id,
-			name: (inDraft.get(area.id)?.name ?? area.name),
-			characters,
-			hasParent: (enabledAncestor(tree, area.id) !== undefined)
-		}] : []));
-	}));
+			return(((characters > 0) ? [{
+				changeIndex,
+				kind: 'area',
+				id: area.id,
+				name: (draftNames.get(area.id) ?? area.name),
+				characters,
+				hasParent: (enabledAncestor(tree, area.id) !== undefined)
+			}] : []));
+		}),
+		...entering.flatMap((area): ChangeImpact[] =>
+		{
+			const characters = (counts.get(area.id) ?? 0);
+
+			return(((characters > 0) ? [{
+				changeIndex,
+				kind: 'lobbyArea',
+				id: area.id,
+				name: (draftNames.get(area.id) ?? area.name),
+				characters
+			}] : []));
+		})
+	]);
 }
 
 /**
@@ -403,7 +425,9 @@ async function itemImpacts(universe: EditableUniverseDetails, changes: readonly 
 }
 
 /**
- * The areas other than the lobby's that the changes disable with characters in them, playing or saved
+ * The areas outside the lobby that the changes disable with characters in them, playing or saved, and
+ * the areas they put below the lobby region with group characters in them. Lobby players in a lobby area
+ * disabled go back to the lobby's starting square, which needs no choice
  *
  * @param universe The universe
  * @param changes The changes
@@ -411,43 +435,53 @@ async function itemImpacts(universe: EditableUniverseDetails, changes: readonly 
  */
 async function areaImpacts(universe: EditableUniverseDetails, changes: readonly EditorChange[]): Promise<ChangeImpact[]>
 {
-	const disablesArea = (change: EditorChange): boolean => ((change.kind === 'updateArea') && (change.update.enabled === false));
+	const placeKinds: ReadonlySet<EditorChange['kind']> = new Set(['updateRegion', 'deleteRegion', 'createArea', 'updateArea', 'deleteArea']);
+	const changesLobby = changes.some((change) => ((change.kind === 'universe') && (change.update.lobbyRegionId !== undefined)));
 
-	if (!changes.some(disablesArea))
+	if (!changesLobby && !changes.some((change) => placeKinds.has(change.kind)))
 	{
 		return([]);
 	}
 
-	const areas = await listAreas(liveVersion(universe.id));
-	const byId = areasById(areas);
-	const found = disablings(changes, (change) => areaTouched(change, universe), disablesArea, (id) => (byId.get(id)?.enabled ?? false));
-	const areaIds = found.map(({ id }) => id);
+	const live = liveVersion(universe.id);
+	const { world } = await loadPlaceWorld(live, universe.ruleset, universe.lobbyRegionId);
+	const lobbyBefore = lobbyAreaIds(new PlaceGraph(world.regions, world.areas), universe.lobbyRegionId);
+	const model = new PlaceModel(world);
+	const disabledAt = findDisabledAreas(model, changes);
+	const enteredAt = findLobbyEntries(new PlaceModel(world), changes);
+
+	for (const areaId of lobbyBefore)
+	{
+		disabledAt.delete(areaId);
+	}
+
+	const areaIds = [...new Set([...disabledAt.keys(), ...enteredAt.keys()])];
 	const saved = (await listMembersInAreas(areaIds)).map(({ characterId, areaId }) => ({ characterId, areaId }));
 	const counts = countCharactersInAreas(saved, areaOccupants.list(universe.id), areaIds);
+	const enabled = enabledAreaIds(model.graph());
+	const byId = areasById(model.allAreas().map((area) => ({
+		id: area.id,
+		parentAreaId: (area.parents.find((parent) => (parent.kind === 'area'))?.id ?? null),
+		enabled: enabled.has(area.id)
+	})));
+	const nameOfArea = (id: string): string => (model.area(id)?.name ?? '');
 
-	return(found.flatMap(({ changeIndex, id }): ChangeImpact[] =>
-	{
-		const change = changes[changeIndex];
-		const characters = (counts.get(id) ?? 0);
-		const name = (((change.kind === 'updateArea') ? change.update.name : undefined) ?? byId.get(id)?.name ?? '');
+	return([
+		...[...disabledAt]
+			.filter(([id]) => !enteredAt.has(id))
+			.flatMap(([id, changeIndex]): ChangeImpact[] =>
+			{
+				const characters = (counts.get(id) ?? 0);
 
-		return(((characters > 0) ? [{ changeIndex, kind: 'area', id, name, characters, hasParent: (enabledAncestor(byId, id) !== undefined) }] : []));
-	}));
-}
+				return(((characters > 0) ? [{ changeIndex, kind: 'area', id, name: nameOfArea(id), characters, hasParent: (enabledAncestor(byId, id) !== undefined) }] : []));
+			}),
+		...[...enteredAt].flatMap(([id, changeIndex]): ChangeImpact[] =>
+		{
+			const characters = (counts.get(id) ?? 0);
 
-/**
- * The saved area other than the lobby's whose enabling a change sets, or that it deletes
- *
- * @param change The change
- * @param universe The universe
- * @return Its ID, or undefined for a change that does neither, or is to an area made in the save
- */
-function areaTouched(change: EditorChange, universe: EditableUniverseDetails): string | undefined
-{
-	const areaId = ((((change.kind === 'updateArea') && (change.update.enabled !== undefined)) || (change.kind === 'deleteArea')) ? change.areaId : undefined);
-
-	// The lobby's players are always in its area, so disabling it moves nobody
-	return((((areaId === undefined) || isNewRef(areaId) || (areaId === universe.lobbyAreaId)) ? undefined : areaId));
+			return(((characters > 0) ? [{ changeIndex, kind: 'lobbyArea', id, name: nameOfArea(id), characters }] : []));
+		})
+	]);
 }
 
 /**

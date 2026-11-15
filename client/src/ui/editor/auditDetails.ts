@@ -7,6 +7,7 @@ import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
+import { FOG_OF_WAR_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
 /**
@@ -73,11 +74,6 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Length of a lobby day',
 		description: 'Names the setting for how many real hours a day in the lobby lasts, in the list of what a save changed on the editor\'s Audit tab'
 	},
-	lobbyNoVisionCost: {
-		id: 'editor.lobby.noVisionCost',
-		defaultMessage: 'No vision cost in the lobby',
-		description: 'Checkbox for whether characters in the lobby see as far as in full daylight at any time of day, past every tile as if none had a vision cost; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
 	groupSize: {
 		id: 'editor.characters.groupSize',
 		defaultMessage: 'Group size',
@@ -103,10 +99,15 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Starting equipment',
 		description: 'Heading of the list of items every character starts with, on the editor\'s Characters tab; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	lobbyRegion: {
+		id: 'editor.lobby.region',
+		defaultMessage: 'Lobby region',
+		description: 'Label of the field on the editor\'s Lobby tab choosing the lobby region, the region whose areas players walk in the lobby; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	lobbyArea: {
-		id: 'editor.lobby.area',
-		defaultMessage: 'Lobby area',
-		description: 'Label of the Lobby tab\'s choice of the area players walk around in the lobby, and the square of it they start on; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		id: 'editor.audit.field.lobbySquare',
+		defaultMessage: 'Lobby\'s starting square',
+		description: 'Names the setting for where players start in the lobby (the Lobby tab\'s starting square: an area below the lobby region and a square of it), in the list of what a save changed on the editor\'s Audit tab'
 	},
 	startingArea: {
 		id: 'editor.audit.field.startingArea',
@@ -151,7 +152,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	languages: {
 		id: 'editor.editors.languages',
 		defaultMessage: 'Languages',
-		description: 'Heading of the column on the editor\'s Editors tab listing the languages each translator may translate the universe into, and the label of that field in its dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field in the dialog for an editor on the editor\'s Editors tab with the languages a translator may translate the universe into; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	indoors: {
 		id: 'form.indoors',
@@ -286,7 +287,22 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	parentArea: {
 		id: 'editor.area.parent',
 		defaultMessage: 'Parent area',
-		description: 'Label of the field for the area this one is inside; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Names the area an area was inside, in the list of what a save changed, on the editor\'s Audit tab, for saves made before regions'
+	},
+	parents: {
+		id: 'editor.place.parents',
+		defaultMessage: 'Parents',
+		description: 'Label of the list of regions (and the area) a region or area is inside, in its editor, and heading of the column of the Areas tab\'s table listing them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	assignments: {
+		id: 'editor.region.assignments',
+		defaultMessage: 'Assigned builders',
+		description: 'Heading of the builders assigned to a region in the region editor, who can edit everything inside it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	permissions: {
+		id: 'editor.editors.permissions',
+		defaultMessage: 'Permissions',
+		description: 'Heading of the checkboxes in the dialog on the editor\'s Editors tab for what a builder may edit besides the areas and regions they are assigned; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	indoorsOrOutdoors: {
 		id: 'form.indoorsOrOutdoors',
@@ -303,6 +319,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Default tile',
 		description: 'Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	fogOfWar: {
+		id: 'editor.place.fogOfWar',
+		defaultMessage: 'Fog of war',
+		description: 'Label of the field for whether a region\'s or area\'s players see only what is in their sight, with what they haven\'t seen hidden, in the region and area editors; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	loopsEastWest: {
 		id: 'editor.area.loopsEastWest',
 		defaultMessage: 'Loops east-west',
@@ -312,6 +333,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.area.loopsNorthSouth',
 		defaultMessage: 'Loops north-south',
 		description: 'Checkbox for an area that wraps around, so walking off the north edge comes back on the south; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	neighbor: {
+		id: 'editor.audit.field.neighbor',
+		defaultMessage: 'Neighbor',
+		description: 'Names an area\'s neighboring area (walked across without a link) in the list of what a save changed, on the editor\'s Audit tab; its value says which side and which area, e.g. "East: Forest"'
 	}
 });
 
@@ -370,6 +396,11 @@ const AUDIT_DETAILS: Readonly<Record<AuditSubject, MessageDescriptor>> = defineM
 		defaultMessage: '{action, select, added {Added difficulty level {name}} changed {Changed difficulty level {name}} other {Deleted difficulty level {name}}}',
 		description: 'In the editor\'s Audit tab\'s list of what a save changed: a difficulty level added, changed or deleted. {name} is its name. A change is followed by a line for each setting it changed'
 	},
+	region: {
+		id: 'editor.audit.detail.region',
+		defaultMessage: '{action, select, added {Added region {name}} changed {Changed region {name}} other {Deleted region {name}}}',
+		description: 'In the editor\'s Audit tab\'s list of what a save changed: a region (which groups areas and holds settings they inherit) added, changed or deleted. {name} is its name. An addition or change is followed by a line for each setting it set'
+	},
 	area: {
 		id: 'editor.audit.detail.area',
 		defaultMessage: '{action, select, added {Added area {name}} changed {Changed area {name}} resized {Resized area {name}} other {Deleted area {name}}}',
@@ -425,6 +456,26 @@ const VALUE_MESSAGES = defineMessages({
 		id: 'editor.audit.value.no',
 		defaultMessage: 'no',
 		description: 'The value of a checkbox setting a save turned off, in the editor\'s Audit tab\'s list of what a save changed, e.g. "Track ammunition (no)"'
+	},
+	inherit: {
+		id: 'editor.audit.value.inherit',
+		defaultMessage: 'inherit',
+		description: 'The value of a region\'s or area\'s setting a save left to the regions and areas above it, in the editor\'s Audit tab\'s list of what a save changed, e.g. "Default tile: inherit"'
+	},
+	tiles: {
+		id: 'editor.audit.value.tiles',
+		defaultMessage: 'tiles',
+		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
+	},
+	items: {
+		id: 'editor.audit.value.items',
+		defaultMessage: 'items',
+		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
+	},
+	mobs: {
+		id: 'editor.audit.value.mobs',
+		defaultMessage: 'mobs',
+		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
 	},
 	none: {
 		id: 'editor.audit.value.none',
@@ -537,7 +588,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(t(UNIVERSE_STAGE_NAMES[change.value]));
 		case 'passageOfTime':
 		case 'lobbyPassageOfTime':
-			return(describePassageOfTime(change.value));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : describePassageOfTime(change.value)));
 		case 'displayTime':
 			return(t(DISPLAY_TIME_NAMES[change.value]));
 		case 'startingMoney':
@@ -609,13 +660,27 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'castingStyle':
 			return(t(PF1E_CASTING_STYLE_NAMES[change.value]));
 		case 'parentArea':
+		case 'lobbyRegion':
 			return((change.value ?? t(VALUE_MESSAGES.none)));
+		case 'parents':
+		case 'assignments':
+			return(listOrNone(change.value));
+		case 'permissions':
+			return(listOrNone([
+				...(change.value.canEditTiles ? [t(VALUE_MESSAGES.tiles)] : []),
+				...(change.value.canEditItems ? [t(VALUE_MESSAGES.items)] : []),
+				...(change.value.canEditMobs ? [t(VALUE_MESSAGES.mobs)] : [])
+			]));
 		case 'indoorsOrOutdoors':
-			return(t(AUDIT_FIELD_NAMES[(change.value ? 'indoors' : 'outdoors')]));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AUDIT_FIELD_NAMES[(change.value ? 'indoors' : 'outdoors')])));
 		case 'lightLevel':
-			return(t(AREA_LIGHT_LEVEL_NAMES[change.value]));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AREA_LIGHT_LEVEL_NAMES[change.value])));
 		case 'defaultTile':
-			return(tileName(change.value, ruleset));
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : tileName(change.value, ruleset)));
+		case 'fogOfWar':
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(FOG_OF_WAR_NAMES[(change.value ? 'on' : 'off')])));
+		case 'enabled':
+			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t((change.value ? VALUE_MESSAGES.yes : VALUE_MESSAGES.no))));
 		case 'lobbyDayHours':
 		case 'groupSize':
 		case 'customPointBuyBudget':
@@ -629,13 +694,11 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(new Intl.NumberFormat(currentLocale()).format(change.value));
 		case 'requireBuilderDraft':
 		case 'requireTwoFactor':
-		case 'lobbyNoVisionCost':
 		case 'needsSleep':
 		case 'coinsHaveWeight':
 		case 'tracksAmmo':
 		case 'indoors':
 		case 'outdoors':
-		case 'enabled':
 		case 'keepPlaying':
 		case 'floatingBonus':
 		case 'lightSensitivity':
@@ -644,6 +707,15 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'loopsEastWest':
 		case 'loopsNorthSouth':
 			return(t((change.value ? VALUE_MESSAGES.yes : VALUE_MESSAGES.no)));
+		case 'neighbor':
+			return(t({
+				id: 'editor.audit.value.neighbor',
+				defaultMessage: '{side, select, north {North} east {East} south {South} other {West}}: {area}',
+				description: 'The value of an area\'s neighbor in the list of what a save changed, on the editor\'s Audit tab: {side} is which side of the area, and {area} the neighboring area\'s name, or "none" when it has none there any more'
+			}, {
+				side: change.value.side,
+				area: (change.value.area ?? t(VALUE_MESSAGES.none))
+			}));
 	}
 }
 

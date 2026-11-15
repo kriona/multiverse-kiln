@@ -111,6 +111,66 @@ export function combineTabs(...parts: SavableTab[]): SavableTab
 }
 
 /**
+ * The elements of a tab's panel that say why a save stopped: messages, a field's problem and the lists of
+ * problems that keep changes from saving
+ */
+const SAVE_REASONS = '.form-error, .field-error:not(.field-success), .save-problems';
+
+/**
+ * Runs code, noting what it changes in elements
+ *
+ * @param roots The elements to watch, with everything inside them
+ * @param run The code
+ * @return What the code returned, and its changes
+ */
+function watchChanges<T>(roots: Iterable<HTMLElement>, run: () => T): { result: T; changes: MutationRecord[] }
+{
+	const observer = new MutationObserver(() =>
+	{
+		// The changes are taken at once below
+	});
+
+	for (const root of roots)
+	{
+		observer.observe(root, {
+			subtree: true,
+			childList: true,
+			characterData: true,
+			attributeFilter: ['hidden']
+		});
+	}
+
+	try
+	{
+		const result = run();
+
+		return({
+			result,
+			changes: observer.takeRecords()
+		});
+	}
+	finally
+	{
+		observer.disconnect();
+	}
+}
+
+/**
+ * What the bar says when a save failed and no tab shows why
+ *
+ * @param error What the request threw
+ * @return The text
+ */
+function describeFailure(error: unknown): string
+{
+	return(describeEditorError(error, {
+		id: 'editor.save.failed',
+		defaultMessage: 'Could not save.',
+		description: 'Shown in the editor\'s save bar when saving failed, followed by why; nothing was saved'
+	}));
+}
+
+/**
  * The bar at the bottom of the editor that saves every tab's changes together, all or nothing. Nothing a
  * tab changes is saved until then. Submitting a form on a tab (Enter in a field) saves too. Reloading the
  * page throws unsaved changes away
@@ -160,7 +220,8 @@ export class SaveBar
 	private justSaved = false;
 
 	/**
-	 * Why the last save failed, when no tab's change was the reason, such as the server not answering
+	 * Why the last save failed, when no tab shows it: no tab's change was the reason, such as the server
+	 * not answering, or the tab showed it nowhere the editor can take the player to
 	 */
 	private failure: string | undefined;
 
@@ -302,10 +363,13 @@ export class SaveBar
 		{
 			save.owner = tab;
 
-			if (!tab.collect(save))
+			const collected = watchChanges(this.panels.values(), () => tab.collect(save));
+
+			if (!collected.result)
 			{
 				save.finish();
 				this.showTab(tab);
+				this.revealReason(tab, collected.changes);
 				this.update();
 				return(false);
 			}
@@ -315,6 +379,7 @@ export class SaveBar
 		this.update();
 
 		let ids: SavedIds | undefined;
+		let refusal: { tab: SavableTab; changes: MutationRecord[]; error: unknown } | undefined;
 
 		try
 		{
@@ -327,11 +392,18 @@ export class SaveBar
 			}
 			catch (error)
 			{
-				this.refused(save, error);
+				refusal = this.refused(save, error);
 			}
 			finally
 			{
 				save.finish();
+			}
+
+			// After finish(): a tab may turn its fields off while saving, and a field turned off can't take focus.
+			// A reason the tab showed nowhere it can be brought into view goes in the bar
+			if (refusal && !this.revealReason(refusal.tab, refusal.changes))
+			{
+				this.failure = describeFailure(refusal.error);
 			}
 
 			// Saving stays on until every tab has taken its changes as saved: until then, the tabs not yet
@@ -466,16 +538,25 @@ export class SaveBar
 	 *
 	 * @param save The save
 	 * @param error What the request threw
+	 * @return The tab that shows why, with what showing it changed in the tabs' panels and the error, or
+	 * undefined when the bar does
 	 */
-	private refused(save: EditorSave, error: unknown): void
+	private refused(save: EditorSave, error: unknown): { tab: SavableTab; changes: MutationRecord[]; error: unknown } | undefined
 	{
 		const data = ((error instanceof EditorApiError) ? error.data : undefined);
 
 		if ((error instanceof EditorApiError) && isSaveRefused(data) && (data.changeIndex !== null))
 		{
-			const owner = save.refuse(data.changeIndex, {
+			const changeIndex = data.changeIndex;
+			const { result: owner, changes } = watchChanges(this.panels.values(), () => save.refuse(changeIndex, {
 				error,
 				resizeConflict: data.resizeConflict,
+				placeProblems: ((data.placeProblems === undefined)
+					? undefined
+					: {
+						problems: data.placeProblems,
+						names: (data.placeNames ?? {})
+					}),
 				retry: () =>
 				{
 					// Once this save has finished
@@ -484,21 +565,68 @@ export class SaveBar
 						void this.save();
 					});
 				}
-			});
+			}));
 			const tab = [...this.panels.keys()].find((candidate) => (candidate === owner));
 
 			if (tab)
 			{
 				this.showTab(tab);
-				return;
+				return({ tab, changes, error });
 			}
 		}
 
-		this.failure = describeEditorError(error, {
-			id: 'editor.save.failed',
-			defaultMessage: 'Could not save.',
-			description: 'Shown in the editor\'s save bar when saving failed, followed by why; nothing was saved'
-		});
+		this.failure = describeFailure(error);
+
+		return(undefined);
+	}
+
+	/**
+	 * Takes the player to why a save stopped, on the tab showing it: scrolls to the first message or
+	 * problem list the tab showed, and moves focus to it, or to the field or first problem it names, so
+	 * screen readers read it out. Nothing moves while a dialog is open, since the dialog asks or says
+	 * something instead
+	 *
+	 * @param tab The tab
+	 * @param changes What the tab changed in the tabs' panels as it showed why
+	 * @return False when the tab showed nothing in its panel to take the player to and no dialog is open
+	 */
+	private revealReason(tab: SavableTab, changes: readonly MutationRecord[]): boolean
+	{
+		const panel = this.panels.get(tab);
+
+		if (document.querySelector('dialog[open]') !== null)
+		{
+			return(true);
+		}
+
+		if (!panel)
+		{
+			return(false);
+		}
+
+		const changed = (element: HTMLElement): boolean => changes.some((change) => (element.contains(change.target) || [...change.addedNodes].some((node) => node.contains(element))));
+		const reason = [...panel.querySelectorAll<HTMLElement>(SAVE_REASONS)].find((element) => (element.checkVisibility() && ((element.textContent ?? '').trim() !== '') && changed(element)));
+
+		if (!reason)
+		{
+			return(false);
+		}
+
+		const field = (reason.matches('.field-error') ? panel.querySelector<HTMLElement>(`[aria-describedby~="${CSS.escape(reason.id)}"]`) : null);
+		const target = (field ?? reason.querySelector<HTMLElement>('button') ?? reason);
+
+		if ((target === reason) && !reason.hasAttribute('tabindex'))
+		{
+			// Focus can reach the message, which the Tab key still skips
+			reason.tabIndex = -1;
+		}
+
+		// Focus first: it may change what shows, such as the full page cell editor leaving full page
+		target.focus({ preventScroll: true });
+		reason.scrollIntoView({ block: 'nearest' });
+		target.scrollIntoView({ block: 'nearest' });
+
+		return(true);
 	}
 
 	/**
@@ -516,6 +644,10 @@ export class SaveBar
 		if (this.failure !== undefined)
 		{
 			this.status.textContent = this.failure;
+		}
+		else if (this.saving)
+		{
+			this.status.textContent = t(formMessages.saving);
 		}
 		else if (unsaved)
 		{

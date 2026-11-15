@@ -1,4 +1,4 @@
-import { isNewRef, type EditorChange, type NewRef, type NumberRef, type ResizeConflict, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { isNewRef, type EditorChange, type NewRef, type NumberRef, type PlaceProblem, type ResizeConflict, type SaveChangesPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
 import type { EditorApiError } from '../../network/editorApi';
 
@@ -13,6 +13,12 @@ export interface SaveRefusal
 	 * For an area refused because shrinking it would discard something: what it would discard
 	 */
 	resizeConflict?: ResizeConflict;
+
+	/**
+	 * For a save refused because it leaves areas' settings unworkable or places nested wrongly: each
+	 * problem, and the names of the places they name, by placeKey()
+	 */
+	placeProblems?: { problems: PlaceProblem[]; names: Record<string, string> };
 
 	/**
 	 * Sends the save again, for a tab that has changed what it sends, such as after the player agreed

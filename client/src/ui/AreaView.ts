@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { VIEW_HEIGHT, VIEW_WIDTH } from '@multiverse-kiln/shared';
 
 import type { AreaConnection, AreaRoom } from '../network/serverConnection';
+import { canvasFontsLoaded, loadCanvasFonts } from '../rendering/canvasFonts';
 import { sleepGameLoop, wakeGameLoop } from '../rendering/gameLoop';
 import { startScene } from '../rendering/sceneStart';
 import { AREA_SCENE_KEY, AreaScene, type AreaSceneData } from '../scenes/AreaScene';
@@ -23,6 +24,19 @@ export class AreaView
 	private text: UniverseText | undefined;
 
 	/**
+	 * The area waiting for the canvas fonts to load before it is shown, while they load
+	 */
+	private waiting: { parent: HTMLElement; connection: AreaConnection<AreaRoom> } | undefined;
+
+	/**
+	 * Starts loading the fonts the area's text is drawn in, so they are usually loaded before an area is shown
+	 */
+	constructor()
+	{
+		void loadCanvasFonts();
+	}
+
+	/**
 	 * Names the areas shown from now on with a universe's text
 	 *
 	 * @param text The universe's text
@@ -33,12 +47,42 @@ export class AreaView
 	}
 
 	/**
-	 * Shows a joined room's area in an element
+	 * Shows a joined room's area in an element, once the fonts its text is drawn in have loaded
 	 *
 	 * @param parent The element to show the area in
 	 * @param connection The joined room
 	 */
 	show(parent: HTMLElement, connection: AreaConnection<AreaRoom>): void
+	{
+		if (canvasFontsLoaded())
+		{
+			this.waiting = undefined;
+			this.showNow(parent, connection);
+			return;
+		}
+
+		const waiting = { parent, connection };
+
+		this.waiting = waiting;
+
+		void loadCanvasFonts().then(() =>
+		{
+			// Only the latest area shown is drawn, and none once hidden
+			if (this.waiting === waiting)
+			{
+				this.waiting = undefined;
+				this.showNow(parent, connection);
+			}
+		});
+	}
+
+	/**
+	 * Shows a joined room's area in an element
+	 *
+	 * @param parent The element to show the area in
+	 * @param connection The joined room
+	 */
+	private showNow(parent: HTMLElement, connection: AreaConnection<AreaRoom>): void
 	{
 		const data: AreaSceneData = {
 			connection,
@@ -75,6 +119,8 @@ export class AreaView
 	 */
 	hide(): void
 	{
+		this.waiting = undefined;
+
 		if (this.game)
 		{
 			this.game.scene.stop(AREA_SCENE_KEY);

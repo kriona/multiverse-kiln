@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, IMPASSABLE_WALK_SECONDS, NO_NEIGHBORS, UNSEEN_CELL, visionKey, type AreaChunk } from '@multiverse-kiln/shared';
 
 import type { LoadedArea } from '../src/db/areaRepo.js';
 import { SeenCells } from '../src/logic/seenCells.js';
@@ -26,23 +26,57 @@ function loadedArea(): LoadedArea
 			name: 'Field',
 			enabled: true,
 			indoors: false,
-			passageOfTime: 'inherit'
+			passageOfTime: 'flows_normally',
+			lobby: false
 		},
 		ruleset: 'pf1e',
 		time: { passage: 'flows_normally' },
 		displayTime: 'precise',
 		lightLevel: null,
-		fullVision: false,
+		fogOfWar: true,
 		bounds: { minColumn: -100, minRow: -100, maxColumn: 99, maxRow: 99 },
 		defaultTileId: GRASS,
 		loopsEastWest: false,
 		loopsNorthSouth: false,
+		neighbors: { ...NO_NEIGHBORS },
+		sides: { ...NO_NEIGHBORS },
 		links: [],
-		disabledTargetIds: new Set(),
+		closedTargetIds: new Set(),
 		tiles: [
 			{ id: GRASS, key: 'grass', name: 'Grass', indoors: false, outdoors: true, color: 0x00ff00, graphic: 'grass', uploadedGraphic: null, visionCost: 0, walkSeconds: 10 },
 			{ id: FOREST, key: 'forest', name: 'Forest', indoors: false, outdoors: true, color: 0x008800, graphic: null, uploadedGraphic: null, visionCost: 50, walkSeconds: 20 }
 		]
+	});
+}
+
+/**
+ * An area 32 cells across, all grass, in a row of areas joined by seams
+ *
+ * @param areaId The area's ID
+ * @param fogOfWar Whether it has fog of war
+ * @param west The area to its west, or null for none
+ * @param east The area to its east, or null for none
+ * @return The area's settings
+ */
+function areaInRow(areaId: string, fogOfWar: boolean, west: string | null, east: string | null): LoadedArea
+{
+	const base = loadedArea();
+	const neighbors = {
+		...NO_NEIGHBORS,
+		west,
+		east
+	};
+
+	return({
+		...base,
+		area: {
+			...base.area,
+			id: areaId
+		},
+		fogOfWar,
+		bounds: { minColumn: -16, minRow: -16, maxColumn: 15, maxRow: 15 },
+		neighbors,
+		sides: { ...neighbors }
 	});
 }
 
@@ -456,10 +490,32 @@ describe('AreaCache', () =>
 			loaded: {
 				...loadedArea.loaded,
 				links: [{ ...link, targetAreaId: 'open', column: 0, row: 0 }, { ...link, targetAreaId: 'closed', column: 1, row: 0 }],
-				disabledTargetIds: new Set(['closed'])
+				closedTargetIds: new Set(['closed'])
 			}
 		};
 
 		assert.deepStrictEqual(toAreaPayload(area, []).links, [{ column: 0, row: 0, mode: 'manual' }]);
+	});
+
+	it('finds fog of war within reach across seams, through areas without it, only near an edge', async () =>
+	{
+		const row: Record<string, LoadedArea> = {
+			town: areaInRow('town', false, null, 'fields'),
+			fields: areaInRow('fields', false, 'town', 'forest'),
+			forest: areaInRow('forest', true, 'fields', null)
+		};
+		const cache = new AreaCache((areaId) => Promise.resolve(row[areaId]), () => Promise.resolve([]));
+		const town = await cache.load('town');
+
+		await cache.load('fields');
+		assert.ok(town);
+		assert.strictEqual(cache.fogWithinReach(town, { column: 13, row: 0 }, 12), false, 'Forest isn\'t loaded');
+
+		await cache.load('forest');
+		assert.strictEqual(cache.fogWithinReach(town, { column: 13, row: 0 }, 12), true, 'Forest, through Fields');
+		assert.strictEqual(cache.fogWithinReach(town, { column: 0, row: 0 }, 12), false, 'every cell within reach is in Town');
+
+		cache.setSeamFilter((loaded) => (loaded.area.id !== 'forest'));
+		assert.strictEqual(cache.fogWithinReach(town, { column: 13, row: 0 }, 12), false, 'Forest can\'t be crossed into');
 	});
 });
