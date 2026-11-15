@@ -1,7 +1,8 @@
 import assert from 'assert';
 
+import { watchQueries } from '../../scripts/benchmarks/queries.js';
 import { hashAddress, keyedHash } from '../../src/auth/keyedHashes.js';
-import { deleteRateLimitEventsBefore, findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent } from '../../src/db/rateLimitRepo.js';
+import { deleteRateLimitEventsBefore, findRateLimitTimes, findRateLimitTimesByKind, lockRateLimitSubject, recordRateLimitEvent } from '../../src/db/rateLimitRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 
 const NOW = new Date('2026-10-29T12:00:00Z');
@@ -30,6 +31,85 @@ describe('rateLimitRepo', () =>
 		await recordRateLimitEvent('addressCodeSent', hashAddress('grace@example.com'), secondsAgo(30));
 
 		assert.deepStrictEqual(await findRateLimitTimes('addressCodeSent', ADDRESS, secondsAgo(3600)), [secondsAgo(100), secondsAgo(10)]);
+	});
+
+	it('finds several lists in one query, each by its own kind, subject and window', async () =>
+	{
+		const otherNetwork = keyedHash('network', '192.0.2.2');
+
+		await recordRateLimitEvent('networkCodeRequest', NETWORK, secondsAgo(30));
+		await recordRateLimitEvent('networkCodeRequest', NETWORK, secondsAgo(4000));
+		await recordRateLimitEvent('networkCodeRequest', otherNetwork, secondsAgo(40));
+		await recordRateLimitEvent('addressCodeSent', ADDRESS, secondsAgo(10));
+		await recordRateLimitEvent('addressCodeSent', ADDRESS, secondsAgo(100));
+		await recordRateLimitEvent('addressCodeSent', ADDRESS, secondsAgo(5000));
+		await recordRateLimitEvent('addressWrongGuess', ADDRESS, secondsAgo(20));
+		await recordRateLimitEvent('addressWrongGuess', ADDRESS, secondsAgo(5000));
+		await recordRateLimitEvent('addressWrongGuess', ADDRESS, secondsAgo(90000));
+		await recordRateLimitEvent('addressWrongGuess', NETWORK, secondsAgo(50));
+
+		const queries = watchQueries();
+		let found: Date[][];
+
+		try
+		{
+			found = await findRateLimitTimesByKind([
+				{
+					kind: 'networkCodeRequest',
+					subjectHash: NETWORK,
+					since: secondsAgo(3600)
+				},
+				{
+					kind: 'addressCodeSent',
+					subjectHash: ADDRESS,
+					since: secondsAgo(3600)
+				},
+				{
+					kind: 'addressWrongGuess',
+					subjectHash: ADDRESS,
+					since: secondsAgo(86400)
+				},
+				{
+					kind: 'addressCheckedCodeSent',
+					subjectHash: ADDRESS,
+					since: secondsAgo(3600)
+				},
+				{
+					kind: 'networkCodeRequest',
+					subjectHash: otherNetwork,
+					since: secondsAgo(86400)
+				}
+			]);
+		}
+		finally
+		{
+			queries.restore();
+		}
+
+		assert.deepStrictEqual(found, [
+			[secondsAgo(30)],
+			[secondsAgo(100), secondsAgo(10)],
+			[secondsAgo(5000), secondsAgo(20)],
+			[],
+			[secondsAgo(40)]
+		]);
+		assert.strictEqual(queries.count, 1);
+	});
+
+	it('finds no lists without a query when given none', async () =>
+	{
+		const queries = watchQueries();
+
+		try
+		{
+			assert.deepStrictEqual(await findRateLimitTimesByKind([]), []);
+		}
+		finally
+		{
+			queries.restore();
+		}
+
+		assert.strictEqual(queries.count, 0);
 	});
 
 	it('counts attempts made at once one after another under the lock', async () =>

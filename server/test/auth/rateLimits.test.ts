@@ -1,11 +1,12 @@
 import assert from 'assert';
 
+import { watchQueries } from '../../scripts/benchmarks/queries.js';
 import { keyedHash } from '../../src/auth/keyedHashes.js';
-import { takeCodeSend, takePasswordAttempt, type PasswordAttemptSubjects } from '../../src/auth/rateLimits.js';
+import { takeAttempt, takeCodeSend, takePasswordAttempt, type AttemptLimit, type PasswordAttemptSubjects } from '../../src/auth/rateLimits.js';
 import { findRateLimitTimes, recordRateLimitEvent, type RateLimitKind } from '../../src/db/rateLimitRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import type { BotCheckState } from '../../src/logic/botChecks.js';
-import { HOUR_MS, MAX_EMAIL_CODES_PER_ADDRESS_HOUR } from '../../src/logic/emailCodes.js';
+import { DAY_MS, HOUR_MS, MAX_EMAIL_CODES_PER_ADDRESS_HOUR } from '../../src/logic/emailCodes.js';
 
 const NETWORK = keyedHash('network', 'network for tests');
 const ADDRESS = keyedHash('address', 'ada@example.com');
@@ -49,8 +50,81 @@ async function past(kind: RateLimitKind, subjectHash: Uint8Array, count: number)
 	}
 }
 
+/**
+ * How many times something reads the rate_limit_events table
+ *
+ * @param run What to watch
+ * @return How many queries read it
+ */
+async function countReads(run: () => Promise<unknown>): Promise<number>
+{
+	const queries = watchQueries({ slowMs: 0 });
+
+	try
+	{
+		await run();
+	}
+	finally
+	{
+		queries.restore();
+	}
+
+	return(queries.slowQueries.filter((query) => (query.text.startsWith('select') && query.text.includes('from "rate_limit_events"'))).length);
+}
+
 describe('rateLimits', () =>
 {
+	describe('takeAttempt', () =>
+	{
+		const now = new Date();
+		const limits: AttemptLimit[] = [
+			{
+				kind: 'networkGuess',
+				subjectHash: NETWORK,
+				limit: 1
+			},
+			{
+				kind: 'accountRoleEmail',
+				subjectHash: BROWSER,
+				limit: 1,
+				windowMs: DAY_MS
+			},
+			{
+				kind: 'networkUsernameCheck',
+				subjectHash: null,
+				limit: 1
+			}
+		];
+
+		it('reads every limit\'s count in one query, each in its own window, and records the attempt against each known subject', async () =>
+		{
+			await recordRateLimitEvent('networkGuess', NETWORK, new Date(now.getTime() - (2 * HOUR_MS)));
+			await recordRateLimitEvent('accountRoleEmail', BROWSER, new Date(now.getTime() - (25 * HOUR_MS)));
+
+			const reads = await countReads(async () =>
+			{
+				assert.deepStrictEqual(await inTransaction((executor) => takeAttempt(limits, now, executor)), { allowed: true });
+			});
+
+			assert.strictEqual(reads, 1);
+			assert.strictEqual(await countOf('networkGuess', NETWORK), 2);
+			assert.strictEqual(await countOf('accountRoleEmail', BROWSER), 1);
+		});
+
+		it('refuses an attempt past any limit, counting it against none', async () =>
+		{
+			const sentAt = new Date(now.getTime() - (2 * HOUR_MS));
+
+			await recordRateLimitEvent('accountRoleEmail', BROWSER, sentAt);
+
+			assert.deepStrictEqual(await inTransaction((executor) => takeAttempt(limits, now, executor)), {
+				allowed: false,
+				retryAt: new Date(sentAt.getTime() + DAY_MS)
+			});
+			assert.strictEqual(await countOf('networkGuess', NETWORK), 0);
+		});
+	});
+
 	describe('takePasswordAttempt', () =>
 	{
 		const login: PasswordAttemptSubjects = {
@@ -110,6 +184,11 @@ describe('rateLimits', () =>
 			assert.strictEqual(await countOf('addressLoginAttempt', ADDRESS), 10);
 			assert.strictEqual(await countOf('addressCheckedLoginAttempt', ADDRESS), 5);
 		});
+
+		it('reads the network\'s and the address\'s counts in one query while they are locked', async () =>
+		{
+			assert.strictEqual(await countReads(() => inTransaction((executor) => takePasswordAttempt(login, ON, new Date(), executor))), 1);
+		});
 	});
 
 	describe('takeCodeSend', () =>
@@ -143,6 +222,11 @@ describe('rateLimits', () =>
 			assert.strictEqual(await countOf('addressCodeSent', ADDRESS), MAX_EMAIL_CODES_PER_ADDRESS_HOUR);
 			assert.strictEqual(await countOf('addressCheckedCodeSent', ADDRESS), 1);
 			assert.strictEqual(await countOf('addressCheckedCodeWhileBlocked', ADDRESS), 1);
+		});
+
+		it('reads the network\'s and the address\'s counts in one query while they are locked', async () =>
+		{
+			assert.strictEqual(await countReads(() => inTransaction((executor) => takeCodeSend(NETWORK, ADDRESS, ON, new Date(), executor))), 1);
 		});
 	});
 });

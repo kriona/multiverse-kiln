@@ -3,7 +3,7 @@
  * at once can't each slip under a limit
  */
 import type { Executor } from '../db/client.js';
-import { findRateLimitTimes, lockRateLimitSubject, recordRateLimitEvent, type RateLimitKind } from '../db/rateLimitRepo.js';
+import { findRateLimitTimesByKind, lockRateLimitSubject, recordRateLimitEvent, type RateLimitKind } from '../db/rateLimitRepo.js';
 import { decideCodeSend, decidePasswordAttempt, type BotCheckDecision, type BotCheckState, type CodeSendDecision, type PasswordSource } from '../logic/botChecks.js';
 import { DAY_MS, decideLimit, HOUR_MS, MAX_EMAIL_CODES_PER_NETWORK_HOUR, type SendDecision } from '../logic/emailCodes.js';
 
@@ -54,6 +54,32 @@ export interface AttemptLimit
 }
 
 /**
+ * Attempts to count: a subject's attempts of a kind in a window before now
+ */
+type AttemptWindow = Pick<AttemptLimit, 'kind' | 'subjectHash' | 'windowMs'>;
+
+/**
+ * The times of each window's attempts, found in one query, with none for a window whose subject isn't
+ * known
+ *
+ * @param windows What to count
+ * @param now The time now
+ * @param executor A transaction, or undefined for the database
+ * @return Each window's times, oldest first, in the order of the windows
+ */
+async function timesOf(windows: readonly AttemptWindow[], now: Date, executor: Executor | undefined): Promise<Date[][]>
+{
+	const found = await findRateLimitTimesByKind(windows.flatMap(({ kind, subjectHash, windowMs = HOUR_MS }) => ((subjectHash === null) ? [] : [{
+		kind,
+		subjectHash,
+		since: new Date(now.getTime() - windowMs)
+	}])), executor);
+	let next = 0;
+
+	return(windows.map(({ subjectHash }) => ((subjectHash === null) ? [] : found[next++])));
+}
+
+/**
  * Locks rate limit subjects until the transaction ends, in order of their hashes. Every caller locking
  * more than one subject goes through here, so two transactions locking the same ones never wait on each other
  *
@@ -87,10 +113,11 @@ export async function takeAttempt(limits: readonly AttemptLimit[], now: Date, ex
 
 	await lockRateLimitSubjects(known.map((limit) => limit.subjectHash), executor);
 
-	for (const { kind, subjectHash, limit, windowMs = HOUR_MS } of known)
+	const times = await timesOf(known, now, executor);
+
+	for (const [index, { limit, windowMs = HOUR_MS }] of known.entries())
 	{
-		const since = new Date(now.getTime() - windowMs);
-		const decision = decideLimit(await findRateLimitTimes(kind, subjectHash, since, executor), limit, windowMs, now);
+		const decision = decideLimit(times[index], limit, windowMs, now);
 
 		if (!decision.allowed)
 		{
@@ -130,21 +157,6 @@ export interface PasswordAttemptSubjects
 }
 
 /**
- * The times of a subject's attempts of a kind in a window before now, or none when the subject isn't known
- *
- * @param kind What is counted
- * @param subjectHash The subject, or null
- * @param windowMs The window
- * @param now The time now
- * @param executor A transaction, or undefined for the database
- * @return The times
- */
-async function timesOf(kind: RateLimitKind, subjectHash: Uint8Array | null | undefined, windowMs: number, now: Date, executor: Executor | undefined): Promise<Date[]>
-{
-	return((subjectHash ? await findRateLimitTimes(kind, subjectHash, new Date(now.getTime() - windowMs), executor) : []));
-}
-
-/**
  * Takes a login try, or a logged-in account's password given again, against the network's and the
  * address's limits (or the known browser's), asking for a bot check past their soft limits and letting a
  * passed one through past the address's hard limit (decidePasswordAttempt()). A request that needs a
@@ -168,10 +180,24 @@ export async function takePasswordAttempt(subjects: PasswordAttemptSubjects, che
 		await lockRateLimitSubjects([networkHash, ownHash], executor);
 	}
 
+	const [network, own, checked] = await timesOf([
+		{
+			kind: 'networkLoginAttempt',
+			subjectHash: networkHash
+		},
+		{
+			kind: ownKind,
+			subjectHash: ownHash
+		},
+		{
+			kind: 'addressCheckedLoginAttempt',
+			subjectHash: ((source === 'knownBrowser') ? null : ownHash)
+		}
+	], now, executor);
 	const decision = decidePasswordAttempt(source, {
-		network: await timesOf('networkLoginAttempt', networkHash, HOUR_MS, now, executor),
-		address: ((ownHash === null) ? null : await timesOf(ownKind, ownHash, HOUR_MS, now, executor)),
-		checked: ((source === 'knownBrowser') ? [] : await timesOf('addressCheckedLoginAttempt', ownHash, HOUR_MS, now, executor))
+		network,
+		address: ((ownHash === null) ? null : own),
+		checked
 	}, check, now);
 
 	if (!executor || (decision.kind === 'refused'))
@@ -214,13 +240,36 @@ export async function takeCodeSend(networkHash: Uint8Array | null, addressHash: 
 		await lockRateLimitSubjects([networkHash, addressHash], executor);
 	}
 
-	const network = await timesOf('networkCodeRequest', networkHash, HOUR_MS, now, executor);
+	const [network, sent, wrongGuesses, checkedSent, checkedWhileBlocked] = await timesOf([
+		{
+			kind: 'networkCodeRequest',
+			subjectHash: networkHash
+		},
+		{
+			kind: 'addressCodeSent',
+			subjectHash: addressHash
+		},
+		{
+			kind: 'addressWrongGuess',
+			subjectHash: addressHash,
+			windowMs: DAY_MS
+		},
+		{
+			kind: 'addressCheckedCodeSent',
+			subjectHash: addressHash
+		},
+		{
+			kind: 'addressCheckedCodeWhileBlocked',
+			subjectHash: addressHash,
+			windowMs: DAY_MS
+		}
+	], now, executor);
 	const decision = decideCodeSend({
 		network,
-		sent: await timesOf('addressCodeSent', addressHash, HOUR_MS, now, executor),
-		wrongGuesses: await timesOf('addressWrongGuess', addressHash, DAY_MS, now, executor),
-		checkedSent: await timesOf('addressCheckedCodeSent', addressHash, HOUR_MS, now, executor),
-		checkedWhileBlocked: await timesOf('addressCheckedCodeWhileBlocked', addressHash, DAY_MS, now, executor)
+		sent,
+		wrongGuesses,
+		checkedSent,
+		checkedWhileBlocked
 	}, check, now);
 
 	if (!executor)
