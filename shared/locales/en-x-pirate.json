@@ -1568,8 +1568,8 @@
 		"source": "{reason, select, deleted {{tile} will be deleted when the Tilesets tab is saved, so it can't be chosen to paint with.} disabled {{tile} is disabled, so it can't be chosen to paint with.} indoors {{tile} isn't used in indoor areas, so it can't be chosen to paint with here.} outdoors {{tile} isn't used in outdoor areas, so it can't be chosen to paint with here.} other {This cell's tile can't be chosen to paint with.}}"
 	},
 	"editor.area.picked": {
-		"message": "Took up {tile} in the Tile list.",
-		"source": "Chose {tile} in the Tile list."
+		"message": "Took up tile: {tile}",
+		"source": "Chose tile: {tile}"
 	},
 	"editor.area.redo": {
 		"message": "Redo",

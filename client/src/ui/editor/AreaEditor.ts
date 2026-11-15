@@ -16,6 +16,7 @@ import { askToConfirm } from '../confirmDialog';
 import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } from '../dom';
 import { addKeyHelp, formatKeys } from '../shortcuts';
 import { tileName } from '../tileNames';
+import { showToast } from '../toast';
 import { areaEditorMessages } from './areaEditorMessages';
 import type { AreaSource, LinkChange } from './areaSource';
 import { describeCell } from './cellDescription';
@@ -55,6 +56,11 @@ const BRUSH_SHAPE_NAMES: Record<BrushShape, MessageDescriptor> = defineMessages(
  * Value of the tile choice for Unexplored, which paints VOID_CELL
  */
 const UNEXPLORED_CHOICE = 'unexplored';
+
+/**
+ * How long what choosing a cell's tile did shows at the top of the page, in milliseconds
+ */
+const PICK_NOTICE_MS = 3000;
 
 /**
  * An edge or corner of the area editor's cells, which a button opens the area past
@@ -322,10 +328,15 @@ export class AreaEditor
 	private readonly section = getElement('area-cells-editor', HTMLElement);
 	private readonly fullPageButton = getElement('area-full-page', HTMLButtonElement);
 	private readonly cursor = getElement('area-cursor', HTMLElement);
-	private readonly pickStatus = getElement('area-pick-status', HTMLElement);
 	private readonly error = getElement('area-cells-error', HTMLElement);
 	private readonly canvasElement = getElement('area-canvas', HTMLElement);
 	private readonly canvas = new AreaCanvas(this.canvasElement, VIEW_WIDTH, VIEW_HEIGHT);
+
+	/**
+	 * Closes what choosing a cell's tile last said, while it shows
+	 */
+	private closePick: (() => void) | undefined;
+
 	private readonly resizeDialog: ResizeDialog;
 	private readonly linkDialog: LinkDialog;
 	private readonly canvasObserver = new ResizeObserver(() =>
@@ -501,7 +512,7 @@ export class AreaEditor
 		// What the last pick said no longer goes with the tile chosen
 		this.tile.addEventListener('change', () =>
 		{
-			this.pickStatus.textContent = '';
+			this.closePickNotice();
 		});
 
 		// Phaser cancels the browser's default for a press on the cells, which would focus them. Without
@@ -625,7 +636,7 @@ export class AreaEditor
 
 		if (!sameArea)
 		{
-			this.pickStatus.textContent = '';
+			this.closePickNotice();
 		}
 
 		showMessage(this.error, undefined);
@@ -740,7 +751,7 @@ export class AreaEditor
 		this.view = undefined;
 		this.neighborCells.clear();
 		this.shownNeighbors = [];
-		this.pickStatus.textContent = '';
+		this.closePickNotice();
 		this.canvas.stop();
 		this.showEdgeButtons();
 		this.unsavedChanged();
@@ -1440,7 +1451,7 @@ export class AreaEditor
 
 		this.canvas.scene?.setLinks(linksInArea(open, this.currentLinks(open.area.id, open.links)));
 		this.showHoveredCell();
-		this.pickStatus.textContent = '';
+		this.closePickNotice();
 		this.unsavedChanged();
 	}
 
@@ -2261,7 +2272,7 @@ export class AreaEditor
 		{
 			this.canvas.scene?.refreshChunks(open.cells.apply(changes));
 			this.showHoveredCell();
-			this.pickStatus.textContent = '';
+			this.closePickNotice();
 		}
 	}
 
@@ -2425,11 +2436,11 @@ export class AreaEditor
 
 		if (value === undefined)
 		{
-			this.pickStatus.textContent = t({
+			this.showPickNotice(t({
 				id: 'editor.area.pickLoading',
 				defaultMessage: 'That part of the area is still loading, so its tile can\'t be chosen yet.',
-				description: 'Under the area editor\'s cells, after a middle click or P on a cell whose part of the area hasn\'t loaded yet, so its tile wasn\'t chosen in the Tile list'
-			});
+				description: 'Shown briefly at the top of the page, after a middle click or P on a cell of the area editor whose part of the area hasn\'t loaded yet, so its tile wasn\'t chosen in the Tile list'
+			}), 'warning');
 			return;
 		}
 
@@ -2437,16 +2448,22 @@ export class AreaEditor
 		const choice = ((value === VOID_CELL) ? UNEXPLORED_CHOICE : String(tileId));
 		const option = [...this.tile.options].find((candidate) => (candidate.value === choice));
 
+		// Choosing the tile already chosen changes nothing, so says nothing
+		if (option && (this.tile.value === choice))
+		{
+			return;
+		}
+
 		if (option)
 		{
 			this.tile.value = choice;
-			this.pickStatus.textContent = t({
+			this.showPickNotice(t({
 				id: 'editor.area.picked',
-				defaultMessage: 'Chose {tile} in the Tile list.',
-				description: 'Under the area editor\'s cells, after a middle click or P on a cell chose its tile as the tile to paint with; {tile} is the tile as the Tile list names it'
+				defaultMessage: 'Chose tile: {tile}',
+				description: 'Shown briefly at the top of the page, after a middle click or P on a cell of the area editor chose its tile as the tile to paint with; {tile} is the tile as the Tile list names it'
 			}, {
 				tile: option.text
-			});
+			}), 'info');
 			return;
 		}
 
@@ -2466,14 +2483,39 @@ export class AreaEditor
 			reason = (this.listedIndoors ? 'indoors' : 'outdoors');
 		}
 
-		this.pickStatus.textContent = t({
+		this.showPickNotice(t({
 			id: 'editor.area.pickUnavailable',
 			defaultMessage: '{reason, select, deleted {{tile} will be deleted when the Tilesets tab is saved, so it can\'t be chosen to paint with.} disabled {{tile} is disabled, so it can\'t be chosen to paint with.} indoors {{tile} isn\'t used in indoor areas, so it can\'t be chosen to paint with here.} outdoors {{tile} isn\'t used in outdoor areas, so it can\'t be chosen to paint with here.} other {This cell\'s tile can\'t be chosen to paint with.}}',
-			description: 'Under the area editor\'s cells, after a middle click or P on a cell whose tile the Tile list doesn\'t offer, so it wasn\'t chosen; {tile} is the tile\'s name and {reason} why: deleted (the Tilesets tab will delete it), disabled (turned off on the Tilesets tab), indoors or outdoors (the tile isn\'t used in that kind of area, which the area is), or other (a tile the editor doesn\'t know)'
+			description: 'Shown briefly at the top of the page, after a middle click or P on a cell of the area editor whose tile the Tile list doesn\'t offer, so it wasn\'t chosen; {tile} is the tile\'s name and {reason} why: deleted (the Tilesets tab will delete it), disabled (turned off on the Tilesets tab), indoors or outdoors (the tile isn\'t used in that kind of area, which the area is), or other (a tile the editor doesn\'t know)'
 		}, {
 			reason,
 			tile: (tile ? tileName(tile, open.universe.ruleset) : '')
+		}), 'warning');
+	}
+
+	/**
+	 * Says what choosing a cell's tile did, briefly at the top of the page, in place of what the last
+	 * choice said
+	 *
+	 * @param text What to say
+	 * @param kind info when the tile was chosen, warning when it wasn't
+	 */
+	private showPickNotice(text: string, kind: 'info' | 'warning'): void
+	{
+		this.closePickNotice();
+		this.closePick = showToast(text, {
+			kind,
+			durationMs: PICK_NOTICE_MS
 		});
+	}
+
+	/**
+	 * Takes away what choosing a cell's tile last said, if it still shows
+	 */
+	private closePickNotice(): void
+	{
+		this.closePick?.();
+		this.closePick = undefined;
 	}
 
 	/**
@@ -2571,7 +2613,7 @@ export class AreaEditor
 	 */
 	private applyStep(changes: EditStep['changes'], previous: EditStep['changes'], bounds?: AreaBounds, carried?: { areaId: string; bounds: AreaBounds }[]): void
 	{
-		this.pickStatus.textContent = '';
+		this.closePickNotice();
 
 		if (this.open && (changes.length > 0))
 		{

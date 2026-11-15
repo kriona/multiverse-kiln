@@ -1361,17 +1361,6 @@ form > .changed-since,
 	}
 }
 
-// Keeps a line's height while empty, so a message showing doesn't move what is below it
-.area-status
-{
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 16px;
-	min-height: 1lh;
-	color: $text-muted;
-}
-
 // Full page: the cell editor covers the window, and AreaEditor sizes the canvas to fill the space left
 html:has(.area-cells-editor.full-page),
 html:has(.area-cells-editor.full-page) body
