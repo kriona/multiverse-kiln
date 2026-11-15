@@ -18,12 +18,12 @@ import { hashAddress, hashesMatch, keyedHash } from '../auth/keyedHashes.js';
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword } from '../auth/passwords.js';
 import { checkPwnedPassword } from '../auth/pwnedPasswords.js';
 import { hasKnownBrowserCookie, knownBrowserHash } from '../auth/knownBrowsers.js';
-import { MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, takeAttempt, takeCodeSend } from '../auth/rateLimits.js';
+import { takeAttempt, takeCodeSend } from '../auth/rateLimits.js';
 import { endSession, giveSession, resolveSession, startSession, type SessionIdentity, type StartedSession } from '../auth/sessions.js';
 import { createToken, hashToken, isTokenForm } from '../auth/tokens.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, deletePlayerEmailCodes, lockContinuation, lockEmailCode, recordWrongEmailCodeGuess, replaceEmailCode, useEmailCode } from '../db/emailCodeRepo.js';
-import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerByUsername, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient, type LocalLogin } from '../db/playerRepo.js';
+import { AccountTakenError, createPlayer, findDisplayName, findEmailRecipient, findLocalLogin, findPasswordHash, findPlayerEmail, findPlayerIdByEmail, saveEmail, savePasswordHash, type EmailRecipient, type LocalLogin } from '../db/playerRepo.js';
 import { deletePlayerPendingProviderLogins, lockPendingProviderLogin } from '../db/providerLoginRepo.js';
 import { recordRateLimitEvent } from '../db/rateLimitRepo.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
@@ -37,7 +37,7 @@ import { CONTINUATION_LIFETIME_MS, emailCodeFromBytes, emailCodeState, EMAIL_COD
 import { connectedSessions } from '../players/connectedSessions.js';
 import { displayText } from '../rooms/payloads.js';
 import { addAccountDeletionRoutes } from './accountDeletion.js';
-import { authMessages, checkDisplayName, checkUsername, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
+import { authMessages, checkDisplayName, checkUsername, checkUsernameFree, cookieTokenHash, recordEvent, sendRefusal, tooManyAttempts, type AuthRefusal } from './authCommon.js';
 import { botCheckRefusal, confirmBeforeAsking, inBotCheckTransaction, readBotCheck, recordBotCheckEvents, takeAccountPasswordTry, takePasswordTry, verifyBotCheckToken, type RequestBotCheck } from './botChecks.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { clearCookie, CONTINUATION_COOKIE, PROVIDER_LOGIN_COOKIE, readCookie, setCookie } from './cookies.js';
@@ -824,7 +824,8 @@ async function checkCodeRoute(request: Request, response: Response): Promise<voi
  * POST AUTH_USERNAME_CHECK_PATH: says whether a new account could take a username, so the page can say
  * so before the account is created. Only a browser creating an account may ask: one that entered a
  * code to register, or has a provider login waiting for a username. Its network can ask
- * MAX_USERNAME_CHECKS_PER_NETWORK_HOUR times an hour, so usernames can't be listed by asking
+ * MAX_USERNAME_CHECKS_PER_NETWORK_HOUR times an hour, creating accounts included, so usernames can't be
+ * listed by asking (checkUsernameFree())
  *
  * @param request The request, with a UsernameCheckRequest
  * @param response The response: 204 when the username could be taken, or the refusal registering would give
@@ -864,29 +865,7 @@ async function usernameCheckRoute(request: Request, response: Response): Promise
 			});
 		}
 
-		const attempt = await takeAttempt([
-			{
-				kind: 'networkUsernameCheck',
-				subjectHash: clientNetworkHash(request),
-				limit: MAX_USERNAME_CHECKS_PER_NETWORK_HOUR
-			}
-		], now, executor);
-
-		if (!attempt.allowed)
-		{
-			return(tooManyAttempts(attempt, now, response));
-		}
-
-		if ((await findPlayerByUsername(username, executor)) !== undefined)
-		{
-			return({
-				status: 409,
-				message: authMessages.usernameTaken,
-				field: 'username'
-			});
-		}
-
-		return(undefined);
+		return(await checkUsernameFree(request, response, username, now, executor));
 	});
 
 	if (outcome)
@@ -896,6 +875,35 @@ async function usernameCheckRoute(request: Request, response: Response): Promise
 	}
 
 	response.sendStatus(204);
+}
+
+/**
+ * Checks that this browser entered a code to register and that no account has the username, as one of
+ * the network's username checks (checkUsernameFree()). Checked before the breach check and hashing the
+ * password, so a request refused here costs only a lookup; the account's transaction checks again
+ *
+ * @param request The request
+ * @param response The response, which gets a Retry-After header when the network checked too many
+ * usernames
+ * @param continuationHash The hash of the browser's continuation token, if it has one
+ * @param username The username, trimmed
+ * @param now The time now
+ * @return The refusal, or undefined when the account may be created
+ */
+async function checkRegistering(request: Request, response: Response, continuationHash: Buffer | undefined, username: string, now: Date): Promise<AuthRefusal | undefined>
+{
+	return(await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
+	{
+		if ((continuationHash === undefined) || ((await lockContinuation('register', continuationHash, now, executor)) === undefined))
+		{
+			return({
+				status: 403,
+				message: authMessages.enterCodeFirst
+			});
+		}
+
+		return(await checkUsernameFree(request, response, username, now, executor));
+	}));
 }
 
 /**
@@ -921,7 +929,7 @@ async function registerRoute(request: Request, response: Response): Promise<void
 	const problem = (checkUsername(username)
 		?? checkDisplayName(displayName)
 		?? checkPasswordLength(password)
-		?? (!(await codeWasEntered('register', continuationHash, now)) ? { status: 403, message: authMessages.enterCodeFirst } : undefined)
+		?? await checkRegistering(request, response, continuationHash, username, now)
 		?? await checkBreachedPassword(password));
 
 	if (problem)

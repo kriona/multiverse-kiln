@@ -260,6 +260,39 @@ describe('auth routes', () =>
 			// The code still lets the browser register, once what was wrong is put right
 			assert.strictEqual((await attempt({})).status, 204);
 		});
+
+		it('counts as one of the network\'s username checks, before checking or hashing the password', async () =>
+		{
+			await register('grace@example.com', 'grace');
+
+			const browser = new Browser();
+
+			await enterCode(browser, 'register', 'ada@example.com');
+			await forgetRateLimits();
+
+			const attempt = (changes: object): Promise<{ status: number; body: AuthErrorPayload }> => browser.send('POST', AUTH_REGISTER_PATH, {
+				email: 'ada@example.com',
+				password: PASSWORD,
+				username: 'ada',
+				displayName: 'Ada',
+				rememberMe: false,
+				locale: 'en',
+				...changes
+			});
+			const checksBefore = breachChecks;
+
+			assert.strictEqual((await attempt({ username: 'GRACE' })).status, 409);
+			assert.strictEqual(breachChecks, checksBefore);
+
+			for (let check = 1; check < MAX_USERNAME_CHECKS_PER_NETWORK_HOUR; check++)
+			{
+				assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: `ada_${check}` })).status, 204);
+			}
+
+			assert.strictEqual((await attempt({})).status, 429);
+			assert.strictEqual(breachChecks, checksBefore);
+			assert.strictEqual((await pool.query('SELECT * FROM players WHERE username = $1', ['ada'])).rowCount, 0);
+		});
 	});
 
 	describe('checking a username', () =>

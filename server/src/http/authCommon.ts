@@ -1,13 +1,16 @@
 /**
  * What the auth routes share (auth.ts, and providerAuth.ts for provider logins): refusals and the
- * messages they give, checks of what players choose, auth events and the tokens in cookies
+ * messages they give, checks of what players choose, the network's username checks, auth events and
+ * the tokens in cookies
  */
 import type { Request, Response } from 'express';
 import { defineMessages, isReservedName, localize, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, NAME_MESSAGES, USERNAME_PATTERN, type AuthErrorPayload, type AuthField, type BotCheckChallenge, type BotCheckNeededPayload, type MessageDescriptor, type MessageValues, type ProfileErrorPayload, type ProfileField } from '@multiverse-kiln/shared';
 
+import { MAX_USERNAME_CHECKS_PER_NETWORK_HOUR, takeAttempt } from '../auth/rateLimits.js';
 import { hashToken, isTokenForm } from '../auth/tokens.js';
 import { recordAuthEvent, type AuthEventKind } from '../db/authEventRepo.js';
 import type { Executor } from '../db/client.js';
+import { findPlayerByUsername } from '../db/playerRepo.js';
 import { clientNetworkHash } from './clientNetwork.js';
 import { readCookie } from './cookies.js';
 
@@ -186,6 +189,45 @@ export function checkDisplayName(displayName: string): AuthRefusal<'displayName'
 		message: NAME_MESSAGES.reserved,
 		field: 'displayName'
 	});
+}
+
+/**
+ * Checks that no account has a username, as one of the network's MAX_USERNAME_CHECKS_PER_NETWORK_HOUR
+ * username checks. Checking a username and creating an account both count, so usernames can't be
+ * listed by trying to create accounts with them either
+ *
+ * @param request The request
+ * @param response The response, which gets a Retry-After header when the network checked too many
+ * @param username The username, trimmed
+ * @param now The time now
+ * @param executor A transaction, which must be committed even when the check is refused, so it counts
+ * @return The refusal when the network checked too many usernames, or an account has the username
+ */
+export async function checkUsernameFree(request: Request, response: Response, username: string, now: Date, executor: Executor): Promise<AuthRefusal | undefined>
+{
+	const attempt = await takeAttempt([
+		{
+			kind: 'networkUsernameCheck',
+			subjectHash: clientNetworkHash(request),
+			limit: MAX_USERNAME_CHECKS_PER_NETWORK_HOUR
+		}
+	], now, executor);
+
+	if (!attempt.allowed)
+	{
+		return(tooManyAttempts(attempt, now, response));
+	}
+
+	if ((await findPlayerByUsername(username, executor)) !== undefined)
+	{
+		return({
+			status: 409,
+			message: authMessages.usernameTaken,
+			field: 'username'
+		});
+	}
+
+	return(undefined);
 }
 
 /**

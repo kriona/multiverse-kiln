@@ -3,6 +3,7 @@ import { AUTH_CODE_CHECK_PATH, AUTH_CODE_PATH, AUTH_LOGIN_PATH, AUTH_LOGOUT_PATH
 
 import { hashPassword } from '../src/auth/passwords.js';
 import { ProviderLoginError, setProviderClients, type ProviderClient, type ProviderUser } from '../src/auth/providers.js';
+import { MAX_USERNAME_CHECKS_PER_NETWORK_HOUR } from '../src/auth/rateLimits.js';
 import { adminDb } from '../src/db/adminClient.js';
 import { pool } from '../src/db/client.js';
 import { createPlayer } from '../src/db/playerRepo.js';
@@ -321,6 +322,33 @@ describe('provider login routes', () =>
 		assert.strictEqual(await other.username(), 'ada');
 		assert.ok(!other.cookies.has(PROVIDER_LOGIN_COOKIE));
 		assert.deepStrictEqual(await eventKinds('ada'), ['registered', 'loggedIn', 'loggedIn']);
+	});
+
+	it('counts choosing a username as one of the network\'s username checks', async () =>
+	{
+		await createPlayer({
+			username: 'grace',
+			displayName: 'Grace',
+			email: 'grace@example.com',
+			passwordHash: null
+		});
+
+		const browser = new Browser();
+
+		assert.strictEqual((await logInWith(browser, GOOGLE_ADA)).body.outcome, 'register');
+
+		const taken = await browser.send('POST', AUTH_PROVIDER_REGISTER_PATH, { username: 'GRACE', displayName: 'Ada', locale: 'en' });
+
+		assert.strictEqual(taken.status, 409);
+		assert.strictEqual(taken.body.field, 'username');
+
+		for (let check = 1; check < MAX_USERNAME_CHECKS_PER_NETWORK_HOUR; check++)
+		{
+			assert.strictEqual((await browser.send('POST', AUTH_USERNAME_CHECK_PATH, { username: `ada_${check}` })).status, 204);
+		}
+
+		assert.strictEqual((await browser.send('POST', AUTH_PROVIDER_REGISTER_PATH, { username: 'ada', displayName: 'Ada', locale: 'en' })).status, 429);
+		assert.strictEqual(await browser.username(), null);
 	});
 
 	it('finishes a login only in the browser that started it, once, with the state it was given', async () =>
