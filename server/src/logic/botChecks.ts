@@ -161,7 +161,7 @@ function reached(attemptsAt: readonly Date[], count: number, windowMs: number, n
  */
 function retryOf(decision: SendDecision): Date
 {
-	return(decision.allowed ? new Date(0) : decision.retryAt);
+	return((decision.allowed ? new Date(0) : decision.retryAt));
 }
 
 /**
