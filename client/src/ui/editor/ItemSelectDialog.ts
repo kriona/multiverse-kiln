@@ -1,4 +1,4 @@
-import { MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem } from '@multiverse-kiln/shared';
+import { isRulebookOn, MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem } from '@multiverse-kiln/shared';
 import removeIcon from 'virtual:icon/ph:x';
 
 import { t } from '../../localization';
@@ -31,14 +31,33 @@ export interface ChosenItem
 }
 
 /**
+ * How the dialog chooses, when it isn't choosing the version open's items under its own title
+ */
+export interface ItemSelectOptions
+{
+	/**
+	 * The dialog's title, in place of Choose Items
+	 */
+	title?: string;
+
+	/**
+	 * The optional books the live version has on, to choose only from its enabled items with them,
+	 * whatever version the editor has open, as items given to characters are
+	 */
+	liveRulebooks?: readonly string[];
+}
+
+/**
  * Selection: Item (see STRUCTURE-OVERVIEW.md): a dialog for choosing items by typing part of their
  * names, each with a quantity (for example, 20 arrows)
  *
- * Disabled items can be chosen, and are marked; characters are only given enabled items
+ * Disabled items can be chosen, and are marked; characters are only given enabled items. Choosing items
+ * to give a character, it finds only the live version's enabled items
  */
 export class ItemSelectDialog
 {
 	private readonly dialog = getElement('item-select-dialog', HTMLDialogElement);
+	private readonly title = getElement('item-select-title', HTMLElement);
 	private readonly form = getElement('item-select-form', HTMLFormElement);
 	private readonly search = getElement('item-select-search', HTMLInputElement);
 	private readonly results = getElement('item-select-results', HTMLFieldSetElement);
@@ -61,6 +80,16 @@ export class ItemSelectDialog
 	});
 
 	private universe: EditableUniverse | undefined;
+
+	/**
+	 * How the dialog open chooses
+	 */
+	private options: ItemSelectOptions = {};
+
+	/**
+	 * The page's title for the dialog, read the first time it opens, once the page is in the player's language
+	 */
+	private defaultTitle: string | undefined;
 
 	/**
 	 * Each chosen item's quantity field, by the item's ID
@@ -124,11 +153,15 @@ export class ItemSelectDialog
 	 *
 	 * @param universe The universe whose items to choose from
 	 * @param chosen The items chosen now, which start out chosen
+	 * @param options How to choose, when not from the version open's items under the dialog's own title
 	 * @return The items chosen, or undefined when the dialog was closed without choosing
 	 */
-	async open(universe: EditableUniverse, chosen: readonly ChosenItem[]): Promise<ChosenItem[] | undefined>
+	async open(universe: EditableUniverse, chosen: readonly ChosenItem[], options: ItemSelectOptions = {}): Promise<ChosenItem[] | undefined>
 	{
 		this.finish(undefined);
+		this.defaultTitle ??= (this.title.textContent ?? '');
+		this.title.textContent = (options.title ?? this.defaultTitle);
+		this.options = options;
 		this.universe = universe;
 		this.chosen = chosen.map((choice) => ({ ...choice }));
 		this.search.value = '';
@@ -177,15 +210,17 @@ export class ItemSelectDialog
 			return;
 		}
 
+		const live = this.options.liveRulebooks;
 		let items: EditorItem[];
 
 		try
 		{
 			items = (await this.api.listItems(universe.id, {
 				name: (this.search.value.trim() || undefined),
-				rulebooks: [...this.rulebooks.rulebooks()],
+				rulebooks: [...(live ?? this.rulebooks.rulebooks())],
+				enabled: ((live === undefined) ? undefined : true),
 				limit: MAX_RESULTS
-			})).items;
+			}, ((live === undefined) ? undefined : 'live'))).items;
 		}
 		catch (error)
 		{
@@ -228,7 +263,10 @@ export class ItemSelectDialog
 		const description = document.createElement('span');
 		const notes = [itemTypeName(item.type, universe.ruleset)];
 
-		if (!item.enabled || !this.rulebooks.shows(item.rulebook))
+		const live = this.options.liveRulebooks;
+		const rulebookOn = ((live === undefined) ? this.rulebooks.shows(item.rulebook) : isRulebookOn(live, item.rulebook));
+
+		if (!item.enabled || !rulebookOn)
 		{
 			notes.push(t(editorMessages.disabled));
 		}

@@ -1,23 +1,27 @@
 /**
  * The world editor's routes for the characters made in a universe (listed in shared/src/editor.ts), for
  * the Character List tab: listing them and showing their sheets, and for creators, deleting them, giving
- * them their last rites, restoring them and taking them out of their groups. Characters belong to their
- * players rather than the universe, so these change them immediately, as their players' own routes do
+ * them their last rites, restoring them, taking them out of their groups, and giving and discarding items.
+ * Characters belong to their players rather than the universe, so these change them immediately, as
+ * their players' own routes do
  */
 import type express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
-import { canEditWorld, canManageCharacters, defineMessages, parsePlayerSearch, type CharacterDeletionPayload, type EditorCharacterListPayload, type GroupCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { canEditWorld, canManageCharacters, defineMessages, isUsable, MAX_ITEM_QUANTITY, parsePlayerSearch, type CharacterDeletionPayload, type EditorCharacterListPayload, type GroupCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
 
-import { findCharacterPlayerId, findUniverseCharacterDetails, listUniverseCharacters } from '../db/characterRepo.js';
+import { findCharacterPlayerId, findUniverseCharacterDetails, giveCharacterItems, listUniverseCharacters } from '../db/characterRepo.js';
 import { loadClassNames } from '../db/classRepo.js';
+import { loadEditorItemsIn } from '../db/itemRepo.js';
 import { loadRaceNames } from '../db/raceRepo.js';
-import { findEditableUniverse } from '../db/universeRepo.js';
+import { loadRulebookSettings } from '../db/rulesetRepo.js';
+import { inTransaction } from '../db/transactions.js';
+import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
-import { characterSheetOf, deleteCharacterNow, giveLastRites, restoreCharacterOf } from './characters.js';
+import { characterItemsRequest, characterSheetOf, deleteCharacterNow, discardItems, giveLastRites, restoreCharacterOf } from './characters.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { editorCharacterListQuery } from './editorPayloads.js';
-import { sendError, sendInvalidRequest } from './errors.js';
+import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { noSuchGroupMessage, takeOutOfGroup } from './groups.js';
 import { UniverseTextTranslator } from './universeTextTranslator.js';
 
@@ -27,6 +31,11 @@ import { UniverseTextTranslator } from './universeTextTranslator.js';
 const groupCharacterRequest = z.object({
 	characterId: z.uuid()
 }) satisfies z.ZodType<GroupCharacterRequest>;
+
+/**
+ * CharacterItemsRequest for giving items, each quantity up to MAX_ITEM_QUANTITY as item selection allows
+ */
+const giveItemsRequest = characterItemsRequest.refine((request) => request.items.every(({ quantity }) => (quantity <= MAX_ITEM_QUANTITY)), 'Gives more of an item than allowed at once');
 
 /**
  * Reasons the editor's character routes give (see shared/src/localization.ts)
@@ -40,7 +49,12 @@ const messages = defineMessages({
 	universeDisabled: {
 		id: 'error.universeDisabledCharacters',
 		defaultMessage: 'The site\'s admins have disabled this universe, so its characters can\'t be changed.',
-		description: 'Why a character couldn\'t be deleted, restored or taken out of their group from the editor\'s Character List tab: one of the site\'s admins disabled the universe'
+		description: 'Why a character couldn\'t be deleted, restored, taken out of their group or given items from the editor\'s Character List tab: one of the site\'s admins disabled the universe'
+	},
+	itemsUnavailable: {
+		id: 'error.giveItemsUnavailable',
+		defaultMessage: 'Some of those items can\'t be given: they were deleted or disabled, or their rulebook is off. Choose the items again.',
+		description: 'Why items weren\'t given to a character from their sheet on the editor\'s Character List tab: an item chosen was deleted, disabled or had its rulebook (a book of optional rules) turned off, perhaps while the creator was choosing'
 	}
 });
 
@@ -58,6 +72,8 @@ export function addCharacterListRoutes(router: express.Router): void
 	router.delete('/characters/:characterId', ...manage, deleteRoute);
 	router.put('/characters/:characterId/deletion', ...manage, scheduleDeletionRoute);
 	router.delete('/characters/:characterId/deletion', ...manage, restoreRoute);
+	router.post('/characters/:characterId/items', ...manage, giveItemsRoute);
+	router.post('/characters/:characterId/items/discard', ...manage, discardRoute);
 	router.post('/groups/:groupId/leave', ...manage, leaveGroupRoute);
 }
 
@@ -241,6 +257,102 @@ async function restoreRoute(request: Request, response: Response): Promise<void>
 	if (!await restoreCharacterOf(found.playerId, found.universeId, found.characterId))
 	{
 		sendError(response, 404, messages.noSuchCharacter);
+		return;
+	}
+
+	response.sendStatus(204);
+}
+
+/**
+ * POST /:universeId/characters/:characterId/items: adds items to what a player's character carries.
+ * Characters play the live version, so the items must be enabled there with their books on, whatever
+ * version the editor has open
+ *
+ * @param request The request, with a CharacterItemsRequest
+ * @param response The response
+ */
+async function giveItemsRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	const body = giveItemsRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const { id: universeId, ruleset } = universeContextOf(request).universe;
+	const { items } = body.data;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		// Deleting and disabling items wait for the universe's lock, so none goes while it is given
+		await lockUniverseShared(universeId, transaction);
+
+		if (await findCharacterPlayerId(universeId, characterId, transaction) === undefined)
+		{
+			return({ status: 404, message: messages.noSuchCharacter });
+		}
+
+		const found = await loadEditorItemsIn(liveVersion(universeId), ruleset, items.map(({ itemId }) => itemId), transaction);
+		const { rulebooks } = await loadRulebookSettings(liveVersion(universeId), ruleset, transaction);
+		const usableIds = new Set(found
+			.filter((item) => isUsable(item, rulebooks))
+			.map((item) => item.id));
+
+		if (!items.every(({ itemId }) => usableIds.has(itemId)))
+		{
+			return({ status: 409, message: messages.itemsUnavailable });
+		}
+
+		await giveCharacterItems(characterId, items, transaction);
+		return(undefined);
+	});
+
+	if (refusal)
+	{
+		sendError(response, refusal.status, refusal.message, refusal.values);
+		return;
+	}
+
+	response.sendStatus(204);
+}
+
+/**
+ * POST /:universeId/characters/:characterId/items/discard: discards items a player's character
+ * carries, as their player can, all of an item when asked for as many as they carry or more
+ *
+ * @param request The request, with a CharacterItemsRequest
+ * @param response The response
+ */
+async function discardRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	const body = characterItemsRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const refusal = await discardItems(universeContextOf(request).universe.id, characterId, body.data.items, undefined, messages.noSuchCharacter);
+
+	if (refusal)
+	{
+		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
 	}
 

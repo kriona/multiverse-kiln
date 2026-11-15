@@ -399,7 +399,7 @@ export class EditorScreen
 		{
 			this.updateUniverse(update);
 		});
-		this.characterListTab = new CharacterListTab(api);
+		this.characterListTab = new CharacterListTab(api, itemSelect);
 		this.auditTab = new AuditTab(api);
 		this.translationTable = new TranslationTable(api);
 		this.translationsTab = new TranslationsTab((update) =>

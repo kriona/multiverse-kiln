@@ -145,6 +145,19 @@ button.character-sheet-delete
 	}
 }
 
+// As wide as how many of the item the character carries, the most they can discard, plus room for its
+// arrows; the script sets --digits to how many digits that is
+#character-discard-quantity
+{
+	max-width: calc((var(--digits, 3) * 1ch) + 4ch);
+}
+
+// Each item's menu sits at the far end of its row
+.character-sheet-item-menu
+{
+	margin-inline-start: auto;
+}
+
 .character-sheet-none
 {
 	margin: 0;

@@ -649,7 +649,8 @@ button.sort-button
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.account-menu-item
+.account-menu-item,
+.action-menu-item
 {
 	display: flex;
 	align-items: center;
@@ -675,6 +676,57 @@ button.sort-button
 	{
 		margin-inline-end: 0;
 	}
+}
+
+// A button of three vertical dots that opens a menu of commands about one thing (src/ui/actionMenu.ts),
+// such as an item on a character's sheet
+.action-menu
+{
+	display: inline-flex;
+}
+
+.action-menu-button
+{
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 4px;
+	border-color: $border-strong;
+	background: $background-secondary;
+	color: $text;
+
+	&:hover,
+	&[aria-expanded="true"]
+	{
+		border-color: $border-stronger;
+		background: $background-secondary-hover;
+	}
+
+	.icon
+	{
+		width: 1.3em;
+		height: 1.3em;
+		margin-inline-end: 0;
+	}
+}
+
+// A popover in the top layer, placed beside its button by the script
+.action-menu-list
+{
+	inset: auto;
+	min-width: 140px;
+	margin: 0;
+	padding: 4px;
+	border: 1px solid $border;
+	border-radius: 6px;
+	background: $background-panel;
+	color: $text;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+// A command that loses something, such as Discard
+.action-menu-item.danger-item
+{
+	color: $error;
 }
 
 // The group's game clock, in the group's toolbar

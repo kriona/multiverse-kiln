@@ -1075,6 +1075,38 @@
 		"message": "Throw Overboard",
 		"source": "Delete"
 	},
+	"characterSheet.discard": {
+		"message": "Toss Overboard",
+		"source": "Discard"
+	},
+	"characterSheet.discardConfirm": {
+		"message": "Toss Overboard",
+		"source": "Discard"
+	},
+	"characterSheet.discardFailed": {
+		"message": "The booty couldn't be tossed overboard.",
+		"source": "Could not discard the items."
+	},
+	"characterSheet.discardItemTitle": {
+		"message": "Toss {item} Overboard",
+		"source": "Discard {item}"
+	},
+	"characterSheet.discardQuantity": {
+		"message": "Pick how many to toss overboard, up to {max, number}",
+		"source": "Choose how many to discard, up to {max, number}"
+	},
+	"characterSheet.discardQuestion": {
+		"message": "Be ye sure ye want to toss {item} overboard?",
+		"source": "Are you sure you want to discard {item}?"
+	},
+	"characterSheet.giveFailed": {
+		"message": "The booty couldn't be handed o'er.",
+		"source": "Could not give the items."
+	},
+	"characterSheet.giveItems": {
+		"message": "Give Booty",
+		"source": "Give Items"
+	},
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",
 		"source": "Hit points"
@@ -1083,9 +1115,21 @@
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
 	},
+	"characterSheet.itemMenu": {
+		"message": "What to do with {item}",
+		"source": "Actions for {item}"
+	},
 	"characterSheet.items": {
 		"message": "Kit",
 		"source": "Equipment"
+	},
+	"characterSheet.itemsDiscarded": {
+		"message": "{name} tossed {quantity, plural, =1 {{item}} other {{item} x#}} overboard.",
+		"source": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}."
+	},
+	"characterSheet.itemsGiven": {
+		"message": "{name} has been handed {count, plural, one {# piece o' booty} other {# different pieces o' booty}}.",
+		"source": "{name} has been given {count, plural, one {# item} other {# different items}}."
 	},
 	"characterSheet.leftGroup": {
 		"message": "{name} has jumped ship.",
@@ -2006,6 +2050,10 @@
 	"editor.characterList.description": {
 		"message": "Folk an' callin'",
 		"source": "Race and class"
+	},
+	"editor.characterList.giveItemsTitle": {
+		"message": "Hand Booty to {name}",
+		"source": "Give Items to {name}"
 	},
 	"editor.characterList.inGroup": {
 		"message": "Sailin' with a crew",
@@ -5507,6 +5555,10 @@
 		"message": "A peril needs a name.",
 		"source": "A difficulty level needs a name."
 	},
+	"error.discardItemsNotCarried": {
+		"message": "That hand don't carry that booty no more.",
+		"source": "The character doesn't carry that item any more."
+	},
 	"error.draftExists": {
 		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
 		"source": "The universe already has a draft. Apply it or discard it before starting another."
@@ -5534,6 +5586,10 @@
 	"error.floatingAbility": {
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
+	},
+	"error.giveItemsUnavailable": {
+		"message": "Some o' that booty can't be handed o'er: it were sunk or stowed away, or its rulebook be shut. Pick the booty again.",
+		"source": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again."
 	},
 	"error.groupCharacterBarred": {
 		"message": "{bar, select, race {That hand's folk be closed, so they can't sail.} other {That hand's callin' be closed, so they can't sail.}}",

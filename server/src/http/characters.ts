@@ -9,9 +9,9 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditableUniverseDetails, type EditorClass, type EditorRace, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, type CharacterDetails } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findCharacterPlayerId, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { findMembership } from '../db/groupRepo.js';
@@ -80,6 +80,19 @@ const characterDraft = z.object({
 }) satisfies z.ZodType<CharacterDraft>;
 
 /**
+ * CharacterItemsRequest. Whether the items can be given, or are carried, is checked by the route
+ */
+export const characterItemsRequest = z.object({
+	items: z.array(z.object({
+		itemId: z.number().int().min(1).max(2147483647),
+		quantity: z.number().int().min(1).max(2147483647)
+	}))
+		.min(1)
+		.max(MAX_ITEMS_PER_CHARACTER_CHANGE)
+		.refine((items) => (new Set(items.map(({ itemId }) => itemId)).size === items.length), 'Lists an item more than once')
+}) satisfies z.ZodType<CharacterItemsRequest>;
+
+/**
  * Reasons the character routes give (see shared/src/localization.ts)
  */
 const messages = defineMessages({
@@ -132,6 +145,11 @@ const messages = defineMessages({
 		id: 'error.deleteGroupMember',
 		defaultMessage: 'That character is in a group. They have to leave it before they can be deleted.',
 		description: 'Why a character wasn\'t deleted, immediately or after some days: characters in a group can\'t be deleted'
+	},
+	itemsNotCarried: {
+		id: 'error.discardItemsNotCarried',
+		defaultMessage: 'The character doesn\'t carry that item any more.',
+		description: 'Why items weren\'t discarded from a character\'s sheet: the character no longer carries one of them, perhaps because it was discarded in another window first'
 	}
 });
 
@@ -166,6 +184,7 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 	router.delete('/:characterId', loadPlayableUniverse, deleteRoute);
 	router.put('/:characterId/deletion', loadPlayableUniverse, scheduleDeletionRoute);
 	router.delete('/:characterId/deletion', loadPlayableUniverse, restoreRoute);
+	router.post('/:characterId/items/discard', loadPlayableUniverse, discardRoute);
 	router.use(handleCharacterError);
 
 	app.use(`${UNIVERSES_PATH}/:universeId/characters`, router);
@@ -688,6 +707,73 @@ export async function restoreCharacterOf(playerId: string, universeId: string, c
 	});
 
 	return(true);
+}
+
+/**
+ * POST /:characterId/items/discard: discards items one of the player's characters carries, all of an
+ * item when asked for as many as they carry or more
+ *
+ * @param request The request, with a CharacterItemsRequest
+ * @param response The response
+ */
+async function discardRoute(request: Request, response: Response): Promise<void>
+{
+	const characterId = characterIdOf(request, response);
+
+	if (characterId === undefined)
+	{
+		return;
+	}
+
+	const body = characterItemsRequest.safeParse(request.body);
+
+	if (!body.success)
+	{
+		sendInvalidRequest(response, body.error);
+		return;
+	}
+
+	const refusal = await discardItems(universeOf(request).id, characterId, body.data.items, playerIdOf(request), messages.noSuchCharacter);
+
+	if (refusal)
+	{
+		sendError(response, refusal.status, refusal.message, refusal.values);
+		return;
+	}
+
+	response.sendStatus(204);
+}
+
+/**
+ * Discards items a character carries, all of an item when asked for as many as they carry or more.
+ * Any item they carry can be discarded, disabled ones included
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param items The items, each listed once, and how many of each to discard
+ * @param playerId The player the character must belong to, or undefined for any player's, as the
+ * universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't have items discarded
+ * @return Why nothing was discarded, or undefined once the items are
+ */
+export async function discardItems(universeId: string, characterId: string, items: readonly ItemQuantity[], playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+{
+	return(inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		const owner = await findCharacterPlayerId(universeId, characterId, transaction);
+
+		if ((owner === undefined) || ((playerId !== undefined) && (owner !== playerId)))
+		{
+			return({ status: 404, message: noSuchCharacter });
+		}
+
+		if (!await takeCharacterItems(characterId, items, transaction))
+		{
+			return({ status: 409, message: messages.itemsNotCarried });
+		}
+
+		return(undefined);
+	}));
 }
 
 /**

@@ -5,11 +5,13 @@ import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_
 import { adminDb, inAdminTransaction } from '../src/db/adminClient.js';
 import { countCharacters } from '../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../src/db/classRepo.js';
+import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
+import { addCharacter } from './db/fixtures.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 import { changeWhileWaitingForUniverse } from './universeLock.js';
@@ -862,6 +864,55 @@ describe('Character routes', () =>
 			});
 
 			assert.strictEqual(answer.status, 409);
+		});
+	});
+
+	describe('discarding items', () =>
+	{
+		let characterId: string;
+		let daggerId: number;
+
+		beforeEach(async () =>
+		{
+			characterId = await addCharacter(ada.playerId, universeId, 'Brokk');
+			daggerId = idOf(await findDefaultItemIds('pf1e'), 'dagger');
+		});
+
+		/**
+		 * How many daggers Brokk carries, as his sheet shows
+		 *
+		 * @return How many
+		 */
+		async function daggers(): Promise<number>
+		{
+			const sheet = await send<CharacterSheet>(ada, 'GET', characterPath(universeId, characterId));
+
+			return(sheet.body.items.find((item) => (item.id === daggerId))?.quantity ?? 0);
+		}
+
+		it('discards some of an item, then all of it', async () =>
+		{
+			const path = `${characterPath(universeId, characterId)}/items/discard`;
+
+			assert.strictEqual(await daggers(), 2);
+			assert.strictEqual((await send(ada, 'POST', path, { items: [{ itemId: daggerId, quantity: 1 }] })).status, 204);
+			assert.strictEqual(await daggers(), 1);
+			assert.strictEqual((await send(ada, 'POST', path, { items: [{ itemId: daggerId, quantity: 5 }] })).status, 204);
+			assert.strictEqual(await daggers(), 0);
+			assert.strictEqual((await send(ada, 'POST', path, { items: [{ itemId: daggerId, quantity: 1 }] })).status, 409);
+			assert.strictEqual((await send(ada, 'POST', path, { items: [] })).status, 400);
+		});
+
+		it('refuses another player\'s character', async () =>
+		{
+			const grace = await logIn('Grace');
+
+			await setUniverseRole(universeId, grace.playerId, 'beta_tester');
+
+			const answer = await send(grace, 'POST', `${characterPath(universeId, characterId)}/items/discard`, { items: [{ itemId: daggerId, quantity: 1 }] });
+
+			assert.strictEqual(answer.status, 404);
+			assert.strictEqual(await daggers(), 2);
 		});
 	});
 });

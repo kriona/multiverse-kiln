@@ -1,4 +1,4 @@
-import { canEditWorld, canManageCharacters, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, type EditableUniverse, type EditorCharacter, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorCharacterSortColumn, type EditorClass, type EditorRace } from '@multiverse-kiln/shared';
+import { canEditWorld, canManageCharacters, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, type CharacterSheet, type EditableUniverse, type EditorCharacter, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorCharacterSortColumn, type EditorClass, type EditorRace } from '@multiverse-kiln/shared';
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -10,6 +10,7 @@ import { announceListPage, showPageRange } from '../pager';
 import { playerCell } from '../playerCell';
 import { characterDescription, className, raceName } from '../raceAndClassNames';
 import { TableSorter } from '../tableSorter';
+import type { ItemSelectDialog } from './ItemSelectDialog';
 import { joinTags } from './stagedChanges';
 
 /**
@@ -21,8 +22,9 @@ const SEARCH_DELAY_MS = 250;
  * The Character List tab: every character players have made in the universe, with their race and
  * class, player, when they were made and whether they are in a group or waiting to be deleted. The
  * server searches, filters, sorts and pages them. A character's name opens their sheet, where creators
- * can delete them as their player can. Characters belong to their players rather than the universe, so
- * the sheet changes them immediately and the tab has nothing to save
+ * can delete them and discard their items as their player can, and give them items. Characters belong
+ * to their players rather than the universe, so the sheet changes them immediately and the tab has
+ * nothing to save
  */
 export class CharacterListTab
 {
@@ -59,8 +61,9 @@ export class CharacterListTab
 
 	/**
 	 * @param api The editor's API
+	 * @param itemSelect The dialog for choosing items, which chooses the items given to characters
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly itemSelect: ItemSelectDialog)
 	{
 		this.sorter = new TableSorter(getElement('character-list-table', HTMLTableElement), EDITOR_CHARACTER_SORT_COLUMNS, {
 			column: 'name',
@@ -73,7 +76,7 @@ export class CharacterListTab
 		this.sheet = new CharacterSheetDialog(api, api, () =>
 		{
 			void this.refresh();
-		});
+		}, undefined, (universeId, sheet) => this.giveItems(universeId, sheet));
 
 		setOptions(this.groupFilter, [
 			{
@@ -189,6 +192,48 @@ export class CharacterListTab
 			id: characterClass.id,
 			name: className(characterClass, universe.ruleset)
 		})));
+	}
+
+	/**
+	 * Asks which of the live version's enabled items to give a character, and how many of each, and gives
+	 * them, adding to what the character already carries
+	 *
+	 * @param universeId The universe the character is in
+	 * @param sheet The character
+	 * @return How many different items were given, 0 when the dialog closed without choosing any
+	 */
+	private async giveItems(universeId: string, sheet: CharacterSheet): Promise<number>
+	{
+		const universe = this.universe;
+
+		if (universe?.id !== universeId)
+		{
+			return(0);
+		}
+
+		const live = await this.api.getRulesetSettings(universeId, 'live');
+		const chosen = await this.itemSelect.open(universe, [], {
+			title: t({
+				id: 'editor.characterList.giveItemsTitle',
+				defaultMessage: 'Give Items to {name}',
+				description: 'Title of the dialog for choosing items to add to what a character carries, opened by Give Items on their sheet from the editor\'s Character List tab; {name} is the character\'s name'
+			}, {
+				name: sheet.name
+			}),
+			liveRulebooks: live.settings.rulebooks
+		});
+
+		if (!chosen || (chosen.length === 0))
+		{
+			return(0);
+		}
+
+		await this.api.giveItems(universeId, sheet.id, chosen.map(({ item, quantity }) => ({
+			itemId: item.id,
+			quantity
+		})));
+
+		return(chosen.length);
 	}
 
 	/**

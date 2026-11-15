@@ -32,8 +32,24 @@
 		<button id="character-sheet-delete" type="button" class="link-button character-sheet-delete" hidden data-message="characterSheet.delete" data-translation-context="Button on a character's sheet that starts deleting the character, asking first">Delete</button>
 		<button id="character-sheet-leave" type="button" hidden data-shortcut="Alt+L"></button>
 		<button id="character-sheet-restore" type="button" aria-describedby="character-sheet-pending" hidden data-shortcut="Alt+R" data-message="characterSheet.restore" data-translation-context="Button on the sheet of a character waiting to be deleted that takes back the deletion, so they can be played again"><!-- icon ph:arrow-counter-clockwise -->Restore</button>
+		<button id="character-sheet-give" type="button" class="secondary" hidden data-shortcut="Alt+I" data-message="characterSheet.giveItems" data-translation-context="Button on a character's sheet, shown to the universe's creators from the editor's Character List tab, that opens the dialog for choosing items and how many of each to add to what the character carries"><!-- icon ph:gift -->Give Items</button>
 		<button id="character-sheet-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 	</div>
+</dialog>
+<dialog id="character-discard-dialog" class="panel dialog" aria-labelledby="character-discard-title" aria-describedby="character-discard-question">
+	<form id="character-discard-form" class="form" novalidate>
+		<h2 id="character-discard-title"></h2>
+		<p id="character-discard-question"></p>
+		<label id="character-discard-quantity-label">
+			<span id="character-discard-quantity-text"></span>
+			<input id="character-discard-quantity" type="number" min="1" step="1" required />
+		</label>
+		<p id="character-discard-error" class="form-error" role="alert" hidden></p>
+		<div class="dialog-buttons">
+			<button id="character-discard-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+			<button id="character-discard-confirm" type="submit" class="danger" aria-describedby="character-discard-error" data-message="characterSheet.discardConfirm" data-translation-context="Button, in the dialog that asks how many of an item to discard from what a character carries, that discards them at once"><!-- icon ph:trash -->Discard</button>
+		</div>
+	</form>
 </dialog>
 <dialog id="character-leave-dialog" class="panel dialog" aria-labelledby="character-leave-title" aria-describedby="character-leave-reason character-leave-question">
 	<h2 id="character-leave-title"></h2>

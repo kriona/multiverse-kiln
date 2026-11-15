@@ -1075,6 +1075,38 @@
 		"defaultMessage": "Delete",
 		"description": "Button on a character's sheet that starts deleting the character, asking first"
 	},
+	"characterSheet.discard": {
+		"defaultMessage": "Discard",
+		"description": "Item in the menu beside an item on a character's sheet that asks how many of it to discard from what the character carries"
+	},
+	"characterSheet.discardConfirm": {
+		"defaultMessage": "Discard",
+		"description": "Button, in the dialog that asks how many of an item to discard from what a character carries, that discards them at once"
+	},
+	"characterSheet.discardFailed": {
+		"defaultMessage": "Could not discard the items.",
+		"description": "Shown in the dialog that discards an item a character carries, opened from their sheet, when the items couldn't be discarded"
+	},
+	"characterSheet.discardItemTitle": {
+		"defaultMessage": "Discard {item}",
+		"description": "Title of the dialog, opened by Discard in an item's menu on a character's sheet, that asks whether to discard the item from what the character carries; {item} is the item's name"
+	},
+	"characterSheet.discardQuantity": {
+		"defaultMessage": "Choose how many to discard, up to {max, number}",
+		"description": "Label of the field, in the dialog that discards an item a character carries, for how many of it to discard, shown when they carry more than one; {max} is how many they carry"
+	},
+	"characterSheet.discardQuestion": {
+		"defaultMessage": "Are you sure you want to discard {item}?",
+		"description": "In the dialog, opened by Discard in an item's menu on a character's sheet, that asks whether to discard the item from what the character carries; when they carry more than one, a field below it asks how many. {item} is the item's name, shown in italics"
+	},
+	"characterSheet.giveFailed": {
+		"defaultMessage": "Could not give the items.",
+		"description": "Shown on a character's sheet, from the editor's Character List tab, when the items chosen with Give Items couldn't be added to what the character carries"
+	},
+	"characterSheet.giveItems": {
+		"defaultMessage": "Give Items",
+		"description": "Button on a character's sheet, shown to the universe's creators from the editor's Character List tab, that opens the dialog for choosing items and how many of each to add to what the character carries"
+	},
 	"characterSheet.hitPoints": {
 		"defaultMessage": "Hit points",
 		"description": "On a character's sheet in Starfinder, the label of their hit points"
@@ -1083,9 +1115,21 @@
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
 	},
+	"characterSheet.itemMenu": {
+		"defaultMessage": "Actions for {item}",
+		"description": "Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character's sheet, which opens a menu of what can be done with the item, such as Discard; {item} is the item's name"
+	},
 	"characterSheet.items": {
 		"defaultMessage": "Equipment",
 		"description": "Heading on a character's sheet of the items they carry"
+	},
+	"characterSheet.itemsDiscarded": {
+		"defaultMessage": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}.",
+		"description": "Read out by screen readers once items a character carried were discarded from their sheet; {name} is the character's name, {item} the item's name and {quantity} how many were discarded, written as the sheet writes it, e.g. \"Arrow x20\""
+	},
+	"characterSheet.itemsGiven": {
+		"defaultMessage": "{name} has been given {count, plural, one {# item} other {# different items}}.",
+		"description": "Read out by screen readers once items chosen with Give Items, on a character's sheet from the editor's Character List tab, were added to what the character carries; {name} is the character's name and {count} how many different items"
 	},
 	"characterSheet.leftGroup": {
 		"defaultMessage": "{name} has left the group.",
@@ -2006,6 +2050,10 @@
 	"editor.characterList.description": {
 		"defaultMessage": "Race and class",
 		"description": "Heading of the column on the editor's Character List tab giving each character's race and class, e.g. Dwarf Fighter"
+	},
+	"editor.characterList.giveItemsTitle": {
+		"defaultMessage": "Give Items to {name}",
+		"description": "Title of the dialog for choosing items to add to what a character carries, opened by Give Items on their sheet from the editor's Character List tab; {name} is the character's name"
 	},
 	"editor.characterList.inGroup": {
 		"defaultMessage": "In a group",
@@ -5507,6 +5555,10 @@
 		"defaultMessage": "A difficulty level needs a name.",
 		"description": "Why a difficulty level the universe added couldn't be saved: its name was left out"
 	},
+	"error.discardItemsNotCarried": {
+		"defaultMessage": "The character doesn't carry that item any more.",
+		"description": "Why items weren't discarded from a character's sheet: the character no longer carries one of them, perhaps because it was discarded in another window first"
+	},
 	"error.draftExists": {
 		"defaultMessage": "The universe already has a draft. Apply it or discard it before starting another.",
 		"description": "Why a draft of the universe couldn't be started (see Universe versions): it has one already, perhaps started by another editor"
@@ -5534,6 +5586,10 @@
 	"error.floatingAbility": {
 		"defaultMessage": "Choose the ability that gets the race's bonus, and only for a race that has one.",
 		"description": "Why a new character wasn't made: a race that lets the player choose an ability to raise had none chosen, or another race had one"
+	},
+	"error.giveItemsUnavailable": {
+		"defaultMessage": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again.",
+		"description": "Why items weren't given to a character from their sheet on the editor's Character List tab: an item chosen was deleted, disabled or had its rulebook (a book of optional rules) turned off, perhaps while the creator was choosing"
 	},
 	"error.groupCharacterBarred": {
 		"defaultMessage": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}",
@@ -5965,7 +6021,7 @@
 	},
 	"error.universeDisabledCharacters": {
 		"defaultMessage": "The site's admins have disabled this universe, so its characters can't be changed.",
-		"description": "Why a character couldn't be deleted, restored or taken out of their group from the editor's Character List tab: one of the site's admins disabled the universe"
+		"description": "Why a character couldn't be deleted, restored, taken out of their group or given items from the editor's Character List tab: one of the site's admins disabled the universe"
 	},
 	"error.universeDisabledSave": {
 		"defaultMessage": "The site's admins have disabled this universe, so changes to it can't be saved.",

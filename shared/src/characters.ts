@@ -20,6 +20,9 @@
  *   CharacterDeletionPayload, or 409 while the site sets it to 0 or they are in a group. Until then they
  *   can be restored but not played
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
+ * - POST characterPath(universeId, characterId)/items/discard: discards items the character carries
+ *   (CharacterItemsRequest), all of an item when asked for as many as they carry or more, or answers
+ *   409 when they don't carry one of them
  */
 import { UNIVERSES_PATH } from './constants.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';

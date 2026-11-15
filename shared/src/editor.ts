@@ -42,6 +42,8 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * - DELETE /:universeId/characters/:characterId    deletes the character immediately, unless they are in a group (canManageCharacters())
  * - PUT    /:universeId/characters/:characterId/deletion  -> CharacterDeletionPayload: gives the character their last rites (canManageCharacters())
  * - DELETE /:universeId/characters/:characterId/deletion  restores a character given their last rites (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items     CharacterItemsRequest: adds enabled items of the live version to what the character carries (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items/discard  CharacterItemsRequest: discards items the character carries, as their player can, all of an item when asked for as many as they carry or more (canManageCharacters())
  * - POST   /:universeId/groups/:groupId/leave      GroupCharacterRequest: takes any player's character out of their group, disbanding it for the anchor being (canManageCharacters())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
@@ -154,6 +156,11 @@ export const MAX_ITEM_QUANTITY = 999;
  * Most different items a universe's starting equipment can hold
  */
 export const MAX_STARTING_ITEMS = 50;
+
+/**
+ * Most different items a creator can give a character, or take from them, at once
+ */
+export const MAX_ITEMS_PER_CHARACTER_CHANGE = 50;
 
 /**
  * Most characters in a race's or class's name
@@ -1668,6 +1675,20 @@ export interface ItemQuantity
 	 * 1 to MAX_ITEM_QUANTITY
 	 */
 	quantity: number;
+}
+
+/**
+ * Body of POST EDITOR_UNIVERSES_PATH/:universeId/characters/:characterId/items (canManageCharacters()),
+ * items to add to what a character carries, each added to the quantity they already have, and of the
+ * editor's and the player's .../items/discard, items to discard from what they carry
+ */
+export interface CharacterItemsRequest
+{
+	/**
+	 * 1 to MAX_ITEMS_PER_CHARACTER_CHANGE different items, each listed once. Items given must be enabled
+	 * in the live version with their books on; items discarded must be ones the character carries
+	 */
+	items: ItemQuantity[];
 }
 
 /**

@@ -1362,6 +1362,102 @@ export async function setCarriedItemsHidden(universeId: string, itemIds: readonl
 }
 
 /**
+ * Adds items to what a character carries, each added to the quantity they already have, up to the
+ * largest quantity the table can hold
+ *
+ * @param characterId The character's ID
+ * @param items The items, each listed once
+ * @param executor The database, or a transaction
+ */
+export async function giveCharacterItems(characterId: string, items: readonly ItemQuantity[], executor: Executor = db): Promise<void>
+{
+	if (items.length === 0)
+	{
+		return;
+	}
+
+	await executor
+		.insert(characterItems)
+		.values(items.map(({ itemId, quantity }) => ({
+			characterId,
+			itemId,
+			quantity
+		})))
+		.onConflictDoUpdate({
+			target: [characterItems.characterId, characterItems.itemId],
+			set: {
+				quantity: sql`least(${characterItems.quantity}::bigint + excluded.quantity, 2147483647)`
+			}
+		});
+}
+
+/**
+ * Takes items from what a character carries: all of an item when asked for as many as they carry or
+ * more. Items hidden while disabled aren't carried, so they can't be taken. Locks the rows it reads,
+ * so it is meant for a transaction
+ *
+ * @param characterId The character's ID
+ * @param items The items, each listed once, and how many of each to take
+ * @param executor A transaction
+ * @return Whether the items were taken: false, taking nothing, when the character doesn't carry one of them
+ */
+export async function takeCharacterItems(characterId: string, items: readonly ItemQuantity[], executor: Executor): Promise<boolean>
+{
+	if (items.length === 0)
+	{
+		return(true);
+	}
+
+	const carried = await executor
+		.select({
+			itemId: characterItems.itemId,
+			quantity: characterItems.quantity
+		})
+		.from(characterItems)
+		.where(and(
+			eq(characterItems.characterId, characterId),
+			eq(characterItems.hidden, false),
+			inArray(characterItems.itemId, items.map(({ itemId }) => itemId))
+		))
+		.for('update');
+	const quantities = new Map(carried.map(({ itemId, quantity }) => [itemId, quantity]));
+
+	if (!items.every(({ itemId }) => quantities.has(itemId)))
+	{
+		return(false);
+	}
+
+	const emptied = items
+		.filter(({ itemId, quantity }) => (quantity >= (quantities.get(itemId) ?? 0)))
+		.map(({ itemId }) => itemId);
+
+	if (emptied.length > 0)
+	{
+		await executor
+			.delete(characterItems)
+			.where(and(
+				eq(characterItems.characterId, characterId),
+				inArray(characterItems.itemId, emptied)
+			));
+	}
+
+	for (const { itemId, quantity } of items.filter((item) => !emptied.includes(item.itemId)))
+	{
+		await executor
+			.update(characterItems)
+			.set({
+				quantity: ((quantities.get(itemId) ?? 0) - quantity)
+			})
+			.where(and(
+				eq(characterItems.characterId, characterId),
+				eq(characterItems.itemId, itemId)
+			));
+	}
+
+	return(true);
+}
+
+/**
  * A player's saved progress in Create Character in a universe
  *
  * @param playerId The player's ID

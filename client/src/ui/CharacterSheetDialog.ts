@@ -1,13 +1,17 @@
-import { ABILITY_NAMES, DARKVISION_NAMES, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, DARKVISION_NAMES, defineMessages, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet, type CharacterSheetItem } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
 import signOutIcon from 'virtual:icon/ph:sign-out';
+import discardIcon from 'virtual:icon/ph:trash';
 
-import { currentLocale, signedNumber, t } from '../localization';
+import { currentLocale, formatToNodes, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import type { GroupApi } from '../network/groupApi';
+import { createActionMenu } from './actionMenu';
 import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
+import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
+import { formMessages } from './formMessages';
 import { createItemIcon, itemName } from './itemNames';
 import { describeLeaving, showLeaveButton, takeOutOfGroup } from './leavingGroup';
 import { moneyElement } from './moneyField';
@@ -22,7 +26,39 @@ export type LeaveGroup = (universeId: string, groupId: string, characterId: stri
  * The routes that load and delete the characters a sheet shows: the player's own (CharacterApi), or
  * any player's for the editor's Character List tab (EditorApi)
  */
-export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter'>;
+export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter' | 'discardItems'>;
+
+/**
+ * Asks which items to give a character and gives them; resolves with how many different items were
+ * given, 0 when none were chosen, or rejects when they couldn't be given
+ */
+export type GiveItems = (universeId: string, sheet: CharacterSheet) => Promise<number>;
+
+/**
+ * The character a sheet shows, the universe they are in, and whether it offers to change them
+ */
+interface ShownCharacter
+{
+	universeId: string;
+	sheet: CharacterSheet;
+
+	/**
+	 * Whether the sheet offers to delete, restore the character, take them out of their group, discard
+	 * their items, and give them items where the page can
+	 */
+	canChange: boolean;
+}
+
+/**
+ * Text the sheet shows in more than one place (see src/localization.ts)
+ */
+const sheetMessages = defineMessages({
+	loadFailed: {
+		id: 'characterSheet.loadFailed',
+		defaultMessage: 'Could not load the character sheet.',
+		description: 'Shown in a character\'s sheet when the character couldn\'t be loaded'
+	}
+});
 
 /**
  * A dialog showing one of the player's characters: their race and class, ability scores, size,
@@ -35,7 +71,9 @@ export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'delete
  * a group can't be deleted, so for them Delete says so and offers to take them out of the group, going on
  * to the first question once they have left. A character in a group who can't play, because their race
  * or class is disabled, can also leave the group from their sheet. The editor's Character List tab
- * shows any player's character in it, offering the same to creators and nothing to change to builders
+ * shows any player's character in it, offering the same to creators, along with Give Items, and nothing
+ * to change to builders. Each item the character carries has a menu of what can be done with it, which
+ * offers Discard, asking how many
  */
 export class CharacterSheetDialog
 {
@@ -53,6 +91,7 @@ export class CharacterSheetDialog
 	private readonly deleteButton = getElement('character-sheet-delete', HTMLButtonElement);
 	private readonly restoreButton = getElement('character-sheet-restore', HTMLButtonElement);
 	private readonly leaveButton = getElement('character-sheet-leave', HTMLButtonElement);
+	private readonly giveButton = getElement('character-sheet-give', HTMLButtonElement);
 	private readonly leaveDialog = getElement('character-leave-dialog', HTMLDialogElement);
 	private readonly leaveTitle = getElement('character-leave-title', HTMLElement);
 	private readonly leaveReason = getElement('character-leave-reason', HTMLElement);
@@ -67,12 +106,26 @@ export class CharacterSheetDialog
 	private readonly cremateButton = getElement('character-cremate', HTMLButtonElement);
 	private readonly lastRitesButton = getElement('character-last-rites', HTMLButtonElement);
 	private readonly farewellCancelButton = getElement('character-farewell-cancel', HTMLButtonElement);
+	private readonly discardDialog = getElement('character-discard-dialog', HTMLDialogElement);
+	private readonly discardForm = getElement('character-discard-form', HTMLFormElement);
+	private readonly discardTitle = getElement('character-discard-title', HTMLElement);
+	private readonly discardQuantityLabel = getElement('character-discard-quantity-label', HTMLLabelElement);
+	private readonly discardQuantityText = getElement('character-discard-quantity-text', HTMLElement);
+	private readonly discardQuestion = getElement('character-discard-question', HTMLElement);
+	private readonly discardQuantity = getElement('character-discard-quantity', HTMLInputElement);
+	private readonly discardError = getElement('character-discard-error', HTMLElement);
+	private readonly discardConfirm = getElement('character-discard-confirm', HTMLButtonElement);
+	private readonly discardCancel = getElement('character-discard-cancel', HTMLButtonElement);
 
 	/**
-	 * The character shown, once loaded, the universe they are in, and whether the sheet offers to delete,
-	 * restore them and take them out of their group
+	 * The character shown, once loaded
 	 */
-	private current: { universeId: string; sheet: CharacterSheet; canChange: boolean } | undefined;
+	private current: ShownCharacter | undefined;
+
+	/**
+	 * The item the dialog asking how many to discard is about, while it is open
+	 */
+	private discarding: CharacterSheetItem | undefined;
 
 	/**
 	 * Whether a deletion or restoration has been sent and the server hasn't answered
@@ -102,10 +155,42 @@ export class CharacterSheetDialog
 	 * taken out of their group
 	 * @param leaveGroup Takes a character out of their group, for a page that does more when one leaves,
 	 * such as the game's page playing them in it; by default the group's route only
+	 * @param giveItems Gives the character items, offered as Give Items to those who may change the
+	 * character; left out, the sheet doesn't offer it
 	 */
-	constructor(private readonly api: CharacterSheetApi, groupApi: Pick<GroupApi, 'leaveGroup'>, private readonly charactersChanged: () => void, leaveGroup?: LeaveGroup)
+	constructor(private readonly api: CharacterSheetApi, groupApi: Pick<GroupApi, 'leaveGroup'>, private readonly charactersChanged: () => void, leaveGroup?: LeaveGroup, private readonly giveItems?: GiveItems)
 	{
 		this.leaveGroup = (leaveGroup ?? ((universeId, groupId, characterId) => takeOutOfGroup(groupApi, universeId, groupId, characterId)));
+
+		this.discardCancel.addEventListener('click', () =>
+		{
+			this.discardDialog.close();
+		});
+
+		this.discardDialog.addEventListener('close', () =>
+		{
+			this.discarding = undefined;
+		});
+
+		// Escape doesn't close the question while the answer is being sent
+		this.discardDialog.addEventListener('cancel', (event) =>
+		{
+			if (this.busy)
+			{
+				event.preventDefault();
+			}
+		});
+
+		this.discardQuantity.addEventListener('input', () =>
+		{
+			setFieldError(this.discardQuantity, undefined);
+		});
+
+		this.discardForm.addEventListener('submit', (event) =>
+		{
+			event.preventDefault();
+			void this.discard();
+		});
 
 		getElement('character-sheet-close', HTMLButtonElement).addEventListener('click', () =>
 		{
@@ -138,6 +223,11 @@ export class CharacterSheetDialog
 		this.leaveButton.addEventListener('click', () =>
 		{
 			this.askToLeave(false);
+		});
+
+		this.giveButton.addEventListener('click', () =>
+		{
+			void this.give();
 		});
 
 		getElement('character-leave-cancel', HTMLButtonElement).addEventListener('click', () =>
@@ -219,6 +309,7 @@ export class CharacterSheetDialog
 		this.deleteButton.hidden = true;
 		this.restoreButton.hidden = true;
 		this.leaveButton.hidden = true;
+		this.giveButton.hidden = true;
 		this.current = undefined;
 		showMessage(this.error, undefined);
 		this.dialog.showModal();
@@ -235,11 +326,7 @@ export class CharacterSheetDialog
 			if (version === this.version)
 			{
 				this.status.textContent = '';
-				showMessage(this.error, describeEditorError(error, {
-					id: 'characterSheet.loadFailed',
-					defaultMessage: 'Could not load the character sheet.',
-					description: 'Shown in a character\'s sheet when the character couldn\'t be loaded'
-				}));
+				showMessage(this.error, describeEditorError(error, sheetMessages.loadFailed));
 			}
 
 			return;
@@ -269,7 +356,7 @@ export class CharacterSheetDialog
 		this.status.textContent = '';
 		this.showAbilities(sheet);
 		this.showTraits(sheet);
-		this.showItems(sheet);
+		this.showItems(sheet, canChange);
 		this.showDeletion(sheet, canChange);
 		this.body.hidden = false;
 	}
@@ -301,6 +388,7 @@ export class CharacterSheetDialog
 		this.restoreButton.hidden = (!canChange || !waiting);
 		this.deleteButton.hidden = !canChange;
 		this.leaveButton.hidden = (!canChange || (sheet.group === null) || (sheet.barredBy === null));
+		this.giveButton.hidden = (!canChange || !this.giveItems);
 
 		if (sheet.group)
 		{
@@ -612,6 +700,227 @@ export class CharacterSheetDialog
 	}
 
 	/**
+	 * Asks which items to give the character shown and gives them, then shows the sheet with them
+	 */
+	private async give(): Promise<void>
+	{
+		const current = this.current;
+
+		if (!current || !this.giveItems || this.busy)
+		{
+			return;
+		}
+
+		let count: number;
+
+		this.busy = true;
+		this.giveButton.disabled = true;
+
+		try
+		{
+			count = await this.giveItems(current.universeId, current.sheet);
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, {
+				id: 'characterSheet.giveFailed',
+				defaultMessage: 'Could not give the items.',
+				description: 'Shown on a character\'s sheet, from the editor\'s Character List tab, when the items chosen with Give Items couldn\'t be added to what the character carries'
+			}));
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+			this.giveButton.disabled = false;
+		}
+
+		showMessage(this.error, undefined);
+
+		if (count === 0)
+		{
+			return;
+		}
+
+		await this.reload(current);
+		announce(t({
+			id: 'characterSheet.itemsGiven',
+			defaultMessage: '{name} has been given {count, plural, one {# item} other {# different items}}.',
+			description: 'Read out by screen readers once items chosen with Give Items, on a character\'s sheet from the editor\'s Character List tab, were added to what the character carries; {name} is the character\'s name and {count} how many different items'
+		}, {
+			name: current.sheet.name,
+			count
+		}));
+	}
+
+	/**
+	 * Asks whether to discard an item the character shown carries, and, below the question, how many of
+	 * it when they carry more than one, all of it to start with
+	 *
+	 * @param item The item, as the sheet lists it
+	 */
+	private askToDiscard(item: CharacterSheetItem): void
+	{
+		const sheet = this.current?.sheet;
+
+		if (!sheet || this.busy)
+		{
+			return;
+		}
+
+		const name = itemName(item, sheet.ruleset);
+		const several = (item.quantity > 1);
+
+		// The item's name is set in italics, so it reads as a name whether it is a thing or a proper noun
+		const italicName = document.createElement('i');
+
+		italicName.textContent = name;
+
+		this.discarding = item;
+		this.discardTitle.textContent = t({
+			id: 'characterSheet.discardItemTitle',
+			defaultMessage: 'Discard {item}',
+			description: 'Title of the dialog, opened by Discard in an item\'s menu on a character\'s sheet, that asks whether to discard the item from what the character carries; {item} is the item\'s name'
+		}, {
+			item: name
+		});
+		this.discardQuestion.replaceChildren(...formatToNodes({
+			id: 'characterSheet.discardQuestion',
+			defaultMessage: 'Are you sure you want to discard {item}?',
+			description: 'In the dialog, opened by Discard in an item\'s menu on a character\'s sheet, that asks whether to discard the item from what the character carries; when they carry more than one, a field below it asks how many. {item} is the item\'s name, shown in italics'
+		}, {
+			item: italicName
+		}));
+		this.discardQuantityText.textContent = t({
+			id: 'characterSheet.discardQuantity',
+			defaultMessage: 'Choose how many to discard, up to {max, number}',
+			description: 'Label of the field, in the dialog that discards an item a character carries, for how many of it to discard, shown when they carry more than one; {max} is how many they carry'
+		}, {
+			max: item.quantity
+		});
+		clearFieldErrors(this.discardDialog);
+		showMessage(this.discardError, undefined);
+		this.discardQuantityLabel.hidden = !several;
+		this.discardQuantity.max = String(item.quantity);
+		this.discardQuantity.value = String(item.quantity);
+		this.discardQuantity.style.setProperty('--digits', String(String(item.quantity).length));
+		this.discardConfirm.disabled = false;
+		this.discardCancel.disabled = false;
+		this.discardDialog.showModal();
+
+		if (several)
+		{
+			this.discardQuantity.select();
+		}
+		else
+		{
+			this.discardCancel.focus();
+		}
+	}
+
+	/**
+	 * Discards as many of the item asked about as the field says from what the character shown carries,
+	 * then shows the sheet without them
+	 */
+	private async discard(): Promise<void>
+	{
+		const current = this.current;
+		const item = this.discarding;
+
+		if (!current || !item || this.busy)
+		{
+			return;
+		}
+
+		const quantity = ((item.quantity > 1) ? this.discardQuantity.valueAsNumber : 1);
+
+		if (!Number.isInteger(quantity) || (quantity < 1) || (quantity > item.quantity))
+		{
+			reportFieldError(this.discardQuantity, t(formMessages.wholeNumber, {
+				min: 1,
+				max: item.quantity
+			}));
+			return;
+		}
+
+		this.busy = true;
+		this.discardConfirm.disabled = true;
+		this.discardCancel.disabled = true;
+
+		try
+		{
+			await this.api.discardItems(current.universeId, current.sheet.id, [
+				{
+					itemId: item.id,
+					quantity
+				}
+			]);
+		}
+		catch (error)
+		{
+			showMessage(this.discardError, describeEditorError(error, {
+				id: 'characterSheet.discardFailed',
+				defaultMessage: 'Could not discard the items.',
+				description: 'Shown in the dialog that discards an item a character carries, opened from their sheet, when the items couldn\'t be discarded'
+			}));
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+			this.discardConfirm.disabled = false;
+			this.discardCancel.disabled = false;
+		}
+
+		this.discardDialog.close();
+		await this.reload(current);
+
+		// The item's row is gone when all of it was discarded, so focus goes on to the sheet's buttons
+		const menuButton = this.items.querySelector<HTMLButtonElement>(`.action-menu-button[data-item-id="${item.id}"]`);
+
+		(menuButton ?? (this.giveButton.hidden ? getElement('character-sheet-close', HTMLButtonElement) : this.giveButton)).focus();
+		announce(t({
+			id: 'characterSheet.itemsDiscarded',
+			defaultMessage: '{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}.',
+			description: 'Read out by screen readers once items a character carried were discarded from their sheet; {name} is the character\'s name, {item} the item\'s name and {quantity} how many were discarded, written as the sheet writes it, e.g. "Arrow x20"'
+		}, {
+			name: current.sheet.name,
+			item: itemName(item, current.sheet.ruleset),
+			quantity
+		}));
+	}
+
+	/**
+	 * Loads the character shown again and shows them, unless the dialog has moved on to another
+	 *
+	 * @param current The character shown
+	 */
+	private async reload(current: ShownCharacter): Promise<void>
+	{
+		let sheet: CharacterSheet;
+
+		try
+		{
+			sheet = await this.api.getCharacterSheet(current.universeId, current.sheet.id);
+		}
+		catch (error)
+		{
+			if (this.current === current)
+			{
+				showMessage(this.error, describeEditorError(error, sheetMessages.loadFailed));
+			}
+
+			return;
+		}
+
+		if (this.current === current)
+		{
+			current.sheet = sheet;
+			this.show(sheet, current.canChange);
+		}
+	}
+
+	/**
 	 * Turns the last question's buttons off while its answer is being sent
 	 *
 	 * @param busy Whether an answer is being sent
@@ -729,11 +1038,12 @@ export class CharacterSheetDialog
 
 	/**
 	 * Lists the items the character carries by name, the way the player's language sorts them, with how
-	 * many of each
+	 * many of each, and a menu beside each of what can be done with it for those who may change the character
 	 *
 	 * @param sheet The character
+	 * @param canChange Whether the sheet offers to change the character
 	 */
-	private showItems(sheet: CharacterSheet): void
+	private showItems(sheet: CharacterSheet, canChange: boolean): void
 	{
 		const items = sheet.items
 			.map((item) => ({
@@ -757,8 +1067,50 @@ export class CharacterSheetDialog
 			});
 			row.append(createItemIcon(item.type, sheet.ruleset), text);
 
+			if (canChange)
+			{
+				row.append(this.createItemMenu(item, name));
+			}
+
 			return(row);
 		}));
 		this.noItems.hidden = (items.length > 0);
+	}
+
+	/**
+	 * The menu beside an item of what can be done with it: Discard
+	 *
+	 * @param item The item
+	 * @param name The item's name
+	 * @return The menu's button, and the menu
+	 */
+	private createItemMenu(item: CharacterSheetItem, name: string): HTMLElement
+	{
+		const menu = createActionMenu(t({
+			id: 'characterSheet.itemMenu',
+			defaultMessage: 'Actions for {item}',
+			description: 'Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character\'s sheet, which opens a menu of what can be done with the item, such as Discard; {item} is the item\'s name'
+		}, {
+			item: name
+		}), [
+			{
+				label: t({
+					id: 'characterSheet.discard',
+					defaultMessage: 'Discard',
+					description: 'Item in the menu beside an item on a character\'s sheet that asks how many of it to discard from what the character carries'
+				}),
+				icon: discardIcon,
+				danger: true,
+				run: () =>
+				{
+					this.askToDiscard(item);
+				}
+			}
+		]);
+
+		menu.classList.add('character-sheet-item-menu');
+		menu.querySelector<HTMLButtonElement>('.action-menu-button')?.setAttribute('data-item-id', String(item.id));
+
+		return(menu);
 	}
 }
