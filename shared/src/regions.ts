@@ -8,6 +8,7 @@
  * path. The editor and every save that changes them run the same functions, so nothing is ever saved with
  * a conflict or a missing value
  */
+import { isInBounds, type AreaBounds } from './areaCells.js';
 import type { NeighborSide } from './areaNeighbors.js';
 import { defineMessages, type MessageDescriptor } from './localization.js';
 import type { AreaLightLevel, FaerieMorning, PassageOfTime } from './universes.js';
@@ -236,6 +237,7 @@ export interface PlaceWorld
  * - lobbyStartingArea: characters start in the area (the universe's, a race's or a class's starting
  *   area), and it is a lobby area
  * - lobbySquareOutside: the lobby's starting square is in the area, which isn't a lobby area
+ * - lobbySquareOffArea: the lobby's starting square is past the edges of its area
  * - lobbyFaerieLoops: the area is a lobby area and loops, while the lobby's passage of time is faerie
  * - lobbyNeighbor: the area is a neighbor of an area on the other side of the lobby region's edge
  * - neighborTooSmall: the area has neighbors and is smaller than MIN_NEIGHBOR_AREA_SIDE either way
@@ -254,6 +256,7 @@ export type PlaceProblem =
 	| { kind: 'lobbyLink'; areaId: string; targetAreaId: string }
 	| { kind: 'lobbyStartingArea'; areaId: string }
 	| { kind: 'lobbySquareOutside'; areaId: string }
+	| { kind: 'lobbySquareOffArea'; areaId: string }
 	| { kind: 'lobbyFaerieLoops'; areaId: string }
 	| { kind: 'lobbyNeighbor'; areaId: string; targetAreaId: string }
 	| { kind: 'neighborTooSmall'; areaId: string }
@@ -287,6 +290,22 @@ export interface LobbyEdge
 	 * Whether the lobby's passage of time is faerie, which the lobby areas can't loop with
 	 */
 	faerie: boolean;
+
+	/**
+	 * The lobby's starting square and its area's bounds, which the square must be inside; left out when
+	 * the bounds aren't known
+	 */
+	square?: LobbySquare;
+}
+
+/**
+ * The lobby's starting square, and the bounds of the area it is in
+ */
+export interface LobbySquare
+{
+	column: number;
+	row: number;
+	bounds: AreaBounds;
 }
 
 /**
@@ -907,12 +926,12 @@ export function lobbyAreaIds(graph: PlaceGraph, lobbyRegionId: string | null): S
 
 /**
  * What connects the lobby areas to the rest of the world, or keeps the lobby from working: links across
- * the lobby region's edge either way, starting areas below it, a starting square outside it, and lobby
- * areas that loop while the lobby's passage of time is faerie. The server refuses every save leaving any,
- * and the editor offers nothing that would make one
+ * the lobby region's edge either way, starting areas below it, a starting square outside it or past the
+ * edges of its area, and lobby areas that loop while the lobby's passage of time is faerie. The server
+ * refuses every save leaving any, and the editor offers nothing that would make one
  *
  * @param graph The version's regions and areas
- * @param lobby The lobby region, its starting square's area and whether its time is faerie
+ * @param lobby The lobby region, its starting square and the square's area, and whether its time is faerie
  * @param links The links between areas; those with neither end a lobby area may be left out
  * @param startingAreaIds Every starting area: the universe's, its races' and its classes'
  * @param neighbors The areas that are neighbors, each pair once (neighborPairs())
@@ -959,6 +978,11 @@ export function lobbyProblems(graph: PlaceGraph, lobby: LobbyEdge, links: readon
 	if ((lobby.lobbyAreaId !== null) && graph.areas.has(lobby.lobbyAreaId) && !inLobby.has(lobby.lobbyAreaId))
 	{
 		problems.push({ kind: 'lobbySquareOutside', areaId: lobby.lobbyAreaId });
+	}
+
+	if ((lobby.lobbyAreaId !== null) && graph.areas.has(lobby.lobbyAreaId) && lobby.square && !isInBounds(lobby.square.bounds, lobby.square.column, lobby.square.row))
+	{
+		problems.push({ kind: 'lobbySquareOffArea', areaId: lobby.lobbyAreaId });
 	}
 
 	if (lobby.faerie)

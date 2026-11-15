@@ -446,9 +446,9 @@ export async function applyUniverseChange(context: ChangeContext, update: Univer
 		context.places.touch();
 	}
 
-	// Whether the lobby's starting square is below the lobby region, and its areas don't loop with faerie
-	// time, is checked once every change is made
-	if ((lobbyAreaId !== universe.lobbyAreaId) || (update.lobbyPassageOfTime !== undefined))
+	// Whether the lobby's starting square is below the lobby region and inside its area, and its areas don't
+	// loop with faerie time, is checked once every change is made
+	if ((lobbyAreaId !== universe.lobbyAreaId) || (update.lobbyColumn !== undefined) || (update.lobbyRow !== undefined) || (update.lobbyPassageOfTime !== undefined))
 	{
 		context.places.checkLobby();
 	}

@@ -530,6 +530,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				this.area = { ...this.area, bounds };
 				this.showSize(this.area);
 				this.showNeighborSection();
+				this.problemsFor({ kind: 'area', id: this.area.id }, this.areaOverride(), this.problemList, this.problems);
 			}
 		}, (unsaved) =>
 		{
@@ -2646,12 +2647,23 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	lobbyProblemsIn(world: PlaceWorld): PlaceProblem[]
 	{
 		const lobbyRegionId = (world.regions.some((region) => (region.id === world.lobbyRegionId)) ? world.lobbyRegionId : null);
+		const lobbyAreaId = ((lobbyRegionId === null) ? null : this.loaded.lobbyAreaId);
+		const grid = this.neighborGrid();
+		const universe = this.universeOpen;
+		const squareBounds = ((lobbyAreaId === null) ? undefined : grid.get(lobbyAreaId)?.bounds);
 
 		return(lobbyProblems(new PlaceGraph(world.regions, world.areas), {
 			lobbyRegionId,
-			lobbyAreaId: ((lobbyRegionId === null) ? null : this.loaded.lobbyAreaId),
-			faerie: (this.universeOpen?.lobbyPassageOfTime === 'faerie')
-		}, this.links(), this.loaded.startingAreaIds, this.neighborPairs()));
+			lobbyAreaId,
+			faerie: (universe?.lobbyPassageOfTime === 'faerie'),
+			...(((squareBounds === undefined) || !universe) ? {} : {
+				square: {
+					column: universe.lobbyColumn,
+					row: universe.lobbyRow,
+					bounds: squareBounds
+				}
+			})
+		}, this.links(), this.loaded.startingAreaIds, neighborPairs(grid)));
 	}
 
 	/**

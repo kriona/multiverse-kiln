@@ -547,6 +547,15 @@ describe('The lobby region\'s edge', () =>
 		assert.deepStrictEqual(lobbyProblems(graph, { ...edge, lobbyRegionId: null }, [], []), [{ kind: 'lobbySquareOutside', areaId: 'Square' }]);
 	});
 
+	it('refuses a starting square past the edges of its area', () =>
+	{
+		const bounds = { minColumn: -2, minRow: -1, maxColumn: 2, maxRow: 1 };
+
+		assert.deepStrictEqual(lobbyProblems(graph, { ...edge, square: { column: 2, row: -1, bounds } }, [], []), []);
+		assert.deepStrictEqual(lobbyProblems(graph, { ...edge, square: { column: 3, row: 0, bounds } }, [], []), [{ kind: 'lobbySquareOffArea', areaId: 'Square' }]);
+		assert.deepStrictEqual(lobbyProblems(graph, { ...edge, square: { column: 0, row: 2, bounds } }, [], []), [{ kind: 'lobbySquareOffArea', areaId: 'Square' }]);
+	});
+
 	it('refuses a lobby area looping with faerie lobby time', () =>
 	{
 		const looping = new PlaceGraph(places.regions, places.areas.map((each) => ((each.id === 'House') ? { ...each, loopsNorthSouth: true } : each)));

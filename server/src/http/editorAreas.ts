@@ -469,6 +469,13 @@ export async function resizeAreaChange(context: ChangeContext, areaId: StringRef
 	{
 		context.places.noteNeighbors([area.id]);
 	}
+
+	// The lobby's starting square must stay inside its area, which is checked once the save's changes are
+	// made
+	if (area.id === context.universe.lobbyAreaId)
+	{
+		context.places.checkLobby();
+	}
 }
 
 /**

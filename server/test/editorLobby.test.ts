@@ -74,15 +74,57 @@ describe('The lobby region', () =>
 	it('moves the starting square to another lobby area, telling the lobby', async () =>
 	{
 		const { universeId, houseAreaId } = universe;
-		const published = await publishedBy(() => saveAll(ada, universeId, [{ kind: 'universe', update: { lobbyAreaId: houseAreaId, lobbyColumn: 1, lobbyRow: -2 } }]));
+		const published = await publishedBy(() => saveAll(ada, universeId, [{ kind: 'universe', update: { lobbyAreaId: houseAreaId, lobbyColumn: 1, lobbyRow: 2 } }]));
 		const saved = await findUniverse(universeId);
 
-		assert.deepStrictEqual([saved?.lobbyAreaId, saved?.lobbyColumn, saved?.lobbyRow], [houseAreaId, 1, -2]);
+		assert.deepStrictEqual([saved?.lobbyAreaId, saved?.lobbyColumn, saved?.lobbyRow], [houseAreaId, 1, 2]);
 		assert.ok(published.some((change) => (change.kind === 'lobby')));
 
 		const editable = await send<EditableUniverse>(ada, 'GET', `/${universeId}`);
 
-		assert.deepStrictEqual([editable.body.lobbyAreaId, editable.body.lobbyColumn, editable.body.lobbyRow], [houseAreaId, 1, -2]);
+		assert.deepStrictEqual([editable.body.lobbyAreaId, editable.body.lobbyColumn, editable.body.lobbyRow], [houseAreaId, 1, 2]);
+	});
+
+	it('refuses a starting square past the edges of its area, from the Lobby tab or a resize', async () =>
+	{
+		const { universeId, squareAreaId, houseAreaId } = universe;
+		const offArea = [{ kind: 'lobbySquareOffArea', areaId: squareAreaId }];
+		const square = { minColumn: 0, minRow: 0, maxColumn: 31, maxRow: 17 };
+
+		// The square reaches from column 0, row 0 to 31, 17
+		assert.deepStrictEqual(await lobbyRefusal([{ kind: 'universe', update: { lobbyColumn: 32 } }]), offArea);
+		assert.deepStrictEqual(await lobbyRefusal([{ kind: 'universe', update: { lobbyAreaId: houseAreaId, lobbyColumn: 10, lobbyRow: 0 } }]), [{ kind: 'lobbySquareOffArea', areaId: houseAreaId }]);
+
+		await saveAll(ada, universeId, [{ kind: 'universe', update: { lobbyColumn: 20, lobbyRow: 10 } }]);
+
+		assert.deepStrictEqual(await lobbyRefusal([{ kind: 'resizeArea', areaId: squareAreaId, bounds: { ...square, maxColumn: 19 }, discard: true }]), offArea);
+
+		// A builder assigned the lobby region is refused the same way
+		const bea = await logIn('Bea');
+
+		await setUniverseRole(universeId, bea.playerId, 'builder');
+		await saveAll(ada, universeId, [
+			{ kind: 'universe', update: { requireBuilderDraft: false } },
+			{ kind: 'assignBuilders', regionId: await testLobbyRegionId(universeId), builderIds: [bea.playerId] }
+		]);
+
+		const builder = await saveChanges(bea, universeId, [{ kind: 'resizeArea', areaId: squareAreaId, bounds: { ...square, maxRow: 9 }, discard: true }]);
+
+		assert.strictEqual(builder.status, 409, JSON.stringify(builder.body));
+		assert.deepStrictEqual(builder.body.placeProblems, offArea);
+		assert.deepStrictEqual((await findEditorArea(squareAreaId))?.area.bounds, square);
+
+		// Moving the square inside in the same save, or a resize that keeps it inside, is saved
+		await saveAll(ada, universeId, [
+			{ kind: 'resizeArea', areaId: squareAreaId, bounds: { ...square, maxColumn: 19 }, discard: true },
+			{ kind: 'universe', update: { lobbyColumn: 19 } }
+		]);
+		await saveAll(bea, universeId, [{ kind: 'resizeArea', areaId: squareAreaId, bounds: { ...square, maxColumn: 19, maxRow: 10 }, discard: true }]);
+
+		const saved = await findUniverse(universeId);
+
+		assert.deepStrictEqual([saved?.lobbyAreaId, saved?.lobbyColumn, saved?.lobbyRow], [squareAreaId, 19, 10]);
+		assert.deepStrictEqual((await findEditorArea(squareAreaId))?.area.bounds, { ...square, maxColumn: 19, maxRow: 10 });
 	});
 
 	it('leaves the universe without a lobby region or starting square', async () =>

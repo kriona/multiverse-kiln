@@ -3099,6 +3099,10 @@
 		"defaultMessage": "{reason, select, starting {in the lobby, where characters can't start} other {in the lobby, and links here lead out of it}}",
 		"description": "After a region or area offered as a parent in the region and area editors' Add Parent, when it can't be chosen: it is below the lobby region, and {reason} is \"starting\" when characters start in this region or area (or below it), or otherwise links lead from here to areas outside the lobby. The lobby areas are never connected to the rest of the world"
 	},
+	"editor.place.lobbySquareOffArea": {
+		"defaultMessage": "{area}: the lobby's starting square is outside it",
+		"description": "A problem keeping a save, shown by the area editor and the Areas tab: the lobby's starting square (chosen on the Lobby tab) is past the edges of the area holding it, such as when the area is made smaller; {area} is the area"
+	},
 	"editor.place.lobbySquareOutside": {
 		"defaultMessage": "{area}: the lobby's starting square is here, so it must stay part of the lobby",
 		"description": "A problem keeping a save, shown by the region and area editors and the Areas tab: the area holding the lobby's starting square (chosen on the Lobby tab) would no longer be below the lobby region; {area} is the area"
@@ -5457,7 +5461,7 @@
 	},
 	"error.lobbyProblems": {
 		"defaultMessage": "The lobby's areas would be connected to the rest of the world, or the lobby couldn't be walked in.",
-		"description": "Why the world editor couldn't save: the areas below the lobby region (the lobby areas) must never be connected to the rest of the world, and the changes leave a link across its edge, a starting area below it, the lobby's starting square outside it, or a lobby area that loops while the lobby's time is faerie; the editor lists each problem on the Areas tab"
+		"description": "Why the world editor couldn't save: the areas below the lobby region (the lobby areas) must never be connected to the rest of the world, and the changes leave a link across its edge, a starting area below it, the lobby's starting square outside it or past the edges of its area, or a lobby area that loops while the lobby's time is faerie; the editor lists each problem on the Areas tab"
 	},
 	"error.logInFirst": {
 		"defaultMessage": "Log in first.",

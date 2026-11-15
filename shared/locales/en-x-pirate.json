@@ -3099,6 +3099,10 @@
 		"message": "{reason, select, starting {in the tavern, where no hand sets sail} other {in the tavern, an' passages here lead out of it}}",
 		"source": "{reason, select, starting {in the lobby, where characters can't start} other {in the lobby, and links here lead out of it}}"
 	},
+	"editor.place.lobbySquareOffArea": {
+		"message": "{area}: the tavern's moorin' spot be off its edges",
+		"source": "{area}: the lobby's starting square is outside it"
+	},
 	"editor.place.lobbySquareOutside": {
 		"message": "{area}: the tavern's moorin' spot be here, so it must stay part o' the tavern",
 		"source": "{area}: the lobby's starting square is here, so it must stay part of the lobby"

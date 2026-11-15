@@ -282,6 +282,15 @@ export function describeProblem(problem: PlaceProblem, names: PlaceNames, tiles:
 				area: names({ kind: 'area', id: problem.areaId })
 			}));
 
+		case 'lobbySquareOffArea':
+			return(t({
+				id: 'editor.place.lobbySquareOffArea',
+				defaultMessage: '{area}: the lobby\'s starting square is outside it',
+				description: 'A problem keeping a save, shown by the area editor and the Areas tab: the lobby\'s starting square (chosen on the Lobby tab) is past the edges of the area holding it, such as when the area is made smaller; {area} is the area'
+			}, {
+				area: names({ kind: 'area', id: problem.areaId })
+			}));
+
 		case 'lobbyFaerieLoops':
 			return(t({
 				id: 'editor.place.lobbyFaerieLoops',

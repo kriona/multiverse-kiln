@@ -357,7 +357,8 @@ export class SavePlaces
 
 	/**
 	 * Refuses the save when it leaves a link across the lobby region's edge, a starting area below it, the
-	 * lobby's starting square outside it, or a lobby area that loops with faerie lobby time
+	 * lobby's starting square outside it or past the edges of its area, or a lobby area that loops with
+	 * faerie lobby time
 	 */
 	private async checkLobbyEdge(): Promise<void>
 	{
@@ -372,10 +373,18 @@ export class SavePlaces
 		const links = (hasLobby ? await listLinkEnds(version, transaction) : []);
 		const startingAreaIds = (hasLobby ? await listStartingAreaIds(version, transaction) : []);
 		const grid = (hasLobby ? await this.neighborGrid() : new Map<string, GridArea>());
+		const squareBounds = ((universe.lobbyAreaId === null) ? undefined : grid.get(universe.lobbyAreaId)?.bounds);
 		const problems = lobbyProblems(model.graph(), {
 			lobbyRegionId: universe.lobbyRegionId,
 			lobbyAreaId: universe.lobbyAreaId,
-			faerie: (universe.lobbyPassageOfTime === 'faerie')
+			faerie: (universe.lobbyPassageOfTime === 'faerie'),
+			...((squareBounds === undefined) ? {} : {
+				square: {
+					column: universe.lobbyColumn,
+					row: universe.lobbyRow,
+					bounds: squareBounds
+				}
+			})
 		}, links, startingAreaIds, neighborPairs(grid));
 
 		if (problems.length > 0)
@@ -385,7 +394,7 @@ export class SavePlaces
 				message: {
 					id: 'error.lobbyProblems',
 					defaultMessage: 'The lobby\'s areas would be connected to the rest of the world, or the lobby couldn\'t be walked in.',
-					description: 'Why the world editor couldn\'t save: the areas below the lobby region (the lobby areas) must never be connected to the rest of the world, and the changes leave a link across its edge, a starting area below it, the lobby\'s starting square outside it, or a lobby area that loops while the lobby\'s time is faerie; the editor lists each problem on the Areas tab'
+					description: 'Why the world editor couldn\'t save: the areas below the lobby region (the lobby areas) must never be connected to the rest of the world, and the changes leave a link across its edge, a starting area below it, the lobby\'s starting square outside it or past the edges of its area, or a lobby area that loops while the lobby\'s time is faerie; the editor lists each problem on the Areas tab'
 				}
 			}, undefined, undefined, {
 				problems,
