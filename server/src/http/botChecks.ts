@@ -206,16 +206,18 @@ export async function takePasswordTry(request: Request, response: Response, sour
 	return(await inTransaction(async (executor): Promise<AuthRefusal | undefined> =>
 	{
 		const decision = await takePasswordAttempt(subjects, check.state, now, executor);
+
+		// A refused try records no events, so the limits bound how many a network can add
+		if (decision.kind === 'refused')
+		{
+			return(tooManyAttempts(decision, now, response));
+		}
+
 		const asked = (decision.kind === 'checkNeeded');
 
 		if (asked || (check.tokenOutcome === 'passed') || (check.tokenOutcome === 'failed'))
 		{
 			await recordBotCheckEvents(request, check, asked, ((typeof account === 'function') ? await account(executor) : account), now, executor);
-		}
-
-		if (decision.kind === 'refused')
-		{
-			return(tooManyAttempts(decision, now, response));
 		}
 
 		return((asked ? botCheckRefusal(check) : undefined));

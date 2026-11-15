@@ -234,6 +234,19 @@ describe('bot checks', () =>
 			assert.strictEqual((await logIn(new Browser(), PASSWORD, 'pass-login')).status, 429);
 		});
 
+		it('records no bot check events for tries the hard limits refuse', async () =>
+		{
+			await pastAttempts('addressLoginAttempt', 'ada@example.com', MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR);
+			await pastAttempts('addressCheckedLoginAttempt', 'ada@example.com', MAX_CHECKED_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR);
+
+			for (const token of ['pass-login', 'wrong'])
+			{
+				assert.strictEqual((await logIn(new Browser(), PASSWORD, token)).status, 429);
+			}
+
+			assert.deepStrictEqual(await checkEvents(), []);
+		});
+
 		it('never asks a browser that has logged in to the account', async () =>
 		{
 			const ada = new Browser();
@@ -351,6 +364,20 @@ describe('bot checks', () =>
 			await pool.query('UPDATE rate_limit_events SET occurred_at = occurred_at - interval \'2 minutes\' WHERE kind = \'addressCheckedCodeSent\'');
 			await pastAttempts('addressCheckedCodeSent', 'nobody@example.com', MAX_CHECKED_CODES_PER_ADDRESS_HOUR - 1);
 			assert.strictEqual((await sendCode('nobody@example.com', 'pass-email-code')).status, 429);
+		});
+
+		it('records no bot check events for codes the hard limits refuse', async () =>
+		{
+			await pastAttempts('addressCodeSent', 'ada@example.com', MAX_EMAIL_CODES_PER_ADDRESS_HOUR);
+			await pastAttempts('addressCheckedCodeSent', 'ada@example.com', MAX_CHECKED_CODES_PER_ADDRESS_HOUR);
+
+			for (const token of ['pass-email-code', 'wrong'])
+			{
+				assert.strictEqual((await sendCode('ada@example.com', token)).status, 429);
+			}
+
+			assert.deepStrictEqual(await checkEvents(), []);
+			assert.deepStrictEqual(emails, []);
 		});
 
 		it('sends a player whose codes others\' wrong guesses blocked a few more codes with a check each', async () =>

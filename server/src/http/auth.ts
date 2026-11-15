@@ -308,16 +308,18 @@ async function takeCodeSendTry(request: Request, response: Response, check: Requ
 		checkEveryRequest: false
 	});
 	const decision = await takeCodeSend(clientNetworkHash(request), addressHash, state, now, executor);
+
+	// A refused code records no events, so the limits bound how many a network can add
+	if (decision.kind === 'refused')
+	{
+		return(tooManyAttempts(decision, now, response));
+	}
+
 	const asked = (decision.kind === 'checkNeeded');
 
 	if (check && (asked || (check.tokenOutcome === 'passed') || (check.tokenOutcome === 'failed')))
 	{
 		await recordBotCheckEvents(request, check, asked, ownerId, now, executor);
-	}
-
-	if (decision.kind === 'refused')
-	{
-		return(tooManyAttempts(decision, now, response));
 	}
 
 	return(((check && asked) ? botCheckRefusal(check) : undefined));
