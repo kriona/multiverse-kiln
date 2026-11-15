@@ -507,7 +507,7 @@ Steps:
 - [✅] An admin setting (Settings in the admin pages, `site_settings`) to check every login and code request while the site is under attack, recorded in `admin_events`, and shown turned off with a note while checks aren't configured
 - [✅] Privacy policy: Cloudflare Turnstile under the services the site uses, saying it is loaded only when the site asks a browser to show it isn't a bot, and what Cloudflare learns then
 - [✅] Add `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to `server/.env.example` (with the test keys, commented out, since the server takes them only with dev tools on) and to CLAUDE.md's Configuration
-- [ ] Check the pages with only a keyboard, with a screen reader, in the pseudo-language (`?locale=en-XA`), with the test keys that fail and that ask the player to interact, and with Turnstile's script blocked
+- [✅] Check the pages with only a keyboard, with a screen reader, in the pseudo-language (`?locale=en-XA`), with the test keys that fail and that ask the player to interact, and with Turnstile's script blocked
 
 **Done when:** a browser that guesses wrong passwords for an address is asked to show it isn't a bot, and once it does can keep trying a little longer while the account's own browsers log in as before; a bot that doesn't pass checks can't use up the address's tries; a player whose address was used up by someone else's guesses still gets a code after passing a check, unless the guesser keeps passing checks too; and a player who logs in normally never loads anything from Cloudflare.
 
