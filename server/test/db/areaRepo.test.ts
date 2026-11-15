@@ -1,12 +1,13 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, tileIdAt, VOID_CELL, type AreaLinkTarget, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
+import { CHUNK_SIZE, cellIndexInChunk, chunkKey, DEFAULT_LOBBY_DAY_HOURS, DEFAULT_TILE_CELL, MAX_AREA_SIDE, NO_NEIGHBORS, seamSides, tileIdAt, VOID_CELL, type AreaLinkTarget, type ResolvedAreaSettings } from '@multiverse-kiln/shared';
 
 import { watchQueries } from '../../scripts/benchmarks/queries.js';
+import { db } from '../../src/db/client.js';
 import { findDefaultTileIds } from '../../src/db/tileRepo.js';
 import { setUniverseAreas, updateUniverseSettings } from '../../src/db/universeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
-import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../../src/db/areaRepo.js';
+import { countAreas, createAreaLink, deleteArea, deleteAreaLink, editCells, findAreaIdsIn, findEditorArea, isTileInUse, listAreaLinks, listAreas, listAreasLinkingTo, loadChunks, loadChunksAt, loadArea, loadNeighborChains, loadNeighborGrid, lockAreas, resizeArea, saveGroundChunk, saveAreaLink, setAreaNeighbor, setAreaParents, storeResolvedSettings, updateAreaSettings } from '../../src/db/areaRepo.js';
 import { findDefaultDifficultyLevel } from '../../src/db/difficultyRepo.js';
 import { createGroup } from '../../src/db/groupRepo.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
@@ -48,6 +49,47 @@ function chunkStartingWith(value: number): number[]
 	cells[0] = value;
 
 	return(cells);
+}
+
+/**
+ * Adds a grid of areas joined as neighbors, each a chunk across
+ *
+ * @param universeId The universe's ID
+ * @param rows How many rows of areas
+ * @param columns How many columns of areas
+ * @return The areas' IDs, by row then column
+ */
+async function addNeighborGrid(universeId: string, rows: number, columns: number): Promise<string[][]>
+{
+	const bounds = {
+		minColumn: 0,
+		minRow: 0,
+		maxColumn: CHUNK_SIZE - 1,
+		maxRow: CHUNK_SIZE - 1
+	};
+	const ids: string[][] = [];
+
+	for (let row = 0; row < rows; row++)
+	{
+		ids.push([]);
+
+		for (let column = 0; column < columns; column++)
+		{
+			ids[row].push(await addArea(universeId, `Area ${row}, ${column}`, { bounds }));
+
+			if (column > 0)
+			{
+				await setAreaNeighbor(ids[row][column - 1], 'east', ids[row][column], db);
+			}
+
+			if (row > 0)
+			{
+				await setAreaNeighbor(ids[row - 1][column], 'south', ids[row][column], db);
+			}
+		}
+	}
+
+	return(ids);
 }
 
 describe('areaRepo', () =>
@@ -150,6 +192,40 @@ describe('areaRepo', () =>
 		it('finds nothing for an unknown ID', async () =>
 		{
 			assert.strictEqual(await loadArea('00000000-0000-4000-8000-000000000000'), undefined);
+		});
+
+		it('works out where each side leads from the area\'s row and column, as the whole grid does', async () =>
+		{
+			const universeId = await addUniverse();
+			const ids = await addNeighborGrid(universeId, 3, 4);
+
+			await addArea(universeId, 'Apart');
+			await updateAreaSettings(ids[1][0], { loopsEastWest: true });
+			await updateAreaSettings(ids[1][3], { loopsEastWest: true });
+
+			const chains = await loadNeighborChains(liveVersion(universeId), ids[1][1]);
+			const grid = await loadNeighborGrid(liveVersion(universeId));
+
+			assert.deepStrictEqual([...chains.keys()].sort(), [...ids[1], ids[0][1], ids[2][1]].sort());
+
+			for (const id of ids.flat())
+			{
+				assert.deepStrictEqual((await loadArea(id))?.sides, seamSides(grid, id));
+			}
+
+			assert.deepStrictEqual((await loadArea(ids[1][0]))?.sides, { north: ids[0][0], east: ids[1][1], south: ids[2][0], west: ids[1][3] });
+			assert.strictEqual((await loadNeighborChains(draftVersion(universeId), ids[1][1])).size, 0);
+		});
+
+		it('works out where each side of an area in a ring leads', async () =>
+		{
+			const universeId = await addUniverse();
+			const [ring] = await addNeighborGrid(universeId, 1, 3);
+
+			await setAreaNeighbor(ring[2], 'east', ring[0], db);
+
+			assert.strictEqual((await loadNeighborChains(liveVersion(universeId), ring[0])).size, 3);
+			assert.deepStrictEqual((await loadArea(ring[0]))?.sides, { north: null, east: ring[1], south: null, west: ring[2] });
 		});
 	});
 

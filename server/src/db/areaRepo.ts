@@ -287,8 +287,8 @@ export async function loadArea(areaId: string, executor: Executor = db): Promise
 	const tiles = await loadUniverseTiles(liveVersion(area.universeId), ruleset, executor);
 	const neighbors = neighborsOf(area);
 
-	// Where a row or column of neighbors loops depends on its ends, so the whole grid is read
-	const sides = (hasNeighbors(neighbors) ? seamSides(await loadNeighborGrid(liveVersion(area.universeId), executor), area.id) : { ...NO_NEIGHBORS });
+	// Where a row or column of neighbors loops depends on its ends, so the whole row and column are read
+	const sides = (hasNeighbors(neighbors) ? seamSides(await loadNeighborChains(liveVersion(area.universeId), area.id, executor), area.id) : { ...NO_NEIGHBORS });
 
 	return({
 		area: {
@@ -624,6 +624,54 @@ export async function storeResolvedSettings(settings: ReadonlyMap<string, Resolv
  */
 export async function loadNeighborGrid(version: UniverseVersion, executor: Executor = db): Promise<Map<string, GridArea>>
 {
+	return(await loadGridAreas(inVersion(areas, version), executor));
+}
+
+/**
+ * The areas of a version in an area's row and column of neighbors, as the grid of neighbors sees them:
+ * every area reached from it going only east and west, or only north and south. That is all seamSides()
+ * reads for the area, so it works out the same sides from them as from the whole grid
+ *
+ * @param version The universe's live version or draft
+ * @param areaId The area's ID
+ * @param executor The database, or a transaction
+ * @return The areas, by ID; none when the area isn't in the version
+ */
+export async function loadNeighborChains(version: UniverseVersion, areaId: string, executor: Executor = db): Promise<Map<string, GridArea>>
+{
+	// Each area reached is followed both ways along its axis, so every area chainOf() can reach is found
+	// even where links aren't both ways. UNION drops the rows already found, so a ring ends. Each area is
+	// looked up in a subquery of its own, and the areas found are matched as an array, so both use the
+	// primary key, where a join may read every area of the universe instead
+	const chains = sql`
+		WITH RECURSIVE chain (id, axis) AS (
+			SELECT ${areaId}::uuid, axes.axis
+			FROM (VALUES ('eastWest'), ('northSouth')) AS axes (axis)
+			UNION
+			SELECT step.id, chain.axis
+			FROM chain
+			CROSS JOIN LATERAL unnest((
+				SELECT (CASE WHEN chain.axis = 'eastWest' THEN ARRAY[here.west_area_id, here.east_area_id] ELSE ARRAY[here.north_area_id, here.south_area_id] END)
+				FROM ${areas} AS here
+				WHERE here.id = chain.id AND here.universe_id = ${version.universeId}::uuid AND here.draft = ${version.draft}
+			)) AS step (id)
+			WHERE step.id IS NOT NULL
+		)
+		SELECT chain.id FROM chain
+	`;
+
+	return(await loadGridAreas(and(inVersion(areas, version), sql`${areas.id} = ANY(ARRAY(${chains}))`) as SQL, executor));
+}
+
+/**
+ * Areas as the grid of neighbors sees them
+ *
+ * @param condition Which areas
+ * @param executor The database, or a transaction
+ * @return The areas, by ID
+ */
+async function loadGridAreas(condition: SQL, executor: Executor): Promise<Map<string, GridArea>>
+{
 	const rows = await executor
 		.select({
 			id: areas.id,
@@ -639,7 +687,7 @@ export async function loadNeighborGrid(version: UniverseVersion, executor: Execu
 			westAreaId: areas.westAreaId
 		})
 		.from(areas)
-		.where(inVersion(areas, version));
+		.where(condition);
 
 	return(new Map(rows.map((row) => [row.id, {
 		id: row.id,
