@@ -1257,7 +1257,7 @@
 	},
 	"editor.area.back": {
 		"defaultMessage": "Back to Areas",
-		"description": "Button that closes the area editor and goes back to the list of areas"
+		"description": "Button in the area and region editors that closes the editor and goes back to the Areas tab's list of regions and areas"
 	},
 	"editor.area.backToLobby": {
 		"defaultMessage": "Back to Lobby",
@@ -1337,7 +1337,7 @@
 	},
 	"editor.area.defaultTile": {
 		"defaultMessage": "Default tile",
-		"description": "Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for the tile an area is filled with where nothing else is painted, in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.delete": {
 		"defaultMessage": "Delete Area",
@@ -1453,7 +1453,7 @@
 	},
 	"editor.area.lightLevel": {
 		"defaultMessage": "Light level",
-		"description": "Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for how light indoor areas are at any time of day, lit or dark, in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.area.links": {
 		"defaultMessage": "Links",
@@ -1899,10 +1899,6 @@
 		"defaultMessage": "{coin}: {text}",
 		"description": "One coin in the value of the universe's Coin names or Coin abbreviations setting, in the editor's Audit tab's list of what a save changed: {coin} is the coin's name in the rules, as a label, and {text} the name or abbreviation the universe gives it, e.g. \"Copper pieces: bronze kits\" or \"Copper pieces: bk\""
 	},
-	"editor.audit.value.faerieTime": {
-		"defaultMessage": "{time}, morning: {morning}",
-		"description": "The value of a passage of time setting in the editor's Audit tab's list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
-	},
 	"editor.audit.value.inherit": {
 		"defaultMessage": "inherit",
 		"description": "The value of a region's or area's setting a save left to the regions and areas above it, in the editor's Audit tab's list of what a save changed, e.g. \"Default tile: inherit\""
@@ -1910,14 +1906,6 @@
 	"editor.audit.value.itemQuantity": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "One item in the value of a starting equipment setting, in the editor's Audit tab's list of what a save changed: the item's name, with how many when there is more than one, e.g. \"Arrow x20\""
-	},
-	"editor.audit.value.items": {
-		"defaultMessage": "items",
-		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
-	},
-	"editor.audit.value.mobs": {
-		"defaultMessage": "mobs",
-		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.audit.value.neighbor": {
 		"defaultMessage": "{side, select, north {North} east {East} south {South} other {West}}: {area}",
@@ -1938,10 +1926,6 @@
 	"editor.audit.value.raceArea": {
 		"defaultMessage": "{race}: {place}",
 		"description": "One race in the value of a class's Starting area by race setting, in the editor's Audit tab's list of what a save changed: {race} is the race's name and {place} where the class's members of that race start, e.g. \"Elf: Meadow at 3, 4\""
-	},
-	"editor.audit.value.tiles": {
-		"defaultMessage": "tiles",
-		"description": "One of the things a builder may edit, in the value of their permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.audit.value.yes": {
 		"defaultMessage": "yes",
@@ -2461,7 +2445,7 @@
 	},
 	"editor.editors.items": {
 		"defaultMessage": "items",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's items"
+		"description": "One of the things a builder may edit besides their regions: the universe's items. Listed in the Notes column of a builder's row on the editor's Editors tab, e.g. \"Also edits: tiles and items\", and in the value of a builder's permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.editors.languages": {
 		"defaultMessage": "Languages",
@@ -2505,7 +2489,7 @@
 	},
 	"editor.editors.mobs": {
 		"defaultMessage": "mobs",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's mobs"
+		"description": "One of the things a builder may edit besides their regions: the universe's mobs (monsters and enemies). Listed in the Notes column of a builder's row on the editor's Editors tab, e.g. \"Also edits: tiles and items\", and in the value of a builder's permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.editors.none": {
 		"defaultMessage": "none",
@@ -2569,7 +2553,7 @@
 	},
 	"editor.editors.tiles": {
 		"defaultMessage": "tiles",
-		"description": "On the editor's Editors tab, in a builder's row: they may edit the universe's tiles"
+		"description": "One of the things a builder may edit besides their regions: the universe's tiles. Listed in the Notes column of a builder's row on the editor's Editors tab, e.g. \"Also edits: tiles and items\", and in the value of a builder's permissions in the editor's Audit tab's list of what a save changed, e.g. \"Permissions: tiles and items\""
 	},
 	"editor.editors.translatorLanguages": {
 		"defaultMessage": "Languages: {languages}",
@@ -2605,7 +2589,11 @@
 	},
 	"editor.faerieMorning": {
 		"defaultMessage": "Where is morning?",
-		"description": "Label of the field for which side of an area has morning, when the passage of time is faerie"
+		"description": "Label of the field for which side of an area has morning when the passage of time is faerie, in the region and area editors, where a region sets it for the areas inside it, and on the Lobby tab"
+	},
+	"editor.faerieTime": {
+		"defaultMessage": "{time}, morning: {morning}",
+		"description": "A passage of time when it is faerie time, with where morning is: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north. Shown in the region and area editors, as the value a setting set to inherit takes and in problems with it, and as the value of a region's, area's or the lobby's passage of time in the editor's Audit tab's list of what a save changed"
 	},
 	"editor.filter.custom": {
 		"defaultMessage": "Custom",
@@ -2999,6 +2987,10 @@
 		"defaultMessage": "Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter.",
 		"description": "Explains the Overall Map dialog: each area of the grid of neighboring areas is drawn in its place, and opening one goes to its editor"
 	},
+	"editor.overallMap.keys.moveDescription": {
+		"defaultMessage": "Move to the nearest area in the arrow's direction",
+		"description": "In the list of keyboard shortcuts, what the arrow keys do on the Overall Map, the dialog drawing the whole grid of neighboring areas an area is in: move the focus from one area to the nearest area up, down, left or right of it"
+	},
 	"editor.overallMap.loop": {
 		"defaultMessage": "{side, select, north {north} east {east} south {south} other {west}} to {target}",
 		"description": "One edge of an area on the Overall Map that loops, in the list screen readers hear for the area: {side} is the edge, and {target} the area at the other end of its row or column, where walking off the edge comes back on, which may be the same area"
@@ -3041,7 +3033,7 @@
 	},
 	"editor.passageOfTime": {
 		"defaultMessage": "Passage of time",
-		"description": "Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for how the time of day changes, in the region and area editors, where a region sets it for the areas inside it, and on the Lobby tab for the universe's lobby; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.place.addParent": {
 		"defaultMessage": "Add Parent",
@@ -3066,10 +3058,6 @@
 	"editor.place.faerieLoops": {
 		"defaultMessage": "{area}: its passage of time is faerie, so it can't loop",
 		"description": "A problem keeping a save, shown by the region and area editors: an area that loops takes faerie time from above it; {area} is the area"
-	},
-	"editor.place.faerieTime": {
-		"defaultMessage": "{time}, morning: {morning}",
-		"description": "A passage of time in the region and area editors, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north"
 	},
 	"editor.place.fogOfWar": {
 		"defaultMessage": "Fog of war",
@@ -3406,6 +3394,10 @@
 	"editor.region.noBuilders": {
 		"defaultMessage": "No builders are assigned to this region.",
 		"description": "Shown in the region editor in place of the list of builders assigned to the region, when it has none"
+	},
+	"editor.region.removeBuilder": {
+		"defaultMessage": "Remove",
+		"description": "Button beside one of the builders assigned to a region in the region editor, which unassigns them from it"
 	},
 	"editor.region.saveFailed": {
 		"defaultMessage": "Could not save the region.",
@@ -4100,8 +4092,8 @@
 		"description": "Label of the list in the dialog replacing a default tile that chooses one tile for every region and area listed at once"
 	},
 	"editor.tileReplace.areas": {
-		"defaultMessage": "Its areas with the tile:",
-		"description": "Under a region or area in the dialog replacing a default tile, before the areas that take the tile from it, each a link"
+		"defaultMessage": "Its areas with the tile: {areas}",
+		"description": "Under a region or area in the dialog replacing a default tile: {areas} lists the areas that take the tile from it, each a link to the area in the editor, e.g. \"Field, Beach, Cove\""
 	},
 	"editor.tileReplace.belowKeeper": {
 		"defaultMessage": "It inherits the tile from a region or area that keeps it for its other areas. Inherit leaves it to take what is above it once the tile no longer suits it.",
@@ -5977,15 +5969,15 @@
 	},
 	"form.enabled": {
 		"defaultMessage": "Enabled",
-		"description": "Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
-		"description": "Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor's checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.indoorsOrOutdoors": {
 		"defaultMessage": "Indoors or outdoors",
-		"description": "Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Heading of the choice between indoors and outdoors in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.invalidText": {
 		"defaultMessage": "Use letters, numbers, spaces or punctuation.",
@@ -6001,11 +5993,11 @@
 	},
 	"form.name": {
 		"defaultMessage": "Name",
-		"description": "Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.outdoors": {
 		"defaultMessage": "Outdoors",
-		"description": "Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor's checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.save": {
 		"defaultMessage": "Save",

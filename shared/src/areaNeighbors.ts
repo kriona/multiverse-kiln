@@ -260,7 +260,14 @@ export function neighborProblems(grid: NeighborGrid): PlaceProblem[]
 
 				if ((first !== undefined) && (second !== undefined) && (first !== second))
 				{
-					problems.push({ kind: 'neighborGrid', areaId: area.id, first: vertical, second: horizontal, firstReached: first, secondReached: second });
+					problems.push({
+						kind: 'neighborGrid',
+						areaId: area.id,
+						first: vertical,
+						second: horizontal,
+						firstReached: first,
+						secondReached: second
+					});
 				}
 			}
 		}

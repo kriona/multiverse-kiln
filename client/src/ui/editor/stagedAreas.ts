@@ -523,8 +523,14 @@ export class StagedAreas implements ChangeSource
 	 */
 	private dropParent(parent: PlaceRef, inherited: readonly PlaceRef[]): void
 	{
-		this.added = this.added.map((area) => ({ ...area, parents: withoutParent(area.parents, parent, inherited) }));
-		this.addedRegions = this.addedRegions.map((region) => ({ ...region, parents: withoutParent(region.parents, parent, inherited.filter((each) => (each.kind === 'region'))) }));
+		this.added = this.added.map((area) => ({
+			...area,
+			parents: withoutParent(area.parents, parent, inherited)
+		}));
+		this.addedRegions = this.addedRegions.map((region) => ({
+			...region,
+			parents: withoutParent(region.parents, parent, inherited.filter((each) => (each.kind === 'region')))
+		}));
 
 		for (const [key, parents] of this.moved)
 		{

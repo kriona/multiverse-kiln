@@ -619,7 +619,12 @@ export async function applyDraft(universeId: string, executor: Executor): Promis
 	await executor.execute(sql`UPDATE ${universes} AS u SET ${sql.join(settingNames.map((name) => sql`${sql.identifier(name)} = ${columnOf('d', name)}`), sql`, `)} FROM ${universeDrafts} AS d WHERE u.id = ${universeId} AND d.universe_id = ${universeId}`);
 
 	// Every reference to a draft row now points at the live row it was copied from
-	for (const { table, column, target } of [...REFERENCES, { table: universes, column: 'lobby_region_id', target: regions }, { table: universes, column: 'lobby_area_id', target: areas }, { table: universes, column: 'starting_area_id', target: areas }])
+	for (const { table, column, target } of [
+		...REFERENCES,
+		{ table: universes, column: 'lobby_region_id', target: regions },
+		{ table: universes, column: 'lobby_area_id', target: areas },
+		{ table: universes, column: 'starting_area_id', target: areas }
+	])
 	{
 		await executor.execute(sql`UPDATE ${table} SET ${sql.identifier(column)} = m.origin_id FROM ${target} AS m WHERE ${table}.${sql.identifier(column)} = m.id AND m.universe_id = ${universeId} AND m.draft AND m.origin_id IS NOT NULL`);
 	}

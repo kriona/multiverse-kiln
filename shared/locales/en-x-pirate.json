@@ -1899,10 +1899,6 @@
 		"message": "{coin}: {text}",
 		"source": "{coin}: {text}"
 	},
-	"editor.audit.value.faerieTime": {
-		"message": "{time}, mornin' be {morning}",
-		"source": "{time}, morning: {morning}"
-	},
 	"editor.audit.value.inherit": {
 		"message": "handed down",
 		"source": "inherit"
@@ -1910,14 +1906,6 @@
 	"editor.audit.value.itemQuantity": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
-	},
-	"editor.audit.value.items": {
-		"message": "booty",
-		"source": "items"
-	},
-	"editor.audit.value.mobs": {
-		"message": "scallywags",
-		"source": "mobs"
 	},
 	"editor.audit.value.neighbor": {
 		"message": "{side, select, north {Nor'ard} east {East'ard} south {Sou'ard} other {West'ard}}: {area}",
@@ -1938,10 +1926,6 @@
 	"editor.audit.value.raceArea": {
 		"message": "{race}: {place}",
 		"source": "{race}: {place}"
-	},
-	"editor.audit.value.tiles": {
-		"message": "tiles",
-		"source": "tiles"
 	},
 	"editor.audit.value.yes": {
 		"message": "aye",
@@ -2607,6 +2591,10 @@
 		"message": "Where be the mornin'?",
 		"source": "Where is morning?"
 	},
+	"editor.faerieTime": {
+		"message": "{time}, mornin' be {morning}",
+		"source": "{time}, morning: {morning}"
+	},
 	"editor.filter.custom": {
 		"message": "Custom",
 		"source": "Custom"
@@ -2999,6 +2987,10 @@
 		"message": "Every area be drawn next to its neighbors, an' the one ye have open be marked. To chart an area, click it, or sail to it with the arrow keys an' press Enter.",
 		"source": "Each area is drawn next to its neighbors, and the open area is marked. To edit an area, click it, or move to it with the arrow keys and press Enter."
 	},
+	"editor.overallMap.keys.moveDescription": {
+		"message": "Sail to the nearest area the way the arrow points",
+		"source": "Move to the nearest area in the arrow's direction"
+	},
 	"editor.overallMap.loop": {
 		"message": "{side, select, north {north} east {east} south {south} other {west}} round to {target}",
 		"source": "{side, select, north {north} east {east} south {south} other {west}} to {target}"
@@ -3066,10 +3058,6 @@
 	"editor.place.faerieLoops": {
 		"message": "{area}: its hours pass the faerie way, so it can't loop",
 		"source": "{area}: its passage of time is faerie, so it can't loop"
-	},
-	"editor.place.faerieTime": {
-		"message": "{time}, mornin': {morning}",
-		"source": "{time}, morning: {morning}"
 	},
 	"editor.place.fogOfWar": {
 		"message": "Sea fog",
@@ -3318,6 +3306,10 @@
 	"editor.region.noBuilders": {
 		"message": "No shipwrights be posted to this sea.",
 		"source": "No builders are assigned to this region."
+	},
+	"editor.region.removeBuilder": {
+		"message": "Discharge",
+		"source": "Remove"
 	},
 	"editor.region.saveFailed": {
 		"message": "Couldn't stow the sea.",
@@ -4100,8 +4092,8 @@
 		"source": "Replace All With"
 	},
 	"editor.tileReplace.areas": {
-		"message": "Its areas with the tile:",
-		"source": "Its areas with the tile:"
+		"message": "Its areas wi' the tile: {areas}",
+		"source": "Its areas with the tile: {areas}"
 	},
 	"editor.tileReplace.belowKeeper": {
 		"message": "It be handed the tile by a sea or area that keeps it for its other areas. Handed down leaves it to take what's above once the tile no longer suits it.",

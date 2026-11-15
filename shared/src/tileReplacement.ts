@@ -268,7 +268,10 @@ function losingPlaces(world: PlaceWorld, resolution: WorldResolution, tileId: nu
 
 		for (const giver of giversOf(settings.defaultTileId, area.id))
 		{
-			const entry = (given.get(placeKey(giver)) ?? { areaIds: [], kinds: new Map<string, boolean | undefined>() });
+			const entry = (given.get(placeKey(giver)) ?? {
+				areaIds: [],
+				kinds: new Map<string, boolean | undefined>()
+			});
 
 			entry.areaIds.push(area.id);
 			entry.kinds.set(area.id, indoors);
@@ -385,8 +388,14 @@ export function withTileChanges(world: PlaceWorld, changes: readonly PlaceTileCh
 
 	return({
 		...world,
-		regions: world.regions.map((region) => ({ ...region, defaultTileId: tileOf({ kind: 'region', id: region.id }, region.defaultTileId) })),
-		areas: world.areas.map((area) => ({ ...area, defaultTileId: tileOf({ kind: 'area', id: area.id }, area.defaultTileId) }))
+		regions: world.regions.map((region) => ({
+			...region,
+			defaultTileId: tileOf({ kind: 'region', id: region.id }, region.defaultTileId)
+		})),
+		areas: world.areas.map((area) => ({
+			...area,
+			defaultTileId: tileOf({ kind: 'area', id: area.id }, area.defaultTileId)
+		}))
 	});
 }
 

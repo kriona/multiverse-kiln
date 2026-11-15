@@ -261,7 +261,11 @@ export class LobbyTab implements SavableTab
 
 			for (const region of regions)
 			{
-				const problems = lobbyProblems(graph, { lobbyRegionId: region.id, lobbyAreaId: null, faerie: false }, list.links, list.startingAreaIds, neighbors);
+				const problems = lobbyProblems(graph, {
+					lobbyRegionId: region.id,
+					lobbyAreaId: null,
+					faerie: false
+				}, list.links, list.startingAreaIds, neighbors);
 				let reason: string | undefined;
 
 				if (problems.some((problem) => (problem.kind === 'lobbyStartingArea')))

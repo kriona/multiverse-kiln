@@ -119,7 +119,11 @@ export async function listArrivals(version: UniverseVersion, ruleset: Ruleset, a
 	for (const row of classRaceRows)
 	{
 		arrivals.push({
-			source: { kind: 'classRace', characterClass: characterClass(row.overridesClassId ?? row.classId), race: race(row.raceId) },
+			source: {
+				kind: 'classRace',
+				characterClass: characterClass(row.overridesClassId ?? row.classId),
+				race: race(row.raceId)
+			},
 			areaId: row.areaId,
 			column: row.column,
 			row: row.row

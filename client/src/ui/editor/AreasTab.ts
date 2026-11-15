@@ -207,24 +207,157 @@ function settingsProblem(settings: Partial<AreaSettings>): 'name' | 'parents' | 
  */
 export interface PlacesHost
 {
+	/**
+	 * The regions and areas added, deleted and moved since the tab was last saved
+	 */
 	readonly staged: StagedAreas;
+
+	/**
+	 * The universe the tab shows
+	 *
+	 * @return The universe, or undefined while none has opened
+	 */
 	universe(): EditableUniverse | undefined;
+
+	/**
+	 * Every region of the universe as last loaded, then the regions added since the tab was last saved,
+	 * with the parents the tab's changes give them
+	 *
+	 * @return The regions, including those that will be deleted
+	 */
 	regions(): EditorRegion[];
+
+	/**
+	 * Every area of the universe as last loaded, then the areas added since the tab was last saved, with
+	 * the parents the tab's changes give them and the settings changed in the areas left with changes
+	 *
+	 * @return The areas, including those that will be deleted
+	 */
 	areas(): EditorAreaSummary[];
+
+	/**
+	 * The regions and areas as the tab's changes leave them, with the region or area open as its editor
+	 * shows it, the kinds of the tiles as the Tilesets tab's changes leave them, and the lobby region. The
+	 * places that will be deleted are left out, an area's parents taking its place in the parents of the
+	 * areas inside it
+	 *
+	 * @param override The region or area open, as its editor shows it
+	 * @return The world
+	 */
 	world(override?: PlaceOverride): PlaceWorld;
+
+	/**
+	 * Names regions and areas, with the names the tab's changes give them
+	 *
+	 * @return The namer
+	 */
 	names(): PlaceNames;
+
+	/**
+	 * The tiles the universe can use, with the Tilesets tab's changes
+	 *
+	 * @return The tiles
+	 */
 	tiles(): readonly EditorTile[];
+
+	/**
+	 * The tiles the Tilesets tab will delete
+	 *
+	 * @return Their IDs
+	 */
 	deletedTiles(): ReadonlySet<number>;
+
+	/**
+	 * Whether the player may change a region or area: creators and the site admin role every one, and
+	 * builders those within the regions assigned to them, in a version they may change
+	 *
+	 * @param place The region or area
+	 * @return True when they may
+	 */
 	canEditPlace(place: PlaceRef): boolean;
+
+	/**
+	 * What a region or area can be put inside, besides its parents, for its editor's Add Parent. Those
+	 * that would carry it into the lobby while links lead from it out of the lobby, or characters start in
+	 * it, are listed but can't be chosen, saying why
+	 *
+	 * @param place The region or area
+	 * @param kind Whether it is a region or an area
+	 * @param override It, as its editor shows it
+	 * @return The choices, by name
+	 */
 	parentChoices(place: PlaceRef, kind: 'region' | 'area', override: PlaceOverride): ParentChoice[];
+
+	/**
+	 * Opens a region or area in its editor, first asking whether to discard the region editor's unsaved
+	 * changes. The area editor's are kept
+	 *
+	 * @param place The region or area
+	 */
 	open(place: PlaceRef): void;
+
+	/**
+	 * Leaves the region or area editor for the tab's list of regions and areas
+	 */
 	showList(): void;
+
+	/**
+	 * A region's or area's entry in a list, opening its editor
+	 *
+	 * @param place The region or area
+	 * @return The list item
+	 */
 	listItem(place: PlaceRef): HTMLLIElement;
+
+	/**
+	 * Lists the problems the tab's changes, with a region or area open as its editor shows it, make for
+	 * it and what is below it
+	 *
+	 * @param place The region or area
+	 * @param override It, as its editor shows it
+	 * @param list Where the problems are listed
+	 * @param container What holds the list, hidden when there are none
+	 */
 	problemsFor(place: PlaceRef, override: PlaceOverride, list: HTMLElement, container: HTMLElement): void;
+
+	/**
+	 * What a region or area inherits with the changes its editor shows
+	 *
+	 * @param place The region or area
+	 * @param override It, as its editor shows it
+	 * @return What the fields show
+	 */
 	inheritedView(place: PlaceRef, override: PlaceOverride): InheritedView;
+
+	/**
+	 * The lobby region, as last saved
+	 *
+	 * @return Its ID, or null for none
+	 */
 	lobbyRegionId(): string | null;
+
+	/**
+	 * What would connect the lobby areas to the rest of the world, or keep the lobby from working, in a
+	 * world as the tab's changes leave it. A world without the lobby region has none of these problems
+	 *
+	 * @param world The regions and areas
+	 * @return The problems
+	 */
 	lobbyProblemsIn(world: PlaceWorld): PlaceProblem[];
+
+	/**
+	 * The areas outside a builder's assignments that deleting some areas would change, which keep them from
+	 * deleting those areas: the areas linked to or from them, their neighbors, and those where walking off
+	 * a side would lead somewhere else
+	 *
+	 * @param areaIds The areas, in the order the save deletes them
+	 * @return The areas outside, or none for roles that edit every place
+	 */
 	areasOutsideDeleting(areaIds: readonly string[]): PlaceRef[];
+
+	/**
+	 * Leaves the region or area editor for the list, and shows the Lobby tab
+	 */
 	backToLobby(): void;
 }
 
@@ -447,7 +580,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * Every region and area of the universe, its lobby region and starting square, its starting areas and
 	 * its links between areas, as last loaded
 	 */
-	private loaded: AreaListPayload = { regions: [], areas: [], lobbyRegionId: null, lobbyAreaId: null, startingAreaId: null, startingAreaIds: [], links: [], arrivals: [] };
+	private loaded: AreaListPayload = {
+		regions: [],
+		areas: [],
+		lobbyRegionId: null,
+		lobbyAreaId: null,
+		startingAreaId: null,
+		startingAreaIds: [],
+		links: [],
+		arrivals: []
+	};
 
 	/**
 	 * Lists the area open's problems again once painting pauses (queueAreaProblems())
@@ -481,7 +623,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * saved and its settings as the form showed them, the settings of the areas left with changes, and the
 	 * openVersion when the save started
 	 */
-	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; kept: ReadonlyMap<string, KeptSettings>; version: number } = { createdIds: [], area: undefined, shown: undefined, kept: new Map(), version: -1 };
+	private collected: { createdIds: PlaceRef[]; area: EditorArea | undefined; shown: AreaSettings | undefined; kept: ReadonlyMap<string, KeptSettings>; version: number } = {
+		createdIds: [],
+		area: undefined,
+		shown: undefined,
+		kept: new Map(),
+		version: -1
+	};
 
 	/**
 	 * The area the editor is showing
@@ -1151,7 +1299,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (kept.changes.parents)
 			{
-				this.keptSettings.set(keptId, { ...kept, changes: { ...kept.changes, parents: withoutParent(kept.changes.parents, place, parents) } });
+				this.keptSettings.set(keptId, {
+					...kept,
+					changes: { ...kept.changes, parents: withoutParent(kept.changes.parents, place, parents) }
+				});
 			}
 		}
 
@@ -1977,16 +2128,19 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 	/**
 	 * The regions and areas as the tab's changes leave them, with the region or area open as its editor
-	 * shows it, the kinds of the tiles as the Tilesets tab's changes leave them, and the lobby's area. The
-	 * places that will be deleted are left out, an area's taking its place in the parents of the areas
-	 * inside it, as the server does
+	 * shows it, the kinds of the tiles as the Tilesets tab's changes leave them, and the lobby region. The
+	 * places that will be deleted are left out, an area's parents taking its place in the parents of the
+	 * areas inside it, as the server does
 	 *
 	 * @param override The region or area open, as its editor shows it
 	 * @return The world
 	 */
 	world(override?: PlaceOverride): PlaceWorld
 	{
-		const paint = (kind: PlaceKind, settings: PlaceNode): PlaceSettings => ({ ...settings, defaultTileId: this.defaultTileFor({ kind, id: settings.id }, settings.defaultTileId) });
+		const paint = (kind: PlaceKind, settings: PlaceNode): PlaceSettings => ({
+			...settings,
+			defaultTileId: this.defaultTileFor({ kind, id: settings.id }, settings.defaultTileId)
+		});
 		let regions: PlaceNode[] = this.regions().map(({ builderIds: _builderIds, ...region }) => ({ ...region, ...paint('region', region) }));
 		let areas: AreaNode[] = this.areas().map(({ resolved: _resolved, ...area }) => ({ ...area, ...paint('area', area) }));
 
@@ -2054,7 +2208,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		for (const change of this.areaEditor.stagedLinkChanges())
 		{
-			targets.set(keyOf(change), ((change.target === null) ? null : { areaId: change.areaId, targetAreaId: change.target.targetAreaId }));
+			targets.set(keyOf(change), ((change.target === null)
+				? null
+				: {
+					areaId: change.areaId,
+					targetAreaId: change.target.targetAreaId
+				}));
 		}
 
 		return([...targets.values()].filter((link) => (link !== null)));
@@ -2920,7 +3079,10 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		}
 
 		const arrivals = [...universeArrivals(universe), ...this.loaded.arrivals].filter((arrival) => (arrival.areaId === area.id));
-		const areas = new Map([[area.id, { bounds: area.bounds, defaultTileId: (defaultTileId ?? area.resolved.defaultTileId) }]]);
+		const areas = new Map([[area.id, {
+			bounds: area.bounds,
+			defaultTileId: (defaultTileId ?? area.resolved.defaultTileId)
+		}]]);
 
 		return(blockedArrivals(arrivals, areas, (areaId, column, row) => this.areaEditor.cellValueAt(areaId, column, row), new Map(this.tileList.map((tile) => [tile.id, tile.walkSeconds]))));
 	}
@@ -3594,8 +3756,16 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		for (const { place, parents } of this.staged.movedPlaces())
 		{
 			save.add(((place.kind === 'region')
-				? { kind: 'updateRegion', regionId: place.id, update: { parents: refParents(parents) } }
-				: { kind: 'updateArea', areaId: place.id, update: { parents: refParents(parents) } }), onRefused(regionFallback));
+				? {
+					kind: 'updateRegion',
+					regionId: place.id,
+					update: { parents: refParents(parents) }
+				}
+				: {
+					kind: 'updateArea',
+					areaId: place.id,
+					update: { parents: refParents(parents) }
+				}), onRefused(regionFallback));
 		}
 
 		for (const areaId of this.staged.deletedIds())
@@ -3642,7 +3812,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			// A neighbor Add Neighbor made is as large as its row and column, and every new area starts out the same size
 			if (!sameBoundsAs(newArea.bounds, NEW_AREA_BOUNDS))
 			{
-				save.add({ kind: 'resizeArea', areaId: newRef('', newArea.id), bounds: newArea.bounds, discard: false }, onRefused(neighborFallback));
+				save.add({
+					kind: 'resizeArea',
+					areaId: newRef('', newArea.id),
+					bounds: newArea.bounds,
+					discard: false
+				}, onRefused(neighborFallback));
 			}
 		}
 
@@ -3724,7 +3899,11 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 				}));
 			}
 
-			saved = { ...area, ...settings, defaultTileId: this.defaultTileFor({ kind: 'area', id: area.id }, settings.defaultTileId) };
+			saved = {
+				...area,
+				...settings,
+				defaultTileId: this.defaultTileFor({ kind: 'area', id: area.id }, settings.defaultTileId)
+			};
 		}
 
 		// The sizes a resize carried the rest of the row or column to, which the warning in Edit Size covered
@@ -3757,7 +3936,12 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 				if (neighborId !== before[side])
 				{
-					save.add({ kind: 'setNeighbor', areaId: placeRef(areaId), side, neighborId: ((neighborId === null) ? null : placeRef(neighborId)) }, onRefused(neighborFallback));
+					save.add({
+						kind: 'setNeighbor',
+						areaId: placeRef(areaId),
+						side,
+						neighborId: ((neighborId === null) ? null : placeRef(neighborId))
+					}, onRefused(neighborFallback));
 				}
 			}
 		}
@@ -4174,7 +4358,13 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		{
 			if (kept.changes.parents)
 			{
-				this.keptSettings.set(areaId, { ...kept, changes: { ...kept.changes, parents: kept.changes.parents.map((parent) => (samePlace(parent, place) ? { ...parent, id: savedId } : parent)) } });
+				this.keptSettings.set(areaId, {
+					...kept,
+					changes: {
+						...kept.changes,
+						parents: kept.changes.parents.map((parent) => (samePlace(parent, place) ? { ...parent, id: savedId } : parent))
+					}
+				});
 			}
 		}
 

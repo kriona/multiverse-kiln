@@ -7,7 +7,8 @@ import { engineCoinName, formatMoney } from '../moneyField';
 import { className, raceName, themeName } from '../raceAndClassNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
-import { FOG_OF_WAR_NAMES } from './places';
+import { BUILDER_PERMISSION_NAMES } from './editorMessages';
+import { FAERIE_TIME_MESSAGE, FOG_OF_WAR_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
 /**
@@ -17,7 +18,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	name: {
 		id: 'form.name',
 		defaultMessage: 'Name',
-		description: 'Label of the field for the name of something being made or edited, such as a universe, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor\'s lists of them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor\'s lists of them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	shortDescription: {
 		id: 'universe.shortDescription',
@@ -57,7 +58,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	passageOfTime: {
 		id: 'editor.passageOfTime',
 		defaultMessage: 'Passage of time',
-		description: 'Label of the field for how the time of day changes in a universe or area; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field for how the time of day changes, in the region and area editors, where a region sets it for the areas inside it, and on the Lobby tab for the universe\'s lobby; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	displayTime: {
 		id: 'editor.displayTime',
@@ -157,12 +158,12 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	indoors: {
 		id: 'form.indoors',
 		defaultMessage: 'Indoors',
-		description: 'Choice for an area or tile that is indoors; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	outdoors: {
 		id: 'form.outdoors',
 		defaultMessage: 'Outdoors',
-		description: 'Choice for an area or tile that is outdoors; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	color: {
 		id: 'editor.tile.color',
@@ -187,7 +188,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	enabled: {
 		id: 'form.enabled',
 		defaultMessage: 'Enabled',
-		description: 'Checkbox for whether something can be used: players going into an area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	keepPlaying: {
 		id: 'editor.option.keepPlaying',
@@ -307,17 +308,17 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	indoorsOrOutdoors: {
 		id: 'form.indoorsOrOutdoors',
 		defaultMessage: 'Indoors or outdoors',
-		description: 'Heading of the choice between indoors and outdoors for an area or tile; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Heading of the choice between indoors and outdoors in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	lightLevel: {
 		id: 'editor.area.lightLevel',
 		defaultMessage: 'Light level',
-		description: 'Label of the field for how light an indoor area is at any time of day: lit or dark; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field for how light indoor areas are at any time of day, lit or dark, in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	defaultTile: {
 		id: 'editor.area.defaultTile',
 		defaultMessage: 'Default tile',
-		description: 'Label of the field for the tile an area is filled with where nothing else is painted; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the field for the tile an area is filled with where nothing else is painted, in the region and area editors, where a region sets it for the areas inside it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	fogOfWar: {
 		id: 'editor.place.fogOfWar',
@@ -462,21 +463,6 @@ const VALUE_MESSAGES = defineMessages({
 		defaultMessage: 'inherit',
 		description: 'The value of a region\'s or area\'s setting a save left to the regions and areas above it, in the editor\'s Audit tab\'s list of what a save changed, e.g. "Default tile: inherit"'
 	},
-	tiles: {
-		id: 'editor.audit.value.tiles',
-		defaultMessage: 'tiles',
-		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
-	},
-	items: {
-		id: 'editor.audit.value.items',
-		defaultMessage: 'items',
-		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
-	},
-	mobs: {
-		id: 'editor.audit.value.mobs',
-		defaultMessage: 'mobs',
-		description: 'One of the things a builder may edit, in the value of their permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
-	},
 	none: {
 		id: 'editor.audit.value.none',
 		defaultMessage: 'none',
@@ -486,11 +472,6 @@ const VALUE_MESSAGES = defineMessages({
 		id: 'editor.audit.value.characters',
 		defaultMessage: '{count, plural, one {# character} other {# characters}}',
 		description: 'The value of a universe\'s long description in the editor\'s Audit tab\'s list of what a save changed: how many characters (letters, spaces and so on) the description has, rather than its text, e.g. "Long description (Markdown) (1,204 characters)"'
-	},
-	faerieTime: {
-		id: 'editor.audit.value.faerieTime',
-		defaultMessage: '{time}, morning: {morning}',
-		description: 'The value of a passage of time setting in the editor\'s Audit tab\'s list of what a save changed, when it is faerie time: {time} is the passage of time (faerie) and {morning} the side of the area that has morning, such as north'
 	},
 	place: {
 		id: 'editor.audit.value.place',
@@ -667,9 +648,9 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(listOrNone(change.value));
 		case 'permissions':
 			return(listOrNone([
-				...(change.value.canEditTiles ? [t(VALUE_MESSAGES.tiles)] : []),
-				...(change.value.canEditItems ? [t(VALUE_MESSAGES.items)] : []),
-				...(change.value.canEditMobs ? [t(VALUE_MESSAGES.mobs)] : [])
+				...(change.value.canEditTiles ? [t(BUILDER_PERMISSION_NAMES.canEditTiles)] : []),
+				...(change.value.canEditItems ? [t(BUILDER_PERMISSION_NAMES.canEditItems)] : []),
+				...(change.value.canEditMobs ? [t(BUILDER_PERMISSION_NAMES.canEditMobs)] : [])
 			]));
 		case 'indoorsOrOutdoors':
 			return(((change.value === null) ? t(VALUE_MESSAGES.inherit) : t(AUDIT_FIELD_NAMES[(change.value ? 'indoors' : 'outdoors')])));
@@ -745,7 +726,7 @@ function describePassageOfTime(passage: AuditPassageOfTime): string
 		return(time);
 	}
 
-	return(t(VALUE_MESSAGES.faerieTime, {
+	return(t(FAERIE_TIME_MESSAGE, {
 		time,
 		morning: t(FAERIE_MORNING_NAMES[passage.morning])
 	}));

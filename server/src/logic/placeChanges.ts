@@ -63,7 +63,11 @@ export function applyPlaceChange(model: PlaceModel, change: EditorChange): void
 	switch (change.kind)
 	{
 		case 'createRegion':
-			model.setRegion(withUpdate({ ...blankNode(change.ref), name: change.region.name, parents: [] }, change.region));
+			model.setRegion(withUpdate({
+				...blankNode(change.ref),
+				name: change.region.name,
+				parents: []
+			}, change.region));
 			break;
 
 		case 'updateRegion':
@@ -83,7 +87,13 @@ export function applyPlaceChange(model: PlaceModel, change: EditorChange): void
 			break;
 
 		case 'createArea':
-			model.setArea(withUpdate({ ...blankNode(change.ref), name: change.area.name, parents: [], loopsEastWest: false, loopsNorthSouth: false }, change.area));
+			model.setArea(withUpdate({
+				...blankNode(change.ref),
+				name: change.area.name,
+				parents: [],
+				loopsEastWest: false,
+				loopsNorthSouth: false
+			}, change.area));
 			break;
 
 		case 'updateArea':

@@ -1,6 +1,6 @@
 import { languageName, SOCIAL_SITES, type PlayerProfilePayload, type SocialSite } from '@multiverse-kiln/shared';
 
-import { currentLocale, t } from '../localization';
+import { currentLocale, formatNodeList, t } from '../localization';
 import { getElement, setPageTitle, showScreen } from './dom';
 import { SOCIAL_SITE_NAMES, socialSiteIcon } from './socialSites';
 import { describeTimeZone } from './timeZones';
@@ -44,12 +44,7 @@ function textIn(text: string, language: string): HTMLSpanElement
  */
 function languageList(languages: readonly string[]): Node[]
 {
-	const names = languages.map((language) => textIn(languageName(language), language));
-	let next = 0;
-
-	return(new Intl.ListFormat(currentLocale(), { style: 'short', type: 'unit' })
-		.formatToParts(names.map((name) => (name.textContent ?? '')))
-		.map((part) => ((part.type === 'element') ? names[next++] : document.createTextNode(part.value))));
+	return([formatNodeList(languages.map((language) => textIn(languageName(language), language)))]);
 }
 
 /**

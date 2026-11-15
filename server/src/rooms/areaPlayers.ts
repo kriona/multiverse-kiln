@@ -479,7 +479,10 @@ export class AreaPlayers
 		try
 		{
 			// A corner is the neighbor of a side, so the sides load first
-			const sideAreas = await Promise.all(nearSides.map(async (side) => ({ side, area: ((sides[side] === null) ? undefined : await this.areas.load(sides[side])) })));
+			const sideAreas = await Promise.all(nearSides.map(async (side) => ({
+				side,
+				area: ((sides[side] === null) ? undefined : await this.areas.load(sides[side]))
+			})));
 			const cornerIds = new Set(sideAreas.flatMap(({ side, area: sideArea }) => across(side)
 				.filter((corner) => reaches[corner])
 				.map((corner) => sideArea?.loaded.sides[corner] ?? null)
@@ -539,7 +542,15 @@ export class AreaPlayers
 		}
 
 		// Added before it has a cell, so the search below knows whether the player is a ghost
-		const player = new Player({ areaId: area.loaded.area.id, x: 0, y: 0, name: appearance.name, ghost: appearance.ghost, darkvision: appearance.darkvision, lightSensitivity: appearance.lightSensitivity });
+		const player = new Player({
+			areaId: area.loaded.area.id,
+			x: 0,
+			y: 0,
+			name: appearance.name,
+			ghost: appearance.ghost,
+			darkvision: appearance.darkvision,
+			lightSensitivity: appearance.lightSensitivity
+		});
 
 		this.players.set(playerId, player);
 
@@ -1043,7 +1054,11 @@ export class AreaPlayers
 
 			if (!player.ghost)
 			{
-				occupancy.hold(playerId, this.placedCells(current, occupiedCells({ x: player.x, y: player.y, step: this.steps.get(playerId) }, current.grid)));
+				occupancy.hold(playerId, this.placedCells(current, occupiedCells({
+					x: player.x,
+					y: player.y,
+					step: this.steps.get(playerId)
+				}, current.grid)));
 			}
 
 			// The cell stepped onto, counted in the columns and rows of the area across the seam when the step crossed one

@@ -5,6 +5,7 @@ import type { AreaCells } from '../../editor/AreaCells';
 import { formatList, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
+import { addKeyHelp } from '../shortcuts';
 import { areaEditorMessages } from './areaEditorMessages';
 
 /**
@@ -100,7 +101,8 @@ export class OverallMapDialog
 	private version = 0;
 
 	/**
-	 * Sets up the dialog's Close button
+	 * Sets up the dialog's Close button, and lists the arrow keys that move between areas in the list of
+	 * shortcuts
 	 */
 	constructor()
 	{
@@ -113,6 +115,16 @@ export class OverallMapDialog
 		{
 			this.version++;
 			this.map.replaceChildren();
+		});
+
+		addKeyHelp({
+			scope: this.map,
+			keys: () => t(areaEditorMessages.arrowKeys),
+			description: () => t({
+				id: 'editor.overallMap.keys.moveDescription',
+				defaultMessage: 'Move to the nearest area in the arrow\'s direction',
+				description: 'In the list of keyboard shortcuts, what the arrow keys do on the Overall Map, the dialog drawing the whole grid of neighboring areas an area is in: move the focus from one area to the nearest area up, down, left or right of it'
+			})
 		});
 	}
 

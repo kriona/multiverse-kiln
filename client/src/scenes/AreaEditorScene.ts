@@ -619,7 +619,10 @@ export class AreaEditorScene extends Phaser.Scene
 
 			this.previews.push({
 				preview,
-				renderer: new AreaRenderer(this, preview.area, preview.chunks, { x: preview.columnOffset * GRID_CELL_SIZE, y: preview.rowOffset * GRID_CELL_SIZE }),
+				renderer: new AreaRenderer(this, preview.area, preview.chunks, {
+					x: preview.columnOffset * GRID_CELL_SIZE,
+					y: preview.rowOffset * GRID_CELL_SIZE
+				}),
 				dim: this.add.rectangle(x, y, width, height, 0x000000)
 					.setOrigin(0, 0)
 					.setDepth(PREVIEW_DIM_DEPTH)

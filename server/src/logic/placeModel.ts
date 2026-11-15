@@ -323,7 +323,10 @@ export class PlaceModel
 
 				if (node)
 				{
-					this.places.setRegion({ ...node, parents: node.parents.filter((each) => !samePlace(each, parent)) });
+					this.places.setRegion({
+						...node,
+						parents: node.parents.filter((each) => !samePlace(each, parent))
+					});
 				}
 			}
 			else
@@ -332,7 +335,10 @@ export class PlaceModel
 
 				if (node)
 				{
-					this.places.setArea({ ...node, parents: node.parents.filter((each) => !samePlace(each, parent)) });
+					this.places.setArea({
+						...node,
+						parents: node.parents.filter((each) => !samePlace(each, parent))
+					});
 				}
 			}
 		}

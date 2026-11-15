@@ -749,7 +749,10 @@ export function arrivalRefusal(problems: readonly BlockedArrival[], names: Recor
 export async function resolveParents(context: ChangeContext, kind: PlaceKind, parents: readonly PlaceRef[], ownId?: string): Promise<PlaceRef[]>
 {
 	const model = await context.places.load();
-	const resolved = parents.map((parent): PlaceRef => ({ kind: parent.kind, id: resolveStringRef(context, parent.id) }));
+	const resolved = parents.map((parent): PlaceRef => ({
+		kind: parent.kind,
+		id: resolveStringRef(context, parent.id)
+	}));
 	const keys = new Set(resolved.map(placeKey));
 
 	if (keys.size !== resolved.length)

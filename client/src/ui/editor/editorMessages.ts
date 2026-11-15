@@ -1,4 +1,4 @@
-import { defineMessages } from '@multiverse-kiln/shared';
+import { defineMessages, type BuilderPermissions, type MessageDescriptor } from '@multiverse-kiln/shared';
 
 /**
  * Text the editor's tabs and dialogs share (see src/localization.ts)
@@ -28,5 +28,27 @@ export const editorMessages = defineMessages({
 		id: 'editor.restore',
 		defaultMessage: 'Restore Default',
 		description: 'Button in the editor of a tile, item, race, class or theme that undoes this universe\'s changes to one of the ruleset\'s'
+	}
+});
+
+/**
+ * What a builder may edit besides their regions, as the Editors tab's notes and the Audit tab's value of a
+ * builder's permissions list it
+ */
+export const BUILDER_PERMISSION_NAMES: Readonly<Record<keyof BuilderPermissions, MessageDescriptor>> = defineMessages({
+	canEditTiles: {
+		id: 'editor.editors.tiles',
+		defaultMessage: 'tiles',
+		description: 'One of the things a builder may edit besides their regions: the universe\'s tiles. Listed in the Notes column of a builder\'s row on the editor\'s Editors tab, e.g. "Also edits: tiles and items", and in the value of a builder\'s permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
+	},
+	canEditItems: {
+		id: 'editor.editors.items',
+		defaultMessage: 'items',
+		description: 'One of the things a builder may edit besides their regions: the universe\'s items. Listed in the Notes column of a builder\'s row on the editor\'s Editors tab, e.g. "Also edits: tiles and items", and in the value of a builder\'s permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
+	},
+	canEditMobs: {
+		id: 'editor.editors.mobs',
+		defaultMessage: 'mobs',
+		description: 'One of the things a builder may edit besides their regions: the universe\'s mobs (monsters and enemies). Listed in the Notes column of a builder\'s row on the editor\'s Editors tab, e.g. "Also edits: tiles and items", and in the value of a builder\'s permissions in the editor\'s Audit tab\'s list of what a save changed, e.g. "Permissions: tiles and items"'
 	}
 });

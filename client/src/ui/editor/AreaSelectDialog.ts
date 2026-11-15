@@ -266,8 +266,8 @@ export class AreaSelectDialog
 	}
 
 	/**
-	 * Opens the dialog to choose an area's neighbor on a side: the areas that can be listed, and those that
-	 * can't greyed out with why, each shown on the preview without choosing a square
+	 * Opens the dialog to choose an area's neighbor on a side: the areas that can be chosen, and those that
+	 * can't, grayed out with why, each shown on the preview without choosing a square
 	 *
 	 * @param universe The universe
 	 * @param choices Every area to list, with why it can't be chosen when it can't
@@ -567,7 +567,13 @@ export class AreaSelectDialog
 	{
 		const preview = this.preview;
 		const universe = this.universe;
-		const square = (preview ? arrivalSquare({ source: { kind: 'universe' }, areaId: preview.area.id, ...cell }, preview.area.bounds) : undefined);
+		const square = (preview
+			? arrivalSquare({
+				source: { kind: 'universe' },
+				areaId: preview.area.id,
+				...cell
+			}, preview.area.bounds)
+			: undefined);
 
 		if (!preview || !universe || !square)
 		{

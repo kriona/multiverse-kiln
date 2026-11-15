@@ -530,7 +530,10 @@ export class SaveAudit
 			}
 
 			case 'createRegion':
-				this.add('region', 'added', { key: null, name: change.region.name }, 1, await this.changedFields('region', { ...NEW_PLACE, name: change.region.name }, change.region));
+				this.add('region', 'added', { key: null, name: change.region.name }, 1, await this.changedFields('region', {
+					...NEW_PLACE,
+					name: change.region.name
+				}, change.region));
 				return;
 
 			case 'updateRegion':
@@ -574,7 +577,12 @@ export class SaveAudit
 			}
 
 			case 'createArea':
-				this.add('area', 'added', { key: null, name: change.area.name }, 1, await this.changedFields('area', { ...NEW_PLACE, name: change.area.name, loopsEastWest: false, loopsNorthSouth: false }, change.area));
+				this.add('area', 'added', { key: null, name: change.area.name }, 1, await this.changedFields('area', {
+					...NEW_PLACE,
+					name: change.area.name,
+					loopsEastWest: false,
+					loopsNorthSouth: false
+				}, change.area));
 				return;
 
 			case 'updateArea':
@@ -607,12 +615,18 @@ export class SaveAudit
 
 				if (before && neighbors && (neighbors[change.side] !== neighborId))
 				{
-					this.addChanged('area', { key: null, name: before.name }, [{ field: 'neighbor', value: { side: change.side, area: (neighbor?.name ?? null) } }]);
+					this.addChanged('area', { key: null, name: before.name }, [{
+						field: 'neighbor',
+						value: { side: change.side, area: (neighbor?.name ?? null) }
+					}]);
 					this.areas.set(areaId, { ...before, neighbors: { ...neighbors, [change.side]: neighborId } });
 
 					if (neighbor && (neighborId !== null))
 					{
-						this.areas.set(neighborId, { ...neighbor, neighbors: { ...(neighbor.neighbors as AreaNeighbors), [oppositeSide(change.side)]: areaId } });
+						this.areas.set(neighborId, {
+							...neighbor,
+							neighbors: { ...(neighbor.neighbors as AreaNeighbors), [oppositeSide(change.side)]: areaId }
+						});
 					}
 				}
 
@@ -725,7 +739,12 @@ export class SaveAudit
 			{
 				const region = (await this.context.places.load()).region(String(id));
 
-				return(region && { subject: 'region', target: { key: null, name: region.name }, id, saved: { ...region } });
+				return(region && {
+					subject: 'region',
+					target: { key: null, name: region.name },
+					id,
+					saved: { ...region }
+				});
 			}
 		}
 	}
@@ -988,7 +1007,10 @@ export class SaveAudit
 				return({ field, value: passageOf(after.passageOfTime, after.faerieMorning) });
 
 			case 'lobbyPassageOfTime':
-				return({ field, value: passageOf(after.lobbyPassageOfTime, after.lobbyFaerieMorning) as AuditPassageOfTime });
+				return({
+					field,
+					value: passageOf(after.lobbyPassageOfTime, after.lobbyFaerieMorning) as AuditPassageOfTime
+				});
 
 			case 'parents':
 				return({
