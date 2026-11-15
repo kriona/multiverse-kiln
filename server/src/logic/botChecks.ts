@@ -189,7 +189,15 @@ export function decidePasswordAttempt(source: PasswordSource, attempts: LoginAtt
 	{
 		const browser = decideLimit((attempts.address ?? []), MAX_LOGIN_ATTEMPTS_PER_BROWSER_HOUR, HOUR_MS, now);
 
-		return((browser.allowed ? { kind: 'allow' } : { kind: 'refused', retryAt: browser.retryAt }));
+		if (browser.allowed)
+		{
+			return({ kind: 'allow' });
+		}
+
+		return({
+			kind: 'refused',
+			retryAt: browser.retryAt
+		});
 	}
 
 	const address = ((attempts.address === null) ? { allowed: true as const } : decideLimit(attempts.address, MAX_LOGIN_ATTEMPTS_PER_ADDRESS_HOUR, HOUR_MS, now));
