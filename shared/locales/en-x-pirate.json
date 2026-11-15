@@ -4092,8 +4092,8 @@
 		"source": "Replace All With"
 	},
 	"editor.tileReplace.areas": {
-		"message": "Its areas with the tile:",
-		"source": "Its areas with the tile:"
+		"message": "Its areas wi' the tile: {areas}",
+		"source": "Its areas with the tile: {areas}"
 	},
 	"editor.tileReplace.belowKeeper": {
 		"message": "It be handed the tile by a sea or area that keeps it for its other areas. Handed down leaves it to take what's above once the tile no longer suits it.",

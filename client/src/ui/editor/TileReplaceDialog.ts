@@ -1,6 +1,6 @@
 import { DefaultTileLoss, placeKey, tileChanges, type EditableUniverse, type EditorTile, type InheritedTile, type LosingPlace, type PlaceRef, type PlaceTileChange, type PlaceWorld, type TileLoss, type TileReplacementChoice } from '@multiverse-kiln/shared';
 
-import { formatList, t } from '../../localization';
+import { formatList, formatNodeList, formatToNodes, t } from '../../localization';
 import { describeEditorError } from '../../network/editorApi';
 import { editorAreaUrl } from '../../pages';
 import { announce } from '../announcer';
@@ -453,13 +453,13 @@ export class TileReplaceDialog
 	}
 
 	/**
-	 * The areas a place gives the tile to, each linking to it in the editor, after a word saying what they are
+	 * The areas a place gives the tile to, each linking to it in the editor, in a sentence saying what they are
 	 *
 	 * @param losing The place
 	 * @param names Names the places
 	 * @return The text and links
 	 */
-	private areaLinks(losing: LosingPlace, names: PlaceNames): (string | HTMLElement)[]
+	private areaLinks(losing: LosingPlace, names: PlaceNames): (string | Node)[]
 	{
 		const universe = this.replacing?.universe;
 
@@ -481,35 +481,32 @@ export class TileReplaceDialog
 			})]);
 		}
 
-		const parts: (string | HTMLElement)[] = [t({
-			id: 'editor.tileReplace.areas',
-			defaultMessage: 'Its areas with the tile:',
-			description: 'Under a region or area in the dialog replacing a default tile, before the areas that take the tile from it, each a link'
-		})];
-
-		losing.areaIds.forEach((areaId, index) =>
+		const areas = losing.areaIds.map((areaId) =>
 		{
 			const place: PlaceRef = { kind: 'area', id: areaId };
 			const name = names(place);
 
-			parts.push(((index === 0) ? ' ' : ', '));
-
-			if (universe && !isNewPlace(place))
+			if (!universe || isNewPlace(place))
 			{
-				const link = document.createElement('a');
+				return(name);
+			}
 
-				link.href = editorAreaUrl(universe.id, areaId, ((universe.version === 'draft') ? 'draft' : undefined));
-				link.target = '_blank';
-				link.textContent = name;
-				parts.push(link);
-			}
-			else
-			{
-				parts.push(name);
-			}
+			const link = document.createElement('a');
+
+			link.href = editorAreaUrl(universe.id, areaId, ((universe.version === 'draft') ? 'draft' : undefined));
+			link.target = '_blank';
+			link.textContent = name;
+
+			return(link);
 		});
 
-		return(parts);
+		return(formatToNodes({
+			id: 'editor.tileReplace.areas',
+			defaultMessage: 'Its areas with the tile: {areas}',
+			description: 'Under a region or area in the dialog replacing a default tile: {areas} lists the areas that take the tile from it, each a link to the area in the editor, e.g. "Field, Beach, Cove"'
+		}, {
+			areas: formatNodeList(areas)
+		}));
 	}
 
 	/**

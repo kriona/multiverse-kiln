@@ -230,6 +230,26 @@ export function formatList(items: readonly string[], type: 'conjunction' | 'unit
 }
 
 /**
+ * Joins text and elements, such as links, into a list the way the player's language does, as nodes to
+ * add to the page or to give a message as an argument (see formatToNodes())
+ *
+ * @param items The items, their text already in the player's language
+ * @param type conjunction for a list read as part of a sentence ("A, B and C"), unit for a list of tags ("A, B, C")
+ * @return The items and the punctuation between them
+ */
+export function formatNodeList(items: readonly (string | Node)[], type: 'conjunction' | 'unit' = 'unit'): DocumentFragment
+{
+	const list = document.createDocumentFragment();
+	let next = 0;
+
+	list.append(...new Intl.ListFormat(translator.locale, { style: ((type === 'unit') ? 'short' : 'long'), type })
+		.formatToParts(items.map((item) => ((typeof item === 'string') ? item : (item.textContent ?? ''))))
+		.map((part) => ((part.type === 'element') ? items[next++] : part.value)));
+
+	return(list);
+}
+
+/**
  * A length of game time in hours, minutes and seconds, leaving out the ones that are 0, such as
  * "1 hour, 30 minutes"
  *

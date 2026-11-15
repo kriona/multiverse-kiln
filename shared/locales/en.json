@@ -4092,8 +4092,8 @@
 		"description": "Label of the list in the dialog replacing a default tile that chooses one tile for every region and area listed at once"
 	},
 	"editor.tileReplace.areas": {
-		"defaultMessage": "Its areas with the tile:",
-		"description": "Under a region or area in the dialog replacing a default tile, before the areas that take the tile from it, each a link"
+		"defaultMessage": "Its areas with the tile: {areas}",
+		"description": "Under a region or area in the dialog replacing a default tile: {areas} lists the areas that take the tile from it, each a link to the area in the editor, e.g. \"Field, Beach, Cove\""
 	},
 	"editor.tileReplace.belowKeeper": {
 		"defaultMessage": "It inherits the tile from a region or area that keeps it for its other areas. Inherit leaves it to take what is above it once the tile no longer suits it.",
