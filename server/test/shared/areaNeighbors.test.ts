@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { areasWithMisalignedLoops, canSee, carriedResizes, chainLoops, chainOf, changedSeams, createVisionArea, halfLoopingEnd, locateCell, loopPlace, misalignedLoops, neighborProblems, neighborRefusal, newNeighbor, NO_NEIGHBORS, otherChainEnd, overallMapLayout,seamSides, seamSlots, visibleCells, windowsAcrossSeams, withNeighbors, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type SeamLookup } from '@multiverse-kiln/shared';
+import { areasChangedByDeleting, areasWithMisalignedLoops, canSee, carriedResizes, chainLoops, chainOf, changedSeams, createVisionArea, halfLoopingEnd, locateCell, loopPlace, misalignedLoops, neighborProblems, neighborRefusal, newNeighbor, NO_NEIGHBORS, otherChainEnd, overallMapLayout,seamSides, seamSlots, visibleCells, windowsAcrossSeams, withNeighbors, withoutAreas, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type SeamLookup } from '@multiverse-kiln/shared';
 
 /**
  * A square area of 32 x 32 cells, the smallest that can have neighbors, centered on column 0, row 0
@@ -257,6 +257,37 @@ describe('neighboring areas', () =>
 			// A row that doesn't loop leaves its far end alone
 			assert.deepStrictEqual(changedSeams(twoByTwo(), withNeighbors(twoByTwo(), 'Plains', new Map([['west', 'Forest']]), area('Plains'))), ['Forest']);
 			assert.deepStrictEqual(changedSeams(looping, looping), []);
+		});
+
+		it('finds the areas deleting areas changes: links, neighbors and the far end of a looping row', () =>
+		{
+			const row = (loops: boolean): NeighborGrid => gridOf(
+				area('West', { east: 'Middle' }, { loopsEastWest: loops }),
+				area('Middle', { west: 'West', east: 'East' }),
+				area('East', { west: 'Middle' }, { loopsEastWest: loops })
+			);
+			const links = [
+				{ areaId: 'Cave', targetAreaId: 'East' },
+				{ areaId: 'East', targetAreaId: 'Castle' },
+				{ areaId: 'West', targetAreaId: 'Middle' }
+			];
+
+			assert.deepStrictEqual(areasChangedByDeleting(twoByTwo(), [], ['Town']).toSorted(), ['Fields', 'Forest']);
+			assert.deepStrictEqual(areasChangedByDeleting(row(false), links, ['East']).toSorted(), ['Castle', 'Cave', 'Middle']);
+
+			// Middle ends the row once East goes, and its own checkbox isn't checked, so West stops looping
+			assert.deepStrictEqual(areasChangedByDeleting(row(true), [], ['East']).toSorted(), ['Middle', 'West']);
+
+			// The areas deleted together are left out
+			assert.deepStrictEqual(areasChangedByDeleting(row(true), links, ['Middle', 'East']).toSorted(), ['Castle', 'Cave', 'West']);
+		});
+
+		it('takes areas out of a grid, leaving their neighbors an edge', () =>
+		{
+			assert.deepStrictEqual(withoutAreas(twoByTwo(), ['Town', 'Marsh']), gridOf(
+				area('Forest', { south: null, west: null }),
+				area('Fields', { north: null, east: null })
+			));
 		});
 	});
 

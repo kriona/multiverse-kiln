@@ -11,7 +11,9 @@ import { describeProblem, problemPlaces } from './places';
  * them, and to those with other parents too, left with them or given another region. It checks that what
  * is left still has a value for each setting before it goes on, then stages it all with the region's
  * deletion until the Areas tab is saved. Only roles that may change the universe's settings delete the
- * lobby region: for the others it says so in place of the choices, or when their choices would delete it
+ * lobby region: for the others it says so in place of the choices, or when their choices would delete it.
+ * A builder can't delete the areas it holds while that changes areas outside their assignments, and the
+ * dialog says which
  */
 export class RegionDeleteDialog
 {
@@ -179,8 +181,9 @@ export class RegionDeleteDialog
 	}
 
 	/**
-	 * Works out what the choices do, checks that it leaves nothing without a value for a setting, then
-	 * stages it, asking twice before deleting what the region holds
+	 * Works out what the choices do, checks that it leaves nothing without a value for a setting and, for a
+	 * builder, changes no area outside their assignments, then stages it, asking twice before deleting what
+	 * the region holds
 	 */
 	private confirm(): void
 	{
@@ -252,6 +255,25 @@ export class RegionDeleteDialog
 		if ((lobbyRegionId !== null) && deleted.has(placeKey({ kind: 'region', id: lobbyRegionId })) && !this.mayDeleteLobbyRegion())
 		{
 			showMessage(this.problems, t(LOBBY_REGION_DELETION_LOCKED));
+			return;
+		}
+
+		const deletedAreaIds = graph.places()
+			.filter((each) => ((each.kind === 'area') && deleted.has(placeKey(each))))
+			.map((each) => each.id);
+		const outside = this.host.areasOutsideDeleting(deletedAreaIds);
+
+		if (outside.length > 0)
+		{
+			showMessage(this.problems, t({
+				id: 'editor.regionDelete.outside',
+				defaultMessage: 'Only a creator can delete the areas inside {region}. Deleting them changes the links or neighbors of {areas}. {count, plural, one {That area is} other {Those areas are}} outside the regions you\'re assigned. Move them to another region instead.',
+				description: 'Shown in the Delete Region dialog to a builder who chose to delete what the region holds, when deleting its areas would delete links into them or out of them, leave their neighboring areas (walked across without links) with an edge, or change where walking off the end of a looping row of neighbors leads, for areas outside the regions assigned to them; {region} is the region\'s name, {areas} lists those areas\' names and {count} is how many there are'
+			}, {
+				region: region.name,
+				areas: formatList(outside.map(this.host.names()), 'conjunction'),
+				count: outside.length
+			}));
 			return;
 		}
 

@@ -1,4 +1,4 @@
-import { canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, changedSeams, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, otherChainEnd, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
+import { areasChangedByDeleting, canEditWorld, canEditWorldOpen, canHaveNeighbors, canTakeParent, changedSeams, defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, halfLoopingEnd, hasNeighbors, isInLobby, isWithinAssignments, loadedFor, lobbyAreaIds, lobbyProblems, lobbyProblemsOfMove, loopPlace, MAX_AREA_NAME_LENGTH, misalignedLoops, MAX_REGION_NAME_LENGTH, MIN_NEIGHBOR_AREA_SIDE, NEIGHBOR_SIDES, neighborPairs, neighborProblems, neighborRefusal, NEW_AREA_BOUNDS, newNeighbor, NO_NEIGHBORS, otherChainEnd, PlaceGraph, placeKey, placeNeighbors, resolveAreaSettings, resolvePlace, samePlace, withNeighbors, withoutNeighbor, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type NeighborSide, type AreaChangeUpdate, type AreaLinkPair, type AreaNode, type AreaSettings, type AuditSubject, type EditableUniverse, type EditorArea, type EditorAreaSummary, type EditorRegion, type EditorTile, type AreaListPayload, type LoadedSettings, type MessageValues, type NumberRef, type PlaceKind, type PlaceNode, type PlaceProblem, type PlaceRef, type PlaceSettings, type PlaceWorld, type SavedEditDetail, type TileUsedFor } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../../localization';
 import { describeEditorError, EditorApiError, type EditorApi } from '../../network/editorApi';
@@ -219,6 +219,7 @@ export interface PlacesHost
 	inheritedView(place: PlaceRef, override: PlaceOverride): InheritedView;
 	lobbyRegionId(): string | null;
 	lobbyProblemsIn(world: PlaceWorld): PlaceProblem[];
+	areasOutsideDeleting(areaIds: readonly string[]): PlaceRef[];
 	backToLobby(): void;
 }
 
@@ -2684,6 +2685,35 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	}
 
 	/**
+	 * The areas outside a builder's assignments that deleting some areas would change, which keep them from
+	 * deleting those areas: the areas linked to or from them, their neighbors, and those where walking off
+	 * a side would lead somewhere else (see Assignments in STRUCTURE-OVERVIEW.md). Areas added since the
+	 * tab was saved, which go at once, and areas the tab doesn't have are left to the server
+	 *
+	 * @param areaIds The areas, in the order the save deletes them
+	 * @return The areas outside, or none for roles that edit every place
+	 */
+	areasOutsideDeleting(areaIds: readonly string[]): PlaceRef[]
+	{
+		const universe = this.universeOpen;
+
+		if (!universe || editsEveryPlace(universe.role))
+		{
+			return([]);
+		}
+
+		const kept = new Set(this.areas()
+			.filter((area) => !this.staged.isDeleted(area.id))
+			.map((area) => area.id));
+		const saved = areaIds.filter((areaId) => !isNewAreaId(areaId));
+
+		return(areasChangedByDeleting(this.neighborGrid(), this.links(), saved)
+			.filter((id) => kept.has(id))
+			.map((id): PlaceRef => ({ kind: 'area', id }))
+			.filter((place) => !this.canEditPlace(place)));
+	}
+
+	/**
 	 * What would connect the lobby areas to the rest of the world, or keep the lobby from working, in a
 	 * world as the tab's changes leave it (lobbyProblems()). A world without the lobby region, such as one
 	 * deleting it, leaves the universe without a lobby or starting square, and so without these problems
@@ -4113,7 +4143,8 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 	 * Deletes the area open when the tab is saved, after asking, and goes back to the list; or, for an
 	 * area that will be deleted, keeps it after all. A new area is deleted immediately, since it was
 	 * never saved. The areas inside it take its parents, and deleting it waits while that leaves one of
-	 * them with a problem
+	 * them with a problem. A builder can't delete it while that changes areas outside their assignments,
+	 * and the editor says which
 	 */
 	private toggleDelete(): void
 	{
@@ -4132,6 +4163,22 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 			return;
 		}
 
+		const names = this.names();
+		const outside = this.areasOutsideDeleting([area.id]);
+
+		if (outside.length > 0)
+		{
+			showMessage(this.error, t({
+				id: 'editor.area.deleteOutside',
+				defaultMessage: 'Only a creator can delete this area. Deleting it changes the links or neighbors of {areas}. {count, plural, one {That area is} other {Those areas are}} outside the regions you\'re assigned.',
+				description: 'Shown in the area editor to a builder in place of deleting the area, when deleting it would delete links into it or out of it, leave its neighboring areas (walked across without links) with an edge, or change where walking off the end of a looping row of neighbors leads, for areas outside the regions assigned to them; {areas} lists those areas\' names and {count} is how many there are'
+			}, {
+				areas: formatList(outside.map(names), 'conjunction'),
+				count: outside.length
+			}));
+			return;
+		}
+
 		// What deleting it leaves, as the server will check it
 		const world = this.world();
 		const children = new PlaceGraph(world.regions, world.areas).descendantsOf({ kind: 'area', id: area.id });
@@ -4141,8 +4188,6 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 		const after = resolveAreaSettings(this.world()).problems.filter((problem) => problemPlaces(problem).some((place) => children.some((child) => samePlace(child, place))));
 
 		this.staged.undoDelete(area.id);
-
-		const names = this.names();
 
 		if (after.length > 0)
 		{

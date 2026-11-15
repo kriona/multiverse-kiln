@@ -1343,6 +1343,10 @@
 		"message": "Scuttlin' this area would leave the areas in its hold, which take its mothers in its place, in troubled waters: {problems}",
 		"source": "Deleting this area would leave the areas inside it, which take its parents in its place, with problems: {problems}"
 	},
+	"editor.area.deleteOutside": {
+		"message": "Only a creator can scuttle this area. Scuttlin' it changes the passages or neighbors o' {areas}. {count, plural, one {That area be} other {Those areas be}} outside the seas ye be charged with.",
+		"source": "Only a creator can delete this area. Deleting it changes the links or neighbors of {areas}. {count, plural, one {That area is} other {Those areas are}} outside the regions you're assigned."
+	},
 	"editor.area.draw": {
 		"message": "Paint",
 		"source": "Draw"
@@ -3358,6 +3362,10 @@
 	"editor.regionDelete.onlyIntro": {
 		"message": "{count, plural, one {This sails in nothin' but {region}:} other {These sail in nothin' but {region}:}}",
 		"source": "{count, plural, one {This is inside nothing but {region}:} other {These are inside nothing but {region}:}}"
+	},
+	"editor.regionDelete.outside": {
+		"message": "Only a creator can scuttle the areas in {region}'s hold. Scuttlin' them changes the passages or neighbors o' {areas}. {count, plural, one {That area be} other {Those areas be}} outside the seas ye be charged with. Move 'em to another region instead.",
+		"source": "Only a creator can delete the areas inside {region}. Deleting them changes the links or neighbors of {areas}. {count, plural, one {That area is} other {Those areas are}} outside the regions you're assigned. Move them to another region instead."
 	},
 	"editor.regionDelete.problems": {
 		"message": "Scuttlin' it this way would leave troubles: {problems}",

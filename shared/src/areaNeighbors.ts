@@ -644,6 +644,98 @@ function sameGridArea(area: GridArea, other: GridArea | undefined): boolean
 }
 
 /**
+ * The grid without some areas, leaving an edge on the sides of their neighbors that faced them
+ *
+ * @param grid The areas
+ * @param areaIds The areas to take out
+ * @return The areas left, by ID
+ */
+export function withoutAreas(grid: NeighborGrid, areaIds: Iterable<string>): Map<string, GridArea>
+{
+	const gone = new Set(areaIds);
+	const after = new Map<string, GridArea>();
+
+	for (const [id, area] of grid)
+	{
+		if (gone.has(id))
+		{
+			continue;
+		}
+
+		const neighbors = { ...area.neighbors };
+
+		for (const side of NEIGHBOR_SIDES)
+		{
+			const neighborId = neighbors[side];
+
+			if ((neighborId !== null) && gone.has(neighborId))
+			{
+				neighbors[side] = null;
+			}
+		}
+
+		after.set(id, { ...area, neighbors });
+	}
+
+	return(after);
+}
+
+/**
+ * The areas that deleting some areas changes, deleted one at a time in order as a save deletes them:
+ * those with links leading into them, those their links lead to, their neighbors, and those where walking
+ * off a side leads somewhere else afterward, such as the far end of a looping row (changedSeams()). A
+ * builder needs all of them within their assignments to delete the areas
+ *
+ * @param grid The areas, as the grid of neighbors sees them
+ * @param links Every link between areas: the area each is on and the area it leads to
+ * @param areaIds The areas to delete, in the order they are deleted
+ * @return The IDs of the areas changed, leaving out the areas deleted
+ */
+export function areasChangedByDeleting(grid: NeighborGrid, links: readonly { areaId: string; targetAreaId: string }[], areaIds: readonly string[]): string[]
+{
+	const deleted = new Set(areaIds);
+	const changed = new Set<string>();
+	let current: NeighborGrid = grid;
+
+	for (const link of links)
+	{
+		if (deleted.has(link.targetAreaId))
+		{
+			changed.add(link.areaId);
+		}
+
+		if (deleted.has(link.areaId))
+		{
+			changed.add(link.targetAreaId);
+		}
+	}
+
+	for (const areaId of areaIds)
+	{
+		const area = current.get(areaId);
+
+		if (!area)
+		{
+			continue;
+		}
+
+		const neighborIds = NEIGHBOR_SIDES
+			.map((side) => area.neighbors[side])
+			.filter((neighborId) => (neighborId !== null));
+		const after = withoutAreas(current, [areaId]);
+
+		for (const id of [...neighborIds, ...changedSeams(current, after, [areaId, ...neighborIds])])
+		{
+			changed.add(id);
+		}
+
+		current = after;
+	}
+
+	return([...changed].filter((id) => !deleted.has(id)));
+}
+
+/**
  * The areas a resize carries along: making an area taller makes every area in its row taller on the same
  * side, and making it wider every area in its column, so touching sides stay the same length
  *
