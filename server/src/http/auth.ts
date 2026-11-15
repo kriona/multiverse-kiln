@@ -381,7 +381,7 @@ async function loginRoute(request: Request, response: Response): Promise<void>
 	const now = new Date();
 
 	// A browser that has logged in to the account counts its own tries, so others' guesses at the address can't lock it out,
-	// and is never asked for a bot check. Others are past the soft limits (takePasswordTry())
+	// and is never asked for a bot check. Other browsers are asked for one past the soft limits (takePasswordTry())
 	const ownerId = (hasKnownBrowserCookie(request) ? await findPlayerIdByEmail(email) : undefined);
 	const browserHash = ((ownerId !== undefined) ? knownBrowserHash(request, ownerId, now) : undefined);
 	const refusal = await takePasswordTry(request, response, ((browserHash !== undefined) ? 'knownBrowser' : 'login'), {
