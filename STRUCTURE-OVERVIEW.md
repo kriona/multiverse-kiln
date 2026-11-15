@@ -820,6 +820,8 @@ Each ruleset groups its item types into categories, which the filters use. For P
 - `armor`: padded armor, leather armor, chain shirt, light shield, heavy shield
 - `gear`: rope, torch
 
+Each optional PF1E [rulebook](#rulebooks) adds a few items from its equipment. Its gear is the "other gear" type, and its weapons and armor have types of their own. The filters and the [item editor](#editor-item)'s type list show the types of books that are on, and a type an item already has.
+
 For SF1E:
 - `weapons`: survival knife, tactical baton, laser pistol, semi-auto pistol, laser rifle, frag grenade, battery, small arm rounds
 - `armor`: second skin, light armor, heavy armor

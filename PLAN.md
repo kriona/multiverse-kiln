@@ -524,6 +524,11 @@ Decided:
 	- Advanced Class Guide: arcanist, bloodrager, brawler, hunter, investigator, shaman, skald, slayer, swashbuckler and warpriest, all added in this phase, each with a primary ability, magic tradition and spellcasting style
 	- every SF1E race, class and theme is from the Starfinder Core Rulebook
 - Every default item names its book too. Today's items are all from the core rulebooks.
+- Each optional PF1E book adds a few items from its equipment, picked from what the item editor can hold and checked on Archives of Nethys:
+	- Advanced Player's Guide: weapons such as the cestus, bladed scarf and sword cane, armor such as the armored kilt and wooden armor, and gear such as alchemist's kindling
+	- Advanced Race Guide: racial weapons and gear from its races' equipment, such as the elven branched spear and kobold tail attachments
+	- Advanced Class Guide: a few of its mundane items, if it has some that fit
+- Gear uses the existing "other gear" type. Each new weapon and armor gets an item type of its own, as the core ones have, in the weapon or armor category. A book's item types belong to it: the Items tab's filters and the item editor's type list show the types of books that are on, and a type an item already has.
 - Races, classes, themes and items a universe adds belong to no book. They always show.
 - A race, class or item is usable only while its book is on and its own Enabled box is checked. The two are separate. Turning a book on shows its races and classes as they were left, enabled unless an editor disabled them. Turning it off keeps their edits (starting money, equipment and areas) for when it comes back.
 - While a book is off, what it brings is hidden from the Characters tab's tables, the Items tab, item selection, Create Character and a class's starting areas by race. It still shows where it is already in use, as a disabled race, class or item does: characters keep their race and class on the character sheet and in the lobby, the Character List's filters list them, and starting equipment shows the book's items marked as disabled.
@@ -535,14 +540,11 @@ Decided:
 - Book names are messages. Their descriptions ask translators to use the official title of the book's translated edition where there is one, such as the German "Grundregelwerk".
 - The Advanced Class Guide's copyright notice goes on the license page with the other books'.
 
-Still to decide:
-- Which items each optional book adds. Today's item types are all from the core rulebooks, so a book's items may need new types.
-
 Steps:
 - [ ] Each ruleset's books in `/shared` (`shared/src/rulesets/<ruleset>/rulebooks.ts`): a key, a name message and whether it is always on, and the book of each default race, class, theme and item beside their data
 - [ ] The Advanced Race Guide's 25 races and the Advanced Class Guide's 10 classes in `/shared`, with names and summaries, each checked against the books on Archives of Nethys, and a custom migration adding their default rows
 - [ ] A `rulebook` column on the default races, classes, themes and items (null on what a universe adds), set by the migrations that add them, so the server can filter by it in SQL: the Items tab pages and filters on the server
-- [ ] The optional books' items, once decided
+- [ ] The optional books' items and item types in `/shared`, with names, and a custom migration adding their default rows. Hiding the item types of books that are off from the Items tab's filters and the item editor's type list
 - [ ] Descriptions: a column on races and classes (null keeps the default's), the defaults' descriptions as messages in `/shared`, a field with a length limit in the race and class editors, Create Character, the Translations tab, the audit, export and import
 - [ ] `rulebooks` in each ruleset's settings: the optional books turned on, and the answers kept for each book turned off. The server checks it (known keys, the core rulebook always on), with tests
 - [ ] What is usable as one pure function, given a race's, class's or item's own state and its book's, used by Create Character, the lobby, starting equipment, starting areas and the check that refuses a save leaving no enabled race or class. Unit tests
@@ -556,7 +558,7 @@ Steps:
 - [ ] Pirate translation of the new messages
 - [ ] Check the card, the dialogs and Create Character with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
 
-**Done when:** a new universe offers only the core races and classes; turning on the Advanced Player's Guide and saving adds the witch and the guide's other classes to the Classes table and Create Character, where each can be disabled on its own; turning the guide off again asks once what happens to the players using it; and each book's Contents dialog shows what it brings.
+**Done when:** a new universe offers only the core races and classes; turning on the Advanced Player's Guide and saving adds the witch and the guide's other classes to the Classes table and Create Character, where each can be disabled on its own, and its items to the Items tab; turning the guide off again asks once what happens to the players using it; and each book's Contents dialog shows what it brings.
 
 ## Phase 19: Cloud deployment
 
