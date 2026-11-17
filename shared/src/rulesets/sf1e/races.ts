@@ -228,42 +228,42 @@ export const SF1E_RACE_NAMES: Record<Sf1eRaceKey, MessageDescriptor> = defineMes
 });
 
 /**
- * Each default race's description, shown in Create Character, the race editor and a rulebook's Contents dialog
+ * Each default race's description, shown in Create Character, the race editor, a rulebook's Contents dialog and the Audit tab
  */
 export const SF1E_RACE_DESCRIPTIONS: Record<Sf1eRaceKey, MessageDescriptor> = defineMessages({
 	android: {
 		id: 'sf1e.raceDescription.android',
 		defaultMessage: 'Artificial people of machinery and flesh, with souls of their own. They are quick and clever, see in the dark and resist poison and disease, but show little emotion.',
-		description: 'Description of the android, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the android, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	human: {
 		id: 'sf1e.raceDescription.human',
 		defaultMessage: 'Ambitious, curious people who have spread far across space. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like.',
-		description: 'Description of the human, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the human, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	kasatha: {
 		id: 'sf1e.raceDescription.kasatha',
 		defaultMessage: 'Tall, four-armed people from a desert world, known for their ancient traditions. They are strong and wise, cross rough desert and hills with ease and can hold more at once.',
-		description: 'Description of the kasatha, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the kasatha, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	lashunta: {
 		id: 'sf1e.raceDescription.lashunta',
 		defaultMessage: 'Telepathic people with antennae, gifted scholars and warriors. They are charming, speak mind to mind with those nearby and have innate psychic magic.',
-		description: 'Description of the lashunta, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the lashunta, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	shirren: {
 		id: 'sf1e.raceDescription.shirren',
 		defaultMessage: 'Insect-like people who broke free of a hive mind and treasure being themselves. They are hardy and wise, sense nearby movement, speak mind to mind and make good diplomats.',
-		description: 'Description of the shirren, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the shirren, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	vesk: {
 		id: 'sf1e.raceDescription.vesk',
 		defaultMessage: 'Tall, warlike reptilian people with tough scales and claws. They are strong and hardy, hard to frighten, and make the most of the armor they wear.',
-		description: 'Description of the vesk, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the vesk, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	ysoki: {
 		id: 'sf1e.raceDescription.ysoki',
 		defaultMessage: 'Small, clever people who look like rats standing upright. They are nimble tinkerers who see in the dark, stash small items in their cheek pouches and spring back to their feet.',
-		description: 'Description of the ysoki, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the ysoki, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	}
 });

@@ -18,6 +18,6 @@ export const SF1E_RULEBOOK_NAMES: Record<Sf1eRulebook, MessageDescriptor> = defi
 	core: {
 		id: 'sf1e.rulebook.core',
 		defaultMessage: 'Starfinder Core Rulebook',
-		description: 'Name of the main rulebook of Starfinder First Edition, on the editor\'s Ruleset tab. Use the title of the book\'s official translated edition where there is one, such as the German "Starfinder Grundregelwerk"'
+		description: 'Name of the main rulebook of Starfinder First Edition, on the editor\'s Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book\'s official translated edition where there is one, such as the German "Starfinder Grundregelwerk"'
 	}
 });

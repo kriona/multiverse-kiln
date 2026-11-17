@@ -680,192 +680,192 @@ export const PF1E_RACE_NAMES: Record<Pf1eRaceKey, MessageDescriptor> = defineMes
 });
 
 /**
- * Each default race's description, shown in Create Character, the race editor and a rulebook's Contents dialog
+ * Each default race's description, shown in Create Character, the race editor, a rulebook's Contents dialog and the Audit tab
  */
 export const PF1E_RACE_DESCRIPTIONS: Record<Pf1eRaceKey, MessageDescriptor> = defineMessages({
 	catfolk: {
 		id: 'pf1e.raceDescription.catfolk',
 		defaultMessage: 'Curious, sociable people who look like cats standing upright. They are quick and charming, with sharp senses for hunting, sneaking and tracking.',
-		description: 'Description of the catfolk, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the catfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	drow: {
 		id: 'pf1e.raceDescription.drow',
 		defaultMessage: 'Graceful but frail elves who live deep underground. They resist magic, can call up darkness and see far in the dark, but bright light blinds them.',
-		description: 'Description of the drow, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the drow, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	dwarf: {
 		id: 'pf1e.raceDescription.dwarf',
 		defaultMessage: 'Stout, stubborn folk who live in mountain halls. They are tough, wise and hard to move once they\'ve made up their minds.',
-		description: 'Description of the dwarf, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the dwarf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	elf: {
 		id: 'pf1e.raceDescription.elf',
 		defaultMessage: 'Long-lived, graceful people with a deep bond to nature and magic. They are quick and clever, with keen senses, and magic can\'t put them to sleep.',
-		description: 'Description of the elf, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the elf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	gnome: {
 		id: 'pf1e.raceDescription.gnome',
 		defaultMessage: 'Small, whimsical people descended from the fey, always hungry for new experiences. They are hardy and charming, with a knack for illusion magic.',
-		description: 'Description of the gnome, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the gnome, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	goblin: {
 		id: 'pf1e.raceDescription.goblin',
 		defaultMessage: 'Small, fast, fire-loving troublemakers. They are very nimble, sneaky and good riders, but weak and hard to get along with.',
-		description: 'Description of the goblin, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the goblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	half_elf: {
 		id: 'pf1e.raceDescription.half_elf',
 		defaultMessage: 'Children of humans and elves, often caught between both worlds. They are adaptable and talented, with keen senses and a gift for more than one class.',
-		description: 'Description of the half-elf, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the half-elf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	half_orc: {
 		id: 'pf1e.raceDescription.half_orc',
 		defaultMessage: 'Children of humans and orcs, strong and often feared. They are intimidating, see in the dark and can fight on for a moment after a blow that would drop them.',
-		description: 'Description of the half-orc, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the half-orc, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	halfling: {
 		id: 'pf1e.raceDescription.halfling',
 		defaultMessage: 'Small, cheerful people about half a human\'s height. They are nimble, charming and lucky, and hard to frighten.',
-		description: 'Description of the halfling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the halfling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	hobgoblin: {
 		id: 'pf1e.raceDescription.hobgoblin',
 		defaultMessage: 'Disciplined, warlike cousins of goblins who stand as tall as humans. They are quick, hardy and stealthy, and see in the dark.',
-		description: 'Description of the hobgoblin, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the hobgoblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	human: {
 		id: 'pf1e.raceDescription.human',
 		defaultMessage: 'Ambitious, adaptable people found almost everywhere. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like.',
-		description: 'Description of the human, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the human, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	ratfolk: {
 		id: 'pf1e.raceDescription.ratfolk',
 		defaultMessage: 'Small, clever people who look like rats standing upright. They are nimble tinkerers and alchemists who crowd together in battle to gang up on foes.',
-		description: 'Description of the ratfolk, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the ratfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	aasimar: {
 		id: 'pf1e.raceDescription.aasimar',
 		defaultMessage: 'Humans touched by celestial blood, often strikingly beautiful. They are wise and charming, resist acid, cold and electricity, and can call up daylight once a day.',
-		description: 'Description of the aasimar, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the aasimar, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	changeling: {
 		id: 'pf1e.raceDescription.changeling',
 		defaultMessage: 'Daughters of hags raised among humans, with eyes of two colors. They are wise and charming but frail, with sharp claws and a trait passed down from their mother.',
-		description: 'Description of the changeling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the changeling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	dhampir: {
 		id: 'pf1e.raceDescription.dhampir',
 		defaultMessage: 'Children of vampires and humans, graceful and persuasive but frail. Healing magic harms them while negative energy heals them, and bright light dazzles them.',
-		description: 'Description of the dhampir, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the dhampir, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	duergar: {
 		id: 'pf1e.raceDescription.duergar',
 		defaultMessage: 'Grim gray dwarves of the deep underground. They can grow larger or turn invisible, shrug off poison and paralysis, and see far in the dark, but bright light dazzles them.',
-		description: 'Description of the duergar, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the duergar, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	fetchling: {
 		id: 'pf1e.raceDescription.fetchling',
 		defaultMessage: 'Pale descendants of humans who settled on the plane of shadow. They melt into dim light, resist cold and electricity, and can disguise themselves with magic.',
-		description: 'Description of the fetchling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the fetchling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	gillman: {
 		id: 'pf1e.raceDescription.gillman',
 		defaultMessage: 'Humans with gills who breathe both air and water. They are hardy and charming, swim well and resist enchantments, but must soak in water every day.',
-		description: 'Description of the gillman, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the gillman, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	grippli: {
 		id: 'pf1e.raceDescription.grippli',
 		defaultMessage: 'Small frog people of swamps and jungles. They are nimble climbers who hide well among trees and reeds and move through swampy ground with ease.',
-		description: 'Description of the grippli, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the grippli, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	ifrit: {
 		id: 'pf1e.raceDescription.ifrit',
 		defaultMessage: 'Humans touched by the blood of fire spirits, fiery and impulsive. They are quick and charming, resist fire and can call up a burst of flame once a day.',
-		description: 'Description of the ifrit, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the ifrit, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	kitsune: {
 		id: 'pf1e.raceDescription.kitsune',
 		defaultMessage: 'Fox people who can take a human form at will. They are agile, charming tricksters with a sharp bite and a talent for enchantment magic.',
-		description: 'Description of the kitsune, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the kitsune, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	kobold: {
 		id: 'pf1e.raceDescription.kobold',
 		defaultMessage: 'Small, scaly people who believe they descend from dragons. They are quick but weak, with keen eyes and a talent for traps, and bright light dazzles them.',
-		description: 'Description of the kobold, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the kobold, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	merfolk: {
 		id: 'pf1e.raceDescription.merfolk',
 		defaultMessage: 'Sea people with a fish\'s tail in place of legs. They are graceful, hardy and charming, swim swiftly and breathe air and water, but crawl slowly on land.',
-		description: 'Description of the merfolk, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the merfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	nagaji: {
 		id: 'pf1e.raceDescription.nagaji',
 		defaultMessage: 'Scaled, snake-like people created to serve nagas. They are strong and imposing, with tough scales, a way with reptiles, and resistance to poison and mind control.',
-		description: 'Description of the nagaji, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the nagaji, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	orc: {
 		id: 'pf1e.raceDescription.orc',
 		defaultMessage: 'Fierce, brutal people who live by raiding and war. They are very strong and fight on even when badly wounded, but bright light dazzles them.',
-		description: 'Description of the orc, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the orc, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	oread: {
 		id: 'pf1e.raceDescription.oread',
 		defaultMessage: 'Humans touched by the blood of earth spirits, calm and steady. They are strong and wise, resist acid and can turn pebbles into magic sling stones once a day.',
-		description: 'Description of the oread, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the oread, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	samsaran: {
 		id: 'pf1e.raceDescription.samsaran',
 		defaultMessage: 'Blue-skinned people who are reborn again and again, keeping pieces of past lives. They are wise and learned but frail, with skills carried over from lives before.',
-		description: 'Description of the samsaran, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the samsaran, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	strix: {
 		id: 'pf1e.raceDescription.strix',
 		defaultMessage: 'Winged people of the mountains, quick and proud, who distrust humans. They can fly from the start, see in the dark and are most alert and stealthy at night.',
-		description: 'Description of the strix, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the strix, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	suli: {
 		id: 'pf1e.raceDescription.suli',
 		defaultMessage: 'Humans descended from genies of all four elements. They are strong and persuasive, resist acid, cold, electricity and fire, and can wreathe their hands in any of them.',
-		description: 'Description of the suli, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the suli, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	svirfneblin: {
 		id: 'pf1e.raceDescription.svirfneblin',
 		defaultMessage: 'Serious, wary deep gnomes who live far underground. They are hard to hit, resist magic and see far in the dark, with innate spells for hiding and deceiving.',
-		description: 'Description of the svirfneblin, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the svirfneblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	sylph: {
 		id: 'pf1e.raceDescription.sylph',
 		defaultMessage: 'Humans touched by the blood of air spirits, light and restless. They are quick and clever, resist electricity and can drift gently down from a fall once a day.',
-		description: 'Description of the sylph, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the sylph, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	tengu: {
 		id: 'pf1e.raceDescription.tengu',
 		defaultMessage: 'Crow-like bird people, quick and watchful but fragile. They train with swords from birth, learn languages with ease and have a sharp bite.',
-		description: 'Description of the tengu, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the tengu, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	tiefling: {
 		id: 'pf1e.raceDescription.tiefling',
 		defaultMessage: 'Humans touched by fiendish blood, often marked by horns, tails or strange eyes. They are quick and clever, resist cold, electricity and fire, and can call up darkness.',
-		description: 'Description of the tiefling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the tiefling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	undine: {
 		id: 'pf1e.raceDescription.undine',
 		defaultMessage: 'Humans touched by the blood of water spirits, calm and adaptable. They are quick and wise, swim well, resist cold and can hurl a blast of water once a day.',
-		description: 'Description of the undine, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the undine, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	vanara: {
 		id: 'pf1e.raceDescription.vanara',
 		defaultMessage: 'Playful monkey people of the jungles. They are nimble and wise, climb with ease and can carry things with their tails.',
-		description: 'Description of the vanara, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the vanara, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	vishkanya: {
 		id: 'pf1e.raceDescription.vishkanya',
 		defaultMessage: 'Graceful, scaled people whose blood is poison. They are quick and charming, shrug off poisons and can coat their weapons in their own venom.',
-		description: 'Description of the vishkanya, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the vishkanya, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	},
 	wayang: {
 		id: 'pf1e.raceDescription.wayang',
 		defaultMessage: 'Small, shadowy people at home in darkness. They are nimble, clever and stealthy, with a gift for shadow and illusion magic.',
-		description: 'Description of the wayang, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook\'s contents'
+		description: 'Description of the wayang, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook\'s contents and the Audit tab'
 	}
 });

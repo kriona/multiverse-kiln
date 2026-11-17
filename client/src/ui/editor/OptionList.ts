@@ -408,7 +408,7 @@ export class OptionList<T extends EditorOption & S, S extends { enabled: boolean
 
 				row.dataset.optionId = String(item.id);
 
-				// A disabled option is struck through like one being deleted; its notes say it is disabled
+				// A disabled option is struck through like one being deleted; its Enabled switch shows it is disabled
 				if (!item.enabled)
 				{
 					row.classList.add('staged-deleted');

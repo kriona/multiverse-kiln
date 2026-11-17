@@ -3732,16 +3732,12 @@
 		"description": "Heading of the list of character classes in the dialog listing what a book of game rules brings"
 	},
 	"editor.rulebook.hint": {
-		"defaultMessage": "The races and classes the book brings to the universe while it is on. Disable each one on the Characters tab.",
-		"description": "Explains the dialog listing the races and classes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab"
+		"defaultMessage": "The book brings these to the universe while it is on. Disable each one on the Characters tab.",
+		"description": "Explains the dialog listing the races, classes and themes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab"
 	},
 	"editor.rulebook.loadFailed": {
 		"defaultMessage": "Could not list what the book brings.",
-		"description": "Shown in the dialog listing what a book of game rules brings when its races and classes couldn't be loaded"
-	},
-	"editor.rulebook.loading": {
-		"defaultMessage": "Loading...",
-		"description": "Shown in the dialog listing what a book of game rules brings while its races and classes load"
+		"description": "Shown in the dialog listing what a book of game rules brings when its races, classes and themes couldn't be loaded"
 	},
 	"editor.rulebook.races": {
 		"defaultMessage": "Races",
@@ -3765,7 +3761,7 @@
 	},
 	"editor.rulebooks.contents": {
 		"defaultMessage": "Contents",
-		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that opens a dialog listing the races and classes the book brings"
+		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that opens a dialog listing the races, classes and themes the book brings"
 	},
 	"editor.rulebooks.heading": {
 		"defaultMessage": "Rulebooks",
@@ -6669,59 +6665,59 @@
 	},
 	"itemDescription.pf1e.book_of_puzzles": {
 		"defaultMessage": "A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day.",
-		"description": "Description of the book of puzzles, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.book_of_war_prayers": {
 		"defaultMessage": "A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day.",
-		"description": "Description of the book of war prayers, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.cestus": {
 		"defaultMessage": "A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things.",
-		"description": "Description of the cestus, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.dagger": {
 		"defaultMessage": "A short blade for stabbing up close or throwing.",
-		"description": "Description of the dagger, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.footprints_cast": {
 		"defaultMessage": "A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather.",
-		"description": "Description of the footprints cast, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_long_lash": {
 		"defaultMessage": "A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_spiked_tail": {
 		"defaultMessage": "A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_fire_ink": {
 		"defaultMessage": "An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read.",
-		"description": "Description of the light fire ink, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.quilted_cloth": {
 		"defaultMessage": "Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding.",
-		"description": "Description of the quilted cloth, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.ratfolk_tailblade": {
 		"defaultMessage": "A small knife strapped to the tip of a ratfolk's tail, so the ratfolk can slash at foes with its tail.",
-		"description": "Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.sword_cane": {
 		"defaultMessage": "A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw.",
-		"description": "Description of the sword cane, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.tome_of_epics": {
 		"defaultMessage": "A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day.",
-		"description": "Description of the tome of epics, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.pf1e.wooden_armor": {
 		"defaultMessage": "Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn't hinder swimming.",
-		"description": "Description of the wooden armor, an item in Pathfinder, shown in the item editor and when choosing items"
+		"description": "Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"itemDescription.sf1e.survival_knife": {
 		"defaultMessage": "A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion.",
-		"description": "Description of the survival knife, an item in Starfinder, shown in the item editor and when choosing items"
+		"description": "Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"keys.alt": {
 		"defaultMessage": "Alt",
@@ -7541,111 +7537,111 @@
 	},
 	"pf1e.classDescription.alchemist": {
 		"defaultMessage": "An inventor who brews bombs, extracts and mutagens. Alchemists hurl explosives, drink extracts that work like spells and take mutagens that make them stronger in a fight.",
-		"description": "Description of the alchemist, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the alchemist, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.arcanist": {
 		"defaultMessage": "A scholar who studies magic like a wizard but casts it like a sorcerer. Arcanists prepare spells each day, cast them freely from their slots and draw on a pool of arcane power.",
-		"description": "Description of the arcanist, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the arcanist, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.barbarian": {
 		"defaultMessage": "A fierce warrior who draws strength from fury. Barbarians rage to hit harder and shrug off blows, move fast and are hard to catch off guard.",
-		"description": "Description of the barbarian, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the barbarian, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.bard": {
 		"defaultMessage": "A performer whose music and words weave magic. Bards inspire their allies, know a little about everything and cast spells to help, charm and trick.",
-		"description": "Description of the bard, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the bard, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.bloodrager": {
 		"defaultMessage": "A warrior whose rage awakens magic in their blood. Bloodragers fight in a fury, gain powers from a bloodline as they rage and cast a few arcane spells.",
-		"description": "Description of the bloodrager, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the bloodrager, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.brawler": {
 		"defaultMessage": "A versatile unarmed fighter who thinks fast in a brawl. Brawlers hit hard with their fists, pick up the combat feat they need on the spot and excel at combat maneuvers.",
-		"description": "Description of the brawler, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the brawler, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.cavalier": {
 		"defaultMessage": "A mounted knight sworn to an order and its cause. Cavaliers fight from the saddle of a loyal mount, challenge foes to single combat and rally their allies.",
-		"description": "Description of the cavalier, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the cavalier, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.cleric": {
 		"defaultMessage": "A priest who channels the power of a god. Clerics cast divine spells, heal allies with channeled energy and draw powers from two domains of their faith.",
-		"description": "Description of the cleric, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the cleric, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.druid": {
 		"defaultMessage": "A guardian of nature who draws magic from the wild. Druids cast divine spells, bond with an animal companion or a nature domain and can take the shapes of animals.",
-		"description": "Description of the druid, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the druid, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.fighter": {
 		"defaultMessage": "A master of weapons and armor who wins battles through training and skill. Fighters learn more combat feats than any other class.",
-		"description": "Description of the fighter, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the fighter, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.hunter": {
 		"defaultMessage": "A wilderness spellcaster who fights alongside an animal companion. Hunters and their companions share tactics and animal powers, track their prey and cast nature spells.",
-		"description": "Description of the hunter, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the hunter, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.inquisitor": {
 		"defaultMessage": "A relentless agent of a faith who roots out its enemies. Inquisitors cast divine spells, pass judgment on foes in battle and are hard to lie to.",
-		"description": "Description of the inquisitor, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the inquisitor, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.investigator": {
 		"defaultMessage": "A detective who solves mysteries with sharp wits and alchemy. Investigators draw on inspiration to boost their checks, brew extracts and study foes to strike them down.",
-		"description": "Description of the investigator, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the investigator, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.monk": {
 		"defaultMessage": "A martial artist who trains body and mind to perfection. Monks fight without weapons or armor, strike in flurries of blows and grow faster as they train.",
-		"description": "Description of the monk, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the monk, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.oracle": {
 		"defaultMessage": "A spellcaster chosen by divine powers, whether they wanted it or not. Oracles carry a curse that both hinders and helps them, and draw spells and powers from a mystery.",
-		"description": "Description of the oracle, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the oracle, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.paladin": {
 		"defaultMessage": "A holy warrior sworn to a strict code of honor. Paladins smite evil, heal with a touch, stand firm against fear and disease, and later cast a few divine spells.",
-		"description": "Description of the paladin, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the paladin, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.ranger": {
 		"defaultMessage": "A hunter and tracker of the wilds. Rangers fight best against chosen foes and in favored lands, with a bow or two weapons, and later gain a hunting companion and spells.",
-		"description": "Description of the ranger, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the ranger, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.rogue": {
 		"defaultMessage": "A sneaky, skilled scout and thief. Rogues land sneak attacks on unwary foes, find and disarm traps, and learn more skills than any other class.",
-		"description": "Description of the rogue, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the rogue, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.shaman": {
 		"defaultMessage": "A spellcaster who speaks with spirits through a spirit animal. Shamans cast divine spells, use hexes and take on the powers of a chosen spirit.",
-		"description": "Description of the shaman, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the shaman, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.skald": {
 		"defaultMessage": "A warrior poet whose songs drive allies into a rage. Skalds fight on the front line, cast arcane spells and share their fury with the whole party.",
-		"description": "Description of the skald, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the skald, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.slayer": {
 		"defaultMessage": "A hunter of people who studies a target to strike it down. Slayers track their quarry, land sneak attacks and pick up tricks from rogues and rangers.",
-		"description": "Description of the slayer, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the slayer, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.sorcerer": {
 		"defaultMessage": "A spellcaster whose magic flows from their bloodline. Sorcerers know fewer spells than wizards but cast them more often, without a spellbook, and gain powers from their blood.",
-		"description": "Description of the sorcerer, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the sorcerer, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.summoner": {
 		"defaultMessage": "A spellcaster bonded to an eidolon, a creature from another plane that grows and changes with them. Summoners fight beside it, call up other creatures and cast arcane spells.",
-		"description": "Description of the summoner, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the summoner, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.swashbuckler": {
 		"defaultMessage": "A daring sword fighter who relies on flair and nimble moves. Swashbucklers spend panache on bold deeds, parry attacks and strike with deadly precision using thrusting blades.",
-		"description": "Description of the swashbuckler, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the swashbuckler, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.warpriest": {
 		"defaultMessage": "A warrior who fights for their faith with weapon and spell. Warpriests bless themselves and their weapons, learn combat feats and cast divine spells.",
-		"description": "Description of the warpriest, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the warpriest, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.witch": {
 		"defaultMessage": "A spellcaster who learns magic from a mysterious patron through a familiar. Witches cast arcane spells and use hexes to curse foes and aid allies.",
-		"description": "Description of the witch, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the witch, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.classDescription.wizard": {
 		"defaultMessage": "A scholar who learns magic from study and a spellbook. Wizards have the widest range of arcane spells and can specialize in one school of magic.",
-		"description": "Description of the wizard, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the wizard, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.coin.cp": {
 		"defaultMessage": "cp",
@@ -7921,167 +7917,167 @@
 	},
 	"pf1e.raceDescription.aasimar": {
 		"defaultMessage": "Humans touched by celestial blood, often strikingly beautiful. They are wise and charming, resist acid, cold and electricity, and can call up daylight once a day.",
-		"description": "Description of the aasimar, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the aasimar, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.catfolk": {
 		"defaultMessage": "Curious, sociable people who look like cats standing upright. They are quick and charming, with sharp senses for hunting, sneaking and tracking.",
-		"description": "Description of the catfolk, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the catfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.changeling": {
 		"defaultMessage": "Daughters of hags raised among humans, with eyes of two colors. They are wise and charming but frail, with sharp claws and a trait passed down from their mother.",
-		"description": "Description of the changeling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the changeling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.dhampir": {
 		"defaultMessage": "Children of vampires and humans, graceful and persuasive but frail. Healing magic harms them while negative energy heals them, and bright light dazzles them.",
-		"description": "Description of the dhampir, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the dhampir, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.drow": {
 		"defaultMessage": "Graceful but frail elves who live deep underground. They resist magic, can call up darkness and see far in the dark, but bright light blinds them.",
-		"description": "Description of the drow, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the drow, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.duergar": {
 		"defaultMessage": "Grim gray dwarves of the deep underground. They can grow larger or turn invisible, shrug off poison and paralysis, and see far in the dark, but bright light dazzles them.",
-		"description": "Description of the duergar, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the duergar, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.dwarf": {
 		"defaultMessage": "Stout, stubborn folk who live in mountain halls. They are tough, wise and hard to move once they've made up their minds.",
-		"description": "Description of the dwarf, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the dwarf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.elf": {
 		"defaultMessage": "Long-lived, graceful people with a deep bond to nature and magic. They are quick and clever, with keen senses, and magic can't put them to sleep.",
-		"description": "Description of the elf, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the elf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.fetchling": {
 		"defaultMessage": "Pale descendants of humans who settled on the plane of shadow. They melt into dim light, resist cold and electricity, and can disguise themselves with magic.",
-		"description": "Description of the fetchling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the fetchling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.gillman": {
 		"defaultMessage": "Humans with gills who breathe both air and water. They are hardy and charming, swim well and resist enchantments, but must soak in water every day.",
-		"description": "Description of the gillman, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the gillman, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.gnome": {
 		"defaultMessage": "Small, whimsical people descended from the fey, always hungry for new experiences. They are hardy and charming, with a knack for illusion magic.",
-		"description": "Description of the gnome, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the gnome, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.goblin": {
 		"defaultMessage": "Small, fast, fire-loving troublemakers. They are very nimble, sneaky and good riders, but weak and hard to get along with.",
-		"description": "Description of the goblin, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the goblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.grippli": {
 		"defaultMessage": "Small frog people of swamps and jungles. They are nimble climbers who hide well among trees and reeds and move through swampy ground with ease.",
-		"description": "Description of the grippli, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the grippli, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.half_elf": {
 		"defaultMessage": "Children of humans and elves, often caught between both worlds. They are adaptable and talented, with keen senses and a gift for more than one class.",
-		"description": "Description of the half-elf, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the half-elf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.half_orc": {
 		"defaultMessage": "Children of humans and orcs, strong and often feared. They are intimidating, see in the dark and can fight on for a moment after a blow that would drop them.",
-		"description": "Description of the half-orc, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the half-orc, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.halfling": {
 		"defaultMessage": "Small, cheerful people about half a human's height. They are nimble, charming and lucky, and hard to frighten.",
-		"description": "Description of the halfling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the halfling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.hobgoblin": {
 		"defaultMessage": "Disciplined, warlike cousins of goblins who stand as tall as humans. They are quick, hardy and stealthy, and see in the dark.",
-		"description": "Description of the hobgoblin, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the hobgoblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.human": {
 		"defaultMessage": "Ambitious, adaptable people found almost everywhere. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like.",
-		"description": "Description of the human, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the human, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.ifrit": {
 		"defaultMessage": "Humans touched by the blood of fire spirits, fiery and impulsive. They are quick and charming, resist fire and can call up a burst of flame once a day.",
-		"description": "Description of the ifrit, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the ifrit, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.kitsune": {
 		"defaultMessage": "Fox people who can take a human form at will. They are agile, charming tricksters with a sharp bite and a talent for enchantment magic.",
-		"description": "Description of the kitsune, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the kitsune, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.kobold": {
 		"defaultMessage": "Small, scaly people who believe they descend from dragons. They are quick but weak, with keen eyes and a talent for traps, and bright light dazzles them.",
-		"description": "Description of the kobold, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the kobold, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.merfolk": {
 		"defaultMessage": "Sea people with a fish's tail in place of legs. They are graceful, hardy and charming, swim swiftly and breathe air and water, but crawl slowly on land.",
-		"description": "Description of the merfolk, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the merfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.nagaji": {
 		"defaultMessage": "Scaled, snake-like people created to serve nagas. They are strong and imposing, with tough scales, a way with reptiles, and resistance to poison and mind control.",
-		"description": "Description of the nagaji, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the nagaji, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.orc": {
 		"defaultMessage": "Fierce, brutal people who live by raiding and war. They are very strong and fight on even when badly wounded, but bright light dazzles them.",
-		"description": "Description of the orc, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the orc, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.oread": {
 		"defaultMessage": "Humans touched by the blood of earth spirits, calm and steady. They are strong and wise, resist acid and can turn pebbles into magic sling stones once a day.",
-		"description": "Description of the oread, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the oread, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.ratfolk": {
 		"defaultMessage": "Small, clever people who look like rats standing upright. They are nimble tinkerers and alchemists who crowd together in battle to gang up on foes.",
-		"description": "Description of the ratfolk, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the ratfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.samsaran": {
 		"defaultMessage": "Blue-skinned people who are reborn again and again, keeping pieces of past lives. They are wise and learned but frail, with skills carried over from lives before.",
-		"description": "Description of the samsaran, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the samsaran, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.strix": {
 		"defaultMessage": "Winged people of the mountains, quick and proud, who distrust humans. They can fly from the start, see in the dark and are most alert and stealthy at night.",
-		"description": "Description of the strix, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the strix, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.suli": {
 		"defaultMessage": "Humans descended from genies of all four elements. They are strong and persuasive, resist acid, cold, electricity and fire, and can wreathe their hands in any of them.",
-		"description": "Description of the suli, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the suli, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.svirfneblin": {
 		"defaultMessage": "Serious, wary deep gnomes who live far underground. They are hard to hit, resist magic and see far in the dark, with innate spells for hiding and deceiving.",
-		"description": "Description of the svirfneblin, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the svirfneblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.sylph": {
 		"defaultMessage": "Humans touched by the blood of air spirits, light and restless. They are quick and clever, resist electricity and can drift gently down from a fall once a day.",
-		"description": "Description of the sylph, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the sylph, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.tengu": {
 		"defaultMessage": "Crow-like bird people, quick and watchful but fragile. They train with swords from birth, learn languages with ease and have a sharp bite.",
-		"description": "Description of the tengu, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the tengu, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.tiefling": {
 		"defaultMessage": "Humans touched by fiendish blood, often marked by horns, tails or strange eyes. They are quick and clever, resist cold, electricity and fire, and can call up darkness.",
-		"description": "Description of the tiefling, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the tiefling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.undine": {
 		"defaultMessage": "Humans touched by the blood of water spirits, calm and adaptable. They are quick and wise, swim well, resist cold and can hurl a blast of water once a day.",
-		"description": "Description of the undine, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the undine, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.vanara": {
 		"defaultMessage": "Playful monkey people of the jungles. They are nimble and wise, climb with ease and can carry things with their tails.",
-		"description": "Description of the vanara, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the vanara, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.vishkanya": {
 		"defaultMessage": "Graceful, scaled people whose blood is poison. They are quick and charming, shrug off poisons and can coat their weapons in their own venom.",
-		"description": "Description of the vishkanya, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the vishkanya, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.raceDescription.wayang": {
 		"defaultMessage": "Small, shadowy people at home in darkness. They are nimble, clever and stealthy, with a gift for shadow and illusion magic.",
-		"description": "Description of the wayang, a playable race in Pathfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the wayang, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.rulebook.acg": {
 		"defaultMessage": "Advanced Class Guide",
-		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one"
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
 	},
 	"pf1e.rulebook.apg": {
 		"defaultMessage": "Advanced Player's Guide",
-		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one"
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
 	},
 	"pf1e.rulebook.arg": {
 		"defaultMessage": "Advanced Race Guide",
-		"description": "Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one"
+		"description": "Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
 	},
 	"pf1e.rulebook.core": {
 		"defaultMessage": "Core Rulebook",
-		"description": "Name of the main rulebook of Pathfinder First Edition, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one, such as the German \"Grundregelwerk\""
+		"description": "Name of the main rulebook of Pathfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book's official translated edition where there is one, such as the German \"Grundregelwerk\""
 	},
 	"pf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -9221,31 +9217,31 @@
 	},
 	"sf1e.classDescription.envoy": {
 		"defaultMessage": "A charismatic leader who inspires allies and talks their way past trouble. Envoys use improvisations to boost their team and hinder foes, and are skilled at almost everything.",
-		"description": "Description of the envoy, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the envoy, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.classDescription.mechanic": {
 		"defaultMessage": "An engineer who builds and hacks technology. Mechanics work with a custom drone or a brain implant that sharpens their aim, and can overload or bypass machines.",
-		"description": "Description of the mechanic, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the mechanic, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.classDescription.mystic": {
 		"defaultMessage": "A spellcaster who draws power from a deep connection to the universe or a deity. Mystics heal allies, link minds with them and gain powers from their connection.",
-		"description": "Description of the mystic, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the mystic, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.classDescription.operative": {
 		"defaultMessage": "A stealthy, skilled spy or scout. Operatives dart in with trick attacks for extra damage, master a specialty and are among the most skilled of all classes.",
-		"description": "Description of the operative, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the operative, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.classDescription.solarian": {
 		"defaultMessage": "A warrior who wields the power of stars and black holes. Solarians form a glowing weapon or armor from their own power and channel light and gravity in battle.",
-		"description": "Description of the solarian, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the solarian, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.classDescription.soldier": {
 		"defaultMessage": "A trained warrior skilled with weapons and heavy armor. Soldiers pick a fighting style and learn more combat feats than any other class.",
-		"description": "Description of the soldier, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the soldier, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.classDescription.technomancer": {
 		"defaultMessage": "A spellcaster who blends magic and technology. Technomancers cast spells, store magic in a device or implant and use magic hacks to bend technology to their will.",
-		"description": "Description of the technomancer, a character class in Starfinder, shown in Create Character, the class editor and a rulebook's contents"
+		"description": "Description of the technomancer, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.coin.cr": {
 		"defaultMessage": "cr",
@@ -9349,35 +9345,35 @@
 	},
 	"sf1e.raceDescription.android": {
 		"defaultMessage": "Artificial people of machinery and flesh, with souls of their own. They are quick and clever, see in the dark and resist poison and disease, but show little emotion.",
-		"description": "Description of the android, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the android, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.raceDescription.human": {
 		"defaultMessage": "Ambitious, curious people who have spread far across space. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like.",
-		"description": "Description of the human, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the human, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.raceDescription.kasatha": {
 		"defaultMessage": "Tall, four-armed people from a desert world, known for their ancient traditions. They are strong and wise, cross rough desert and hills with ease and can hold more at once.",
-		"description": "Description of the kasatha, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the kasatha, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.raceDescription.lashunta": {
 		"defaultMessage": "Telepathic people with antennae, gifted scholars and warriors. They are charming, speak mind to mind with those nearby and have innate psychic magic.",
-		"description": "Description of the lashunta, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the lashunta, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.raceDescription.shirren": {
 		"defaultMessage": "Insect-like people who broke free of a hive mind and treasure being themselves. They are hardy and wise, sense nearby movement, speak mind to mind and make good diplomats.",
-		"description": "Description of the shirren, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the shirren, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.raceDescription.vesk": {
 		"defaultMessage": "Tall, warlike reptilian people with tough scales and claws. They are strong and hardy, hard to frighten, and make the most of the armor they wear.",
-		"description": "Description of the vesk, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the vesk, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.raceDescription.ysoki": {
 		"defaultMessage": "Small, clever people who look like rats standing upright. They are nimble tinkerers who see in the dark, stash small items in their cheek pouches and spring back to their feet.",
-		"description": "Description of the ysoki, a playable race in Starfinder, shown in Create Character, the race editor and a rulebook's contents"
+		"description": "Description of the ysoki, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.rulebook.core": {
 		"defaultMessage": "Starfinder Core Rulebook",
-		"description": "Name of the main rulebook of Starfinder First Edition, on the editor's Ruleset tab. Use the title of the book's official translated edition where there is one, such as the German \"Starfinder Grundregelwerk\""
+		"description": "Name of the main rulebook of Starfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book's official translated edition where there is one, such as the German \"Starfinder Grundregelwerk\""
 	},
 	"sf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -9453,39 +9449,39 @@
 	},
 	"sf1e.themeDescription.ace_pilot": {
 		"defaultMessage": "A natural at the controls of starships and vehicles, whether trained by the military or self-taught. Ace pilots know every make and model, and are skilled at piloting.",
-		"description": "Description of the ace pilot, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the ace pilot, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.bounty_hunter": {
 		"defaultMessage": "A hunter who tracks people down for money. Bounty hunters pick a mark, learn all they can about them and are good at following a trail.",
-		"description": "Description of the bounty hunter, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the bounty hunter, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.icon": {
 		"defaultMessage": "A celebrity known on many worlds, such as a famous performer or scientist. Icons know their profession and its culture inside out.",
-		"description": "Description of the icon, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the icon, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.mercenary": {
 		"defaultMessage": "A soldier of fortune who fights for pay beside their companions. Mercenaries know armies, rival crews and military procedure, and are trained in athletics.",
-		"description": "Description of the mercenary, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the mercenary, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.outlaw": {
 		"defaultMessage": "Someone wanted by the law, guilty or not. Outlaws know the criminal underworld and its back-alley deals, and have quick hands.",
-		"description": "Description of the outlaw, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the outlaw, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.priest": {
 		"defaultMessage": "A devoted member of a religion or philosophy, who always has their beliefs to fall back on. Priests know religious traditions and are trained in mysticism.",
-		"description": "Description of the priest, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the priest, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.scholar": {
 		"defaultMessage": "An intellectual drawn to problems and puzzles others find daunting. Scholars are experts in one field of science, such as biology or astronomy.",
-		"description": "Description of the scholar, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the scholar, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.spacefarer": {
 		"defaultMessage": "An explorer who longs to set foot on distant worlds and uncover their secrets. Spacefarers remember all they learn about new places and are trained in physical science.",
-		"description": "Description of the spacefarer, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the spacefarer, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"sf1e.themeDescription.xenoseeker": {
 		"defaultMessage": "An adventurer who seeks out alien life, the stranger the better. Xenoseekers are trained to find, identify and talk with alien creatures.",
-		"description": "Description of the xenoseeker, a character theme (background) in Starfinder, shown in Create Character, the theme editor and a rulebook's contents"
+		"description": "Description of the xenoseeker, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
 	},
 	"shortcuts.escape": {
 		"defaultMessage": "Esc",

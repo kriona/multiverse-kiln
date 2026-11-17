@@ -202,7 +202,7 @@ async function rulebookOffImpacts(universeId: string, ruleset: Ruleset, turnedOf
 
 	const live = liveVersion(universeId);
 	const inBooks = <Option extends { enabled: boolean; rulebook: string | null }>(options: readonly Option[]): Option[] => options.filter((option) => (option.enabled && (option.rulebook !== null) && turnedOff.includes(option.rulebook)));
-	// One after another, so finding a save's impacts doesn't take more of the pool than it did
+	// One after another, so finding a save's impacts holds one pool connection at a time
 	const bookRaces = inBooks(await loadEditorRaces(live, ruleset));
 	const bookClasses = inBooks(await loadEditorClasses(live, ruleset));
 	const bookItems = inBooks(await loadEditorItems(live, ruleset));

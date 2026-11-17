@@ -597,12 +597,13 @@ export class EditorApi
 	}
 
 	/**
-	 * Sends a request to an editor route, about the version open when it is about a universe
+	 * Sends a request to an editor route, about one version of the universe when it is about a universe
 	 *
 	 * @param method The HTTP method
 	 * @param path The path under EDITOR_UNIVERSES_PATH
 	 * @param body The JSON body, or a file with its type in contentType, if any
 	 * @param contentType The body's media type when it is a file
+	 * @param version The version the request is about, by default the one the editor has open
 	 * @return The response body
 	 */
 	private async send<T = unknown>(method: HttpMethod, path: string, body?: object, contentType?: string, version: UniverseVersionName = this.version): Promise<T>

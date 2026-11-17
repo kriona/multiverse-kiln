@@ -3,6 +3,7 @@ import { CORE_RULEBOOK, defineMessages, rulesetHasThemes, RULESET_RULEBOOKS, typ
 import { currentLocale, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
+import { pageMessages } from '../pageMessages';
 import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
 import { createToggleSwitch } from '../toggleSwitch';
@@ -24,17 +25,12 @@ const messages = defineMessages({
 	contents: {
 		id: 'editor.rulebooks.contents',
 		defaultMessage: 'Contents',
-		description: 'Button in a row of the Rulebooks table on the editor\'s Ruleset tab that opens a dialog listing the races and classes the book brings'
-	},
-	loading: {
-		id: 'editor.rulebook.loading',
-		defaultMessage: 'Loading...',
-		description: 'Shown in the dialog listing what a book of game rules brings while its races and classes load'
+		description: 'Button in a row of the Rulebooks table on the editor\'s Ruleset tab that opens a dialog listing the races, classes and themes the book brings'
 	},
 	loadFailed: {
 		id: 'editor.rulebook.loadFailed',
 		defaultMessage: 'Could not list what the book brings.',
-		description: 'Shown in the dialog listing what a book of game rules brings when its races and classes couldn\'t be loaded'
+		description: 'Shown in the dialog listing what a book of game rules brings when its races, classes and themes couldn\'t be loaded'
 	},
 	races: {
 		id: 'editor.rulebook.races',
@@ -313,7 +309,7 @@ export class RulebooksSection
 		const { ruleset } = universe;
 
 		this.dialogTitle.textContent = rulebookName(ruleset, rulebook);
-		this.dialogStatus.textContent = t(messages.loading);
+		this.dialogStatus.textContent = t(pageMessages.loading);
 		this.contents.replaceChildren();
 		this.dialog.showModal();
 

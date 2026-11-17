@@ -408,15 +408,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
-		const shown = stagedPage(this.items, this.changes, (this.offset === 0), (id, settings) => ({
-			id,
-			key: null,
-			...settings,
-			rulebook: null,
-			custom: true,
-			edited: false,
-			editedSettings: false
-		})).map(({ item, state }) => ({
+		const shown = stagedPage(this.items, this.changes, (this.offset === 0), customItem).map(({ item, state }) => ({
 			item: {
 				...item,
 				editedSettings: this.editedSettingsOf(item)
@@ -447,7 +439,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 		if (!known)
 		{
-			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, rulebook: null, custom: true, edited: false, editedSettings: false });
+			return(((settings === undefined) ? undefined : customItem(itemId, settings)));
 		}
 
 		return({ ...known, ...settings });
@@ -469,7 +461,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
-		return(saved.editedSettings || differsBeyondEnabling({ name: saved.name, description: saved.description, category: saved.category, types: saved.types }, { name: item.name, description: item.description, category: item.category, types: item.types }));
+		return(saved.editedSettings || differsBeyondEnabling(settingsOf(saved), settingsOf(item)));
 	}
 
 	/**
@@ -530,7 +522,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		row.dataset.itemId = String(item.id);
 		this.changedSince.mark(row.cells[1], item.id, (state !== undefined));
 
-		// A disabled item is struck through like one being deleted, as races and classes are; its notes say it is disabled
+		// A disabled item is struck through like one being deleted, as races and classes are; its switch shows it is disabled
 		if (!item.enabled)
 		{
 			row.classList.add('staged-deleted');
@@ -608,4 +600,41 @@ function anyOption(): SelectOption
 function filterValue(select: HTMLSelectElement): boolean | undefined
 {
 	return(((select.value === '') ? undefined : (select.value === 'true')));
+}
+
+/**
+ * An item the universe added, as the list shows it before it is saved
+ *
+ * @param id The item's ID
+ * @param settings Its settings
+ * @return The item
+ */
+function customItem(id: number, settings: ItemSettings): EditorItem
+{
+	return({
+		id,
+		key: null,
+		...settings,
+		rulebook: null,
+		custom: true,
+		edited: false,
+		editedSettings: false
+	});
+}
+
+/**
+ * An item's settings, without what the list adds to them
+ *
+ * @param item The item
+ * @return Its settings
+ */
+function settingsOf(item: ItemSettings): ItemSettings
+{
+	return({
+		name: item.name,
+		description: item.description,
+		category: item.category,
+		types: item.types,
+		enabled: item.enabled
+	});
 }

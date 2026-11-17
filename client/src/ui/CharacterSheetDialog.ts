@@ -291,7 +291,7 @@ export class CharacterSheetDialog
 	 * @param universeId The universe the character is in
 	 * @param characterId The character's ID
 	 * @param name The character's name, shown while the rest loads
-	 * @param canChange Whether to offer to delete, restore the character and take them out of their group
+	 * @param canChange Whether the sheet offers to change the character: delete, restore, take out of their group, give items and discard items
 	 */
 	async open(universeId: string, characterId: string, name: string, canChange = true): Promise<void>
 	{
@@ -347,7 +347,7 @@ export class CharacterSheetDialog
 	 * Fills the dialog with a character
 	 *
 	 * @param sheet The character
-	 * @param canChange Whether to offer to delete, restore the character and take them out of their group
+	 * @param canChange Whether the sheet offers to change the character: delete, restore, take out of their group, give items and discard items
 	 */
 	private show(sheet: CharacterSheet, canChange: boolean): void
 	{

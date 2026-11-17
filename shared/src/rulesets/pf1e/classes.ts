@@ -373,142 +373,142 @@ export const PF1E_CLASS_NAMES: Record<Pf1eClassKey, MessageDescriptor> = defineM
 });
 
 /**
- * Each default class's description, shown in Create Character, the class editor and a rulebook's Contents dialog
+ * Each default class's description, shown in Create Character, the class editor, a rulebook's Contents dialog and the Audit tab
  */
 export const PF1E_CLASS_DESCRIPTIONS: Record<Pf1eClassKey, MessageDescriptor> = defineMessages({
 	alchemist: {
 		id: 'pf1e.classDescription.alchemist',
 		defaultMessage: 'An inventor who brews bombs, extracts and mutagens. Alchemists hurl explosives, drink extracts that work like spells and take mutagens that make them stronger in a fight.',
-		description: 'Description of the alchemist, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the alchemist, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	barbarian: {
 		id: 'pf1e.classDescription.barbarian',
 		defaultMessage: 'A fierce warrior who draws strength from fury. Barbarians rage to hit harder and shrug off blows, move fast and are hard to catch off guard.',
-		description: 'Description of the barbarian, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the barbarian, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	bard: {
 		id: 'pf1e.classDescription.bard',
 		defaultMessage: 'A performer whose music and words weave magic. Bards inspire their allies, know a little about everything and cast spells to help, charm and trick.',
-		description: 'Description of the bard, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the bard, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	cavalier: {
 		id: 'pf1e.classDescription.cavalier',
 		defaultMessage: 'A mounted knight sworn to an order and its cause. Cavaliers fight from the saddle of a loyal mount, challenge foes to single combat and rally their allies.',
-		description: 'Description of the cavalier, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the cavalier, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	cleric: {
 		id: 'pf1e.classDescription.cleric',
 		defaultMessage: 'A priest who channels the power of a god. Clerics cast divine spells, heal allies with channeled energy and draw powers from two domains of their faith.',
-		description: 'Description of the cleric, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the cleric, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	druid: {
 		id: 'pf1e.classDescription.druid',
 		defaultMessage: 'A guardian of nature who draws magic from the wild. Druids cast divine spells, bond with an animal companion or a nature domain and can take the shapes of animals.',
-		description: 'Description of the druid, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the druid, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	fighter: {
 		id: 'pf1e.classDescription.fighter',
 		defaultMessage: 'A master of weapons and armor who wins battles through training and skill. Fighters learn more combat feats than any other class.',
-		description: 'Description of the fighter, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the fighter, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	inquisitor: {
 		id: 'pf1e.classDescription.inquisitor',
 		defaultMessage: 'A relentless agent of a faith who roots out its enemies. Inquisitors cast divine spells, pass judgment on foes in battle and are hard to lie to.',
-		description: 'Description of the inquisitor, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the inquisitor, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	monk: {
 		id: 'pf1e.classDescription.monk',
 		defaultMessage: 'A martial artist who trains body and mind to perfection. Monks fight without weapons or armor, strike in flurries of blows and grow faster as they train.',
-		description: 'Description of the monk, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the monk, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	oracle: {
 		id: 'pf1e.classDescription.oracle',
 		defaultMessage: 'A spellcaster chosen by divine powers, whether they wanted it or not. Oracles carry a curse that both hinders and helps them, and draw spells and powers from a mystery.',
-		description: 'Description of the oracle, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the oracle, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	paladin: {
 		id: 'pf1e.classDescription.paladin',
 		defaultMessage: 'A holy warrior sworn to a strict code of honor. Paladins smite evil, heal with a touch, stand firm against fear and disease, and later cast a few divine spells.',
-		description: 'Description of the paladin, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the paladin, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	ranger: {
 		id: 'pf1e.classDescription.ranger',
 		defaultMessage: 'A hunter and tracker of the wilds. Rangers fight best against chosen foes and in favored lands, with a bow or two weapons, and later gain a hunting companion and spells.',
-		description: 'Description of the ranger, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the ranger, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	rogue: {
 		id: 'pf1e.classDescription.rogue',
 		defaultMessage: 'A sneaky, skilled scout and thief. Rogues land sneak attacks on unwary foes, find and disarm traps, and learn more skills than any other class.',
-		description: 'Description of the rogue, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the rogue, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	sorcerer: {
 		id: 'pf1e.classDescription.sorcerer',
 		defaultMessage: 'A spellcaster whose magic flows from their bloodline. Sorcerers know fewer spells than wizards but cast them more often, without a spellbook, and gain powers from their blood.',
-		description: 'Description of the sorcerer, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the sorcerer, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	summoner: {
 		id: 'pf1e.classDescription.summoner',
 		defaultMessage: 'A spellcaster bonded to an eidolon, a creature from another plane that grows and changes with them. Summoners fight beside it, call up other creatures and cast arcane spells.',
-		description: 'Description of the summoner, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the summoner, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	witch: {
 		id: 'pf1e.classDescription.witch',
 		defaultMessage: 'A spellcaster who learns magic from a mysterious patron through a familiar. Witches cast arcane spells and use hexes to curse foes and aid allies.',
-		description: 'Description of the witch, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the witch, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	wizard: {
 		id: 'pf1e.classDescription.wizard',
 		defaultMessage: 'A scholar who learns magic from study and a spellbook. Wizards have the widest range of arcane spells and can specialize in one school of magic.',
-		description: 'Description of the wizard, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the wizard, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	arcanist: {
 		id: 'pf1e.classDescription.arcanist',
 		defaultMessage: 'A scholar who studies magic like a wizard but casts it like a sorcerer. Arcanists prepare spells each day, cast them freely from their slots and draw on a pool of arcane power.',
-		description: 'Description of the arcanist, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the arcanist, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	bloodrager: {
 		id: 'pf1e.classDescription.bloodrager',
 		defaultMessage: 'A warrior whose rage awakens magic in their blood. Bloodragers fight in a fury, gain powers from a bloodline as they rage and cast a few arcane spells.',
-		description: 'Description of the bloodrager, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the bloodrager, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	brawler: {
 		id: 'pf1e.classDescription.brawler',
 		defaultMessage: 'A versatile unarmed fighter who thinks fast in a brawl. Brawlers hit hard with their fists, pick up the combat feat they need on the spot and excel at combat maneuvers.',
-		description: 'Description of the brawler, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the brawler, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	hunter: {
 		id: 'pf1e.classDescription.hunter',
 		defaultMessage: 'A wilderness spellcaster who fights alongside an animal companion. Hunters and their companions share tactics and animal powers, track their prey and cast nature spells.',
-		description: 'Description of the hunter, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the hunter, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	investigator: {
 		id: 'pf1e.classDescription.investigator',
 		defaultMessage: 'A detective who solves mysteries with sharp wits and alchemy. Investigators draw on inspiration to boost their checks, brew extracts and study foes to strike them down.',
-		description: 'Description of the investigator, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the investigator, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	shaman: {
 		id: 'pf1e.classDescription.shaman',
 		defaultMessage: 'A spellcaster who speaks with spirits through a spirit animal. Shamans cast divine spells, use hexes and take on the powers of a chosen spirit.',
-		description: 'Description of the shaman, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the shaman, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	skald: {
 		id: 'pf1e.classDescription.skald',
 		defaultMessage: 'A warrior poet whose songs drive allies into a rage. Skalds fight on the front line, cast arcane spells and share their fury with the whole party.',
-		description: 'Description of the skald, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the skald, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	slayer: {
 		id: 'pf1e.classDescription.slayer',
 		defaultMessage: 'A hunter of people who studies a target to strike it down. Slayers track their quarry, land sneak attacks and pick up tricks from rogues and rangers.',
-		description: 'Description of the slayer, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the slayer, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	swashbuckler: {
 		id: 'pf1e.classDescription.swashbuckler',
 		defaultMessage: 'A daring sword fighter who relies on flair and nimble moves. Swashbucklers spend panache on bold deeds, parry attacks and strike with deadly precision using thrusting blades.',
-		description: 'Description of the swashbuckler, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the swashbuckler, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	},
 	warpriest: {
 		id: 'pf1e.classDescription.warpriest',
 		defaultMessage: 'A warrior who fights for their faith with weapon and spell. Warpriests bless themselves and their weapons, learn combat feats and cast divine spells.',
-		description: 'Description of the warpriest, a character class in Pathfinder, shown in Create Character, the class editor and a rulebook\'s contents'
+		description: 'Description of the warpriest, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
 	}
 });

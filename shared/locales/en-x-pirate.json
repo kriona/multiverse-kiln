@@ -3732,16 +3732,12 @@
 		"source": "Classes"
 	},
 	"editor.rulebook.hint": {
-		"message": "The folk an' callin's the book brings aboard while it be open. Close each one on the Crew tab.",
-		"source": "The races and classes the book brings to the universe while it is on. Disable each one on the Characters tab."
+		"message": "The book brings these aboard while it be open. Close each one on the Crew tab.",
+		"source": "The book brings these to the universe while it is on. Disable each one on the Characters tab."
 	},
 	"editor.rulebook.loadFailed": {
 		"message": "Couldn't haul up what the book brings.",
 		"source": "Could not list what the book brings."
-	},
-	"editor.rulebook.loading": {
-		"message": "Haulin' it up...",
-		"source": "Loading..."
 	},
 	"editor.rulebook.races": {
 		"message": "Folk",

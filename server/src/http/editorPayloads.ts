@@ -354,9 +354,10 @@ const rulesetSettings = z.discriminatedUnion('ruleset', [
 ]) satisfies z.ZodType<RulesetSettings>;
 
 /**
- * What happens to the items of each book a change turns off, by the book's key
+ * A choice for each optional book a change turns off, by the book's key
  *
  * @param ruleset The universe's ruleset
+ * @param choice The validator for each book's choice
  * @return The validator
  */
 function rulebookChoices<Choice extends z.ZodType>(ruleset: Ruleset, choice: Choice)
