@@ -290,7 +290,7 @@ describe('Universe drafts', () =>
 
 		assert.strictEqual(await hasDraft(universe.universeId), false);
 		assert.ok((await areasOf('live')).areas.some((area) => ((area.id === universe.houseAreaId) && (area.name === 'Inn'))));
-		assert.ok((await loadBarredOptions(universe.universeId)).raceIds.has(dwarfId));
+		assert.ok((await loadBarredOptions(universe.universeId, 'pf1e')).raceIds.has(dwarfId));
 		assert.ok(published.some((change) => ((change.kind === 'area') && (change.areaId === universe.houseAreaId))));
 		assert.strictEqual((await findCharacterDetails(playerId, universe.universeId, 'pf1e', brokkId))?.raceId, dwarfId);
 	});
@@ -343,11 +343,11 @@ describe('Universe drafts', () =>
 
 		assert.deepStrictEqual(impacts.body.impacts, expected);
 		await saveAll(ada, universe.universeId, [apply]);
-		assert.ok((await loadBarredOptions(universe.universeId)).classIds.has(witchId));
+		assert.ok((await loadBarredOptions(universe.universeId, 'pf1e')).classIds.has(witchId));
 		assert.ok(!await carries());
 
 		await applyChangedDraft(async () => [await rulebooksChange('draft', ['apg'])]);
-		assert.strictEqual((await loadBarredOptions(universe.universeId)).classIds.size, 0);
+		assert.strictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).classIds.size, 0);
 		assert.ok(await carries());
 	});
 
@@ -356,7 +356,7 @@ describe('Universe drafts', () =>
 		const { carries } = await witchWithCestus();
 
 		await applyChangedDraft(async () => [await rulebooksChange('draft', [])], { rulebooks: { apg: { keepPlaying: true, items: 'keep' } } });
-		assert.deepStrictEqual((await loadBarredOptions(universe.universeId)).classIds, new Set());
+		assert.deepStrictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).classIds, new Set());
 		assert.ok(await carries());
 	});
 

@@ -223,6 +223,16 @@ describe('Rulebooks', () =>
 		assert.strictEqual(disableWitch.body.error.id, 'error.noEnabledClass');
 	});
 
+	it('checks each change of a save against the books the changes before it turned on', async () =>
+	{
+		const core = (await listClasses()).filter((option) => (option.rulebook === 'core'));
+		const [first, ...others] = core.map(disableClass);
+
+		// Once the Advanced Player's Guide is on, its classes leave new characters a class to choose
+		await saveAll(ada, universe.universeId, [first, await rulebooksChange(['apg']), ...others]);
+		assert.ok((await listClasses()).every((option) => ((option.rulebook !== 'core') || !option.enabled)));
+	});
+
 	it('warns about the characters of a book being turned off, and bars them only when told to', async () =>
 	{
 		const playerId = (await addPlayer('Bob')).id;
@@ -244,7 +254,7 @@ describe('Rulebooks', () =>
 		}]);
 
 		await saveAll(ada, universe.universeId, [keep]);
-		assert.strictEqual((await loadBarredOptions(universe.universeId)).classIds.size, 0);
+		assert.strictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).classIds.size, 0);
 
 		// Every class of the book is barred, not only those characters are
 		const apgClassIds = (await listClasses())
@@ -253,11 +263,11 @@ describe('Rulebooks', () =>
 
 		await saveAll(ada, universe.universeId, [await rulebooksChange([], ['apg'])]);
 		assert.ok(apgClassIds.includes(witchId));
-		assert.deepStrictEqual([...(await loadBarredOptions(universe.universeId)).classIds].sort((a, b) => (a - b)), apgClassIds.sort((a, b) => (a - b)));
+		assert.deepStrictEqual([...(await loadBarredOptions(universe.universeId, 'pf1e')).classIds].sort((a, b) => (a - b)), apgClassIds.sort((a, b) => (a - b)));
 
 		// Turning the book on again lets them play
 		await saveAll(ada, universe.universeId, [await rulebooksChange(['apg'], ['apg'])]);
-		assert.strictEqual((await loadBarredOptions(universe.universeId)).classIds.size, 0);
+		assert.strictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).classIds.size, 0);
 		assert.deepStrictEqual((await loadSettings()).barredRulebooks, []);
 	});
 

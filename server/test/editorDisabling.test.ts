@@ -128,7 +128,7 @@ describe('Disabling things players are using', () =>
 		assert.deepStrictEqual(await impactsOf([keep]), [{ changeIndex: 0, kind: 'race', id: dwarfId, name: { key: 'dwarf', name: null }, characters: 1 }]);
 
 		await saveAll(ada, universe.universeId, [keep]);
-		assert.strictEqual((await loadBarredOptions(universe.universeId)).raceIds.size, 0);
+		assert.strictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).raceIds.size, 0);
 
 		// The race is disabled already, so making its characters stop playing warns no more
 		const prevent = await saveRace(dwarfId, { enabled: false, keepPlaying: false });
@@ -144,7 +144,7 @@ describe('Disabling things players are using', () =>
 		assert.deepStrictEqual(await impactsOf([prevent]), []);
 		await saveAll(ada, universe.universeId, [prevent]);
 
-		const barred = await loadBarredOptions(universe.universeId);
+		const barred = await loadBarredOptions(universe.universeId, 'pf1e');
 
 		assert.deepStrictEqual([...(await published).barred.raceIds], [dwarfId]);
 		assert.deepStrictEqual([...barred.raceIds], [dwarfId]);
@@ -158,7 +158,7 @@ describe('Disabling things players are using', () =>
 
 		// Enabling the race lets them play again
 		await saveAll(ada, universe.universeId, [await saveRace(dwarfId, { enabled: true })]);
-		assert.strictEqual((await loadBarredOptions(universe.universeId)).raceIds.size, 0);
+		assert.strictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).raceIds.size, 0);
 	});
 
 	it('takes a carried item from characters when disabled with remove, and gives it back', async () =>

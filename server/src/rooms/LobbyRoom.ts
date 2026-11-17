@@ -340,7 +340,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		};
 		this.state.hasArea = ((await this.lobbyArea()) !== undefined);
 		this.raceSight = await loadRaceSight(universeId, universe.ruleset);
-		this.barred = await loadBarredOptions(universeId);
+		this.barred = await loadBarredOptions(universeId, universe.ruleset);
 		this.setTimestep((deltaTime) => this.areaPlayers.update(deltaTime / 1000), 1000 / SIMULATION_TICK_RATE);
 		this.clock.setInterval(() => this.areaPlayers.refreshChunks(), CHUNK_REFRESH_INTERVAL_MS);
 

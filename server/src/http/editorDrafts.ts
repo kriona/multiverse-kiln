@@ -58,6 +58,7 @@ export async function discardDraftChange(context: ChangeContext): Promise<void>
 	}
 
 	context.deletedImages.push(...await discardDraft(universe.id, transaction));
+	context.rulebooks = undefined;
 }
 
 /**
@@ -86,7 +87,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		refuse(404, errorMessages.noSuchUniverse);
 	}
 
-	const barredBefore = await loadBarredOptions(universeId, transaction);
+	const barredBefore = await loadBarredOptions(universeId, universe.ruleset, transaction);
 	const disablings = new SaveDisablings();
 	const areasBefore = await listAreas(live, transaction);
 	const rulebooksBefore = await loadRulebookSettings(live, universe.ruleset, transaction);
@@ -138,6 +139,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 	// The draft's changes were to rows the rooms don't have; once applied, the rooms load the live version again
 	context.published.length = 0;
 	context.draftApplied = true;
+	context.rulebooks = undefined;
 
 	const liveContext: ChangeContext = {
 		...context,
@@ -190,7 +192,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		itemIds: removed.itemIds.filter((id) => !kept.itemIds.has(id))
 	}, transaction));
 
-	const barred = await loadBarredOptions(universeId, transaction);
+	const barred = await loadBarredOptions(universeId, universe.ruleset, transaction);
 
 	if (!sameBarred(barredBefore, barred))
 	{

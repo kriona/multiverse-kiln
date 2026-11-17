@@ -591,6 +591,7 @@ export async function applyRulesetChange(context: ChangeContext, settings: Rules
 	const rulebooks = normalizedRulebooks(universe.ruleset, settings.settings);
 
 	await storeRulesetSettings(version, withRulebooks(settings, rulebooks), transaction);
+	context.rulebooks = rulebooks.rulebooks;
 	await noteRulebookChanges(context, before, rulebooks, whenRulebooksOff);
 }
 

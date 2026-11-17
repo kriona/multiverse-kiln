@@ -53,37 +53,6 @@ export async function loadRulebookSettings(version: UniverseVersion, ruleset: Ru
 }
 
 /**
- * The books a universe has turned off without letting their characters keep playing, whatever its
- * ruleset
- *
- * @param version The universe's live version or draft
- * @param executor The database, or a transaction
- * @return The books, with the ruleset they belong to; none when the universe has never saved its settings
- */
-export async function findBarredRulebooks(version: UniverseVersion, executor: Executor = db): Promise<{ ruleset: Ruleset; rulebooks: string[] }[]>
-{
-	const pf1eRows = await executor
-		.select({
-			rulebooks: pf1eSettings.barredRulebooks
-		})
-		.from(pf1eSettings)
-		.where(inVersion(pf1eSettings, version))
-		.limit(1);
-	const sf1eRows = await executor
-		.select({
-			rulebooks: sf1eSettings.barredRulebooks
-		})
-		.from(sf1eSettings)
-		.where(inVersion(sf1eSettings, version))
-		.limit(1);
-
-	return([
-		...pf1eRows.map((row) => ({ ruleset: 'pf1e' as const, rulebooks: row.rulebooks })),
-		...sf1eRows.map((row) => ({ ruleset: 'sf1e' as const, rulebooks: row.rulebooks }))
-	].filter((row) => (row.rulebooks.length > 0)));
-}
-
-/**
  * Stores a universe's settings under its ruleset, replacing any it had
  *
  * @param version The universe's live version or draft

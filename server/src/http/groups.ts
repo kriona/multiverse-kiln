@@ -240,7 +240,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
-		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+		const bar = characterBar(character, await loadBarredOptions(universe.id, universe.ruleset, transaction));
 
 		if (bar !== null)
 		{
@@ -556,7 +556,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
-		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+		const bar = characterBar(character, await loadBarredOptions(universe.id, universe.ruleset, transaction));
 
 		if (bar !== null)
 		{

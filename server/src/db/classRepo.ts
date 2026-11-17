@@ -321,11 +321,12 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
  * characters already of them keep playing, and the default classes of the books it has turned off that way
  *
  * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
  * @param barredRulebooks The books turned off without letting their characters keep playing
  * @param executor The database, or a transaction
  * @return The classes, by the IDs characters hold (a default class's own ID for an edited copy)
  */
-export async function listBarredClassIds(version: UniverseVersion, barredRulebooks: readonly { ruleset: Ruleset; rulebooks: readonly string[] }[], executor: Executor = db): Promise<Set<number>>
+export async function listBarredClassIds(version: UniverseVersion, ruleset: Ruleset, barredRulebooks: readonly string[], executor: Executor = db): Promise<Set<number>>
 {
 	// Default classes are always enabled, so only the universe's own rows can bar anyone that way
 	const rows = await executor
@@ -340,11 +341,13 @@ export async function listBarredClassIds(version: UniverseVersion, barredRuleboo
 				eq(classes.enabled, false),
 				eq(classes.keepPlaying, false)
 			),
-			...barredRulebooks.map(({ ruleset, rulebooks }) => and(
-				isNull(classes.universeId),
-				eq(classes.ruleset, ruleset),
-				inArray(classes.rulebook, [...rulebooks])
-			))
+			((barredRulebooks.length > 0)
+				? and(
+					isNull(classes.universeId),
+					eq(classes.ruleset, ruleset),
+					inArray(classes.rulebook, [...barredRulebooks])
+				)
+				: undefined)
 		));
 
 	return(new Set(rows.map((row) => (row.overridesClassId ?? row.id))));

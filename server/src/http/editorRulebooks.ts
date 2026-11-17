@@ -33,16 +33,19 @@ const messages = defineMessages({
 });
 
 /**
- * The optional books the version being saved has on, as the save's changes so far leave them
+ * The optional books the version being saved has on, as the save's changes so far leave them. They are
+ * read once per save and kept on the context until a change stores the version's ruleset settings
  *
  * @param context The save
  * @return The books' keys
  */
-export async function savedRulebooks(context: ChangeContext): Promise<string[]>
+export async function savedRulebooks(context: ChangeContext): Promise<readonly string[]>
 {
 	const { universe, version, transaction } = context;
 
-	return((await loadRulebookSettings(version, universe.ruleset, transaction)).rulebooks);
+	context.rulebooks ??= (await loadRulebookSettings(version, universe.ruleset, transaction)).rulebooks;
+
+	return(context.rulebooks);
 }
 
 /**

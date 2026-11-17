@@ -320,11 +320,12 @@ export async function loadRaceSight(universeId: string, ruleset: Ruleset, execut
  * characters already of them keep playing, and the default races of the books it has turned off that way
  *
  * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
  * @param barredRulebooks The books turned off without letting their characters keep playing
  * @param executor The database, or a transaction
  * @return The races, by the IDs characters hold (a default race's own ID for an edited copy)
  */
-export async function listBarredRaceIds(version: UniverseVersion, barredRulebooks: readonly { ruleset: Ruleset; rulebooks: readonly string[] }[], executor: Executor = db): Promise<Set<number>>
+export async function listBarredRaceIds(version: UniverseVersion, ruleset: Ruleset, barredRulebooks: readonly string[], executor: Executor = db): Promise<Set<number>>
 {
 	// Default races are always enabled, so only the universe's own rows can bar anyone that way
 	const rows = await executor
@@ -339,11 +340,13 @@ export async function listBarredRaceIds(version: UniverseVersion, barredRulebook
 				eq(races.enabled, false),
 				eq(races.keepPlaying, false)
 			),
-			...barredRulebooks.map(({ ruleset, rulebooks }) => and(
-				isNull(races.universeId),
-				eq(races.ruleset, ruleset),
-				inArray(races.rulebook, [...rulebooks])
-			))
+			((barredRulebooks.length > 0)
+				? and(
+					isNull(races.universeId),
+					eq(races.ruleset, ruleset),
+					inArray(races.rulebook, [...barredRulebooks])
+				)
+				: undefined)
 		));
 
 	return(new Set(rows.map((row) => (row.overridesRaceId ?? row.id))));

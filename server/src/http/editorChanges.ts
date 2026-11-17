@@ -383,6 +383,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				disablings: new SaveDisablings(),
 				places,
 				deletedImages: [],
+				rulebooks: undefined,
 				draftApplied: false
 			};
 
@@ -394,7 +395,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 			const audit = new SaveAudit(saving);
 			const merge = new SaveMerge(saving, audit);
 			const changesOptions = (!base.version.draft && changes.some((change) => ((typeof change === 'function') || BARRING_KINDS.has(change.kind))));
-			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, transaction) : undefined);
+			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, base.universe.ruleset, transaction) : undefined);
 
 			for (; current < changes.length; current++)
 			{
@@ -457,7 +458,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 
 			if (barredBefore)
 			{
-				const barred = await loadBarredOptions(base.universe.id, transaction);
+				const barred = await loadBarredOptions(base.universe.id, base.universe.ruleset, transaction);
 
 				if (!sameBarred(barredBefore, barred))
 				{
