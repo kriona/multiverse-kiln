@@ -164,3 +164,67 @@ export function sortedItemTypes(ruleset: Ruleset, types: Iterable<string>): stri
 
 	return(Object.keys(ITEM_KINDS[ruleset].types).filter((type) => chosen.has(type)));
 }
+
+/**
+ * The category and types of each type an item had, by ruleset, when items had one type each
+ * (server/drizzle/0125_item_categories_and_types.sql). A Starfinder type not listed kept its key
+ */
+const SINGLE_ITEM_TYPES: Record<Ruleset, Record<string, ItemKind>> = {
+	pf1e: {
+		dagger: { category: 'weapon', types: ['blades_light', 'thrown'] },
+		club: { category: 'weapon', types: ['hammers', 'thrown'] },
+		quarterstaff: { category: 'weapon', types: ['double', 'monk'] },
+		spear: { category: 'weapon', types: ['spears', 'thrown'] },
+		short_sword: { category: 'weapon', types: ['blades_light'] },
+		longsword: { category: 'weapon', types: ['blades_heavy'] },
+		shortbow: { category: 'weapon', types: ['bows'] },
+		longbow: { category: 'weapon', types: ['bows'] },
+		light_crossbow: { category: 'weapon', types: ['crossbows'] },
+		arrows: { category: 'weapon', types: [] },
+		crossbow_bolts: { category: 'weapon', types: [] },
+		cestus: { category: 'weapon', types: ['close', 'monk'] },
+		sword_cane: { category: 'weapon', types: ['blades_light'] },
+		kobold_long_lash: { category: 'weapon', types: [] },
+		kobold_spiked_tail: { category: 'weapon', types: [] },
+		ratfolk_tailblade: { category: 'weapon', types: ['blades_light'] },
+		padded_armor: { category: 'armor', types: ['light_armor'] },
+		leather_armor: { category: 'armor', types: ['light_armor'] },
+		chain_shirt: { category: 'armor', types: ['light_armor'] },
+		wooden_armor: { category: 'armor', types: ['light_armor'] },
+		quilted_cloth: { category: 'armor', types: ['light_armor'] },
+		light_shield: { category: 'armor', types: ['shields'] },
+		heavy_shield: { category: 'armor', types: ['shields'] },
+		rope: { category: 'gear', types: ['rope'] },
+		torch: { category: 'gear', types: ['torch'] },
+		other_gear: { category: 'gear', types: [] }
+	},
+	sf1e: {
+		other_gear: { category: 'gear', types: [] }
+	}
+};
+
+/**
+ * The category and types of an item that had one type, as universe exports and the editor's saves
+ * recorded before items had several (SINGLE_ITEM_TYPES) hold it
+ *
+ * @param ruleset The ruleset
+ * @param type The item's one type
+ * @return Its category and types, or undefined for a type the ruleset never had
+ */
+export function singleItemTypeKind(ruleset: Ruleset, type: string): ItemKind | undefined
+{
+	if (Object.hasOwn(SINGLE_ITEM_TYPES[ruleset], type))
+	{
+		return(SINGLE_ITEM_TYPES[ruleset][type]);
+	}
+
+	if (!Object.hasOwn(ITEM_KINDS[ruleset].types, type))
+	{
+		return(undefined);
+	}
+
+	return({
+		category: ITEM_KINDS[ruleset].types[type],
+		types: [type]
+	});
+}

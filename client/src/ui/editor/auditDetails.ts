@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, singleItemTypeKind, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
@@ -544,19 +544,60 @@ export function auditFieldName(field: AuditField): string
 }
 
 /**
- * One setting a part of a save changed, with the value it changed it to, e.g. "Track ammunition (yes)"
+ * One setting a part of a save changed, with the value it changed it to, e.g. "Track ammunition: yes",
+ * as the lines the Audit tab lists it on
  *
- * @param change The setting and its value
+ * @param change The setting and its value, as the save recorded it
  * @param detail The part of the save that changed it
  * @param ruleset The universe's ruleset
- * @return The description
+ * @return The descriptions, one per setting the editor has now (currentFieldChanges())
  */
-export function describeFieldChange(change: AuditFieldChange, detail: UniverseEditDetail, ruleset: Ruleset): string
+export function describeFieldChange(change: AuditFieldChange, detail: UniverseEditDetail, ruleset: Ruleset): string[]
 {
-	return(t(VALUE_MESSAGES.fieldValue, {
-		field: t(AUDIT_FIELD_NAMES[change.field]),
-		value: describeValue(change, detail, ruleset)
-	}));
+	return(currentFieldChanges(change, ruleset).map((current) => t(VALUE_MESSAGES.fieldValue, {
+		field: t(AUDIT_FIELD_NAMES[current.field]),
+		value: describeValue(current, detail, ruleset)
+	})));
+}
+
+/**
+ * A setting a save recorded, as the settings the editor has now. The Audit tab lists saves for 90 days
+ * (universe_edits), so it reads settings that saves recorded before they changed: an item's one type
+ * becomes its category and types, and a setting the Audit tab has no name for is left out
+ *
+ * @param change The setting and its value, as the save recorded it
+ * @param ruleset The universe's ruleset
+ * @return The settings and their values
+ */
+function currentFieldChanges(change: AuditFieldChange, ruleset: Ruleset): AuditFieldChange[]
+{
+	const recorded: { field: string; value: unknown } = change;
+
+	if ((recorded.field === 'type') && (typeof recorded.value === 'string'))
+	{
+		const kind = singleItemTypeKind(ruleset, recorded.value);
+
+		if (kind === undefined)
+		{
+			return([{
+				field: 'types',
+				value: [recorded.value]
+			}]);
+		}
+
+		return([
+			{
+				field: 'category',
+				value: kind.category
+			},
+			{
+				field: 'types',
+				value: [...kind.types]
+			}
+		]);
+	}
+
+	return((Object.hasOwn(AUDIT_FIELD_NAMES, recorded.field) ? [change] : []));
 }
 
 /**

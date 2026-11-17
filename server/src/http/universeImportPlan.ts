@@ -16,7 +16,7 @@
  * changes before them are saved (PendingChange)
  */
 import { isDeepStrictEqual } from 'util';
-import { isNewRef, ITEM_KINDS, type ItemKind, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { isNewRef, singleItemTypeKind, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { listRegions } from '../db/regionRepo.js';
@@ -56,44 +56,6 @@ type SavedIds = ReadonlyMap<NewRef, number | string>;
  */
 const TILE_FIELDS = ['name', 'indoors', 'outdoors', 'color', 'graphic', 'visionCost', 'walkSeconds', 'enabled'] as const;
 const ITEM_FIELDS = ['name', 'category', 'types', 'enabled'] as const;
-
-/**
- * The category and types of each type an item had, by ruleset, when items had one type each
- * (server/drizzle/0125_item_categories_and_types.sql). A Starfinder type not listed kept its key
- */
-const SINGLE_ITEM_TYPES: Record<Ruleset, Record<string, ItemKind>> = {
-	pf1e: {
-		dagger: { category: 'weapon', types: ['blades_light', 'thrown'] },
-		club: { category: 'weapon', types: ['hammers', 'thrown'] },
-		quarterstaff: { category: 'weapon', types: ['double', 'monk'] },
-		spear: { category: 'weapon', types: ['spears', 'thrown'] },
-		short_sword: { category: 'weapon', types: ['blades_light'] },
-		longsword: { category: 'weapon', types: ['blades_heavy'] },
-		shortbow: { category: 'weapon', types: ['bows'] },
-		longbow: { category: 'weapon', types: ['bows'] },
-		light_crossbow: { category: 'weapon', types: ['crossbows'] },
-		arrows: { category: 'weapon', types: [] },
-		crossbow_bolts: { category: 'weapon', types: [] },
-		cestus: { category: 'weapon', types: ['close', 'monk'] },
-		sword_cane: { category: 'weapon', types: ['blades_light'] },
-		kobold_long_lash: { category: 'weapon', types: [] },
-		kobold_spiked_tail: { category: 'weapon', types: [] },
-		ratfolk_tailblade: { category: 'weapon', types: ['blades_light'] },
-		padded_armor: { category: 'armor', types: ['light_armor'] },
-		leather_armor: { category: 'armor', types: ['light_armor'] },
-		chain_shirt: { category: 'armor', types: ['light_armor'] },
-		wooden_armor: { category: 'armor', types: ['light_armor'] },
-		quilted_cloth: { category: 'armor', types: ['light_armor'] },
-		light_shield: { category: 'armor', types: ['shields'] },
-		heavy_shield: { category: 'armor', types: ['shields'] },
-		rope: { category: 'gear', types: ['rope'] },
-		torch: { category: 'gear', types: ['torch'] },
-		other_gear: { category: 'gear', types: [] }
-	},
-	sf1e: {
-		other_gear: { category: 'gear', types: [] }
-	}
-};
 const OPTION_FIELDS = ['name', 'enabled', 'keepPlaying', 'rules', 'startingMoney', 'startingColumn', 'startingRow'] as const;
 const THEME_FIELDS = ['name', 'enabled', 'rules'] as const;
 const LEVEL_FIELDS = ['name', 'isDefault', 'mobScale', 'permadeath'] as const;
@@ -607,7 +569,7 @@ function pickDescribed(thing: Record<string, unknown>, fields: readonly string[]
 
 /**
  * An item as a file holds it, with a category and types in place of the one type an item had in a file
- * exported before items had several (SINGLE_ITEM_TYPES)
+ * exported before items had several (singleItemTypeKind())
  *
  * @param ruleset The universe's ruleset
  * @param item The item, as the file holds it
@@ -622,9 +584,11 @@ function withItemKind(ruleset: Ruleset, item: Record<string, unknown>): Record<s
 		return(item);
 	}
 
-	const kind = (Object.hasOwn(SINGLE_ITEM_TYPES[ruleset], type)
-		? SINGLE_ITEM_TYPES[ruleset][type]
-		: { category: (ITEM_KINDS[ruleset].types[type] ?? ''), types: [type] });
+	// A type the ruleset never had keeps its key, under no category, for the save to refuse
+	const kind = (singleItemTypeKind(ruleset, type) ?? {
+		category: '',
+		types: [type]
+	});
 
 	return({
 		...others,
