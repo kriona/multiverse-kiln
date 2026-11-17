@@ -179,7 +179,8 @@ A modal dialog showing one of the player's characters, opened from the [lobby](#
 - each ability score (with the race's modifiers added) and the modifier it gives
 - size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
-- equipment, sorted by name, with how many of each and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it, which will grow; for now it offers Discard, which opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
+- what the character has equipped: each of the ruleset's slots with the item in it, or Empty (see [Equipment](#equipment))
+- equipment, sorted by name, with how many of each, how many are equipped, and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it: Equip (Main hand, Off hand or Both hands for a weapon held in one hand), Unequip, Give, Inspect and Discard (see [Equipment](#equipment)). Discard opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
 
 For SF1E it also shows the theme, hit points (the race's and the class's) and stamina points (the class's plus the Constitution modifier, at least 0), from the race and class as the universe sets them now.
 
@@ -192,6 +193,38 @@ The sheet's Delete button asks twice. "Delete Character" asks "Do you want to de
 A character in a group can't be deleted either way, and the server refuses. Their sheet's Delete button says so instead, in the dialog that asks whether to leave the group (Disband the Group? for the anchor being), and once they have left goes on to the questions above; a window playing them in the group goes to the lobby with them, as the group's Leave group does. A character in a group who can't play because their race or class is disabled (see [Disabling things players are using](#disabling-things-players-are-using)) can't reach the group's Leave group button, so their sheet offers it instead, asking first like the group's (Disband Group for the anchor being).
 
 The server deletes characters whose days are over once an hour, and hides them until it does.
+
+## Equipment
+A character equips items they carry to their ruleset's slots. Equipping changes no rules yet: combat, armor class and the like will read it.
+
+Each ruleset lists its slots in `/shared` (`shared/src/rulesets/<ruleset>/equipment.ts`):
+- PF1E: head, headband, eyes, shoulders, neck, chest, body, armor, belt, wrists, hands, two rings, feet, tail, off arm, main hand and off hand. These are the Core Rulebook's item slots, which magic items will use, plus a tail for tail weapons, the off arm for a buckler, and the hands. Only characters whose race has a tail (a setting of the [race](#races)) have the tail slot
+- SF1E: armor, clothing, main hand and off hand. Worn magic items, armor upgrades and augmentations add slots later
+
+Each item has where it equips: nowhere, one worn slot, one hand or two hands. It is set apart from the item's kind: a dwarven boulder helmet is a weapon worn on the head, and a torch is gear held in a hand.
+
+Hands:
+- The main hand and the off hand each hold one item. A one-handed item goes in either hand. A one-handed weapon can also go in both. A two-handed item takes both hands
+- A one-handed item in each hand is dual-wielding. A double weapon, such as a quarterstaff, is one two-handed item
+- A shield takes a hand, and a character holds one shield at most. PF1E's buckler is worn in the off arm slot and takes no hand. It counts as the character's one shield
+
+Equipping:
+- Equip and Unequip are in each item's menu on the [character sheet](#character-sheet), in the lobby, the game, on the universe page and on the player's profile
+- Equipping into a slot or hand in use unequips what was there, without asking. A two-handed item unequips both hands. A one-handed item unequips a two-handed one. A second shield unequips the first
+- A ring goes in the first free ring slot, or in the left ring's when both are full
+- An equipped item is one of the items the character carries: 3 daggers with one in each hand are 3 daggers, 2 of them equipped. Discarding or giving more than the unequipped ones unequips the rest, the off hand first, then the main hand, then worn slots, and the dialog says which
+- Disabled items, and items of [rulebooks](#rulebooks) that are off, can still be equipped, unequipped and given. An item [removed from characters](#disabling-things-players-are-using) is unequipped
+- A save that changes where an item equips, or whether it is a shield, unequips it from every character once it reaches the live version. A save that turns off a race's tail unequips the tail items of that race's characters
+- Create Character equips the starting items, the class's, then the race's, then the universe's, each list by name. Each worn item goes in its slot while it is free. Only the first weapon is equipped, in the main hand, so no character starts out dual-wielding. A shield goes in the off hand while it is free, and a buckler in the off arm. Other held items, such as torches, stay unequipped
+- Each change to a character's items or equipment is sent to the player's windows through the session room, so an open sheet shows it wherever it is
+
+Give opens "Give [item]". It chooses another character in the group, the player's own included, online or not, and for more than one of the item, how many. The items arrive at once. The receiving player's open windows show a toast saying who gave them what, and a line in the group's chat records it. It is offered only while the character is in a group.
+
+Inspect opens a dialog with the item's name, kind, types, book, where it equips and description. Rules details such as weight and damage aren't tracked yet. Inspect will show them once items have them. Inspect is also in [item selection](#selection-item).
+
+The universe's creators change a character's sheet from the [Character List](#tab-character-list) as the player can, with the same item menu. Items they give with Give Items arrive unequipped.
+
+Later, appearance slots will repeat the stats slots, all but the hands, for items worn only for how they look. The avatar draws them over the stats items, and a Hide option skips an equipped item when drawing it. So slot keys belong to the ruleset rather than to a set of slots, `character_equipment` is keyed by character and slot so a layer column can join the key, and whether an item fits a slot is one pure function the appearance slots reuse. The hands and shield rules apply only to the stats slots.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
@@ -622,6 +655,7 @@ You can edit each race:
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
 	- darkvision: `none`, `darkvision (60 feet)` or `superior darkvision (120 feet)`. A default race starts with what its book gives it: drow have superior darkvision, and dwarves have darkvision
 	- light sensitivity? a checkbox. Bright light dazzles the race's characters (see [Vision](#vision)). A default race starts with what its book gives it: drow have it
+	- has a tail? a checkbox. The race's characters get a tail slot for tail weapons (see [Equipment](#equipment)). A default race starts with it on for catfolk, kitsune, kobolds, ratfolk, tieflings and vanara
 	- size
 		- `fine`
 		- `diminutive`
@@ -964,13 +998,14 @@ Money is kept as individual pieces of each coin, the way a purse holds them, and
 A checkbox drawn as a pill-shaped switch, with On or Off inside it in the player's language (`createToggleSwitch()` in `client/src/ui/toggleSwitch.ts`, styled by `.toggle-switch` in `client/src/_shared.scss`). It is still a checkbox, so Space toggles it and screen readers announce it as one, named by a label of its own or by the element it belongs to. Used for the [rulebooks](#rulebooks) and for the Enabled switches in the tables of races, classes, themes and items. A list drawn again when a switch changes waits for the knob to finish sliding (`afterSwitchSlides()`), and gives focus back to the switch.
 
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Up to 50 different items can be selected, for starting equipment and for giving a character items; selecting one more says so under it and leaves it unselected. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
+modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture, and Inspect (see [Equipment](#equipment)). Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Up to 50 different items can be selected, for starting equipment and for giving a character items; selecting one more says so under it and leaves it unselected. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
 
 ## Editor: Item
 - name
 - description, as for [races](#races), shown in [item selection](#selection-item) and on the [character sheet](#character-sheet)
 - kind (e.g., "Weapon"), one of the ruleset's item categories
 - types: a checkbox for each of the kind's types (e.g., "light blades" and "thrown" for a dagger). Any number can be checked, or none. Changing the kind clears them
+- equips to: nowhere, one of the ruleset's worn slots, one hand or two hands (see [Equipment](#equipment))
 - a checkbox for "Enabled?", checked by default
 
 ## Selection: Area
