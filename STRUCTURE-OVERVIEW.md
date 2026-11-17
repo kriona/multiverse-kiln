@@ -517,7 +517,7 @@ Turning off a book that players are using asks on Save once for the whole book (
 Races, classes, themes and items a universe adds belong to no book. They always show.
 
 #### PF1E
-Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) are Open Game Content used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
+Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items, with the names and descriptions of the defaults) are Open Game Content from the Core Rulebook, Advanced Player's Guide, Advanced Race Guide and Advanced Class Guide, used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page, whose copyright notice (the license's section 15) names each book the rules come from. A book added to the ruleset adds its line there. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
 
 Its [rulebooks](#rulebooks) are the `Core Rulebook` (always on), the `Advanced Player's Guide`, the `Advanced Race Guide` and the `Advanced Class Guide`.
 
@@ -538,7 +538,7 @@ Its [rulebooks](#rulebooks) are the `Core Rulebook` (always on), the `Advanced P
 - track ammo?
 
 #### SF1E
-Starfinder 1E's rules (races, classes, themes, abilities, ability points, sizes, credits and items) are Open Game Content from the Starfinder Core Rulebook, used under the Open Game License 1.0a, and the name "Starfinder" is used under Paizo's Community Use Policy, the same as [PF1E](#pf1e). Both notices are on the license page.
+Starfinder 1E's rules (races, classes, themes, abilities, ability points, sizes, credits and items, with the names and descriptions of the defaults) are Open Game Content from the Starfinder Core Rulebook, used under the Open Game License 1.0a, and the name "Starfinder" is used under Paizo's Community Use Policy, the same as [PF1E](#pf1e). Both notices are on the license page.
 
 Only a few of each step's rules are modeled for now; the rest of the ruleset comes later.
 

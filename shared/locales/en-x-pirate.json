@@ -6828,8 +6828,8 @@
 		"source": "Nunito's license"
 	},
 	"license.openGameContent": {
-		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}.",
-		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}."
+		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names an' descriptions in every tongue. In the source code, they be in {folder}, an' their names an' descriptions in {locales}.",
+		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}."
 	},
 	"license.pathfinder": {
 		"message": "Pathfinder First Edition rules o' the sea",
@@ -6852,8 +6852,8 @@
 		"source": "Starfinder is a trademark of Paizo Inc., used under the Community Use Policy described in the {pathfinder} section."
 	},
 	"license.starfinderOpenGameContent": {
-		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in {siteName} be Open Game Content.",
-		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content."
+		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names an' descriptions in every tongue. In the source code, they be in {folder}, an' their names an' descriptions in {locales}. Nothin' else in {siteName} be Open Game Content.",
+		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}. Nothing else in {siteName} is Open Game Content."
 	},
 	"license.summary": {
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",

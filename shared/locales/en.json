@@ -6828,7 +6828,7 @@
 		"description": "On the license page, a link to the text of the license that comes with the Nunito font, in English"
 	},
 	"license.openGameContent": {
-		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}.",
+		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}.",
 		"description": "On the license page, saying which part of the game is Open Game Content, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code. The license's text follows in English"
 	},
 	"license.pathfinder": {
@@ -6852,7 +6852,7 @@
 		"description": "On the license page, saying the notice about Paizo's Community Use Policy in the Pathfinder section covers Starfinder too; {pathfinder} is a link to that section"
 	},
 	"license.starfinderOpenGameContent": {
-		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content.",
+		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}. Nothing else in {siteName} is Open Game Content.",
 		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code, and {siteName} is the game engine's name"
 	},
 	"license.summary": {

@@ -1,8 +1,9 @@
 /**
  * Pathfinder 1E's kinds of item, and the default items a universe can edit, disable or add to
  *
- * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook, used under the Open Game License
- * 1.0a (client/license.html)
+ * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook, Advanced Player's Guide, Advanced
+ * Race Guide and Advanced Class Guide, used under the Open Game License 1.0a (client/license.html). Each
+ * item's book is in rulebooks.ts
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 

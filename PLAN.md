@@ -555,9 +555,9 @@ Steps:
 - [✅] Turning off a book in use: one dialog for the book on Save, through the same check that asks about disabled races, classes and items
 - [✅] The audit ("Rulebooks" under "Changed the ruleset"), export and import of the books
 - [✅] The seed's sample universe turns on the Advanced Player's Guide
-- [ ] License page: the Advanced Class Guide's copyright notice
+- [✅] License page: the Advanced Class Guide's copyright notice
 - [✅] Pirate translation of the new messages
-- [ ] Check the card, the dialogs and Create Character with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
+- [✅] Check the card, the dialogs and Create Character with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
 
 **Done when:** a new universe offers only the core races and classes; turning on the Advanced Player's Guide and saving adds the witch and the guide's other classes to the Classes table and Create Character, where each can be disabled on its own, and its items to the Items tab; turning the guide off again asks once what happens to the players using it; and each book's Contents dialog shows its races and classes.
 
