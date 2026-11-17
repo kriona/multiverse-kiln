@@ -71,20 +71,22 @@ export async function noteRulebookChanges(context: ChangeContext, before: Rulebo
 		return;
 	}
 
+	// Disabled items are noted too: one the save disables before turning its book off was enabled before
+	// the save, so the book's choice takes it as well
 	for (const item of await loadEditorItems(version, universe.ruleset, transaction))
 	{
-		if (!item.enabled || (item.rulebook === null))
+		if (item.rulebook === null)
 		{
 			continue;
 		}
 
 		if (turnedOff.includes(item.rulebook))
 		{
-			context.disablings.item(item.id, true, (whenOff[item.rulebook] ?? 'keep'));
+			context.disablings.item(item, before.rulebooks, { whenRulebookOff: (whenOff[item.rulebook] ?? 'keep') });
 		}
 		else if (turnedOn.includes(item.rulebook))
 		{
-			context.disablings.item(item.id, false);
+			context.disablings.item(item, before.rulebooks);
 		}
 	}
 }

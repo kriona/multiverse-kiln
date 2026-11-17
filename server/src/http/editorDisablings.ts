@@ -6,7 +6,7 @@
  * affects nobody, and something disabled more than once does what the last change chose, once. The
  * impact route (editorImpact.ts) warns about the same things, at the change whose choice is used
  */
-import { isUsable, type AreaEvacuation, type AreaEvacuations, type GroupSizeLowering, type ItemDisabling } from '@multiverse-kiln/shared';
+import { isRulebookOn, isUsable, type AreaEvacuation, type AreaEvacuations, type GroupSizeLowering, type ItemDisabling } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
@@ -21,13 +21,56 @@ import { parentPlace } from './editorAreas.js';
 import type { PlacesOutcome } from './editorPlaces.js';
 
 /**
- * Something a save enables or disables: whether it was enabled before the save, and what the last change
- * disabling it chose
+ * An item a save enables, disables or restores, or whose book it turns on or off: how the save found it,
+ * and what the changes disabling it or turning its book off chose
  */
-interface Noted<Choice>
+interface NotedItem
 {
+	/**
+	 * Whether the item itself was enabled before the save, whatever its book
+	 */
 	wasEnabled: boolean;
-	choice: Choice | undefined;
+
+	/**
+	 * Whether its book was on before the save
+	 */
+	rulebookWasOn: boolean;
+
+	/**
+	 * What the last change disabling the item itself chose
+	 */
+	whenDisabled: ItemDisabling | undefined;
+
+	/**
+	 * What the last change turning its book off chose
+	 */
+	whenRulebookOff: ItemDisabling | undefined;
+}
+
+/**
+ * An item as a change finds it
+ */
+interface ItemState
+{
+	id: number;
+	enabled: boolean;
+	rulebook: string | null;
+}
+
+/**
+ * What a change chose for the characters carrying an item
+ */
+interface ItemChoices
+{
+	/**
+	 * When the change disables the item itself
+	 */
+	whenDisabled?: ItemDisabling;
+
+	/**
+	 * When the change turns its book off
+	 */
+	whenRulebookOff?: ItemDisabling;
 }
 
 /**
@@ -55,7 +98,7 @@ interface Evacuation
  */
 export class SaveDisablings
 {
-	private readonly items = new Map<number, Noted<ItemDisabling>>();
+	private readonly items = new Map<number, NotedItem>();
 
 	/**
 	 * Where the characters in each area the save disables go, as the last change disabling it chose
@@ -68,15 +111,23 @@ export class SaveDisablings
 	private groupSize: { before: number; choice: GroupSizeLowering | undefined } | undefined;
 
 	/**
-	 * Notes a change to an item that enables or disables it, restores it, or turns its book on or off
+	 * Notes a change to an item that enables or disables it, restores it, or turns its book on or off. How
+	 * the save found it comes from the first change to it, and each choice from the last change making one
 	 *
-	 * @param itemId The item
-	 * @param wasEnabled Whether it is usable before the change: enabled, with its book on
-	 * @param whenDisabled What the change chose for the characters carrying it, when it disables it
+	 * @param item The item before the change
+	 * @param rulebooks The optional books on before the change
+	 * @param choices What the change chose for the characters carrying it
 	 */
-	item(itemId: number, wasEnabled: boolean, whenDisabled?: ItemDisabling): void
+	item(item: ItemState, rulebooks: readonly string[], choices: ItemChoices = {}): void
 	{
-		note(this.items, itemId, wasEnabled, whenDisabled);
+		const earlier = this.items.get(item.id);
+
+		this.items.set(item.id, {
+			wasEnabled: (earlier?.wasEnabled ?? item.enabled),
+			rulebookWasOn: (earlier?.rulebookWasOn ?? isRulebookOn(rulebooks, item.rulebook)),
+			whenDisabled: (choices.whenDisabled ?? earlier?.whenDisabled),
+			whenRulebookOff: (choices.whenRulebookOff ?? earlier?.whenRulebookOff)
+		});
 	}
 
 	/**
@@ -135,7 +186,8 @@ export class SaveDisablings
 
 	/**
 	 * Hides the items the save disables with remove on the characters carrying them, and shows those it
-	 * enables again
+	 * makes usable again. An item disabled with remove is taken whatever its book, and turning a book off
+	 * with remove takes the items enabled in it, as the impact route asks about them
 	 *
 	 * @param context The save
 	 */
@@ -157,13 +209,21 @@ export class SaveDisablings
 		for (const item of items)
 		{
 			const noted = this.items.get(item.id);
-			const usable = isUsable(item, rulebooks);
 
-			if (noted?.wasEnabled && !usable && (noted.choice === 'remove'))
+			if (noted === undefined)
+			{
+				continue;
+			}
+
+			const usable = isUsable(item, rulebooks);
+			const disabledWithRemove = (!item.enabled && (noted.whenDisabled === 'remove'));
+			const rulebookOffWithRemove = (noted.rulebookWasOn && !isRulebookOn(rulebooks, item.rulebook) && (noted.whenRulebookOff === 'remove'));
+
+			if (noted.wasEnabled && !usable && (disabledWithRemove || rulebookOffWithRemove))
 			{
 				taken.push(item.id);
 			}
-			else if ((noted !== undefined) && !noted.wasEnabled && usable)
+			else if (!(noted.wasEnabled && noted.rulebookWasOn) && usable)
 			{
 				givenBack.push(item.id);
 			}
@@ -245,25 +305,6 @@ export class SaveDisablings
 			await shrinkGroups(context, size, choice);
 		}
 	}
-}
-
-/**
- * Notes a change enabling or disabling something: whether it was enabled before the save, from the
- * first change to it, and the choice of the last change disabling it
- *
- * @param noted What is noted so far, by ID
- * @param id The thing
- * @param wasEnabled Whether it is enabled before the change
- * @param choice The change's choice, when it disables it
- */
-function note<Id, Choice>(noted: Map<Id, Noted<Choice>>, id: Id, wasEnabled: boolean, choice: Choice | undefined): void
-{
-	const earlier = noted.get(id);
-
-	noted.set(id, {
-		wasEnabled: (earlier?.wasEnabled ?? wasEnabled),
-		choice: (choice ?? earlier?.choice)
-	});
 }
 
 /**

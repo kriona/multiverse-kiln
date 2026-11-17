@@ -3,7 +3,7 @@
  * Universe versions in STRUCTURE-OVERVIEW.md). They come after the save's other changes, so starting a
  * draft copies them and applying one includes them
  */
-import { isUsable, normalizedRulebooks, placeKey, universeSlug, withRulebooks, type DraftApplyChoices, type RulebookTurnOff } from '@multiverse-kiln/shared';
+import { normalizedRulebooks, placeKey, universeSlug, withRulebooks, type DraftApplyChoices, type RulebookTurnOff } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
@@ -96,7 +96,10 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 
 	for (const item of await loadEditorItems(live, universe.ruleset, transaction))
 	{
-		disablings.item(item.id, isUsable(item, rulebooksBefore.rulebooks), (choices.items[String(item.id)] ?? rulebookChoice(item.rulebook)?.items));
+		disablings.item(item, rulebooksBefore.rulebooks, {
+			whenDisabled: choices.items[String(item.id)],
+			whenRulebookOff: rulebookChoice(item.rulebook)?.items
+		});
 	}
 
 	disablings.areas(choices.areas);

@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, isItemKind, isUsable, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isItemKind, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
@@ -133,7 +133,7 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 		refuse(400, messages.unknownItemType);
 	}
 
-	context.disablings.item(itemId, isUsable(item, await savedRulebooks(context)), (settings.enabled ? undefined : whenDisabled));
+	context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context), { whenDisabled: (settings.enabled ? undefined : whenDisabled) });
 
 	if (item.kind === 'default')
 	{
@@ -170,7 +170,7 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 	// Default items are enabled, so restoring one gives back what was taken while it was disabled
 	if (item.kind === 'default')
 	{
-		context.disablings.item(itemId, isUsable(item, await savedRulebooks(context)));
+		context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context));
 		await restoreDefaultItem(version, itemId, transaction);
 		await deleteUniverseTextOf(version, 'item', itemId, transaction);
 		return;

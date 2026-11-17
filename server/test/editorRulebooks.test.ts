@@ -1,11 +1,11 @@
 import assert from 'assert';
-import { type ChangeImpact, type ClassListPayload, type EditorChange, type EditorClass, type Pf1eSettings, type RaceListPayload, type RulesetSettings, type SaveImpactPayload } from '@multiverse-kiln/shared';
+import { type ChangeImpact, type ClassListPayload, type EditorChange, type EditorClass, type EditorItem, type ItemDisabling, type ItemListPayload, type Pf1eSettings, type RaceListPayload, type RulesetSettings, type SaveImpactPayload } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions } from '../src/db/barredOptions.js';
-import { createCharacter } from '../src/db/characterRepo.js';
+import { createCharacter, findCharacterDetails, giveCharacterItems } from '../src/db/characterRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
-import { addPlayableUniverse, defaultClassId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, defaultClassId, dwarfFighter, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, saveChanges, send, type Editor } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -46,9 +46,10 @@ describe('Rulebooks', () =>
 	 *
 	 * @param rulebooks The optional books to have on
 	 * @param barredRulebooks The books off whose characters can't play
+	 * @param whenRulebooksOff What turning each book off does to the characters carrying its items
 	 * @return The change
 	 */
-	async function rulebooksChange(rulebooks: string[], barredRulebooks: string[] = []): Promise<EditorChange>
+	async function rulebooksChange(rulebooks: string[], barredRulebooks: string[] = [], whenRulebooksOff?: Record<string, ItemDisabling>): Promise<EditorChange>
 	{
 		return({
 			kind: 'ruleset',
@@ -59,7 +60,70 @@ describe('Rulebooks', () =>
 					rulebooks,
 					barredRulebooks
 				}
-			}
+			},
+			...((whenRulebooksOff === undefined) ? {} : { whenRulebooksOff })
+		});
+	}
+
+	/**
+	 * A default item of a book that is on, as the Items tab lists it
+	 *
+	 * @param key The item's key
+	 * @return The item
+	 */
+	async function defaultItem(key: string): Promise<EditorItem>
+	{
+		const items = (await send<ItemListPayload>(ada, 'GET', `/${universe.universeId}/items?custom=false`)).body.items;
+		const item = items.find((each) => (each.key === key));
+
+		assert.ok(item);
+
+		return(item);
+	}
+
+	/**
+	 * A change enabling or disabling a default item
+	 *
+	 * @param item The item, as listed
+	 * @param enabled Whether to enable it
+	 * @param whenDisabled What disabling it does to the characters carrying it
+	 * @return The change
+	 */
+	function saveItem(item: EditorItem, enabled: boolean, whenDisabled?: ItemDisabling): EditorChange
+	{
+		return({
+			kind: 'saveItem',
+			id: item.id,
+			settings: {
+				name: null,
+				description: null,
+				category: item.category,
+				types: item.types,
+				enabled
+			},
+			whenDisabled
+		});
+	}
+
+	/**
+	 * A character carrying a cestus, an Advanced Player's Guide item, with the book on
+	 *
+	 * @return The cestus, and whether the character carries it, not taken away
+	 */
+	async function carryCestus(): Promise<{ cestus: EditorItem; carries: () => Promise<boolean> }>
+	{
+		const bob = await addPlayer('Bob');
+		const characterId = await addCharacter(bob.id, universe.universeId, 'Brokk');
+
+		await saveAll(ada, universe.universeId, [await rulebooksChange(['apg'])]);
+
+		const cestus = await defaultItem('cestus');
+
+		await giveCharacterItems(characterId, [{ itemId: cestus.id, quantity: 1 }]);
+
+		return({
+			cestus,
+			carries: async () => ((await findCharacterDetails(bob.id, universe.universeId, 'pf1e', characterId))?.items ?? []).some((item) => (item.itemId === cestus.id))
 		});
 	}
 
@@ -201,5 +265,79 @@ describe('Rulebooks', () =>
 	{
 		await saveAll(ada, universe.universeId, [await rulebooksChange(['apg', 'arg'])]);
 		assert.deepStrictEqual(await impactsOf([await rulebooksChange([])]), []);
+	});
+
+	it('takes a book\'s items away when it is turned off only when told to, and gives them back when it is on again', async () =>
+	{
+		const { cestus, carries } = await carryCestus();
+		const keep = await rulebooksChange([], [], { apg: 'keep' });
+
+		assert.deepStrictEqual(await impactsOf([keep]), [{
+			changeIndex: 0,
+			kind: 'rulebook',
+			rulebook: 'apg',
+			races: [],
+			classes: [],
+			items: [{ id: cestus.id, name: { key: 'cestus', name: null }, characters: 1 }]
+		}]);
+
+		await saveAll(ada, universe.universeId, [keep]);
+		assert.ok(await carries());
+
+		await saveAll(ada, universe.universeId, [await rulebooksChange(['apg'])]);
+		await saveAll(ada, universe.universeId, [await rulebooksChange([], [], { apg: 'remove' })]);
+		assert.ok(!await carries());
+
+		await saveAll(ada, universe.universeId, [await rulebooksChange(['apg'])]);
+		assert.ok(await carries());
+	});
+
+	it('takes an item disabled with remove whatever its book, in either order', async () =>
+	{
+		const { cestus, carries } = await carryCestus();
+
+		for (const order of ['book first', 'item first'])
+		{
+			// The book goes off, and the characters keep its items
+			await saveAll(ada, universe.universeId, [await rulebooksChange([], [], { apg: 'keep' })]);
+			assert.ok(await carries(), order);
+
+			// One save turns the book back on and disables the cestus, taking it away
+			const changes = [await rulebooksChange(['apg']), saveItem(cestus, false, 'remove')];
+			const save = ((order === 'book first') ? changes : changes.reverse());
+
+			assert.ok((await impactsOf(save)).some((impact) => ((impact.kind === 'item') && (impact.id === cestus.id))), order);
+			await saveAll(ada, universe.universeId, save);
+			assert.ok(!await carries(), order);
+
+			// Enabling it gives it back
+			await saveAll(ada, universe.universeId, [saveItem(cestus, true)]);
+			assert.ok(await carries(), order);
+		}
+	});
+
+	it('takes an item when either turning its book off or disabling it says to, in either order', async () =>
+	{
+		const { cestus, carries } = await carryCestus();
+		const cases: [ItemDisabling, ItemDisabling, boolean][] = [
+			['keep', 'remove', false],
+			['remove', 'keep', false],
+			['keep', 'keep', true]
+		];
+
+		for (const [whenRulebookOff, whenDisabled, kept] of cases)
+		{
+			for (const order of ['book first', 'item first'])
+			{
+				const label = `${whenRulebookOff}, ${whenDisabled}, ${order}`;
+				const changes = [await rulebooksChange([], [], { apg: whenRulebookOff }), saveItem(cestus, false, whenDisabled)];
+
+				await saveAll(ada, universe.universeId, ((order === 'book first') ? changes : changes.reverse()));
+				assert.strictEqual(await carries(), kept, label);
+
+				await saveAll(ada, universe.universeId, [await rulebooksChange(['apg']), saveItem(cestus, true)]);
+				assert.ok(await carries(), label);
+			}
+		}
 	});
 });
