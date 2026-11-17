@@ -1427,30 +1427,37 @@ export async function takeCharacterItems(characterId: string, items: readonly It
 		return(false);
 	}
 
-	const emptied = items
+	const emptied = new Set(items
 		.filter(({ itemId, quantity }) => (quantity >= (quantities.get(itemId) ?? 0)))
-		.map(({ itemId }) => itemId);
+		.map(({ itemId }) => itemId));
+	const remaining = items.filter(({ itemId }) => !emptied.has(itemId));
 
-	if (emptied.length > 0)
+	if (emptied.size > 0)
 	{
 		await executor
 			.delete(characterItems)
 			.where(and(
 				eq(characterItems.characterId, characterId),
-				inArray(characterItems.itemId, emptied)
+				inArray(characterItems.itemId, [...emptied])
 			));
 	}
 
-	for (const { itemId, quantity } of items.filter((item) => !emptied.includes(item.itemId)))
+	if (remaining.length > 0)
 	{
+		const leftOver = sql`unnest(
+			${sql.param(remaining.map(({ itemId }) => itemId))}::integer[],
+			${sql.param(remaining.map(({ itemId, quantity }) => ((quantities.get(itemId) ?? 0) - quantity)))}::integer[]
+		) AS left_over (item_id, quantity)`;
+
 		await executor
 			.update(characterItems)
 			.set({
-				quantity: ((quantities.get(itemId) ?? 0) - quantity)
+				quantity: sql`left_over.quantity`
 			})
+			.from(leftOver)
 			.where(and(
 				eq(characterItems.characterId, characterId),
-				eq(characterItems.itemId, itemId)
+				eq(characterItems.itemId, sql`left_over.item_id`)
 			));
 	}
 
