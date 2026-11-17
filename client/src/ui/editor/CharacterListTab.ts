@@ -1,4 +1,4 @@
-import { canEditWorld, canManageCharacters, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, type CharacterSheet, type EditableUniverse, type EditorCharacter, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorCharacterSortColumn, type EditorClass, type EditorRace } from '@multiverse-kiln/shared';
+import { canEditWorld, canManageCharacters, EDITOR_CHARACTER_SORT_COLUMNS, MAX_CHARACTERS_PER_PAGE, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterSheet, type EditableUniverse, type EditorCharacter, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorCharacterSortColumn, type EditorClass, type EditorRace } from '@multiverse-kiln/shared';
 
 import { formatDateTime, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -213,6 +213,7 @@ export class CharacterListTab
 
 		const live = await this.api.getRulesetSettings(universeId, 'live');
 		const chosen = await this.itemSelect.open(universe, [], {
+			maxItems: MAX_ITEMS_PER_CHARACTER_CHANGE,
 			title: t({
 				id: 'editor.characterList.giveItemsTitle',
 				defaultMessage: 'Give Items to {name}',

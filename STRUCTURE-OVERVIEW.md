@@ -964,7 +964,7 @@ Money is kept as individual pieces of each coin, the way a purse holds them, and
 A checkbox drawn as a pill-shaped switch, with On or Off inside it in the player's language (`createToggleSwitch()` in `client/src/ui/toggleSwitch.ts`, styled by `.toggle-switch` in `client/src/_shared.scss`). It is still a checkbox, so Space toggles it and screen readers announce it as one, named by a label of its own or by the element it belongs to. Used for the [rulebooks](#rulebooks) and for the Enabled switches in the tables of races, classes, themes and items. A list drawn again when a switch changes waits for the knob to finish sliding (`afterSwitchSlides()`), and gives focus back to the switch.
 
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
+modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Up to 50 different items can be selected, for starting equipment and for giving a character items; selecting one more says so under it and leaves it unselected. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
 
 ## Editor: Item
 - name

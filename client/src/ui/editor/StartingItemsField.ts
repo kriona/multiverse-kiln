@@ -1,4 +1,4 @@
-import { canEditWorld, type EditableUniverse, type EditorItem, type ItemQuantity } from '@multiverse-kiln/shared';
+import { canEditWorld, MAX_STARTING_ITEMS, type EditableUniverse, type EditorItem, type ItemQuantity } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -175,7 +175,7 @@ export class StartingItemsField
 
 			return((item ? [{ item, quantity }] : []));
 		});
-		const chosen = await this.itemSelect.open(this.universe, current);
+		const chosen = await this.itemSelect.open(this.universe, current, { maxItems: MAX_STARTING_ITEMS });
 
 		this.elements.choose.focus();
 

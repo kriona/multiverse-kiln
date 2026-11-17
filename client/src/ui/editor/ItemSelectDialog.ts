@@ -31,10 +31,16 @@ export interface ChosenItem
 }
 
 /**
- * How the dialog chooses, when it isn't choosing the version open's items under its own title
+ * How the dialog chooses: how many items, and, when it isn't choosing the version open's items under its
+ * own title, which items and its title
  */
 export interface ItemSelectOptions
 {
+	/**
+	 * Most different items that can be chosen, as the request that takes them allows
+	 */
+	maxItems: number;
+
 	/**
 	 * The dialog's title, in place of Choose Items
 	 */
@@ -84,7 +90,7 @@ export class ItemSelectDialog
 	/**
 	 * How the dialog open chooses
 	 */
-	private options: ItemSelectOptions = {};
+	private options: ItemSelectOptions | undefined;
 
 	/**
 	 * The page's title for the dialog, read the first time it opens, once the page is in the player's language
@@ -153,10 +159,10 @@ export class ItemSelectDialog
 	 *
 	 * @param universe The universe whose items to choose from
 	 * @param chosen The items chosen now, which start out chosen
-	 * @param options How to choose, when not from the version open's items under the dialog's own title
+	 * @param options How many items can be chosen, and which from under what title
 	 * @return The items chosen, or undefined when the dialog was closed without choosing
 	 */
-	async open(universe: EditableUniverse, chosen: readonly ChosenItem[], options: ItemSelectOptions = {}): Promise<ChosenItem[] | undefined>
+	async open(universe: EditableUniverse, chosen: readonly ChosenItem[], options: ItemSelectOptions): Promise<ChosenItem[] | undefined>
 	{
 		this.finish(undefined);
 		this.defaultTitle ??= (this.title.textContent ?? '');
@@ -210,7 +216,7 @@ export class ItemSelectDialog
 			return;
 		}
 
-		const live = this.options.liveRulebooks;
+		const live = this.options?.liveRulebooks;
 		let items: EditorItem[];
 
 		try
@@ -264,7 +270,7 @@ export class ItemSelectDialog
 		const types = itemTypesText(item.types, universe.ruleset);
 		const notes = ((types === '') ? [] : [types]);
 
-		const live = this.options.liveRulebooks;
+		const live = this.options?.liveRulebooks;
 		const rulebookOn = ((live === undefined) ? this.rulebooks.shows(item.rulebook) : isRulebookOn(live, item.rulebook));
 
 		if (!item.enabled || !rulebookOn)
@@ -273,6 +279,7 @@ export class ItemSelectDialog
 		}
 
 		label.className = 'checkbox described-choice';
+		input.id = `item-select-item-${item.id}`;
 		input.type = 'checkbox';
 		input.value = String(item.id);
 		input.checked = this.chosen.some((choice) => (choice.item.id === item.id));
@@ -300,7 +307,7 @@ export class ItemSelectDialog
 		{
 			if (input.checked)
 			{
-				this.choose(item);
+				this.choose(item, input);
 			}
 			else
 			{
@@ -312,14 +319,33 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * Adds an item to the items chosen, one of it
+	 * Adds an item to the items chosen, one of it. When as many items as can be chosen are chosen
+	 * already, it unchecks the item's checkbox and says so under it instead
 	 *
 	 * @param item The item
+	 * @param input The item's checkbox
 	 */
-	private choose(item: EditorItem): void
+	private choose(item: EditorItem, input: HTMLInputElement): void
 	{
+		const maxItems = (this.options?.maxItems ?? 0);
+
+		clearFieldErrors(this.results);
+
 		if (!this.chosen.some((choice) => (choice.item.id === item.id)))
 		{
+			if (this.chosen.length >= maxItems)
+			{
+				input.checked = false;
+				reportFieldError(input, t({
+					id: 'editor.itemSelect.tooMany',
+					defaultMessage: 'You can choose up to {max, plural, one {# item} other {# items}}.',
+					description: 'Shown under an item in the dialog for choosing items when it was ticked while as many items as allowed were already chosen; it isn\'t chosen. {max} is the most items allowed'
+				}, {
+					max: maxItems
+				}));
+				return;
+			}
+
 			this.readQuantities();
 			this.chosen.push({ item, quantity: 1 });
 			this.showChosen();
@@ -334,6 +360,7 @@ export class ItemSelectDialog
 	 */
 	private unchoose(itemId: number): void
 	{
+		clearFieldErrors(this.results);
 		this.readQuantities();
 		this.chosen = this.chosen.filter((choice) => (choice.item.id !== itemId));
 		this.showChosen();

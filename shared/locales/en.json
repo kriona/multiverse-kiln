@@ -2863,6 +2863,10 @@
 		"defaultMessage": "Choose Items",
 		"description": "Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with"
 	},
+	"editor.itemSelect.tooMany": {
+		"defaultMessage": "You can choose up to {max, plural, one {# item} other {# items}}.",
+		"description": "Shown under an item in the dialog for choosing items when it was ticked while as many items as allowed were already chosen; it isn't chosen. {max} is the most items allowed"
+	},
 	"editor.items.add": {
 		"defaultMessage": "Add Item",
 		"description": "Button that opens the dialog for making a new item"

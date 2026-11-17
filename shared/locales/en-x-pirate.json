@@ -2863,6 +2863,10 @@
 		"message": "Pick Yer Booty",
 		"source": "Choose Items"
 	},
+	"editor.itemSelect.tooMany": {
+		"message": "Ye can pick no more than {max, plural, one {# piece o' booty} other {# pieces o' booty}}.",
+		"source": "You can choose up to {max, plural, one {# item} other {# items}}."
+	},
 	"editor.items.add": {
 		"message": "Add Booty",
 		"source": "Add Item"
