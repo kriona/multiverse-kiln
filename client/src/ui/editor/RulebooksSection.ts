@@ -135,7 +135,8 @@ export class RulebooksSection
 	}
 
 	/**
-	 * Shows a universe's books
+	 * Shows a universe's books. While they load, the card and the other tabs keep the books shown when
+	 * the universe and version are the ones shown already, and wait for them otherwise
 	 *
 	 * @param universe The universe
 	 * @param saved Its books as saved, or undefined while they haven't loaded
@@ -143,14 +144,38 @@ export class RulebooksSection
 	 */
 	open(universe: EditableUniverse, saved: RulebookSettings | undefined, editable: boolean): void
 	{
+		const sameVersion = ((this.universe?.id === universe.id) && (this.universe.version === universe.version));
+
 		this.universe = universe;
-		this.saved = (saved ?? {
-			rulebooks: [],
-			barredRulebooks: []
-		});
 		this.editable = (editable && (saved !== undefined));
-		this.choice.set(this.saved.rulebooks);
+
+		if (saved !== undefined)
+		{
+			this.saved = saved;
+			this.choice.set(saved.rulebooks);
+		}
+		else if (!sameVersion)
+		{
+			this.saved = {
+				rulebooks: [],
+				barredRulebooks: []
+			};
+			this.choice.forget();
+		}
+
 		this.render();
+	}
+
+	/**
+	 * Lets the other tabs show the core rulebook's things when the books couldn't be loaded and those of
+	 * the universe and version shown aren't known
+	 */
+	loadFailed(): void
+	{
+		if (!this.choice.known())
+		{
+			this.choice.set([]);
+		}
 	}
 
 	/**

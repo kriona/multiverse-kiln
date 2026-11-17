@@ -8,50 +8,70 @@ import { isRulebookOn } from '@multiverse-kiln/shared';
 export class RulebookChoice
 {
 	/**
-	 * The optional books on; none until the Ruleset tab loads them, leaving only the core rulebook
+	 * The optional books on, or undefined until the Ruleset tab loads the version open's
 	 */
-	private on: readonly string[] = [];
+	private on: readonly string[] | undefined;
 
 	private readonly listeners = new Set<() => void>();
 
 	/**
+	 * Whether the books on are known for the universe and version open
+	 *
+	 * @return True when they are
+	 */
+	known(): boolean
+	{
+		return(this.on !== undefined);
+	}
+
+	/**
 	 * The optional books on
 	 *
-	 * @return Their keys
+	 * @return Their keys, none while they aren't known
 	 */
 	rulebooks(): readonly string[]
 	{
-		return(this.on);
+		return((this.on ?? []));
 	}
 
 	/**
 	 * Whether what a book brings shows
 	 *
 	 * @param rulebook The book, or null for something the universe added
-	 * @return True when it shows
+	 * @return True when it shows; only the core rulebook's and the universe's things show while the books aren't known
 	 */
 	shows(rulebook: string | null): boolean
 	{
-		return(isRulebookOn(this.on, rulebook));
+		return(isRulebookOn(this.rulebooks(), rulebook));
 	}
 
 	/**
-	 * Changes the books on, telling the listeners when they differ
+	 * Changes the books on, telling the listeners when they differ or weren't known
 	 *
 	 * @param rulebooks The optional books on
 	 */
 	set(rulebooks: readonly string[]): void
 	{
-		if ((rulebooks.length === this.on.length) && rulebooks.every((rulebook) => this.on.includes(rulebook)))
+		const on = this.on;
+
+		if ((on !== undefined) && (rulebooks.length === on.length) && rulebooks.every((rulebook) => on.includes(rulebook)))
 		{
 			return;
 		}
 
 		this.on = [...rulebooks];
+		this.tell();
+	}
 
-		for (const listener of this.listeners)
+	/**
+	 * Forgets the books on, for another universe or version, until set() gives its books
+	 */
+	forget(): void
+	{
+		if (this.on !== undefined)
 		{
-			listener();
+			this.on = undefined;
+			this.tell();
 		}
 	}
 
@@ -69,5 +89,16 @@ export class RulebookChoice
 		{
 			this.listeners.delete(listener);
 		});
+	}
+
+	/**
+	 * Tells the listeners the books on changed
+	 */
+	private tell(): void
+	{
+		for (const listener of this.listeners)
+		{
+			listener();
+		}
 	}
 }

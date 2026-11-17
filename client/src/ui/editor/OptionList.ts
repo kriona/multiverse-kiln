@@ -369,13 +369,14 @@ export class OptionList<T extends EditorOption & S, S extends { enabled: boolean
 	}
 
 	/**
-	 * Shows the options of the books that are on, sorted by the column chosen, with options that tie by name
+	 * Shows the options of the books that are on, sorted by the column chosen, with options that tie by
+	 * name. It waits for the books on to be known, and shows the options once they are
 	 */
 	private render(): void
 	{
 		const universe = this.universe;
 
-		if (!universe)
+		if (!universe || !this.setup.rulebooks.known())
 		{
 			return;
 		}

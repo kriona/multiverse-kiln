@@ -136,6 +136,7 @@ export class RulesetTab implements SavableTab
 					defaultMessage: 'Could not load the ruleset\'s settings.',
 					description: 'Shown on the Ruleset tab when its settings couldn\'t be loaded'
 				}));
+				this.rulebooks.loadFailed();
 			}
 
 			return;

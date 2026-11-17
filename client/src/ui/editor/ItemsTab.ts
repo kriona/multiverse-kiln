@@ -310,7 +310,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since
+	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since.
+	 * It waits for the books on to be known, which loads the page once they are
 	 *
 	 * @param announcePage Whether to read out what the list shows, as after the player changed its page or filters
 	 */
@@ -320,7 +321,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		const version = ++this.requestVersion;
 
 		// Only roles that change the world may load the items (see shared/src/editor.ts)
-		if (!universe || !canEditWorld(universe.role))
+		if (!universe || !canEditWorld(universe.role) || !this.rulebooks.known())
 		{
 			return;
 		}
