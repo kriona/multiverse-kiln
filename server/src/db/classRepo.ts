@@ -246,6 +246,7 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 			overridesClassId: classes.overridesClassId,
 			key: classes.key,
 			name: classes.name,
+			description: classes.description,
 			rulebook: classes.rulebook,
 			enabled: classes.enabled,
 			keepPlaying: classes.keepPlaying,
@@ -278,6 +279,7 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 			const classRules = rules.get(settings.id);
 			const comparable = (source: typeof row): object => ({
 				name: ((source.name === row.name) ? null : source.name),
+				description: source.description,
 				startingMoney: fromCoinColumns(source),
 				startingItems: (startingItems.get(source.id) ?? []),
 				startingAreaId: source.startingAreaId,
@@ -296,6 +298,7 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
+				description: (custom ? row.description : (copy?.description ?? null)),
 				enabled: settings.enabled,
 				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
@@ -613,7 +616,7 @@ export async function updateCustomClass(version: UniverseVersion, ruleset: Rules
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultClassId The default class's ID, from findClassKind() as default
- * @param settings The copy's settings; a null name keeps the default class's
+ * @param settings The copy's settings; a null name or description keeps the default class's
  * @param executor A transaction
  */
 export async function saveEditedDefaultClass(version: UniverseVersion, ruleset: Ruleset, defaultClassId: number, settings: ClassSettings, executor: Executor): Promise<void>
@@ -702,12 +705,13 @@ export async function isClassStartingItem(version: UniverseVersion, itemId: numb
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'description' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
+		description: settings.description,
 		enabled: settings.enabled,
 		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),

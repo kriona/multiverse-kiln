@@ -9,7 +9,7 @@ import { ChangeTracker } from './changeTracker';
 import { getElement, setOptions, setPageTitle, showMessage, titleLink, type SelectOption } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { className, raceName, themeName } from './raceAndClassNames';
+import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from './raceAndClassNames';
 
 /**
  * How long after the player's last change their progress is saved, in milliseconds
@@ -57,12 +57,15 @@ export class CreateCharacterScreen
 	private readonly fields = getElement('character-fields', HTMLFieldSetElement);
 	private readonly name = getElement('character-name', HTMLInputElement);
 	private readonly race = getElement('character-race', HTMLSelectElement);
+	private readonly raceDescription = getElement('character-race-description', HTMLElement);
 	private readonly raceSummary = getElement('character-race-summary', HTMLElement);
 	private readonly floatingLabel = getElement('character-floating-label', HTMLElement);
 	private readonly floating = getElement('character-floating', HTMLSelectElement);
 	private readonly characterClass = getElement('character-class', HTMLSelectElement);
+	private readonly classDescription = getElement('character-class-description', HTMLElement);
 	private readonly classHint = getElement('character-class-hint', HTMLElement);
 	private readonly theme = getElement('character-theme', HTMLSelectElement);
+	private readonly themeDescription = getElement('character-theme-description', HTMLElement);
 	private readonly themeHint = getElement('character-theme-hint', HTMLElement);
 	private readonly raceColumn = getElement('character-race-column', HTMLElement);
 	private readonly method = getElement('character-method', HTMLElement);
@@ -556,7 +559,8 @@ export class CreateCharacterScreen
 	}
 
 	/**
-	 * Shows whether the chosen race lets the player place a bonus, what it changes, and the scores with its modifiers
+	 * Shows the chosen race's description, whether it lets the player place a bonus, what it changes, and
+	 * the scores with its modifiers
 	 */
 	private showRace(): void
 	{
@@ -570,17 +574,20 @@ export class CreateCharacterScreen
 		}
 
 		this.floatingLabel.hidden = !floatingBonus;
+		showDescription(this.raceDescription, ((race && this.options) ? raceDescription(race, this.options.ruleset) : ''));
 		this.raceSummary.textContent = (race ? this.describeRace(race) : '');
 		this.showScores();
 	}
 
 	/**
-	 * Says which ability the chosen class relies on most, and marks it in the table
+	 * Shows the chosen class's description, says which ability it relies on most, and marks that in the table
 	 */
 	private showClass(): void
 	{
 		const characterClass = this.chosenClass();
 		const classAbility = (characterClass ? mainAbility(characterClass.rules) : undefined);
+
+		showDescription(this.classDescription, ((characterClass && this.options) ? classDescription(characterClass, this.options.ruleset) : ''));
 
 		for (const ability of PF1E_ABILITIES)
 		{
@@ -607,11 +614,13 @@ export class CreateCharacterScreen
 	}
 
 	/**
-	 * Says which ability the chosen theme raises, and shows the scores with its bonus
+	 * Shows the chosen theme's description, says which ability it raises, and shows the scores with its bonus
 	 */
 	private showTheme(): void
 	{
 		const theme = this.chosenTheme();
+
+		showDescription(this.themeDescription, ((theme && this.options) ? themeDescription(theme, this.options.ruleset) : ''));
 
 		this.themeHint.textContent = (theme
 			? t({
@@ -1423,4 +1432,16 @@ function withNoChoice(options: SelectOption[]): SelectOption[]
 function sortByName<T extends { label: string }>(options: T[]): T[]
 {
 	return([...options].sort((a, b) => a.label.localeCompare(b.label, currentLocale())));
+}
+
+/**
+ * Shows a race's, class's or theme's description in its paragraph, hiding the paragraph while there is none
+ *
+ * @param paragraph The paragraph
+ * @param description The description, or an empty string for none
+ */
+function showDescription(paragraph: HTMLElement, description: string): void
+{
+	paragraph.textContent = description;
+	paragraph.hidden = (description === '');
 }

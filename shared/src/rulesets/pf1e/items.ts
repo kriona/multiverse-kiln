@@ -244,6 +244,77 @@ export const PF1E_DEFAULT_ITEM_NAMES = defineMessages({
 export type Pf1eDefaultItemKey = keyof typeof PF1E_DEFAULT_ITEM_NAMES;
 
 /**
+ * Each default item's description, by the item's key, shown in the item editor and when choosing items
+ */
+export const PF1E_DEFAULT_ITEM_DESCRIPTIONS: Record<Pf1eDefaultItemKey, MessageDescriptor> = defineMessages({
+	dagger: {
+		id: 'itemDescription.pf1e.dagger',
+		defaultMessage: 'A short blade for stabbing up close or throwing.',
+		description: 'Description of the dagger, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	cestus: {
+		id: 'itemDescription.pf1e.cestus',
+		defaultMessage: 'A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things.',
+		description: 'Description of the cestus, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	sword_cane: {
+		id: 'itemDescription.pf1e.sword_cane',
+		defaultMessage: 'A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw.',
+		description: 'Description of the sword cane, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	wooden_armor: {
+		id: 'itemDescription.pf1e.wooden_armor',
+		defaultMessage: 'Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn\'t hinder swimming.',
+		description: 'Description of the wooden armor, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	quilted_cloth: {
+		id: 'itemDescription.pf1e.quilted_cloth',
+		defaultMessage: 'Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding.',
+		description: 'Description of the quilted cloth, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	kobold_long_lash: {
+		id: 'itemDescription.pf1e.kobold_long_lash',
+		defaultMessage: 'A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it.',
+		description: 'Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	kobold_spiked_tail: {
+		id: 'itemDescription.pf1e.kobold_spiked_tail',
+		defaultMessage: 'A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it.',
+		description: 'Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	ratfolk_tailblade: {
+		id: 'itemDescription.pf1e.ratfolk_tailblade',
+		defaultMessage: 'A small knife strapped to the tip of a ratfolk\'s tail, so the ratfolk can slash at foes with its tail.',
+		description: 'Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	book_of_puzzles: {
+		id: 'itemDescription.pf1e.book_of_puzzles',
+		defaultMessage: 'A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day.',
+		description: 'Description of the book of puzzles, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	book_of_war_prayers: {
+		id: 'itemDescription.pf1e.book_of_war_prayers',
+		defaultMessage: 'A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day.',
+		description: 'Description of the book of war prayers, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	footprints_cast: {
+		id: 'itemDescription.pf1e.footprints_cast',
+		defaultMessage: 'A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather.',
+		description: 'Description of the footprints cast, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	light_fire_ink: {
+		id: 'itemDescription.pf1e.light_fire_ink',
+		defaultMessage: 'An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read.',
+		description: 'Description of the light fire ink, an item in Pathfinder, shown in the item editor and when choosing items'
+	},
+	tome_of_epics: {
+		id: 'itemDescription.pf1e.tome_of_epics',
+		defaultMessage: 'A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day.',
+		description: 'Description of the tome of epics, an item in Pathfinder, shown in the item editor and when choosing items'
+	}
+});
+
+/**
  * Each default item's category and types, which the migrations in server/drizzle give it. A weapon in no
  * weapon group, such as a kobold's tail attachment, has no type
  */

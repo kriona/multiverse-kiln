@@ -778,6 +778,13 @@ export const items = pgTable('items', {
 	name: text('name'),
 
 	/**
+	 * The universe's description of the item. Null on a default item, whose description is a message
+	 * (DEFAULT_ITEM_DESCRIPTIONS in /shared), on an edited copy that keeps it, and on an item the universe
+	 * added without one
+	 */
+	description: text('description'),
+
+	/**
 	 * One of the ruleset's item categories (ITEM_KINDS in /shared), e.g. weapon
 	 */
 	category: text('category').notNull(),
@@ -850,6 +857,13 @@ export const races = pgTable('races', {
 	 * players read in their language. Null on an edited copy that keeps the default race's name
 	 */
 	name: text('name'),
+
+	/**
+	 * The universe's description of the race. Null on a default race, whose description is a message
+	 * (DEFAULT_RACE_DESCRIPTIONS in /shared), on an edited copy that keeps it, and on a race the universe
+	 * added without one
+	 */
+	description: text('description'),
 
 	/**
 	 * The book a default race comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
@@ -1016,6 +1030,13 @@ export const classes = pgTable('classes', {
 	name: text('name'),
 
 	/**
+	 * The universe's description of the class. Null on a default class, whose description is a message
+	 * (DEFAULT_CLASS_DESCRIPTIONS in /shared), on an edited copy that keeps it, and on a class the
+	 * universe added without one
+	 */
+	description: text('description'),
+
+	/**
 	 * The book a default class comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
 	 */
 	rulebook: text('rulebook'),
@@ -1125,6 +1146,13 @@ export const themes = pgTable('themes', {
 	 * players read in their language. Null on an edited copy that keeps the default theme's name
 	 */
 	name: text('name'),
+
+	/**
+	 * The universe's description of the theme. Null on a default theme, whose description is a message
+	 * (DEFAULT_THEME_DESCRIPTIONS in /shared), on an edited copy that keeps it, and on a theme the
+	 * universe added without one
+	 */
+	description: text('description'),
 
 	/**
 	 * The book a default theme comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows

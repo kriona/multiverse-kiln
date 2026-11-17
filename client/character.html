@@ -45,8 +45,9 @@
 								<h2 id="character-heading-race" data-message="character.heading.race" data-translation-context="Heading of the Create Character step where the player chooses the character's race">Choose a race</h2>
 								<label data-message="character.create.race" data-translation-context="Label of the field for a new character's race, such as elf or dwarf">
 									Race
-									<select id="character-race"></select>
+									<select id="character-race" aria-describedby="character-race-description character-race-summary"></select>
 								</label>
+								<p id="character-race-description" hidden></p>
 								<p id="character-race-summary" class="hint"></p>
 								<label id="character-floating-label" data-message="character.create.floatingAbility" data-translation-context="Label of the field for which ability gets the bonus some races (such as humans) let the player place" hidden>
 									Ability for the race's bonus
@@ -57,16 +58,18 @@
 								<h2 id="character-heading-class" data-message="character.heading.class" data-translation-context="Heading of the Create Character step where the player chooses the character's class">Choose a class</h2>
 								<label data-message="character.create.class" data-translation-context="Label of the field for a new character's class, such as fighter or wizard">
 									Class
-									<select id="character-class"></select>
+									<select id="character-class" aria-describedby="character-class-description character-class-hint"></select>
 								</label>
+								<p id="character-class-description" hidden></p>
 								<p id="character-class-hint" class="hint"></p>
 							</section>
 							<section id="character-step-theme" class="character-step" aria-labelledby="character-heading-theme" hidden>
 								<h2 id="character-heading-theme" data-message="character.heading.theme" data-translation-context="Heading of the Create Character step, in Starfinder, where the player chooses the character's theme (a background, such as ace pilot)">Choose a theme</h2>
 								<label data-message="character.create.theme" data-translation-context="Label of the field for a new character's theme, in Starfinder: a background such as ace pilot or scholar">
 									Theme
-									<select id="character-theme"></select>
+									<select id="character-theme" aria-describedby="character-theme-description character-theme-hint"></select>
 								</label>
+								<p id="character-theme-description" hidden></p>
 								<p id="character-theme-hint" class="hint"></p>
 							</section>
 							<section id="character-step-abilities" class="character-step" aria-labelledby="character-heading-abilities" hidden>

@@ -7,7 +7,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemName, itemTypesText } from '../itemNames';
+import { createItemIcon, itemDescription, itemName, itemTypesText } from '../itemNames';
 import { editorMessages } from './editorMessages';
 import type { RulebookChoice } from './rulebookChoice';
 
@@ -248,7 +248,7 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * One item's choice: a checkbox with the item's icon, name, type and whether it is disabled
+	 * One item's choice: a checkbox with the item's icon, name, type, whether it is disabled and its description
 	 *
 	 * @param item The item
 	 * @param universe The universe whose item it is
@@ -282,6 +282,18 @@ export class ItemSelectDialog
 		description.className = 'choice-description';
 		description.textContent = notes.join(' - ');
 		text.append(name, description);
+
+		const itemText = itemDescription(item, universe.ruleset);
+
+		if (itemText !== '')
+		{
+			const about = document.createElement('span');
+
+			about.className = 'choice-description';
+			about.textContent = itemText;
+			text.append(about);
+		}
+
 		label.append(input, createItemIcon(item.category, universe.ruleset), text);
 
 		input.addEventListener('change', () =>

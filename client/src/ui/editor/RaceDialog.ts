@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, canEditUniverseSettings, DARKVISION_NAMES, DARKVISIONS, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type Darkvision, type EditableUniverse, type EditorRace, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, canEditUniverseSettings, DARKVISION_NAMES, DARKVISIONS, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type Darkvision, type EditableUniverse, type EditorRace, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -7,7 +7,8 @@ import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
-import { raceName } from '../raceAndClassNames';
+import { raceDescription, raceName } from '../raceAndClassNames';
+import { DescriptionField } from './descriptionField';
 import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { FollowedDialog } from './otherSaves';
@@ -18,7 +19,7 @@ import type { AreaSelectDialog } from './AreaSelectDialog';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
- * The race editor: a dialog for a race's name, whether it is enabled, its rules, and what its
+ * The race editor: a dialog for a race's name, description, whether it is enabled, its rules, and what its
  * characters start with and where
  *
  * Applying keeps the changes on the Characters tab until it is saved; for a default race, saving stores the
@@ -31,6 +32,7 @@ export class RaceDialog
 	private readonly form = getElement('race-form', HTMLFormElement);
 	private readonly title = getElement('race-dialog-title', HTMLElement);
 	private readonly name = getElement('race-name', HTMLInputElement);
+	private readonly description = new DescriptionField(getElement('race-description', HTMLTextAreaElement), MAX_RACE_DESCRIPTION_LENGTH);
 	private readonly enabled = getElement('race-enabled', HTMLInputElement);
 	private readonly floatingBonus = getElement('race-floating', HTMLInputElement);
 	private readonly darkvision = getElement('race-darkvision', HTMLSelectElement);
@@ -202,6 +204,7 @@ export class RaceDialog
 		}
 
 		this.name.value = name;
+		this.description.show((race ? raceDescription(race, universe.ruleset) : ''), ((race?.custom === false) ? raceDescription({ key: race.key, description: null }, universe.ruleset) : ''));
 		this.enabled.checked = (race?.enabled ?? true);
 
 		for (const ability of PF1E_ABILITIES)
@@ -229,7 +232,7 @@ export class RaceDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.floatingBonus, this.darkvision, this.lightSensitivity, this.size, this.startingMoney, ...Object.values(this.modifiers)])
+		for (const input of [this.name, this.description.field, this.enabled, this.floatingBonus, this.darkvision, this.lightSensitivity, this.size, this.startingMoney, ...Object.values(this.modifiers)])
 		{
 			input.disabled = !editable;
 		}
@@ -303,6 +306,13 @@ export class RaceDialog
 			return;
 		}
 
+		const description = this.description.read();
+
+		if (description === undefined)
+		{
+			return;
+		}
+
 		const abilityModifiers = readModifierFields(this.modifiers);
 
 		if (abilityModifiers === undefined)
@@ -329,6 +339,7 @@ export class RaceDialog
 
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
+			description,
 			enabled: this.enabled.checked,
 			// Chosen in the dialog Save opens when disabling the race affects characters (ImpactDialog)
 			keepPlaying: (this.race?.keepPlaying ?? true),

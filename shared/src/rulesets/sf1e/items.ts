@@ -138,6 +138,17 @@ export const SF1E_DEFAULT_ITEM_NAMES: Record<string, MessageDescriptor> = define
 });
 
 /**
+ * Each default item's description, by the item's key, shown in the item editor and when choosing items
+ */
+export const SF1E_DEFAULT_ITEM_DESCRIPTIONS: Record<string, MessageDescriptor> = defineMessages({
+	survival_knife: {
+		id: 'itemDescription.sf1e.survival_knife',
+		defaultMessage: 'A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion.',
+		description: 'Description of the survival knife, an item in Starfinder, shown in the item editor and when choosing items'
+	}
+});
+
+/**
  * Each default item's category and types, which the migrations in server/drizzle give it
  */
 export const SF1E_DEFAULT_ITEM_KINDS: Record<string, { category: Sf1eItemCategory; types: readonly Sf1eItemType[] }> = {

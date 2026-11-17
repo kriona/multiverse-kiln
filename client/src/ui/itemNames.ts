@@ -1,9 +1,10 @@
-import { DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_DESCRIPTIONS, DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
 import armorIcon from 'virtual:icon/game-icons:breastplate';
 import gearIcon from 'virtual:icon/game-icons:knapsack';
 import weaponIcon from 'virtual:icon/game-icons:broadsword';
 
 import { formatList, t } from '../localization';
+import { describedBy } from './raceAndClassNames';
 
 /**
  * The icon of each item category, by the category's key; categories without one use gearIcon
@@ -32,6 +33,19 @@ export function itemName(item: Pick<EditorItem, 'key' | 'name'>, ruleset: Rulese
 	const message = ((item.key === null) ? undefined : DEFAULT_ITEM_NAMES[ruleset][item.key]);
 
 	return(((message === undefined) ? (item.key ?? '') : t(message)));
+}
+
+/**
+ * An item's description as the player reads it: the universe's description of it, or a default item's
+ * in the player's language
+ *
+ * @param item The item
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for an item the universe added without one
+ */
+export function itemDescription(item: Pick<EditorItem, 'key' | 'description'>, ruleset: Ruleset): string
+{
+	return(describedBy(item, DEFAULT_ITEM_DESCRIPTIONS[ruleset]));
 }
 
 /**

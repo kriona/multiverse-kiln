@@ -3,7 +3,7 @@ import { CORE_RULEBOOK, defineMessages, rulesetHasThemes, RULESET_RULEBOOKS, typ
 import { currentLocale, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, showMessage } from '../dom';
-import { className, raceName, themeName } from '../raceAndClassNames';
+import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
 import { createToggleSwitch } from '../toggleSwitch';
 import { describeClass } from './ClassesSection';
@@ -56,6 +56,11 @@ const messages = defineMessages({
 		defaultMessage: 'Name',
 		description: 'Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor\'s lists of them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	description: {
+		id: 'form.description',
+		defaultMessage: 'Description',
+		description: 'Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook\'s Contents dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	summary: {
 		id: 'editor.summary',
 		defaultMessage: 'Summary',
@@ -74,6 +79,12 @@ const messages = defineMessages({
 interface ContentsRow
 {
 	name: string;
+
+	/**
+	 * The engine's description, or an empty string for a default without one
+	 */
+	description: string;
+
 	summary: string;
 	notes: string;
 }
@@ -296,21 +307,28 @@ export class RulebooksSection
 			}
 
 			const inBook = <T extends { rulebook: string | null }>(options: readonly T[]): T[] => options.filter((option) => (option.rulebook === rulebook));
-			const unnamed = <T extends { key: string | null }>(option: T): T & { name: null } => ({ ...option, name: null });
+			const unnamed = <T extends { key: string | null }>(option: T): T & { name: null; description: null } => ({
+				...option,
+				name: null,
+				description: null
+			});
 
 			this.contents.replaceChildren(...[
 				contentsList('races', t(messages.races), inBook(races).map((race) => ({
 					name: raceName(unnamed(race), ruleset),
+					description: raceDescription(unnamed(race), ruleset),
 					summary: describeRace(race, ruleset),
 					notes: optionTags(race, true)
 				}))),
 				contentsList('classes', t(messages.classes), inBook(classes).map((characterClass) => ({
 					name: className(unnamed(characterClass), ruleset),
+					description: classDescription(unnamed(characterClass), ruleset),
 					summary: describeClass(characterClass, ruleset),
 					notes: optionTags(characterClass, true)
 				}))),
 				contentsList('themes', t(messages.themes), inBook(themes).map((theme) => ({
 					name: themeName(unnamed(theme), ruleset),
+					description: themeDescription(unnamed(theme), ruleset),
 					summary: describeTheme(theme),
 					notes: optionTags(theme, true)
 				})))
@@ -328,7 +346,8 @@ export class RulebooksSection
 }
 
 /**
- * One list in the Contents dialog: a heading and a table of names, summaries and notes, sorted by name
+ * One list in the Contents dialog: a heading and a table of names, descriptions, summaries and notes,
+ * sorted by name
  *
  * @param list Which list it is, e.g. races, which names its heading's ID
  * @param heading The list's heading, e.g. Races
@@ -355,7 +374,9 @@ function contentsList(list: string, heading: string, rows: readonly ContentsRow[
 	table.className = 'item-table';
 	table.setAttribute('aria-labelledby', id);
 
-	for (const message of [messages.name, messages.summary, messages.notes])
+	const described = rows.some((row) => (row.description !== ''));
+
+	for (const message of [messages.name, ...(described ? [messages.description] : []), messages.summary, messages.notes])
 	{
 		const cell = document.createElement('th');
 
@@ -367,7 +388,7 @@ function contentsList(list: string, heading: string, rows: readonly ContentsRow[
 	head.append(headings);
 	body.append(...[...rows]
 		.sort((first, second) => first.name.localeCompare(second.name, currentLocale()))
-		.map(({ name, summary, notes }) =>
+		.map(({ name, description, summary, notes }) =>
 		{
 			const row = document.createElement('tr');
 			const nameCell = document.createElement('th');
@@ -376,7 +397,7 @@ function contentsList(list: string, heading: string, rows: readonly ContentsRow[
 			nameCell.textContent = name;
 			row.append(nameCell);
 
-			for (const text of [summary, notes])
+			for (const text of [...(described ? [description] : []), summary, notes])
 			{
 				const cell = document.createElement('td');
 

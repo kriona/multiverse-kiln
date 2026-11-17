@@ -31,7 +31,7 @@ import { loadEditorTiles } from '../db/tileRepo.js';
 import { inBulkSnapshot } from '../db/transactions.js';
 import { findAllDraftOrigins, type DraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse, isUniverseNameTaken } from '../db/universeRepo.js';
-import { listThingNames, listTranslations, listTranslatorNotes, type TranslatorNoteRecord, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
+import { listThingDescriptions, listThingNames, listTranslations, listTranslatorNotes, type TranslatorNoteRecord, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { ChangeRefusal } from './editorChangeContext.js';
@@ -322,6 +322,11 @@ async function existingTexts(version: UniverseVersion, universe: EditableUnivers
 {
 	const texts = new Set((await listThingNames(version, executor)).map((thing) => textKey(thing.kind, thing.thingId, 'name')));
 
+	for (const thing of await listThingDescriptions(version, executor))
+	{
+		texts.add(textKey(thing.kind, thing.thingId, 'description'));
+	}
+
 	for (const key of universeTextKeys(universe.id, universe))
 	{
 		texts.add(key);
@@ -582,6 +587,22 @@ function sameBounds(a: AreaBounds, b: AreaBounds): boolean
 function pick(thing: Record<string, unknown>, fields: readonly string[]): Record<string, unknown>
 {
 	return(Object.fromEntries(fields.map((field) => [field, thing[field]])));
+}
+
+/**
+ * Some of an item's, race's, class's or theme's settings, with its description, which an export made
+ * before they had descriptions leaves out
+ *
+ * @param thing The item, race, class or theme, as the file holds it
+ * @param fields The settings besides its description
+ * @return The settings
+ */
+function pickDescribed(thing: Record<string, unknown>, fields: readonly string[]): Record<string, unknown>
+{
+	return({
+		...pick(thing, fields),
+		description: (thing.description ?? null)
+	});
 }
 
 /**
@@ -1102,7 +1123,7 @@ class ImportPlanner
 
 		for (const item of (this.manifest.items ?? []))
 		{
-			const settings = pick(withItemKind(this.ruleset, item), ITEM_FIELDS);
+			const settings = pickDescribed(withItemKind(this.ruleset, item), ITEM_FIELDS);
 			const where = `item ${item.id}`;
 
 			if (item.key !== null)
@@ -1675,7 +1696,7 @@ class ImportPlanner
 	private planRaces(): void
 	{
 		this.planOptions('Race', 'race', (this.manifest.races ?? []), this.target.races, this.matchers.races, this.raceTargets, (race, ids) => ({
-			...pick(race, OPTION_FIELDS),
+			...pickDescribed(race, OPTION_FIELDS),
 			...this.startingExtras(race, `race ${race.id}`, ids)
 		}));
 	}
@@ -1687,7 +1708,7 @@ class ImportPlanner
 	private planClasses(): void
 	{
 		this.planOptions('Class', 'class', (this.manifest.classes ?? []), this.target.classes, this.matchers.classes, this.classTargets, (option, ids) => ({
-			...pick(option, OPTION_FIELDS),
+			...pickDescribed(option, OPTION_FIELDS),
 			...this.startingExtras(option, `class ${option.id}`, ids),
 			raceAreas: (Array.isArray(option.raceAreas) ? option.raceAreas : []).map((raceArea: unknown) =>
 			{
@@ -1718,7 +1739,7 @@ class ImportPlanner
 	 */
 	private planThemes(): void
 	{
-		this.planOptions('Theme', 'theme', (this.manifest.themes ?? []), this.target.themes, this.matchers.themes, this.themeTargets, (theme) => pick(theme, THEME_FIELDS));
+		this.planOptions('Theme', 'theme', (this.manifest.themes ?? []), this.target.themes, this.matchers.themes, this.themeTargets, (theme) => pickDescribed(theme, THEME_FIELDS));
 	}
 
 	/**
@@ -2077,6 +2098,7 @@ class ImportPlanner
 		{
 			this.add(change(thing.id), `the draft's ${kind} ${thing.id}`);
 			this.deleted.add(textKey(kind, String(thing.id), 'name'));
+			this.deleted.add(textKey(kind, String(thing.id), 'description'));
 		}
 	}
 
@@ -2136,8 +2158,8 @@ class ImportPlanner
 	}
 
 	/**
-	 * Notes the names of the file's things of a kind as universe text, for those that have one: the
-	 * universe's own things, and the ruleset's defaults it renamed
+	 * Notes the names and descriptions of the file's things of a kind as universe text, for those that
+	 * have them: the universe's own things, and the ruleset's defaults it renamed or described
 	 *
 	 * @param kind What they are
 	 * @param things The file's things of the kind
@@ -2149,9 +2171,17 @@ class ImportPlanner
 		{
 			const target = ((typeof thing.id === 'number') ? targets.get(thing.id) : undefined);
 
-			if ((target !== undefined) && (typeof thing.name === 'string'))
+			if (target === undefined)
 			{
-				this.texts.add(textKey(kind, String(target), 'name'));
+				continue;
+			}
+
+			for (const field of ['name', 'description'] as const)
+			{
+				if (typeof thing[field] === 'string')
+				{
+					this.texts.add(textKey(kind, String(target), field));
+				}
 			}
 		}
 	}

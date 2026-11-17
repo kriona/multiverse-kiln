@@ -2,9 +2,9 @@ import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES,
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
-import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { itemCategoryName, itemDescription, itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
-import { className, raceName, themeName } from '../raceAndClassNames';
+import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
@@ -30,6 +30,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.universe.longDescription',
 		defaultMessage: 'Long description (Markdown)',
 		description: 'Label of the field for a universe\'s full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	description: {
+		id: 'form.description',
+		defaultMessage: 'Description',
+		description: 'Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook\'s Contents dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	sourceLanguage: {
 		id: 'editor.translations.sourceLanguage',
@@ -572,6 +577,8 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(change.value);
 		case 'longDescription':
 			return(t(VALUE_MESSAGES.characters, { count: change.value }));
+		case 'description':
+			return((change.value ?? (defaultDescription(detail.subject, (detail.target?.key ?? null), ruleset) || t(VALUE_MESSAGES.none))));
 		case 'sourceLanguage':
 			return(languageName(change.value));
 		case 'translationLanguages':
@@ -814,5 +821,35 @@ export function targetName(subject: AuditSubject, target: OptionName | null, rul
 			return(languageName(target.name ?? ''));
 		default:
 			return(target.name ?? '');
+	}
+}
+
+/**
+ * The engine's description of one of the ruleset's defaults, in the player's language
+ *
+ * @param subject What the default is: an item, race, class or theme
+ * @param key The default's key, or null for something the universe added
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for one with none
+ */
+function defaultDescription(subject: AuditSubject, key: string | null, ruleset: Ruleset): string
+{
+	const described = {
+		key,
+		description: null
+	};
+
+	switch (subject)
+	{
+		case 'item':
+			return(itemDescription(described, ruleset));
+		case 'race':
+			return(raceDescription(described, ruleset));
+		case 'class':
+			return(classDescription(described, ruleset));
+		case 'theme':
+			return(themeDescription(described, ruleset));
+		default:
+			return('');
 	}
 }

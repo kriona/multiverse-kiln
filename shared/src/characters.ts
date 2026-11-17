@@ -210,6 +210,13 @@ export interface CharacterListPayload
 export interface CharacterRaceOption extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the race, or null for a default race's in DEFAULT_RACE_DESCRIPTIONS,
+	 * found by its key, or none
+	 */
+	description: string | null;
+
 	rules: RaceRules;
 }
 
@@ -219,6 +226,13 @@ export interface CharacterRaceOption extends OptionName
 export interface CharacterClassOption extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the class, or null for a default class's in
+	 * DEFAULT_CLASS_DESCRIPTIONS, found by its key, or none
+	 */
+	description: string | null;
+
 	rules: ClassRules;
 }
 
@@ -228,6 +242,13 @@ export interface CharacterClassOption extends OptionName
 export interface CharacterThemeOption extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the theme, or null for a default theme's in
+	 * DEFAULT_THEME_DESCRIPTIONS, found by its key, or none
+	 */
+	description: string | null;
+
 	rules: Sf1eThemeRules;
 }
 
@@ -388,6 +409,12 @@ export interface NewCharacterRequest
 export interface CharacterSheetItem extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the item, or null for a default item's in DEFAULT_ITEM_DESCRIPTIONS,
+	 * found by its key, or none
+	 */
+	description: string | null;
 
 	/**
 	 * The item's category, a key of the ruleset's ITEM_KINDS

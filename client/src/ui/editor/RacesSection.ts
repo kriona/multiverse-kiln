@@ -51,6 +51,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 			name: raceName,
 			settingsOf: (race) => ({
 				name: race.name,
+				description: race.description,
 				enabled: race.enabled,
 				keepPlaying: race.keepPlaying,
 				startingMoney: race.startingMoney,

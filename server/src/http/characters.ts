@@ -436,10 +436,11 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 		{
 			const item = itemsById.get(itemId);
 
-			return(translator.name('item', itemId, {
+			return(translator.described('item', itemId, {
 				id: itemId,
 				key: (item?.key ?? null),
 				name: (item?.name ?? null),
+				description: (item?.description ?? null),
 				category: (item?.category ?? ''),
 				quantity
 			}));
@@ -807,13 +808,13 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 		abilities,
 		races: races
 			.filter((race) => isUsable(race, rulebooks))
-			.map(({ id, key, name, rules }) => translator.name('race', id, { id, key, name, rules })),
+			.map(({ id, key, name, description, rules }) => translator.described('race', id, { id, key, name, description, rules })),
 		classes: classes
 			.filter((characterClass) => isUsable(characterClass, rulebooks))
-			.map(({ id, key, name, rules }) => translator.name('class', id, { id, key, name, rules })),
+			.map(({ id, key, name, description, rules }) => translator.described('class', id, { id, key, name, description, rules })),
 		themes: themes
 			.filter((theme) => isUsable(theme, rulebooks))
-			.map(({ id, key, name, rules }) => translator.name('theme', id, { id, key, name, rules })),
+			.map(({ id, key, name, description, rules }) => translator.described('theme', id, { id, key, name, description, rules })),
 		characterCount,
 		characterLimit: siteSettings.charactersPerUniverse,
 		draft: (draft.success ? draft.data : null)

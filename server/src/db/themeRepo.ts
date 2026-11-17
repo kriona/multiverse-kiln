@@ -156,6 +156,7 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 			overridesThemeId: themes.overridesThemeId,
 			key: themes.key,
 			name: themes.name,
+			description: themes.description,
 			rulebook: themes.rulebook,
 			enabled: themes.enabled,
 			ability: sf1eThemes.ability
@@ -180,6 +181,7 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
+				description: (custom ? row.description : (copy?.description ?? null)),
 				enabled: settings.enabled,
 				rules: {
 					ability: settings.ability
@@ -187,7 +189,7 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined),
-				editedSettings: ((copy !== undefined) && ((copy.name !== null) || (copy.ability !== row.ability)))
+				editedSettings: ((copy !== undefined) && ((copy.name !== null) || (copy.description !== null) || (copy.ability !== row.ability)))
 			});
 		}));
 }
@@ -265,6 +267,7 @@ export async function createCustomTheme(version: UniverseVersion, ruleset: Rules
 			universeId: version.universeId,
 			draft: version.draft,
 			name: settings.name,
+			description: settings.description,
 			enabled: settings.enabled
 		})
 		.returning({ id: themes.id });
@@ -288,6 +291,7 @@ export async function updateCustomTheme(version: UniverseVersion, themeId: numbe
 		.update(themes)
 		.set({
 			name: settings.name,
+			description: settings.description,
 			enabled: settings.enabled
 		})
 		.where(and(
@@ -303,13 +307,14 @@ export async function updateCustomTheme(version: UniverseVersion, themeId: numbe
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultThemeId The default theme's ID, from findThemeKind() as default
- * @param settings The copy's settings; a null name keeps the default theme's
+ * @param settings The copy's settings; a null name or description keeps the default theme's
  * @param executor A transaction
  */
 export async function saveEditedDefaultTheme(version: UniverseVersion, ruleset: Ruleset, defaultThemeId: number, settings: ThemeSettings, executor: Executor): Promise<void>
 {
 	const columns = {
 		name: settings.name,
+		description: settings.description,
 		enabled: settings.enabled
 	};
 	const [copy] = await executor

@@ -1699,6 +1699,17 @@ html:has(.area-cells-editor.full-page) body
 	}
 }
 
+// An item's, race's, class's or theme's description: a sentence or two, the field growing with it up to a point.
+// Its label stretches it across the dialog, so its width stays put as it grows. Without field-sizing, it
+// keeps its rows and scrolls
+textarea.description-field
+{
+	field-sizing: content;
+	min-block-size: 2lh;
+	max-block-size: 8lh;
+	resize: vertical;
+}
+
 // A race's six ability modifiers, three to a row
 div.ability-modifiers
 {

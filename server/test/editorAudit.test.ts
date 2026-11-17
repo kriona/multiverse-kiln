@@ -173,6 +173,33 @@ describe('The editor\'s audit of saves', () =>
 		]);
 	});
 
+	it('records a race\'s description as written, and null when it goes back to the default\'s', async () =>
+	{
+		const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+		const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, description: 'Stout folk of the deep halls.' } }])).status, 200);
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, description: null, enabled: false } }])).status, 200);
+
+		const [cleared, described] = (await send<UniverseEditListPayload>(ada, 'GET', `/${universeId}/audit`)).body.edits;
+
+		assert.deepStrictEqual(described.details, [
+			{ subject: 'race', action: 'changed', target: { key: 'dwarf', name: null }, fields: [{ field: 'description', value: 'Stout folk of the deep halls.' }], count: 1 }
+		]);
+		assert.deepStrictEqual(cleared.details, [
+			{
+				subject: 'race',
+				action: 'changed',
+				target: { key: 'dwarf', name: null },
+				fields: [
+					{ field: 'enabled', value: false },
+					{ field: 'description', value: null }
+				],
+				count: 1
+			}
+		]);
+	});
+
 	it('describes changes to editors, settings, classes and difficulty levels, naming what settings name', async () =>
 	{
 		const grace = await logIn('Grace');

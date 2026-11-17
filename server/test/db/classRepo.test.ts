@@ -14,6 +14,7 @@ import { addUniverse, addArea } from './fixtures.js';
 
 const gunslinger: CustomClassSettings = {
 	name: 'Gunslinger',
+	description: null,
 	enabled: true,
 	keepPlaying: true,
 	startingMoney: emptyMoney(),
@@ -78,6 +79,7 @@ describe('classRepo', () =>
 					id: characterClass.id,
 					key,
 					name: null,
+					description: null,
 					enabled: true,
 					keepPlaying: true,
 					startingMoney: emptyMoney(),
@@ -162,6 +164,36 @@ describe('classRepo', () =>
 		// Deleting a class's area leaves its members to start where their race or the universe says
 		await deleteArea(areaId);
 		assert.strictEqual((await findClass(universeId, wizardId))?.startingAreaId, null);
+
+		await restoreDefaultClass(liveVersion(universeId), wizardId);
+		assert.deepStrictEqual(await findClass(universeId, wizardId), original);
+	});
+
+	it('saves and loads a universe\'s own class\'s description', async () =>
+	{
+		const universeId = await addUniverse();
+		const classId = await inTransaction((transaction) => createCustomClass(liveVersion(universeId), 'pf1e', { ...gunslinger, description: 'A sharpshooter with black powder.' }, transaction));
+
+		assert.strictEqual((await findClass(universeId, classId))?.description, 'A sharpshooter with black powder.');
+
+		await inTransaction((transaction) => updateCustomClass(liveVersion(universeId), 'pf1e', classId, { ...gunslinger, description: 'Quick on the draw.' }, transaction));
+		assert.strictEqual((await findClass(universeId, classId))?.description, 'Quick on the draw.');
+
+		await inTransaction((transaction) => updateCustomClass(liveVersion(universeId), 'pf1e', classId, gunslinger, transaction));
+		assert.strictEqual((await findClass(universeId, classId))?.description, null);
+	});
+
+	it('keeps a default class\'s description, gives it the universe\'s, and restores it', async () =>
+	{
+		const universeId = await addUniverse();
+		const wizardId = await defaultClassId('wizard');
+		const original = await findClass(universeId, wizardId) as EditorClass;
+
+		await inTransaction((transaction) => saveEditedDefaultClass(liveVersion(universeId), 'pf1e', wizardId, { ...original, enabled: false }, transaction));
+		assert.deepStrictEqual(await findClass(universeId, wizardId), { ...original, enabled: false, description: null, edited: true, editedSettings: false });
+
+		await inTransaction((transaction) => saveEditedDefaultClass(liveVersion(universeId), 'pf1e', wizardId, { ...original, description: 'A scholar of arcane formulae.' }, transaction));
+		assert.deepStrictEqual(await findClass(universeId, wizardId), { ...original, description: 'A scholar of arcane formulae.', edited: true, editedSettings: true });
 
 		await restoreDefaultClass(liveVersion(universeId), wizardId);
 		assert.deepStrictEqual(await findClass(universeId, wizardId), original);

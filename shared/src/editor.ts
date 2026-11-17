@@ -138,6 +138,13 @@ export const MAX_TILE_GRAPHIC_DRAW_ORDER = 99;
 export const MAX_ITEM_NAME_LENGTH = 60;
 
 /**
+ * Most characters in an item's, race's or class's description: a sentence or two
+ */
+export const MAX_ITEM_DESCRIPTION_LENGTH = 300;
+export const MAX_RACE_DESCRIPTION_LENGTH = 300;
+export const MAX_CLASS_DESCRIPTION_LENGTH = 300;
+
+/**
  * Most items a universe may add to its ruleset's default items
  */
 export const MAX_CUSTOM_ITEMS = 5000;
@@ -178,6 +185,11 @@ export const MAX_CUSTOM_CLASSES = 100;
  * Most characters in a theme's name
  */
 export const MAX_THEME_NAME_LENGTH = 40;
+
+/**
+ * Most characters in a theme's description: a sentence or two
+ */
+export const MAX_THEME_DESCRIPTION_LENGTH = 300;
 
 /**
  * Most themes a universe may add to its ruleset's defaults
@@ -897,6 +909,7 @@ export const AUDIT_FIELDS = [
 	'name',
 	'shortDescription',
 	'longDescription',
+	'description',
 	'sourceLanguage',
 	'translationLanguages',
 	'stage',
@@ -1001,6 +1014,12 @@ export interface AuditFieldValues
 	 * How many characters it has
 	 */
 	longDescription: number;
+
+	/**
+	 * An item's, race's, class's or theme's description; null for one of the ruleset's defaults given its
+	 * default description back, or for an item, race, class or theme the universe added with none
+	 */
+	description: string | null;
 
 	/**
 	 * Language tags
@@ -1536,6 +1555,12 @@ export interface ItemSettings
 	name: string | null;
 
 	/**
+	 * Null for a default item that keeps its description, which players read in their language
+	 * (DEFAULT_ITEM_DESCRIPTIONS), and for an item the universe added without one
+	 */
+	description: string | null;
+
+	/**
 	 * One of the ruleset's item categories (ITEM_KINDS), e.g. weapon
 	 */
 	category: string;
@@ -1746,6 +1771,12 @@ export interface RaceSettings extends StartingExtras
 	name: string | null;
 
 	/**
+	 * Null for a default race that keeps its description, which players read in their language
+	 * (DEFAULT_RACE_DESCRIPTIONS), and for a race the universe added without one
+	 */
+	description: string | null;
+
+	/**
 	 * Whether new characters can be this race. A universe always has at least one enabled race
 	 */
 	enabled: boolean;
@@ -1844,6 +1875,12 @@ export interface ClassSettings extends StartingExtras
 	name: string | null;
 
 	/**
+	 * Null for a default class that keeps its description, which players read in their language
+	 * (DEFAULT_CLASS_DESCRIPTIONS), and for a class the universe added without one
+	 */
+	description: string | null;
+
+	/**
 	 * Whether new characters can be this class. A universe always has at least one enabled class
 	 */
 	enabled: boolean;
@@ -1922,6 +1959,12 @@ export interface ThemeSettings
 	 * (DEFAULT_THEME_NAMES). A theme the universe added must have one
 	 */
 	name: string | null;
+
+	/**
+	 * Null for a default theme that keeps its description, which players read in their language
+	 * (DEFAULT_THEME_DESCRIPTIONS), and for a theme the universe added without one
+	 */
+	description: string | null;
 
 	/**
 	 * Whether new characters can have this theme. A universe with themes always has at least one enabled

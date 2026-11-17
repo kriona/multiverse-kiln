@@ -31,6 +31,7 @@ const missingRace: EditorChange = {
 	id: 2147483647,
 	settings: {
 		name: 'Nobody',
+		description: null,
 		enabled: true,
 		keepPlaying: true,
 		startingMoney: emptyMoney(),
@@ -106,7 +107,7 @@ describe('Saving editor changes', () =>
 		const universeId = await createUniverse(ada);
 		const response = await saveChanges(ada, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', category: 'gear', types: ['torch'], enabled: true } },
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['torch'], enabled: true } },
 			missingRace
 		]);
 		const items = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body;
@@ -239,7 +240,7 @@ describe('Saving editor changes', () =>
 
 		await saveAll(builder, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', category: 'gear', types: ['torch'], enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['torch'], enabled: true } }
 		]);
 		assert.deepStrictEqual(await customTileNames(ada, universeId), ['Lava']);
 		assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body.items.map((item) => item.name), ['Torch']);

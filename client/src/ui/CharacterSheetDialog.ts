@@ -12,7 +12,7 @@ import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { createItemIcon, itemName } from './itemNames';
+import { createItemIcon, itemDescription, itemName } from './itemNames';
 import { describeLeaving, showLeaveButton, takeOutOfGroup } from './leavingGroup';
 import { moneyElement } from './moneyField';
 import { characterDescription, themeName } from './raceAndClassNames';
@@ -1038,7 +1038,7 @@ export class CharacterSheetDialog
 
 	/**
 	 * Lists the items the character carries by name, the way the player's language sorts them, with how
-	 * many of each, and a menu beside each of what can be done with it for those who may change the character
+	 * many of each and their descriptions, and a menu beside each of what can be done with it for those who may change the character
 	 *
 	 * @param sheet The character
 	 * @param canChange Whether the sheet offers to change the character
@@ -1056,8 +1056,11 @@ export class CharacterSheetDialog
 		{
 			const row = document.createElement('li');
 			const text = document.createElement('span');
+			const nameText = document.createElement('span');
+			const description = itemDescription(item, sheet.ruleset);
 
-			text.textContent = t({
+			text.className = 'character-sheet-item-text';
+			nameText.textContent = t({
 				id: 'characterSheet.item',
 				defaultMessage: '{quantity, plural, =1 {{item}} other {{item} x#}}',
 				description: 'On a character\'s sheet, an item they carry, with how many when there is more than one; {item} is the item\'s name, e.g. "Arrow x20"'
@@ -1065,6 +1068,17 @@ export class CharacterSheetDialog
 				item: name,
 				quantity: item.quantity
 			});
+			text.append(nameText);
+
+			if (description !== '')
+			{
+				const descriptionText = document.createElement('span');
+
+				descriptionText.className = 'character-sheet-item-description';
+				descriptionText.textContent = description;
+				text.append(descriptionText);
+			}
+
 			row.append(createItemIcon(item.category, sheet.ruleset), text);
 
 			if (canChange)

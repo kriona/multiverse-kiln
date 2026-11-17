@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload,type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload,type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceListPayload, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { adminDb, inAdminTransaction } from '../src/db/adminClient.js';
 import { countCharacters } from '../src/db/characterRepo.js';
@@ -256,6 +256,64 @@ describe('Character routes', () =>
 		assert.ok(first.classes.some((characterClass) => (characterClass.id === fighterId)));
 		assert.strictEqual(first.characterCount, 0);
 		assert.strictEqual(first.characterLimit, DEFAULT_SITE_SETTINGS.charactersPerUniverse);
+	});
+
+	it('offers the descriptions the universe writes for races, in the player\'s language, and none for a default that keeps the engine\'s', async () =>
+	{
+		const races = (await send<RaceListPayload>(ada, 'GET', `${EDITOR_UNIVERSES_PATH}/${universeId}/races`)).body.races;
+		const dwarf = races.find((race) => (race.id === dwarfId));
+
+		assert.ok(dwarf);
+
+		const saved = await send<SaveChangesPayload>(ada, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/changes`, {
+			changes: [
+				{ kind: 'universe', update: { translationLanguages: ['fr'] } },
+				{ kind: 'saveRace', id: dwarfId, settings: { ...dwarf, description: 'Stout folk of the deep halls.' } }
+			]
+		});
+
+		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+
+		/**
+		 * The races and classes Create Character offers, in a language
+		 *
+		 * @param language The browser's Accept-Language
+		 * @return The dwarf, the human and the fighter, each with its ID, key, name and description
+		 */
+		const offered = async (language: string): Promise<unknown[]> =>
+		{
+			const answer = await fetch(`${testServerUrl}${charactersPath(universeId)}/new`, {
+				headers: {
+					'Cookie': ada.cookie,
+					'Accept-Language': language
+				}
+			});
+			const options = (await answer.json()) as NewCharacterOptions;
+
+			return([
+				...options.races.filter((race) => [dwarfId, humanId].includes(race.id)),
+				...options.classes.filter((characterClass) => (characterClass.id === fighterId))
+			].map(({ id, key, name, description }) => ({ id, key, name, description })));
+		};
+
+		assert.deepStrictEqual(await offered('en'), [
+			{ id: dwarfId, key: 'dwarf', name: null, description: 'Stout folk of the deep halls.' },
+			{ id: humanId, key: 'human', name: null, description: null },
+			{ id: fighterId, key: 'fighter', name: null, description: null }
+		]);
+
+		// French without a translation shows the universe's own text
+		assert.strictEqual(((await offered('fr'))[0] as { description: string }).description, 'Stout folk of the deep halls.');
+
+		const translated = await saveEditorChange(ada, universeId, { kind: 'saveTranslation', text: { kind: 'race', thingId: String(dwarfId), field: 'description' }, language: 'fr', translation: 'Un peuple robuste des salles profondes.', sourceHash: sourceTextHash('Stout folk of the deep halls.') });
+
+		assert.strictEqual(translated.status, 200, JSON.stringify(translated.body));
+		assert.deepStrictEqual(await offered('fr'), [
+			{ id: dwarfId, key: 'dwarf', name: null, description: 'Un peuple robuste des salles profondes.' },
+			{ id: humanId, key: 'human', name: null, description: null },
+			{ id: fighterId, key: 'fighter', name: null, description: null }
+		]);
+		assert.strictEqual(((await offered('en'))[0] as { description: string }).description, 'Stout folk of the deep halls.');
 	});
 
 	it('makes a character from the rolled scores in any order, and rolls again for the next', async () =>
@@ -570,6 +628,7 @@ describe('Character routes', () =>
 
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
+			description: null,
 			enabled: false,
 			keepPlaying: true,
 			startingMoney: emptyMoney(),
@@ -599,6 +658,7 @@ describe('Character routes', () =>
 
 		const lizardfolk: RaceSettings = {
 			name: 'Lizardfolk',
+			description: null,
 			enabled: true,
 			keepPlaying: true,
 			startingMoney: emptyMoney(),
@@ -805,6 +865,9 @@ describe('Character routes', () =>
 		{
 			assert.deepStrictEqual(options.abilities, { kind: 'abilityPoints', points: 10 });
 			assert.strictEqual(options.themes.length, 9);
+
+			// Each default theme keeps the engine's description, which the client finds by its key
+			assert.ok(options.themes.every((theme) => ((theme.key !== null) && (theme.description === null))));
 		});
 
 		it('makes a character with their race\'s and theme\'s bonuses, hit points, stamina and credits', async () =>

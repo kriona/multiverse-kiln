@@ -1,4 +1,4 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, isSf1eClassRules, MAX_CLASS_NAME_LENGTH, NEW_CLASS_RULES, NEW_PF1E_CLASS_RULES, NEW_SF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_MAX_CLASS_POINTS, SF1E_MIN_CLASS_POINTS, type ClassRaceArea, type ClassRules, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition, type Sf1eAbility } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, emptyMoney, isSf1eClassRules, MAX_CLASS_DESCRIPTION_LENGTH, MAX_CLASS_NAME_LENGTH, NEW_CLASS_RULES, NEW_PF1E_CLASS_RULES, NEW_SF1E_CLASS_RULES, PF1E_ABILITIES, PF1E_ABILITY_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITION_NAMES, PF1E_MAGIC_TRADITIONS, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_MAX_CLASS_POINTS, SF1E_MIN_CLASS_POINTS, type ClassRaceArea, type ClassRules, type ClassSettings, type EditableUniverse, type EditorClass, type EditorRace, type Pf1eAbility, type Pf1eCastingStyle, type Pf1eMagicTradition, type Sf1eAbility } from '@multiverse-kiln/shared';
 import mapPinIcon from 'virtual:icon/ph:map-pin';
 import clearIcon from 'virtual:icon/ph:x';
 
@@ -9,7 +9,8 @@ import { getElement, namedOptions, setButtonLabel, setOptions, showMessage } fro
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { formatMoney, readMoneyField } from '../moneyField';
-import { className, raceName } from '../raceAndClassNames';
+import { classDescription, className, raceName } from '../raceAndClassNames';
+import { DescriptionField } from './descriptionField';
 import { editorMessages } from './editorMessages';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { FollowedDialog } from './otherSaves';
@@ -21,7 +22,7 @@ import type { RulebookChoice } from './rulebookChoice';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
- * The class editor: a dialog for a class's name, whether it is enabled, its rules, and what its
+ * The class editor: a dialog for a class's name, description, whether it is enabled, its rules, and what its
  * characters start with and where, for every race or for each race
  *
  * Applying keeps the changes on the Characters tab until it is saved; for a default class, saving stores
@@ -34,6 +35,7 @@ export class ClassDialog
 	private readonly form = getElement('class-form', HTMLFormElement);
 	private readonly title = getElement('class-dialog-title', HTMLElement);
 	private readonly name = getElement('class-name', HTMLInputElement);
+	private readonly description = new DescriptionField(getElement('class-description', HTMLTextAreaElement), MAX_CLASS_DESCRIPTION_LENGTH);
 	private readonly enabled = getElement('class-enabled', HTMLInputElement);
 	private readonly primaryAbility = getElement('class-primary-ability', HTMLSelectElement);
 	private readonly tradition = getElement('class-tradition', HTMLSelectElement);
@@ -230,6 +232,7 @@ export class ClassDialog
 		}
 
 		this.name.value = name;
+		this.description.show((characterClass ? classDescription(characterClass, universe.ruleset) : ''), ((characterClass?.custom === false) ? classDescription({ key: characterClass.key, description: null }, universe.ruleset) : ''));
 		this.enabled.checked = (characterClass?.enabled ?? true);
 		this.showRules(rules);
 		this.startingMoney.value = formatMoney((characterClass?.startingMoney ?? emptyMoney()), universe.ruleset, universe.coinAbbreviations);
@@ -252,7 +255,7 @@ export class ClassDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.primaryAbility, this.tradition, this.castingStyle, this.keyAbility, this.hitPoints, this.staminaPoints, this.startingMoney])
+		for (const input of [this.name, this.description.field, this.enabled, this.primaryAbility, this.tradition, this.castingStyle, this.keyAbility, this.hitPoints, this.staminaPoints, this.startingMoney])
 		{
 			input.disabled = !editable;
 		}
@@ -436,6 +439,13 @@ export class ClassDialog
 			return;
 		}
 
+		const description = this.description.read();
+
+		if (description === undefined)
+		{
+			return;
+		}
+
 		const rules = this.readRules(universe);
 
 		if (rules === undefined)
@@ -459,6 +469,7 @@ export class ClassDialog
 
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
+			description,
 			enabled: this.enabled.checked,
 			// Chosen in the dialog Save opens when disabling the class affects characters (ImpactDialog)
 			keepPlaying: (this.characterClass?.keepPlaying ?? true),

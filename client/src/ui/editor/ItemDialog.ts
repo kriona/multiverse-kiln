@@ -1,17 +1,18 @@
-import { canEditItemsOpen, categoryItemTypes, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditItemsOpen, categoryItemTypes, DISALLOWED_TEXT_CHARACTERS, ITEM_KINDS, MAX_ITEM_DESCRIPTION_LENGTH, MAX_ITEM_NAME_LENGTH, type EditableUniverse, type EditorItem, type ItemSettings, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { itemCategoryName, itemDescription, itemName, itemTypeName } from '../itemNames';
+import { DescriptionField } from './descriptionField';
 import { editorMessages } from './editorMessages';
 import { FollowedDialog } from './otherSaves';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
- * The item editor: a dialog for an item's name, kind, types and whether it is enabled
+ * The item editor: a dialog for an item's name, description, kind, types and whether it is enabled
  *
  * Applying keeps the changes on the Items tab until it is saved; for a default item, saving stores the
  * universe's edited copy of it. The dialog can also delete a custom item, or restore an edited default
@@ -23,6 +24,7 @@ export class ItemDialog
 	private readonly form = getElement('item-form', HTMLFormElement);
 	private readonly title = getElement('item-dialog-title', HTMLElement);
 	private readonly name = getElement('item-name', HTMLInputElement);
+	private readonly description = new DescriptionField(getElement('item-description', HTMLTextAreaElement), MAX_ITEM_DESCRIPTION_LENGTH);
 	private readonly category = getElement('item-category', HTMLSelectElement);
 	private readonly typesField = getElement('item-types-field', HTMLFieldSetElement);
 	private readonly types = getElement('item-types', HTMLElement);
@@ -145,12 +147,13 @@ export class ItemDialog
 		})));
 		this.category.value = (item?.category ?? ITEM_KINDS[universe.ruleset].categories[0]);
 		this.name.value = name;
+		this.description.show((item ? itemDescription(item, universe.ruleset) : ''), ((item?.custom === false) ? itemDescription({ key: item.key, description: null }, universe.ruleset) : ''));
 		this.enabled.checked = (item?.enabled ?? true);
 		this.saveButton.hidden = !editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.category, this.enabled])
+		for (const input of [this.name, this.description.field, this.category, this.enabled])
 		{
 			input.disabled = !editable;
 		}
@@ -217,11 +220,19 @@ export class ItemDialog
 			return;
 		}
 
+		const description = this.description.read();
+
+		if (description === undefined)
+		{
+			return;
+		}
+
 		// A default item whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.item && !this.item.custom) ? itemName({ key: this.item.key, name: null }, universe.ruleset) : undefined);
 
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
+			description,
 			category: this.category.value,
 			types: [...this.types.querySelectorAll<HTMLInputElement>('input:checked')].map((input) => input.value),
 			enabled: this.enabled.checked

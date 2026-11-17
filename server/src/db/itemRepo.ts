@@ -200,6 +200,7 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			overridesItemId: items.overridesItemId,
 			key: items.key,
 			name: items.name,
+			description: items.description,
 			category: items.category,
 			types: items.types,
 			rulebook: items.rulebook,
@@ -235,13 +236,14 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
+				description: (custom ? row.description : (copy?.description ?? null)),
 				category: settings.category,
 				types: settings.types,
 				enabled: settings.enabled,
 				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined),
-				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.category !== row.category) || !sameValue(copy.types, row.types)))
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.category !== row.category) || !sameValue(copy.types, row.types)))
 			};
 
 			return({
@@ -438,7 +440,7 @@ export async function updateCustomItem(version: UniverseVersion, itemId: number,
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultItemId The default item's ID, from findItem() as default
- * @param settings The copy's settings; a null name keeps the default item's
+ * @param settings The copy's settings; a null name or description keeps the default item's
  * @param executor The database, or a transaction
  */
 export async function saveEditedDefaultItem(version: UniverseVersion, ruleset: Ruleset, defaultItemId: number, settings: ItemSettings, executor: Executor = db): Promise<void>

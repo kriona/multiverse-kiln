@@ -1,4 +1,4 @@
-import { DEFAULT_CLASS_NAMES, DEFAULT_RACE_NAMES, DEFAULT_THEME_NAMES, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_CLASS_DESCRIPTIONS, DEFAULT_CLASS_NAMES, DEFAULT_RACE_DESCRIPTIONS, DEFAULT_RACE_NAMES, DEFAULT_THEME_DESCRIPTIONS, DEFAULT_THEME_NAMES, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 
@@ -48,6 +48,74 @@ export function className(characterClass: Named, ruleset: Ruleset): string
 export function themeName(theme: Named, ruleset: Ruleset): string
 {
 	return(nameOf(theme, DEFAULT_THEME_NAMES[ruleset]));
+}
+
+/**
+ * Something described the way races, classes, themes and items are: a description of the universe's
+ * own, or a default's key that finds the engine's
+ */
+interface Described
+{
+	key: string | null;
+	description: string | null;
+}
+
+/**
+ * A race's description as the player reads it: the universe's description of it, or a default race's
+ * in the player's language
+ *
+ * @param race The race
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for a race the universe added without one
+ */
+export function raceDescription(race: Described, ruleset: Ruleset): string
+{
+	return(describedBy(race, DEFAULT_RACE_DESCRIPTIONS[ruleset]));
+}
+
+/**
+ * A class's description as the player reads it: the universe's description of it, or a default
+ * class's in the player's language
+ *
+ * @param characterClass The class
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for a class the universe added without one
+ */
+export function classDescription(characterClass: Described, ruleset: Ruleset): string
+{
+	return(describedBy(characterClass, DEFAULT_CLASS_DESCRIPTIONS[ruleset]));
+}
+
+/**
+ * A theme's description as the player reads it: the universe's description of it, or a default
+ * theme's in the player's language
+ *
+ * @param theme The theme
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for a theme the universe added without one
+ */
+export function themeDescription(theme: Described, ruleset: Ruleset): string
+{
+	return(describedBy(theme, DEFAULT_THEME_DESCRIPTIONS[ruleset]));
+}
+
+/**
+ * A race's, class's, theme's or item's description as the player reads it
+ *
+ * @param described The race, class, theme or item
+ * @param defaultDescriptions The default descriptions, by key
+ * @return The description, or an empty string for one with none
+ */
+export function describedBy(described: Described, defaultDescriptions: Record<string, MessageDescriptor>): string
+{
+	if (described.description !== null)
+	{
+		return(described.description);
+	}
+
+	const message = ((described.key === null) ? undefined : defaultDescriptions[described.key]);
+
+	return(((message === undefined) ? '' : t(message)));
 }
 
 /**

@@ -8,6 +8,7 @@ import { addUniverse } from './fixtures.js';
 
 const rustyDagger: ItemSettings = {
 	name: 'rusty dagger',
+	description: null,
 	category: 'weapon',
 	types: ['blades_light', 'thrown'],
 	enabled: true
@@ -15,23 +16,26 @@ const rustyDagger: ItemSettings = {
 
 const torch: CustomItemSettings = {
 	name: 'torch',
+	description: null,
 	category: 'gear',
 	types: ['torch'],
 	enabled: true
 };
 
 /**
- * The default dagger's category and types
+ * The default dagger's description, category and types
  */
 const daggerKind = {
+	description: null,
 	category: 'weapon',
 	types: ['blades_light', 'thrown']
 };
 
 /**
- * A longsword's category and types
+ * A longsword's description, category and types
  */
 const longswordKind = {
+	description: null,
 	category: 'weapon',
 	types: ['blades_heavy']
 };
@@ -241,7 +245,7 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(page.items.map((item) => item.id), [torchId]);
 
 			// Changing a default item's types alone is an edit
-			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, category: 'weapon', types: ['blades_light'], enabled: false });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, description: null, category: 'weapon', types: ['blades_light'], enabled: false });
 			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'thrown' }), []);
 		});
@@ -342,6 +346,38 @@ describe('itemRepo', () =>
 
 			await restoreDefaultItem(liveVersion(universeId), id);
 			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, ...daggerKind, enabled: true, rulebook: 'core', custom: false, edited: false, editedSettings: false });
+		});
+
+		it('saves and loads a universe\'s own item\'s description', async () =>
+		{
+			const universeId = await addUniverse();
+			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { ...torch, description: 'A stick with a burning rag.' });
+			const findTorch = async (): Promise<EditorItem | undefined> => (await loadEditorItems(liveVersion(universeId), 'pf1e')).find((item) => (item.id === torchId));
+
+			assert.strictEqual((await findTorch())?.description, 'A stick with a burning rag.');
+
+			await updateCustomItem(liveVersion(universeId), torchId, { ...torch, description: 'It never goes out.' });
+			assert.strictEqual((await findTorch())?.description, 'It never goes out.');
+
+			await updateCustomItem(liveVersion(universeId), torchId, torch);
+			assert.strictEqual((await findTorch())?.description, null);
+		});
+
+		it('keeps a default item\'s description, gives it the universe\'s, and restores it', async () =>
+		{
+			const universeId = await addUniverse();
+			const id = await daggerId();
+
+			// Disabling the dagger, keeping its description, isn't an edit to its settings
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', id, { name: null, ...daggerKind, enabled: false });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, ...daggerKind, enabled: false, rulebook: 'core', custom: false, edited: true, editedSettings: false });
+
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', id, { name: null, ...daggerKind, description: 'Small and sharp.', enabled: true });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, ...daggerKind, description: 'Small and sharp.', enabled: true, rulebook: 'core', custom: false, edited: true, editedSettings: true });
+			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [id]);
+
+			await restoreDefaultItem(liveVersion(universeId), id);
+			assert.strictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0].description, null);
 		});
 	});
 });

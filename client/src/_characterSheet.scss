@@ -145,6 +145,20 @@ button.character-sheet-delete
 	}
 }
 
+// An item's name, with its description under it
+.character-sheet-item-text
+{
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.character-sheet-item-description
+{
+	@include small-text;
+	color: $text-faint;
+}
+
 // As wide as how many of the item the character carries, the most they can discard, plus room for its
 // arrows; the script sets --digits to how many digits that is
 #character-discard-quantity

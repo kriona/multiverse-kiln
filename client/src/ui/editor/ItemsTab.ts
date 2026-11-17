@@ -468,7 +468,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			return(false);
 		}
 
-		return(saved.editedSettings || differsBeyondEnabling({ name: saved.name, category: saved.category, types: saved.types }, { name: item.name, category: item.category, types: item.types }));
+		return(saved.editedSettings || differsBeyondEnabling({ name: saved.name, description: saved.description, category: saved.category, types: saved.types }, { name: item.name, description: item.description, category: item.category, types: item.types }));
 	}
 
 	/**
@@ -549,6 +549,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		this.changes.edit(item.id, loadedFrom(this.known.get(item.id))).apply({
 			name: item.name,
+			description: item.description,
 			category: item.category,
 			types: item.types,
 			enabled

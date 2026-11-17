@@ -138,4 +138,21 @@ export class UniverseTextTranslator
 	{
 		return(((option.name === null) ? option : { ...option, name: this.text(kind, thingId, 'name', option.name) }));
 	}
+
+	/**
+	 * The name and description of a race, class, theme or item in the player's language. A default the
+	 * universe hasn't described has no description of its own, and is engine text the client finds from
+	 * its key
+	 *
+	 * @param kind What it is
+	 * @param thingId Its ID
+	 * @param option Its key, and its name and description in the source language
+	 * @return The same, with the name and description translated
+	 */
+	described<T extends OptionName & { description: string | null }>(kind: UniverseTextKind, thingId: number, option: T): T
+	{
+		const named = this.name(kind, thingId, option);
+
+		return(((named.description === null) ? named : { ...named, description: this.text(kind, thingId, 'description', named.description) }));
+	}
 }

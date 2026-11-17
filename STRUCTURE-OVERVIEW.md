@@ -166,7 +166,7 @@ Based entirely on the universe's ruleset. It is a page of its own, reached from 
 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
-- the player chooses a name, an enabled race and an enabled class, from the [rulebooks](#rulebooks) that are on. The race, class and theme fields start blank, so the player must choose each rather than taking whatever is first. The chosen race's and class's descriptions are shown. A race with a floating ability bonus asks which ability gets it
+- the player chooses a name, an enabled race and an enabled class, from the [rulebooks](#rulebooks) that are on. The race, class and theme fields start blank, so the player must choose each rather than taking whatever is first. The chosen race's, class's and theme's descriptions are shown. A race with a floating ability bonus asks which ability gets it
 - the character starts with the universe's, race's and class's starting money added coin by coin, and their starting equipment added together (enabled items only). Where they start is chosen when a group is made around them (see [starting area](#tab-characters))
 - the lobby lists the player's characters in the universe
 - a race, class, theme or item that characters have can't be deleted; it can be disabled instead
@@ -179,7 +179,7 @@ A modal dialog showing one of the player's characters, opened from the [lobby](#
 - each ability score (with the race's modifiers added) and the modifier it gives
 - size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
-- equipment, sorted by name, with how many of each. Each item has a menu, opened by a button of three vertical dots, of what can be done with it, which will grow; for now it offers Discard, which opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
+- equipment, sorted by name, with how many of each and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it, which will grow; for now it offers Discard, which opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
 
 For SF1E it also shows the theme, hit points (the race's and the class's) and stamina points (the class's plus the Constitution modifier, at least 0), from the race and class as the universe sets them now.
 
@@ -506,7 +506,7 @@ A ruleset's [races](#races), [classes](#classes), [themes](#themes) and [items](
 The card is a table of the ruleset's books. Each row has:
 - the book's name. Book names are messages, translated with the official title of the book's translated edition where there is one (such as the German "Grundregelwerk")
 - its status: an on/off switch (a checkbox drawn as a switch, `.toggle-switch`), or Always on for the core rulebook, which can't be turned off. Like the editor's other changes, the save bar says when a switch's change isn't saved
-- a Contents button, which opens a dialog listing what the book brings: a table each for its races and classes, with their default names, summaries, descriptions and whether each is enabled in this universe. Its items aren't listed, since a book can bring too many
+- a Contents button, which opens a dialog listing what the book brings: a table each for its races, classes and themes, with their default names, descriptions, summaries and whether each is enabled in this universe. Its items aren't listed, since a book can bring too many
 
 The books are saved with the rest of the tab as `rulebooks`, and like the rest of the tab, only creators can change them. Only the core rulebook is on in a new universe.
 
@@ -593,6 +593,7 @@ Themeless, which lets the player choose the ability, isn't modeled yet.
 
 You can add your own themes, and edit each one:
 - Enabled? Checked by default. There must be at least 1 enabled theme in order to save changes
+- Description, as for [races](#races), shown in Create Character and the [Contents](#rulebooks) dialog
 - the ability it raises
 
 #### Races
@@ -612,7 +613,7 @@ You can add your own races, but any unique abilities of a race must be coded by 
 You can edit each race:
 - Enabled? Checked by default. There must be at least 1 enabled race in order to save changes
 	- disabling a race characters are asks on Save whether they keep playing (see [disabling things players are using](#disabling-things-players-are-using))
-- Description, shown in Create Character and the [Contents](#rulebooks) dialog. A default race's description is a message written for the engine. An edited or added race's is universe text, translated on the [Translations](#tab-translations) tab. Emptying an edited default race's description gives back the engine's
+- Description, a sentence or two (up to 300 characters, one paragraph), shown in Create Character and the [Contents](#rulebooks) dialog. A default race's description is a message written for the engine, with no names from the game's published setting. The field starts with it, and shows it as its placeholder once emptied. An edited or added race's is universe text, translated on the [Translations](#tab-translations) tab. Emptying an edited default race's description, or leaving it as the engine wrote it, gives back the engine's; an added race may have none
 - Additional starting equipment, lets you [select items](#selection-item)
 - Additional starting [money](#field-money)
 - Starting [area](#selection-area), lets you override
@@ -854,8 +855,8 @@ Lets the universe be played in more than one language. See [Localization](#local
 - source language, the language the universe's editors write in. Defaults to the creator's language: the one on their profile, then the one the pages are shown in, without its region, or English when it isn't one of the languages a profile can name (such as Pirate)
 - languages, the languages the universe is translated into ("Translated into", up to 50, never the source language). The choices are every ISO 639-1 language and Pirate (`UNIVERSE_LANGUAGES`); a universe translated into Pirate shows that translation to players who chose Pirate for the site, and fills text it hasn't translated from its English translation, if it has one. [Home](#home) and the universe's page show the source language and these. Taking off a language with translations asks first, since saving deletes its translations. Only creators change them, staged until Save like the rest of the editor, and saved as a `universe` change
 - deleting something the universe holds (an area, tile, item, race, class, theme or difficulty level), restoring one of the ruleset's defaults, or giving a coin back the engine's name or abbreviation, deletes its translations and notes in the same save (`server/src/db/universeTextRepo.ts`)
-- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed are engine text and aren't listed, and nor are descriptions it hasn't written or coin names and abbreviations it hasn't given (coins are listed most valuable first):
-	- where it comes from (e.g. "Area: Waterdeep, name", or "Coin: copper pieces, abbreviation"). A coin abbreviation's translation follows its rules (no spaces, digits or commas)
+- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed or described are engine text and aren't listed, and nor are descriptions it hasn't written or coin names and abbreviations it hasn't given (coins are listed most valuable first):
+	- where it comes from (e.g. "Area: Waterdeep, name", "Race: Dwarf, description", or "Coin: copper pieces, abbreviation"). A coin abbreviation's translation follows its rules (no spaces, digits or commas)
 	- the source text
 	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words"). One note per piece of text, for every language
 	- the translation, or "missing", tagged "out of date"; or "needs no translation"
@@ -963,10 +964,11 @@ Money is kept as individual pieces of each coin, the way a purse holds them, and
 A checkbox drawn as a pill-shaped switch, with On or Off inside it in the player's language (`createToggleSwitch()` in `client/src/ui/toggleSwitch.ts`, styled by `.toggle-switch` in `client/src/_shared.scss`). It is still a checkbox, so Space toggles it and screen readers announce it as one, named by a label of its own or by the element it belongs to. Used for the [rulebooks](#rulebooks) and for the Enabled switches in the tables of races, classes, themes and items. A list drawn again when a switch changes waits for the knob to finish sliding (`afterSwitchSlides()`), and gives focus back to the switch.
 
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
+modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
 
 ## Editor: Item
 - name
+- description, as for [races](#races), shown in [item selection](#selection-item) and on the [character sheet](#character-sheet)
 - kind (e.g., "Weapon"), one of the ruleset's item categories
 - types: a checkbox for each of the kind's types (e.g., "light blades" and "thrown" for a dagger). Any number can be checked, or none. Changing the kind clears them
 - a checkbox for "Enabled?", checked by default

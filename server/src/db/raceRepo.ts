@@ -230,6 +230,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 			overridesRaceId: races.overridesRaceId,
 			key: races.key,
 			name: races.name,
+			description: races.description,
 			rulebook: races.rulebook,
 			enabled: races.enabled,
 			keepPlaying: races.keepPlaying,
@@ -261,6 +262,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 			const raceRules = rules.get(settings.id);
 			const comparable = (source: typeof row): object => ({
 				name: ((source.name === row.name) ? null : source.name),
+				description: source.description,
 				startingMoney: fromCoinColumns(source),
 				startingItems: (startingItems.get(source.id) ?? []),
 				startingAreaId: source.startingAreaId,
@@ -278,6 +280,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
+				description: (custom ? row.description : (copy?.description ?? null)),
 				enabled: settings.enabled,
 				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
@@ -619,7 +622,7 @@ export async function updateCustomRace(version: UniverseVersion, ruleset: Rulese
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultRaceId The default race's ID, from findRaceKind() as default
- * @param settings The copy's settings; a null name keeps the default race's
+ * @param settings The copy's settings; a null name or description keeps the default race's
  * @param executor A transaction
  */
 export async function saveEditedDefaultRace(version: UniverseVersion, ruleset: Ruleset, defaultRaceId: number, settings: RaceSettings, executor: Executor): Promise<void>
@@ -708,12 +711,13 @@ export async function isRaceStartingItem(version: UniverseVersion, itemId: numbe
  * @param settings The settings
  * @return The columns' values
  */
-function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'description' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
+		description: settings.description,
 		enabled: settings.enabled,
 		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),

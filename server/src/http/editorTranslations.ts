@@ -12,7 +12,7 @@ import type { Request, Response } from 'express';
 import { canEditWorld, canTranslate, COINS, RULESET_COINS, sortRows, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, type EditableUniverseDetails, type EditorChange, type MergedTextChange, type UniverseTextListPayload, type UniverseTextListQuery, type UniverseTextRef, type UniverseTextRow, type UniverseTextSortColumn } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { deleteTranslationOf, deleteTranslatorNote, findTranslation, findTranslatorNote, listThingNames, listTranslations, listTranslationsWithSavers, listTranslatorNotes, listTranslatorNotesWithSavers, saveTranslations, saveTranslatorNote, setNoTranslation, type TextSaver, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
+import { deleteTranslationOf, deleteTranslatorNote, findTranslation, findTranslatorNote, listThingDescriptions, listThingNames, listTranslations, listTranslationsWithSavers, listTranslatorNotes, listTranslatorNotesWithSavers, saveTranslations, saveTranslatorNote, setNoTranslation, type TextSaver, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { universeContextOf } from './editorAccess.js';
@@ -37,8 +37,9 @@ function textKey(ref: UniverseTextRef): string
 
 /**
  * Every piece of a version's text in the universe's source language, leaving out descriptions it hasn't
- * written, defaults it hasn't renamed and coins' names and abbreviations it hasn't given: the universe's
- * own text, then the names of the things it holds in no particular order, then its coins' text
+ * written, defaults it hasn't renamed or described and coins' names and abbreviations it hasn't given:
+ * the universe's own text, then the names of the things it holds in no particular order, then the
+ * descriptions of its items, races, classes and themes, then its coins' text
  *
  * @param universe The universe, with the version's settings
  * @param version The universe's live version or draft
@@ -49,6 +50,7 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 {
 	const { id, ruleset } = universe;
 	const names = await listThingNames(version, executor);
+	const descriptions = await listThingDescriptions(version, executor);
 	const universeText = (['name', 'shortDescription', 'longDescription'] as const)
 		.map((field): UniverseTextSource => ({
 			kind: 'universe',
@@ -86,6 +88,14 @@ async function collectUniverseText(universe: EditableUniverseDetails, version: U
 			field: 'name',
 			thingName: name,
 			source: name
+		})),
+		...descriptions.map(({ kind, thingId, liveThingId, name, description }): UniverseTextSource => ({
+			kind,
+			thingId,
+			liveThingId,
+			field: 'description',
+			thingName: name,
+			source: description
 		})),
 		...coinText
 	]);

@@ -2,8 +2,8 @@
  * Each ruleset's kinds of item and default items, which the migrations in server/drizzle add to the database
  */
 import type { MessageDescriptor } from './localization.js';
-import { PF1E_DEFAULT_ITEM_KINDS, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_CATEGORIES, PF1E_ITEM_CATEGORY_NAMES, PF1E_ITEM_TYPE_NAMES, PF1E_ITEM_TYPES } from './rulesets/pf1e/items.js';
-import { SF1E_DEFAULT_ITEM_KINDS, SF1E_DEFAULT_ITEM_NAMES, SF1E_ITEM_CATEGORIES, SF1E_ITEM_CATEGORY_NAMES, SF1E_ITEM_TYPE_NAMES, SF1E_ITEM_TYPES } from './rulesets/sf1e/items.js';
+import { PF1E_DEFAULT_ITEM_DESCRIPTIONS, PF1E_DEFAULT_ITEM_KINDS, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_CATEGORIES, PF1E_ITEM_CATEGORY_NAMES, PF1E_ITEM_TYPE_NAMES, PF1E_ITEM_TYPES } from './rulesets/pf1e/items.js';
+import { SF1E_DEFAULT_ITEM_DESCRIPTIONS, SF1E_DEFAULT_ITEM_KINDS, SF1E_DEFAULT_ITEM_NAMES, SF1E_ITEM_CATEGORIES, SF1E_ITEM_CATEGORY_NAMES, SF1E_ITEM_TYPE_NAMES, SF1E_ITEM_TYPES } from './rulesets/sf1e/items.js';
 import type { Ruleset } from './universes.js';
 
 /**
@@ -76,6 +76,14 @@ export const DEFAULT_ITEM_KINDS: Record<Ruleset, Record<string, ItemKind>> = {
 export const DEFAULT_ITEM_NAMES: Record<Ruleset, Record<string, MessageDescriptor>> = {
 	pf1e: PF1E_DEFAULT_ITEM_NAMES,
 	sf1e: SF1E_DEFAULT_ITEM_NAMES
+};
+
+/**
+ * Each default item's description, by ruleset and the item's key
+ */
+export const DEFAULT_ITEM_DESCRIPTIONS: Record<Ruleset, Record<string, MessageDescriptor>> = {
+	pf1e: PF1E_DEFAULT_ITEM_DESCRIPTIONS,
+	sf1e: SF1E_DEFAULT_ITEM_DESCRIPTIONS
 };
 
 /**

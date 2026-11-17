@@ -12,6 +12,7 @@ import { addUniverse, addArea } from './fixtures.js';
 
 const lizardfolk: CustomRaceSettings = {
 	name: 'Lizardfolk',
+	description: null,
 	enabled: true,
 	keepPlaying: true,
 	startingMoney: emptyMoney(),
@@ -78,6 +79,7 @@ describe('raceRepo', () =>
 					id: race.id,
 					key,
 					name: null,
+					description: null,
 					enabled: true,
 					keepPlaying: true,
 					startingMoney: emptyMoney(),
@@ -182,6 +184,36 @@ describe('raceRepo', () =>
 		await restoreDefaultRace(liveVersion(universeId), dwarfId);
 		assert.deepStrictEqual(await findRace(universeId, dwarfId), original);
 		assert.strictEqual(await isRaceStartingItem(liveVersion(universeId), daggerId), false);
+	});
+
+	it('saves and loads a universe\'s own race\'s description', async () =>
+	{
+		const universeId = await addUniverse();
+		const raceId = await inTransaction((transaction) => createCustomRace(liveVersion(universeId), 'pf1e', { ...lizardfolk, description: 'Scaled hunters of the marshes.' }, transaction));
+
+		assert.strictEqual((await findRace(universeId, raceId))?.description, 'Scaled hunters of the marshes.');
+
+		await inTransaction((transaction) => updateCustomRace(liveVersion(universeId), 'pf1e', raceId, { ...lizardfolk, description: 'Cold-blooded swamp dwellers.' }, transaction));
+		assert.strictEqual((await findRace(universeId, raceId))?.description, 'Cold-blooded swamp dwellers.');
+
+		await inTransaction((transaction) => updateCustomRace(liveVersion(universeId), 'pf1e', raceId, lizardfolk, transaction));
+		assert.strictEqual((await findRace(universeId, raceId))?.description, null);
+	});
+
+	it('keeps a default race\'s description, gives it the universe\'s, and restores it', async () =>
+	{
+		const universeId = await addUniverse();
+		const dwarfId = await defaultRaceId('dwarf');
+		const original = await findRace(universeId, dwarfId) as EditorRace;
+
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, { ...original, enabled: false }, transaction));
+		assert.deepStrictEqual(await findRace(universeId, dwarfId), { ...original, enabled: false, description: null, edited: true, editedSettings: false });
+
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, { ...original, description: 'Stout folk of the deep halls.' }, transaction));
+		assert.deepStrictEqual(await findRace(universeId, dwarfId), { ...original, description: 'Stout folk of the deep halls.', edited: true, editedSettings: true });
+
+		await restoreDefaultRace(liveVersion(universeId), dwarfId);
+		assert.deepStrictEqual(await findRace(universeId, dwarfId), original);
 	});
 
 	it('finds one race as it lists them', async () =>

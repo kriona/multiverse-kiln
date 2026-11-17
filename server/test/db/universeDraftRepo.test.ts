@@ -71,6 +71,7 @@ describe('universeDraftRepo', () =>
 		});
 		torchId = await createCustomItem(liveVersion(universe.universeId), 'pf1e', {
 			name: 'Torch',
+			description: null,
 			category: 'gear',
 			types: ['torch'],
 			enabled: true
@@ -178,7 +179,7 @@ describe('universeDraftRepo', () =>
 			const draftTorch = (await loadEditorItems(draft, 'pf1e')).find((item) => (item.name === 'Torch'));
 
 			assert.ok(draftTorch);
-			await updateCustomItem(draft, draftTorch.id, { name: 'Lantern', category: 'gear', types: ['torch'], enabled: true });
+			await updateCustomItem(draft, draftTorch.id, { name: 'Lantern', description: null, category: 'gear', types: ['torch'], enabled: true });
 			await updateAreaSettings(await draftAreaOf(universeId, squareAreaId), { name: 'Market' });
 			await updateUniverseSettings(draft, { shortDescription: 'Draft' });
 

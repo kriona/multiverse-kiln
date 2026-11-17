@@ -133,7 +133,7 @@ export function describeTextPlace(row: UniverseTextRef & { thingName: string }):
 {
 	return(t({
 		id: 'editor.translations.placeOf',
-		defaultMessage: '{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}',
+		defaultMessage: '{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, {field, select, description {description} other {name}}} race {Race: {name}, {field, select, description {description} other {name}}} class {Class: {name}, {field, select, description {description} other {name}}} theme {Theme: {name}, {field, select, description {description} other {name}}} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}',
 		description: 'Where a piece of universe text comes from, in the From column of the editor\'s Translations tab and in its dialog\'s title, e.g. "Area: Waterdeep, name": what kind of thing it belongs to, {name} its name in the universe\'s source language, and which of its text it is. For a coin, {coin} is the coin\'s name in the rules as it reads mid-sentence, such as copper pieces, and the text is the name the universe gives it (such as bronze kits) or the abbreviation amounts of it are written with (such as bk)'
 	}, {
 		kind: row.kind,

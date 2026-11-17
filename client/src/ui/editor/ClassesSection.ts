@@ -52,6 +52,7 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 			name: className,
 			settingsOf: (characterClass) => ({
 				name: characterClass.name,
+				description: characterClass.description,
 				enabled: characterClass.enabled,
 				keepPlaying: characterClass.keepPlaying,
 				startingMoney: characterClass.startingMoney,

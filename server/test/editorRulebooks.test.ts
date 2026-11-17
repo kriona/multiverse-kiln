@@ -81,12 +81,12 @@ describe('Rulebooks', () =>
 	 */
 	function disableClass(characterClass: EditorClass): EditorChange
 	{
-		const { name, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
+		const { name, description, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
 
 		return({
 			kind: 'saveClass',
 			id: characterClass.id,
-			settings: { name, enabled: false, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules }
+			settings: { name, description, enabled: false, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules }
 		});
 	}
 

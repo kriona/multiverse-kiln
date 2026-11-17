@@ -50,6 +50,7 @@ export class ThemesSection extends OptionList<EditorTheme, ThemeSettings>
 			name: themeName,
 			settingsOf: (theme) => ({
 				name: theme.name,
+				description: theme.description,
 				enabled: theme.enabled,
 				rules: theme.rules
 			}),
