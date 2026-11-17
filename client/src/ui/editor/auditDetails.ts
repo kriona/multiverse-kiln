@@ -1,10 +1,11 @@
-import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, singleItemTypeKind, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
-import { itemName, itemTypeName } from '../itemNames';
+import { itemCategoryName, itemDescription, itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
-import { className, raceName, themeName } from '../raceAndClassNames';
+import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
+import { rulebookName } from '../rulebookNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
 import { BUILDER_PERMISSION_NAMES } from './editorMessages';
@@ -29,6 +30,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.universe.longDescription',
 		defaultMessage: 'Long description (Markdown)',
 		description: 'Label of the field for a universe\'s full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	description: {
+		id: 'form.description',
+		defaultMessage: 'Description',
+		description: 'Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook\'s Contents dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	sourceLanguage: {
 		id: 'editor.translations.sourceLanguage',
@@ -145,6 +151,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Track ammunition',
 		description: 'Checkbox for whether arrows and other ammunition are used up when fired; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	rulebooks: {
+		id: 'editor.rulebooks.heading',
+		defaultMessage: 'Rulebooks',
+		description: 'Heading of the part of the editor\'s Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	role: {
 		id: 'editor.editors.role',
 		defaultMessage: 'Role',
@@ -188,17 +199,22 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	enabled: {
 		id: 'form.enabled',
 		defaultMessage: 'Enabled',
-		description: 'Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs\' filters for it, and the heading of the column of on/off switches for it in the editor\'s tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	keepPlaying: {
 		id: 'editor.option.keepPlaying',
 		defaultMessage: 'Existing characters keep playing while disabled',
 		description: 'Names a race\'s or class\'s setting in the list of what a save changed, on the editor\'s Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can\'t play until it is enabled again (no). Chosen in the dialog the editor\'s Save opens when disabling a race or class characters are'
 	},
-	type: {
-		id: 'editor.item.type',
-		defaultMessage: 'Type',
-		description: 'An item\'s type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab\'s filter; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	category: {
+		id: 'editor.items.category',
+		defaultMessage: 'Kind',
+		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab\'s filter for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	types: {
+		id: 'editor.item.types',
+		defaultMessage: 'Types',
+		description: 'Heading of the item editor\'s checkboxes for an item\'s types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	abilityModifiers: {
 		id: 'editor.race.abilityModifiers',
@@ -528,19 +544,60 @@ export function auditFieldName(field: AuditField): string
 }
 
 /**
- * One setting a part of a save changed, with the value it changed it to, e.g. "Track ammunition (yes)"
+ * One setting a part of a save changed, with the value it changed it to, e.g. "Track ammunition: yes",
+ * as the lines the Audit tab lists it on
  *
- * @param change The setting and its value
+ * @param change The setting and its value, as the save recorded it
  * @param detail The part of the save that changed it
  * @param ruleset The universe's ruleset
- * @return The description
+ * @return The descriptions, one per setting the editor has now (currentFieldChanges())
  */
-export function describeFieldChange(change: AuditFieldChange, detail: UniverseEditDetail, ruleset: Ruleset): string
+export function describeFieldChange(change: AuditFieldChange, detail: UniverseEditDetail, ruleset: Ruleset): string[]
 {
-	return(t(VALUE_MESSAGES.fieldValue, {
-		field: t(AUDIT_FIELD_NAMES[change.field]),
-		value: describeValue(change, detail, ruleset)
-	}));
+	return(currentFieldChanges(change, ruleset).map((current) => t(VALUE_MESSAGES.fieldValue, {
+		field: t(AUDIT_FIELD_NAMES[current.field]),
+		value: describeValue(current, detail, ruleset)
+	})));
+}
+
+/**
+ * A setting a save recorded, as the settings the editor has now. The Audit tab lists saves for 90 days
+ * (universe_edits), so it reads settings that saves recorded before they changed: an item's one type
+ * becomes its category and types, and a setting the Audit tab has no name for is left out
+ *
+ * @param change The setting and its value, as the save recorded it
+ * @param ruleset The universe's ruleset
+ * @return The settings and their values
+ */
+function currentFieldChanges(change: AuditFieldChange, ruleset: Ruleset): AuditFieldChange[]
+{
+	const recorded: { field: string; value: unknown } = change;
+
+	if ((recorded.field === 'type') && (typeof recorded.value === 'string'))
+	{
+		const kind = singleItemTypeKind(ruleset, recorded.value);
+
+		if (kind === undefined)
+		{
+			return([{
+				field: 'types',
+				value: [recorded.value]
+			}]);
+		}
+
+		return([
+			{
+				field: 'category',
+				value: kind.category
+			},
+			{
+				field: 'types',
+				value: [...kind.types]
+			}
+		]);
+	}
+
+	return((Object.hasOwn(AUDIT_FIELD_NAMES, recorded.field) ? [change] : []));
 }
 
 /**
@@ -561,6 +618,8 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(change.value);
 		case 'longDescription':
 			return(t(VALUE_MESSAGES.characters, { count: change.value }));
+		case 'description':
+			return((change.value ?? (defaultDescription(detail.subject, (detail.target?.key ?? null), ruleset) || t(VALUE_MESSAGES.none))));
 		case 'sourceLanguage':
 			return(languageName(change.value));
 		case 'translationLanguages':
@@ -606,12 +665,17 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(t(UNIVERSE_ROLE_NAMES[change.value]));
 		case 'languages':
 			return(listOrNone(change.value.map((language) => languageName(language))));
+		case 'rulebooks':
+			// The core rulebook is always on, so it is listed first though never saved
+			return(listOrNone([CORE_RULEBOOK, ...change.value].map((rulebook) => rulebookName(ruleset, rulebook))));
 		case 'color':
 			return(colorToHex(change.value));
 		case 'graphic':
 			return(describeGraphic(change.value));
-		case 'type':
-			return(itemTypeName(change.value, ruleset));
+		case 'category':
+			return(itemCategoryName(change.value, ruleset));
+		case 'types':
+			return(listOrNone(change.value.map((type) => itemTypeName(type, ruleset))));
 		case 'abilityModifiers':
 		{
 			const modifiers = change.value;
@@ -798,5 +862,35 @@ export function targetName(subject: AuditSubject, target: OptionName | null, rul
 			return(languageName(target.name ?? ''));
 		default:
 			return(target.name ?? '');
+	}
+}
+
+/**
+ * The engine's description of one of the ruleset's defaults, in the player's language
+ *
+ * @param subject What the default is: an item, race, class or theme
+ * @param key The default's key, or null for something the universe added
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for one with none
+ */
+function defaultDescription(subject: AuditSubject, key: string | null, ruleset: Ruleset): string
+{
+	const described = {
+		key,
+		description: null
+	};
+
+	switch (subject)
+	{
+		case 'item':
+			return(itemDescription(described, ruleset));
+		case 'race':
+			return(raceDescription(described, ruleset));
+		case 'class':
+			return(classDescription(described, ruleset));
+		case 'theme':
+			return(themeDescription(described, ruleset));
+		default:
+			return('');
 	}
 }

@@ -166,7 +166,7 @@ Based entirely on the universe's ruleset. It is a page of its own, reached from 
 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
-- the player chooses a name, an enabled race and an enabled class. The race, class and theme fields start blank, so the player must choose each rather than taking whatever is first. A race with a floating ability bonus asks which ability gets it
+- the player chooses a name, an enabled race and an enabled class, from the [rulebooks](#rulebooks) that are on. The race, class and theme fields start blank, so the player must choose each rather than taking whatever is first. The chosen race's, class's and theme's descriptions are shown. A race with a floating ability bonus asks which ability gets it
 - the character starts with the universe's, race's and class's starting money added coin by coin, and their starting equipment added together (enabled items only). Where they start is chosen when a group is made around them (see [starting area](#tab-characters))
 - the lobby lists the player's characters in the universe
 - a race, class, theme or item that characters have can't be deleted; it can be disabled instead
@@ -174,12 +174,12 @@ For PF1E, the server rolls the ability scores (or checks the point buy choices) 
 For SF1E, every ability score starts at 10, and the player spends the universe's [ability points](#sf1e) to raise them, one point for each +1. Points can't raise a score above 18 once the race's and theme's bonuses are added (bonuses alone can), and points left unspent are lost; the server checks both. The player also chooses an enabled [theme](#themes), whose +1 is added to its ability. The class's key ability is the hint.
 
 ## Character sheet
-A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it. For PF1E it shows:
+A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it, and the universe's creators and builders from the editor's [Character List](#tab-character-list). For PF1E it shows:
 - the name, race and class
 - each ability score (with the race's modifiers added) and the modifier it gives
 - size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
-- equipment, sorted by name, with how many of each
+- equipment, sorted by name, with how many of each and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it, which will grow; for now it offers Discard, which opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
 
 For SF1E it also shows the theme, hit points (the race's and the class's) and stamina points (the class's plus the Constitution modifier, at least 0), from the race and class as the universe sets them now.
 
@@ -443,6 +443,7 @@ Disabling or limiting something that players are already using warns the editor 
 - a class: "allow them to continue to play, only disable the class for new characters" or "prevent them from playing"
 - an area with characters in it: "move everyone to the parent area" or "move everyone back to their start area". Disabling a [region](#regions) disables every area below it, and asks the same for each of them with characters in it, as does any change that disables an area through what is above it (a new parent, a move, deleting a region)
 - an item characters have: "allow them to continue to use it, prevent new copies of the item from being made" or "remove it from characters, it will be re-added when the item is re-enabled"
+- a [rulebook](#rulebooks): asks once for the whole book, listing the races and classes characters are and the items characters have. It offers the same choices as disabling them one at a time: keep playing or prevent playing for the races and classes, and keep using or remove for the items. The answers are kept with the book while it is off
 - lowering the group size below a group's current size: "allow those groups to continue to play, only limit the size for new groups", "disband larger groups" or "remove X number of group members, starting with those who joined most recently"
 
 Save asks the server first (`POST /:universeId/changes/impact`) what the changes would do, compared with the universe as it is saved. Only a change that disables something saved as enabled, or lowers the group size, warns, and only when characters are using it: characters (not past their last rites) of the race or class, characters carrying the item, characters in the area (playing there, from the rooms, or saved there by their group), groups with more members than the new size. One dialog lists every warning with its choices, and Save in it sends the save with the choices; Cancel aborts. Each choice travels with its change, and the server applies it in the save's transaction, then tells the rooms. A save is judged by how it leaves each thing, not by each change on its way: the editor keeps every edit in order, so one save can disable something, enable it again and disable it once more. Something the save leaves enabled warns about nothing and affects nobody, and something disabled more than once warns once, at its last change, whose choice is the one used (`server/src/http/editorDisablings.ts`). A change sent without a choice (such as one that affected nobody when the editor asked) takes the gentlest: keep playing, keep the item, keep the groups, and back to the start area.
@@ -450,7 +451,7 @@ Save asks the server first (`POST /:universeId/changes/impact`) what the changes
 How each choice works:
 - races and classes store whether their characters keep playing while disabled (`keepPlaying`), chosen only in Save's dialog; the race and class editors keep the stored value. A character whose race or class bars them is listed with why on the lobby's and the universe page's lists and the invite screen, and can't be chosen in the lobby, be played in a group, make a group or join one. One in a group can leave it from their sheet. Players playing one are switched in the lobby to their most recent character who can play (or become ghosts), and taken out of the group's areas, where they were saved; enabling the race or class, or letting its characters play, lets them back. Enter Universe passes over them
 - the parent area is the nearest enabled area holding the disabled one, following its parents up past any [regions](#regions) between them. Characters arrive on the cell of a link there leading back in (to the disabled area or one between them), or at its center when there is none, on the nearest free cell. An area inside no enabled area offers only the start area. The start area is the lobby's area (at its starting square) in the lobby, and the group's starting area (the anchor being's) in a group. The lobby's own area never warns or moves anyone: disabling it takes the lobby's area away instead (see [Tab: Lobby](#tab-lobby)). Group members not playing are moved too, in the database and in an open group room
-- a removed item is hidden on each character rather than deleted, keeping how many they had; enabling the item again, or restoring a default item, gives it back. A hidden item still counts as carried, so the item can't be deleted
+- a removed item is hidden on each character rather than deleted, keeping how many they had; enabling the item again, or restoring a default item, gives it back. A hidden item still counts as carried, so the item can't be deleted. Disabling an item with remove takes it even while its book is off. Turning a book off with remove takes its items that were enabled. When a save does both, either answer of remove takes the item
 - disbanding a group or taking members out works as the anchor being or the members leaving: they go back to the lobby, told the group size was lowered. The anchor being is never taken out
 
 Changing the stat rolling method doesn't change existing characters.
@@ -480,7 +481,7 @@ A universe can have several creators, any of whom can [delete it](#deleting-a-un
 ### Tab: Ruleset
 What shows up here depends on what ruleset is chosen.
 
-Below the ruleset's settings, the tab has the universe's coins: a table with a row for each of the ruleset's coins, headed by its name in the rules ("Copper pieces"), with fields for the name and abbreviation the universe gives it (such as "bronze kits" and "bk"), each showing the engine's while it is empty. Saved as `coinNames` and `coinAbbreviations` with the rest of the tab. This is the only engine text a universe can rename
+Below the ruleset's settings is the [Rulebooks](#rulebooks) card. Below that, the tab has the universe's coins: a table with a row for each of the ruleset's coins, headed by its name in the rules ("Copper pieces"), with fields for the name and abbreviation the universe gives it (such as "bronze kits" and "bk"), each showing the engine's while it is empty. Saved as `coinNames` and `coinAbbreviations` with the rest of the tab. This is the only engine text a universe can rename
 - the abbreviation is what amounts of the coin are written with everywhere in the universe, the character sheet and the editor's money fields included: up to 10 characters without spaces, digits or commas, and no two coins can be shown with the same one, counting the engine's for the coins left empty. The [Characters](#tab-characters) tab's starting money follows the abbreviations as this table shows them, before they are saved
 - the name, up to 30 characters, never follows an amount, so it has no singular and plural forms. It is written as it reads mid-sentence ("gold pieces", "bronze kits"), as are the engine's names and the name's translations, so a sentence can use it as it is. A label capitalizes its first letter in the player's language (`capitalized()` in `client/src/localization.ts`): never the reverse, since lowercasing would break a name such as "Crowns of Aldor", and nouns in languages such as German. The character sheet shows it as a label when the pointer rests on the coin's abbreviation (an `abbr`), and later shops and money changers will name coins with it
 - both are universe text, translated on the [Translations](#tab-translations) tab. Emptying one gives the coin back the engine's text and deletes that text's translations
@@ -499,8 +500,26 @@ Levels can be added (up to 20) and deleted. Deleting a level moves the groups pl
 
 Their names are shown in the player's language until a creator renames them. Like the rest of the tab, only creators can change them.
 
+#### Rulebooks
+A ruleset's [races](#races), [classes](#classes), [themes](#themes) and [items](#tab-items) each come from one of its books. A universe chooses which books it uses. Later, books will bring more than these.
+
+The card is a table of the ruleset's books. Each row has:
+- the book's name. Book names are messages, translated with the official title of the book's translated edition where there is one (such as the German "Grundregelwerk")
+- its status: an on/off switch (a checkbox drawn as a switch, `.toggle-switch`), or Always on for the core rulebook, which can't be turned off. Like the editor's other changes, the save bar says when a switch's change isn't saved
+- a Contents button, which opens a dialog listing what the book brings: a table each for its races, classes and themes, with their default names, descriptions, summaries and whether each is enabled in this universe. Its items aren't listed, since a book can bring too many
+
+The books are saved with the rest of the tab as `rulebooks`, and like the rest of the tab, only creators can change them. Only the core rulebook is on in a new universe.
+
+While a book is on, what it brings shows on the [Characters](#tab-characters) and [Items](#tab-items) tabs, where each race, class and item can still be disabled on its own. Turning a book off keeps their edits (starting money, equipment and areas) for when it is turned back on. While it is off, they act as disabled and are hidden from the Characters tab's tables, the Items tab, [item selection](#selection-item), Create Character and a class's starting areas by race. They still show where they are in use, as disabled ones do: on characters, in the [Character List](#tab-character-list)'s filters, and in starting equipment, marked as disabled.
+
+Turning off a book that players are using asks on Save once for the whole book (see [disabling things players are using](#disabling-things-players-are-using)). A save that turns off a book whose races or classes are the only enabled ones is refused, since the universe needs at least one enabled race and class.
+
+Races, classes, themes and items a universe adds belong to no book. They always show.
+
 #### PF1E
-Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) are Open Game Content used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
+Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items, with the names and descriptions of the defaults) are Open Game Content from the Core Rulebook, Advanced Player's Guide, Advanced Race Guide and Advanced Class Guide, used under the Open Game License 1.0a, and the name "Pathfinder" is used under Paizo's Community Use Policy. Both notices are on the license page, whose copyright notice (the license's section 15) names each book the rules come from. A book added to the ruleset adds its line there. The Community Use Policy only covers a game that is free to play (donations and ads are allowed, a paywall isn't).
+
+Its [rulebooks](#rulebooks) are the `Core Rulebook` (always on), the `Advanced Player's Guide`, the `Advanced Race Guide` and the `Advanced Class Guide`.
 
 - dropdown for "rolling for stats"
 	- 3d6
@@ -519,9 +538,11 @@ Pathfinder 1E's rules (races, classes, abilities, point buy, sizes and items) ar
 - track ammo?
 
 #### SF1E
-Starfinder 1E's rules (races, classes, themes, abilities, ability points, sizes, credits and items) are Open Game Content from the Starfinder Core Rulebook, used under the Open Game License 1.0a, and the name "Starfinder" is used under Paizo's Community Use Policy, the same as [PF1E](#pf1e). Both notices are on the license page.
+Starfinder 1E's rules (races, classes, themes, abilities, ability points, sizes, credits and items, with the names and descriptions of the defaults) are Open Game Content from the Starfinder Core Rulebook, used under the Open Game License 1.0a, and the name "Starfinder" is used under Paizo's Community Use Policy, the same as [PF1E](#pf1e). Both notices are on the license page.
 
 Only a few of each step's rules are modeled for now; the rest of the ruleset comes later.
+
+Its only [rulebook](#rulebooks) for now is the `Starfinder Core Rulebook`, which is always on. Its other books come later.
 
 - ability points: how many points players spend raising ability scores from 10, 0 to 48 (every score 18), default 10
 - do characters get tired and require sleep?
@@ -550,7 +571,7 @@ Money is credits (`cr`), the only coin.
 - Starting [money](#field-money), in the coins the [Ruleset](#tab-ruleset) tab names
 - Starting [area](#selection-area)
 
-Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes), each in a section of its own, and saves them with the settings. Each list is a table of names, summaries and notes (custom, edited, disabled, and changes not saved yet), sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)); rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
+Below the settings, the tab lists the [races](#races), the [classes](#classes) and, for a ruleset with them, the [themes](#themes) of the [rulebooks](#rulebooks) that are on, and those the universe added, each in a section of its own, and saves them with the settings. Each list is a table of names, Enabled switches (which do what the Enabled checkbox in the race, class or theme editor does), summaries and notes (custom, edited, and changes not saved yet; a default only disabled isn't noted as edited, and a disabled row is struck through), sorted by name until the Name, Enabled or Notes heading is clicked (see [sortable tables](#sortable-tables)), Enabled putting enabled rows first; rows that tie are sorted by name. Each race and class can add to the starting money and equipment, and choose a starting area of its own.
 
 A character's starting area is chosen each time a group is made around them, so a change to these settings applies to characters already made. It is chosen in this order, most specific first: the class's entry for their race, the class, the race, then the universe. A class with an area of its own has no entries for races, so the two never compete. Each starting area comes with the square characters start on (chosen with the [area](#selection-area)), which goes with it: a group starts at its anchor being's square, and its members are placed on the free square nearest it. A square the area no longer holds, after it was made smaller, counts as the nearest square in the area. Every starting square must be one characters can walk on (see [Starting squares and links](#starting-squares-and-links)).
 
@@ -572,24 +593,18 @@ Themeless, which lets the player choose the ability, isn't modeled yet.
 
 You can add your own themes, and edit each one:
 - Enabled? Checked by default. There must be at least 1 enabled theme in order to save changes
+- Description, as for [races](#races), shown in Create Character and the [Contents](#rulebooks) dialog
 - the ability it raises
 
 #### Races
 based on the ruleset, show a list of races.
 
-For PF1E that list is:
-- `Catfolk`
-- `Drow`
-- `Dwarf`
-- `Elf`
-- `Goblin`
-- `Gnome`
-- `Half Elf`
-- `Half Orc`
-- `Halfling`
-- `Hobgoblin`
-- `Human`
-- `Ratfolk`
+For PF1E, the list shows the races of the [rulebooks](#rulebooks) that are on:
+- Core Rulebook: `Dwarf`, `Elf`, `Gnome`, `Half Elf`, `Half Orc`, `Halfling` and `Human`
+- Advanced Race Guide, featured races: `Aasimar`, `Catfolk`, `Dhampir`, `Drow`, `Fetchling`, `Goblin`, `Hobgoblin`, `Ifrit`, `Kobold`, `Orc`, `Oread`, `Ratfolk`, `Sylph`, `Tengu`, `Tiefling` and `Undine`
+- Advanced Race Guide, uncommon races: `Changeling`, `Duergar`, `Gillman`, `Grippli`, `Kitsune`, `Merfolk`, `Nagaji`, `Samsaran`, `Strix`, `Suli`, `Svirfneblin`, `Vanara`, `Vishkanya` and `Wayang`
+
+Only what the race editor has comes over from the books. Flying, swimming and the like wait until movement has them.
 
 For SF1E that list is `Android`, `Human`, `Kasatha`, `Lashunta`, `Shirren`, `Vesk` and `Ysoki`. Lashuntas' two kinds aren't modeled, so a lashunta gets only the +2 Charisma both share.
 
@@ -598,14 +613,15 @@ You can add your own races, but any unique abilities of a race must be coded by 
 You can edit each race:
 - Enabled? Checked by default. There must be at least 1 enabled race in order to save changes
 	- disabling a race characters are asks on Save whether they keep playing (see [disabling things players are using](#disabling-things-players-are-using))
+- Description, a sentence or two (up to 300 characters, one paragraph), shown in Create Character and the [Contents](#rulebooks) dialog. A default race's description is a message written for the engine, with no names from the game's published setting. The field starts with it, and shows it as its placeholder once emptied. An edited or added race's is universe text, translated on the [Translations](#tab-translations) tab. Emptying an edited default race's description, or leaving it as the engine wrote it, gives back the engine's; an added race may have none
 - Additional starting equipment, lets you [select items](#selection-item)
 - Additional starting [money](#field-money)
 - Starting [area](#selection-area), lets you override
 - for PF1E:
 	- ability modifiers? lists abilities (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`) and a number field for each (minimum -99, maximum 99)
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
-	- darkvision: `none`, `darkvision (60 feet)` or `superior darkvision (120 feet)`. Drow have superior darkvision; dwarves, goblins, half-orcs, hobgoblins and ratfolk have darkvision
-	- light sensitivity? a checkbox. Bright light dazzles the race's characters (see [Vision](#vision)). Drow have it
+	- darkvision: `none`, `darkvision (60 feet)` or `superior darkvision (120 feet)`. A default race starts with what its book gives it: drow have superior darkvision, and dwarves have darkvision
+	- light sensitivity? a checkbox. Bright light dazzles the race's characters (see [Vision](#vision)). A default race starts with what its book gives it: drow have it
 	- size
 		- `fine`
 		- `diminutive`
@@ -622,24 +638,10 @@ You can edit each race:
 #### Classes
 based on the ruleset, show a list of classes.
 
-For PF1E that list is:
-- `Alchemist`
-- `Barbarian`
-- `Bard`
-- `Cavalier`
-- `Cleric`
-- `Druid`
-- `Fighter`
-- `Inquisitor`
-- `Monk`
-- `Oracle`
-- `Paladin`
-- `Ranger`
-- `Rogue`
-- `Sorcerer`
-- `Summoner`
-- `Witch`
-- `Wizard`
+For PF1E, the list shows the classes of the [rulebooks](#rulebooks) that are on:
+- Core Rulebook: `Barbarian`, `Bard`, `Cleric`, `Druid`, `Fighter`, `Monk`, `Paladin`, `Ranger`, `Rogue`, `Sorcerer` and `Wizard`
+- Advanced Player's Guide: `Alchemist`, `Cavalier`, `Inquisitor`, `Oracle`, `Summoner` and `Witch`
+- Advanced Class Guide: `Arcanist`, `Bloodrager`, `Brawler`, `Hunter`, `Investigator`, `Shaman`, `Skald`, `Slayer`, `Swashbuckler` and `Warpriest`
 
 For SF1E that list is `Envoy`, `Mechanic`, `Mystic`, `Operative`, `Solarian`, `Soldier` and `Technomancer`.
 
@@ -648,6 +650,7 @@ You can add your own classes, but any unique abilities of a race must be coded b
 You can edit each class:
 - Enabled? Checked by default. There must be at least 1 enabled class in order to save changes
 	- disabling a class characters are asks on Save whether they keep playing, as for races
+- Description, as for races
 - Add starting equipment, note it is in addition to starting + racial equipment, lets you [select items](#selection-item)
 - Add starting [money](#field-money), note it is in addition to starting + racial money
 - Edit starting area button. If clicked:
@@ -669,7 +672,7 @@ You can edit each class:
 	- stamina points per level, 0 to 99
 
 ### Tab: Character List
-Lists every character players have made in the universe, for creators and builders (the server refuses other roles too): each character's name, their race and class (as the lobby shows them, e.g. "Dwarf Fighter"), their player's name (linking to their profile) and @username, when they were made, and notes saying whether they are in a group or waiting for their [last rites](#deleting-a-character) to end. Characters whose last rites are over aren't listed. A search narrows the list by the character's name or the player's username or name, ignoring capitals; text starting with @ matches usernames only. Filters choose a race, a class (disabled ones included, since characters may still have them) and whether the character is in a group. The server searches, filters and sorts (by name until the Name, Player or Created heading is clicked, see [sortable tables](#sortable-tables)), and the list shows 500 characters a page. Characters belong to their players, so the tab only lists them and has nothing to save.
+Lists every character players have made in the universe, for creators and builders (the server refuses other roles too): each character's name, their race and class (as the lobby shows them, e.g. "Dwarf Fighter"), their player's name (linking to their profile) and @username, when they were made, and notes saying whether they are in a group or waiting for their [last rites](#deleting-a-character) to end. Characters whose last rites are over aren't listed. A search narrows the list by the character's name or the player's username or name, ignoring capitals; text starting with @ matches usernames only. Filters choose a race, a class (disabled ones and those of [rulebooks](#rulebooks) that are off included, since characters may still have them) and whether the character is in a group. The server searches, filters and sorts (by name until the Name, Player or Created heading is clicked, see [sortable tables](#sortable-tables)), and the list shows 500 characters a page. Clicking a character's name shows their [character sheet](#character-sheet), with the universe's text as written rather than translated. Creators (and site admins) get the sheet's Delete, Restore and Leave group buttons, each item's menu, and the same questions the character's player gets (see [Deleting a character](#deleting-a-character)), so they can take a character out of their group, disbanding it for the anchor being, and then delete them. Creators also get Give Items, which opens [item selection](#selection-item) titled "Give Items to [character]", finding only the live version's enabled items whose books are on (whichever version the editor has open, since characters play the live version), and adds the items chosen to what the character carries, each quantity added to what they already have. Builders only see the sheet. Characters belong to their players rather than the universe, so these change them immediately rather than waiting for Save, and the tab has nothing to save. They are refused while the universe is [disabled](#admin), except to a site admin.
 
 ### Tab: Tilesets
 shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. Disabling a default tile is such an edit, so a universe can leave out the ruleset's tiles it doesn't want. A tile you created can be deleted once no area uses it.
@@ -788,7 +791,7 @@ The region is struck through in the tree until the tab is saved, with Undo Delet
 The [Audit](#tab-audit) tab lists regions like areas ("Added region Planet", "Changed region Planet", "Deleted region Planet"), with their settings, parents and assignments. Exporting and importing include regions with the world, and assignments with the editors.
 
 ### Tab: Items
-shows you a table of all items in the game, populated from the default for your ruleset and any items you have created.
+shows you a table of all items in the game, populated from the default for your ruleset and any items you have created. Default items of [rulebooks](#rulebooks) that are off aren't listed.
 
 It needs a filter control that includes:
 - name search
@@ -796,28 +799,34 @@ It needs a filter control that includes:
 - "is custom" toggle
 - "is edited from default" toggle
 - toggles for each property
-	- for example, a toggle for `weapons`, and then a toggle for `longswords`
+	- for example, a toggle for `weapons`, and then a toggle for `light blades`
 	- note that these toggles will be based on the ruleset
 - pagination (500 by default)
 
 the table contains:
 - icon
 - name, links to the [item editor](#editor-item)
-- summary (item type, properties, etc)
-- notes: custom, edited, disabled, and changes not saved yet
+- an Enabled switch, which does what the item editor's Enabled checkbox does
+- summary (item types, properties, etc)
+- notes: custom, edited, and changes not saved yet. A default item only disabled isn't noted as edited, and a disabled item's row is struck through
 
-The table is sorted by name until the Name or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, and notes by the items' flags, with items that have none first, then disabled, edited and custom ones. Items that tie are sorted by name.
+The table is sorted by name until the Name, Enabled or Notes heading is clicked (see [sortable tables](#sortable-tables)). The server sorts before paging: names by their English text, as the name search matches them, enabled items before disabled ones, and notes by the items' flags, with items that have none first, then edited and custom ones. Items that tie are sorted by name.
 
-For PF1E, the only default item for now is a dagger; for SF1E, a survival knife.
+For PF1E, the Core Rulebook's only default item for now is a dagger; for SF1E, a survival knife. The optional PF1E books add theirs (below).
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 
-Each ruleset groups its item types into categories, which the filters use. For PF1E:
-- `weapons`: dagger, club, quarterstaff, spear, short sword, longsword, shortbow, longbow, light crossbow, arrows, crossbow bolts
-- `armor`: padded armor, leather armor, chain shirt, light shield, heavy shield
-- `gear`: rope, torch
+Each item is in one of the ruleset's categories (its kind), and has any number of that category's types, or none. The filters use both: the Kind filter matches an item's category, and the Type filter matches an item with that type among its others. For PF1E:
+- `weapons`: the fighter's weapon groups from the Core Rulebook's Weapon Training: axes, heavy blades, light blades, bows, close, crossbows, double, flails, hammers, monk, natural, polearms, spears and thrown. A weapon has every group it is in, such as light blades and thrown for a dagger. A weapon in no group, such as a kobold's tail attachment, and ammunition have no type. Firearms, siege engines and tribal come from books the engine doesn't have yet
+- `armor`: light armor, medium armor, heavy armor and shields
+- `gear`: rope, torch. Other gear has no type
 
-For SF1E:
+Each optional PF1E [rulebook](#rulebooks) adds a few items from its equipment, of the types above:
+- Advanced Player's Guide: the cestus (close, monk) and sword cane (light blades), and wooden armor and quilted cloth (light armor)
+- Advanced Race Guide: the long lash and spiked tail attachments (no type) and the ratfolk tailblade (light blades)
+- Advanced Class Guide: a book of puzzles, a book of war prayers, a footprints cast, light fire ink and a tome of epics (gear). Its class kits aren't items: each is a list of other gear
+
+For SF1E, each type is still one kind of item:
 - `weapons`: survival knife, tactical baton, laser pistol, semi-auto pistol, laser rifle, frag grenade, battery, small arm rounds
 - `armor`: second skin, light armor, heavy armor
 - `gear`: comm unit, flashlight
@@ -846,8 +855,8 @@ Lets the universe be played in more than one language. See [Localization](#local
 - source language, the language the universe's editors write in. Defaults to the creator's language: the one on their profile, then the one the pages are shown in, without its region, or English when it isn't one of the languages a profile can name (such as Pirate)
 - languages, the languages the universe is translated into ("Translated into", up to 50, never the source language). The choices are every ISO 639-1 language and Pirate (`UNIVERSE_LANGUAGES`); a universe translated into Pirate shows that translation to players who chose Pirate for the site, and fills text it hasn't translated from its English translation, if it has one. [Home](#home) and the universe's page show the source language and these. Taking off a language with translations asks first, since saving deletes its translations. Only creators change them, staged until Save like the rest of the editor, and saved as a `universe` change
 - deleting something the universe holds (an area, tile, item, race, class, theme or difficulty level), restoring one of the ruleset's defaults, or giving a coin back the engine's name or abbreviation, deletes its translations and notes in the same save (`server/src/db/universeTextRepo.ts`)
-- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed are engine text and aren't listed, and nor are descriptions it hasn't written or coin names and abbreviations it hasn't given (coins are listed most valuable first):
-	- where it comes from (e.g. "Area: Waterdeep, name", or "Coin: copper pieces, abbreviation"). A coin abbreviation's translation follows its rules (no spaces, digits or commas)
+- choosing a language shows a table of every piece of universe text (`GET /:universeId/translations`, paged, searched, filtered and sorted on the server, 100 a page; `server/src/http/editorTranslations.ts`). Ruleset defaults the universe hasn't renamed or described are engine text and aren't listed, and nor are descriptions it hasn't written or coin names and abbreviations it hasn't given (coins are listed most valuable first):
+	- where it comes from (e.g. "Area: Waterdeep, name", "Race: Dwarf, description", or "Coin: copper pieces, abbreviation"). A coin abbreviation's translation follows its rules (no spaces, digits or commas)
 	- the source text
 	- a note for translators, written by the universe's editors (e.g. "a pun on the town's founder; keep the joke rather than the words"). One note per piece of text, for every language
 	- the translation, or "missing", tagged "out of date"; or "needs no translation"
@@ -951,12 +960,17 @@ Coins are written with the abbreviations the universe gives them in the Coins ta
 
 Money is kept as individual pieces of each coin, the way a purse holds them, and is never converted automatically: gaining 5sp twice is 10sp, not 1gp, and starting money from the universe, race and class adds up coin by coin. A character can hold 1pp 302gp 4444sp 10cp. A money changer converts coins into the fewest coins of the same worth (that purse becomes 75pp 6gp 5sp). Who offers money changing, and whether it costs a fee, comes with NPCs.
 
+## Switch: On/Off
+A checkbox drawn as a pill-shaped switch, with On or Off inside it in the player's language (`createToggleSwitch()` in `client/src/ui/toggleSwitch.ts`, styled by `.toggle-switch` in `client/src/_shared.scss`). It is still a checkbox, so Space toggles it and screen readers announce it as one, named by a label of its own or by the element it belongs to. Used for the [rulebooks](#rulebooks) and for the Enabled switches in the tables of races, classes, themes and items. A list drawn again when a switch changes waits for the knob to finish sliding (`afterSwitchSlides()`), and gives focus back to the switch.
+
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Disabled items can be selected and are marked as disabled; characters are only given enabled items.
+modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Up to 50 different items can be selected, for starting equipment and for giving a character items; selecting one more says so under it and leaves it unselected. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
 
 ## Editor: Item
 - name
-- type (e.g., "longsword"), one of the ruleset's item types
+- description, as for [races](#races), shown in [item selection](#selection-item) and on the [character sheet](#character-sheet)
+- kind (e.g., "Weapon"), one of the ruleset's item categories
+- types: a checkbox for each of the kind's types (e.g., "light blades" and "thrown" for a dagger). Any number can be checked, or none. Changing the kind clears them
 - a checkbox for "Enabled?", checked by default
 
 ## Selection: Area

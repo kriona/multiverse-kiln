@@ -27,7 +27,7 @@ export const leavingMessages = defineMessages({
  * @param characterId The character's ID
  * @return Resolves once they have left; rejects with an Error whose message says why they couldn't
  */
-export async function takeOutOfGroup(groupApi: GroupApi, universeId: string, groupId: string, characterId: string): Promise<void>
+export async function takeOutOfGroup(groupApi: Pick<GroupApi, 'leaveGroup'>, universeId: string, groupId: string, characterId: string): Promise<void>
 {
 	try
 	{

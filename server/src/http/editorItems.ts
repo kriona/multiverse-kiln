@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, isItemType, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isItemKind, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
@@ -15,6 +15,7 @@ import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
 import { itemListQuery } from './editorPayloads.js';
+import { savedRulebooks } from './editorRulebooks.js';
 import { sendInvalidRequest } from './errors.js';
 
 /**
@@ -33,8 +34,8 @@ const messages = defineMessages({
 	},
 	unknownItemType: {
 		id: 'error.unknownItemType',
-		defaultMessage: 'The universe\'s ruleset has no such type of item.',
-		description: 'Why an item couldn\'t be saved: the type chosen for it isn\'t one of the game rules\' item types'
+		defaultMessage: 'The universe\'s ruleset has no such kind or type of item.',
+		description: 'Why an item couldn\'t be saved: the kind (such as weapons) or a type (such as light blades) chosen for it isn\'t one of the game rules\', or a type isn\'t of its kind'
 	}
 });
 
@@ -86,7 +87,7 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 		refuse(400, messages.itemNeedsName);
 	}
 
-	if (!isItemType(universe.ruleset, settings.type))
+	if (!isItemKind(universe.ruleset, settings))
 	{
 		refuse(400, messages.unknownItemType);
 	}
@@ -127,12 +128,12 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 		refuse(404, messages.noSuchItem);
 	}
 
-	if (!isItemType(universe.ruleset, settings.type))
+	if (!isItemKind(universe.ruleset, settings))
 	{
 		refuse(400, messages.unknownItemType);
 	}
 
-	context.disablings.item(itemId, item.enabled, (settings.enabled ? undefined : whenDisabled));
+	context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context), { whenDisabled: (settings.enabled ? undefined : whenDisabled) });
 
 	if (item.kind === 'default')
 	{
@@ -169,7 +170,7 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 	// Default items are enabled, so restoring one gives back what was taken while it was disabled
 	if (item.kind === 'default')
 	{
-		context.disablings.item(itemId, item.enabled);
+		context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context));
 		await restoreDefaultItem(version, itemId, transaction);
 		await deleteUniverseTextOf(version, 'item', itemId, transaction);
 		return;

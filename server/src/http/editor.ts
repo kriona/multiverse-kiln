@@ -6,11 +6,11 @@
  * browser; routes about a universe also need a role in it, and changes need a role that allows them
  */
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
-import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, editsEveryPlace, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, RULESET_COINS, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type NewRef, type NumberRef, type PlaceRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
+import { canEditWorld, DEFAULT_AREA_TILE_KEYS, defineMessages, EDITOR_UNIVERSES_PATH, editsEveryPlace, IMPASSABLE_WALK_SECONDS, isDefaultAreaTile, MAX_CUSTOM_TILES, NEW_AREA_BOUNDS, NO_BUILDER_PERMISSIONS, normalizedRulebooks, RULESET_COINS, withRulebooks, SOURCE_LOCALE, Translator, universeLanguageOf, type CreatedPayload, type EditableUniverse, type EditableUniverseListPayload, type GroupSizeLowering, type ItemDisabling, type NewRef, type NumberRef, type PlaceRef, type Ruleset, type RulesetSettings, type ResolvedAreaSettings, type TileChangeSettings, type TileSettings, type TileUsagePayload, type UniverseSettingsUpdate } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
 import { findDismissedNotices, findPlayerLocale, findTwoFactorCandidate, lockPlayer } from '../db/playerRepo.js';
-import { loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
+import { loadRulebookSettings, loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { countCustomTiles, createCustomTile, deleteCustomTile, findDefaultTileIds, findTileKind, listEditorTiles, loadUniverseTiles, restoreDefaultTile, saveEditedDefaultTile, updateCustomTile } from '../db/tileRepo.js';
 import { isUniverseTileGraphic } from '../db/tileGraphicRepo.js';
@@ -33,6 +33,7 @@ import { addClassRoutes } from './editorClasses.js';
 import { addItemRoutes } from './editorItems.js';
 import { newUniverseRequest, tileIdParameter, tileListQuery } from './editorPayloads.js';
 import { addRaceRoutes } from './editorRaces.js';
+import { noteRulebookChanges } from './editorRulebooks.js';
 import { addThemeRoutes } from './editorThemes.js';
 import { addTileGraphicRoutes } from './editorTileGraphics.js';
 import { addTranslationRoutes } from './editorTranslations.js';
@@ -567,12 +568,13 @@ async function getRulesetSettings(request: Request, response: Response): Promise
 }
 
 /**
- * Changes how the universe plays under its ruleset
+ * Changes how the universe plays under its ruleset, and which books it uses
  *
  * @param context The save
  * @param settings The settings, which must be for the universe's ruleset
+ * @param whenRulebooksOff What turning each book off does to the characters carrying its items, by book
  */
-export async function applyRulesetChange(context: ChangeContext, settings: RulesetSettings): Promise<void>
+export async function applyRulesetChange(context: ChangeContext, settings: RulesetSettings, whenRulebooksOff: Readonly<Record<string, ItemDisabling>>): Promise<void>
 {
 	const { universe, version, transaction } = context;
 
@@ -585,7 +587,12 @@ export async function applyRulesetChange(context: ChangeContext, settings: Rules
 		});
 	}
 
-	await storeRulesetSettings(version, settings, transaction);
+	const before = await loadRulebookSettings(version, universe.ruleset, transaction);
+	const rulebooks = normalizedRulebooks(universe.ruleset, settings.settings);
+
+	await storeRulesetSettings(version, withRulebooks(settings, rulebooks), transaction);
+	context.rulebooks = rulebooks.rulebooks;
+	await noteRulebookChanges(context, before, rulebooks, whenRulebooksOff);
 }
 
 /**

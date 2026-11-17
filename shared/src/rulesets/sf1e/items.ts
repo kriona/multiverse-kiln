@@ -19,23 +19,23 @@ export type Sf1eItemCategory = typeof SF1E_ITEM_CATEGORIES[number];
 export const SF1E_ITEM_CATEGORY_NAMES: Record<Sf1eItemCategory, MessageDescriptor> = defineMessages({
 	weapon: {
 		id: 'sf1e.itemCategory.weapon',
-		defaultMessage: 'Weapons',
-		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab: knives, guns, grenades, ammunition and the like'
+		defaultMessage: 'Weapon',
+		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab and a choice in the item editor: knives, guns, grenades, ammunition and the like'
 	},
 	armor: {
 		id: 'sf1e.itemCategory.armor',
 		defaultMessage: 'Armor',
-		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab: armor suits'
+		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab and a choice in the item editor: armor suits'
 	},
 	gear: {
 		id: 'sf1e.itemCategory.gear',
 		defaultMessage: 'Gear',
-		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab: equipment such as comm units and flashlights'
+		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab and a choice in the item editor: equipment such as comm units and flashlights'
 	}
 });
 
 /**
- * Each item type's category, by the type's key: every item is one of these
+ * Each item type's category, by the type's key. An item has any number of types of its category, or none
  */
 export const SF1E_ITEM_TYPES = {
 	survival_knife: 'weapon',
@@ -50,8 +50,7 @@ export const SF1E_ITEM_TYPES = {
 	light_armor: 'armor',
 	heavy_armor: 'armor',
 	comm_unit: 'gear',
-	flashlight: 'gear',
-	other_gear: 'gear'
+	flashlight: 'gear'
 } as const satisfies Record<string, Sf1eItemCategory>;
 
 export type Sf1eItemType = keyof typeof SF1E_ITEM_TYPES;
@@ -124,11 +123,6 @@ export const SF1E_ITEM_TYPE_NAMES: Record<Sf1eItemType, MessageDescriptor> = def
 		id: 'sf1e.itemType.flashlight',
 		defaultMessage: 'flashlight',
 		description: 'Type of item in Starfinder, shown beside an item\'s name: a handheld electric light'
-	},
-	other_gear: {
-		id: 'sf1e.itemType.other_gear',
-		defaultMessage: 'other gear',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: equipment that is none of the other types'
 	}
 });
 
@@ -142,3 +136,24 @@ export const SF1E_DEFAULT_ITEM_NAMES: Record<string, MessageDescriptor> = define
 		description: 'Name of an item in Starfinder: a sturdy knife for fighting and for use in the wild'
 	}
 });
+
+/**
+ * Each default item's description, by the item's key, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab
+ */
+export const SF1E_DEFAULT_ITEM_DESCRIPTIONS: Record<string, MessageDescriptor> = defineMessages({
+	survival_knife: {
+		id: 'itemDescription.sf1e.survival_knife',
+		defaultMessage: 'A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion.',
+		description: 'Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	}
+});
+
+/**
+ * Each default item's category and types, which the migrations in server/drizzle give it
+ */
+export const SF1E_DEFAULT_ITEM_KINDS: Record<string, { category: Sf1eItemCategory; types: readonly Sf1eItemType[] }> = {
+	survival_knife: {
+		category: 'weapon',
+		types: ['survival_knife']
+	}
+};

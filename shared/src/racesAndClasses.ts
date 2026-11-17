@@ -4,14 +4,14 @@
  */
 import type { MessageDescriptor } from './localization.js';
 import { PF1E_ABILITIES, PF1E_ABILITY_NAMES, type Pf1eAbility } from './rulesets/pf1e/abilities.js';
-import { NEW_PF1E_CLASS_RULES, PF1E_CLASS_NAMES, type Pf1eClassRules } from './rulesets/pf1e/classes.js';
-import { NEW_PF1E_RACE_RULES, PF1E_FLOATING_ABILITY_BONUS, PF1E_RACE_NAMES, type Pf1eRaceRules } from './rulesets/pf1e/races.js';
+import { NEW_PF1E_CLASS_RULES, PF1E_CLASS_DESCRIPTIONS, PF1E_CLASS_NAMES, type Pf1eClassRules } from './rulesets/pf1e/classes.js';
+import { NEW_PF1E_RACE_RULES, PF1E_FLOATING_ABILITY_BONUS, PF1E_RACE_DESCRIPTIONS, PF1E_RACE_NAMES, type Pf1eRaceRules } from './rulesets/pf1e/races.js';
 import { PF1E_SIZE_NAMES, PF1E_SIZES, type Pf1eSize } from './rulesets/pf1e/sizes.js';
 import { SF1E_ABILITIES, SF1E_ABILITY_NAMES } from './rulesets/sf1e/abilities.js';
-import { NEW_SF1E_CLASS_RULES, SF1E_CLASS_NAMES, type Sf1eClassRules } from './rulesets/sf1e/classes.js';
-import { NEW_SF1E_RACE_RULES, SF1E_FLOATING_ABILITY_BONUS, SF1E_RACE_NAMES, type Sf1eRaceRules } from './rulesets/sf1e/races.js';
+import { NEW_SF1E_CLASS_RULES, SF1E_CLASS_DESCRIPTIONS, SF1E_CLASS_NAMES, type Sf1eClassRules } from './rulesets/sf1e/classes.js';
+import { NEW_SF1E_RACE_RULES, SF1E_FLOATING_ABILITY_BONUS, SF1E_RACE_DESCRIPTIONS, SF1E_RACE_NAMES, type Sf1eRaceRules } from './rulesets/sf1e/races.js';
 import { SF1E_SIZE_NAMES, SF1E_SIZES } from './rulesets/sf1e/sizes.js';
-import { SF1E_THEME_NAMES } from './rulesets/sf1e/themes.js';
+import { SF1E_THEME_DESCRIPTIONS, SF1E_THEME_NAMES } from './rulesets/sf1e/themes.js';
 import type { Ruleset } from './universes.js';
 
 /**
@@ -113,12 +113,36 @@ export const DEFAULT_CLASS_NAMES: Record<Ruleset, Record<string, MessageDescript
 };
 
 /**
+ * Each default race's description, by ruleset and the race's key
+ */
+export const DEFAULT_RACE_DESCRIPTIONS: Record<Ruleset, Record<string, MessageDescriptor>> = {
+	pf1e: PF1E_RACE_DESCRIPTIONS,
+	sf1e: SF1E_RACE_DESCRIPTIONS
+};
+
+/**
+ * Each default class's description, by ruleset and the class's key
+ */
+export const DEFAULT_CLASS_DESCRIPTIONS: Record<Ruleset, Record<string, MessageDescriptor>> = {
+	pf1e: PF1E_CLASS_DESCRIPTIONS,
+	sf1e: SF1E_CLASS_DESCRIPTIONS
+};
+
+/**
  * Each default theme's name, by ruleset and the theme's key; empty for a ruleset without themes. The
  * database stores each name's English text
  */
 export const DEFAULT_THEME_NAMES: Record<Ruleset, Record<string, MessageDescriptor>> = {
 	pf1e: {},
 	sf1e: SF1E_THEME_NAMES
+};
+
+/**
+ * Each default theme's description, by ruleset and the theme's key; empty for a ruleset without themes
+ */
+export const DEFAULT_THEME_DESCRIPTIONS: Record<Ruleset, Record<string, MessageDescriptor>> = {
+	pf1e: {},
+	sf1e: SF1E_THEME_DESCRIPTIONS
 };
 
 /**

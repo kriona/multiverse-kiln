@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type DifficultyLevelListPayload, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow } from '@multiverse-kiln/shared';
+import { MAX_COIN_NAME_LENGTH, sourceTextHash, universeTextFileKey, type DifficultyLevelListPayload, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type ThemeListPayload, type TileListPayload, type UniverseTextListPayload, type UniverseTextRef, type UniverseTextRow } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -103,7 +103,7 @@ describe('Translations tab', () =>
 			{ kind: 'saveRace', id: elf.id, settings: { ...elf, enabled: false } },
 			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, name: 'Shiv' } },
 			{ kind: 'saveTile', id: grass.id, settings: { ...grass, walkSeconds: 9 } },
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['torch'], enabled: true } }
 		]);
 
 		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
@@ -118,6 +118,74 @@ describe('Translations tab', () =>
 			['item', String(dagger.id), 'Shiv'],
 			['item', String(torchId), 'Torch'],
 			['race', String(dwarf.id), 'Stout']
+		]);
+	});
+
+	it('lists the descriptions the universe writes for items, races and classes, with the name of what each describes, and saves their translations', async () =>
+	{
+		const { universeId, ada } = await translatableUniverse();
+		const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+		const items = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items`)).body.items;
+		const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+		const elf = races.find((race) => (race.key === 'elf'))!;
+		const dagger = items.find((item) => (item.key === 'dagger'))!;
+		const saved = await saveChanges(ada, universeId, [
+			{ kind: 'saveRace', id: elf.id, settings: { ...elf, name: 'Fair Folk', enabled: false } },
+			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, description: 'Small and sharp.' } },
+			{ kind: 'createRace', ref: 'new:mole', settings: { ...dwarf, name: 'Molefolk', description: 'Diggers of the deep.' } }
+		]);
+
+		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+
+		const moleId = String(saved.body.ids['new:mole']);
+		const descriptionRows = async (): Promise<UniverseTextRow[]> => (await listText(ada, universeId, 'language=fr')).body.rows.filter((row) => (row.field === 'description'));
+
+		// The elf, renamed but keeping the engine's description, has only its name listed
+		assert.deepStrictEqual(placesOf(await descriptionRows()).sort(), [
+			'item:dagger:description',
+			'race:Molefolk:description'
+		]);
+		assert.deepStrictEqual((await descriptionRows()).map(({ kind, thingId, liveThingId, source }) => [kind, thingId, liveThingId, source]).sort(), [
+			['item', String(dagger.id), String(dagger.id), 'Small and sharp.'],
+			['race', moleId, moleId, 'Diggers of the deep.']
+		]);
+
+		const mole = { kind: 'race', thingId: moleId, field: 'description' };
+		const translated = await saveChanges(ada, universeId, [
+			{ kind: 'saveTranslation', text: mole, language: 'fr', translation: 'Creuseurs des profondeurs.', sourceHash: sourceTextHash('Diggers of the deep.') },
+			{ kind: 'saveTranslation', text: { kind: 'item', thingId: String(dagger.id), field: 'description' }, language: 'fr', translation: 'Petite et pointue.', sourceHash: sourceTextHash('Small and sharp.') }
+		]);
+
+		assert.strictEqual(translated.status, 200, JSON.stringify(translated.body));
+		assert.deepStrictEqual((await descriptionRows()).map(({ source, translation }) => [source, translation]).sort(), [
+			['Diggers of the deep.', 'Creuseurs des profondeurs.'],
+			['Small and sharp.', 'Petite et pointue.']
+		]);
+
+		// A description the universe hasn't written has nothing to translate
+		const unwritten = await saveChanges(ada, universeId, [{ kind: 'saveTranslation', text: { kind: 'race', thingId: String(elf.id), field: 'description' }, language: 'fr', translation: 'Gracieux.', sourceHash: sourceTextHash('') }]);
+
+		assert.strictEqual(unwritten.status, 404, JSON.stringify(unwritten.body));
+	});
+
+	it('lists the descriptions the universe writes for themes, under the default theme\'s name', async () =>
+	{
+		const ada = await logIn('Ada');
+		const universeId = await createUniverse(ada, 'Starhaven', 'sf1e');
+		const languages = await saveChanges(ada, universeId, [{ kind: 'universe', update: { translationLanguages: ['fr'] } }]);
+
+		assert.strictEqual(languages.status, 200, JSON.stringify(languages.body));
+
+		const themes = (await send<ThemeListPayload>(ada, 'GET', `/${universeId}/themes`)).body.themes;
+		const scholar = themes.find((theme) => (theme.key === 'scholar'))!;
+		const saved = await saveChanges(ada, universeId, [{ kind: 'saveTheme', id: scholar.id, settings: { ...scholar, description: 'Reads everything twice.' } }]);
+
+		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
+
+		const rows = (await listText(ada, universeId, 'language=fr')).body.rows.filter((row) => (row.field === 'description'));
+
+		assert.deepStrictEqual(rows.map(({ kind, thingId, thingName, source }) => [kind, thingId, thingName, source]), [
+			['theme', String(scholar.id), 'Scholar', 'Reads everything twice.']
 		]);
 	});
 

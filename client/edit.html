@@ -198,6 +198,21 @@
 							</fieldset>
 						</form>
 
+						<section id="ruleset-rulebooks" class="panel rulebooks" aria-labelledby="rulebooks-heading">
+							<h2 id="rulebooks-heading" data-message="editor.rulebooks.heading" data-translation-context="Heading of the part of the editor's Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor's Audit tab">Rulebooks</h2>
+							<p id="rulebooks-hint" class="hint" data-message="editor.rulebooks.hint" data-translation-context="Explains the Rulebooks table on the editor's Ruleset tab">The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there.</p>
+							<table class="item-table rulebook-table" aria-labelledby="rulebooks-heading" aria-describedby="rulebooks-hint">
+								<thead>
+									<tr>
+										<th scope="col" data-message="editor.rulebooks.bookColumn" data-translation-context="Heading of the column of book names in the Rulebooks table on the editor's Ruleset tab">Book</th>
+										<th scope="col" data-message="editor.rulebooks.statusColumn" data-translation-context="Heading of the column in the Rulebooks table on the editor's Ruleset tab saying whether each book is on or off">Status</th>
+										<th scope="col"><span class="visually-hidden" data-message="editor.rulebooks.actionsColumn" data-translation-context="Heading of the column of buttons in the Rulebooks table on the editor's Ruleset tab, read only by screen readers">Actions</span></th>
+									</tr>
+								</thead>
+								<tbody id="rulebook-rows"></tbody>
+							</table>
+						</section>
+
 						<section id="ruleset-coins" class="panel coins" aria-labelledby="coins-heading">
 							<h2 id="coins-heading" data-message="editor.coins.heading" data-translation-context="Heading of the part of the editor's Ruleset tab where the universe gives each coin a name and abbreviation of its own">Coins</h2>
 							<form id="coins-form" class="form">
@@ -322,6 +337,7 @@
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
+										<th scope="col" data-sort="enabled"><button type="button" class="sort-button" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">Enabled</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 									</tr>
@@ -341,6 +357,7 @@
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
+										<th scope="col" data-sort="enabled"><button type="button" class="sort-button" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">Enabled</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 									</tr>
@@ -360,6 +377,7 @@
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
+										<th scope="col" data-sort="enabled"><button type="button" class="sort-button" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">Enabled</button></th>
 										<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 										<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 									</tr>
@@ -417,7 +435,7 @@
 								Where
 								<select id="tile-filter-used-in"></select>
 							</label>
-							<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Enabled
 								<select id="tile-filter-enabled"></select>
 							</label>
@@ -515,7 +533,7 @@
 											<ul id="area-parent-add-options" class="combobox-options" role="listbox" aria-label="Add Parent" hidden data-message-aria-label="editor.place.addParent" data-translation-context-aria-label="Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"></ul>
 										</div>
 									</div>
-									<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Enabled
 										<select id="area-enabled"></select>
 									</label>
@@ -671,7 +689,7 @@
 											<ul id="region-parent-add-options" class="combobox-options" role="listbox" aria-label="Add Parent" hidden data-message-aria-label="editor.place.addParent" data-translation-context-aria-label="Shown in the empty field under a region's or area's parents in its editor, where typing part of a name lists the regions (and areas, for an area) it can be put inside, to add one"></ul>
 										</div>
 									</div>
-									<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+									<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 										Enabled
 										<select id="region-enabled"></select>
 									</label>
@@ -749,15 +767,15 @@
 					<section id="editor-panel-items" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-items" hidden>
 						<div class="filters">
 							<input id="item-filter-name" type="search" placeholder="Search by name" aria-label="Search items by name" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
-							<label data-message="editor.items.category" data-translation-context="Label of the filter for an item's broad kind, such as weapons or armor">
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Kind
 								<select id="item-filter-category"></select>
 							</label>
-							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="editor.item.type" data-translation-context="Label of the Items tab's filter for items of one type, such as light blades or light armor">
 								Type
 								<select id="item-filter-type"></select>
 							</label>
-							<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Enabled
 								<select id="item-filter-enabled"></select>
 							</label>
@@ -778,6 +796,7 @@
 								<tr>
 									<th scope="col" data-message="editor.items.icon" data-translation-context="Heading of the table column showing each item's picture">Icon</th>
 									<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
+									<th scope="col" data-sort="enabled"><button type="button" class="sort-button" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">Enabled</button></th>
 									<th scope="col" data-message="editor.summary" data-translation-context="Heading of the table column describing each row's rules, in the editor's lists of races, classes, themes, items and difficulty levels (such as a race's size, an item's type, or how a difficulty level changes monsters and enemies)">Summary</th>
 									<th scope="col" data-sort="notes"><button type="button" class="sort-button" data-message="editor.notes" data-translation-context="Heading of the table column in the editor's lists of races, classes, themes and items that says whether each was added by the universe, edited from the ruleset's, disabled, or changed and not saved yet; also of the column on the editor's Editors tab with a translator's languages, what a builder may edit and their regions, and which row is the player's own">Notes</button></th>
 								</tr>
@@ -1011,11 +1030,19 @@
 								Name
 								<input id="item-name" required />
 							</label>
-							<label data-message="editor.item.type" data-translation-context="An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter; also names the setting in the list of what a save changed, on the editor's Audit tab">
-								Type
-								<select id="item-type"></select>
+							<label data-message="form.description" data-translation-context="Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook's Contents dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Description
+								<textarea id="item-description" class="description-field" rows="2"></textarea>
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Kind
+								<select id="item-category"></select>
+							</label>
+							<fieldset id="item-types-field" class="choice">
+								<legend data-message="editor.item.types" data-translation-context="Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor's Audit tab">Types</legend>
+								<div id="item-types" class="item-types"></div>
+							</fieldset>
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -1030,7 +1057,7 @@
 					</form>
 				</dialog>
 				<dialog id="item-select-dialog" class="panel dialog item-select-dialog" aria-labelledby="item-select-title">
-					<form id="item-select-form" class="form">
+					<form id="item-select-form" class="form" novalidate>
 						<h2 id="item-select-title" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
 						<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
 						<fieldset id="item-select-results" class="choice stacked item-select-results" aria-label="Items" data-message-aria-label="editor.itemSelect.results" data-translation-context-aria-label="Name of the list of items to choose from, for screen readers"></fieldset>
@@ -1053,7 +1080,11 @@
 								Name
 								<input id="race-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="form.description" data-translation-context="Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook's Contents dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Description
+								<textarea id="race-description" class="description-field" rows="2"></textarea>
+							</label>
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="race-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -1118,7 +1149,11 @@
 								Name
 								<input id="class-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="form.description" data-translation-context="Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook's Contents dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Description
+								<textarea id="class-description" class="description-field" rows="2"></textarea>
+							</label>
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="class-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -1191,7 +1226,11 @@
 								Name
 								<input id="theme-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="form.description" data-translation-context="Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook's Contents dialog; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Description
+								<textarea id="theme-description" class="description-field" rows="2"></textarea>
+							</label>
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="theme-enabled" type="checkbox" />
 								Enabled
 							</label>
@@ -1242,6 +1281,15 @@
 						</fieldset>
 					</form>
 				</dialog>
+				<dialog id="rulebook-dialog" class="panel dialog rulebook-dialog" aria-labelledby="rulebook-dialog-title">
+					<h2 id="rulebook-dialog-title"></h2>
+					<p class="hint" data-message="editor.rulebook.hint" data-translation-context="Explains the dialog listing the races, classes and themes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab">The book brings these to the universe while it is on. Disable each one on the Characters tab.</p>
+					<p id="rulebook-dialog-status" role="status"></p>
+					<div id="rulebook-contents" class="rulebook-contents"></div>
+					<div class="dialog-buttons">
+						<button id="rulebook-dialog-close" type="button" class="secondary" autofocus data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
+					</div>
+				</dialog>
 				<dialog id="tile-dialog" class="panel dialog" aria-labelledby="tile-dialog-title">
 					<form id="tile-form" class="form">
 						<fieldset id="tile-fields" class="plain">
@@ -1250,7 +1298,7 @@
 								Name
 								<input id="tile-name" required />
 							</label>
-							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="tile-enabled" type="checkbox" aria-describedby="tile-enabled-locked" />
 								Enabled
 							</label>
@@ -1823,6 +1871,7 @@
 					</div>
 				</form>
 			</dialog>
+			<!-- include character-sheet.html -->
 		</main>
 		<!-- include footer.html -->
 		<!-- include accessibility.html -->

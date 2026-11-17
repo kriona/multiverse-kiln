@@ -3,7 +3,7 @@
  * class_starting_items and class_race_areas tables
  */
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
-import { isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
+import { differsBeyondEnabling, isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaClass } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
@@ -246,6 +246,8 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 			overridesClassId: classes.overridesClassId,
 			key: classes.key,
 			name: classes.name,
+			description: classes.description,
+			rulebook: classes.rulebook,
 			enabled: classes.enabled,
 			keepPlaying: classes.keepPlaying,
 			startingPlatinum: classes.startingPlatinum,
@@ -275,6 +277,17 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 			const settings = (copy ?? row);
 			const custom = (row.universeId !== null);
 			const classRules = rules.get(settings.id);
+			const comparable = (source: typeof row): object => ({
+				name: ((source.name === row.name) ? null : source.name),
+				description: source.description,
+				startingMoney: fromCoinColumns(source),
+				startingItems: (startingItems.get(source.id) ?? []),
+				startingAreaId: source.startingAreaId,
+				startingColumn: source.startingColumn,
+				startingRow: source.startingRow,
+				raceAreas: (raceAreas.get(source.id) ?? []),
+				rules: rules.get(source.id)
+			});
 
 			if (!classRules)
 			{
@@ -285,6 +298,7 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
+				description: (custom ? row.description : (copy?.description ?? null)),
 				enabled: settings.enabled,
 				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
@@ -294,33 +308,46 @@ async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: 
 				startingRow: settings.startingRow,
 				raceAreas: (raceAreas.get(settings.id) ?? []),
 				rules: classRules,
+				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && differsBeyondEnabling(comparable(row), comparable(copy)))
 			});
 		}));
 }
 
 /**
  * The classes whose characters can't play in a universe: those it has disabled without letting the
- * characters already of them keep playing
+ * characters already of them keep playing, and the default classes of the books it has turned off that way
  *
  * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param barredRulebooks The books turned off without letting their characters keep playing
  * @param executor The database, or a transaction
  * @return The classes, by the IDs characters hold (a default class's own ID for an edited copy)
  */
-export async function listBarredClassIds(version: UniverseVersion, executor: Executor = db): Promise<Set<number>>
+export async function listBarredClassIds(version: UniverseVersion, ruleset: Ruleset, barredRulebooks: readonly string[], executor: Executor = db): Promise<Set<number>>
 {
-	// Default classes are always enabled, so only the universe's own rows can bar anyone
+	// Default classes are always enabled, so only the universe's own rows can bar anyone that way
 	const rows = await executor
 		.select({
 			id: classes.id,
 			overridesClassId: classes.overridesClassId
 		})
 		.from(classes)
-		.where(and(
-			inVersion(classes, version),
-			eq(classes.enabled, false),
-			eq(classes.keepPlaying, false)
+		.where(or(
+			and(
+				inVersion(classes, version),
+				eq(classes.enabled, false),
+				eq(classes.keepPlaying, false)
+			),
+			((barredRulebooks.length > 0)
+				? and(
+					isNull(classes.universeId),
+					eq(classes.ruleset, ruleset),
+					inArray(classes.rulebook, [...barredRulebooks])
+				)
+				: undefined)
 		));
 
 	return(new Set(rows.map((row) => (row.overridesClassId ?? row.id))));
@@ -592,7 +619,7 @@ export async function updateCustomClass(version: UniverseVersion, ruleset: Rules
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultClassId The default class's ID, from findClassKind() as default
- * @param settings The copy's settings; a null name keeps the default class's
+ * @param settings The copy's settings; a null name or description keeps the default class's
  * @param executor A transaction
  */
 export async function saveEditedDefaultClass(version: UniverseVersion, ruleset: Ruleset, defaultClassId: number, settings: ClassSettings, executor: Executor): Promise<void>
@@ -681,12 +708,13 @@ export async function isClassStartingItem(version: UniverseVersion, itemId: numb
  * @param settings The settings
  * @return The columns' values
  */
-function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function classColumns(settings: ClassSettings): Pick<typeof classes.$inferInsert, 'name' | 'description' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
+		description: settings.description,
 		enabled: settings.enabled,
 		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),

@@ -97,6 +97,13 @@ export interface ChangeContext
 	readonly deletedImages: string[];
 
 	/**
+	 * The optional books the version being saved has on, as the changes so far left them, once a change
+	 * has read them (savedRulebooks() in editorRulebooks.ts). A change that stores the version's ruleset
+	 * settings sets it to the books it stores, or clears it to undefined so the next change reads them again
+	 */
+	rulebooks: readonly string[] | undefined;
+
+	/**
 	 * Set once the save applies the universe's draft, which reaches the rooms then as a save to the live
 	 * version does
 	 */

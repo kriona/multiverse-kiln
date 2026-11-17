@@ -16,7 +16,7 @@
  * changes before them are saved (PendingChange)
  */
 import { isDeepStrictEqual } from 'util';
-import { isNewRef, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { isNewRef, singleItemTypeKind, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { listRegions } from '../db/regionRepo.js';
@@ -31,7 +31,7 @@ import { loadEditorTiles } from '../db/tileRepo.js';
 import { inBulkSnapshot } from '../db/transactions.js';
 import { findAllDraftOrigins, type DraftOrigins } from '../db/universeDraftRepo.js';
 import { findEditableUniverse, isUniverseNameTaken } from '../db/universeRepo.js';
-import { listThingNames, listTranslations, listTranslatorNotes, type TranslatorNoteRecord, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
+import { listThingDescriptions, listThingNames, listTranslations, listTranslatorNotes, type TranslatorNoteRecord, type UniverseTranslationRecord } from '../db/universeTextRepo.js';
 import type { UniverseVersion } from '../db/universeVersions.js';
 import { describeInvalidPayload } from '../rooms/payloads.js';
 import { ChangeRefusal } from './editorChangeContext.js';
@@ -55,7 +55,7 @@ type SavedIds = ReadonlyMap<NewRef, number | string>;
  * finds in the draft
  */
 const TILE_FIELDS = ['name', 'indoors', 'outdoors', 'color', 'graphic', 'visionCost', 'walkSeconds', 'enabled'] as const;
-const ITEM_FIELDS = ['name', 'type', 'enabled'] as const;
+const ITEM_FIELDS = ['name', 'category', 'types', 'enabled'] as const;
 const OPTION_FIELDS = ['name', 'enabled', 'keepPlaying', 'rules', 'startingMoney', 'startingColumn', 'startingRow'] as const;
 const THEME_FIELDS = ['name', 'enabled', 'rules'] as const;
 const LEVEL_FIELDS = ['name', 'isDefault', 'mobScale', 'permadeath'] as const;
@@ -283,6 +283,11 @@ function copyName(name: string, number: number, translator: Translator): string
 async function existingTexts(version: UniverseVersion, universe: EditableUniverseDetails, executor: Executor): Promise<Set<string>>
 {
 	const texts = new Set((await listThingNames(version, executor)).map((thing) => textKey(thing.kind, thing.thingId, 'name')));
+
+	for (const thing of await listThingDescriptions(version, executor))
+	{
+		texts.add(textKey(thing.kind, thing.thingId, 'description'));
+	}
 
 	for (const key of universeTextKeys(universe.id, universe))
 	{
@@ -544,6 +549,76 @@ function sameBounds(a: AreaBounds, b: AreaBounds): boolean
 function pick(thing: Record<string, unknown>, fields: readonly string[]): Record<string, unknown>
 {
 	return(Object.fromEntries(fields.map((field) => [field, thing[field]])));
+}
+
+/**
+ * Some of an item's, race's, class's or theme's settings, with its description, which an export made
+ * before they had descriptions leaves out
+ *
+ * @param thing The item, race, class or theme, as the file holds it
+ * @param fields The settings besides its description
+ * @return The settings
+ */
+function pickDescribed(thing: Record<string, unknown>, fields: readonly string[]): Record<string, unknown>
+{
+	return({
+		...pick(thing, fields),
+		description: (thing.description ?? null)
+	});
+}
+
+/**
+ * An item as a file holds it, with a category and types in place of the one type an item had in a file
+ * exported before items had several (singleItemTypeKind())
+ *
+ * @param ruleset The universe's ruleset
+ * @param item The item, as the file holds it
+ * @return The item to save, which the save checks
+ */
+function withItemKind(ruleset: Ruleset, item: Record<string, unknown>): Record<string, unknown>
+{
+	const { type, ...others } = item;
+
+	if ((typeof type !== 'string') || ('category' in item))
+	{
+		return(item);
+	}
+
+	// A type the ruleset never had keeps its key, under no category, for the save to refuse
+	const kind = (singleItemTypeKind(ruleset, type) ?? {
+		category: '',
+		types: [type]
+	});
+
+	return({
+		...others,
+		category: kind.category,
+		types: [...kind.types]
+	});
+}
+
+/**
+ * A file's ruleset settings, with only the core rulebook on when the file was exported before universes
+ * chose their books
+ *
+ * @param rulesetSettings The ruleset settings, as the file holds them
+ * @return The settings to save, which the save checks
+ */
+function withCoreRulebookOnly(rulesetSettings: unknown): unknown
+{
+	if ((typeof rulesetSettings !== 'object') || (rulesetSettings === null) || !('settings' in rulesetSettings) || (typeof rulesetSettings.settings !== 'object') || (rulesetSettings.settings === null))
+	{
+		return(rulesetSettings);
+	}
+
+	return({
+		...rulesetSettings,
+		settings: {
+			rulebooks: [],
+			barredRulebooks: [],
+			...rulesetSettings.settings
+		}
+	});
 }
 
 /**
@@ -1012,7 +1087,7 @@ class ImportPlanner
 
 		for (const item of (this.manifest.items ?? []))
 		{
-			const settings = pick(item, ITEM_FIELDS);
+			const settings = pickDescribed(withItemKind(this.ruleset, item), ITEM_FIELDS);
 			const where = `item ${item.id}`;
 
 			if (item.key !== null)
@@ -1522,7 +1597,7 @@ class ImportPlanner
 				startingAreaId: ((startingAreaId === null) ? null : savedString(ids, startingAreaId))
 			}
 		}), 'settings');
-		this.add({ kind: 'ruleset', settings: this.manifest.rulesetSettings }, 'ruleset settings');
+		this.add({ kind: 'ruleset', settings: withCoreRulebookOnly(this.manifest.rulesetSettings) }, 'ruleset settings');
 		this.planDifficultyLevels();
 		this.planRaces();
 		this.planClasses();
@@ -1585,7 +1660,7 @@ class ImportPlanner
 	private planRaces(): void
 	{
 		this.planOptions('Race', 'race', (this.manifest.races ?? []), this.target.races, this.matchers.races, this.raceTargets, (race, ids) => ({
-			...pick(race, OPTION_FIELDS),
+			...pickDescribed(race, OPTION_FIELDS),
 			...this.startingExtras(race, `race ${race.id}`, ids)
 		}));
 	}
@@ -1597,7 +1672,7 @@ class ImportPlanner
 	private planClasses(): void
 	{
 		this.planOptions('Class', 'class', (this.manifest.classes ?? []), this.target.classes, this.matchers.classes, this.classTargets, (option, ids) => ({
-			...pick(option, OPTION_FIELDS),
+			...pickDescribed(option, OPTION_FIELDS),
 			...this.startingExtras(option, `class ${option.id}`, ids),
 			raceAreas: (Array.isArray(option.raceAreas) ? option.raceAreas : []).map((raceArea: unknown) =>
 			{
@@ -1628,7 +1703,7 @@ class ImportPlanner
 	 */
 	private planThemes(): void
 	{
-		this.planOptions('Theme', 'theme', (this.manifest.themes ?? []), this.target.themes, this.matchers.themes, this.themeTargets, (theme) => pick(theme, THEME_FIELDS));
+		this.planOptions('Theme', 'theme', (this.manifest.themes ?? []), this.target.themes, this.matchers.themes, this.themeTargets, (theme) => pickDescribed(theme, THEME_FIELDS));
 	}
 
 	/**
@@ -1987,6 +2062,7 @@ class ImportPlanner
 		{
 			this.add(change(thing.id), `the draft's ${kind} ${thing.id}`);
 			this.deleted.add(textKey(kind, String(thing.id), 'name'));
+			this.deleted.add(textKey(kind, String(thing.id), 'description'));
 		}
 	}
 
@@ -2046,8 +2122,8 @@ class ImportPlanner
 	}
 
 	/**
-	 * Notes the names of the file's things of a kind as universe text, for those that have one: the
-	 * universe's own things, and the ruleset's defaults it renamed
+	 * Notes the names and descriptions of the file's things of a kind as universe text, for those that
+	 * have them: the universe's own things, and the ruleset's defaults it renamed or described
 	 *
 	 * @param kind What they are
 	 * @param things The file's things of the kind
@@ -2059,9 +2135,17 @@ class ImportPlanner
 		{
 			const target = ((typeof thing.id === 'number') ? targets.get(thing.id) : undefined);
 
-			if ((target !== undefined) && (typeof thing.name === 'string'))
+			if (target === undefined)
 			{
-				this.texts.add(textKey(kind, String(target), 'name'));
+				continue;
+			}
+
+			for (const field of ['name', 'description'] as const)
+			{
+				if (typeof thing[field] === 'string')
+				{
+					this.texts.add(textKey(kind, String(target), field));
+				}
 			}
 		}
 	}

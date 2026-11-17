@@ -116,3 +116,54 @@ export const SF1E_THEME_NAMES: Record<Sf1eThemeKey, MessageDescriptor> = defineM
 		description: 'Name of a character theme (background) in Starfinder: seeks out and studies alien life. Used as a label'
 	}
 });
+
+/**
+ * Each default theme's description, shown in Create Character, the theme editor, a rulebook's Contents dialog and the Audit tab
+ */
+export const SF1E_THEME_DESCRIPTIONS: Record<Sf1eThemeKey, MessageDescriptor> = defineMessages({
+	ace_pilot: {
+		id: 'sf1e.themeDescription.ace_pilot',
+		defaultMessage: 'A natural at the controls of starships and vehicles, whether trained by the military or self-taught. Ace pilots know every make and model, and are skilled at piloting.',
+		description: 'Description of the ace pilot, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	bounty_hunter: {
+		id: 'sf1e.themeDescription.bounty_hunter',
+		defaultMessage: 'A hunter who tracks people down for money. Bounty hunters pick a mark, learn all they can about them and are good at following a trail.',
+		description: 'Description of the bounty hunter, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	icon: {
+		id: 'sf1e.themeDescription.icon',
+		defaultMessage: 'A celebrity known on many worlds, such as a famous performer or scientist. Icons know their profession and its culture inside out.',
+		description: 'Description of the icon, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	mercenary: {
+		id: 'sf1e.themeDescription.mercenary',
+		defaultMessage: 'A soldier of fortune who fights for pay beside their companions. Mercenaries know armies, rival crews and military procedure, and are trained in athletics.',
+		description: 'Description of the mercenary, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	outlaw: {
+		id: 'sf1e.themeDescription.outlaw',
+		defaultMessage: 'Someone wanted by the law, guilty or not. Outlaws know the criminal underworld and its back-alley deals, and have quick hands.',
+		description: 'Description of the outlaw, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	priest: {
+		id: 'sf1e.themeDescription.priest',
+		defaultMessage: 'A devoted member of a religion or philosophy, who always has their beliefs to fall back on. Priests know religious traditions and are trained in mysticism.',
+		description: 'Description of the priest, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	scholar: {
+		id: 'sf1e.themeDescription.scholar',
+		defaultMessage: 'An intellectual drawn to problems and puzzles others find daunting. Scholars are experts in one field of science, such as biology or astronomy.',
+		description: 'Description of the scholar, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	spacefarer: {
+		id: 'sf1e.themeDescription.spacefarer',
+		defaultMessage: 'An explorer who longs to set foot on distant worlds and uncover their secrets. Spacefarers remember all they learn about new places and are trained in physical science.',
+		description: 'Description of the spacefarer, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	},
+	xenoseeker: {
+		id: 'sf1e.themeDescription.xenoseeker',
+		defaultMessage: 'An adventurer who seeks out alien life, the stranger the better. Xenoseekers are trained to find, identify and talk with alien creatures.',
+		description: 'Description of the xenoseeker, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook\'s contents and the Audit tab'
+	}
+});

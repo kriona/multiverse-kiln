@@ -1075,6 +1075,38 @@
 		"defaultMessage": "Delete",
 		"description": "Button on a character's sheet that starts deleting the character, asking first"
 	},
+	"characterSheet.discard": {
+		"defaultMessage": "Discard",
+		"description": "Item in the menu beside an item on a character's sheet that asks how many of it to discard from what the character carries"
+	},
+	"characterSheet.discardConfirm": {
+		"defaultMessage": "Discard",
+		"description": "Button, in the dialog that asks how many of an item to discard from what a character carries, that discards them at once"
+	},
+	"characterSheet.discardFailed": {
+		"defaultMessage": "Could not discard the items.",
+		"description": "Shown in the dialog that discards an item a character carries, opened from their sheet, when the items couldn't be discarded"
+	},
+	"characterSheet.discardItemTitle": {
+		"defaultMessage": "Discard {item}",
+		"description": "Title of the dialog, opened by Discard in an item's menu on a character's sheet, that asks whether to discard the item from what the character carries; {item} is the item's name"
+	},
+	"characterSheet.discardQuantity": {
+		"defaultMessage": "Choose how many to discard, up to {max, number}",
+		"description": "Label of the field, in the dialog that discards an item a character carries, for how many of it to discard, shown when they carry more than one; {max} is how many they carry"
+	},
+	"characterSheet.discardQuestion": {
+		"defaultMessage": "Are you sure you want to discard {item}?",
+		"description": "In the dialog, opened by Discard in an item's menu on a character's sheet, that asks whether to discard the item from what the character carries; when they carry more than one, a field below it asks how many. {item} is the item's name, shown in italics"
+	},
+	"characterSheet.giveFailed": {
+		"defaultMessage": "Could not give the items.",
+		"description": "Shown on a character's sheet, from the editor's Character List tab, when the items chosen with Give Items couldn't be added to what the character carries"
+	},
+	"characterSheet.giveItems": {
+		"defaultMessage": "Give Items",
+		"description": "Button on a character's sheet, shown to the universe's creators from the editor's Character List tab, that opens the dialog for choosing items and how many of each to add to what the character carries"
+	},
 	"characterSheet.hitPoints": {
 		"defaultMessage": "Hit points",
 		"description": "On a character's sheet in Starfinder, the label of their hit points"
@@ -1083,9 +1115,21 @@
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
 	},
+	"characterSheet.itemMenu": {
+		"defaultMessage": "Actions for {item}",
+		"description": "Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character's sheet, which opens a menu of what can be done with the item, such as Discard; {item} is the item's name"
+	},
 	"characterSheet.items": {
 		"defaultMessage": "Equipment",
 		"description": "Heading on a character's sheet of the items they carry"
+	},
+	"characterSheet.itemsDiscarded": {
+		"defaultMessage": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}.",
+		"description": "Read out by screen readers once items a character carried were discarded from their sheet; {name} is the character's name, {item} the item's name and {quantity} how many were discarded, written as the sheet writes it, e.g. \"Arrow x20\""
+	},
+	"characterSheet.itemsGiven": {
+		"defaultMessage": "{name} has been given {count, plural, one {# item} other {# different items}}.",
+		"description": "Read out by screen readers once items chosen with Give Items, on a character's sheet from the editor's Character List tab, were added to what the character carries; {name} is the character's name and {count} how many different items"
 	},
 	"characterSheet.leftGroup": {
 		"defaultMessage": "{name} has left the group.",
@@ -2007,6 +2051,10 @@
 		"defaultMessage": "Race and class",
 		"description": "Heading of the column on the editor's Character List tab giving each character's race and class, e.g. Dwarf Fighter"
 	},
+	"editor.characterList.giveItemsTitle": {
+		"defaultMessage": "Give Items to {name}",
+		"description": "Title of the dialog for choosing items to add to what a character carries, opened by Give Items on their sheet from the editor's Character List tab; {name} is the character's name"
+	},
 	"editor.characterList.inGroup": {
 		"defaultMessage": "In a group",
 		"description": "Label of the yes-or-no filter on the editor's Character List tab for whether a character is in a group (characters playing together)"
@@ -2619,6 +2667,10 @@
 		"defaultMessage": "you",
 		"description": "In the Notes column of the editor's Editors table, for the row of the player using the editor, on its own line after any other notes"
 	},
+	"editor.enabledSwitch": {
+		"defaultMessage": "{name} enabled",
+		"description": "Read by screen readers for the on/off switch in a row of the editor's tables of races, classes, themes and items, which does what the Enabled checkbox in its editor does; {name} is the race's, class's, theme's or item's name"
+	},
 	"editor.error.failedBecause": {
 		"defaultMessage": "{failure} {reason}",
 		"description": "An editor action that failed, followed by why; {failure} is e.g. \"Could not save the tile.\" and {reason} is the server's explanation. Change only to reorder the two sentences"
@@ -2711,6 +2763,34 @@
 		"defaultMessage": "Take out members, those who joined most recently first, until they fit",
 		"description": "Choice in the dialog the editor's Save opens, for a group size smaller than some groups: members leave, newest first, never the character the group is centered on (its anchor being)"
 	},
+	"editor.impact.rulebookItems": {
+		"defaultMessage": "Turning off {rulebook}: characters carry its items",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a book of game rules being turned off whose items characters carry; {rulebook} is the book's name. The items are listed under it"
+	},
+	"editor.impact.rulebookKeepItems": {
+		"defaultMessage": "Let them keep using them; no new copies are made",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose items characters carry: they keep them, and nobody new is given them"
+	},
+	"editor.impact.rulebookKeepPlaying": {
+		"defaultMessage": "Let them keep playing; only new characters can't choose them",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose races and classes characters are: they can still play, and only new characters can't choose the book's races and classes"
+	},
+	"editor.impact.rulebookOption": {
+		"defaultMessage": "{name} ({count, plural, one {# character} other {# characters}})",
+		"description": "One race, class or item in the list under a choice in the dialog the editor's Save opens, for a book of game rules being turned off; {name} is its name and {count} how many characters are it or carry it"
+	},
+	"editor.impact.rulebookPlaying": {
+		"defaultMessage": "Turning off {rulebook}: characters are its races and classes",
+		"description": "Heading of a choice in the dialog the editor's Save opens, for a book of game rules being turned off whose races and classes characters are; {rulebook} is the book's name. The races and classes are listed under it"
+	},
+	"editor.impact.rulebookPreventPlaying": {
+		"defaultMessage": "Stop them playing until the book is turned on again",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose races and classes characters are: they are turned out of the lobby and their groups, and can't play until the book is turned on again"
+	},
+	"editor.impact.rulebookRemoveItems": {
+		"defaultMessage": "Take them away; they get them back if the book is turned on again",
+		"description": "Choice in the dialog the editor's Save opens, for a book of game rules being turned off whose items characters carry: the items are taken away from them, and given back if the book is turned on again"
+	},
 	"editor.impact.title": {
 		"defaultMessage": "Players Are Affected",
 		"description": "Title of the dialog the editor's Save opens when the changes disable a race, class, item or area that characters are using, or make groups smaller than some are, asking what should happen to them"
@@ -2741,7 +2821,11 @@
 	},
 	"editor.item.type": {
 		"defaultMessage": "Type",
-		"description": "An item's type, such as dagger or longsword: the label of its field in the item editor, and of the Items tab's filter; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the Items tab's filter for items of one type, such as light blades or light armor"
+	},
+	"editor.item.types": {
+		"defaultMessage": "Types",
+		"description": "Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.itemSelect.chosen": {
 		"defaultMessage": "Chosen",
@@ -2779,6 +2863,10 @@
 		"defaultMessage": "Choose Items",
 		"description": "Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with"
 	},
+	"editor.itemSelect.tooMany": {
+		"defaultMessage": "You can choose up to {max, plural, one {# item} other {# items}}.",
+		"description": "Shown under an item in the dialog for choosing items when it was ticked while as many items as allowed were already chosen; it isn't chosen. {max} is the most items allowed"
+	},
 	"editor.items.add": {
 		"defaultMessage": "Add Item",
 		"description": "Button that opens the dialog for making a new item"
@@ -2789,7 +2877,7 @@
 	},
 	"editor.items.category": {
 		"defaultMessage": "Kind",
-		"description": "Label of the filter for an item's broad kind, such as weapons or armor"
+		"description": "An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.items.icon": {
 		"defaultMessage": "Icon",
@@ -3639,6 +3727,54 @@
 		"defaultMessage": "Your role: {role}",
 		"description": "In the editor's toolbar, the player's role in the universe; {role} is e.g. creator or builder"
 	},
+	"editor.rulebook.classes": {
+		"defaultMessage": "Classes",
+		"description": "Heading of the list of character classes in the dialog listing what a book of game rules brings"
+	},
+	"editor.rulebook.hint": {
+		"defaultMessage": "The book brings these to the universe while it is on. Disable each one on the Characters tab.",
+		"description": "Explains the dialog listing the races, classes and themes a book of game rules brings to a universe, opened from the Rulebooks table on the editor's Ruleset tab"
+	},
+	"editor.rulebook.loadFailed": {
+		"defaultMessage": "Could not list what the book brings.",
+		"description": "Shown in the dialog listing what a book of game rules brings when its races, classes and themes couldn't be loaded"
+	},
+	"editor.rulebook.races": {
+		"defaultMessage": "Races",
+		"description": "Heading of the list of races in the dialog listing what a book of game rules brings"
+	},
+	"editor.rulebook.themes": {
+		"defaultMessage": "Themes",
+		"description": "Heading of the list of themes (a Starfinder character's background) in the dialog listing what a book of game rules brings"
+	},
+	"editor.rulebooks.actionsColumn": {
+		"defaultMessage": "Actions",
+		"description": "Heading of the column of buttons in the Rulebooks table on the editor's Ruleset tab, read only by screen readers"
+	},
+	"editor.rulebooks.alwaysOn": {
+		"defaultMessage": "Always on",
+		"description": "Status of the core rulebook in the Rulebooks table on the editor's Ruleset tab: it can't be turned off"
+	},
+	"editor.rulebooks.bookColumn": {
+		"defaultMessage": "Book",
+		"description": "Heading of the column of book names in the Rulebooks table on the editor's Ruleset tab"
+	},
+	"editor.rulebooks.contents": {
+		"defaultMessage": "Contents",
+		"description": "Button in a row of the Rulebooks table on the editor's Ruleset tab that opens a dialog listing the races, classes and themes the book brings"
+	},
+	"editor.rulebooks.heading": {
+		"defaultMessage": "Rulebooks",
+		"description": "Heading of the part of the editor's Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.rulebooks.hint": {
+		"defaultMessage": "The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there.",
+		"description": "Explains the Rulebooks table on the editor's Ruleset tab"
+	},
+	"editor.rulebooks.statusColumn": {
+		"defaultMessage": "Status",
+		"description": "Heading of the column in the Rulebooks table on the editor's Ruleset tab saying whether each book is on or off"
+	},
 	"editor.ruleset.abilityPoints": {
 		"defaultMessage": "Ability points",
 		"description": "Label of the field for how many ability points players spend raising their characters' ability scores, in Starfinder; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -4428,7 +4564,7 @@
 		"description": "Heading of the column on the editor's Translations tab saying where each piece of text comes from, such as Area: Waterdeep, name"
 	},
 	"editor.translations.placeOf": {
-		"defaultMessage": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}",
+		"defaultMessage": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, {field, select, description {description} other {name}}} race {Race: {name}, {field, select, description {description} other {name}}} class {Class: {name}, {field, select, description {description} other {name}}} theme {Theme: {name}, {field, select, description {description} other {name}}} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}",
 		"description": "Where a piece of universe text comes from, in the From column of the editor's Translations tab and in its dialog's title, e.g. \"Area: Waterdeep, name\": what kind of thing it belongs to, {name} its name in the universe's source language, and which of its text it is. For a coin, {coin} is the coin's name in the rules as it reads mid-sentence, such as copper pieces, and the text is the name the universe gives it (such as bronze kits) or the abbreviation amounts of it are written with (such as bk)"
 	},
 	"editor.translations.remove": {
@@ -5423,6 +5559,10 @@
 		"defaultMessage": "A difficulty level needs a name.",
 		"description": "Why a difficulty level the universe added couldn't be saved: its name was left out"
 	},
+	"error.discardItemsNotCarried": {
+		"defaultMessage": "The character doesn't carry that item any more.",
+		"description": "Why items weren't discarded from a character's sheet: the character no longer carries one of them, perhaps because it was discarded in another window first"
+	},
 	"error.draftExists": {
 		"defaultMessage": "The universe already has a draft. Apply it or discard it before starting another.",
 		"description": "Why a draft of the universe couldn't be started (see Universe versions): it has one already, perhaps started by another editor"
@@ -5435,6 +5575,10 @@
 		"defaultMessage": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor.",
 		"description": "Shown on the page the world editor shows in place of a universe whose creators require its editors to have two-factor authentication on, to an editor who doesn't; {universe} is the universe's name. Buttons to turn it on, leave the universe and go back to Home follow"
 	},
+	"error.editorNoSuchCharacter": {
+		"defaultMessage": "The character doesn't exist any more.",
+		"description": "Why the editor's Character List tab couldn't show or change a character: their player deleted them, or their last rites are over"
+	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",
 		"description": "Why an area can't both have faerie time and wrap around at its edges: shown by the area editor's loop checkboxes, and as the reason the server refused an area's settings"
@@ -5446,6 +5590,10 @@
 	"error.floatingAbility": {
 		"defaultMessage": "Choose the ability that gets the race's bonus, and only for a race that has one.",
 		"description": "Why a new character wasn't made: a race that lets the player choose an ability to raise had none chosen, or another race had one"
+	},
+	"error.giveItemsUnavailable": {
+		"defaultMessage": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again.",
+		"description": "Why items weren't given to a character from their sheet on the editor's Character List tab: an item chosen was deleted, disabled or had its rulebook (a book of optional rules) turned off, perhaps while the creator was choosing"
 	},
 	"error.groupCharacterBarred": {
 		"defaultMessage": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}",
@@ -5779,6 +5927,18 @@
 		"defaultMessage": "Your role in this universe doesn't allow that.",
 		"description": "Why an editor change was refused: the player's role, such as beta tester, can't make it"
 	},
+	"error.rulebookLeavesNoClass": {
+		"defaultMessage": "Turning off the book leaves no enabled class for new characters. Enable a class from another book first.",
+		"description": "Why a book of game rules (such as the Advanced Player's Guide) couldn't be turned off on the Ruleset tab: its classes are the only ones new characters can choose"
+	},
+	"error.rulebookLeavesNoRace": {
+		"defaultMessage": "Turning off the book leaves no enabled race for new characters. Enable a race from another book first.",
+		"description": "Why a book of game rules (such as the Advanced Race Guide) couldn't be turned off on the Ruleset tab: its races are the only ones new characters can choose"
+	},
+	"error.rulebookLeavesNoTheme": {
+		"defaultMessage": "Turning off the book leaves no enabled theme for new characters. Enable a theme from another book first.",
+		"description": "Why a book of game rules couldn't be turned off on the Ruleset tab: its themes are the only ones new characters can choose"
+	},
 	"error.saveConflicts": {
 		"defaultMessage": "Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again.",
 		"description": "Why the world editor couldn't save: another editor saved different values for settings the player also changed; the editor then lists each one, to keep the player's value or take the other editor's"
@@ -5863,6 +6023,10 @@
 		"defaultMessage": "Type your username exactly as it is to confirm.",
 		"description": "Shown under the username field when deleting a universe from an account that has no password: what was typed isn't the account's username"
 	},
+	"error.universeDisabledCharacters": {
+		"defaultMessage": "The site's admins have disabled this universe, so its characters can't be changed.",
+		"description": "Why a character couldn't be deleted, restored, taken out of their group or given items from the editor's Character List tab: one of the site's admins disabled the universe"
+	},
 	"error.universeDisabledSave": {
 		"defaultMessage": "The site's admins have disabled this universe, so changes to it can't be saved.",
 		"description": "Why the world editor couldn't save: one of the site's admins disabled the universe, for a reason the editor shows. Leaving the universe can still be saved"
@@ -5884,8 +6048,8 @@
 		"description": "Why a universe couldn't be enabled on the Universes admin page: it isn't disabled, perhaps because another admin enabled it a moment ago"
 	},
 	"error.unknownItemType": {
-		"defaultMessage": "The universe's ruleset has no such type of item.",
-		"description": "Why an item couldn't be saved: the type chosen for it isn't one of the game rules' item types"
+		"defaultMessage": "The universe's ruleset has no such kind or type of item.",
+		"description": "Why an item couldn't be saved: the kind (such as weapons) or a type (such as light blades) chosen for it isn't one of the game rules', or a type isn't of its kind"
 	},
 	"error.unknownRaceArea": {
 		"defaultMessage": "A starting area is chosen for a race this universe doesn't have.",
@@ -6015,13 +6179,17 @@
 		"defaultMessage": "Write up to {max, number} characters, without spaces, digits or commas.",
 		"description": "Shown under a coin's abbreviation on the editor's Ruleset tab, or under its translation on the Translations tab, when it can't be written after an amount, like the gp in 2gp; {max} is the most characters it may have"
 	},
+	"form.description": {
+		"defaultMessage": "Description",
+		"description": "Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook's Contents dialog; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
 	"form.discardChanges": {
 		"defaultMessage": "You have changes that haven't been saved. Discard them?",
 		"description": "Asked before closing a form or dialog that has unsaved changes; the browser's OK discards them and Cancel goes back to the form"
 	},
 	"form.enabled": {
 		"defaultMessage": "Enabled",
-		"description": "Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"form.indoors": {
 		"defaultMessage": "Indoors",
@@ -6439,13 +6607,117 @@
 		"defaultMessage": "Who can use the link",
 		"description": "Label of the choice of how many characters can join the group with an invite link"
 	},
+	"item.pf1e.book_of_puzzles": {
+		"defaultMessage": "book of puzzles",
+		"description": "Name of an item in Pathfinder: a book of brainteasers that train the mind of whoever solves them"
+	},
+	"item.pf1e.book_of_war_prayers": {
+		"defaultMessage": "book of war prayers",
+		"description": "Name of an item in Pathfinder: a small book of prayers read aloud before a battle to hearten allies"
+	},
+	"item.pf1e.cestus": {
+		"defaultMessage": "cestus",
+		"description": "Name of an item in Pathfinder: a studded leather glove for punching"
+	},
 	"item.pf1e.dagger": {
 		"defaultMessage": "dagger",
 		"description": "Name of an item in Pathfinder: a short blade for stabbing or throwing"
 	},
+	"item.pf1e.footprints_cast": {
+		"defaultMessage": "footprints cast",
+		"description": "Name of an item in Pathfinder: a quick-drying plaster for taking a copy of footprints to study later"
+	},
+	"item.pf1e.kobold_long_lash": {
+		"defaultMessage": "long lash tail attachment",
+		"description": "Name of an item in Pathfinder: a whip-like blade a kobold straps to the end of its tail"
+	},
+	"item.pf1e.kobold_spiked_tail": {
+		"defaultMessage": "spiked tail attachment",
+		"description": "Name of an item in Pathfinder: a spiked weight a kobold straps to the end of its tail"
+	},
+	"item.pf1e.light_fire_ink": {
+		"defaultMessage": "light fire ink",
+		"description": "Name of an item in Pathfinder: an ink for secret messages that bursts into flame once light falls on it"
+	},
+	"item.pf1e.quilted_cloth": {
+		"defaultMessage": "quilted cloth",
+		"description": "Name of an item in Pathfinder: light armor of layered, padded cloth worn as clothing"
+	},
+	"item.pf1e.ratfolk_tailblade": {
+		"defaultMessage": "ratfolk tailblade",
+		"description": "Name of an item in Pathfinder: a small blade a ratfolk straps to its tail"
+	},
+	"item.pf1e.sword_cane": {
+		"defaultMessage": "sword cane",
+		"description": "Name of an item in Pathfinder: a thin blade hidden in a walking stick"
+	},
+	"item.pf1e.tome_of_epics": {
+		"defaultMessage": "tome of epics",
+		"description": "Name of an item in Pathfinder: a heavy illustrated book of heroic tales that inspires its reader"
+	},
+	"item.pf1e.wooden_armor": {
+		"defaultMessage": "wooden armor",
+		"description": "Name of an item in Pathfinder: light armor of wooden plates bound together"
+	},
 	"item.sf1e.survival_knife": {
 		"defaultMessage": "survival knife",
 		"description": "Name of an item in Starfinder: a sturdy knife for fighting and for use in the wild"
+	},
+	"itemDescription.pf1e.book_of_puzzles": {
+		"defaultMessage": "A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day.",
+		"description": "Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.book_of_war_prayers": {
+		"defaultMessage": "A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day.",
+		"description": "Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.cestus": {
+		"defaultMessage": "A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things.",
+		"description": "Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.dagger": {
+		"defaultMessage": "A short blade for stabbing up close or throwing.",
+		"description": "Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.footprints_cast": {
+		"defaultMessage": "A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather.",
+		"description": "Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.kobold_long_lash": {
+		"defaultMessage": "A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it.",
+		"description": "Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.kobold_spiked_tail": {
+		"defaultMessage": "A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it.",
+		"description": "Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.light_fire_ink": {
+		"defaultMessage": "An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read.",
+		"description": "Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.quilted_cloth": {
+		"defaultMessage": "Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding.",
+		"description": "Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.ratfolk_tailblade": {
+		"defaultMessage": "A small knife strapped to the tip of a ratfolk's tail, so the ratfolk can slash at foes with its tail.",
+		"description": "Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.sword_cane": {
+		"defaultMessage": "A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw.",
+		"description": "Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.tome_of_epics": {
+		"defaultMessage": "A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day.",
+		"description": "Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.pf1e.wooden_armor": {
+		"defaultMessage": "Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn't hinder swimming.",
+		"description": "Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+	},
+	"itemDescription.sf1e.survival_knife": {
+		"defaultMessage": "A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion.",
+		"description": "Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
 	},
 	"keys.alt": {
 		"defaultMessage": "Alt",
@@ -6556,7 +6828,7 @@
 		"description": "On the license page, a link to the text of the license that comes with the Nunito font, in English"
 	},
 	"license.openGameContent": {
-		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}.",
+		"defaultMessage": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}.",
 		"description": "On the license page, saying which part of the game is Open Game Content, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code. The license's text follows in English"
 	},
 	"license.pathfinder": {
@@ -6580,7 +6852,7 @@
 		"description": "On the license page, saying the notice about Paizo's Community Use Policy in the Pathfinder section covers Starfinder too; {pathfinder} is a link to that section"
 	},
 	"license.starfinderOpenGameContent": {
-		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content.",
+		"defaultMessage": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}. Nothing else in {siteName} is Open Game Content.",
 		"description": "On the license page, saying which part of the game is Open Game Content from Starfinder, as the Open Game License requires; {folder} and {locales} are folders in the game engine's source code, and {siteName} is the game engine's name"
 	},
 	"license.summary": {
@@ -7159,6 +7431,10 @@
 		"defaultMessage": "Alchemist",
 		"description": "Name of a character class in Pathfinder: brews potions, bombs and magical extracts. Singular, used as a label"
 	},
+	"pf1e.class.arcanist": {
+		"defaultMessage": "Arcanist",
+		"description": "Name of a character class in Pathfinder: a scholar who prepares spells but shapes them freely as they cast. Singular, used as a label"
+	},
 	"pf1e.class.barbarian": {
 		"defaultMessage": "Barbarian",
 		"description": "Name of a character class in Pathfinder: a warrior who fights in a rage. Singular, used as a label"
@@ -7166,6 +7442,14 @@
 	"pf1e.class.bard": {
 		"defaultMessage": "Bard",
 		"description": "Name of a character class in Pathfinder: a performer whose music and words are magic. Singular, used as a label"
+	},
+	"pf1e.class.bloodrager": {
+		"defaultMessage": "Bloodrager",
+		"description": "Name of a character class in Pathfinder: a warrior whose rage awakens magic in their blood. Singular, used as a label"
+	},
+	"pf1e.class.brawler": {
+		"defaultMessage": "Brawler",
+		"description": "Name of a character class in Pathfinder: a fighter who wins with fists and quick adaptation. Singular, used as a label"
 	},
 	"pf1e.class.cavalier": {
 		"defaultMessage": "Cavalier",
@@ -7183,9 +7467,17 @@
 		"defaultMessage": "Fighter",
 		"description": "Name of a character class in Pathfinder: a trained warrior skilled with weapons and armor. Singular, used as a label"
 	},
+	"pf1e.class.hunter": {
+		"defaultMessage": "Hunter",
+		"description": "Name of a character class in Pathfinder: a wilderness spellcaster who fights alongside an animal companion. Singular, used as a label"
+	},
 	"pf1e.class.inquisitor": {
 		"defaultMessage": "Inquisitor",
 		"description": "Name of a character class in Pathfinder: a hunter of a faith's enemies. Singular, used as a label"
+	},
+	"pf1e.class.investigator": {
+		"defaultMessage": "Investigator",
+		"description": "Name of a character class in Pathfinder: a detective who solves mysteries with keen wits and alchemy. Singular, used as a label"
 	},
 	"pf1e.class.monk": {
 		"defaultMessage": "Monk",
@@ -7207,6 +7499,18 @@
 		"defaultMessage": "Rogue",
 		"description": "Name of a character class in Pathfinder: a sneaky, skilled thief or scout. Singular, used as a label"
 	},
+	"pf1e.class.shaman": {
+		"defaultMessage": "Shaman",
+		"description": "Name of a character class in Pathfinder: casts spells granted by spirits through a spirit animal. Singular, used as a label"
+	},
+	"pf1e.class.skald": {
+		"defaultMessage": "Skald",
+		"description": "Name of a character class in Pathfinder: a warrior poet whose songs stir allies into a rage. Singular, used as a label"
+	},
+	"pf1e.class.slayer": {
+		"defaultMessage": "Slayer",
+		"description": "Name of a character class in Pathfinder: a hunter of people who studies a target to strike it down. Singular, used as a label"
+	},
 	"pf1e.class.sorcerer": {
 		"defaultMessage": "Sorcerer",
 		"description": "Name of a character class in Pathfinder: casts magic that comes from their bloodline. Singular, used as a label"
@@ -7215,6 +7519,14 @@
 		"defaultMessage": "Summoner",
 		"description": "Name of a character class in Pathfinder: bonded to a summoned creature from another plane. Singular, used as a label"
 	},
+	"pf1e.class.swashbuckler": {
+		"defaultMessage": "Swashbuckler",
+		"description": "Name of a character class in Pathfinder: a daring sword fighter who relies on flair and nimble moves. Singular, used as a label"
+	},
+	"pf1e.class.warpriest": {
+		"defaultMessage": "Warpriest",
+		"description": "Name of a character class in Pathfinder: a warrior who fights for their faith and casts divine spells. Singular, used as a label"
+	},
 	"pf1e.class.witch": {
 		"defaultMessage": "Witch",
 		"description": "Name of a character class in Pathfinder: casts spells learned from a patron through a familiar. Singular, used as a label"
@@ -7222,6 +7534,114 @@
 	"pf1e.class.wizard": {
 		"defaultMessage": "Wizard",
 		"description": "Name of a character class in Pathfinder: casts spells learned from study and a spellbook. Singular, used as a label"
+	},
+	"pf1e.classDescription.alchemist": {
+		"defaultMessage": "An inventor who brews bombs, extracts and mutagens. Alchemists hurl explosives, drink extracts that work like spells and take mutagens that make them stronger in a fight.",
+		"description": "Description of the alchemist, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.arcanist": {
+		"defaultMessage": "A scholar who studies magic like a wizard but casts it like a sorcerer. Arcanists prepare spells each day, cast them freely from their slots and draw on a pool of arcane power.",
+		"description": "Description of the arcanist, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.barbarian": {
+		"defaultMessage": "A fierce warrior who draws strength from fury. Barbarians rage to hit harder and shrug off blows, move fast and are hard to catch off guard.",
+		"description": "Description of the barbarian, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.bard": {
+		"defaultMessage": "A performer whose music and words weave magic. Bards inspire their allies, know a little about everything and cast spells to help, charm and trick.",
+		"description": "Description of the bard, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.bloodrager": {
+		"defaultMessage": "A warrior whose rage awakens magic in their blood. Bloodragers fight in a fury, gain powers from a bloodline as they rage and cast a few arcane spells.",
+		"description": "Description of the bloodrager, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.brawler": {
+		"defaultMessage": "A versatile unarmed fighter who thinks fast in a brawl. Brawlers hit hard with their fists, pick up the combat feat they need on the spot and excel at combat maneuvers.",
+		"description": "Description of the brawler, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.cavalier": {
+		"defaultMessage": "A mounted knight sworn to an order and its cause. Cavaliers fight from the saddle of a loyal mount, challenge foes to single combat and rally their allies.",
+		"description": "Description of the cavalier, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.cleric": {
+		"defaultMessage": "A priest who channels the power of a god. Clerics cast divine spells, heal allies with channeled energy and draw powers from two domains of their faith.",
+		"description": "Description of the cleric, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.druid": {
+		"defaultMessage": "A guardian of nature who draws magic from the wild. Druids cast divine spells, bond with an animal companion or a nature domain and can take the shapes of animals.",
+		"description": "Description of the druid, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.fighter": {
+		"defaultMessage": "A master of weapons and armor who wins battles through training and skill. Fighters learn more combat feats than any other class.",
+		"description": "Description of the fighter, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.hunter": {
+		"defaultMessage": "A wilderness spellcaster who fights alongside an animal companion. Hunters and their companions share tactics and animal powers, track their prey and cast nature spells.",
+		"description": "Description of the hunter, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.inquisitor": {
+		"defaultMessage": "A relentless agent of a faith who roots out its enemies. Inquisitors cast divine spells, pass judgment on foes in battle and are hard to lie to.",
+		"description": "Description of the inquisitor, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.investigator": {
+		"defaultMessage": "A detective who solves mysteries with sharp wits and alchemy. Investigators draw on inspiration to boost their checks, brew extracts and study foes to strike them down.",
+		"description": "Description of the investigator, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.monk": {
+		"defaultMessage": "A martial artist who trains body and mind to perfection. Monks fight without weapons or armor, strike in flurries of blows and grow faster as they train.",
+		"description": "Description of the monk, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.oracle": {
+		"defaultMessage": "A spellcaster chosen by divine powers, whether they wanted it or not. Oracles carry a curse that both hinders and helps them, and draw spells and powers from a mystery.",
+		"description": "Description of the oracle, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.paladin": {
+		"defaultMessage": "A holy warrior sworn to a strict code of honor. Paladins smite evil, heal with a touch, stand firm against fear and disease, and later cast a few divine spells.",
+		"description": "Description of the paladin, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.ranger": {
+		"defaultMessage": "A hunter and tracker of the wilds. Rangers fight best against chosen foes and in favored lands, with a bow or two weapons, and later gain a hunting companion and spells.",
+		"description": "Description of the ranger, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.rogue": {
+		"defaultMessage": "A sneaky, skilled scout and thief. Rogues land sneak attacks on unwary foes, find and disarm traps, and learn more skills than any other class.",
+		"description": "Description of the rogue, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.shaman": {
+		"defaultMessage": "A spellcaster who speaks with spirits through a spirit animal. Shamans cast divine spells, use hexes and take on the powers of a chosen spirit.",
+		"description": "Description of the shaman, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.skald": {
+		"defaultMessage": "A warrior poet whose songs drive allies into a rage. Skalds fight on the front line, cast arcane spells and share their fury with the whole party.",
+		"description": "Description of the skald, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.slayer": {
+		"defaultMessage": "A hunter of people who studies a target to strike it down. Slayers track their quarry, land sneak attacks and pick up tricks from rogues and rangers.",
+		"description": "Description of the slayer, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.sorcerer": {
+		"defaultMessage": "A spellcaster whose magic flows from their bloodline. Sorcerers know fewer spells than wizards but cast them more often, without a spellbook, and gain powers from their blood.",
+		"description": "Description of the sorcerer, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.summoner": {
+		"defaultMessage": "A spellcaster bonded to an eidolon, a creature from another plane that grows and changes with them. Summoners fight beside it, call up other creatures and cast arcane spells.",
+		"description": "Description of the summoner, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.swashbuckler": {
+		"defaultMessage": "A daring sword fighter who relies on flair and nimble moves. Swashbucklers spend panache on bold deeds, parry attacks and strike with deadly precision using thrusting blades.",
+		"description": "Description of the swashbuckler, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.warpriest": {
+		"defaultMessage": "A warrior who fights for their faith with weapon and spell. Warpriests bless themselves and their weapons, learn combat feats and cast divine spells.",
+		"description": "Description of the warpriest, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.witch": {
+		"defaultMessage": "A spellcaster who learns magic from a mysterious patron through a familiar. Witches cast arcane spells and use hexes to curse foes and aid allies.",
+		"description": "Description of the witch, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.classDescription.wizard": {
+		"defaultMessage": "A scholar who learns magic from study and a spellbook. Wizards have the widest range of arcane spells and can specialize in one school of magic.",
+		"description": "Description of the wizard, a character class in Pathfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
 	},
 	"pf1e.coin.cp": {
 		"defaultMessage": "cp",
@@ -7257,99 +7677,119 @@
 	},
 	"pf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: armor and shields"
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: armor and shields"
 	},
 	"pf1e.itemCategory.gear": {
 		"defaultMessage": "Gear",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: adventuring equipment such as rope and torches"
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: adventuring equipment such as rope and torches"
 	},
 	"pf1e.itemCategory.weapon": {
-		"defaultMessage": "Weapons",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab: swords, bows, ammunition and the like"
+		"defaultMessage": "Weapon",
+		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: swords, bows, ammunition and the like"
 	},
-	"pf1e.itemType.arrows": {
-		"defaultMessage": "arrows",
-		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a bow"
+	"pf1e.itemType.axes": {
+		"defaultMessage": "axes",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: battleaxes, handaxes, picks and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.chain_shirt": {
-		"defaultMessage": "chain shirt",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor, a shirt of metal rings"
+	"pf1e.itemType.blades_heavy": {
+		"defaultMessage": "heavy blades",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: longswords, scimitars, greatswords and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.club": {
-		"defaultMessage": "club",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a wooden cudgel"
+	"pf1e.itemType.blades_light": {
+		"defaultMessage": "light blades",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: daggers, short swords, rapiers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.crossbow_bolts": {
-		"defaultMessage": "crossbow bolts",
-		"description": "Type of item in Pathfinder, shown beside an item's name: ammunition for a crossbow"
+	"pf1e.itemType.bows": {
+		"defaultMessage": "bows",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: shortbows and longbows. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.dagger": {
-		"defaultMessage": "dagger",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a short blade for stabbing or throwing"
+	"pf1e.itemType.close": {
+		"defaultMessage": "close",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.heavy_shield": {
-		"defaultMessage": "heavy shield",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a large shield held with the whole arm"
+	"pf1e.itemType.crossbows": {
+		"defaultMessage": "crossbows",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: light, heavy and hand crossbows. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.leather_armor": {
-		"defaultMessage": "leather armor",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of stiffened leather"
+	"pf1e.itemType.double": {
+		"defaultMessage": "double",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons with a striking end at each end, such as a quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.light_crossbow": {
-		"defaultMessage": "light crossbow",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a crossbow drawn back by hand"
+	"pf1e.itemType.flails": {
+		"defaultMessage": "flails",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: flails, chains and whips. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.light_shield": {
-		"defaultMessage": "light shield",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a small shield strapped to the forearm"
+	"pf1e.itemType.hammers": {
+		"defaultMessage": "hammers",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: clubs, maces, warhammers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.longbow": {
-		"defaultMessage": "longbow",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a bow about as tall as its archer"
+	"pf1e.itemType.heavy_armor": {
+		"defaultMessage": "heavy armor",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as full plate, which slows its wearer the most"
 	},
-	"pf1e.itemType.longsword": {
-		"defaultMessage": "longsword",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a straight one-handed sword"
+	"pf1e.itemType.light_armor": {
+		"defaultMessage": "light armor",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as leather armor or a chain shirt, which barely slows its wearer"
 	},
-	"pf1e.itemType.other_gear": {
-		"defaultMessage": "other gear",
-		"description": "Type of item in Pathfinder, shown beside an item's name: equipment that is none of the other types"
+	"pf1e.itemType.medium_armor": {
+		"defaultMessage": "medium armor",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as hide or a breastplate, which slows its wearer"
 	},
-	"pf1e.itemType.padded_armor": {
-		"defaultMessage": "padded armor",
-		"description": "Type of item in Pathfinder, shown beside an item's name: light armor of quilted cloth"
+	"pf1e.itemType.monk": {
+		"defaultMessage": "monk",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: the weapons monks train with, such as a kama or quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.quarterstaff": {
-		"defaultMessage": "quarterstaff",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a long wooden staff used as a weapon"
+	"pf1e.itemType.natural": {
+		"defaultMessage": "natural",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: unarmed strikes and natural weapons such as claws. Use the group's name in the official translation of the Core Rulebook where there is one"
+	},
+	"pf1e.itemType.polearms": {
+		"defaultMessage": "polearms",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: halberds, glaives and other blades on long poles. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.rope": {
 		"defaultMessage": "rope",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a length of rope"
 	},
-	"pf1e.itemType.short_sword": {
-		"defaultMessage": "short sword",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a light one-handed sword"
+	"pf1e.itemType.shields": {
+		"defaultMessage": "shields",
+		"description": "Type of armor in Pathfinder, shown beside an item's name: shields of every size, from bucklers to tower shields"
 	},
-	"pf1e.itemType.shortbow": {
-		"defaultMessage": "shortbow",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a small bow"
+	"pf1e.itemType.spears": {
+		"defaultMessage": "spears",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: spears, javelins, lances and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
-	"pf1e.itemType.spear": {
-		"defaultMessage": "spear",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a pole with a pointed head"
+	"pf1e.itemType.thrown": {
+		"defaultMessage": "thrown",
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.torch": {
 		"defaultMessage": "torch",
 		"description": "Type of item in Pathfinder, shown beside an item's name: a burning stick that gives light"
 	},
+	"pf1e.race.aasimar": {
+		"defaultMessage": "Aasimar",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of celestial, angelic blood. Singular, used as a label"
+	},
 	"pf1e.race.catfolk": {
 		"defaultMessage": "Catfolk",
 		"description": "Name of a playable race in Pathfinder: curious, agile people who look like cats standing upright"
 	},
+	"pf1e.race.changeling": {
+		"defaultMessage": "Changeling",
+		"description": "Name of a playable race in Pathfinder: daughters of hags raised among humans, with eyes of two colors. Singular, used as a label"
+	},
+	"pf1e.race.dhampir": {
+		"defaultMessage": "Dhampir",
+		"description": "Name of a playable race in Pathfinder: people with one human and one vampire parent. Singular, used as a label"
+	},
 	"pf1e.race.drow": {
 		"defaultMessage": "Drow",
 		"description": "Name of a playable race in Pathfinder: dark elves who live underground"
+	},
+	"pf1e.race.duergar": {
+		"defaultMessage": "Duergar",
+		"description": "Name of a playable race in Pathfinder: gray dwarves who live deep underground. Singular, used as a label"
 	},
 	"pf1e.race.dwarf": {
 		"defaultMessage": "Dwarf",
@@ -7359,6 +7799,14 @@
 		"defaultMessage": "Elf",
 		"description": "Name of a playable race in Pathfinder: long-lived, graceful people. Singular, used as a label"
 	},
+	"pf1e.race.fetchling": {
+		"defaultMessage": "Fetchling",
+		"description": "Name of a playable race in Pathfinder: pale, shadowy descendants of humans who lived on a plane of shadow. Singular, used as a label"
+	},
+	"pf1e.race.gillman": {
+		"defaultMessage": "Gillman",
+		"description": "Name of a playable race in Pathfinder: humans with gills, who breathe both air and water. Singular, used as a label"
+	},
 	"pf1e.race.gnome": {
 		"defaultMessage": "Gnome",
 		"description": "Name of a playable race in Pathfinder: small, whimsical people with fey ancestry. Singular, used as a label"
@@ -7366,6 +7814,10 @@
 	"pf1e.race.goblin": {
 		"defaultMessage": "Goblin",
 		"description": "Name of a playable race in Pathfinder: small, mischievous, fire-loving people. Singular, used as a label"
+	},
+	"pf1e.race.grippli": {
+		"defaultMessage": "Grippli",
+		"description": "Name of a playable race in Pathfinder: small frog people of the swamps and jungles. Singular, used as a label"
 	},
 	"pf1e.race.half_elf": {
 		"defaultMessage": "Half-Elf",
@@ -7387,9 +7839,245 @@
 		"defaultMessage": "Human",
 		"description": "Name of a playable race in Pathfinder: humans. Singular, used as a label"
 	},
+	"pf1e.race.ifrit": {
+		"defaultMessage": "Ifrit",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of fire spirits. Singular, used as a label"
+	},
+	"pf1e.race.kitsune": {
+		"defaultMessage": "Kitsune",
+		"description": "Name of a playable race in Pathfinder: fox people who can take human form. Singular, used as a label"
+	},
+	"pf1e.race.kobold": {
+		"defaultMessage": "Kobold",
+		"description": "Name of a playable race in Pathfinder: small, scaly people who believe they descend from dragons. Singular, used as a label"
+	},
+	"pf1e.race.merfolk": {
+		"defaultMessage": "Merfolk",
+		"description": "Name of a playable race in Pathfinder: sea people with a fish's tail in place of legs"
+	},
+	"pf1e.race.nagaji": {
+		"defaultMessage": "Nagaji",
+		"description": "Name of a playable race in Pathfinder: scaled, snake-like people created to serve nagas. Singular, used as a label"
+	},
+	"pf1e.race.orc": {
+		"defaultMessage": "Orc",
+		"description": "Name of a playable race in Pathfinder: strong, brutal people who live by raiding. Singular, used as a label"
+	},
+	"pf1e.race.oread": {
+		"defaultMessage": "Oread",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of earth spirits. Singular, used as a label"
+	},
 	"pf1e.race.ratfolk": {
 		"defaultMessage": "Ratfolk",
 		"description": "Name of a playable race in Pathfinder: small, clever people who look like rats standing upright"
+	},
+	"pf1e.race.samsaran": {
+		"defaultMessage": "Samsaran",
+		"description": "Name of a playable race in Pathfinder: blue-skinned people who are reborn and remember past lives. Singular, used as a label"
+	},
+	"pf1e.race.strix": {
+		"defaultMessage": "Strix",
+		"description": "Name of a playable race in Pathfinder: winged, dark-skinned people of the mountains. Singular, used as a label"
+	},
+	"pf1e.race.suli": {
+		"defaultMessage": "Suli",
+		"description": "Name of a playable race in Pathfinder: humans descended from genies of all four elements. Singular, used as a label"
+	},
+	"pf1e.race.svirfneblin": {
+		"defaultMessage": "Svirfneblin",
+		"description": "Name of a playable race in Pathfinder: deep gnomes who live underground. Singular, used as a label"
+	},
+	"pf1e.race.sylph": {
+		"defaultMessage": "Sylph",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of air spirits. Singular, used as a label"
+	},
+	"pf1e.race.tengu": {
+		"defaultMessage": "Tengu",
+		"description": "Name of a playable race in Pathfinder: crow-like bird people. Singular, used as a label"
+	},
+	"pf1e.race.tiefling": {
+		"defaultMessage": "Tiefling",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of fiendish, demonic blood. Singular, used as a label"
+	},
+	"pf1e.race.undine": {
+		"defaultMessage": "Undine",
+		"description": "Name of a playable race in Pathfinder: humans with a trace of the blood of water spirits. Singular, used as a label"
+	},
+	"pf1e.race.vanara": {
+		"defaultMessage": "Vanara",
+		"description": "Name of a playable race in Pathfinder: monkey people of the jungles. Singular, used as a label"
+	},
+	"pf1e.race.vishkanya": {
+		"defaultMessage": "Vishkanya",
+		"description": "Name of a playable race in Pathfinder: graceful, scaled people whose blood is poison. Singular, used as a label"
+	},
+	"pf1e.race.wayang": {
+		"defaultMessage": "Wayang",
+		"description": "Name of a playable race in Pathfinder: small, shadowy people who live in darkness. Singular, used as a label"
+	},
+	"pf1e.raceDescription.aasimar": {
+		"defaultMessage": "Humans touched by celestial blood, often strikingly beautiful. They are wise and charming, resist acid, cold and electricity, and can call up daylight once a day.",
+		"description": "Description of the aasimar, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.catfolk": {
+		"defaultMessage": "Curious, sociable people who look like cats standing upright. They are quick and charming, with sharp senses for hunting, sneaking and tracking.",
+		"description": "Description of the catfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.changeling": {
+		"defaultMessage": "Daughters of hags raised among humans, with eyes of two colors. They are wise and charming but frail, with sharp claws and a trait passed down from their mother.",
+		"description": "Description of the changeling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.dhampir": {
+		"defaultMessage": "Children of vampires and humans, graceful and persuasive but frail. Healing magic harms them while negative energy heals them, and bright light dazzles them.",
+		"description": "Description of the dhampir, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.drow": {
+		"defaultMessage": "Graceful but frail elves who live deep underground. They resist magic, can call up darkness and see far in the dark, but bright light blinds them.",
+		"description": "Description of the drow, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.duergar": {
+		"defaultMessage": "Grim gray dwarves of the deep underground. They can grow larger or turn invisible, shrug off poison and paralysis, and see far in the dark, but bright light dazzles them.",
+		"description": "Description of the duergar, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.dwarf": {
+		"defaultMessage": "Stout, stubborn folk who live in mountain halls. They are tough, wise and hard to move once they've made up their minds.",
+		"description": "Description of the dwarf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.elf": {
+		"defaultMessage": "Long-lived, graceful people with a deep bond to nature and magic. They are quick and clever, with keen senses, and magic can't put them to sleep.",
+		"description": "Description of the elf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.fetchling": {
+		"defaultMessage": "Pale descendants of humans who settled on the plane of shadow. They melt into dim light, resist cold and electricity, and can disguise themselves with magic.",
+		"description": "Description of the fetchling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.gillman": {
+		"defaultMessage": "Humans with gills who breathe both air and water. They are hardy and charming, swim well and resist enchantments, but must soak in water every day.",
+		"description": "Description of the gillman, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.gnome": {
+		"defaultMessage": "Small, whimsical people descended from the fey, always hungry for new experiences. They are hardy and charming, with a knack for illusion magic.",
+		"description": "Description of the gnome, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.goblin": {
+		"defaultMessage": "Small, fast, fire-loving troublemakers. They are very nimble, sneaky and good riders, but weak and hard to get along with.",
+		"description": "Description of the goblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.grippli": {
+		"defaultMessage": "Small frog people of swamps and jungles. They are nimble climbers who hide well among trees and reeds and move through swampy ground with ease.",
+		"description": "Description of the grippli, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.half_elf": {
+		"defaultMessage": "Children of humans and elves, often caught between both worlds. They are adaptable and talented, with keen senses and a gift for more than one class.",
+		"description": "Description of the half-elf, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.half_orc": {
+		"defaultMessage": "Children of humans and orcs, strong and often feared. They are intimidating, see in the dark and can fight on for a moment after a blow that would drop them.",
+		"description": "Description of the half-orc, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.halfling": {
+		"defaultMessage": "Small, cheerful people about half a human's height. They are nimble, charming and lucky, and hard to frighten.",
+		"description": "Description of the halfling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.hobgoblin": {
+		"defaultMessage": "Disciplined, warlike cousins of goblins who stand as tall as humans. They are quick, hardy and stealthy, and see in the dark.",
+		"description": "Description of the hobgoblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.human": {
+		"defaultMessage": "Ambitious, adaptable people found almost everywhere. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like.",
+		"description": "Description of the human, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.ifrit": {
+		"defaultMessage": "Humans touched by the blood of fire spirits, fiery and impulsive. They are quick and charming, resist fire and can call up a burst of flame once a day.",
+		"description": "Description of the ifrit, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.kitsune": {
+		"defaultMessage": "Fox people who can take a human form at will. They are agile, charming tricksters with a sharp bite and a talent for enchantment magic.",
+		"description": "Description of the kitsune, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.kobold": {
+		"defaultMessage": "Small, scaly people who believe they descend from dragons. They are quick but weak, with keen eyes and a talent for traps, and bright light dazzles them.",
+		"description": "Description of the kobold, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.merfolk": {
+		"defaultMessage": "Sea people with a fish's tail in place of legs. They are graceful, hardy and charming, swim swiftly and breathe air and water, but crawl slowly on land.",
+		"description": "Description of the merfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.nagaji": {
+		"defaultMessage": "Scaled, snake-like people created to serve nagas. They are strong and imposing, with tough scales, a way with reptiles, and resistance to poison and mind control.",
+		"description": "Description of the nagaji, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.orc": {
+		"defaultMessage": "Fierce, brutal people who live by raiding and war. They are very strong and fight on even when badly wounded, but bright light dazzles them.",
+		"description": "Description of the orc, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.oread": {
+		"defaultMessage": "Humans touched by the blood of earth spirits, calm and steady. They are strong and wise, resist acid and can turn pebbles into magic sling stones once a day.",
+		"description": "Description of the oread, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.ratfolk": {
+		"defaultMessage": "Small, clever people who look like rats standing upright. They are nimble tinkerers and alchemists who crowd together in battle to gang up on foes.",
+		"description": "Description of the ratfolk, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.samsaran": {
+		"defaultMessage": "Blue-skinned people who are reborn again and again, keeping pieces of past lives. They are wise and learned but frail, with skills carried over from lives before.",
+		"description": "Description of the samsaran, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.strix": {
+		"defaultMessage": "Winged people of the mountains, quick and proud, who distrust humans. They can fly from the start, see in the dark and are most alert and stealthy at night.",
+		"description": "Description of the strix, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.suli": {
+		"defaultMessage": "Humans descended from genies of all four elements. They are strong and persuasive, resist acid, cold, electricity and fire, and can wreathe their hands in any of them.",
+		"description": "Description of the suli, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.svirfneblin": {
+		"defaultMessage": "Serious, wary deep gnomes who live far underground. They are hard to hit, resist magic and see far in the dark, with innate spells for hiding and deceiving.",
+		"description": "Description of the svirfneblin, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.sylph": {
+		"defaultMessage": "Humans touched by the blood of air spirits, light and restless. They are quick and clever, resist electricity and can drift gently down from a fall once a day.",
+		"description": "Description of the sylph, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.tengu": {
+		"defaultMessage": "Crow-like bird people, quick and watchful but fragile. They train with swords from birth, learn languages with ease and have a sharp bite.",
+		"description": "Description of the tengu, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.tiefling": {
+		"defaultMessage": "Humans touched by fiendish blood, often marked by horns, tails or strange eyes. They are quick and clever, resist cold, electricity and fire, and can call up darkness.",
+		"description": "Description of the tiefling, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.undine": {
+		"defaultMessage": "Humans touched by the blood of water spirits, calm and adaptable. They are quick and wise, swim well, resist cold and can hurl a blast of water once a day.",
+		"description": "Description of the undine, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.vanara": {
+		"defaultMessage": "Playful monkey people of the jungles. They are nimble and wise, climb with ease and can carry things with their tails.",
+		"description": "Description of the vanara, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.vishkanya": {
+		"defaultMessage": "Graceful, scaled people whose blood is poison. They are quick and charming, shrug off poisons and can coat their weapons in their own venom.",
+		"description": "Description of the vishkanya, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.raceDescription.wayang": {
+		"defaultMessage": "Small, shadowy people at home in darkness. They are nimble, clever and stealthy, with a gift for shadow and illusion magic.",
+		"description": "Description of the wayang, a playable race in Pathfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"pf1e.rulebook.acg": {
+		"defaultMessage": "Advanced Class Guide",
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
+	},
+	"pf1e.rulebook.apg": {
+		"defaultMessage": "Advanced Player's Guide",
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
+	},
+	"pf1e.rulebook.arg": {
+		"defaultMessage": "Advanced Race Guide",
+		"description": "Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
+	},
+	"pf1e.rulebook.core": {
+		"defaultMessage": "Core Rulebook",
+		"description": "Name of the main rulebook of Pathfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book's official translated edition where there is one, such as the German \"Grundregelwerk\""
 	},
 	"pf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -8527,6 +9215,34 @@
 		"defaultMessage": "Technomancer",
 		"description": "Name of a character class in Starfinder: casts spells that blend magic and technology. Singular, used as a label"
 	},
+	"sf1e.classDescription.envoy": {
+		"defaultMessage": "A charismatic leader who inspires allies and talks their way past trouble. Envoys use improvisations to boost their team and hinder foes, and are skilled at almost everything.",
+		"description": "Description of the envoy, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.classDescription.mechanic": {
+		"defaultMessage": "An engineer who builds and hacks technology. Mechanics work with a custom drone or a brain implant that sharpens their aim, and can overload or bypass machines.",
+		"description": "Description of the mechanic, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.classDescription.mystic": {
+		"defaultMessage": "A spellcaster who draws power from a deep connection to the universe or a deity. Mystics heal allies, link minds with them and gain powers from their connection.",
+		"description": "Description of the mystic, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.classDescription.operative": {
+		"defaultMessage": "A stealthy, skilled spy or scout. Operatives dart in with trick attacks for extra damage, master a specialty and are among the most skilled of all classes.",
+		"description": "Description of the operative, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.classDescription.solarian": {
+		"defaultMessage": "A warrior who wields the power of stars and black holes. Solarians form a glowing weapon or armor from their own power and channel light and gravity in battle.",
+		"description": "Description of the solarian, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.classDescription.soldier": {
+		"defaultMessage": "A trained warrior skilled with weapons and heavy armor. Soldiers pick a fighting style and learn more combat feats than any other class.",
+		"description": "Description of the soldier, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.classDescription.technomancer": {
+		"defaultMessage": "A spellcaster who blends magic and technology. Technomancers cast spells, store magic in a device or implant and use magic hacks to bend technology to their will.",
+		"description": "Description of the technomancer, a character class in Starfinder, shown in Create Character, the class editor, a rulebook's contents and the Audit tab"
+	},
 	"sf1e.coin.cr": {
 		"defaultMessage": "cr",
 		"description": "Abbreviation of credits, the money of Starfinder, written after a number with no space: \"250cr\". Players type it into money fields, so keep it short and without spaces or digits"
@@ -8537,15 +9253,15 @@
 	},
 	"sf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: armor suits"
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: armor suits"
 	},
 	"sf1e.itemCategory.gear": {
 		"defaultMessage": "Gear",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: equipment such as comm units and flashlights"
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: equipment such as comm units and flashlights"
 	},
 	"sf1e.itemCategory.weapon": {
-		"defaultMessage": "Weapons",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab: knives, guns, grenades, ammunition and the like"
+		"defaultMessage": "Weapon",
+		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: knives, guns, grenades, ammunition and the like"
 	},
 	"sf1e.itemType.battery": {
 		"defaultMessage": "battery",
@@ -8578,10 +9294,6 @@
 	"sf1e.itemType.light_armor": {
 		"defaultMessage": "light armor",
 		"description": "Type of item in Starfinder, shown beside an item's name: armor that is light enough to move freely in, other than a second skin"
-	},
-	"sf1e.itemType.other_gear": {
-		"defaultMessage": "other gear",
-		"description": "Type of item in Starfinder, shown beside an item's name: equipment that is none of the other types"
 	},
 	"sf1e.itemType.second_skin": {
 		"defaultMessage": "second skin",
@@ -8630,6 +9342,38 @@
 	"sf1e.race.ysoki": {
 		"defaultMessage": "Ysoki",
 		"description": "Name of a playable race in Starfinder: small, clever people who look like rats standing upright. Singular, used as a label"
+	},
+	"sf1e.raceDescription.android": {
+		"defaultMessage": "Artificial people of machinery and flesh, with souls of their own. They are quick and clever, see in the dark and resist poison and disease, but show little emotion.",
+		"description": "Description of the android, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.raceDescription.human": {
+		"defaultMessage": "Ambitious, curious people who have spread far across space. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like.",
+		"description": "Description of the human, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.raceDescription.kasatha": {
+		"defaultMessage": "Tall, four-armed people from a desert world, known for their ancient traditions. They are strong and wise, cross rough desert and hills with ease and can hold more at once.",
+		"description": "Description of the kasatha, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.raceDescription.lashunta": {
+		"defaultMessage": "Telepathic people with antennae, gifted scholars and warriors. They are charming, speak mind to mind with those nearby and have innate psychic magic.",
+		"description": "Description of the lashunta, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.raceDescription.shirren": {
+		"defaultMessage": "Insect-like people who broke free of a hive mind and treasure being themselves. They are hardy and wise, sense nearby movement, speak mind to mind and make good diplomats.",
+		"description": "Description of the shirren, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.raceDescription.vesk": {
+		"defaultMessage": "Tall, warlike reptilian people with tough scales and claws. They are strong and hardy, hard to frighten, and make the most of the armor they wear.",
+		"description": "Description of the vesk, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.raceDescription.ysoki": {
+		"defaultMessage": "Small, clever people who look like rats standing upright. They are nimble tinkerers who see in the dark, stash small items in their cheek pouches and spring back to their feet.",
+		"description": "Description of the ysoki, a playable race in Starfinder, shown in Create Character, the race editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.rulebook.core": {
+		"defaultMessage": "Starfinder Core Rulebook",
+		"description": "Name of the main rulebook of Starfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book's official translated edition where there is one, such as the German \"Starfinder Grundregelwerk\""
 	},
 	"sf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -8703,6 +9447,42 @@
 		"defaultMessage": "Xenoseeker",
 		"description": "Name of a character theme (background) in Starfinder: seeks out and studies alien life. Used as a label"
 	},
+	"sf1e.themeDescription.ace_pilot": {
+		"defaultMessage": "A natural at the controls of starships and vehicles, whether trained by the military or self-taught. Ace pilots know every make and model, and are skilled at piloting.",
+		"description": "Description of the ace pilot, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.bounty_hunter": {
+		"defaultMessage": "A hunter who tracks people down for money. Bounty hunters pick a mark, learn all they can about them and are good at following a trail.",
+		"description": "Description of the bounty hunter, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.icon": {
+		"defaultMessage": "A celebrity known on many worlds, such as a famous performer or scientist. Icons know their profession and its culture inside out.",
+		"description": "Description of the icon, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.mercenary": {
+		"defaultMessage": "A soldier of fortune who fights for pay beside their companions. Mercenaries know armies, rival crews and military procedure, and are trained in athletics.",
+		"description": "Description of the mercenary, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.outlaw": {
+		"defaultMessage": "Someone wanted by the law, guilty or not. Outlaws know the criminal underworld and its back-alley deals, and have quick hands.",
+		"description": "Description of the outlaw, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.priest": {
+		"defaultMessage": "A devoted member of a religion or philosophy, who always has their beliefs to fall back on. Priests know religious traditions and are trained in mysticism.",
+		"description": "Description of the priest, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.scholar": {
+		"defaultMessage": "An intellectual drawn to problems and puzzles others find daunting. Scholars are experts in one field of science, such as biology or astronomy.",
+		"description": "Description of the scholar, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.spacefarer": {
+		"defaultMessage": "An explorer who longs to set foot on distant worlds and uncover their secrets. Spacefarers remember all they learn about new places and are trained in physical science.",
+		"description": "Description of the spacefarer, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
+	"sf1e.themeDescription.xenoseeker": {
+		"defaultMessage": "An adventurer who seeks out alien life, the stranger the better. Xenoseekers are trained to find, identify and talk with alien creatures.",
+		"description": "Description of the xenoseeker, a character theme (background) in Starfinder, shown in Create Character, the theme editor, a rulebook's contents and the Audit tab"
+	},
 	"shortcuts.escape": {
 		"defaultMessage": "Esc",
 		"description": "In the list of keyboard shortcuts, the name of the Escape key"
@@ -8722,6 +9502,14 @@
 	"shortcuts.title": {
 		"defaultMessage": "Keyboard shortcuts",
 		"description": "Title of the dialog listing the keyboard shortcuts that work on the screen"
+	},
+	"switch.off": {
+		"defaultMessage": "Off",
+		"description": "Inside an on/off switch while it is off, such as a book of game rules the universe doesn't use, or a disabled race, class, theme or item, in the editor's tables. The switch has room for only about 4 letters"
+	},
+	"switch.on": {
+		"defaultMessage": "On",
+		"description": "Inside an on/off switch while it is on, such as a book of game rules the universe uses, or a race, class, theme or item that can be used, in the editor's tables. The switch has room for only about 4 letters"
 	},
 	"table.sorted": {
 		"defaultMessage": "{direction, select, ascending {Sorted by {column}, ascending} other {Sorted by {column}, descending}}",

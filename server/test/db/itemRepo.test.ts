@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_KINDS, DEFAULT_ITEM_NAMES, isItemKind, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_RULEBOOKS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
 import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
@@ -8,14 +8,36 @@ import { addUniverse } from './fixtures.js';
 
 const rustyDagger: ItemSettings = {
 	name: 'rusty dagger',
-	type: 'dagger',
+	description: null,
+	category: 'weapon',
+	types: ['blades_light', 'thrown'],
 	enabled: true
 };
 
 const torch: CustomItemSettings = {
 	name: 'torch',
-	type: 'torch',
+	description: null,
+	category: 'gear',
+	types: ['torch'],
 	enabled: true
+};
+
+/**
+ * The default dagger's description, category and types
+ */
+const daggerKind = {
+	description: null,
+	category: 'weapon',
+	types: ['blades_light', 'thrown']
+};
+
+/**
+ * A longsword's description, category and types
+ */
+const longswordKind = {
+	description: null,
+	category: 'weapon',
+	types: ['blades_heavy']
 };
 
 /**
@@ -47,7 +69,8 @@ function englishName(item: EditorItem): string | undefined
 }
 
 /**
- * The IDs of the items a filter lists
+ * The IDs of the items a filter lists, of the core rulebook and the universe's own unless the filter
+ * names other books, as the editor of a universe with only the core rulebook asks for them
  *
  * @param universeId The universe's ID
  * @param query The filters
@@ -55,7 +78,18 @@ function englishName(item: EditorItem): string | undefined
  */
 async function listedIds(universeId: string, query: ItemListQuery): Promise<number[]>
 {
-	return((await listEditorItems(liveVersion(universeId), 'pf1e', query)).items.map((item) => item.id));
+	return((await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], ...query })).items.map((item) => item.id));
+}
+
+/**
+ * The items of the core rulebook and the universe's own, leaving out those of the optional books
+ *
+ * @param items The items
+ * @return Those items
+ */
+function coreAndOwn(items: readonly EditorItem[]): EditorItem[]
+{
+	return(items.filter((item) => ((item.rulebook === null) || (item.rulebook === 'core'))));
 }
 
 describe('itemRepo', () =>
@@ -64,17 +98,38 @@ describe('itemRepo', () =>
 	{
 		it('finds the Pathfinder 1E default items the migrations add', async () =>
 		{
-			assert.deepStrictEqual([...(await findDefaultItemIds('pf1e')).keys()], ['dagger']);
+			assert.deepStrictEqual([...(await findDefaultItemIds('pf1e')).keys()].sort(), Object.keys(PF1E_DEFAULT_ITEM_NAMES).sort());
 		});
 
-		it('gives every default item a name message and a type of the ruleset', async () =>
+		it('gives every Pathfinder 1E default item a name message, its category and types, and its book', async () =>
 		{
 			const universeId = await addUniverse();
 
 			for (const item of await loadEditorItems(liveVersion(universeId), 'pf1e'))
 			{
+				const key = item.key as keyof typeof PF1E_ITEM_RULEBOOKS;
+
 				assert.ok(item.key && DEFAULT_ITEM_NAMES.pf1e[item.key], `${item.key} has no name message`);
-				assert.ok(Object.hasOwn(ITEM_KINDS.pf1e.types, item.type), `${item.key} has an unknown type`);
+				assert.ok(isItemKind('pf1e', item), `${item.key} has an unknown category or type`);
+				assert.deepStrictEqual({ category: item.category, types: item.types }, { ...DEFAULT_ITEM_KINDS.pf1e[key], types: [...DEFAULT_ITEM_KINDS.pf1e[key].types] }, `${item.key} has another category or types than DEFAULT_ITEM_KINDS`);
+				assert.strictEqual(item.rulebook, PF1E_ITEM_RULEBOOKS[key], `${item.key} has another book than PF1E_ITEM_RULEBOOKS`);
+			}
+		});
+
+		it('gives every Starfinder 1E default item a name message and its category and types', async () =>
+		{
+			const universeId = await addUniverse();
+			const found = await loadEditorItems(liveVersion(universeId), 'sf1e');
+
+			assert.deepStrictEqual(found.map((item) => item.key).sort(), Object.keys(DEFAULT_ITEM_NAMES.sf1e).sort());
+
+			for (const item of found)
+			{
+				const key = item.key as string;
+
+				assert.ok(DEFAULT_ITEM_NAMES.sf1e[key], `${key} has no name message`);
+				assert.ok(isItemKind('sf1e', item), `${key} has an unknown category or type`);
+				assert.deepStrictEqual({ category: item.category, types: item.types }, { ...DEFAULT_ITEM_KINDS.sf1e[key], types: [...DEFAULT_ITEM_KINDS.sf1e[key].types] }, `${key} has another category or types than DEFAULT_ITEM_KINDS`);
 			}
 		});
 	});
@@ -89,7 +144,7 @@ describe('itemRepo', () =>
 			await createCustomItem(liveVersion(universeId), 'pf1e', torch);
 			await createCustomItem(liveVersion(otherId), 'pf1e', { ...torch, name: 'Lantern' });
 
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['dagger', 'torch']);
+			assert.deepStrictEqual(coreAndOwn(await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['dagger', 'torch']);
 		});
 
 		it('gives an edited default item the universe\'s settings under the default item\'s ID, for that universe only', async () =>
@@ -103,8 +158,8 @@ describe('itemRepo', () =>
 			const [mine] = await loadEditorItems(liveVersion(universeId), 'pf1e');
 			const [theirs] = await loadEditorItems(liveVersion(otherId), 'pf1e');
 
-			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, custom: false, edited: true });
-			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, type: 'dagger', enabled: true, custom: false, edited: false });
+			assert.deepStrictEqual(mine, { id, key: 'dagger', ...rustyDagger, rulebook: 'core', custom: false, edited: true, editedSettings: true });
+			assert.deepStrictEqual(theirs, { id, key: 'dagger', name: null, ...daggerKind, enabled: true, rulebook: 'core', custom: false, edited: false, editedSettings: false });
 		});
 	});
 
@@ -162,42 +217,73 @@ describe('itemRepo', () =>
 		{
 			const universeId = await addUniverse();
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
-			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', type: 'longsword', enabled: false });
+			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, enabled: false });
 
-			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, type: 'dagger', enabled: false });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, ...daggerKind, enabled: false });
 
 			// A default item that kept its name matches by its English name
 			assert.deepStrictEqual(await listedIds(universeId, { name: 'DAG' }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { enabled: true }), [torchId]);
 			assert.deepStrictEqual(await listedIds(universeId, { custom: true }), [torchId, swordId]);
+
+			// Disabling a default item alone isn't an edit; renaming it is
+			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), []);
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: 'rusty dagger', ...daggerKind, enabled: false });
 			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { category: 'weapon' }), [await daggerId(), swordId]);
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'torch' }), [torchId]);
+
+			// An item of several types matches each of them
+			assert.deepStrictEqual(await listedIds(universeId, { type: 'thrown' }), [await daggerId()]);
+			assert.deepStrictEqual(await listedIds(universeId, { type: 'blades_light' }), [await daggerId()]);
+			assert.deepStrictEqual(await listedIds(universeId, { type: 'blades_heavy' }), [swordId]);
 			assert.deepStrictEqual(await listedIds(universeId, { category: 'armor' }), []);
 
-			const page = await listEditorItems(liveVersion(universeId), 'pf1e', { offset: 1, limit: 1 });
+			const page = await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], offset: 1, limit: 1 });
 
 			assert.strictEqual(page.total, 3);
 			assert.deepStrictEqual(page.items.map((item) => item.id), [torchId]);
+
+			// Changing a default item's types alone is an edit
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, description: null, category: 'weapon', types: ['blades_light'], enabled: false });
+			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [await daggerId()]);
+			assert.deepStrictEqual(await listedIds(universeId, { type: 'thrown' }), []);
 		});
 
-		it('sorts by name or notes before paging, breaking ties by name', async () =>
+		it('lists the items of the core rulebook, the books asked for and the universe\'s own', async () =>
 		{
 			const universeId = await addUniverse();
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
-			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', type: 'longsword', enabled: false });
-			const axeId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'axe', type: 'longsword', enabled: true });
+			const ids = await findDefaultItemIds('pf1e');
+			const keysOf = async (rulebooks: string[] | undefined): Promise<(string | number)[]> => (await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks })).items.map((item) => (item.key ?? item.id));
+
+			assert.deepStrictEqual(await keysOf([]), ['dagger', torchId]);
+			assert.deepStrictEqual(await keysOf(['apg']), ['dagger', 'cestus', 'sword_cane', 'wooden_armor', 'quilted_cloth', torchId]);
+			assert.strictEqual((await keysOf(undefined)).length, (ids.size + 1));
+		});
+
+		it('sorts by name, enabled or notes before paging, breaking ties by name', async () =>
+		{
+			const universeId = await addUniverse();
+			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
+			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, enabled: false });
+			const axeId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'axe', ...longswordKind, enabled: true });
 			const dagger = await daggerId();
 
-			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, ...daggerKind, enabled: false });
 
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name' }), [axeId, dagger, swordId, torchId]);
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name', direction: 'descending' }), [torchId, swordId, dagger, axeId]);
 			assert.deepStrictEqual(await listedIds(universeId, { sort: 'name', offset: 1, limit: 2 }), [dagger, swordId]);
 
-			// Edited before custom, disabled after enabled, and items with the same notes by name
-			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes' }), [dagger, axeId, torchId, swordId]);
-			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes', direction: 'descending' }), [swordId, axeId, torchId, dagger]);
+			// Notes don't say an item is disabled, so the dagger, only disabled, has none, and custom items
+			// with the same notes go by name
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes' }), [dagger, axeId, swordId, torchId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'notes', direction: 'descending' }), [axeId, swordId, torchId, dagger]);
+
+			// Enabled items first, each group by name
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'enabled' }), [axeId, torchId, dagger, swordId]);
+			assert.deepStrictEqual(await listedIds(universeId, { sort: 'enabled', direction: 'descending' }), [dagger, swordId, axeId, torchId]);
 		});
 	});
 
@@ -210,8 +296,8 @@ describe('itemRepo', () =>
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
 			const theirsId = await createCustomItem(liveVersion(otherId), 'pf1e', torch);
 
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true, rulebook: 'core' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true, rulebook: null });
 			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', theirsId), undefined);
 			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', 2147483647), undefined);
 		});
@@ -220,15 +306,15 @@ describe('itemRepo', () =>
 		{
 			const universeId = await addUniverse('Mine');
 			const otherId = await addUniverse('Theirs');
-			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', type: 'longsword', enabled: false });
+			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, enabled: false });
 			const dagger = await daggerId();
 
-			await saveEditedDefaultItem(liveVersion(otherId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true });
+			await saveEditedDefaultItem(liveVersion(otherId), 'pf1e', dagger, { name: null, ...daggerKind, enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true, rulebook: 'core' });
 
-			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, type: 'dagger', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, ...daggerKind, enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false, rulebook: 'core' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false, rulebook: null });
 		});
 	});
 
@@ -243,7 +329,7 @@ describe('itemRepo', () =>
 			assert.strictEqual(await countCustomItems(liveVersion(universeId)), 1);
 
 			await updateCustomItem(liveVersion(universeId), torchId, { ...torch, name: 'everburning torch' });
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['rusty dagger', 'everburning torch']);
+			assert.deepStrictEqual(coreAndOwn(await loadEditorItems(liveVersion(universeId), 'pf1e')).map(englishName), ['rusty dagger', 'everburning torch']);
 
 			await deleteCustomItem(liveVersion(universeId), torchId);
 			assert.strictEqual(await countCustomItems(liveVersion(universeId)), 0);
@@ -259,7 +345,39 @@ describe('itemRepo', () =>
 			assert.strictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0].enabled, false);
 
 			await restoreDefaultItem(liveVersion(universeId), id);
-			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, type: 'dagger', enabled: true, custom: false, edited: false });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, ...daggerKind, enabled: true, rulebook: 'core', custom: false, edited: false, editedSettings: false });
+		});
+
+		it('saves and loads a universe\'s own item\'s description', async () =>
+		{
+			const universeId = await addUniverse();
+			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { ...torch, description: 'A stick with a burning rag.' });
+			const findTorch = async (): Promise<EditorItem | undefined> => (await loadEditorItems(liveVersion(universeId), 'pf1e')).find((item) => (item.id === torchId));
+
+			assert.strictEqual((await findTorch())?.description, 'A stick with a burning rag.');
+
+			await updateCustomItem(liveVersion(universeId), torchId, { ...torch, description: 'It never goes out.' });
+			assert.strictEqual((await findTorch())?.description, 'It never goes out.');
+
+			await updateCustomItem(liveVersion(universeId), torchId, torch);
+			assert.strictEqual((await findTorch())?.description, null);
+		});
+
+		it('keeps a default item\'s description, gives it the universe\'s, and restores it', async () =>
+		{
+			const universeId = await addUniverse();
+			const id = await daggerId();
+
+			// Disabling the dagger, keeping its description, isn't an edit to its settings
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', id, { name: null, ...daggerKind, enabled: false });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, ...daggerKind, enabled: false, rulebook: 'core', custom: false, edited: true, editedSettings: false });
+
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', id, { name: null, ...daggerKind, description: 'Small and sharp.', enabled: true });
+			assert.deepStrictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0], { id, key: 'dagger', name: null, ...daggerKind, description: 'Small and sharp.', enabled: true, rulebook: 'core', custom: false, edited: true, editedSettings: true });
+			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [id]);
+
+			await restoreDefaultItem(liveVersion(universeId), id);
+			assert.strictEqual((await loadEditorItems(liveVersion(universeId), 'pf1e'))[0].description, null);
 		});
 	});
 });

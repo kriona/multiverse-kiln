@@ -1,16 +1,19 @@
-import { canEditWorld, canEditItemsOpen, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, categoryItemTypes, differsBeyondEnabling, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemCategoryName, itemName, itemTypeName } from '../itemNames';
+import { createItemIcon, itemCategoryName, itemName, itemTypeName, itemTypesText } from '../itemNames';
 import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
+import { afterSwitchSlides } from '../toggleSwitch';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import { createEnabledSwitch } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
+import type { RulebookChoice } from './rulebookChoice';
 import type { SavableTab } from './SaveBar';
 import { describeRefusedChange, joinTags, listChange, listRef, markStagedRow, StagedChanges, stagedPage, stagedTag, type StagedChange, type StagedState } from './stagedChanges';
 
@@ -89,13 +92,19 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 	/**
 	 * @param api The editor's API
+	 * @param rulebooks The books on, whose items the list shows
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly rulebooks: RulebookChoice)
 	{
 		this.sorter = new TableSorter(getElement('item-table', HTMLTableElement), ITEM_SORT_COLUMNS, {
 			column: 'name',
 			direction: 'ascending'
 		}, () =>
+		{
+			this.offset = 0;
+			void this.refresh();
+		});
+		rulebooks.subscribe(() =>
 		{
 			this.offset = 0;
 			void this.refresh();
@@ -279,8 +288,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Offers the types in the category chosen, or every type when none is, keeping the type chosen if
-	 * it is still offered
+	 * Offers the types in the category chosen, or every type when none is, keeping the type chosen if it
+	 * is still offered
 	 *
 	 * @param ruleset The universe's ruleset
 	 */
@@ -288,9 +297,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		const category = this.categoryFilter.value;
 		const chosen = this.typeFilter.value;
-		const types = Object.entries(ITEM_KINDS[ruleset].types)
-			.filter(([, typeCategory]) => ((category === '') || (typeCategory === category)))
-			.map(([type]) => type);
+		const types = ((category === '') ? Object.keys(ITEM_KINDS[ruleset].types) : categoryItemTypes(ruleset, category));
 
 		setOptions(this.typeFilter, [
 			anyOption(),
@@ -303,7 +310,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since
+	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since.
+	 * It waits for the books on to be known, which loads the page once they are
 	 *
 	 * @param announcePage Whether to read out what the list shows, as after the player changed its page or filters
 	 */
@@ -313,7 +321,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		const version = ++this.requestVersion;
 
 		// Only roles that change the world may load the items (see shared/src/editor.ts)
-		if (!universe || !canEditWorld(universe.role))
+		if (!universe || !canEditWorld(universe.role) || !this.rulebooks.known())
 		{
 			return;
 		}
@@ -325,6 +333,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
+			rulebooks: [...this.rulebooks.rulebooks()],
 			sort: this.sorter.order.column,
 			direction: this.sorter.order.direction,
 			offset: this.offset,
@@ -399,12 +408,12 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			return;
 		}
 
-		const shown = stagedPage(this.items, this.changes, (this.offset === 0), (id, settings) => ({
-			id,
-			key: null,
-			...settings,
-			custom: true,
-			edited: false
+		const shown = stagedPage(this.items, this.changes, (this.offset === 0), customItem).map(({ item, state }) => ({
+			item: {
+				...item,
+				editedSettings: this.editedSettingsOf(item)
+			},
+			state
 		}));
 
 		this.rows.replaceChildren(...shown.map(({ item, state }) => this.createRow(item, state, universe)));
@@ -430,15 +439,34 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 
 		if (!known)
 		{
-			return((settings === undefined) ? undefined : { id: itemId, key: null, ...settings, custom: true, edited: false });
+			return(((settings === undefined) ? undefined : customItem(itemId, settings)));
 		}
 
 		return({ ...known, ...settings });
 	}
 
 	/**
-	 * An item's row in the table: its icon, name (opening the item editor), type, and whether it is
-	 * custom, edited, disabled or not saved yet
+	 * Whether a default item, with the changes made since it was saved, differs from the ruleset's in more
+	 * than whether it is enabled, which its edited tag shows
+	 *
+	 * @param item The item as the list shows it
+	 * @return True when it does
+	 */
+	private editedSettingsOf(item: EditorItem): boolean
+	{
+		const saved = this.known.get(item.id);
+
+		if (item.custom || !saved)
+		{
+			return(false);
+		}
+
+		return(saved.editedSettings || differsBeyondEnabling(settingsOf(saved), settingsOf(item)));
+	}
+
+	/**
+	 * An item's row in the table: its icon, name (opening the item editor), Enabled switch, type, and
+	 * whether it is custom, edited or not saved yet. Whether it is disabled shows on its switch
 	 *
 	 * @param item The item
 	 * @param state How it differs from what is saved
@@ -449,22 +477,24 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	{
 		const row = document.createElement('tr');
 		const nameButton = document.createElement('button');
+		const enabledSwitch = createEnabledSwitch(itemName(item, universe.ruleset), item.enabled, (this.canSave() && (state !== 'removed')), (enabled) =>
+		{
+			this.setEnabled(item, enabled);
+		});
 		const tags = [
 			(item.custom
 				? t(editorMessages.customTag)
 				: undefined),
-			(item.edited
+			(item.editedSettings
 				? t(editorMessages.editedTag)
 				: undefined),
-			(item.enabled
-				? undefined
-				: t(editorMessages.disabledTag)),
 			stagedTag(state, !item.custom)
 		];
 		const cells = [
-			createItemIcon(item.type, universe.ruleset),
+			createItemIcon(item.category, universe.ruleset),
 			nameButton,
-			itemTypeName(item.type, universe.ruleset),
+			enabledSwitch,
+			itemTypesText(item.types, universe.ruleset),
 			joinTags(...tags)
 		];
 
@@ -480,13 +510,54 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		{
 			const cell = document.createElement('td');
 
+			if (content === enabledSwitch)
+			{
+				cell.className = 'switch-cell';
+			}
+
 			cell.append(content);
 			row.append(cell);
 		}
 
+		row.dataset.itemId = String(item.id);
 		this.changedSince.mark(row.cells[1], item.id, (state !== undefined));
 
+		// A disabled item is struck through like one being deleted, as races and classes are; its switch shows it is disabled
+		if (!item.enabled)
+		{
+			row.classList.add('staged-deleted');
+		}
+
 		return(markStagedRow(row, state, !item.custom));
+	}
+
+	/**
+	 * Enables or disables an item from its row's switch, as the Enabled checkbox in the item editor does.
+	 * The list is shown again once the switch has slid, so the row's notes follow, and the switch keeps focus
+	 *
+	 * @param item The item, as the list shows it
+	 * @param enabled Whether to enable it
+	 */
+	private setEnabled(item: EditorItem, enabled: boolean): void
+	{
+		this.changes.edit(item.id, loadedFrom(this.known.get(item.id))).apply({
+			name: item.name,
+			description: item.description,
+			category: item.category,
+			types: item.types,
+			enabled
+		});
+		afterSwitchSlides(() =>
+		{
+			const focused = this.rows.contains(document.activeElement);
+
+			this.render();
+
+			if (focused)
+			{
+				this.rows.querySelector<HTMLInputElement>(`tr[data-item-id="${item.id}"] .toggle-switch`)?.focus();
+			}
+		});
 	}
 
 	/**
@@ -529,4 +600,41 @@ function anyOption(): SelectOption
 function filterValue(select: HTMLSelectElement): boolean | undefined
 {
 	return(((select.value === '') ? undefined : (select.value === 'true')));
+}
+
+/**
+ * An item the universe added, as the list shows it before it is saved
+ *
+ * @param id The item's ID
+ * @param settings Its settings
+ * @return The item
+ */
+function customItem(id: number, settings: ItemSettings): EditorItem
+{
+	return({
+		id,
+		key: null,
+		...settings,
+		rulebook: null,
+		custom: true,
+		edited: false,
+		editedSettings: false
+	});
+}
+
+/**
+ * An item's settings, without what the list adds to them
+ *
+ * @param item The item
+ * @return Its settings
+ */
+function settingsOf(item: ItemSettings): ItemSettings
+{
+	return({
+		name: item.name,
+		description: item.description,
+		category: item.category,
+		types: item.types,
+		enabled: item.enabled
+	});
 }

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { universeSlug, type AreaListPayload, type ChangeImpact, type EditableUniverse, type EditorChange, type ItemListPayload, type RaceListPayload, type SaveChangesPayload, type SaveImpactPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
+import { universeSlug, type AreaListPayload, type ChangeImpact, type DraftApplyChoices, type EditableUniverse, type EditorChange, type EditorItem, type ItemDisabling, type ItemListPayload, type Pf1eSettings, type RaceListPayload, type RulesetSettings, type SaveChangesPayload, type SaveImpactPayload, type SaveRefusedPayload } from '@multiverse-kiln/shared';
 
 import { loadBarredOptions } from '../src/db/barredOptions.js';
 import { createCharacter, findCharacterDetails } from '../src/db/characterRepo.js';
@@ -7,7 +7,7 @@ import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { deleteUniverse, hasDraft } from '../src/db/universeRepo.js';
 import { areaChanges, type AreaChange } from '../src/world/areaChanges.js';
-import { addCharacter, addPlayableUniverse, addUniverse, assignToTestRegion, defaultRaceId, dwarfFighter, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
+import { addCharacter, addPlayableUniverse, addUniverse, assignToTestRegion, defaultClassId, defaultRaceId, dwarfFighter, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { logIn, saveAll, send, type Editor, type EditorResponse } from './editorRequests.js';
 import { addPlayer } from './players.js';
 import { getTestServer } from './testServer.js';
@@ -73,6 +73,78 @@ describe('Universe drafts', () =>
 		assert.ok(area);
 
 		return(area.id);
+	}
+
+	/**
+	 * A ruleset change giving one of the universe's versions other books
+	 *
+	 * @param version The version
+	 * @param rulebooks The optional books to have on
+	 * @param whenRulebooksOff What turning each book off does to the characters carrying its items
+	 * @return The change
+	 */
+	async function rulebooksChange(version: 'live' | 'draft', rulebooks: string[], whenRulebooksOff?: Record<string, ItemDisabling>): Promise<EditorChange>
+	{
+		const { body } = await send<RulesetSettings>(ada, 'GET', `/${universe.universeId}/ruleset?version=${version}`);
+
+		assert.strictEqual(body.ruleset, 'pf1e');
+
+		const settings: Pf1eSettings = body.settings;
+
+		return({
+			kind: 'ruleset',
+			settings: {
+				ruleset: 'pf1e',
+				settings: {
+					...settings,
+					rulebooks,
+					barredRulebooks: []
+				}
+			},
+			...((whenRulebooksOff === undefined) ? {} : { whenRulebooksOff })
+		});
+	}
+
+	/**
+	 * A character of the Advanced Player's Guide's witch class carrying its cestus, with the book on
+	 *
+	 * @return The class's and the cestus's IDs, and whether the character carries the cestus, not taken away
+	 */
+	async function witchWithCestus(): Promise<{ witchId: number; cestus: EditorItem; carries: () => Promise<boolean> }>
+	{
+		const witchId = await defaultClassId('witch');
+
+		await saveAll(ada, universe.universeId, [await rulebooksChange('live', ['apg'])]);
+
+		const cestus = (await send<ItemListPayload>(ada, 'GET', `/${universe.universeId}/items?custom=false`)).body.items.find((item) => (item.key === 'cestus'));
+		const hexa = await dwarfFighter(playerId, universe.universeId, 'Hexa');
+
+		assert.ok(cestus);
+		hexa.items = [{ itemId: cestus.id, quantity: 1 }];
+
+		const hexaId = await inTransaction((transaction) => createCharacter({ ...hexa, classId: witchId }, transaction));
+
+		return({
+			witchId,
+			cestus,
+			carries: async () => ((await findCharacterDetails(playerId, universe.universeId, 'pf1e', hexaId))?.items ?? []).some((item) => (item.itemId === cestus.id))
+		});
+	}
+
+	/**
+	 * Starts a draft, saves changes to it and applies it
+	 *
+	 * @param changes The changes to the draft, made with the draft's books
+	 * @param choices What happens to the players using what the draft disables
+	 */
+	async function applyChangedDraft(changes: () => Promise<EditorChange[]>, choices: Partial<DraftApplyChoices> = {}): Promise<void>
+	{
+		await saveAll(ada, universe.universeId, [{ kind: 'startDraft' }]);
+
+		const draftSave = await saveToDraft(await changes());
+
+		assert.strictEqual(draftSave.status, 200, JSON.stringify(draftSave.body));
+		await saveAll(ada, universe.universeId, [{ kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {}, ...choices } }]);
 	}
 
 	it('starts a draft for creators and builders only, and answers for the draft when asked', async () =>
@@ -186,9 +258,9 @@ describe('Universe drafts', () =>
 
 		assert.ok(dwarf);
 
-		const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = dwarf;
+		const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = dwarf;
 		const draftSave = await saveToDraft([
-			{ kind: 'saveRace', id: dwarfId, settings: { name, enabled: false, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } },
+			{ kind: 'saveRace', id: dwarfId, settings: { name, description, enabled: false, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } },
 			{ kind: 'updateArea', areaId: await draftAreaNamed('House'), update: { name: 'Inn' } }
 		]);
 
@@ -218,7 +290,7 @@ describe('Universe drafts', () =>
 
 		assert.strictEqual(await hasDraft(universe.universeId), false);
 		assert.ok((await areasOf('live')).areas.some((area) => ((area.id === universe.houseAreaId) && (area.name === 'Inn'))));
-		assert.ok((await loadBarredOptions(universe.universeId)).raceIds.has(dwarfId));
+		assert.ok((await loadBarredOptions(universe.universeId, 'pf1e')).raceIds.has(dwarfId));
 		assert.ok(published.some((change) => ((change.kind === 'area') && (change.areaId === universe.houseAreaId))));
 		assert.strictEqual((await findCharacterDetails(playerId, universe.universeId, 'pf1e', brokkId))?.raceId, dwarfId);
 	});
@@ -226,8 +298,8 @@ describe('Universe drafts', () =>
 	it('keeps the items the draft deleted that characters carry, disabled, and deletes the rest', async () =>
 	{
 		const created = await saveAll(ada, universe.universeId, [
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', type: 'torch', enabled: true } },
-			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', type: 'rope', enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['torch'], enabled: true } },
+			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', description: null, category: 'gear', types: ['rope'], enabled: true } }
 		]);
 		const torchId = Number(created['new:torch']);
 		const ropeId = Number(created['new:rope']);
@@ -249,6 +321,66 @@ describe('Universe drafts', () =>
 
 		assert.deepStrictEqual(liveItems.map((item) => [item.id, item.enabled]), [[torchId, false]]);
 		assert.ok(!liveItems.some((item) => (item.id === ropeId)));
+	});
+
+	it('bars a book\'s characters and takes its items when told to as a draft turning it off is applied, and gives them back once a draft turns it on', async () =>
+	{
+		const { witchId, cestus, carries } = await witchWithCestus();
+
+		await saveAll(ada, universe.universeId, [{ kind: 'startDraft' }]);
+		assert.strictEqual((await saveToDraft([await rulebooksChange('draft', [])])).status, 200);
+
+		const apply: EditorChange = { kind: 'applyDraft', choices: { races: {}, classes: {}, items: {}, areas: {}, rulebooks: { apg: { keepPlaying: false, items: 'remove' } } } };
+		const impacts = await send<SaveImpactPayload>(ada, 'POST', `/${universe.universeId}/changes/impact`, { body: { changes: [apply] } });
+		const expected: ChangeImpact[] = [{
+			changeIndex: 0,
+			kind: 'rulebook',
+			rulebook: 'apg',
+			races: [],
+			classes: [{ id: witchId, name: { key: 'witch', name: null }, characters: 1 }],
+			items: [{ id: cestus.id, name: { key: 'cestus', name: null }, characters: 1 }]
+		}];
+
+		assert.deepStrictEqual(impacts.body.impacts, expected);
+		await saveAll(ada, universe.universeId, [apply]);
+		assert.ok((await loadBarredOptions(universe.universeId, 'pf1e')).classIds.has(witchId));
+		assert.ok(!await carries());
+
+		await applyChangedDraft(async () => [await rulebooksChange('draft', ['apg'])]);
+		assert.strictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).classIds.size, 0);
+		assert.ok(await carries());
+	});
+
+	it('bars nothing and keeps a book\'s items as a draft turning it off is applied when told to', async () =>
+	{
+		const { carries } = await witchWithCestus();
+
+		await applyChangedDraft(async () => [await rulebooksChange('draft', [])], { rulebooks: { apg: { keepPlaying: true, items: 'keep' } } });
+		assert.deepStrictEqual((await loadBarredOptions(universe.universeId, 'pf1e')).classIds, new Set());
+		assert.ok(await carries());
+	});
+
+	it('takes an item a draft disables with remove whatever its book', async () =>
+	{
+		const { cestus, carries } = await witchWithCestus();
+
+		// The book goes off, and the characters keep its items
+		await saveAll(ada, universe.universeId, [await rulebooksChange('live', [], { apg: 'keep' })]);
+		assert.ok(await carries());
+
+		// A draft turns the book back on and disables the cestus, and applying it takes the cestus away
+		await saveAll(ada, universe.universeId, [{ kind: 'startDraft' }]);
+		assert.strictEqual((await saveToDraft([
+			await rulebooksChange('draft', ['apg']),
+			{ kind: 'saveItem', id: cestus.id, settings: { name: null, description: null, category: cestus.category, types: cestus.types, enabled: false }, whenDisabled: 'remove' }
+		])).status, 200);
+
+		const apply: EditorChange = { kind: 'applyDraft', choices: { races: {}, classes: {}, items: { [cestus.id]: 'remove' }, areas: {} } };
+		const impacts = (await send<SaveImpactPayload>(ada, 'POST', `/${universe.universeId}/changes/impact`, { body: { changes: [apply] } })).body.impacts;
+
+		assert.ok(impacts.some((impact) => ((impact.kind === 'item') && (impact.id === cestus.id))));
+		await saveAll(ada, universe.universeId, [apply]);
+		assert.ok(!await carries());
 	});
 
 	it('refuses a save that applies or discards the draft with other changes, or starts it before them, changing nothing', async () =>

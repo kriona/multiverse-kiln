@@ -240,7 +240,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
-		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+		const bar = characterBar(character, await loadBarredOptions(universe.id, universe.ruleset, transaction));
 
 		if (bar !== null)
 		{
@@ -326,39 +326,52 @@ async function leaveRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	if (!groupId.success)
+	if (!groupId.success || !await takeOutOfGroup(playerId, universe.id, groupId.data, body.data.characterId))
 	{
 		sendError(response, 404, messages.noSuchGroup);
 		return;
 	}
 
+	response.sendStatus(204);
+}
+
+/**
+ * Takes a character out of a group, disbanding it when they are its anchor being, and tells the rooms
+ *
+ * @param playerId The character's player's ID
+ * @param universeId The universe's ID
+ * @param groupId The group's ID
+ * @param characterId The character's ID
+ * @return Whether they left: false when the player has no such character, or they aren't in the group
+ */
+export async function takeOutOfGroup(playerId: string, universeId: string, groupId: string, characterId: string): Promise<boolean>
+{
 	const result = await inTransaction(async (transaction) =>
 	{
 		// The player, then the universe, then the group (leaveGroup locks it): the order making and joining
 		// a group take them in
 		await lockPlayer(playerId, transaction);
-		await lockUniverseShared(universe.id, transaction);
+		await lockUniverseShared(universeId, transaction);
 
-		if (!await findOwnCharacter(playerId, universe.id, body.data.characterId, transaction))
+		if (!await findOwnCharacter(playerId, universeId, characterId, transaction))
 		{
 			return(undefined);
 		}
 
-		return(leaveGroup(groupId.data, body.data.characterId, transaction));
+		return(leaveGroup(groupId, characterId, transaction));
 	});
 
 	if (!result)
 	{
-		sendError(response, 404, messages.noSuchGroup);
-		return;
+		return(false);
 	}
 
 	if (result.kind === 'disbanded')
 	{
 		groupChanges.publish({
 			kind: 'disbanded',
-			groupId: groupId.data,
-			universeId: universe.id,
+			groupId,
+			universeId,
 			members: result.members
 		});
 	}
@@ -366,14 +379,19 @@ async function leaveRoute(request: Request, response: Response): Promise<void>
 	{
 		groupChanges.publish({
 			kind: 'left',
-			groupId: groupId.data,
-			universeId: universe.id,
+			groupId,
+			universeId,
 			character: result.character
 		});
 	}
 
-	response.sendStatus(204);
+	return(true);
 }
+
+/**
+ * Why a character couldn't leave a group: the group was disbanded, or the character had already left
+ */
+export const noSuchGroupMessage = messages.noSuchGroup;
 
 /**
  * POST /:groupId/invites: makes an invite link to the group, for the anchor being's player only
@@ -538,7 +556,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			return({ status: 404, message: messages.characterUnavailable });
 		}
 
-		const bar = characterBar(character, await loadBarredOptions(universe.id, transaction));
+		const bar = characterBar(character, await loadBarredOptions(universe.id, universe.ruleset, transaction));
 
 		if (bar !== null)
 		{

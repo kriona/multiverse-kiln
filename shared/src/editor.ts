@@ -38,6 +38,13 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * - GET    /:universeId/editors                    UniverseEditorListPayload: everyone with a role in the universe
  * - GET    /:universeId/editors/search             PlayerSearchQuery as query parameters -> PlayerSearchPayload: players to add, by username or name (canManageEditors())
  * - GET    /:universeId/characters                 EditorCharacterListQuery as query parameters -> EditorCharacterListPayload: the characters made in the universe (canEditWorld())
+ * - GET    /:universeId/characters/:characterId    CharacterSheet: any player's character in the universe, with the source text (canEditWorld())
+ * - DELETE /:universeId/characters/:characterId    deletes the character immediately, unless they are in a group (canManageCharacters())
+ * - PUT    /:universeId/characters/:characterId/deletion  -> CharacterDeletionPayload: gives the character their last rites (canManageCharacters())
+ * - DELETE /:universeId/characters/:characterId/deletion  restores a character given their last rites (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items     CharacterItemsRequest: adds enabled items of the live version to what the character carries (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items/discard  CharacterItemsRequest: discards items the character carries, as their player can, all of an item when asked for as many as they carry or more (canManageCharacters())
+ * - POST   /:universeId/groups/:groupId/leave      GroupCharacterRequest: takes any player's character out of their group, disbanding it for the anchor being (canManageCharacters())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
  * - GET    /:universeId/tiles                      TileListQuery as query parameters -> TileListPayload (canEditWorld())
@@ -56,7 +63,9 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * Every route except the list and create needs a role in the universe. The routes for what only the
  * tabs of roles that change the world show answer 403 to other roles, such as beta testers and
  * translators. Every change to a universe is saved through /:universeId/changes, which checks the
- * player's role for each change
+ * player's role for each change. Characters belong to their players rather than the universe, so the
+ * character and group routes change them immediately, and refuse while the universe is disabled except
+ * for a server admin
  */
 export const EDITOR_UNIVERSES_PATH = '/editor/universes';
 
@@ -129,6 +138,13 @@ export const MAX_TILE_GRAPHIC_DRAW_ORDER = 99;
 export const MAX_ITEM_NAME_LENGTH = 60;
 
 /**
+ * Most characters in an item's, race's or class's description: a sentence or two
+ */
+export const MAX_ITEM_DESCRIPTION_LENGTH = 300;
+export const MAX_RACE_DESCRIPTION_LENGTH = 300;
+export const MAX_CLASS_DESCRIPTION_LENGTH = 300;
+
+/**
  * Most items a universe may add to its ruleset's default items
  */
 export const MAX_CUSTOM_ITEMS = 5000;
@@ -149,6 +165,11 @@ export const MAX_ITEM_QUANTITY = 999;
 export const MAX_STARTING_ITEMS = 50;
 
 /**
+ * Most different items a creator can give a character, or take from them, at once
+ */
+export const MAX_ITEMS_PER_CHARACTER_CHANGE = 50;
+
+/**
  * Most characters in a race's or class's name
  */
 export const MAX_RACE_NAME_LENGTH = 40;
@@ -164,6 +185,11 @@ export const MAX_CUSTOM_CLASSES = 100;
  * Most characters in a theme's name
  */
 export const MAX_THEME_NAME_LENGTH = 40;
+
+/**
+ * Most characters in a theme's description: a sentence or two
+ */
+export const MAX_THEME_DESCRIPTION_LENGTH = 300;
 
 /**
  * Most themes a universe may add to its ruleset's defaults
@@ -883,6 +909,7 @@ export const AUDIT_FIELDS = [
 	'name',
 	'shortDescription',
 	'longDescription',
+	'description',
 	'sourceLanguage',
 	'translationLanguages',
 	'stage',
@@ -906,6 +933,7 @@ export const AUDIT_FIELDS = [
 	'needsSleep',
 	'coinsHaveWeight',
 	'tracksAmmo',
+	'rulebooks',
 	'role',
 	'languages',
 	'indoors',
@@ -916,7 +944,8 @@ export const AUDIT_FIELDS = [
 	'walkSeconds',
 	'enabled',
 	'keepPlaying',
-	'type',
+	'category',
+	'types',
 	'abilityModifiers',
 	'floatingBonus',
 	'darkvision',
@@ -987,6 +1016,12 @@ export interface AuditFieldValues
 	longDescription: number;
 
 	/**
+	 * An item's, race's, class's or theme's description; null for one of the ruleset's defaults given its
+	 * default description back, or for an item, race, class or theme the universe added with none
+	 */
+	description: string | null;
+
+	/**
 	 * Language tags
 	 */
 	sourceLanguage: string;
@@ -1032,6 +1067,11 @@ export interface AuditFieldValues
 	needsSleep: boolean;
 	coinsHaveWeight: boolean;
 	tracksAmmo: boolean;
+
+	/**
+	 * The optional books turned on, by key (RULESET_RULEBOOKS)
+	 */
+	rulebooks: string[];
 	role: UniverseRole;
 
 	/**
@@ -1063,9 +1103,14 @@ export interface AuditFieldValues
 	keepPlaying: boolean;
 
 	/**
-	 * An item type's key (ITEM_KINDS)
+	 * An item category's key (ITEM_KINDS)
 	 */
-	type: string;
+	category: string;
+
+	/**
+	 * Item types' keys (ITEM_KINDS)
+	 */
+	types: string[];
 	abilityModifiers: Partial<Record<Ability, number>>;
 	floatingBonus: boolean;
 	darkvision: Darkvision;
@@ -1510,9 +1555,21 @@ export interface ItemSettings
 	name: string | null;
 
 	/**
-	 * One of the ruleset's item types (ITEM_KINDS), e.g. dagger
+	 * Null for a default item that keeps its description, which players read in their language
+	 * (DEFAULT_ITEM_DESCRIPTIONS), and for an item the universe added without one
 	 */
-	type: string;
+	description: string | null;
+
+	/**
+	 * One of the ruleset's item categories (ITEM_KINDS), e.g. weapon
+	 */
+	category: string;
+
+	/**
+	 * Some of the category's types (ITEM_KINDS), in the order the ruleset lists them, e.g. light blades
+	 * and thrown; none for an item of no type
+	 */
+	types: string[];
 
 	/**
 	 * Whether characters can be given the item
@@ -1537,6 +1594,11 @@ export interface EditorItem extends ItemSettings
 	key: string | null;
 
 	/**
+	 * The book a default item comes from (RULESET_RULEBOOKS); null for an item the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the item, rather than it being one of the ruleset's default items
 	 */
 	custom: boolean;
@@ -1545,12 +1607,18 @@ export interface EditorItem extends ItemSettings
 	 * Whether the item is a default item the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default item than whether it is enabled, which the edited
+	 * tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**
  * The columns the Items tab can sort its items by
  */
-export const ITEM_SORT_COLUMNS = ['name', 'notes'] as const;
+export const ITEM_SORT_COLUMNS = ['name', 'enabled', 'notes'] as const;
 
 export type ItemSortColumn = typeof ITEM_SORT_COLUMNS[number];
 
@@ -1566,6 +1634,10 @@ export interface ItemListQuery
 
 	enabled?: boolean;
 	custom?: boolean;
+
+	/**
+	 * Whether the universe changed more of a default item than whether it is enabled (editedSettings)
+	 */
 	edited?: boolean;
 
 	/**
@@ -1574,7 +1646,7 @@ export interface ItemListQuery
 	category?: string;
 
 	/**
-	 * One of the ruleset's item types, e.g. dagger
+	 * One of the ruleset's item types, e.g. light blades: only items of that type, among others
 	 */
 	type?: string;
 
@@ -1584,9 +1656,16 @@ export interface ItemListQuery
 	ids?: number[];
 
 	/**
+	 * Only the items of the core rulebook and these optional books, and those the universe added (a
+	 * comma-separated list in the query string, empty for the core rulebook alone). The editor sends the
+	 * books as its Ruleset tab has them, before they are saved
+	 */
+	rulebooks?: string[];
+
+	/**
 	 * The column to sort the matches by before paging, with items that tie sorted by name. Names sort in
-	 * English, as the name filter matches them, and notes by the items' flags: those with none first, then
-	 * disabled, edited and custom ones. Left out, the items come by ID
+	 * English, as the name filter matches them, enabled with enabled items first, and notes by the items'
+	 * flags: those with none first, then edited (editedSettings) and custom ones. Left out, the items come by ID
 	 */
 	sort?: ItemSortColumn;
 
@@ -1636,6 +1715,20 @@ export interface ItemQuantity
 }
 
 /**
+ * Body of POST EDITOR_UNIVERSES_PATH/:universeId/characters/:characterId/items (canManageCharacters()),
+ * items to add to what a character carries, each added to the quantity they already have, and of the
+ * editor's and the player's .../items/discard, items to discard from what they carry
+ */
+export interface CharacterItemsRequest
+{
+	/**
+	 * 1 to MAX_ITEMS_PER_CHARACTER_CHANGE different items, each listed once. Items given must be enabled
+	 * in the live version with their books on; items discarded must be ones the character carries
+	 */
+	items: ItemQuantity[];
+}
+
+/**
  * What a race or class gives its characters on top of what every character of the universe starts with
  */
 export interface StartingExtras
@@ -1678,6 +1771,12 @@ export interface RaceSettings extends StartingExtras
 	name: string | null;
 
 	/**
+	 * Null for a default race that keeps its description, which players read in their language
+	 * (DEFAULT_RACE_DESCRIPTIONS), and for a race the universe added without one
+	 */
+	description: string | null;
+
+	/**
 	 * Whether new characters can be this race. A universe always has at least one enabled race
 	 */
 	enabled: boolean;
@@ -1712,6 +1811,11 @@ export interface EditorRace extends RaceSettings
 	key: string | null;
 
 	/**
+	 * The book a default race comes from (RULESET_RULEBOOKS); null for a race the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the race, rather than it being one of the ruleset's default races
 	 */
 	custom: boolean;
@@ -1720,6 +1824,12 @@ export interface EditorRace extends RaceSettings
 	 * Whether the race is a default race the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default race than whether it is enabled (and its characters
+	 * keep playing), which the edited tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**
@@ -1765,6 +1875,12 @@ export interface ClassSettings extends StartingExtras
 	name: string | null;
 
 	/**
+	 * Null for a default class that keeps its description, which players read in their language
+	 * (DEFAULT_CLASS_DESCRIPTIONS), and for a class the universe added without one
+	 */
+	description: string | null;
+
+	/**
 	 * Whether new characters can be this class. A universe always has at least one enabled class
 	 */
 	enabled: boolean;
@@ -1804,6 +1920,11 @@ export interface EditorClass extends ClassSettings
 	key: string | null;
 
 	/**
+	 * The book a default class comes from (RULESET_RULEBOOKS); null for a class the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the class, rather than it being one of the ruleset's default classes
 	 */
 	custom: boolean;
@@ -1812,6 +1933,12 @@ export interface EditorClass extends ClassSettings
 	 * Whether the class is a default class the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default class than whether it is enabled (and its
+	 * characters keep playing), which the edited tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**
@@ -1832,6 +1959,12 @@ export interface ThemeSettings
 	 * (DEFAULT_THEME_NAMES). A theme the universe added must have one
 	 */
 	name: string | null;
+
+	/**
+	 * Null for a default theme that keeps its description, which players read in their language
+	 * (DEFAULT_THEME_DESCRIPTIONS), and for a theme the universe added without one
+	 */
+	description: string | null;
 
 	/**
 	 * Whether new characters can have this theme. A universe with themes always has at least one enabled
@@ -1861,6 +1994,11 @@ export interface EditorTheme extends ThemeSettings
 	key: string | null;
 
 	/**
+	 * The book a default theme comes from (RULESET_RULEBOOKS); null for a theme the universe added
+	 */
+	rulebook: string | null;
+
+	/**
 	 * Whether the universe added the theme, rather than it being one of the ruleset's default themes
 	 */
 	custom: boolean;
@@ -1869,6 +2007,12 @@ export interface EditorTheme extends ThemeSettings
 	 * Whether the theme is a default theme the universe has changed
 	 */
 	edited: boolean;
+
+	/**
+	 * Whether the universe changed more of a default theme than whether it is enabled, which the edited
+	 * tag shows; its Enabled switch shows whether it is disabled
+	 */
+	editedSettings: boolean;
 }
 
 /**

@@ -383,6 +383,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				disablings: new SaveDisablings(),
 				places,
 				deletedImages: [],
+				rulebooks: undefined,
 				draftApplied: false
 			};
 
@@ -394,7 +395,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 			const audit = new SaveAudit(saving);
 			const merge = new SaveMerge(saving, audit);
 			const changesOptions = (!base.version.draft && changes.some((change) => ((typeof change === 'function') || BARRING_KINDS.has(change.kind))));
-			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, transaction) : undefined);
+			const barredBefore = (changesOptions ? await loadBarredOptions(base.universe.id, base.universe.ruleset, transaction) : undefined);
 
 			for (; current < changes.length; current++)
 			{
@@ -457,7 +458,7 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 
 			if (barredBefore)
 			{
-				const barred = await loadBarredOptions(base.universe.id, transaction);
+				const barred = await loadBarredOptions(base.universe.id, base.universe.ruleset, transaction);
 
 				if (!sameBarred(barredBefore, barred))
 				{
@@ -584,9 +585,10 @@ function changesRoomText(change: EditorChange): boolean
 }
 
 /**
- * The kinds of change that can bar characters of a race or class from playing, or let them play again
+ * The kinds of change that can bar characters of a race or class from playing, or let them play again:
+ * changes to races and classes, and turning their books off or on
  */
-const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass']);
+const BARRING_KINDS: ReadonlySet<EditorChange['kind']> = new Set(['saveRace', 'removeRace', 'saveClass', 'removeClass', 'ruleset']);
 
 /**
  * The first change a player's role doesn't let them make, of those given as changes; one a function
@@ -649,7 +651,7 @@ async function applyChange(context: ChangeContext, change: EditorChange): Promis
 			context.universe = (await findEditableUniverse(context.version, context.transaction) ?? context.universe);
 			return;
 		case 'ruleset':
-			return(applyRulesetChange(context, change.settings));
+			return(applyRulesetChange(context, change.settings, (change.whenRulebooksOff ?? {})));
 		case 'uploadTileGraphic':
 			return(uploadTileGraphicChange(context, change.ref, change.upload));
 		case 'deleteTileGraphic':

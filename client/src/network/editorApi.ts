@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type CharacterDeletionPayload, type CharacterItemsRequest, type CharacterSheet, type GroupCharacterRequest, type ItemQuantity, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -172,11 +172,12 @@ export class EditorApi
 	 * How a universe plays under its ruleset
 	 *
 	 * @param universeId The universe's ID
+	 * @param version The version to read, by default the one the editor has open
 	 * @return The settings
 	 */
-	async getRulesetSettings(universeId: string): Promise<RulesetSettings>
+	async getRulesetSettings(universeId: string, version: UniverseVersionName = this.version): Promise<RulesetSettings>
 	{
-		return(this.send<RulesetSettings>('GET', `${universePath(universeId)}/ruleset`));
+		return(this.send<RulesetSettings>('GET', `${universePath(universeId)}/ruleset`, undefined, undefined, version));
 	}
 
 	/**
@@ -246,11 +247,12 @@ export class EditorApi
 	 *
 	 * @param universeId The universe's ID
 	 * @param query The filters, and which page
+	 * @param version The version to read, by default the one the editor has open
 	 * @return The page, and how many items match
 	 */
-	async listItems(universeId: string, query: ItemListQuery): Promise<ItemListPayload>
+	async listItems(universeId: string, query: ItemListQuery, version: UniverseVersionName = this.version): Promise<ItemListPayload>
 	{
-		return(this.send<ItemListPayload>('GET', `${universePath(universeId)}/items?${queryString(query)}`));
+		return(this.send<ItemListPayload>('GET', `${universePath(universeId)}/items?${queryString(query)}`, undefined, undefined, version));
 	}
 
 	/**
@@ -287,6 +289,98 @@ export class EditorApi
 	async listCharacters(universeId: string, query: EditorCharacterListQuery): Promise<EditorCharacterListPayload>
 	{
 		return(this.send<EditorCharacterListPayload>('GET', `${universePath(universeId)}/characters?${queryString(query)}`));
+	}
+
+	/**
+	 * Any player's character in a universe, as their character sheet shows them
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @return The character, with the universe's source text
+	 */
+	async getCharacterSheet(universeId: string, characterId: string): Promise<CharacterSheet>
+	{
+		return(this.send<CharacterSheet>('GET', editorCharacterPath(universeId, characterId), undefined, undefined, 'live'));
+	}
+
+	/**
+	 * Deletes a player's character in a universe immediately, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 */
+	async deleteCharacter(universeId: string, characterId: string): Promise<void>
+	{
+		await this.send('DELETE', editorCharacterPath(universeId, characterId), undefined, undefined, 'live');
+	}
+
+	/**
+	 * Gives a player's character in a universe their last rites, as one of its creators. Refused while the
+	 * site sets characterDeletionDays to 0
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @return When the character is deleted, as an ISO 8601 time
+	 */
+	async scheduleCharacterDeletion(universeId: string, characterId: string): Promise<string>
+	{
+		return((await this.send<CharacterDeletionPayload>('PUT', `${editorCharacterPath(universeId, characterId)}/deletion`, undefined, undefined, 'live')).deleteAt);
+	}
+
+	/**
+	 * Restores a player's character in a universe given their last rites, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 */
+	async restoreCharacter(universeId: string, characterId: string): Promise<void>
+	{
+		await this.send('DELETE', `${editorCharacterPath(universeId, characterId)}/deletion`, undefined, undefined, 'live');
+	}
+
+	/**
+	 * Adds items to what a player's character in a universe carries, as one of its creators. The items are
+	 * the live version's, whatever version the editor has open
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param items The items, each listed once, with how many of each to add
+	 */
+	async giveItems(universeId: string, characterId: string, items: ItemQuantity[]): Promise<void>
+	{
+		const request: CharacterItemsRequest = { items };
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items`, request, undefined, 'live');
+	}
+
+	/**
+	 * Discards items a player's character in a universe carries, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param items The items, each listed once, with how many of each to discard; all of an item when it
+	 * is as many as they carry or more
+	 */
+	async discardItems(universeId: string, characterId: string, items: ItemQuantity[]): Promise<void>
+	{
+		const request: CharacterItemsRequest = { items };
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items/discard`, request, undefined, 'live');
+	}
+
+	/**
+	 * Takes a player's character in a universe out of their group, disbanding it when they are its anchor
+	 * being, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param groupId The group's ID
+	 * @param characterId The character's ID
+	 */
+	async leaveGroup(universeId: string, groupId: string, characterId: string): Promise<void>
+	{
+		const request: GroupCharacterRequest = { characterId };
+
+		await this.send('POST', `${universePath(universeId)}/groups/${encodeURIComponent(groupId)}/leave`, request, undefined, 'live');
 	}
 
 	/**
@@ -503,17 +597,18 @@ export class EditorApi
 	}
 
 	/**
-	 * Sends a request to an editor route, about the version open when it is about a universe
+	 * Sends a request to an editor route, about one version of the universe when it is about a universe
 	 *
 	 * @param method The HTTP method
 	 * @param path The path under EDITOR_UNIVERSES_PATH
 	 * @param body The JSON body, or a file with its type in contentType, if any
 	 * @param contentType The body's media type when it is a file
+	 * @param version The version the request is about, by default the one the editor has open
 	 * @return The response body
 	 */
-	private async send<T = unknown>(method: HttpMethod, path: string, body?: object, contentType?: string): Promise<T>
+	private async send<T = unknown>(method: HttpMethod, path: string, body?: object, contentType?: string, version: UniverseVersionName = this.version): Promise<T>
 	{
-		const versioned = (((path === '') || (this.version === 'live')) ? path : `${path}${path.includes('?') ? '&' : '?'}${EDITOR_VERSION_PARAM}=${this.version}`);
+		const versioned = (((path === '') || (version === 'live')) ? path : `${path}${path.includes('?') ? '&' : '?'}${EDITOR_VERSION_PARAM}=${version}`);
 
 		return(sendRequest<T>(this.client, method, `${EDITOR_UNIVERSES_PATH}${versioned}`, body, contentType));
 	}
@@ -593,6 +688,18 @@ export async function sendRequest<T = unknown>(client: Client, method: HttpMetho
 function universePath(universeId: string): string
 {
 	return(`/${encodeURIComponent(universeId)}`);
+}
+
+/**
+ * The path of a character in a universe, under EDITOR_UNIVERSES_PATH
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return The path
+ */
+function editorCharacterPath(universeId: string, characterId: string): string
+{
+	return(`${universePath(universeId)}/characters/${encodeURIComponent(characterId)}`);
 }
 
 /**

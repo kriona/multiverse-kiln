@@ -8,6 +8,7 @@ import { ClassDialog } from './ClassDialog';
 import type { ItemSelectDialog } from './ItemSelectDialog';
 import { OptionList } from './OptionList';
 import type { AreaSelectDialog } from './AreaSelectDialog';
+import type { RulebookChoice } from './rulebookChoice';
 
 /**
  * The classes on the Characters tab: every class characters of the universe can be, opening the class
@@ -19,15 +20,18 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 	 * @param api The editor's API
 	 * @param areaSelect The dialog for choosing a class's starting areas
 	 * @param itemSelect The dialog for choosing a class's starting equipment
+	 * @param rulebooks The books on, whose classes the list shows, and whose races the class's starting
+	 * areas by race show
 	 */
-	constructor(api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog)
+	constructor(api: EditorApi, areaSelect: AreaSelectDialog, itemSelect: ItemSelectDialog, rulebooks: RulebookChoice)
 	{
-		const dialog = new ClassDialog(api, areaSelect, itemSelect);
+		const dialog = new ClassDialog(api, areaSelect, itemSelect, rulebooks);
 
 		super({
 			addButton: getElement('class-add', HTMLButtonElement),
 			rows: getElement('class-rows', HTMLTableSectionElement),
 			error: getElement('class-list-error', HTMLElement),
+			rulebooks,
 			listFailed: {
 				id: 'editor.classes.listFailed',
 				defaultMessage: 'Could not list the classes.',
@@ -40,10 +44,25 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
 				id,
 				key: null,
 				...settings,
+				rulebook: null,
 				custom: true,
-				edited: false
+				edited: false,
+				editedSettings: false
 			}),
 			name: className,
+			settingsOf: (characterClass) => ({
+				name: characterClass.name,
+				description: characterClass.description,
+				enabled: characterClass.enabled,
+				keepPlaying: characterClass.keepPlaying,
+				startingMoney: characterClass.startingMoney,
+				startingItems: characterClass.startingItems,
+				startingAreaId: characterClass.startingAreaId,
+				startingColumn: characterClass.startingColumn,
+				startingRow: characterClass.startingRow,
+				raceAreas: characterClass.raceAreas,
+				rules: characterClass.rules
+			}),
 			describe: describeClass,
 			dialog: dialog.following,
 			openDialog: (universe, characterClass, edit, onChanged) =>
@@ -62,7 +81,7 @@ export class ClassesSection extends OptionList<EditorClass, ClassSettings>
  * @param ruleset The universe's ruleset
  * @return The summary
  */
-function describeClass(characterClass: EditorClass, ruleset: Ruleset): string
+export function describeClass(characterClass: EditorClass, ruleset: Ruleset): string
 {
 	const { rules } = characterClass;
 	const parts = [

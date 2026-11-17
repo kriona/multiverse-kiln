@@ -1,8 +1,9 @@
 /**
  * Pathfinder 1E's kinds of item, and the default items a universe can edit, disable or add to
  *
- * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook, used under the Open Game License
- * 1.0a (client/license.html)
+ * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook, Advanced Player's Guide, Advanced
+ * Race Guide and Advanced Class Guide, used under the Open Game License 1.0a (client/license.html). Each
+ * item's book is in rulebooks.ts
  */
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 
@@ -19,44 +20,47 @@ export type Pf1eItemCategory = typeof PF1E_ITEM_CATEGORIES[number];
 export const PF1E_ITEM_CATEGORY_NAMES: Record<Pf1eItemCategory, MessageDescriptor> = defineMessages({
 	weapon: {
 		id: 'pf1e.itemCategory.weapon',
-		defaultMessage: 'Weapons',
-		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab: swords, bows, ammunition and the like'
+		defaultMessage: 'Weapon',
+		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab and a choice in the item editor: swords, bows, ammunition and the like'
 	},
 	armor: {
 		id: 'pf1e.itemCategory.armor',
 		defaultMessage: 'Armor',
-		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab: armor and shields'
+		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab and a choice in the item editor: armor and shields'
 	},
 	gear: {
 		id: 'pf1e.itemCategory.gear',
 		defaultMessage: 'Gear',
-		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab: adventuring equipment such as rope and torches'
+		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab and a choice in the item editor: adventuring equipment such as rope and torches'
 	}
 });
 
 /**
- * Each item type's category, by the type's key: every item is one of these
+ * Each item type's category, by the type's key. An item has any number of types of its category, or none.
+ * A weapon's types are the fighter's weapon groups it is in (the Core Rulebook's Weapon Training), and
+ * armor's are the categories armor proficiency uses
  */
 export const PF1E_ITEM_TYPES = {
-	dagger: 'weapon',
-	club: 'weapon',
-	quarterstaff: 'weapon',
-	spear: 'weapon',
-	short_sword: 'weapon',
-	longsword: 'weapon',
-	shortbow: 'weapon',
-	longbow: 'weapon',
-	light_crossbow: 'weapon',
-	arrows: 'weapon',
-	crossbow_bolts: 'weapon',
-	padded_armor: 'armor',
-	leather_armor: 'armor',
-	chain_shirt: 'armor',
-	light_shield: 'armor',
-	heavy_shield: 'armor',
+	axes: 'weapon',
+	blades_heavy: 'weapon',
+	blades_light: 'weapon',
+	bows: 'weapon',
+	close: 'weapon',
+	crossbows: 'weapon',
+	double: 'weapon',
+	flails: 'weapon',
+	hammers: 'weapon',
+	monk: 'weapon',
+	natural: 'weapon',
+	polearms: 'weapon',
+	spears: 'weapon',
+	thrown: 'weapon',
+	light_armor: 'armor',
+	medium_armor: 'armor',
+	heavy_armor: 'armor',
+	shields: 'armor',
 	rope: 'gear',
-	torch: 'gear',
-	other_gear: 'gear'
+	torch: 'gear'
 } as const satisfies Record<string, Pf1eItemCategory>;
 
 export type Pf1eItemType = keyof typeof PF1E_ITEM_TYPES;
@@ -65,85 +69,95 @@ export type Pf1eItemType = keyof typeof PF1E_ITEM_TYPES;
  * Each item type's name
  */
 export const PF1E_ITEM_TYPE_NAMES: Record<Pf1eItemType, MessageDescriptor> = defineMessages({
-	dagger: {
-		id: 'pf1e.itemType.dagger',
-		defaultMessage: 'dagger',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a short blade for stabbing or throwing'
+	axes: {
+		id: 'pf1e.itemType.axes',
+		defaultMessage: 'axes',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: battleaxes, handaxes, picks and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	club: {
-		id: 'pf1e.itemType.club',
-		defaultMessage: 'club',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a wooden cudgel'
+	blades_heavy: {
+		id: 'pf1e.itemType.blades_heavy',
+		defaultMessage: 'heavy blades',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: longswords, scimitars, greatswords and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	quarterstaff: {
-		id: 'pf1e.itemType.quarterstaff',
-		defaultMessage: 'quarterstaff',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a long wooden staff used as a weapon'
+	blades_light: {
+		id: 'pf1e.itemType.blades_light',
+		defaultMessage: 'light blades',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: daggers, short swords, rapiers and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	spear: {
-		id: 'pf1e.itemType.spear',
-		defaultMessage: 'spear',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a pole with a pointed head'
+	bows: {
+		id: 'pf1e.itemType.bows',
+		defaultMessage: 'bows',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: shortbows and longbows. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	short_sword: {
-		id: 'pf1e.itemType.short_sword',
-		defaultMessage: 'short sword',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a light one-handed sword'
+	close: {
+		id: 'pf1e.itemType.close',
+		defaultMessage: 'close',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	longsword: {
-		id: 'pf1e.itemType.longsword',
-		defaultMessage: 'longsword',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a straight one-handed sword'
+	crossbows: {
+		id: 'pf1e.itemType.crossbows',
+		defaultMessage: 'crossbows',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: light, heavy and hand crossbows. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	shortbow: {
-		id: 'pf1e.itemType.shortbow',
-		defaultMessage: 'shortbow',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a small bow'
+	double: {
+		id: 'pf1e.itemType.double',
+		defaultMessage: 'double',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: weapons with a striking end at each end, such as a quarterstaff. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	longbow: {
-		id: 'pf1e.itemType.longbow',
-		defaultMessage: 'longbow',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a bow about as tall as its archer'
+	flails: {
+		id: 'pf1e.itemType.flails',
+		defaultMessage: 'flails',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: flails, chains and whips. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	light_crossbow: {
-		id: 'pf1e.itemType.light_crossbow',
-		defaultMessage: 'light crossbow',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a crossbow drawn back by hand'
+	hammers: {
+		id: 'pf1e.itemType.hammers',
+		defaultMessage: 'hammers',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: clubs, maces, warhammers and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	arrows: {
-		id: 'pf1e.itemType.arrows',
-		defaultMessage: 'arrows',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: ammunition for a bow'
+	monk: {
+		id: 'pf1e.itemType.monk',
+		defaultMessage: 'monk',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: the weapons monks train with, such as a kama or quarterstaff. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	crossbow_bolts: {
-		id: 'pf1e.itemType.crossbow_bolts',
-		defaultMessage: 'crossbow bolts',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: ammunition for a crossbow'
+	natural: {
+		id: 'pf1e.itemType.natural',
+		defaultMessage: 'natural',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: unarmed strikes and natural weapons such as claws. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	padded_armor: {
-		id: 'pf1e.itemType.padded_armor',
-		defaultMessage: 'padded armor',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: light armor of quilted cloth'
+	polearms: {
+		id: 'pf1e.itemType.polearms',
+		defaultMessage: 'polearms',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: halberds, glaives and other blades on long poles. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	leather_armor: {
-		id: 'pf1e.itemType.leather_armor',
-		defaultMessage: 'leather armor',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: light armor of stiffened leather'
+	spears: {
+		id: 'pf1e.itemType.spears',
+		defaultMessage: 'spears',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: spears, javelins, lances and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	chain_shirt: {
-		id: 'pf1e.itemType.chain_shirt',
-		defaultMessage: 'chain shirt',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: light armor, a shirt of metal rings'
+	thrown: {
+		id: 'pf1e.itemType.thrown',
+		defaultMessage: 'thrown',
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
-	light_shield: {
-		id: 'pf1e.itemType.light_shield',
-		defaultMessage: 'light shield',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a small shield strapped to the forearm'
+	light_armor: {
+		id: 'pf1e.itemType.light_armor',
+		defaultMessage: 'light armor',
+		description: 'Type of armor in Pathfinder, shown beside an item\'s name: armor such as leather armor or a chain shirt, which barely slows its wearer'
 	},
-	heavy_shield: {
-		id: 'pf1e.itemType.heavy_shield',
-		defaultMessage: 'heavy shield',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a large shield held with the whole arm'
+	medium_armor: {
+		id: 'pf1e.itemType.medium_armor',
+		defaultMessage: 'medium armor',
+		description: 'Type of armor in Pathfinder, shown beside an item\'s name: armor such as hide or a breastplate, which slows its wearer'
+	},
+	heavy_armor: {
+		id: 'pf1e.itemType.heavy_armor',
+		defaultMessage: 'heavy armor',
+		description: 'Type of armor in Pathfinder, shown beside an item\'s name: armor such as full plate, which slows its wearer the most'
+	},
+	shields: {
+		id: 'pf1e.itemType.shields',
+		defaultMessage: 'shields',
+		description: 'Type of armor in Pathfinder, shown beside an item\'s name: shields of every size, from bucklers to tower shields'
 	},
 	rope: {
 		id: 'pf1e.itemType.rope',
@@ -154,21 +168,208 @@ export const PF1E_ITEM_TYPE_NAMES: Record<Pf1eItemType, MessageDescriptor> = def
 		id: 'pf1e.itemType.torch',
 		defaultMessage: 'torch',
 		description: 'Type of item in Pathfinder, shown beside an item\'s name: a burning stick that gives light'
-	},
-	other_gear: {
-		id: 'pf1e.itemType.other_gear',
-		defaultMessage: 'other gear',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: equipment that is none of the other types'
 	}
 });
 
 /**
  * Each default item's name, by the item's key. The database stores each name's English text
  */
-export const PF1E_DEFAULT_ITEM_NAMES: Record<string, MessageDescriptor> = defineMessages({
+export const PF1E_DEFAULT_ITEM_NAMES = defineMessages({
 	dagger: {
 		id: 'item.pf1e.dagger',
 		defaultMessage: 'dagger',
 		description: 'Name of an item in Pathfinder: a short blade for stabbing or throwing'
+	},
+	cestus: {
+		id: 'item.pf1e.cestus',
+		defaultMessage: 'cestus',
+		description: 'Name of an item in Pathfinder: a studded leather glove for punching'
+	},
+	sword_cane: {
+		id: 'item.pf1e.sword_cane',
+		defaultMessage: 'sword cane',
+		description: 'Name of an item in Pathfinder: a thin blade hidden in a walking stick'
+	},
+	wooden_armor: {
+		id: 'item.pf1e.wooden_armor',
+		defaultMessage: 'wooden armor',
+		description: 'Name of an item in Pathfinder: light armor of wooden plates bound together'
+	},
+	quilted_cloth: {
+		id: 'item.pf1e.quilted_cloth',
+		defaultMessage: 'quilted cloth',
+		description: 'Name of an item in Pathfinder: light armor of layered, padded cloth worn as clothing'
+	},
+	kobold_long_lash: {
+		id: 'item.pf1e.kobold_long_lash',
+		defaultMessage: 'long lash tail attachment',
+		description: 'Name of an item in Pathfinder: a whip-like blade a kobold straps to the end of its tail'
+	},
+	kobold_spiked_tail: {
+		id: 'item.pf1e.kobold_spiked_tail',
+		defaultMessage: 'spiked tail attachment',
+		description: 'Name of an item in Pathfinder: a spiked weight a kobold straps to the end of its tail'
+	},
+	ratfolk_tailblade: {
+		id: 'item.pf1e.ratfolk_tailblade',
+		defaultMessage: 'ratfolk tailblade',
+		description: 'Name of an item in Pathfinder: a small blade a ratfolk straps to its tail'
+	},
+	book_of_puzzles: {
+		id: 'item.pf1e.book_of_puzzles',
+		defaultMessage: 'book of puzzles',
+		description: 'Name of an item in Pathfinder: a book of brainteasers that train the mind of whoever solves them'
+	},
+	book_of_war_prayers: {
+		id: 'item.pf1e.book_of_war_prayers',
+		defaultMessage: 'book of war prayers',
+		description: 'Name of an item in Pathfinder: a small book of prayers read aloud before a battle to hearten allies'
+	},
+	footprints_cast: {
+		id: 'item.pf1e.footprints_cast',
+		defaultMessage: 'footprints cast',
+		description: 'Name of an item in Pathfinder: a quick-drying plaster for taking a copy of footprints to study later'
+	},
+	light_fire_ink: {
+		id: 'item.pf1e.light_fire_ink',
+		defaultMessage: 'light fire ink',
+		description: 'Name of an item in Pathfinder: an ink for secret messages that bursts into flame once light falls on it'
+	},
+	tome_of_epics: {
+		id: 'item.pf1e.tome_of_epics',
+		defaultMessage: 'tome of epics',
+		description: 'Name of an item in Pathfinder: a heavy illustrated book of heroic tales that inspires its reader'
 	}
 });
+
+export type Pf1eDefaultItemKey = keyof typeof PF1E_DEFAULT_ITEM_NAMES;
+
+/**
+ * Each default item's description, by the item's key, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab
+ */
+export const PF1E_DEFAULT_ITEM_DESCRIPTIONS: Record<Pf1eDefaultItemKey, MessageDescriptor> = defineMessages({
+	dagger: {
+		id: 'itemDescription.pf1e.dagger',
+		defaultMessage: 'A short blade for stabbing up close or throwing.',
+		description: 'Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	cestus: {
+		id: 'itemDescription.pf1e.cestus',
+		defaultMessage: 'A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things.',
+		description: 'Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	sword_cane: {
+		id: 'itemDescription.pf1e.sword_cane',
+		defaultMessage: 'A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw.',
+		description: 'Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	wooden_armor: {
+		id: 'itemDescription.pf1e.wooden_armor',
+		defaultMessage: 'Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn\'t hinder swimming.',
+		description: 'Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	quilted_cloth: {
+		id: 'itemDescription.pf1e.quilted_cloth',
+		defaultMessage: 'Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding.',
+		description: 'Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	kobold_long_lash: {
+		id: 'itemDescription.pf1e.kobold_long_lash',
+		defaultMessage: 'A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it.',
+		description: 'Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	kobold_spiked_tail: {
+		id: 'itemDescription.pf1e.kobold_spiked_tail',
+		defaultMessage: 'A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it.',
+		description: 'Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	ratfolk_tailblade: {
+		id: 'itemDescription.pf1e.ratfolk_tailblade',
+		defaultMessage: 'A small knife strapped to the tip of a ratfolk\'s tail, so the ratfolk can slash at foes with its tail.',
+		description: 'Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	book_of_puzzles: {
+		id: 'itemDescription.pf1e.book_of_puzzles',
+		defaultMessage: 'A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day.',
+		description: 'Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	book_of_war_prayers: {
+		id: 'itemDescription.pf1e.book_of_war_prayers',
+		defaultMessage: 'A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day.',
+		description: 'Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	footprints_cast: {
+		id: 'itemDescription.pf1e.footprints_cast',
+		defaultMessage: 'A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather.',
+		description: 'Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	light_fire_ink: {
+		id: 'itemDescription.pf1e.light_fire_ink',
+		defaultMessage: 'An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read.',
+		description: 'Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	},
+	tome_of_epics: {
+		id: 'itemDescription.pf1e.tome_of_epics',
+		defaultMessage: 'A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day.',
+		description: 'Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+	}
+});
+
+/**
+ * Each default item's category and types, which the migrations in server/drizzle give it. A weapon in no
+ * weapon group, such as a kobold's tail attachment, has no type
+ */
+export const PF1E_DEFAULT_ITEM_KINDS: Record<Pf1eDefaultItemKey, { category: Pf1eItemCategory; types: readonly Pf1eItemType[] }> = {
+	dagger: {
+		category: 'weapon',
+		types: ['blades_light', 'thrown']
+	},
+	cestus: {
+		category: 'weapon',
+		types: ['close', 'monk']
+	},
+	sword_cane: {
+		category: 'weapon',
+		types: ['blades_light']
+	},
+	wooden_armor: {
+		category: 'armor',
+		types: ['light_armor']
+	},
+	quilted_cloth: {
+		category: 'armor',
+		types: ['light_armor']
+	},
+	kobold_long_lash: {
+		category: 'weapon',
+		types: []
+	},
+	kobold_spiked_tail: {
+		category: 'weapon',
+		types: []
+	},
+	ratfolk_tailblade: {
+		category: 'weapon',
+		types: ['blades_light']
+	},
+	book_of_puzzles: {
+		category: 'gear',
+		types: []
+	},
+	book_of_war_prayers: {
+		category: 'gear',
+		types: []
+	},
+	footprints_cast: {
+		category: 'gear',
+		types: []
+	},
+	light_fire_ink: {
+		category: 'gear',
+		types: []
+	},
+	tome_of_epics: {
+		category: 'gear',
+		types: []
+	}
+};

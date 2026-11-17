@@ -5,7 +5,7 @@
  * most of
  */
 import { and, count, eq, inArray, isNotNull, isNull, notExists, notInArray, or, sql, type SQL } from 'drizzle-orm';
-import { unionAll, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { alias, unionAll, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import type { UniverseTextKind, UniverseTextRef } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
@@ -319,6 +319,63 @@ export async function listThingNames(version: UniverseVersion, executor: Executo
 		overridable('race', races, races.overridesRaceId),
 		overridable('class', classes, classes.overridesClassId),
 		overridable('theme', themes, themes.overridesThemeId)
+	));
+}
+
+/**
+ * A description a universe writes for one of the things it holds, as universe text
+ */
+export interface ThingDescription extends ThingName
+{
+	description: string;
+}
+
+/**
+ * The descriptions a universe writes for the items, races, classes and themes it adds, and for the
+ * ruleset's defaults, each with the name of what it describes in the source language, in one query. A default
+ * whose description the universe hasn't written keeps the engine's, which isn't universe text and isn't
+ * listed
+ *
+ * @param version The universe's live version or draft
+ * @param executor The database, or a transaction
+ * @return The descriptions, in no particular order
+ */
+export async function listThingDescriptions(version: UniverseVersion, executor: Executor = db): Promise<ThingDescription[]>
+{
+	/**
+	 * The descriptions in one of the tables whose rows may be the ruleset's defaults, each copy named
+	 * for its default unless it renames it
+	 *
+	 * @param kind What the things are
+	 * @param table The table
+	 * @param overrides Its column naming the default a copy is of
+	 * @return The query
+	 */
+	const described = (kind: UniverseTextKind, table: typeof items | typeof races | typeof classes | typeof themes, overrides: AnyPgColumn) =>
+	{
+		const defaults = alias(table, 'defaults');
+
+		return(executor
+			.select({
+				kind: sql<UniverseTextKind>`${kind}::text`,
+				thingId: sql<string>`coalesce(${overrides}, ${table.id})::text`,
+				liveThingId: sql<string>`coalesce(${overrides}, ${table.originId}, ${table.id})::text`,
+				name: sql<string>`coalesce(${table.name}, ${defaults.name})`,
+				description: sql<string>`${table.description}`
+			})
+			.from(table)
+			.leftJoin(defaults, eq(defaults.id, overrides))
+			.where(and(
+				inVersion(table, version),
+				isNotNull(table.description)
+			)));
+	};
+
+	return(unionAll(
+		described('item', items, items.overridesItemId),
+		described('race', races, races.overridesRaceId),
+		described('class', classes, classes.overridesClassId),
+		described('theme', themes, themes.overridesThemeId)
 	));
 }
 

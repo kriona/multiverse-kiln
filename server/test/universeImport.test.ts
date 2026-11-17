@@ -371,7 +371,7 @@ describe('importing a universe', () =>
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, uploadedGraphicId: 'new:mossy' } },
 			{ kind: 'editCells', areaId: caveId, changes: [[0, 0, 'new:moss'], [12, -3, VOID_CELL]] },
 			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
-			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', type: 'torch', enabled: true } },
+			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', description: null, category: 'gear', types: ['torch'], enabled: true } },
 			{ kind: 'saveTranslatorNote', text: { kind: 'area', thingId: caveId, field: 'name' }, note: 'A dark place' },
 			{ kind: 'saveNoTranslation', text: { kind: 'universe', thingId: kilnhavenId, field: 'name' }, noTranslation: true }
 		]);
@@ -383,6 +383,7 @@ describe('importing a universe', () =>
 				ref: 'new:mole',
 				settings: {
 					name: 'Molefolk',
+					description: null,
 					enabled: true,
 					keepPlaying: true,
 					startingMoney: emptyMoney(),
@@ -807,6 +808,88 @@ describe('importing a universe', () =>
 				request.destroy();
 			}
 		}
+	});
+
+	it('gives the items of a file exported when items had one type each a category and types', async () =>
+	{
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const otherId = await createUniverse(ada, 'Otherhaven');
+
+		contents.items = contents.items?.map(({ category, types, ...item }) => ((item.name === 'Lantern')
+			? { ...item, type: 'quarterstaff' } as unknown as EditorItem
+			: { ...item, category, types }));
+
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const imported = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const lantern = (await draftOf(ada, otherId)).items?.find((item) => (item.name === 'Lantern'));
+
+		assert.deepStrictEqual([lantern?.category, lantern?.types], ['weapon', ['double', 'monk']]);
+	});
+
+	it('imports the descriptions of items, races and classes with their translations, and none from a file exported before they had them', async () =>
+	{
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const otherId = await createUniverse(ada, 'Otherhaven');
+		const mole = contents.races?.find((race) => (race.name === 'Molefolk'));
+		const dwarf = contents.races?.find((race) => (race.key === 'dwarf'));
+		const wizard = contents.classes?.find((characterClass) => (characterClass.key === 'wizard'));
+		const lantern = contents.items?.find((item) => (item.name === 'Lantern'));
+
+		assert.ok(mole && dwarf && wizard && lantern && contents.translations?.translations);
+		mole.description = 'Diggers of the deep.';
+		lantern.description = 'It lights the way.';
+
+		// A default described is an edited one, as an export holds it
+		Object.assign(dwarf, { description: 'Stout folk of the deep halls.', edited: true, editedSettings: true });
+		Object.assign(wizard, { description: 'A scholar of arcane formulae.', edited: true, editedSettings: true });
+		contents.translations.translations.push({ kind: 'race', thingId: String(mole.id), field: 'description', language: 'fr', text: 'Creuseurs des profondeurs.', sourceHash: sourceTextHash('Diggers of the deep.') });
+
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const imported = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const described = await draftOf(ada, otherId);
+		const importedMole = described.races?.find((race) => (race.name === 'Molefolk'));
+
+		assert.ok(importedMole);
+		assert.deepStrictEqual([
+			importedMole.description,
+			described.races?.find((race) => (race.key === 'dwarf'))?.description,
+			described.classes?.find((characterClass) => (characterClass.key === 'wizard'))?.description,
+			described.items?.find((item) => (item.name === 'Lantern'))?.description
+		], ['Diggers of the deep.', 'Stout folk of the deep halls.', 'A scholar of arcane formulae.', 'It lights the way.']);
+		assert.deepStrictEqual(described.translations?.translations?.filter((entry) => (entry.field === 'description')).map(({ kind, thingId, language, text }) => [kind, thingId, language, text]), [['race', String(importedMole.id), 'fr', 'Creuseurs des profondeurs.']]);
+
+		/**
+		 * A thing as a file exported before items, races and classes had descriptions holds it
+		 *
+		 * @param thing The item, race or class
+		 * @return The same, without its description
+		 */
+		const undescribed = <T extends object>(thing: T): T => Object.fromEntries(Object.entries(thing).filter(([field]) => (field !== 'description'))) as T;
+
+		contents.races = contents.races?.map(undescribed);
+		contents.classes = contents.classes?.map(undescribed);
+		contents.items = contents.items?.map(undescribed);
+		contents.translations.translations = contents.translations.translations.filter((entry) => (entry.field !== 'description'));
+		assert.ok(!contents.races?.some((race) => ('description' in race)));
+
+		const old = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(old.status, 204, JSON.stringify(old.body));
+
+		const draft = await draftOf(ada, otherId);
+
+		assert.ok(draft.races?.some((race) => (race.name === 'Molefolk')));
+		assert.ok(draft.items?.some((item) => (item.name === 'Lantern')));
+		assert.ok([...(draft.races ?? []), ...(draft.classes ?? []), ...(draft.items ?? [])].every((thing) => (thing.description === null)));
+		assert.deepStrictEqual(draft.translations?.translations?.filter((entry) => (entry.field === 'description')), []);
 	});
 
 	it('refuses a file whose content a save wouldn\'t take, saving none of it', async () =>

@@ -649,7 +649,8 @@ button.sort-button
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.account-menu-item
+.account-menu-item,
+.action-menu-item
 {
 	display: flex;
 	align-items: center;
@@ -675,6 +676,57 @@ button.sort-button
 	{
 		margin-inline-end: 0;
 	}
+}
+
+// A button of three vertical dots that opens a menu of commands about one thing (src/ui/actionMenu.ts),
+// such as an item on a character's sheet
+.action-menu
+{
+	display: inline-flex;
+}
+
+.action-menu-button
+{
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 4px;
+	border-color: $border-strong;
+	background: $background-secondary;
+	color: $text;
+
+	&:hover,
+	&[aria-expanded="true"]
+	{
+		border-color: $border-stronger;
+		background: $background-secondary-hover;
+	}
+
+	.icon
+	{
+		width: 1.3em;
+		height: 1.3em;
+		margin-inline-end: 0;
+	}
+}
+
+// A popover in the top layer, placed beside its button by the script
+.action-menu-list
+{
+	inset: auto;
+	min-width: 140px;
+	margin: 0;
+	padding: 4px;
+	border: 1px solid $border;
+	border-radius: 6px;
+	background: $background-panel;
+	color: $text;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+// A command that loses something, such as Discard
+.action-menu-item.danger-item
+{
+	color: $error;
 }
 
 // The group's game clock, in the group's toolbar
@@ -1482,6 +1534,153 @@ footer
 		{
 			width: 16px;
 			height: 16px;
+		}
+	}
+}
+
+// A checkbox drawn as an on/off switch. It is still the checkbox underneath, so Space toggles it, its
+// label toggles it and a screen reader announces it as one. The knob is drawn in the track's
+// background, which leaves ::before to say On and ::after to say Off, each in the room beside the knob
+// on the side it is not. The words come from the data-on and data-off attributes, in the player's
+// language. Sizes are the outside of the track (border-box), and positions inside it are measured
+// within its 1px border
+//
+// A word that is going drops out at once, and the one that is coming waits out the knob's slide. That
+// is done with transitions rather than an animation because a transition runs only when the state
+// changes, where an animation would play again every time the switch is shown. The code making
+// switches (src/ui/toggleSwitch.ts) waits out $toggle-slide too, so keep its SLIDE_MS the same
+$toggle-width: 52px;
+$toggle-height: 22px;
+$toggle-knob: 16px;
+$toggle-inset: 2px;
+$toggle-inner: $toggle-width - 2px;
+$toggle-travel: $toggle-inner - $toggle-knob - 2 * $toggle-inset;
+$toggle-label-width: $toggle-inner - $toggle-knob - 2 * $toggle-inset;
+$toggle-slide: 0.15s;
+$toggle-shadow: radial-gradient(circle closest-side, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+
+// The knob as a background layer, in $color
+@function toggle-knob($color)
+{
+	@return radial-gradient(circle closest-side, $color 90%, transparent 100%);
+}
+
+input[type="checkbox"].toggle-switch
+{
+	appearance: none;
+	box-sizing: border-box;
+	display: inline-block;
+	position: relative;
+	width: $toggle-width;
+	min-width: $toggle-width;
+	height: $toggle-height;
+	margin: 0;
+	padding: 0;
+	vertical-align: middle;
+	border: 1px solid $border-stronger;
+	border-radius: $toggle-height;
+	cursor: pointer;
+	// The knob, then its shadow a pixel lower, over the track
+	background-color: $background-secondary;
+	background-image: toggle-knob($text), $toggle-shadow;
+	background-repeat: no-repeat;
+	background-size: $toggle-knob $toggle-knob;
+	background-position: $toggle-inset center, $toggle-inset calc(50% + 1px);
+	transition: background-color $toggle-slide ease-in-out, border-color $toggle-slide ease-in-out, background-position $toggle-slide ease-in-out;
+
+	&::before,
+	&::after
+	{
+		position: absolute;
+		top: 50%;
+		width: $toggle-label-width;
+		transform: translateY(-50%);
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 1;
+		text-align: center;
+		white-space: nowrap;
+	}
+
+	&::before
+	{
+		content: attr(data-on);
+		left: $toggle-inset;
+		color: $text-on-accent;
+		opacity: 0;
+		transition: opacity 0s;
+	}
+
+	&::after
+	{
+		content: attr(data-off);
+		left: $toggle-inset + $toggle-knob;
+		color: $text-muted;
+		opacity: 1;
+		transition: opacity 0s ease-out $toggle-slide;
+	}
+
+	&:checked
+	{
+		border-color: $accent;
+		background-color: $accent-background;
+		background-position: ($toggle-inset + $toggle-travel) center, ($toggle-inset + $toggle-travel) calc(50% + 1px);
+
+		&::before
+		{
+			opacity: 1;
+			transition: opacity 0s ease-out $toggle-slide;
+		}
+
+		&::after
+		{
+			opacity: 0;
+			transition: opacity 0s;
+		}
+	}
+
+	&:disabled
+	{
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	@media (prefers-reduced-motion: reduce)
+	{
+		&,
+		&::before,
+		&::after,
+		&:checked::before,
+		&:checked::after
+		{
+			transition: none;
+		}
+	}
+
+	// High contrast mode would repaint the track and knob alike in one system color, leaving nothing to
+	// tell on from off, so the switch is drawn in system colors of its own
+	@media (forced-colors: active)
+	{
+		forced-color-adjust: none;
+		border-color: ButtonText;
+		background-color: Canvas;
+		background-image: toggle-knob(ButtonText);
+
+		&::before
+		{
+			color: HighlightText;
+		}
+
+		&::after
+		{
+			color: CanvasText;
+		}
+
+		&:checked
+		{
+			border-color: Highlight;
+			background-color: Highlight;
+			background-image: toggle-knob(HighlightText);
 		}
 	}
 }

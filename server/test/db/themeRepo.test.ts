@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { createCustomTheme, findEditorTheme, loadEditorThemes, loadLiveThemeNames, saveEditedDefaultTheme, type CustomThemeSettings } from '../../src/db/themeRepo.js';
+import { createCustomTheme, findEditorTheme, loadEditorThemes, loadLiveThemeNames, restoreDefaultTheme, saveEditedDefaultTheme, updateCustomTheme, type CustomThemeSettings } from '../../src/db/themeRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
@@ -9,6 +9,7 @@ import { addUniverse } from './fixtures.js';
 
 const smuggler: CustomThemeSettings = {
 	name: 'Smuggler',
+	description: null,
 	enabled: true,
 	rules: {
 		ability: 'dexterity'
@@ -94,5 +95,62 @@ describe('themeRepo', () =>
 		assert.strictEqual(names.get(plainId)?.has(smugglerId), false);
 		assert.strictEqual(names.get(pathfinderId)?.size, 0);
 		assert.deepStrictEqual(await loadLiveThemeNames([]), new Map());
+	});
+
+	it('saves and loads a universe\'s own theme\'s description', async () =>
+	{
+		const universeId = await createUniverse({
+			name: 'Described',
+			ruleset: 'sf1e'
+		});
+		const themeId = await inTransaction((transaction) => createCustomTheme(liveVersion(universeId), 'sf1e', { ...smuggler, description: 'Runs cargo past the customs patrols.' }, transaction));
+
+		assert.strictEqual((await findEditorTheme(liveVersion(universeId), 'sf1e', themeId))?.description, 'Runs cargo past the customs patrols.');
+
+		await inTransaction((transaction) => updateCustomTheme(liveVersion(universeId), themeId, { ...smuggler, description: 'Knows every hidden compartment.' }, transaction));
+		assert.strictEqual((await findEditorTheme(liveVersion(universeId), 'sf1e', themeId))?.description, 'Knows every hidden compartment.');
+
+		await inTransaction((transaction) => updateCustomTheme(liveVersion(universeId), themeId, smuggler, transaction));
+		assert.strictEqual((await findEditorTheme(liveVersion(universeId), 'sf1e', themeId))?.description, null);
+	});
+
+	it('keeps a default theme\'s description, gives it the universe\'s, and restores it', async () =>
+	{
+		const universeId = await createUniverse({
+			name: 'Described',
+			ruleset: 'sf1e'
+		});
+		const version = liveVersion(universeId);
+		const original = (await loadEditorThemes(version, 'sf1e')).find((theme) => (theme.key === 'scholar'));
+
+		assert.ok(original);
+		assert.strictEqual(original.description, null);
+
+		await inTransaction((transaction) => saveEditedDefaultTheme(version, 'sf1e', original.id, { ...original, enabled: false }, transaction));
+		assert.deepStrictEqual(await findEditorTheme(version, 'sf1e', original.id), { ...original, enabled: false, edited: true, editedSettings: false });
+
+		await inTransaction((transaction) => saveEditedDefaultTheme(version, 'sf1e', original.id, { ...original, description: 'Reads everything twice.' }, transaction));
+		assert.deepStrictEqual(await findEditorTheme(version, 'sf1e', original.id), { ...original, description: 'Reads everything twice.', edited: true, editedSettings: true });
+
+		await restoreDefaultTheme(version, original.id);
+		assert.deepStrictEqual(await findEditorTheme(version, 'sf1e', original.id), original);
+	});
+
+	it('counts a default theme renamed to its own name as edited only by whether it is enabled', async () =>
+	{
+		const universeId = await createUniverse({
+			name: 'Renamed',
+			ruleset: 'sf1e'
+		});
+		const version = liveVersion(universeId);
+		const original = (await loadEditorThemes(version, 'sf1e')).find((theme) => (theme.key === 'scholar'));
+
+		assert.ok(original);
+
+		await inTransaction((transaction) => saveEditedDefaultTheme(version, 'sf1e', original.id, { ...original, name: 'Scholar', enabled: false }, transaction));
+		assert.strictEqual((await findEditorTheme(version, 'sf1e', original.id))?.editedSettings, false);
+
+		await inTransaction((transaction) => saveEditedDefaultTheme(version, 'sf1e', original.id, { ...original, name: 'Bookworm' }, transaction));
+		assert.strictEqual((await findEditorTheme(version, 'sf1e', original.id))?.editedSettings, true);
 	});
 });

@@ -1075,6 +1075,38 @@
 		"message": "Throw Overboard",
 		"source": "Delete"
 	},
+	"characterSheet.discard": {
+		"message": "Toss Overboard",
+		"source": "Discard"
+	},
+	"characterSheet.discardConfirm": {
+		"message": "Toss Overboard",
+		"source": "Discard"
+	},
+	"characterSheet.discardFailed": {
+		"message": "The booty couldn't be tossed overboard.",
+		"source": "Could not discard the items."
+	},
+	"characterSheet.discardItemTitle": {
+		"message": "Toss {item} Overboard",
+		"source": "Discard {item}"
+	},
+	"characterSheet.discardQuantity": {
+		"message": "Pick how many to toss overboard, up to {max, number}",
+		"source": "Choose how many to discard, up to {max, number}"
+	},
+	"characterSheet.discardQuestion": {
+		"message": "Be ye sure ye want to toss {item} overboard?",
+		"source": "Are you sure you want to discard {item}?"
+	},
+	"characterSheet.giveFailed": {
+		"message": "The booty couldn't be handed o'er.",
+		"source": "Could not give the items."
+	},
+	"characterSheet.giveItems": {
+		"message": "Give Booty",
+		"source": "Give Items"
+	},
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",
 		"source": "Hit points"
@@ -1083,9 +1115,21 @@
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
 	},
+	"characterSheet.itemMenu": {
+		"message": "What to do with {item}",
+		"source": "Actions for {item}"
+	},
 	"characterSheet.items": {
 		"message": "Kit",
 		"source": "Equipment"
+	},
+	"characterSheet.itemsDiscarded": {
+		"message": "{name} tossed {quantity, plural, =1 {{item}} other {{item} x#}} overboard.",
+		"source": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}."
+	},
+	"characterSheet.itemsGiven": {
+		"message": "{name} has been handed {count, plural, one {# piece o' booty} other {# different pieces o' booty}}.",
+		"source": "{name} has been given {count, plural, one {# item} other {# different items}}."
 	},
 	"characterSheet.leftGroup": {
 		"message": "{name} has jumped ship.",
@@ -2007,6 +2051,10 @@
 		"message": "Folk an' callin'",
 		"source": "Race and class"
 	},
+	"editor.characterList.giveItemsTitle": {
+		"message": "Hand Booty to {name}",
+		"source": "Give Items to {name}"
+	},
 	"editor.characterList.inGroup": {
 		"message": "Sailin' with a crew",
 		"source": "In a group"
@@ -2619,6 +2667,10 @@
 		"message": "ye",
 		"source": "you"
 	},
+	"editor.enabledSwitch": {
+		"message": "{name} open",
+		"source": "{name} enabled"
+	},
 	"editor.error.failedBecause": {
 		"message": "{failure} {reason}",
 		"source": "{failure} {reason}"
@@ -2711,6 +2763,34 @@
 		"message": "Put hands ashore, the newest aboard first, till the crew fits",
 		"source": "Take out members, those who joined most recently first, until they fit"
 	},
+	"editor.impact.rulebookItems": {
+		"message": "Shuttin' {rulebook}: hands carry its booty",
+		"source": "Turning off {rulebook}: characters carry its items"
+	},
+	"editor.impact.rulebookKeepItems": {
+		"message": "Let 'em keep it; no new copies be made",
+		"source": "Let them keep using them; no new copies are made"
+	},
+	"editor.impact.rulebookKeepPlaying": {
+		"message": "Let 'em keep sailin'; only new hands can't choose 'em",
+		"source": "Let them keep playing; only new characters can't choose them"
+	},
+	"editor.impact.rulebookOption": {
+		"message": "{name} ({count, plural, one {# hand} other {# hands}})",
+		"source": "{name} ({count, plural, one {# character} other {# characters}})"
+	},
+	"editor.impact.rulebookPlaying": {
+		"message": "Shuttin' {rulebook}: hands be its folk an' callin's",
+		"source": "Turning off {rulebook}: characters are its races and classes"
+	},
+	"editor.impact.rulebookPreventPlaying": {
+		"message": "Keep 'em in port till the book be opened again",
+		"source": "Stop them playing until the book is turned on again"
+	},
+	"editor.impact.rulebookRemoveItems": {
+		"message": "Take it from 'em; they get it back if the book be opened again",
+		"source": "Take them away; they get them back if the book is turned on again"
+	},
 	"editor.impact.title": {
 		"message": "Sailors Be Caught Up in This",
 		"source": "Players Are Affected"
@@ -2742,6 +2822,10 @@
 	"editor.item.type": {
 		"message": "Sort",
 		"source": "Type"
+	},
+	"editor.item.types": {
+		"message": "Sorts",
+		"source": "Types"
 	},
 	"editor.itemSelect.chosen": {
 		"message": "In the hold",
@@ -2778,6 +2862,10 @@
 	"editor.itemSelect.title": {
 		"message": "Pick Yer Booty",
 		"source": "Choose Items"
+	},
+	"editor.itemSelect.tooMany": {
+		"message": "Ye can pick no more than {max, plural, one {# piece o' booty} other {# pieces o' booty}}.",
+		"source": "You can choose up to {max, plural, one {# item} other {# items}}."
 	},
 	"editor.items.add": {
 		"message": "Add Booty",
@@ -3639,6 +3727,54 @@
 		"message": "Yer rank: {role}",
 		"source": "Your role: {role}"
 	},
+	"editor.rulebook.classes": {
+		"message": "Callin's",
+		"source": "Classes"
+	},
+	"editor.rulebook.hint": {
+		"message": "The book brings these aboard while it be open. Close each one on the Crew tab.",
+		"source": "The book brings these to the universe while it is on. Disable each one on the Characters tab."
+	},
+	"editor.rulebook.loadFailed": {
+		"message": "Couldn't haul up what the book brings.",
+		"source": "Could not list what the book brings."
+	},
+	"editor.rulebook.races": {
+		"message": "Folk",
+		"source": "Races"
+	},
+	"editor.rulebook.themes": {
+		"message": "Yarns",
+		"source": "Themes"
+	},
+	"editor.rulebooks.actionsColumn": {
+		"message": "Orders",
+		"source": "Actions"
+	},
+	"editor.rulebooks.alwaysOn": {
+		"message": "Always open",
+		"source": "Always on"
+	},
+	"editor.rulebooks.bookColumn": {
+		"message": "Book",
+		"source": "Book"
+	},
+	"editor.rulebooks.contents": {
+		"message": "What's Inside",
+		"source": "Contents"
+	},
+	"editor.rulebooks.heading": {
+		"message": "Books o' the Code",
+		"source": "Rulebooks"
+	},
+	"editor.rulebooks.hint": {
+		"message": "The books the universe's folk, callin's an' booty come from. While a book be open, what it brings shows on the Crew an' Booty tabs. Ye can still close each one there.",
+		"source": "The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there."
+	},
+	"editor.rulebooks.statusColumn": {
+		"message": "How She Stands",
+		"source": "Status"
+	},
 	"editor.ruleset.abilityPoints": {
 		"message": "Doubloons for knacks",
 		"source": "Ability points"
@@ -4428,8 +4564,8 @@
 		"source": "From"
 	},
 	"editor.translations.placeOf": {
-		"message": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence tale} other {long tale}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Booty: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {mark} other {name}}} other {Peril: {name}, name}}",
-		"source": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, name} race {Race: {name}, name} class {Class: {name}, name} theme {Theme: {name}, name} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}"
+		"message": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence tale} other {long tale}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Booty: {name}, {field, select, description {tale} other {name}}} race {Race: {name}, {field, select, description {tale} other {name}}} class {Class: {name}, {field, select, description {tale} other {name}}} theme {Theme: {name}, {field, select, description {tale} other {name}}} coin {Coin: {coin}, {field, select, abbreviation {mark} other {name}}} other {Peril: {name}, name}}",
+		"source": "{kind, select, universe {Universe: {name}, {field, select, name {name} shortDescription {1-sentence description} other {long description}}} area {Area: {name}, name} tile {Tile: {name}, name} item {Item: {name}, {field, select, description {description} other {name}}} race {Race: {name}, {field, select, description {description} other {name}}} class {Class: {name}, {field, select, description {description} other {name}}} theme {Theme: {name}, {field, select, description {description} other {name}}} coin {Coin: {coin}, {field, select, abbreviation {abbreviation} other {name}}} other {Difficulty level: {name}, name}}"
 	},
 	"editor.translations.remove": {
 		"message": "Strike It Off",
@@ -5423,6 +5559,10 @@
 		"message": "A peril needs a name.",
 		"source": "A difficulty level needs a name."
 	},
+	"error.discardItemsNotCarried": {
+		"message": "That hand don't carry that booty no more.",
+		"source": "The character doesn't carry that item any more."
+	},
 	"error.draftExists": {
 		"message": "This universe already has a draft on the slipway. Launch it or scuttle it afore layin' down another.",
 		"source": "The universe already has a draft. Apply it or discard it before starting another."
@@ -5435,6 +5575,10 @@
 		"message": "{universe} demands her officers raise two-factor authentication. Raise it to open the universe in the editor.",
 		"source": "{universe} requires its editors to have two-factor authentication on. Turn it on to open the universe in the editor."
 	},
+	"error.editorNoSuchCharacter": {
+		"message": "That hand be lost at sea.",
+		"source": "The character doesn't exist any more."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
@@ -5446,6 +5590,10 @@
 	"error.floatingAbility": {
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
+	},
+	"error.giveItemsUnavailable": {
+		"message": "Some o' that booty can't be handed o'er: it were sunk or stowed away, or its rulebook be shut. Pick the booty again.",
+		"source": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again."
 	},
 	"error.groupCharacterBarred": {
 		"message": "{bar, select, race {That hand's folk be closed, so they can't sail.} other {That hand's callin' be closed, so they can't sail.}}",
@@ -5779,6 +5927,18 @@
 		"message": "Yer rank in this universe don't allow that.",
 		"source": "Your role in this universe doesn't allow that."
 	},
+	"error.rulebookLeavesNoClass": {
+		"message": "Closin' the book leaves no open callin' for new hands. Open a callin' from another book first.",
+		"source": "Turning off the book leaves no enabled class for new characters. Enable a class from another book first."
+	},
+	"error.rulebookLeavesNoRace": {
+		"message": "Closin' the book leaves no open folk for new hands. Open a folk from another book first.",
+		"source": "Turning off the book leaves no enabled race for new characters. Enable a race from another book first."
+	},
+	"error.rulebookLeavesNoTheme": {
+		"message": "Closin' the book leaves no open yarn for new hands. Open a yarn from another book first.",
+		"source": "Turning off the book leaves no enabled theme for new characters. Enable a theme from another book first."
+	},
 	"error.saveConflicts": {
 		"message": "Other hands changed some o' the same settings since ye loaded 'em. Choose whose t' keep, then stow again.",
 		"source": "Other editors changed some of the same settings since you loaded them. Choose whose to keep, then save again."
@@ -5863,6 +6023,10 @@
 		"message": "Write yer username exactly as it be to swear to it.",
 		"source": "Type your username exactly as it is to confirm."
 	},
+	"error.universeDisabledCharacters": {
+		"message": "The ship's officers have laid up this universe, so its hands can't be meddled with.",
+		"source": "The site's admins have disabled this universe, so its characters can't be changed."
+	},
 	"error.universeDisabledSave": {
 		"message": "The ship's officers have laid up this universe, so changes to it can't be stowed.",
 		"source": "The site's admins have disabled this universe, so changes to it can't be saved."
@@ -5884,8 +6048,8 @@
 		"source": "The universe isn't disabled."
 	},
 	"error.unknownItemType": {
-		"message": "The universe's ruleset knows no such sort o' booty.",
-		"source": "The universe's ruleset has no such type of item."
+		"message": "The universe's ruleset knows no such kind or sort o' booty.",
+		"source": "The universe's ruleset has no such kind or type of item."
 	},
 	"error.unknownRaceArea": {
 		"message": "A home port be chosen for folk this universe doesn't have.",
@@ -6014,6 +6178,10 @@
 	"form.coinAbbreviation.invalid": {
 		"message": "Scrawl up to {max, number} marks, without spaces, digits or commas.",
 		"source": "Write up to {max, number} characters, without spaces, digits or commas."
+	},
+	"form.description": {
+		"message": "Tale",
+		"source": "Description"
 	},
 	"form.discardChanges": {
 		"message": "Ye've changes not yet stowed. Toss 'em overboard?",
@@ -6439,13 +6607,117 @@
 		"message": "Who can use the summons",
 		"source": "Who can use the link"
 	},
+	"item.pf1e.book_of_puzzles": {
+		"message": "book o' riddles",
+		"source": "book of puzzles"
+	},
+	"item.pf1e.book_of_war_prayers": {
+		"message": "book o' battle prayers",
+		"source": "book of war prayers"
+	},
+	"item.pf1e.cestus": {
+		"message": "knuckle-duster",
+		"source": "cestus"
+	},
 	"item.pf1e.dagger": {
 		"message": "dirk",
 		"source": "dagger"
 	},
+	"item.pf1e.footprints_cast": {
+		"message": "bootprint cast",
+		"source": "footprints cast"
+	},
+	"item.pf1e.kobold_long_lash": {
+		"message": "long lash tail rig",
+		"source": "long lash tail attachment"
+	},
+	"item.pf1e.kobold_spiked_tail": {
+		"message": "spiked tail rig",
+		"source": "spiked tail attachment"
+	},
+	"item.pf1e.light_fire_ink": {
+		"message": "flash-fire ink",
+		"source": "light fire ink"
+	},
+	"item.pf1e.quilted_cloth": {
+		"message": "quilted sailcloth",
+		"source": "quilted cloth"
+	},
+	"item.pf1e.ratfolk_tailblade": {
+		"message": "bilge rat tailblade",
+		"source": "ratfolk tailblade"
+	},
+	"item.pf1e.sword_cane": {
+		"message": "sword cane",
+		"source": "sword cane"
+	},
+	"item.pf1e.tome_of_epics": {
+		"message": "tome o' legends",
+		"source": "tome of epics"
+	},
+	"item.pf1e.wooden_armor": {
+		"message": "plank armor",
+		"source": "wooden armor"
+	},
 	"item.sf1e.survival_knife": {
 		"message": "boardin' knife",
 		"source": "survival knife"
+	},
+	"itemDescription.pf1e.book_of_puzzles": {
+		"message": "A book o' ten brain-teasers that whet the wits. Each riddle cracked gives a second roll on one check to disarm a device, recall knowledge or read a body that day.",
+		"source": "A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day."
+	},
+	"itemDescription.pf1e.book_of_war_prayers": {
+		"message": "A wee leather-bound book o' prayers read aloud afore battle. Hearin' 'em steels yer mates against fear for the next day.",
+		"source": "A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day."
+	},
+	"itemDescription.pf1e.cestus": {
+		"message": "A leather glove plated with metal for punchin'. The wearer counts as armed, an' the fingers stay free to grab things.",
+		"source": "A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things."
+	},
+	"itemDescription.pf1e.dagger": {
+		"message": "A short blade for stabbin' up close or throwin'.",
+		"source": "A short blade for stabbing up close or throwing."
+	},
+	"itemDescription.pf1e.footprints_cast": {
+		"message": "A quick-dryin' plaster for takin' a copy o' bootprints. The cast can be studied later or elsewhere, safe from time an' weather.",
+		"source": "A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather."
+	},
+	"itemDescription.pf1e.kobold_long_lash": {
+		"message": "A whip-like lash a kobold slips over the tip o' its tail, lettin' its tail slap reach farther. Only kobolds trained to fight with their tails can wield it.",
+		"source": "A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it."
+	},
+	"itemDescription.pf1e.kobold_spiked_tail": {
+		"message": "A spiked weight a kobold slips over the tip o' its tail, turnin' its tail slap into a piercin' blow with deadly critical hits. Only kobolds trained to fight with their tails can wield it.",
+		"source": "A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it."
+	},
+	"itemDescription.pf1e.light_fire_ink": {
+		"message": "An alchemical ink for secret messages. Once dry, it bursts into a wee flame soon after light falls on it, so a note burns up once it be read.",
+		"source": "An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read."
+	},
+	"itemDescription.pf1e.quilted_cloth": {
+		"message": "Light, padded armor with inner layers that snag arrows, bolts, darts an' thrown dirks. Against other blows it guards no better than paddin'.",
+		"source": "Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding."
+	},
+	"itemDescription.pf1e.ratfolk_tailblade": {
+		"message": "A wee knife strapped to the tip o' a bilge rat's tail, so the rat can slash at foes with its tail.",
+		"source": "A small knife strapped to the tip of a ratfolk's tail, so the ratfolk can slash at foes with its tail."
+	},
+	"itemDescription.pf1e.sword_cane": {
+		"message": "A thin blade hid inside a walkin' stick. It be hard to spot as a weapon an' quick to draw.",
+		"source": "A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw."
+	},
+	"itemDescription.pf1e.tome_of_epics": {
+		"message": "A heavy, painted book o' heroic yarns. An hour spent readin' it helps with speeches, shanties an' the lore o' heroic bloodlines for the next day.",
+		"source": "A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day."
+	},
+	"itemDescription.pf1e.wooden_armor": {
+		"message": "Leather armor with planks o' fire-treated wood over the vitals. It guards better than plain leather, an' the wood floats, so it don't hinder swimmin'.",
+		"source": "Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn't hinder swimming."
+	},
+	"itemDescription.sf1e.survival_knife": {
+		"message": "A sturdy blade for everyday work an' for fightin'. It be light, easy to lug an' treated against rust an' corrosion.",
+		"source": "A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion."
 	},
 	"keys.alt": {
 		"message": "Alt",
@@ -6556,8 +6828,8 @@
 		"source": "Nunito's license"
 	},
 	"license.openGameContent": {
-		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}.",
-		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}."
+		"message": "The game mechanics o' the Pathfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a below: its abilities, ways o' makin' ability scores, sizes, races, classes, coins an' items, an' their names an' descriptions in every tongue. In the source code, they be in {folder}, an' their names an' descriptions in {locales}.",
+		"source": "The Pathfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a below: its abilities, ways of making ability scores, sizes, races, classes, coins and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}."
 	},
 	"license.pathfinder": {
 		"message": "Pathfinder First Edition rules o' the sea",
@@ -6580,8 +6852,8 @@
 		"source": "Starfinder is a trademark of Paizo Inc., used under the Community Use Policy described in the {pathfinder} section."
 	},
 	"license.starfinderOpenGameContent": {
-		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names in every tongue. In the source code, they be in {folder}, an' their names in {locales}. Nothin' else in {siteName} be Open Game Content.",
-		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names in every language. In the source code, they are in {folder}, and their names in {locales}. Nothing else in {siteName} is Open Game Content."
+		"message": "The game mechanics o' the Starfinder First Edition ruleset be Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice names the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits an' items, an' their names an' descriptions in every tongue. In the source code, they be in {folder}, an' their names an' descriptions in {locales}. Nothin' else in {siteName} be Open Game Content.",
+		"source": "The Starfinder First Edition ruleset's game mechanics are Open Game Content, used under the Open Game License 1.0a in the Pathfinder First Edition rules section, whose copyright notice lists the Starfinder Core Rulebook: its abilities, ability points, sizes, races, classes, themes, credits and items, and their names and descriptions in every language. In the source code, they are in {folder}, and their names and descriptions in {locales}. Nothing else in {siteName} is Open Game Content."
 	},
 	"license.summary": {
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
@@ -7159,6 +7431,10 @@
 		"message": "Powder Monkey",
 		"source": "Alchemist"
 	},
+	"pf1e.class.arcanist": {
+		"message": "Arcanist",
+		"source": "Arcanist"
+	},
 	"pf1e.class.barbarian": {
 		"message": "Berserker",
 		"source": "Barbarian"
@@ -7166,6 +7442,14 @@
 	"pf1e.class.bard": {
 		"message": "Shanty Singer",
 		"source": "Bard"
+	},
+	"pf1e.class.bloodrager": {
+		"message": "Bloodrager",
+		"source": "Bloodrager"
+	},
+	"pf1e.class.brawler": {
+		"message": "Tavern Brawler",
+		"source": "Brawler"
 	},
 	"pf1e.class.cavalier": {
 		"message": "Cavalier",
@@ -7183,9 +7467,17 @@
 		"message": "Cutthroat",
 		"source": "Fighter"
 	},
+	"pf1e.class.hunter": {
+		"message": "Hunter",
+		"source": "Hunter"
+	},
 	"pf1e.class.inquisitor": {
 		"message": "Inquisitor",
 		"source": "Inquisitor"
+	},
+	"pf1e.class.investigator": {
+		"message": "Bilge Sleuth",
+		"source": "Investigator"
 	},
 	"pf1e.class.monk": {
 		"message": "Monk",
@@ -7207,6 +7499,18 @@
 		"message": "Scallywag",
 		"source": "Rogue"
 	},
+	"pf1e.class.shaman": {
+		"message": "Sea Shaman",
+		"source": "Shaman"
+	},
+	"pf1e.class.skald": {
+		"message": "War Shanty Singer",
+		"source": "Skald"
+	},
+	"pf1e.class.slayer": {
+		"message": "Headhunter",
+		"source": "Slayer"
+	},
 	"pf1e.class.sorcerer": {
 		"message": "Sorcerer",
 		"source": "Sorcerer"
@@ -7215,6 +7519,14 @@
 		"message": "Summoner",
 		"source": "Summoner"
 	},
+	"pf1e.class.swashbuckler": {
+		"message": "Swashbuckler",
+		"source": "Swashbuckler"
+	},
+	"pf1e.class.warpriest": {
+		"message": "Battle Chaplain",
+		"source": "Warpriest"
+	},
 	"pf1e.class.witch": {
 		"message": "Sea Witch",
 		"source": "Witch"
@@ -7222,6 +7534,114 @@
 	"pf1e.class.wizard": {
 		"message": "Wizard",
 		"source": "Wizard"
+	},
+	"pf1e.classDescription.alchemist": {
+		"message": "A tinkerer who brews bombs, extracts an' mutagens. Powder Monkeys hurl explosives, swig extracts that work like spells an' take mutagens that make 'em stronger in a scrap.",
+		"source": "An inventor who brews bombs, extracts and mutagens. Alchemists hurl explosives, drink extracts that work like spells and take mutagens that make them stronger in a fight."
+	},
+	"pf1e.classDescription.arcanist": {
+		"message": "A scholar who studies magic like a wizard but casts it like a sorcerer. Arcanists ready spells each day, cast 'em freely from their slots an' draw on a pool o' arcane power.",
+		"source": "A scholar who studies magic like a wizard but casts it like a sorcerer. Arcanists prepare spells each day, cast them freely from their slots and draw on a pool of arcane power."
+	},
+	"pf1e.classDescription.barbarian": {
+		"message": "A fierce warrior who draws strength from fury. Berserkers rage to hit harder an' shrug off blows, move fast an' be hard to catch nappin'.",
+		"source": "A fierce warrior who draws strength from fury. Barbarians rage to hit harder and shrug off blows, move fast and are hard to catch off guard."
+	},
+	"pf1e.classDescription.bard": {
+		"message": "A performer whose shanties an' words weave magic. Shanty Singers rouse their mates, know a wee bit about everythin' an' cast spells to help, charm an' trick.",
+		"source": "A performer whose music and words weave magic. Bards inspire their allies, know a little about everything and cast spells to help, charm and trick."
+	},
+	"pf1e.classDescription.bloodrager": {
+		"message": "A warrior whose rage wakes the magic in their blood. Bloodragers fight in a fury, gain powers from a bloodline as they rage an' cast a few arcane spells.",
+		"source": "A warrior whose rage awakens magic in their blood. Bloodragers fight in a fury, gain powers from a bloodline as they rage and cast a few arcane spells."
+	},
+	"pf1e.classDescription.brawler": {
+		"message": "A handy fist-fighter who thinks fast in a scrap. Tavern Brawlers hit hard with their fists, pick up the combat feat they need on the spot an' excel at combat maneuvers.",
+		"source": "A versatile unarmed fighter who thinks fast in a brawl. Brawlers hit hard with their fists, pick up the combat feat they need on the spot and excel at combat maneuvers."
+	},
+	"pf1e.classDescription.cavalier": {
+		"message": "A mounted knight sworn to an order an' its cause. Cavaliers fight from the saddle o' a loyal mount, challenge foes to single combat an' rally their crew.",
+		"source": "A mounted knight sworn to an order and its cause. Cavaliers fight from the saddle of a loyal mount, challenge foes to single combat and rally their allies."
+	},
+	"pf1e.classDescription.cleric": {
+		"message": "A priest who channels the power o' a god. Ship's Chaplains cast divine spells, heal their mates with channeled energy an' draw powers from two domains o' their faith.",
+		"source": "A priest who channels the power of a god. Clerics cast divine spells, heal allies with channeled energy and draw powers from two domains of their faith."
+	},
+	"pf1e.classDescription.druid": {
+		"message": "A guardian o' nature who draws magic from the wild. Druids cast divine spells, bond with an animal companion or a nature domain an' can take the shapes o' beasts.",
+		"source": "A guardian of nature who draws magic from the wild. Druids cast divine spells, bond with an animal companion or a nature domain and can take the shapes of animals."
+	},
+	"pf1e.classDescription.fighter": {
+		"message": "A master o' weapons an' armor who wins battles through drill an' skill. Cutthroats learn more combat feats than any other class.",
+		"source": "A master of weapons and armor who wins battles through training and skill. Fighters learn more combat feats than any other class."
+	},
+	"pf1e.classDescription.hunter": {
+		"message": "A wilderness spellcaster who fights alongside an animal companion. Hunters an' their companions share tactics an' animal powers, track their prey an' cast nature spells.",
+		"source": "A wilderness spellcaster who fights alongside an animal companion. Hunters and their companions share tactics and animal powers, track their prey and cast nature spells."
+	},
+	"pf1e.classDescription.inquisitor": {
+		"message": "A relentless agent o' a faith who roots out its enemies. Inquisitors cast divine spells, pass judgment on foes in battle an' be hard to lie to.",
+		"source": "A relentless agent of a faith who roots out its enemies. Inquisitors cast divine spells, pass judgment on foes in battle and are hard to lie to."
+	},
+	"pf1e.classDescription.investigator": {
+		"message": "A sleuth who cracks mysteries with sharp wits an' alchemy. Bilge Sleuths draw on inspiration to boost their checks, brew extracts an' study foes to strike 'em down.",
+		"source": "A detective who solves mysteries with sharp wits and alchemy. Investigators draw on inspiration to boost their checks, brew extracts and study foes to strike them down."
+	},
+	"pf1e.classDescription.monk": {
+		"message": "A martial artist who trains body an' mind to perfection. Monks fight without weapons or armor, strike in flurries o' blows an' grow faster as they train.",
+		"source": "A martial artist who trains body and mind to perfection. Monks fight without weapons or armor, strike in flurries of blows and grow faster as they train."
+	},
+	"pf1e.classDescription.oracle": {
+		"message": "A spellcaster chosen by divine powers, whether they wanted it or no. Oracles carry a curse that both hinders an' helps 'em, an' draw spells an' powers from a mystery.",
+		"source": "A spellcaster chosen by divine powers, whether they wanted it or not. Oracles carry a curse that both hinders and helps them, and draw spells and powers from a mystery."
+	},
+	"pf1e.classDescription.paladin": {
+		"message": "A holy warrior sworn to a strict code o' honor. Paladins smite evil, heal with a touch, stand firm against fear an' disease, an' later cast a few divine spells.",
+		"source": "A holy warrior sworn to a strict code of honor. Paladins smite evil, heal with a touch, stand firm against fear and disease, and later cast a few divine spells."
+	},
+	"pf1e.classDescription.ranger": {
+		"message": "A hunter an' tracker o' the wilds. Scouts fight best against chosen foes an' in favored lands, with a bow or two blades, an' later gain a huntin' companion an' spells.",
+		"source": "A hunter and tracker of the wilds. Rangers fight best against chosen foes and in favored lands, with a bow or two weapons, and later gain a hunting companion and spells."
+	},
+	"pf1e.classDescription.rogue": {
+		"message": "A sneaky, skilled lookout an' thief. Scallywags land sneak attacks on unwary foes, find an' disarm traps, an' learn more skills than any other class.",
+		"source": "A sneaky, skilled scout and thief. Rogues land sneak attacks on unwary foes, find and disarm traps, and learn more skills than any other class."
+	},
+	"pf1e.classDescription.shaman": {
+		"message": "A spellcaster who parleys with spirits through a spirit animal. Sea Shamans cast divine spells, use hexes an' take on the powers o' a chosen spirit.",
+		"source": "A spellcaster who speaks with spirits through a spirit animal. Shamans cast divine spells, use hexes and take on the powers of a chosen spirit."
+	},
+	"pf1e.classDescription.skald": {
+		"message": "A warrior poet whose shanties drive mates into a rage. War Shanty Singers fight on the front line, cast arcane spells an' share their fury with the whole crew.",
+		"source": "A warrior poet whose songs drive allies into a rage. Skalds fight on the front line, cast arcane spells and share their fury with the whole party."
+	},
+	"pf1e.classDescription.slayer": {
+		"message": "A hunter o' folk who studies a mark to strike it down. Headhunters track their quarry, land sneak attacks an' pick up tricks from scallywags an' scouts.",
+		"source": "A hunter of people who studies a target to strike it down. Slayers track their quarry, land sneak attacks and pick up tricks from rogues and rangers."
+	},
+	"pf1e.classDescription.sorcerer": {
+		"message": "A spellcaster whose magic flows from their bloodline. Sorcerers know fewer spells than wizards but cast 'em more often, without a spellbook, an' gain powers from their blood.",
+		"source": "A spellcaster whose magic flows from their bloodline. Sorcerers know fewer spells than wizards but cast them more often, without a spellbook, and gain powers from their blood."
+	},
+	"pf1e.classDescription.summoner": {
+		"message": "A spellcaster bonded to an eidolon, a creature from another plane that grows an' changes with 'em. Summoners fight beside it, call up other creatures an' cast arcane spells.",
+		"source": "A spellcaster bonded to an eidolon, a creature from another plane that grows and changes with them. Summoners fight beside it, call up other creatures and cast arcane spells."
+	},
+	"pf1e.classDescription.swashbuckler": {
+		"message": "A darin' sword fighter who trusts in flair an' nimble footwork. Swashbucklers spend panache on bold deeds, parry attacks an' strike with deadly precision usin' thrustin' blades.",
+		"source": "A daring sword fighter who relies on flair and nimble moves. Swashbucklers spend panache on bold deeds, parry attacks and strike with deadly precision using thrusting blades."
+	},
+	"pf1e.classDescription.warpriest": {
+		"message": "A warrior who fights for their faith with blade an' spell. Battle Chaplains bless themselves an' their weapons, learn combat feats an' cast divine spells.",
+		"source": "A warrior who fights for their faith with weapon and spell. Warpriests bless themselves and their weapons, learn combat feats and cast divine spells."
+	},
+	"pf1e.classDescription.witch": {
+		"message": "A spellcaster who learns magic from a mysterious patron through a familiar. Sea Witches cast arcane spells an' use hexes to curse foes an' aid their mates.",
+		"source": "A spellcaster who learns magic from a mysterious patron through a familiar. Witches cast arcane spells and use hexes to curse foes and aid allies."
+	},
+	"pf1e.classDescription.wizard": {
+		"message": "A scholar who learns magic from study an' a spellbook. Wizards have the widest range o' arcane spells an' can specialize in one school o' magic.",
+		"source": "A scholar who learns magic from study and a spellbook. Wizards have the widest range of arcane spells and can specialize in one school of magic."
 	},
 	"pf1e.coin.cp": {
 		"message": "cp",
@@ -7264,92 +7684,112 @@
 		"source": "Gear"
 	},
 	"pf1e.itemCategory.weapon": {
-		"message": "Arms",
-		"source": "Weapons"
+		"message": "Armament",
+		"source": "Weapon"
 	},
-	"pf1e.itemType.arrows": {
-		"message": "arrows",
-		"source": "arrows"
+	"pf1e.itemType.axes": {
+		"message": "hatchets",
+		"source": "axes"
 	},
-	"pf1e.itemType.chain_shirt": {
-		"message": "chain shirt",
-		"source": "chain shirt"
+	"pf1e.itemType.blades_heavy": {
+		"message": "big blades",
+		"source": "heavy blades"
 	},
-	"pf1e.itemType.club": {
-		"message": "belayin' pin",
-		"source": "club"
+	"pf1e.itemType.blades_light": {
+		"message": "wee blades",
+		"source": "light blades"
 	},
-	"pf1e.itemType.crossbow_bolts": {
-		"message": "crossbow bolts",
-		"source": "crossbow bolts"
+	"pf1e.itemType.bows": {
+		"message": "bows",
+		"source": "bows"
 	},
-	"pf1e.itemType.dagger": {
-		"message": "dirk",
-		"source": "dagger"
+	"pf1e.itemType.close": {
+		"message": "close quarters",
+		"source": "close"
 	},
-	"pf1e.itemType.heavy_shield": {
-		"message": "heavy shield",
-		"source": "heavy shield"
+	"pf1e.itemType.crossbows": {
+		"message": "crossbows",
+		"source": "crossbows"
 	},
-	"pf1e.itemType.leather_armor": {
-		"message": "leather armor",
-		"source": "leather armor"
+	"pf1e.itemType.double": {
+		"message": "double-enders",
+		"source": "double"
 	},
-	"pf1e.itemType.light_crossbow": {
-		"message": "light crossbow",
-		"source": "light crossbow"
+	"pf1e.itemType.flails": {
+		"message": "flails",
+		"source": "flails"
 	},
-	"pf1e.itemType.light_shield": {
-		"message": "buckler",
-		"source": "light shield"
+	"pf1e.itemType.hammers": {
+		"message": "cudgels",
+		"source": "hammers"
 	},
-	"pf1e.itemType.longbow": {
-		"message": "longbow",
-		"source": "longbow"
+	"pf1e.itemType.heavy_armor": {
+		"message": "heavy armor",
+		"source": "heavy armor"
 	},
-	"pf1e.itemType.longsword": {
-		"message": "broadsword",
-		"source": "longsword"
+	"pf1e.itemType.light_armor": {
+		"message": "light armor",
+		"source": "light armor"
 	},
-	"pf1e.itemType.other_gear": {
-		"message": "odds an' ends",
-		"source": "other gear"
+	"pf1e.itemType.medium_armor": {
+		"message": "middlin' armor",
+		"source": "medium armor"
 	},
-	"pf1e.itemType.padded_armor": {
-		"message": "padded armor",
-		"source": "padded armor"
+	"pf1e.itemType.monk": {
+		"message": "monk's arms",
+		"source": "monk"
 	},
-	"pf1e.itemType.quarterstaff": {
-		"message": "quarterstaff",
-		"source": "quarterstaff"
+	"pf1e.itemType.natural": {
+		"message": "fists an' claws",
+		"source": "natural"
+	},
+	"pf1e.itemType.polearms": {
+		"message": "long poles",
+		"source": "polearms"
 	},
 	"pf1e.itemType.rope": {
 		"message": "line",
 		"source": "rope"
 	},
-	"pf1e.itemType.short_sword": {
-		"message": "cutlass",
-		"source": "short sword"
+	"pf1e.itemType.shields": {
+		"message": "shields",
+		"source": "shields"
 	},
-	"pf1e.itemType.shortbow": {
-		"message": "shortbow",
-		"source": "shortbow"
+	"pf1e.itemType.spears": {
+		"message": "boardin' pikes",
+		"source": "spears"
 	},
-	"pf1e.itemType.spear": {
-		"message": "boardin' pike",
-		"source": "spear"
+	"pf1e.itemType.thrown": {
+		"message": "throwin'",
+		"source": "thrown"
 	},
 	"pf1e.itemType.torch": {
 		"message": "torch",
 		"source": "torch"
 	},
+	"pf1e.race.aasimar": {
+		"message": "Aasimar",
+		"source": "Aasimar"
+	},
 	"pf1e.race.catfolk": {
 		"message": "Ship's Cat",
 		"source": "Catfolk"
 	},
+	"pf1e.race.changeling": {
+		"message": "Changeling",
+		"source": "Changeling"
+	},
+	"pf1e.race.dhampir": {
+		"message": "Dhampir",
+		"source": "Dhampir"
+	},
 	"pf1e.race.drow": {
 		"message": "Drow",
 		"source": "Drow"
+	},
+	"pf1e.race.duergar": {
+		"message": "Duergar",
+		"source": "Duergar"
 	},
 	"pf1e.race.dwarf": {
 		"message": "Dwarf",
@@ -7359,6 +7799,14 @@
 		"message": "Elf",
 		"source": "Elf"
 	},
+	"pf1e.race.fetchling": {
+		"message": "Fetchling",
+		"source": "Fetchling"
+	},
+	"pf1e.race.gillman": {
+		"message": "Gill-Man",
+		"source": "Gillman"
+	},
 	"pf1e.race.gnome": {
 		"message": "Gnome",
 		"source": "Gnome"
@@ -7366,6 +7814,10 @@
 	"pf1e.race.goblin": {
 		"message": "Goblin",
 		"source": "Goblin"
+	},
+	"pf1e.race.grippli": {
+		"message": "Bog Frog",
+		"source": "Grippli"
 	},
 	"pf1e.race.half_elf": {
 		"message": "Half-Elf",
@@ -7387,9 +7839,245 @@
 		"message": "Landlubber",
 		"source": "Human"
 	},
+	"pf1e.race.ifrit": {
+		"message": "Ifrit",
+		"source": "Ifrit"
+	},
+	"pf1e.race.kitsune": {
+		"message": "Kitsune",
+		"source": "Kitsune"
+	},
+	"pf1e.race.kobold": {
+		"message": "Kobold",
+		"source": "Kobold"
+	},
+	"pf1e.race.merfolk": {
+		"message": "Merfolk",
+		"source": "Merfolk"
+	},
+	"pf1e.race.nagaji": {
+		"message": "Nagaji",
+		"source": "Nagaji"
+	},
+	"pf1e.race.orc": {
+		"message": "Orc",
+		"source": "Orc"
+	},
+	"pf1e.race.oread": {
+		"message": "Oread",
+		"source": "Oread"
+	},
 	"pf1e.race.ratfolk": {
 		"message": "Bilge Rat",
 		"source": "Ratfolk"
+	},
+	"pf1e.race.samsaran": {
+		"message": "Samsaran",
+		"source": "Samsaran"
+	},
+	"pf1e.race.strix": {
+		"message": "Strix",
+		"source": "Strix"
+	},
+	"pf1e.race.suli": {
+		"message": "Suli",
+		"source": "Suli"
+	},
+	"pf1e.race.svirfneblin": {
+		"message": "Svirfneblin",
+		"source": "Svirfneblin"
+	},
+	"pf1e.race.sylph": {
+		"message": "Sylph",
+		"source": "Sylph"
+	},
+	"pf1e.race.tengu": {
+		"message": "Crow",
+		"source": "Tengu"
+	},
+	"pf1e.race.tiefling": {
+		"message": "Tiefling",
+		"source": "Tiefling"
+	},
+	"pf1e.race.undine": {
+		"message": "Undine",
+		"source": "Undine"
+	},
+	"pf1e.race.vanara": {
+		"message": "Vanara",
+		"source": "Vanara"
+	},
+	"pf1e.race.vishkanya": {
+		"message": "Vishkanya",
+		"source": "Vishkanya"
+	},
+	"pf1e.race.wayang": {
+		"message": "Wayang",
+		"source": "Wayang"
+	},
+	"pf1e.raceDescription.aasimar": {
+		"message": "Landlubbers touched by celestial blood, often a sight to behold. They be wise an' charmin', resist acid, cold an' electricity, an' can call up daylight once a day.",
+		"source": "Humans touched by celestial blood, often strikingly beautiful. They are wise and charming, resist acid, cold and electricity, and can call up daylight once a day."
+	},
+	"pf1e.raceDescription.catfolk": {
+		"message": "Curious, friendly folk who look like cats standin' upright. They be quick an' charmin', with sharp senses for huntin', sneakin' an' trackin'.",
+		"source": "Curious, sociable people who look like cats standing upright. They are quick and charming, with sharp senses for hunting, sneaking and tracking."
+	},
+	"pf1e.raceDescription.changeling": {
+		"message": "Daughters o' hags raised among landlubbers, with eyes o' two colors. They be wise an' charmin' but frail, with sharp claws an' a trait handed down from their mother.",
+		"source": "Daughters of hags raised among humans, with eyes of two colors. They are wise and charming but frail, with sharp claws and a trait passed down from their mother."
+	},
+	"pf1e.raceDescription.dhampir": {
+		"message": "Children o' vampires an' landlubbers, graceful an' persuasive but frail. Healin' magic harms 'em while negative energy heals 'em, an' bright light dazzles 'em.",
+		"source": "Children of vampires and humans, graceful and persuasive but frail. Healing magic harms them while negative energy heals them, and bright light dazzles them."
+	},
+	"pf1e.raceDescription.drow": {
+		"message": "Graceful but frail elves who dwell deep below ground. They resist magic, can call up darkness an' see far in the dark, but bright light blinds 'em.",
+		"source": "Graceful but frail elves who live deep underground. They resist magic, can call up darkness and see far in the dark, but bright light blinds them."
+	},
+	"pf1e.raceDescription.duergar": {
+		"message": "Grim gray dwarves o' the deep underground. They can grow larger or turn invisible, shrug off poison an' paralysis, an' see far in the dark, but bright light dazzles 'em.",
+		"source": "Grim gray dwarves of the deep underground. They can grow larger or turn invisible, shrug off poison and paralysis, and see far in the dark, but bright light dazzles them."
+	},
+	"pf1e.raceDescription.dwarf": {
+		"message": "Stout, stubborn folk who dwell in mountain halls. They be tough, wise an' harder to budge than an anchor once they've made up their minds.",
+		"source": "Stout, stubborn folk who live in mountain halls. They are tough, wise and hard to move once they've made up their minds."
+	},
+	"pf1e.raceDescription.elf": {
+		"message": "Long-lived, graceful folk with a deep bond to nature an' magic. They be quick an' clever, with keen senses, an' magic can't put 'em to sleep.",
+		"source": "Long-lived, graceful people with a deep bond to nature and magic. They are quick and clever, with keen senses, and magic can't put them to sleep."
+	},
+	"pf1e.raceDescription.fetchling": {
+		"message": "Pale descendants o' landlubbers who settled on the plane o' shadow. They melt into dim light, resist cold an' electricity, an' can disguise themselves with magic.",
+		"source": "Pale descendants of humans who settled on the plane of shadow. They melt into dim light, resist cold and electricity, and can disguise themselves with magic."
+	},
+	"pf1e.raceDescription.gillman": {
+		"message": "Landlubbers with gills who breathe both air an' water. They be hardy an' charmin', swim well an' resist enchantments, but must soak in water every day.",
+		"source": "Humans with gills who breathe both air and water. They are hardy and charming, swim well and resist enchantments, but must soak in water every day."
+	},
+	"pf1e.raceDescription.gnome": {
+		"message": "Small, whimsical folk descended from the fey, ever hungry for new adventures. They be hardy an' charmin', with a knack for illusion magic.",
+		"source": "Small, whimsical people descended from the fey, always hungry for new experiences. They are hardy and charming, with a knack for illusion magic."
+	},
+	"pf1e.raceDescription.goblin": {
+		"message": "Small, fast, fire-lovin' troublemakers. They be mighty nimble, sneaky an' good riders, but weak an' hard to get along with.",
+		"source": "Small, fast, fire-loving troublemakers. They are very nimble, sneaky and good riders, but weak and hard to get along with."
+	},
+	"pf1e.raceDescription.grippli": {
+		"message": "Small frog folk o' swamps an' jungles. They be nimble climbers who hide well among trees an' reeds an' slog through swampy ground with ease.",
+		"source": "Small frog people of swamps and jungles. They are nimble climbers who hide well among trees and reeds and move through swampy ground with ease."
+	},
+	"pf1e.raceDescription.half_elf": {
+		"message": "Children o' landlubbers an' elves, often caught 'tween both worlds. They be adaptable an' talented, with keen senses an' a gift for more than one class.",
+		"source": "Children of humans and elves, often caught between both worlds. They are adaptable and talented, with keen senses and a gift for more than one class."
+	},
+	"pf1e.raceDescription.half_orc": {
+		"message": "Children o' landlubbers an' orcs, strong an' often feared. They be menacin', see in the dark an' can fight on for a moment after a blow that would drop 'em.",
+		"source": "Children of humans and orcs, strong and often feared. They are intimidating, see in the dark and can fight on for a moment after a blow that would drop them."
+	},
+	"pf1e.raceDescription.halfling": {
+		"message": "Small, cheerful folk about half a landlubber's height. They be nimble, charmin' an' lucky, an' hard to frighten.",
+		"source": "Small, cheerful people about half a human's height. They are nimble, charming and lucky, and hard to frighten."
+	},
+	"pf1e.raceDescription.hobgoblin": {
+		"message": "Disciplined, warlike cousins o' goblins who stand as tall as landlubbers. They be quick, hardy an' stealthy, an' see in the dark.",
+		"source": "Disciplined, warlike cousins of goblins who stand as tall as humans. They are quick, hardy and stealthy, and see in the dark."
+	},
+	"pf1e.raceDescription.human": {
+		"message": "Ambitious, adaptable folk found in near every port. They gain an extra feat an' more skill ranks, an' can put their +2 ability bonus where they like.",
+		"source": "Ambitious, adaptable people found almost everywhere. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like."
+	},
+	"pf1e.raceDescription.ifrit": {
+		"message": "Landlubbers touched by the blood o' fire spirits, fiery an' hotheaded. They be quick an' charmin', resist fire an' can call up a burst o' flame once a day.",
+		"source": "Humans touched by the blood of fire spirits, fiery and impulsive. They are quick and charming, resist fire and can call up a burst of flame once a day."
+	},
+	"pf1e.raceDescription.kitsune": {
+		"message": "Fox folk who can take a landlubber's form at will. They be agile, charmin' tricksters with a sharp bite an' a talent for enchantment magic.",
+		"source": "Fox people who can take a human form at will. They are agile, charming tricksters with a sharp bite and a talent for enchantment magic."
+	},
+	"pf1e.raceDescription.kobold": {
+		"message": "Small, scaly folk who reckon they descend from dragons. They be quick but weak, with keen eyes an' a talent for traps, an' bright light dazzles 'em.",
+		"source": "Small, scaly people who believe they descend from dragons. They are quick but weak, with keen eyes and a talent for traps, and bright light dazzles them."
+	},
+	"pf1e.raceDescription.merfolk": {
+		"message": "Sea folk with a fish's tail in place o' legs. They be graceful, hardy an' charmin', swim swiftly an' breathe air an' water, but crawl slowly on dry land.",
+		"source": "Sea people with a fish's tail in place of legs. They are graceful, hardy and charming, swim swiftly and breathe air and water, but crawl slowly on land."
+	},
+	"pf1e.raceDescription.nagaji": {
+		"message": "Scaled, snake-like folk made to serve nagas. They be strong an' imposin', with tough scales, a way with reptiles, an' resistance to poison an' mind control.",
+		"source": "Scaled, snake-like people created to serve nagas. They are strong and imposing, with tough scales, a way with reptiles, and resistance to poison and mind control."
+	},
+	"pf1e.raceDescription.orc": {
+		"message": "Fierce, brutal folk who live by raidin' an' war. They be mighty strong an' fight on even when badly wounded, but bright light dazzles 'em.",
+		"source": "Fierce, brutal people who live by raiding and war. They are very strong and fight on even when badly wounded, but bright light dazzles them."
+	},
+	"pf1e.raceDescription.oread": {
+		"message": "Landlubbers touched by the blood o' earth spirits, calm an' steady. They be strong an' wise, resist acid an' can turn pebbles into magic sling stones once a day.",
+		"source": "Humans touched by the blood of earth spirits, calm and steady. They are strong and wise, resist acid and can turn pebbles into magic sling stones once a day."
+	},
+	"pf1e.raceDescription.ratfolk": {
+		"message": "Small, clever folk who look like rats standin' upright. They be nimble tinkerers an' alchemists who crowd together in battle to gang up on foes.",
+		"source": "Small, clever people who look like rats standing upright. They are nimble tinkerers and alchemists who crowd together in battle to gang up on foes."
+	},
+	"pf1e.raceDescription.samsaran": {
+		"message": "Blue-skinned folk who be reborn again an' again, keepin' pieces o' past lives. They be wise an' learned but frail, with skills carried over from lives afore.",
+		"source": "Blue-skinned people who are reborn again and again, keeping pieces of past lives. They are wise and learned but frail, with skills carried over from lives before."
+	},
+	"pf1e.raceDescription.strix": {
+		"message": "Winged folk o' the mountains, quick an' proud, who distrust landlubbers. They can fly from the start, see in the dark an' be most alert an' stealthy at night.",
+		"source": "Winged people of the mountains, quick and proud, who distrust humans. They can fly from the start, see in the dark and are most alert and stealthy at night."
+	},
+	"pf1e.raceDescription.suli": {
+		"message": "Landlubbers descended from genies o' all four elements. They be strong an' persuasive, resist acid, cold, electricity an' fire, an' can wreathe their hands in any of 'em.",
+		"source": "Humans descended from genies of all four elements. They are strong and persuasive, resist acid, cold, electricity and fire, and can wreathe their hands in any of them."
+	},
+	"pf1e.raceDescription.svirfneblin": {
+		"message": "Serious, wary deep gnomes who dwell far below ground. They be hard to hit, resist magic an' see far in the dark, with innate spells for hidin' an' hoodwinkin'.",
+		"source": "Serious, wary deep gnomes who live far underground. They are hard to hit, resist magic and see far in the dark, with innate spells for hiding and deceiving."
+	},
+	"pf1e.raceDescription.sylph": {
+		"message": "Landlubbers touched by the blood o' air spirits, light an' restless. They be quick an' clever, resist electricity an' can drift gently down from a fall once a day.",
+		"source": "Humans touched by the blood of air spirits, light and restless. They are quick and clever, resist electricity and can drift gently down from a fall once a day."
+	},
+	"pf1e.raceDescription.tengu": {
+		"message": "Crow-like bird folk, quick an' watchful but fragile. They train with swords from birth, pick up tongues with ease an' have a sharp bite.",
+		"source": "Crow-like bird people, quick and watchful but fragile. They train with swords from birth, learn languages with ease and have a sharp bite."
+	},
+	"pf1e.raceDescription.tiefling": {
+		"message": "Landlubbers touched by fiendish blood, often marked by horns, tails or strange eyes. They be quick an' clever, resist cold, electricity an' fire, an' can call up darkness.",
+		"source": "Humans touched by fiendish blood, often marked by horns, tails or strange eyes. They are quick and clever, resist cold, electricity and fire, and can call up darkness."
+	},
+	"pf1e.raceDescription.undine": {
+		"message": "Landlubbers touched by the blood o' water spirits, calm an' adaptable. They be quick an' wise, swim well, resist cold an' can hurl a blast o' water once a day.",
+		"source": "Humans touched by the blood of water spirits, calm and adaptable. They are quick and wise, swim well, resist cold and can hurl a blast of water once a day."
+	},
+	"pf1e.raceDescription.vanara": {
+		"message": "Playful monkey folk o' the jungles. They be nimble an' wise, climb like deckhands in the riggin' an' can carry things with their tails.",
+		"source": "Playful monkey people of the jungles. They are nimble and wise, climb with ease and can carry things with their tails."
+	},
+	"pf1e.raceDescription.vishkanya": {
+		"message": "Graceful, scaled folk whose blood be poison. They be quick an' charmin', shrug off poisons an' can coat their weapons in their own venom.",
+		"source": "Graceful, scaled people whose blood is poison. They are quick and charming, shrug off poisons and can coat their weapons in their own venom."
+	},
+	"pf1e.raceDescription.wayang": {
+		"message": "Small, shadowy folk at home in darkness. They be nimble, clever an' stealthy, with a gift for shadow an' illusion magic.",
+		"source": "Small, shadowy people at home in darkness. They are nimble, clever and stealthy, with a gift for shadow and illusion magic."
+	},
+	"pf1e.rulebook.acg": {
+		"message": "Advanced Class Guide",
+		"source": "Advanced Class Guide"
+	},
+	"pf1e.rulebook.apg": {
+		"message": "Advanced Player's Guide",
+		"source": "Advanced Player's Guide"
+	},
+	"pf1e.rulebook.arg": {
+		"message": "Advanced Race Guide",
+		"source": "Advanced Race Guide"
+	},
+	"pf1e.rulebook.core": {
+		"message": "Core Rulebook",
+		"source": "Core Rulebook"
 	},
 	"pf1e.size.colossal": {
 		"message": "Kraken-sized",
@@ -8527,6 +9215,34 @@
 		"message": "Gear Witch",
 		"source": "Technomancer"
 	},
+	"sf1e.classDescription.envoy": {
+		"message": "A charmin' leader who rouses the crew an' talks their way past trouble. Silver Tongues use improvisations to boost their crew an' hinder foes, an' be skilled at near everythin'.",
+		"source": "A charismatic leader who inspires allies and talks their way past trouble. Envoys use improvisations to boost their team and hinder foes, and are skilled at almost everything."
+	},
+	"sf1e.classDescription.mechanic": {
+		"message": "An engineer who builds an' hacks technology. Ship's Wrights work with a custom drone or a brain implant that sharpens their aim, an' can overload or bypass machines.",
+		"source": "An engineer who builds and hacks technology. Mechanics work with a custom drone or a brain implant that sharpens their aim, and can overload or bypass machines."
+	},
+	"sf1e.classDescription.mystic": {
+		"message": "A spellcaster who draws power from a deep connection to the universe or a deity. Star Witches heal their mates, link minds with 'em an' gain powers from their connection.",
+		"source": "A spellcaster who draws power from a deep connection to the universe or a deity. Mystics heal allies, link minds with them and gain powers from their connection."
+	},
+	"sf1e.classDescription.operative": {
+		"message": "A stealthy, skilled spy or lookout. Spies dart in with trick attacks for extra damage, master a specialty an' be among the most skilled o' all classes.",
+		"source": "A stealthy, skilled spy or scout. Operatives dart in with trick attacks for extra damage, master a specialty and are among the most skilled of all classes."
+	},
+	"sf1e.classDescription.solarian": {
+		"message": "A warrior who wields the power o' stars an' black holes. Sun-Blades forge a glowin' weapon or armor from their own power an' channel light an' gravity in battle.",
+		"source": "A warrior who wields the power of stars and black holes. Solarians form a glowing weapon or armor from their own power and channel light and gravity in battle."
+	},
+	"sf1e.classDescription.soldier": {
+		"message": "A trained warrior handy with weapons an' heavy armor. Marines pick a fightin' style an' learn more combat feats than any other class.",
+		"source": "A trained warrior skilled with weapons and heavy armor. Soldiers pick a fighting style and learn more combat feats than any other class."
+	},
+	"sf1e.classDescription.technomancer": {
+		"message": "A spellcaster who blends magic an' technology. Gear Witches cast spells, keep magic in a device or implant an' use magic hacks to bend technology to their will.",
+		"source": "A spellcaster who blends magic and technology. Technomancers cast spells, store magic in a device or implant and use magic hacks to bend technology to their will."
+	},
 	"sf1e.coin.cr": {
 		"message": "cr",
 		"source": "cr"
@@ -8544,8 +9260,8 @@
 		"source": "Gear"
 	},
 	"sf1e.itemCategory.weapon": {
-		"message": "Arms",
-		"source": "Weapons"
+		"message": "Armament",
+		"source": "Weapon"
 	},
 	"sf1e.itemType.battery": {
 		"message": "powder charge",
@@ -8578,10 +9294,6 @@
 	"sf1e.itemType.light_armor": {
 		"message": "light armor",
 		"source": "light armor"
-	},
-	"sf1e.itemType.other_gear": {
-		"message": "other stores",
-		"source": "other gear"
 	},
 	"sf1e.itemType.second_skin": {
 		"message": "second hide",
@@ -8630,6 +9342,38 @@
 	"sf1e.race.ysoki": {
 		"message": "Ysoki",
 		"source": "Ysoki"
+	},
+	"sf1e.raceDescription.android": {
+		"message": "Artificial folk o' machinery an' flesh, with souls o' their own. They be quick an' clever, see in the dark an' resist poison an' disease, but show little feelin'.",
+		"source": "Artificial people of machinery and flesh, with souls of their own. They are quick and clever, see in the dark and resist poison and disease, but show little emotion."
+	},
+	"sf1e.raceDescription.human": {
+		"message": "Ambitious, curious folk who've spread far across the star-sea. They gain an extra feat an' more skill ranks, an' can put their +2 ability bonus where they like.",
+		"source": "Ambitious, curious people who have spread far across space. They gain an extra feat and more skill ranks, and can put their +2 ability bonus where they like."
+	},
+	"sf1e.raceDescription.kasatha": {
+		"message": "Tall, four-armed folk from a desert world, known for their ancient ways. They be strong an' wise, cross rough desert an' hills with ease an' can hold more at once.",
+		"source": "Tall, four-armed people from a desert world, known for their ancient traditions. They are strong and wise, cross rough desert and hills with ease and can hold more at once."
+	},
+	"sf1e.raceDescription.lashunta": {
+		"message": "Telepathic folk with antennae, gifted scholars an' warriors. They be charmin', speak mind to mind with those nearby an' have innate psychic magic.",
+		"source": "Telepathic people with antennae, gifted scholars and warriors. They are charming, speak mind to mind with those nearby and have innate psychic magic."
+	},
+	"sf1e.raceDescription.shirren": {
+		"message": "Insect-like folk who broke free o' a hive mind an' treasure bein' themselves. They be hardy an' wise, sense nearby movement, speak mind to mind an' make fine diplomats.",
+		"source": "Insect-like people who broke free of a hive mind and treasure being themselves. They are hardy and wise, sense nearby movement, speak mind to mind and make good diplomats."
+	},
+	"sf1e.raceDescription.vesk": {
+		"message": "Tall, warlike reptilian folk with tough scales an' claws. They be strong an' hardy, hard to frighten, an' make the most o' the armor they wear.",
+		"source": "Tall, warlike reptilian people with tough scales and claws. They are strong and hardy, hard to frighten, and make the most of the armor they wear."
+	},
+	"sf1e.raceDescription.ysoki": {
+		"message": "Small, clever folk who look like rats standin' upright. They be nimble tinkerers who see in the dark, stash wee trinkets in their cheek pouches an' spring back to their feet.",
+		"source": "Small, clever people who look like rats standing upright. They are nimble tinkerers who see in the dark, stash small items in their cheek pouches and spring back to their feet."
+	},
+	"sf1e.rulebook.core": {
+		"message": "Starfinder Core Rulebook",
+		"source": "Starfinder Core Rulebook"
 	},
 	"sf1e.size.colossal": {
 		"message": "Kraken-sized",
@@ -8703,6 +9447,42 @@
 		"message": "Strange-Shore Seeker",
 		"source": "Xenoseeker"
 	},
+	"sf1e.themeDescription.ace_pilot": {
+		"message": "A natural at the helm o' starships an' vehicles, whether trained by the navy or self-taught. Ace helmsmen know every make an' model, an' be skilled at pilotin'.",
+		"source": "A natural at the controls of starships and vehicles, whether trained by the military or self-taught. Ace pilots know every make and model, and are skilled at piloting."
+	},
+	"sf1e.themeDescription.bounty_hunter": {
+		"message": "A hunter who tracks folk down for coin. Bounty hunters pick a mark, learn all they can about 'em an' be good at followin' a trail.",
+		"source": "A hunter who tracks people down for money. Bounty hunters pick a mark, learn all they can about them and are good at following a trail."
+	},
+	"sf1e.themeDescription.icon": {
+		"message": "A celebrity known on many worlds, such as a famous performer or scientist. Legends o' the stars know their trade an' its ways inside out.",
+		"source": "A celebrity known on many worlds, such as a famous performer or scientist. Icons know their profession and its culture inside out."
+	},
+	"sf1e.themeDescription.mercenary": {
+		"message": "A soldier o' fortune who fights for pay beside their shipmates. Swords for hire know armies, rival crews an' military drill, an' be trained in athletics.",
+		"source": "A soldier of fortune who fights for pay beside their companions. Mercenaries know armies, rival crews and military procedure, and are trained in athletics."
+	},
+	"sf1e.themeDescription.outlaw": {
+		"message": "Someone wanted by the law, guilty or not. Outlaws know the criminal underworld an' its back-alley deals, an' have quick hands.",
+		"source": "Someone wanted by the law, guilty or not. Outlaws know the criminal underworld and its back-alley deals, and have quick hands."
+	},
+	"sf1e.themeDescription.priest": {
+		"message": "A devoted member o' a faith or philosophy, who always has their beliefs to fall back on. Ship's chaplains know the old rites an' be trained in mysticism.",
+		"source": "A devoted member of a religion or philosophy, who always has their beliefs to fall back on. Priests know religious traditions and are trained in mysticism."
+	},
+	"sf1e.themeDescription.scholar": {
+		"message": "A brainy sort drawn to riddles an' puzzles others find dauntin'. Scholars be experts in one field o' science, such as biology or astronomy.",
+		"source": "An intellectual drawn to problems and puzzles others find daunting. Scholars are experts in one field of science, such as biology or astronomy."
+	},
+	"sf1e.themeDescription.spacefarer": {
+		"message": "An explorer who longs to set foot on distant shores an' plunder their secrets. Star sailors remember all they learn about new places an' be trained in physical science.",
+		"source": "An explorer who longs to set foot on distant worlds and uncover their secrets. Spacefarers remember all they learn about new places and are trained in physical science."
+	},
+	"sf1e.themeDescription.xenoseeker": {
+		"message": "An adventurer who seeks out alien life, the stranger the better. Strange-shore seekers be trained to find, name an' parley with alien creatures.",
+		"source": "An adventurer who seeks out alien life, the stranger the better. Xenoseekers are trained to find, identify and talk with alien creatures."
+	},
 	"shortcuts.escape": {
 		"message": "Esc",
 		"source": "Esc"
@@ -8722,6 +9502,14 @@
 	"shortcuts.title": {
 		"message": "Keyboard shortcuts",
 		"source": "Keyboard shortcuts"
+	},
+	"switch.off": {
+		"message": "Nay",
+		"source": "Off"
+	},
+	"switch.on": {
+		"message": "Aye",
+		"source": "On"
 	},
 	"table.sorted": {
 		"message": "{direction, select, ascending {Stowed by {column}, low to high} other {Stowed by {column}, high to low}}",

@@ -1,4 +1,4 @@
-import { MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem } from '@multiverse-kiln/shared';
+import { isRulebookOn, MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem } from '@multiverse-kiln/shared';
 import removeIcon from 'virtual:icon/ph:x';
 
 import { t } from '../../localization';
@@ -7,8 +7,9 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemName, itemTypeName } from '../itemNames';
+import { createItemIcon, itemDescription, itemName, itemTypesText } from '../itemNames';
 import { editorMessages } from './editorMessages';
+import type { RulebookChoice } from './rulebookChoice';
 
 /**
  * Most items the dialog lists at once; typing narrows them down
@@ -30,14 +31,39 @@ export interface ChosenItem
 }
 
 /**
+ * How the dialog chooses: how many items, and, when it isn't choosing the version open's items under its
+ * own title, which items and its title
+ */
+export interface ItemSelectOptions
+{
+	/**
+	 * Most different items that can be chosen, as the request that takes them allows
+	 */
+	maxItems: number;
+
+	/**
+	 * The dialog's title, in place of Choose Items
+	 */
+	title?: string;
+
+	/**
+	 * The optional books the live version has on, to choose only from its enabled items with them,
+	 * whatever version the editor has open, as items given to characters are
+	 */
+	liveRulebooks?: readonly string[];
+}
+
+/**
  * Selection: Item (see STRUCTURE-OVERVIEW.md): a dialog for choosing items by typing part of their
  * names, each with a quantity (for example, 20 arrows)
  *
- * Disabled items can be chosen, and are marked; characters are only given enabled items
+ * Disabled items can be chosen, and are marked; characters are only given enabled items. Choosing items
+ * to give a character, it finds only the live version's enabled items
  */
 export class ItemSelectDialog
 {
 	private readonly dialog = getElement('item-select-dialog', HTMLDialogElement);
+	private readonly title = getElement('item-select-title', HTMLElement);
 	private readonly form = getElement('item-select-form', HTMLFormElement);
 	private readonly search = getElement('item-select-search', HTMLInputElement);
 	private readonly results = getElement('item-select-results', HTMLFieldSetElement);
@@ -62,6 +88,16 @@ export class ItemSelectDialog
 	private universe: EditableUniverse | undefined;
 
 	/**
+	 * How the dialog open chooses
+	 */
+	private options: ItemSelectOptions | undefined;
+
+	/**
+	 * The page's title for the dialog, read the first time it opens, once the page is in the player's language
+	 */
+	private defaultTitle: string | undefined;
+
+	/**
 	 * Each chosen item's quantity field, by the item's ID
 	 */
 	private readonly quantityFields = new Map<number, HTMLInputElement>();
@@ -80,8 +116,9 @@ export class ItemSelectDialog
 
 	/**
 	 * @param api The editor's API
+	 * @param rulebooks The books on, whose items the search finds
 	 */
-	constructor(private readonly api: EditorApi)
+	constructor(private readonly api: EditorApi, private readonly rulebooks: RulebookChoice)
 	{
 		this.search.setAttribute('data-untracked', '');
 
@@ -122,11 +159,15 @@ export class ItemSelectDialog
 	 *
 	 * @param universe The universe whose items to choose from
 	 * @param chosen The items chosen now, which start out chosen
+	 * @param options How many items can be chosen, and which from under what title
 	 * @return The items chosen, or undefined when the dialog was closed without choosing
 	 */
-	async open(universe: EditableUniverse, chosen: readonly ChosenItem[]): Promise<ChosenItem[] | undefined>
+	async open(universe: EditableUniverse, chosen: readonly ChosenItem[], options: ItemSelectOptions): Promise<ChosenItem[] | undefined>
 	{
 		this.finish(undefined);
+		this.defaultTitle ??= (this.title.textContent ?? '');
+		this.title.textContent = (options.title ?? this.defaultTitle);
+		this.options = options;
 		this.universe = universe;
 		this.chosen = chosen.map((choice) => ({ ...choice }));
 		this.search.value = '';
@@ -175,14 +216,17 @@ export class ItemSelectDialog
 			return;
 		}
 
+		const live = this.options?.liveRulebooks;
 		let items: EditorItem[];
 
 		try
 		{
 			items = (await this.api.listItems(universe.id, {
 				name: (this.search.value.trim() || undefined),
+				rulebooks: [...(live ?? this.rulebooks.rulebooks())],
+				enabled: ((live === undefined) ? undefined : true),
 				limit: MAX_RESULTS
-			})).items;
+			}, ((live === undefined) ? undefined : 'live'))).items;
 		}
 		catch (error)
 		{
@@ -210,7 +254,7 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * One item's choice: a checkbox with the item's icon, name, type and whether it is disabled
+	 * One item's choice: a checkbox with the item's icon, name, type, whether it is disabled and its description
 	 *
 	 * @param item The item
 	 * @param universe The universe whose item it is
@@ -223,14 +267,19 @@ export class ItemSelectDialog
 		const text = document.createElement('span');
 		const name = document.createElement('span');
 		const description = document.createElement('span');
-		const notes = [itemTypeName(item.type, universe.ruleset)];
+		const types = itemTypesText(item.types, universe.ruleset);
+		const notes = ((types === '') ? [] : [types]);
 
-		if (!item.enabled)
+		const live = this.options?.liveRulebooks;
+		const rulebookOn = ((live === undefined) ? this.rulebooks.shows(item.rulebook) : isRulebookOn(live, item.rulebook));
+
+		if (!item.enabled || !rulebookOn)
 		{
 			notes.push(t(editorMessages.disabled));
 		}
 
 		label.className = 'checkbox described-choice';
+		input.id = `item-select-item-${item.id}`;
 		input.type = 'checkbox';
 		input.value = String(item.id);
 		input.checked = this.chosen.some((choice) => (choice.item.id === item.id));
@@ -240,13 +289,25 @@ export class ItemSelectDialog
 		description.className = 'choice-description';
 		description.textContent = notes.join(' - ');
 		text.append(name, description);
-		label.append(input, createItemIcon(item.type, universe.ruleset), text);
+
+		const itemText = itemDescription(item, universe.ruleset);
+
+		if (itemText !== '')
+		{
+			const about = document.createElement('span');
+
+			about.className = 'choice-description';
+			about.textContent = itemText;
+			text.append(about);
+		}
+
+		label.append(input, createItemIcon(item.category, universe.ruleset), text);
 
 		input.addEventListener('change', () =>
 		{
 			if (input.checked)
 			{
-				this.choose(item);
+				this.choose(item, input);
 			}
 			else
 			{
@@ -258,14 +319,33 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * Adds an item to the items chosen, one of it
+	 * Adds an item to the items chosen, one of it. When as many items as can be chosen are chosen
+	 * already, it unchecks the item's checkbox and says so under it instead
 	 *
 	 * @param item The item
+	 * @param input The item's checkbox
 	 */
-	private choose(item: EditorItem): void
+	private choose(item: EditorItem, input: HTMLInputElement): void
 	{
+		const maxItems = (this.options?.maxItems ?? 0);
+
+		clearFieldErrors(this.results);
+
 		if (!this.chosen.some((choice) => (choice.item.id === item.id)))
 		{
+			if (this.chosen.length >= maxItems)
+			{
+				input.checked = false;
+				reportFieldError(input, t({
+					id: 'editor.itemSelect.tooMany',
+					defaultMessage: 'You can choose up to {max, plural, one {# item} other {# items}}.',
+					description: 'Shown under an item in the dialog for choosing items when it was ticked while as many items as allowed were already chosen; it isn\'t chosen. {max} is the most items allowed'
+				}, {
+					max: maxItems
+				}));
+				return;
+			}
+
 			this.readQuantities();
 			this.chosen.push({ item, quantity: 1 });
 			this.showChosen();
@@ -280,6 +360,7 @@ export class ItemSelectDialog
 	 */
 	private unchoose(itemId: number): void
 	{
+		clearFieldErrors(this.results);
 		this.readQuantities();
 		this.chosen = this.chosen.filter((choice) => (choice.item.id !== itemId));
 		this.showChosen();
@@ -355,7 +436,7 @@ export class ItemSelectDialog
 				setFieldError(field, undefined);
 			});
 			label.className = 'item-quantity';
-			label.append(createItemIcon(item.type, universe.ruleset), name, field);
+			label.append(createItemIcon(item.category, universe.ruleset), name, field);
 			removeButton.type = 'button';
 			removeButton.className = 'secondary';
 			setButtonLabel(removeButton, removeIcon, t({

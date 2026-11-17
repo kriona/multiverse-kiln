@@ -8,6 +8,7 @@ export * from './classes.js';
 export * from './items.js';
 export * from './money.js';
 export * from './races.js';
+export * from './rulebooks.js';
 export * from './settings.js';
 export * from './sizes.js';
 export * from './themes.js';

@@ -1,17 +1,18 @@
-import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, MAX_THEME_NAME_LENGTH, NEW_SF1E_THEME_RULES, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_THEME_ABILITY_BONUS, type EditableUniverse, type EditorTheme, type Sf1eAbility, type ThemeSettings } from '@multiverse-kiln/shared';
+import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, MAX_THEME_DESCRIPTION_LENGTH, MAX_THEME_NAME_LENGTH, NEW_SF1E_THEME_RULES, SF1E_ABILITIES, SF1E_ABILITY_NAMES, SF1E_THEME_ABILITY_BONUS, type EditableUniverse, type EditorTheme, type Sf1eAbility, type ThemeSettings } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { themeName } from '../raceAndClassNames';
+import { themeDescription, themeName } from '../raceAndClassNames';
+import { DescriptionField } from './descriptionField';
 import { editorMessages } from './editorMessages';
 import { FollowedDialog } from './otherSaves';
 import { labelRemoveButton, type StagedEdit } from './stagedChanges';
 
 /**
- * The theme editor: a dialog for a theme's name, whether it is enabled, and the ability it raises
+ * The theme editor: a dialog for a theme's name, description, whether it is enabled, and the ability it raises
  *
  * Applying keeps the changes on the Characters tab until it is saved; for a default theme, saving stores
  * the universe's edited copy of it. The dialog can also delete a custom theme, or restore an edited
@@ -23,6 +24,7 @@ export class ThemeDialog
 	private readonly form = getElement('theme-form', HTMLFormElement);
 	private readonly title = getElement('theme-dialog-title', HTMLElement);
 	private readonly name = getElement('theme-name', HTMLInputElement);
+	private readonly description = new DescriptionField(getElement('theme-description', HTMLTextAreaElement), MAX_THEME_DESCRIPTION_LENGTH);
 	private readonly enabled = getElement('theme-enabled', HTMLInputElement);
 	private readonly ability = getElement('theme-ability', HTMLSelectElement);
 	private readonly error = getElement('theme-error', HTMLElement);
@@ -140,13 +142,14 @@ export class ThemeDialog
 		}
 
 		this.name.value = name;
+		this.description.show((theme ? themeDescription(theme, universe.ruleset) : ''), ((theme?.custom === false) ? themeDescription({ key: theme.key, description: null }, universe.ruleset) : ''));
 		this.enabled.checked = (theme?.enabled ?? true);
 		this.ability.value = (theme?.rules ?? NEW_SF1E_THEME_RULES).ability;
 		this.saveButton.hidden = !editable;
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.enabled, this.ability])
+		for (const input of [this.name, this.description.field, this.enabled, this.ability])
 		{
 			input.disabled = !editable;
 		}
@@ -185,11 +188,19 @@ export class ThemeDialog
 			return;
 		}
 
+		const description = this.description.read();
+
+		if (description === undefined)
+		{
+			return;
+		}
+
 		// A default theme whose name wasn't changed keeps the ruleset's, which players read in their own language
 		const defaultName = ((this.theme && !this.theme.custom) ? themeName({ key: this.theme.key, name: null }, universe.ruleset) : undefined);
 
 		this.edit.apply({
 			name: ((name === defaultName) ? null : name),
+			description,
 			enabled: this.enabled.checked,
 			rules: {
 				ability: this.ability.value as Sf1eAbility

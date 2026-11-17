@@ -582,6 +582,18 @@ export function canManageEditors(role: EditorRole): boolean
 }
 
 /**
+ * Whether a role may delete players' characters in a universe, give them their last rites, restore
+ * them and take them out of their groups, from the editor's Character List tab
+ *
+ * @param role The user's role in the editor
+ * @return True when the role may
+ */
+export function canManageCharacters(role: EditorRole): boolean
+{
+	return((role === 'creator') || (role === ADMIN_ROLE));
+}
+
+/**
  * Whether a role may change a universe's settings: its name, descriptions, stage and passage of time
  *
  * @param role The user's role in the editor

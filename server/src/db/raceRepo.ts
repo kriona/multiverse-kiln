@@ -2,7 +2,7 @@
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
-import { darkvisionSquares, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
+import { darkvisionSquares, differsBeyondEnabling, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaRace } from '../logic/startingArea.js';
 import { db, type Executor } from './client.js';
@@ -230,6 +230,8 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 			overridesRaceId: races.overridesRaceId,
 			key: races.key,
 			name: races.name,
+			description: races.description,
+			rulebook: races.rulebook,
 			enabled: races.enabled,
 			keepPlaying: races.keepPlaying,
 			startingPlatinum: races.startingPlatinum,
@@ -258,6 +260,16 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 			const settings = (copy ?? row);
 			const custom = (row.universeId !== null);
 			const raceRules = rules.get(settings.id);
+			const comparable = (source: typeof row): object => ({
+				name: ((source.name === row.name) ? null : source.name),
+				description: source.description,
+				startingMoney: fromCoinColumns(source),
+				startingItems: (startingItems.get(source.id) ?? []),
+				startingAreaId: source.startingAreaId,
+				startingColumn: source.startingColumn,
+				startingRow: source.startingRow,
+				rules: rules.get(source.id)
+			});
 
 			if (!raceRules)
 			{
@@ -268,6 +280,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
+				description: (custom ? row.description : (copy?.description ?? null)),
 				enabled: settings.enabled,
 				keepPlaying: settings.keepPlaying,
 				startingMoney: fromCoinColumns(settings),
@@ -276,8 +289,10 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				startingColumn: settings.startingColumn,
 				startingRow: settings.startingRow,
 				rules: raceRules,
+				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && differsBeyondEnabling(comparable(row), comparable(copy)))
 			});
 		}));
 }
@@ -302,25 +317,36 @@ export async function loadRaceSight(universeId: string, ruleset: Ruleset, execut
 
 /**
  * The races whose characters can't play in a universe: those it has disabled without letting the
- * characters already of them keep playing
+ * characters already of them keep playing, and the default races of the books it has turned off that way
  *
  * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param barredRulebooks The books turned off without letting their characters keep playing
  * @param executor The database, or a transaction
  * @return The races, by the IDs characters hold (a default race's own ID for an edited copy)
  */
-export async function listBarredRaceIds(version: UniverseVersion, executor: Executor = db): Promise<Set<number>>
+export async function listBarredRaceIds(version: UniverseVersion, ruleset: Ruleset, barredRulebooks: readonly string[], executor: Executor = db): Promise<Set<number>>
 {
-	// Default races are always enabled, so only the universe's own rows can bar anyone
+	// Default races are always enabled, so only the universe's own rows can bar anyone that way
 	const rows = await executor
 		.select({
 			id: races.id,
 			overridesRaceId: races.overridesRaceId
 		})
 		.from(races)
-		.where(and(
-			inVersion(races, version),
-			eq(races.enabled, false),
-			eq(races.keepPlaying, false)
+		.where(or(
+			and(
+				inVersion(races, version),
+				eq(races.enabled, false),
+				eq(races.keepPlaying, false)
+			),
+			((barredRulebooks.length > 0)
+				? and(
+					isNull(races.universeId),
+					eq(races.ruleset, ruleset),
+					inArray(races.rulebook, [...barredRulebooks])
+				)
+				: undefined)
 		));
 
 	return(new Set(rows.map((row) => (row.overridesRaceId ?? row.id))));
@@ -599,7 +625,7 @@ export async function updateCustomRace(version: UniverseVersion, ruleset: Rulese
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultRaceId The default race's ID, from findRaceKind() as default
- * @param settings The copy's settings; a null name keeps the default race's
+ * @param settings The copy's settings; a null name or description keeps the default race's
  * @param executor A transaction
  */
 export async function saveEditedDefaultRace(version: UniverseVersion, ruleset: Ruleset, defaultRaceId: number, settings: RaceSettings, executor: Executor): Promise<void>
@@ -688,12 +714,13 @@ export async function isRaceStartingItem(version: UniverseVersion, itemId: numbe
  * @param settings The settings
  * @return The columns' values
  */
-function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
+function raceColumns(settings: RaceSettings): Pick<typeof races.$inferInsert, 'name' | 'description' | 'enabled' | 'keepPlaying' | 'startingPlatinum' | 'startingGold' | 'startingSilver' | 'startingCopper' | 'startingCredits' | 'startingAreaId' | 'startingColumn' | 'startingRow'>
 {
 	const hasArea = (settings.startingAreaId !== null);
 
 	return({
 		name: settings.name,
+		description: settings.description,
 		enabled: settings.enabled,
 		keepPlaying: settings.keepPlaying,
 		...toCoinColumns(settings.startingMoney),

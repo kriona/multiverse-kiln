@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, NO_NEIGHBORS, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_QUANTITY, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, NO_NEIGHBORS, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_DESCRIPTION_LENGTH, MAX_THEME_DESCRIPTION_LENGTH, MAX_ITEM_QUANTITY, MAX_RACE_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
 import { adminDb } from '../src/db/adminClient.js';
@@ -37,12 +37,15 @@ const lava: TileSettings = {
 
 const torch: ItemSettings = {
 	name: 'torch',
-	type: 'torch',
+	description: null,
+	category: 'gear',
+	types: ['torch'],
 	enabled: true
 };
 
 const lizardfolk: RaceSettings = {
 	name: 'Lizardfolk',
+	description: null,
 	enabled: true,
 	keepPlaying: true,
 	startingMoney: emptyMoney(),
@@ -55,6 +58,7 @@ const lizardfolk: RaceSettings = {
 
 const gunslinger: ClassSettings = {
 	name: 'Gunslinger',
+	description: null,
 	enabled: true,
 	keepPlaying: true,
 	startingMoney: emptyMoney(),
@@ -190,9 +194,9 @@ function deleteTileset(editor: Editor, universeId: string, graphicId: string): P
  */
 function raceSettingsOf(race: EditorRace): RaceSettings
 {
-	const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
+	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
 
-	return({ name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
+	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
 }
 
 /**
@@ -203,9 +207,9 @@ function raceSettingsOf(race: EditorRace): RaceSettings
  */
 function classSettingsOf(characterClass: EditorClass): ClassSettings
 {
-	const { name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
+	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules } = characterClass;
 
-	return({ name, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
+	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, raceAreas, rules });
 }
 
 describe('World editor API', () =>
@@ -711,7 +715,9 @@ describe('World editor API', () =>
 				customPointBuyBudget: 30,
 				needsSleep: true,
 				coinsHaveWeight: true,
-				tracksAmmo: false
+				tracksAmmo: false,
+				rulebooks: [],
+				barredRulebooks: []
 			}
 		};
 
@@ -1103,18 +1109,21 @@ describe('World editor API', () =>
 
 			assert.strictEqual(created.status, 200);
 
+			// The editor asks for the items of the books on: with rulebooks empty, the core rulebook's alone
 			const custom = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body;
-			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon`)).body;
-			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1`)).body;
+			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon&rulebooks=`)).body;
+			const apgWeapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon&rulebooks=apg`)).body;
+			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1&rulebooks=`)).body;
 
-			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, custom: true, edited: false }]);
+			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, rulebook: null, custom: true, edited: false, editedSettings: false }]);
 
 			// Default items that keep their names are named by their keys, in the player's language
 			assert.deepStrictEqual(weapons.items.map((item) => (item.name ?? item.key)), ['dagger']);
+			assert.deepStrictEqual(apgWeapons.items.map((item) => (item.name ?? item.key)), ['dagger', 'cestus', 'sword_cane']);
 			assert.strictEqual(page.total, 2);
 			assert.deepStrictEqual(page.items.map((item) => item.id), [created.body.id]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?enabled=yes`)).status, 400);
-			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending`)).body.items.map((item) => item.id), [created.body.id, (await findDefaultItemIds('pf1e')).get('dagger')]);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending&rulebooks=`)).body.items.map((item) => item.id), [created.body.id, (await findDefaultItemIds('pf1e')).get('dagger')]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?sort=summary`)).status, 400);
 		});
 
@@ -1123,10 +1132,10 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
-			const disabled = { name: null, type: 'dagger', enabled: false };
+			const rusty = { name: 'rusty dagger', description: null, category: 'weapon', types: ['blades_light'], enabled: false };
 
-			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, disabled)).status, 200);
-			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...disabled, custom: false, edited: true }]);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, rusty)).status, 200);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...rusty, rulebook: 'core', custom: false, edited: true, editedSettings: true }]);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${otherId}/items?edited=true`)).body.items, []);
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', daggerId)).status, 200);
@@ -1146,18 +1155,40 @@ describe('World editor API', () =>
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', itemId)).status, 404);
 		});
 
-		it('refuses an unknown type, a custom item without a name and invalid settings', async () =>
+		it('refuses an unknown category or type, a type of another category, a custom item without a name and invalid settings', async () =>
 		{
 			const universeId = await createUniverse(ada);
 			const itemId = (await createIn(ada, universeId, 'Item', torch)).body.id;
+			const invalid = [
+				{ ...torch, category: 'spaceship' },
+				{ ...torch, types: ['lightsaber'] },
+				{ ...torch, types: ['bows'] },
+				{ ...torch, types: ['torch', 'torch'] },
+				{ ...torch, category: 'weapon', types: ['thrown', 'blades_light'] },
+				{ ...torch, types: 'torch' },
+				{ ...torch, name: null },
+				{ ...torch, name: '' },
+				{ ...torch, description: '' },
+				{ ...torch, description: 'a'.repeat(MAX_ITEM_DESCRIPTION_LENGTH + 1) },
+				{ ...torch, description: undefined },
+				{ ...torch, enabled: 'yes' }
+			];
 
-			for (const body of [{ ...torch, type: 'lightsaber' }, { ...torch, name: null }, { ...torch, name: '' }, { ...torch, enabled: 'yes' }])
+			for (const body of invalid)
 			{
 				assert.strictEqual((await createIn(ada, universeId, 'Item', body)).status, 400, JSON.stringify(body));
 			}
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, name: null })).status, 400);
-			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, type: 'lightsaber' })).status, 400);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, types: ['lightsaber'] })).status, 400);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, description: 'a'.repeat(MAX_ITEM_DESCRIPTION_LENGTH + 1) })).status, 400);
+
+			// A description may be as long as allowed
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, description: 'a'.repeat(MAX_ITEM_DESCRIPTION_LENGTH) })).status, 200);
+
+			// An item can have no type, or several of its category's
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, types: [] })).status, 200);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, category: 'weapon', types: ['blades_light', 'thrown'] })).status, 200);
 		});
 
 		it('lets builders with the permission change items, but not beta testers', async () =>
@@ -1184,7 +1215,7 @@ describe('World editor API', () =>
 			const otherId = await createUniverse(ada, 'Other');
 			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
 			const dwarf = races.find((race) => (race.key === 'dwarf')) as EditorRace;
-			const { id, key, custom } = dwarf;
+			const { id, key, rulebook, custom } = dwarf;
 			const changed: RaceSettings = {
 				...raceSettingsOf(dwarf),
 				startingMoney: {
@@ -1200,7 +1231,7 @@ describe('World editor API', () =>
 			const after = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
 			const theirs = (await send<RaceListPayload>(ada, 'GET', `/${otherId}/races`)).body.races;
 
-			assert.deepStrictEqual(after.find((race) => (race.id === id)), { id, key, ...changed, custom, edited: true });
+			assert.deepStrictEqual(after.find((race) => (race.id === id)), { id, key, ...changed, rulebook, custom, edited: true, editedSettings: true });
 			assert.deepStrictEqual(theirs.find((race) => (race.id === id)), dwarf);
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Race', id)).status, 200);
@@ -1215,7 +1246,7 @@ describe('World editor API', () =>
 			const theirRaceId = (await createIn(ada, otherId, 'Race', lizardfolk)).body.id;
 
 			assert.strictEqual(created.status, 200);
-			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), [{ id: created.body.id, key: null, ...lizardfolk, custom: true, edited: false }]);
+			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), [{ id: created.body.id, key: null, ...lizardfolk, rulebook: null, custom: true, edited: false, editedSettings: false }]);
 			assert.strictEqual((await saveIn(ada, universeId, 'Race', theirRaceId, lizardfolk)).status, 404);
 			assert.strictEqual((await saveIn(ada, universeId, 'Race', 'abc', lizardfolk)).status, 400);
 			assert.strictEqual((await removeFrom(ada, universeId, 'Race', created.body.id)).status, 200);
@@ -1232,6 +1263,9 @@ describe('World editor API', () =>
 			const invalid = [
 				{ ...lizardfolk, name: null },
 				{ ...lizardfolk, name: '' },
+				{ ...lizardfolk, description: '' },
+				{ ...lizardfolk, description: 'a'.repeat(MAX_RACE_DESCRIPTION_LENGTH + 1) },
+				{ ...lizardfolk, description: undefined },
 				{ ...lizardfolk, rules: { ...lizardfolk.rules, size: 'enormous' } },
 				{ ...lizardfolk, rules: { ...lizardfolk.rules, abilityModifiers: { ...lizardfolk.rules.abilityModifiers, wisdom: PF1E_MAX_RACE_ABILITY_MODIFIER + 1 } } },
 				{ ...lizardfolk, startingItems: [{ itemId: 1, quantity: 0 }] }
@@ -1305,17 +1339,17 @@ describe('World editor API', () =>
 
 			assert.strictEqual(created.status, 200);
 			assert.deepStrictEqual(classes.map((characterClass) => characterClass.key), [...Object.keys(PF1E_CLASSES), null]);
-			assert.deepStrictEqual(classes.find((characterClass) => characterClass.custom), { id: created.body.id, key: null, ...settings, custom: true, edited: false });
+			assert.deepStrictEqual(classes.find((characterClass) => characterClass.custom), { id: created.body.id, key: null, ...settings, rulebook: null, custom: true, edited: false, editedSettings: false });
 
 			const wizard = classes.find((characterClass) => (characterClass.key === 'wizard')) as EditorClass;
-			const { id, key, custom } = wizard;
+			const { id, key, rulebook, custom } = wizard;
 			const changed: ClassSettings = {
 				...classSettingsOf(wizard),
 				startingAreaId: areaId
 			};
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Class', id, changed)).status, 200);
-			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), { id, key, ...changed, custom, edited: true });
+			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), { id, key, ...changed, rulebook, custom, edited: true, editedSettings: true });
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Class', id)).status, 200);
 			assert.deepStrictEqual((await send<ClassListPayload>(ada, 'GET', `/${universeId}/classes`)).body.classes.find((characterClass) => (characterClass.id === id)), wizard);
@@ -1853,7 +1887,9 @@ describe('World editor API', () =>
 				settings: {
 					abilityPoints: 12,
 					needsSleep: true,
-					tracksAmmo: true
+					tracksAmmo: true,
+					rulebooks: [],
+					barredRulebooks: []
 				}
 			};
 
@@ -1913,6 +1949,7 @@ describe('World editor API', () =>
 			const pilot = themes.find((theme) => (theme.key === 'ace_pilot'));
 			const smuggler: ThemeSettings = {
 				name: 'Smuggler',
+				description: null,
 				enabled: true,
 				rules: {
 					ability: 'dexterity'
@@ -1924,12 +1961,13 @@ describe('World editor API', () =>
 			const created = await createIn(ada, universeId, 'Theme', smuggler);
 
 			assert.strictEqual(created.status, 200);
-			assert.strictEqual((await saveIn(ada, universeId, 'Theme', pilot.id, { name: null, enabled: false, rules: { ability: 'wisdom' } })).status, 200);
+			assert.strictEqual((await saveIn(ada, universeId, 'Theme', pilot.id, { name: null, description: 'Flies anything with an engine.', enabled: false, rules: { ability: 'wisdom' } })).status, 200);
+			assert.strictEqual((await saveIn(ada, universeId, 'Theme', pilot.id, { name: null, description: 'x'.repeat(MAX_THEME_DESCRIPTION_LENGTH + 1), enabled: true, rules: pilot.rules })).status, 400);
 
 			const listed = (await send<ThemeListPayload>(ada, 'GET', path)).body.themes;
 
-			assert.deepStrictEqual(listed.find((theme) => (theme.id === created.body.id)), { id: created.body.id, key: null, ...smuggler, custom: true, edited: false });
-			assert.deepStrictEqual(listed.find((theme) => (theme.id === pilot.id)), { ...pilot, enabled: false, rules: { ability: 'wisdom' }, edited: true });
+			assert.deepStrictEqual(listed.find((theme) => (theme.id === created.body.id)), { id: created.body.id, key: null, ...smuggler, rulebook: null, custom: true, edited: false, editedSettings: false });
+			assert.deepStrictEqual(listed.find((theme) => (theme.id === pilot.id)), { ...pilot, description: 'Flies anything with an engine.', enabled: false, rules: { ability: 'wisdom' }, edited: true, editedSettings: true });
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Theme', pilot.id)).status, 200);
 			assert.deepStrictEqual((await send<ThemeListPayload>(ada, 'GET', path)).body.themes.find((theme) => (theme.id === pilot.id)), pilot);
@@ -1939,16 +1977,16 @@ describe('World editor API', () =>
 			// Disabling every theme would leave new characters none to choose
 			for (const theme of themes.slice(1))
 			{
-				assert.strictEqual((await saveIn(ada, universeId, 'Theme', theme.id, { name: null, enabled: false, rules: theme.rules })).status, 200);
+				assert.strictEqual((await saveIn(ada, universeId, 'Theme', theme.id, { name: null, description: null, enabled: false, rules: theme.rules })).status, 200);
 			}
 
-			assert.strictEqual((await saveIn(ada, universeId, 'Theme', themes[0].id, { name: null, enabled: false, rules: themes[0].rules })).status, 409);
+			assert.strictEqual((await saveIn(ada, universeId, 'Theme', themes[0].id, { name: null, description: null, enabled: false, rules: themes[0].rules })).status, 409);
 		});
 
 		it('answers 404 for themes in a Pathfinder universe', async () =>
 		{
 			const universeId = await createUniverse(ada);
-			const smuggler = { name: 'Smuggler', enabled: true, rules: { ability: 'dexterity' } };
+			const smuggler = { name: 'Smuggler', description: null, enabled: true, rules: { ability: 'dexterity' } };
 
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/themes`)).status, 404);
 			assert.strictEqual((await createIn(ada, universeId, 'Theme', smuggler)).status, 404);

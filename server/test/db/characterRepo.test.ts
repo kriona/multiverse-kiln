@@ -2,8 +2,9 @@ import assert from 'assert';
 import type { CharacterDraft } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../../src/db/adminClient.js';
-import { carriedItems, classesWithCharacters, countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacterDetails, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, racesWithCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, themesWithCharacters, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
+import { carriedItems, classesWithCharacters, countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, giveCharacterItems, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacterDetails, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, racesWithCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, takeCharacterItems, themesWithCharacters, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
 import { loadEditorThemes } from '../../src/db/themeRepo.js';
@@ -217,6 +218,38 @@ describe('characterRepo', () =>
 		});
 		assert.strictEqual(await findCharacterDetails(otherPlayerId, universeId, 'pf1e', characterId), undefined);
 		assert.strictEqual(await findCharacterDetails(playerId, otherUniverseId, 'pf1e', characterId), undefined);
+	});
+
+	it('takes part of some items and all of others, or nothing when one of them isn\'t carried', async () =>
+	{
+		const brokk = await dwarfFighter(playerId, universeId);
+		const characterId = await inTransaction((transaction) => createCharacter({ ...brokk, items: [] }, transaction));
+		const [firstId, secondId, thirdId, fourthId] = [...(await findDefaultItemIds('pf1e')).values()].sort((a, b) => (a - b));
+
+		await giveCharacterItems(characterId, [
+			{ itemId: firstId, quantity: 5 },
+			{ itemId: secondId, quantity: 3 },
+			{ itemId: thirdId, quantity: 2 }
+		]);
+
+		assert.strictEqual(await inTransaction((transaction) => takeCharacterItems(characterId, [
+			{ itemId: firstId, quantity: 1 },
+			{ itemId: secondId, quantity: 3 },
+			{ itemId: thirdId, quantity: 1 }
+		], transaction)), true);
+		assert.deepStrictEqual((await findCharacterDetails(playerId, universeId, 'pf1e', characterId))?.items, [
+			{ itemId: firstId, quantity: 4 },
+			{ itemId: thirdId, quantity: 1 }
+		]);
+
+		assert.strictEqual(await inTransaction((transaction) => takeCharacterItems(characterId, [
+			{ itemId: firstId, quantity: 1 },
+			{ itemId: fourthId, quantity: 1 }
+		], transaction)), false);
+		assert.deepStrictEqual((await findCharacterDetails(playerId, universeId, 'pf1e', characterId))?.items, [
+			{ itemId: firstId, quantity: 4 },
+			{ itemId: thirdId, quantity: 1 }
+		]);
 	});
 
 	it('lists every one of a player\'s characters in every universe, as it finds each', async () =>

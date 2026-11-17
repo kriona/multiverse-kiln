@@ -416,6 +416,73 @@ export async function setCharacterVisibility(playerId: string, characterId: stri
  */
 export async function findCharacterDetails(playerId: string, universeId: string, ruleset: Ruleset, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
 {
+	return(findDetails(ownCharacter(playerId, universeId, characterId), ruleset, characterId, executor));
+}
+
+/**
+ * Any player's character in a universe, with their ability scores, money and items, for the editor
+ *
+ * @param universeId The universe's ID
+ * @param ruleset The universe's ruleset, whose table holds the ability scores
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when the universe has no such character
+ */
+export async function findUniverseCharacterDetails(universeId: string, ruleset: Ruleset, characterId: string, executor: Executor = db): Promise<CharacterDetails | undefined>
+{
+	return(findDetails(universeCharacter(universeId, characterId), ruleset, characterId, executor));
+}
+
+/**
+ * The player of a character in a universe, whose last rites aren't over
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The player's ID, or undefined when the universe has no such character
+ */
+export async function findCharacterPlayerId(universeId: string, characterId: string, executor: Executor = db): Promise<string | undefined>
+{
+	const [row] = await executor
+		.select({
+			playerId: characters.playerId
+		})
+		.from(characters)
+		.where(and(
+			universeCharacter(universeId, characterId),
+			notExpired
+		))
+		.limit(1);
+
+	return(row?.playerId);
+}
+
+/**
+ * Matches a character in a universe, whoever their player is
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @return The condition
+ */
+function universeCharacter(universeId: string, characterId: string): SQL | undefined
+{
+	return(and(
+		eq(characters.id, characterId),
+		eq(characters.universeId, universeId)
+	));
+}
+
+/**
+ * A character a condition matches, with their ability scores, money and items
+ *
+ * @param condition Which character: one with characterId's ID, and whatever else it must be
+ * @param ruleset The universe's ruleset, whose table holds the ability scores
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The character, or undefined when none matches or their last rites are over
+ */
+async function findDetails(condition: SQL | undefined, ruleset: Ruleset, characterId: string, executor: Executor): Promise<CharacterDetails | undefined>
+{
 	const [row] = await executor
 		.select({
 			id: characters.id,
@@ -431,7 +498,7 @@ export async function findCharacterDetails(playerId: string, universeId: string,
 		})
 		.from(characters)
 		.where(and(
-			ownCharacter(playerId, universeId, characterId),
+			condition,
 			notExpired
 		))
 		.limit(1);
@@ -1292,6 +1359,109 @@ export async function setCarriedItemsHidden(universeId: string, itemIds: readonl
 				.from(characters)
 				.where(eq(characters.universeId, universeId)))
 		));
+}
+
+/**
+ * Adds items to what a character carries, each added to the quantity they already have, up to the
+ * largest quantity the table can hold
+ *
+ * @param characterId The character's ID
+ * @param items The items, each listed once
+ * @param executor The database, or a transaction
+ */
+export async function giveCharacterItems(characterId: string, items: readonly ItemQuantity[], executor: Executor = db): Promise<void>
+{
+	if (items.length === 0)
+	{
+		return;
+	}
+
+	await executor
+		.insert(characterItems)
+		.values(items.map(({ itemId, quantity }) => ({
+			characterId,
+			itemId,
+			quantity
+		})))
+		.onConflictDoUpdate({
+			target: [characterItems.characterId, characterItems.itemId],
+			set: {
+				quantity: sql`least(${characterItems.quantity}::bigint + excluded.quantity, 2147483647)`
+			}
+		});
+}
+
+/**
+ * Takes items from what a character carries: all of an item when asked for as many as they carry or
+ * more. Items hidden while disabled aren't carried, so they can't be taken. Locks the rows it reads,
+ * so it is meant for a transaction
+ *
+ * @param characterId The character's ID
+ * @param items The items, each listed once, and how many of each to take
+ * @param executor A transaction
+ * @return Whether the items were taken: false, taking nothing, when the character doesn't carry one of them
+ */
+export async function takeCharacterItems(characterId: string, items: readonly ItemQuantity[], executor: Executor): Promise<boolean>
+{
+	if (items.length === 0)
+	{
+		return(true);
+	}
+
+	const carried = await executor
+		.select({
+			itemId: characterItems.itemId,
+			quantity: characterItems.quantity
+		})
+		.from(characterItems)
+		.where(and(
+			eq(characterItems.characterId, characterId),
+			eq(characterItems.hidden, false),
+			inArray(characterItems.itemId, items.map(({ itemId }) => itemId))
+		))
+		.for('update');
+	const quantities = new Map(carried.map(({ itemId, quantity }) => [itemId, quantity]));
+
+	if (!items.every(({ itemId }) => quantities.has(itemId)))
+	{
+		return(false);
+	}
+
+	const emptied = new Set(items
+		.filter(({ itemId, quantity }) => (quantity >= (quantities.get(itemId) ?? 0)))
+		.map(({ itemId }) => itemId));
+	const remaining = items.filter(({ itemId }) => !emptied.has(itemId));
+
+	if (emptied.size > 0)
+	{
+		await executor
+			.delete(characterItems)
+			.where(and(
+				eq(characterItems.characterId, characterId),
+				inArray(characterItems.itemId, [...emptied])
+			));
+	}
+
+	if (remaining.length > 0)
+	{
+		const leftOver = sql`unnest(
+			${sql.param(remaining.map(({ itemId }) => itemId))}::integer[],
+			${sql.param(remaining.map(({ itemId, quantity }) => ((quantities.get(itemId) ?? 0) - quantity)))}::integer[]
+		) AS left_over (item_id, quantity)`;
+
+		await executor
+			.update(characterItems)
+			.set({
+				quantity: sql`left_over.quantity`
+			})
+			.from(leftOver)
+			.where(and(
+				eq(characterItems.characterId, characterId),
+				eq(characterItems.itemId, sql`left_over.item_id`)
+			));
+	}
+
+	return(true);
 }
 
 /**

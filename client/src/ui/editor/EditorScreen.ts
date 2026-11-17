@@ -26,6 +26,7 @@ import { DifficultySection } from './DifficultySection';
 import { ItemSelectDialog } from './ItemSelectDialog';
 import { ItemsTab } from './ItemsTab';
 import { RacesSection } from './RacesSection';
+import { RulebookChoice } from './rulebookChoice';
 import { RulesetTab } from './RulesetTab';
 import { combineTabs, SaveBar, type SavableTab } from './SaveBar';
 import { showSaveNotice } from './saveNotices';
@@ -367,7 +368,10 @@ export class EditorScreen
 		{
 			this.startDraftDialog.open(this.hasTabChanges());
 		});
-		this.rulesetTab = new RulesetTab(api);
+		// The books the Ruleset tab has on, before they are saved, which the Characters and Items tabs follow
+		const rulebookChoice = new RulebookChoice();
+
+		this.rulesetTab = new RulesetTab(api, rulebookChoice);
 		this.coinsSection = new CoinsSection(() =>
 		{
 			this.charactersTab.coinsChanged(false);
@@ -379,7 +383,7 @@ export class EditorScreen
 		this.tilesetsTab = new TilesetsTab(api);
 
 		const areaSelect = new AreaSelectDialog(api, this.tilesetsTab);
-		const itemSelect = new ItemSelectDialog(api);
+		const itemSelect = new ItemSelectDialog(api, rulebookChoice);
 
 		this.lobbyTab = new LobbyTab(api, areaSelect, (update) =>
 		{
@@ -395,7 +399,7 @@ export class EditorScreen
 		{
 			this.updateUniverse(update);
 		});
-		this.characterListTab = new CharacterListTab(api);
+		this.characterListTab = new CharacterListTab(api, itemSelect);
 		this.auditTab = new AuditTab(api);
 		this.translationTable = new TranslationTable(api);
 		this.translationsTab = new TranslationsTab((update) =>
@@ -407,9 +411,9 @@ export class EditorScreen
 				this.translationTable.useUniverse(this.universe);
 			}
 		});
-		this.racesSection = new RacesSection(api, areaSelect, itemSelect);
-		this.classesSection = new ClassesSection(api, areaSelect, itemSelect);
-		this.themesSection = new ThemesSection(api);
+		this.racesSection = new RacesSection(api, areaSelect, itemSelect, rulebookChoice);
+		this.classesSection = new ClassesSection(api, areaSelect, itemSelect, rulebookChoice);
+		this.themesSection = new ThemesSection(api, rulebookChoice);
 		this.difficultySection = new DifficultySection(api);
 		this.areasTab = new AreasTab(api, this.tilesetsTab, areaSelect, (place) =>
 		{
@@ -428,7 +432,7 @@ export class EditorScreen
 		});
 		this.tilesetsTab.setPlaces(this.areasTab);
 		this.translationTable.setPlaces(this.areasTab);
-		this.itemsTab = new ItemsTab(api);
+		this.itemsTab = new ItemsTab(api, rulebookChoice);
 		this.editorsTab = new EditorsTab(api, {
 			ownRoleChanged: () =>
 			{

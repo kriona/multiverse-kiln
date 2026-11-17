@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type ItemQuantity, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
 
 import { sendRequest } from './editorApi';
 
@@ -118,5 +118,20 @@ export class CharacterApi
 	async restoreCharacter(universeId: string, characterId: string): Promise<void>
 	{
 		await sendRequest(this.client, 'DELETE', `${characterPath(universeId, characterId)}/deletion`);
+	}
+
+	/**
+	 * Discards items one of the player's characters carries
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param items The items, each listed once, with how many of each to discard; all of an item when it
+	 * is as many as they carry or more
+	 */
+	async discardItems(universeId: string, characterId: string, items: ItemQuantity[]): Promise<void>
+	{
+		const request: CharacterItemsRequest = { items };
+
+		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/discard`, request);
 	}
 }

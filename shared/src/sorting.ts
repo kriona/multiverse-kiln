@@ -55,3 +55,16 @@ export function compareNumbers(first: number, second: number): number
 {
 	return(first - second);
 }
+
+/**
+ * Compares two things by whether they are enabled, going up with enabled ones first, as the editor's
+ * Enabled columns sort
+ *
+ * @param first The first thing
+ * @param second The second thing
+ * @return Negative, 0 or positive, for sort()
+ */
+export function compareEnabled(first: { enabled: boolean }, second: { enabled: boolean }): number
+{
+	return(Number(second.enabled) - Number(first.enabled));
+}

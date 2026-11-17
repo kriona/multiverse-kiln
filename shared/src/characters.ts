@@ -20,10 +20,14 @@
  *   CharacterDeletionPayload, or 409 while the site sets it to 0 or they are in a group. Until then they
  *   can be restored but not played
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
+ * - POST characterPath(universeId, characterId)/items/discard: discards items the character carries
+ *   (CharacterItemsRequest), all of an item when asked for as many as they carry or more, or answers
+ *   409 when they don't carry one of them
  */
 import { UNIVERSES_PATH } from './constants.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
+import { isRulebookBarred, type RulebookSettings } from './rulebooks.js';
 import type { Pf1eRollMethod, Pf1eStatMethod } from './rulesets/pf1e/statMethods.js';
 import type { Sf1eThemeRules } from './rulesets/sf1e/themes.js';
 import type { Ruleset } from './universes.js';
@@ -95,12 +99,14 @@ export const NOTHING_BARRED: BarredOptions = {
  *
  * @param races The races the universe can use
  * @param classes The classes it can use
- * @return Those disabled without letting the characters already of them keep playing
+ * @param rulebooks The books the universe uses
+ * @return Those disabled, or whose book is turned off, without letting the characters already of them
+ * keep playing
  */
-export function barredOptionsOf(races: readonly BarringOption[], classes: readonly BarringOption[]): BarredOptions
+export function barredOptionsOf(races: readonly BarringOption[], classes: readonly BarringOption[], rulebooks: RulebookSettings): BarredOptions
 {
 	const barredIds = (options: readonly BarringOption[]): Set<number> => new Set(options
-		.filter((option) => (!option.enabled && !option.keepPlaying))
+		.filter((option) => ((!option.enabled && !option.keepPlaying) || isRulebookBarred(rulebooks, option.rulebook)))
 		.map((option) => option.id));
 
 	return({
@@ -117,6 +123,11 @@ export interface BarringOption
 	id: number;
 	enabled: boolean;
 	keepPlaying: boolean;
+
+	/**
+	 * Its book, or null for one the universe added
+	 */
+	rulebook: string | null;
 }
 
 /**
@@ -199,6 +210,13 @@ export interface CharacterListPayload
 export interface CharacterRaceOption extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the race, or null for a default race's in DEFAULT_RACE_DESCRIPTIONS,
+	 * found by its key, or none
+	 */
+	description: string | null;
+
 	rules: RaceRules;
 }
 
@@ -208,6 +226,13 @@ export interface CharacterRaceOption extends OptionName
 export interface CharacterClassOption extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the class, or null for a default class's in
+	 * DEFAULT_CLASS_DESCRIPTIONS, found by its key, or none
+	 */
+	description: string | null;
+
 	rules: ClassRules;
 }
 
@@ -217,6 +242,13 @@ export interface CharacterClassOption extends OptionName
 export interface CharacterThemeOption extends OptionName
 {
 	id: number;
+
+	/**
+	 * The universe's description of the theme, or null for a default theme's in
+	 * DEFAULT_THEME_DESCRIPTIONS, found by its key, or none
+	 */
+	description: string | null;
+
 	rules: Sf1eThemeRules;
 }
 
@@ -379,9 +411,15 @@ export interface CharacterSheetItem extends OptionName
 	id: number;
 
 	/**
-	 * The item's type, a key of the ruleset's ITEM_KINDS
+	 * The universe's description of the item, or null for a default item's in DEFAULT_ITEM_DESCRIPTIONS,
+	 * found by its key, or none
 	 */
-	type: string;
+	description: string | null;
+
+	/**
+	 * The item's category, a key of the ruleset's ITEM_KINDS
+	 */
+	category: string;
 
 	quantity: number;
 }

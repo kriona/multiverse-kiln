@@ -399,7 +399,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.state.locked = (universe.stage === 'end_of_time');
 		this.areaPlayers.setLocked(this.state.locked);
 		this.raceSight = await loadRaceSight(universe.id, universe.ruleset);
-		this.barred = await loadBarredOptions(universe.id);
+		this.barred = await loadBarredOptions(universe.id, universe.ruleset);
 
 		this.areaPlayers.onWalk((characterId, seconds, time) =>
 		{

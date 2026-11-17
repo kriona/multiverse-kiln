@@ -3,7 +3,7 @@
  * Universe versions in STRUCTURE-OVERVIEW.md). They come after the save's other changes, so starting a
  * draft copies them and applying one includes them
  */
-import { placeKey, universeSlug, type DraftApplyChoices } from '@multiverse-kiln/shared';
+import { normalizedRulebooks, placeKey, universeSlug, withRulebooks, type DraftApplyChoices, type RulebookTurnOff } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { loadBarredOptions, sameBarred } from '../db/barredOptions.js';
@@ -11,10 +11,11 @@ import { carriedItems, classesWithCharacters, racesWithCharacters, themesWithCha
 import { findDefaultDifficultyLevel } from '../db/difficultyRepo.js';
 import { moveGroupsToDifficultyLevel } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
+import { loadRulebookSettings, loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { applyDraft, deleteRemovedRows, disableLiveRows, discardDraft, setLiveKeepPlaying, startDraft, type RemovedRows } from '../db/universeDraftRepo.js';
 import { findEditableUniverse, hasDraft, updateUniverseSettings } from '../db/universeRepo.js';
 import { areas, classes, items, races, themes } from '../db/schema.js';
-import { liveVersion } from '../db/universeVersions.js';
+import { draftVersion, liveVersion } from '../db/universeVersions.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { SaveDisablings } from './editorDisablings.js';
@@ -57,6 +58,7 @@ export async function discardDraftChange(context: ChangeContext): Promise<void>
 	}
 
 	context.deletedImages.push(...await discardDraft(universe.id, transaction));
+	context.rulebooks = undefined;
 }
 
 /**
@@ -85,13 +87,20 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		refuse(404, errorMessages.noSuchUniverse);
 	}
 
-	const barredBefore = await loadBarredOptions(universeId, transaction);
+	const barredBefore = await loadBarredOptions(universeId, universe.ruleset, transaction);
 	const disablings = new SaveDisablings();
 	const areasBefore = await listAreas(live, transaction);
+	const rulebooksBefore = await loadRulebookSettings(live, universe.ruleset, transaction);
+	const draftRulebooks = await loadRulebookSettings(draftVersion(universeId), universe.ruleset, transaction);
+	const turnedOff = rulebooksBefore.rulebooks.filter((rulebook) => !draftRulebooks.rulebooks.includes(rulebook));
+	const rulebookChoice = (rulebook: string | null): RulebookTurnOff | undefined => (((rulebook !== null) && turnedOff.includes(rulebook)) ? choices.rulebooks?.[rulebook] : undefined);
 
 	for (const item of await loadEditorItems(live, universe.ruleset, transaction))
 	{
-		disablings.item(item.id, item.enabled, choices.items[String(item.id)]);
+		disablings.item(item, rulebooksBefore.rulebooks, {
+			whenDisabled: choices.items[String(item.id)],
+			whenRulebookOff: rulebookChoice(item.rulebook)?.items
+		});
 	}
 
 	disablings.areas(choices.areas);
@@ -125,10 +134,12 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 	await disableLiveRows(universeId, items, [...kept.itemIds], transaction);
 	await setLiveKeepPlaying(universeId, races, keepPlayingOf(choices.races), transaction);
 	await setLiveKeepPlaying(universeId, classes, keepPlayingOf(choices.classes), transaction);
+	await barAppliedRulebooks(context, turnedOff, (rulebook) => (rulebookChoice(rulebook)?.keepPlaying ?? true));
 
 	// The draft's changes were to rows the rooms don't have; once applied, the rooms load the live version again
 	context.published.length = 0;
 	context.draftApplied = true;
+	context.rulebooks = undefined;
 
 	const liveContext: ChangeContext = {
 		...context,
@@ -181,7 +192,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 		itemIds: removed.itemIds.filter((id) => !kept.itemIds.has(id))
 	}, transaction));
 
-	const barred = await loadBarredOptions(universeId, transaction);
+	const barred = await loadBarredOptions(universeId, universe.ruleset, transaction);
 
 	if (!sameBarred(barredBefore, barred))
 	{
@@ -246,6 +257,37 @@ async function keptRows(removed: RemovedRows, transaction: ChangeContext['transa
 		themeIds,
 		itemIds
 	});
+}
+
+/**
+ * Once a draft is applied, bars the characters of the books it turned off that the editor chose not to
+ * let keep playing. The rest of the books it turned off let them keep playing, whatever the draft said
+ *
+ * @param context The save
+ * @param turnedOff The books the draft turned off
+ * @param keepPlaying Whether the characters of each of them keep playing
+ */
+async function barAppliedRulebooks(context: ChangeContext, turnedOff: readonly string[], keepPlaying: (rulebook: string) => boolean): Promise<void>
+{
+	const { universe, transaction } = context;
+	const live = liveVersion(universe.id);
+
+	if (turnedOff.length === 0)
+	{
+		return;
+	}
+
+	const applied = await loadRulesetSettings(live, universe.ruleset, transaction);
+	const barredRulebooks = [
+		...applied.settings.barredRulebooks.filter((rulebook) => !turnedOff.includes(rulebook)),
+		...turnedOff.filter((rulebook) => !keepPlaying(rulebook))
+	];
+	const rulebooks = normalizedRulebooks(universe.ruleset, {
+		rulebooks: applied.settings.rulebooks,
+		barredRulebooks
+	});
+
+	await storeRulesetSettings(live, withRulebooks(applied, rulebooks), transaction);
 }
 
 /**

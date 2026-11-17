@@ -6,7 +6,7 @@
 import { MAX_DIFFICULTY_NAME_LENGTH } from './difficulty.js';
 import { PIRATE_LOCALE } from './localization.js';
 import { MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH } from './money.js';
-import { MAX_AREA_NAME_LENGTH, MAX_CLASS_NAME_LENGTH, MAX_ITEM_NAME_LENGTH, MAX_LONG_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_UNIVERSE_NAME_LENGTH } from './editor.js';
+import { MAX_AREA_NAME_LENGTH, MAX_CLASS_DESCRIPTION_LENGTH, MAX_CLASS_NAME_LENGTH, MAX_ITEM_DESCRIPTION_LENGTH, MAX_ITEM_NAME_LENGTH, MAX_LONG_DESCRIPTION_LENGTH, MAX_RACE_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_THEME_DESCRIPTION_LENGTH, MAX_THEME_NAME_LENGTH, MAX_TILE_NAME_LENGTH, MAX_UNIVERSE_NAME_LENGTH } from './editor.js';
 import { PROFILE_LANGUAGES } from './profiles.js';
 import type { SortDirection } from './sorting.js';
 
@@ -36,23 +36,24 @@ export const UNIVERSE_TEXT_FIELDS = [
 	'name',
 	'shortDescription',
 	'longDescription',
-	'abbreviation'
+	'abbreviation',
+	'description'
 ] as const;
 
 export type UniverseTextField = typeof UNIVERSE_TEXT_FIELDS[number];
 
 /**
  * The text each kind of thing has: the universe has its name and descriptions, a coin its name and
- * abbreviation, and everything else its name
+ * abbreviation, an item, race, class or theme its name and description, and everything else its name
  */
 export const UNIVERSE_TEXT_KIND_FIELDS: Readonly<Record<UniverseTextKind, readonly UniverseTextField[]>> = {
 	universe: ['name', 'shortDescription', 'longDescription'],
 	area: ['name'],
 	tile: ['name'],
-	item: ['name'],
-	race: ['name'],
-	class: ['name'],
-	theme: ['name'],
+	item: ['name', 'description'],
+	race: ['name', 'description'],
+	class: ['name', 'description'],
+	theme: ['name', 'description'],
 	difficultyLevel: ['name'],
 	coin: ['name', 'abbreviation']
 };
@@ -96,6 +97,18 @@ export function maxUniverseTextLength(kind: UniverseTextKind, field: UniverseTex
 	if (field === 'abbreviation')
 	{
 		return(MAX_COIN_ABBREVIATION_LENGTH);
+	}
+
+	if (field === 'description')
+	{
+		const descriptionLengths: Partial<Record<UniverseTextKind, number>> = {
+			item: MAX_ITEM_DESCRIPTION_LENGTH,
+			race: MAX_RACE_DESCRIPTION_LENGTH,
+			class: MAX_CLASS_DESCRIPTION_LENGTH,
+			theme: MAX_THEME_DESCRIPTION_LENGTH
+		};
+
+		return((descriptionLengths[kind] ?? 0));
 	}
 
 	const nameLengths: Record<UniverseTextKind, number> = {

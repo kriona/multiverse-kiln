@@ -3,7 +3,7 @@
  */
 import { and, count, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { compareNumbers, itemCategory, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
+import { compareEnabled, compareNumbers, isRulebookOn, sameValue, sortRows, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type OptionName, type RowComparers, type Ruleset } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { items } from './schema.js';
@@ -12,7 +12,7 @@ import { inVersion, type UniverseVersion } from './universeVersions.js';
 /**
  * What a new item needs
  */
-export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'type' | 'enabled'>;
+export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'enabled'>;
 
 /**
  * The settings of an item a universe added, which always has a name of its own
@@ -35,6 +35,11 @@ export interface FoundItem
 	 * Whether the universe has it enabled
 	 */
 	enabled: boolean;
+
+	/**
+	 * The book a default item comes from; null for an item the universe added
+	 */
+	rulebook: string | null;
 }
 
 /**
@@ -195,7 +200,10 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			overridesItemId: items.overridesItemId,
 			key: items.key,
 			name: items.name,
-			type: items.type,
+			description: items.description,
+			category: items.category,
+			types: items.types,
+			rulebook: items.rulebook,
 			enabled: items.enabled
 		})
 		.from(items)
@@ -228,10 +236,14 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				id: row.id,
 				key: (custom ? null : row.key),
 				name: (custom ? row.name : (copy?.name ?? null)),
-				type: settings.type,
+				description: (custom ? row.description : (copy?.description ?? null)),
+				category: settings.category,
+				types: settings.types,
 				enabled: settings.enabled,
+				rulebook: row.rulebook,
 				custom,
-				edited: (copy !== undefined)
+				edited: (copy !== undefined),
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.category !== row.category) || !sameValue(copy.types, row.types)))
 			};
 
 			return({
@@ -251,19 +263,20 @@ const nameCollator = new Intl.Collator('en', { sensitivity: 'base' });
  */
 const itemComparers: RowComparers<{ item: EditorItem; englishName: string }, ItemSortColumn> = {
 	name: (first, second) => nameCollator.compare(first.englishName, second.englishName),
+	enabled: (first, second) => compareEnabled(first.item, second.item),
 	notes: (first, second) => compareNumbers(notesSortKey(first.item), notesSortKey(second.item))
 };
 
 /**
- * Where an item's notes put it when the Items tab sorts by them: those with none first, then disabled,
- * edited and custom ones
+ * Where an item's notes put it when the Items tab sorts by them: those with none first, then edited and
+ * custom ones. Whether it is disabled shows on its Enabled switch, not in its notes
  *
  * @param item The item
- * @return The sort key, from 0 to 7
+ * @return The sort key, from 0 to 3
  */
 function notesSortKey(item: EditorItem): number
 {
-	return((item.custom ? 4 : 0) + (item.edited ? 2 : 0) + (item.enabled ? 0 : 1));
+	return((item.custom ? 2 : 0) + (item.editedSettings ? 1 : 0));
 }
 
 /**
@@ -287,10 +300,11 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 			((name === undefined) || englishName.toLowerCase().includes(name))
 			&& ((query.enabled === undefined) || (item.enabled === query.enabled))
 			&& ((query.custom === undefined) || (item.custom === query.custom))
-			&& ((query.edited === undefined) || (item.edited === query.edited))
-			&& ((query.category === undefined) || (itemCategory(ruleset, item.type) === query.category))
-			&& ((query.type === undefined) || (item.type === query.type))
+			&& ((query.edited === undefined) || (item.editedSettings === query.edited))
+			&& ((query.category === undefined) || (item.category === query.category))
+			&& ((query.type === undefined) || item.types.includes(query.type))
 			&& ((ids === undefined) || ids.has(item.id))
+			&& ((query.rulebooks === undefined) || isRulebookOn(query.rulebooks, item.rulebook))
 		);
 	});
 	const offset = (query.offset ?? 0);
@@ -327,6 +341,7 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 	const [row] = await executor
 		.select({
 			universeId: items.universeId,
+			rulebook: items.rulebook,
 			enabled: items.enabled,
 			copyEnabled: copies.enabled
 		})
@@ -353,7 +368,8 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 
 	return({
 		kind: ((row.universeId === null) ? 'default' : 'custom'),
-		enabled: (row.copyEnabled ?? row.enabled)
+		enabled: (row.copyEnabled ?? row.enabled),
+		rulebook: row.rulebook
 	});
 }
 
@@ -424,7 +440,7 @@ export async function updateCustomItem(version: UniverseVersion, itemId: number,
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultItemId The default item's ID, from findItem() as default
- * @param settings The copy's settings; a null name keeps the default item's
+ * @param settings The copy's settings; a null name or description keeps the default item's
  * @param executor The database, or a transaction
  */
 export async function saveEditedDefaultItem(version: UniverseVersion, ruleset: Ruleset, defaultItemId: number, settings: ItemSettings, executor: Executor = db): Promise<void>

@@ -127,3 +127,44 @@ export const SF1E_CLASS_NAMES: Record<Sf1eClassKey, MessageDescriptor> = defineM
 		description: 'Name of a character class in Starfinder: casts spells that blend magic and technology. Singular, used as a label'
 	}
 });
+
+/**
+ * Each default class's description, shown in Create Character, the class editor, a rulebook's Contents dialog and the Audit tab
+ */
+export const SF1E_CLASS_DESCRIPTIONS: Record<Sf1eClassKey, MessageDescriptor> = defineMessages({
+	envoy: {
+		id: 'sf1e.classDescription.envoy',
+		defaultMessage: 'A charismatic leader who inspires allies and talks their way past trouble. Envoys use improvisations to boost their team and hinder foes, and are skilled at almost everything.',
+		description: 'Description of the envoy, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	},
+	mechanic: {
+		id: 'sf1e.classDescription.mechanic',
+		defaultMessage: 'An engineer who builds and hacks technology. Mechanics work with a custom drone or a brain implant that sharpens their aim, and can overload or bypass machines.',
+		description: 'Description of the mechanic, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	},
+	mystic: {
+		id: 'sf1e.classDescription.mystic',
+		defaultMessage: 'A spellcaster who draws power from a deep connection to the universe or a deity. Mystics heal allies, link minds with them and gain powers from their connection.',
+		description: 'Description of the mystic, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	},
+	operative: {
+		id: 'sf1e.classDescription.operative',
+		defaultMessage: 'A stealthy, skilled spy or scout. Operatives dart in with trick attacks for extra damage, master a specialty and are among the most skilled of all classes.',
+		description: 'Description of the operative, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	},
+	solarian: {
+		id: 'sf1e.classDescription.solarian',
+		defaultMessage: 'A warrior who wields the power of stars and black holes. Solarians form a glowing weapon or armor from their own power and channel light and gravity in battle.',
+		description: 'Description of the solarian, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	},
+	soldier: {
+		id: 'sf1e.classDescription.soldier',
+		defaultMessage: 'A trained warrior skilled with weapons and heavy armor. Soldiers pick a fighting style and learn more combat feats than any other class.',
+		description: 'Description of the soldier, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	},
+	technomancer: {
+		id: 'sf1e.classDescription.technomancer',
+		defaultMessage: 'A spellcaster who blends magic and technology. Technomancers cast spells, store magic in a device or implant and use magic hacks to bend technology to their will.',
+		description: 'Description of the technomancer, a character class in Starfinder, shown in Create Character, the class editor, a rulebook\'s contents and the Audit tab'
+	}
+});

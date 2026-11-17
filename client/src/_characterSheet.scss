@@ -1,5 +1,5 @@
-// The character sheet dialog (partials/character-sheet.html), on the game's page and a universe's page.
-// Each page's stylesheet includes it with `@use 'characterSheet';`
+// The character sheet dialog (partials/character-sheet.html), on the game's page, a universe's page, the
+// profile and the editor's Character List tab. Each page's stylesheet includes it with `@use 'characterSheet';`
 
 @use 'shared' as *;
 
@@ -143,6 +143,33 @@ button.character-sheet-delete
 			vertical-align: 0;
 		}
 	}
+}
+
+// An item's name, with its description under it
+.character-sheet-item-text
+{
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.character-sheet-item-description
+{
+	@include small-text;
+	color: $text-faint;
+}
+
+// As wide as how many of the item the character carries, the most they can discard, plus room for its
+// arrows; the script sets --digits to how many digits that is
+#character-discard-quantity
+{
+	max-width: calc((var(--digits, 3) * 1ch) + 4ch);
+}
+
+// Each item's menu sits at the far end of its row
+.character-sheet-item-menu
+{
+	margin-inline-start: auto;
 }
 
 .character-sheet-none

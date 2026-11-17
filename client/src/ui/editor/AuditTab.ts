@@ -296,13 +296,15 @@ function createChangesCell(edit: UniverseEdit, ruleset: Ruleset): HTMLTableCellE
 
 		item.textContent = describeDetail(detail, ruleset);
 
-		if (detail.fields.length > 0)
+		const lines = detail.fields.flatMap((change) => describeFieldChange(change, detail, ruleset));
+
+		if (lines.length > 0)
 		{
-			item.append(createList(detail.fields.map((change) =>
+			item.append(createList(lines.map((text) =>
 			{
 				const line = document.createElement('li');
 
-				line.textContent = describeFieldChange(change, detail, ruleset);
+				line.textContent = text;
 
 				return(line);
 			})));

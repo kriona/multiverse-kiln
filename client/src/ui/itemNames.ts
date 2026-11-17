@@ -1,9 +1,10 @@
-import { DEFAULT_ITEM_NAMES, ITEM_KINDS, itemCategory, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_DESCRIPTIONS, DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
 import armorIcon from 'virtual:icon/game-icons:breastplate';
 import gearIcon from 'virtual:icon/game-icons:knapsack';
 import weaponIcon from 'virtual:icon/game-icons:broadsword';
 
-import { t } from '../localization';
+import { formatList, t } from '../localization';
+import { describedBy } from './raceAndClassNames';
 
 /**
  * The icon of each item category, by the category's key; categories without one use gearIcon
@@ -35,6 +36,19 @@ export function itemName(item: Pick<EditorItem, 'key' | 'name'>, ruleset: Rulese
 }
 
 /**
+ * An item's description as the player reads it: the universe's description of it, or a default item's
+ * in the player's language
+ *
+ * @param item The item
+ * @param ruleset The universe's ruleset
+ * @return The description, or an empty string for an item the universe added without one
+ */
+export function itemDescription(item: Pick<EditorItem, 'key' | 'description'>, ruleset: Ruleset): string
+{
+	return(describedBy(item, DEFAULT_ITEM_DESCRIPTIONS[ruleset]));
+}
+
+/**
  * An item type's name in the player's language
  *
  * @param type The type's key
@@ -63,21 +77,32 @@ export function itemCategoryName(category: string, ruleset: Ruleset): string
 }
 
 /**
+ * An item's types' names in the player's language, as one list
+ *
+ * @param types The types' keys
+ * @param ruleset The universe's ruleset
+ * @return The list, or an empty string for an item of no type
+ */
+export function itemTypesText(types: readonly string[], ruleset: Ruleset): string
+{
+	return(formatList(types.map((type) => itemTypeName(type, ruleset))));
+}
+
+/**
  * The icon for an item, by its category, named for screen readers
  *
- * @param type The item's type
+ * @param category The item's category
  * @param ruleset The universe's ruleset
  * @return The icon's element
  */
-export function createItemIcon(type: string, ruleset: Ruleset): HTMLElement
+export function createItemIcon(category: string, ruleset: Ruleset): HTMLElement
 {
-	const category = itemCategory(ruleset, type);
 	const icon = document.createElement('span');
 
 	icon.className = 'item-icon';
 	icon.setAttribute('role', 'img');
-	icon.setAttribute('aria-label', ((category === undefined) ? itemTypeName(type, ruleset) : itemCategoryName(category, ruleset)));
-	icon.innerHTML = (((category === undefined) ? undefined : CATEGORY_ICONS[category]) ?? gearIcon);
+	icon.setAttribute('aria-label', itemCategoryName(category, ruleset));
+	icon.innerHTML = (CATEGORY_ICONS[category] ?? gearIcon);
 
 	return(icon);
 }

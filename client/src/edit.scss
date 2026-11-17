@@ -1,6 +1,7 @@
 // The world editor's page (edit.html): the Edit Universe tabs, the tile editor, the area editor and its cells
 
 @use 'shared' as *;
+@use 'characterSheet';
 
 .markdown-editor
 {
@@ -618,10 +619,14 @@ fieldset
 	margin: 0 0 12px;
 }
 
-// A row in an editor list that will be deleted when its tab is saved (markStagedRow)
+// A row in an editor list that will be deleted when its tab is saved (markStagedRow), or that is
+// disabled. Its Enabled switch keeps its look, so it can be read and turned back on
 tr.staged-deleted
 {
-	opacity: 0.3;
+	> td:not(.switch-cell)
+	{
+		opacity: 0.3;
+	}
 
 	td
 	{
@@ -678,10 +683,11 @@ form > .changed-since,
 	}
 }
 
-// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the coins and difficulty levels cards on the Ruleset tab
+// The races, classes and themes cards on the Characters tab (themes in a ruleset with them), and the rulebooks, coins and difficulty levels cards on the Ruleset tab
 .races,
 .classes,
 .themes,
+.rulebooks,
 .coins,
 .difficulty-levels
 {
@@ -733,6 +739,15 @@ form > .changed-since,
 	{
 		vertical-align: 0;
 	}
+}
+
+// The item editor's type checkboxes, in columns that wrap, since a category can have many types
+.item-types
+{
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+	gap: 8px 16px;
+	width: 100%;
 }
 
 .swatch
@@ -1217,6 +1232,46 @@ form > .changed-since,
 	}
 }
 
+// The rulebooks on the Ruleset tab, each named in its row's heading, with its buttons at the end
+.rulebook-table
+{
+	tbody th
+	{
+		color: inherit;
+	}
+
+	.row-buttons
+	{
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+}
+
+// The races, classes and themes a book brings, a table for each
+.rulebook-dialog
+{
+	max-width: min(960px, calc(100vw - 32px));
+}
+
+.rulebook-contents
+{
+	overflow: auto;
+	max-height: 60vh;
+
+	h3
+	{
+		margin: 16px 0 4px;
+		font-size: 1em;
+	}
+
+	tbody th
+	{
+		color: inherit;
+	}
+}
+
 // The whole grid of neighboring areas, each drawn at scale in its place
 .overall-map-dialog
 {
@@ -1642,6 +1697,17 @@ html:has(.area-cells-editor.full-page) body
 		margin: 0;
 		font-size: 1em;
 	}
+}
+
+// An item's, race's, class's or theme's description: a sentence or two, the field growing with it up to a point.
+// Its label stretches it across the dialog, so its width stays put as it grows. Without field-sizing, it
+// keeps its rows and scrolls
+textarea.description-field
+{
+	field-sizing: content;
+	min-block-size: 2lh;
+	max-block-size: 8lh;
+	resize: vertical;
 }
 
 // A race's six ability modifiers, three to a row
