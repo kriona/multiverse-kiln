@@ -135,4 +135,22 @@ describe('themeRepo', () =>
 		await restoreDefaultTheme(version, original.id);
 		assert.deepStrictEqual(await findEditorTheme(version, 'sf1e', original.id), original);
 	});
+
+	it('counts a default theme renamed to its own name as edited only by whether it is enabled', async () =>
+	{
+		const universeId = await createUniverse({
+			name: 'Renamed',
+			ruleset: 'sf1e'
+		});
+		const version = liveVersion(universeId);
+		const original = (await loadEditorThemes(version, 'sf1e')).find((theme) => (theme.key === 'scholar'));
+
+		assert.ok(original);
+
+		await inTransaction((transaction) => saveEditedDefaultTheme(version, 'sf1e', original.id, { ...original, name: 'Scholar', enabled: false }, transaction));
+		assert.strictEqual((await findEditorTheme(version, 'sf1e', original.id))?.editedSettings, false);
+
+		await inTransaction((transaction) => saveEditedDefaultTheme(version, 'sf1e', original.id, { ...original, name: 'Bookworm' }, transaction));
+		assert.strictEqual((await findEditorTheme(version, 'sf1e', original.id))?.editedSettings, true);
+	});
 });

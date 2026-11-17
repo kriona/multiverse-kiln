@@ -189,7 +189,7 @@ async function loadThemes(version: UniverseVersion, ruleset: Ruleset, themeId: n
 				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined),
-				editedSettings: ((copy !== undefined) && ((copy.name !== null) || (copy.description !== null) || (copy.ability !== row.ability)))
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.ability !== row.ability)))
 			});
 		}));
 }
