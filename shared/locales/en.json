@@ -1277,7 +1277,7 @@
 	},
 	"characterSheet.allEquipped": {
 		"defaultMessage": "Carries nothing else.",
-		"description": "Shown on a character's sheet under the Equipment heading when everything they carry is equipped, so it is all in the Equipped list above"
+		"description": "Shown on a character's sheet under the Equipment heading when everything they carry is equipped or worn for its look, so it is all in the Equipped and Social lists above"
 	},
 	"characterSheet.appearance": {
 		"defaultMessage": "Appearance",
@@ -1425,7 +1425,7 @@
 	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
-		"description": "On a character's sheet, an item they carry and haven't equipped, with how many when there is more than one, as a link that inspects it; {item} is the item's name, e.g. \"Arrow x20\""
+		"description": "On a character's sheet, an item they carry that isn't equipped or worn for its look, with how many when there is more than one, as a link that inspects it; {item} is the item's name, e.g. \"Arrow x20\""
 	},
 	"characterSheet.itemMenu": {
 		"defaultMessage": "Actions for {item}",

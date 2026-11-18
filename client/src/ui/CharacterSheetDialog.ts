@@ -1167,14 +1167,29 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Puts focus back on an item's menu button once the sheet has been drawn again, or on the sheet's
-	 * buttons when the item's row is gone, such as when all of it was discarded or given away
+	 * Puts focus back on an item's menu button once the sheet has been drawn again. When the item's row in
+	 * the Equipment list is gone because all of it is equipped or worn for its look, focus goes to the menu
+	 * of a slot holding it, one of the layer given first. When it is gone because all of it was discarded or
+	 * given away, focus goes to the sheet's buttons
 	 *
 	 * @param itemId The item
+	 * @param layer Which slots to look in first
 	 */
-	private focusItemMenu(itemId: number): void
+	private focusItemMenu(itemId: number, layer: EquipmentLayer = 'stats'): void
 	{
-		const menuButton = this.items.querySelector<HTMLButtonElement>(`.action-menu-button[data-item-id="${itemId}"]`);
+		const sheet = this.current?.sheet;
+		const other: EquipmentLayer = ((layer === 'stats') ? 'social' : 'stats');
+		const holding = [layer, other]
+			.map((slotLayer) => ({
+				layer: slotLayer,
+				slot: ((slotLayer === 'stats') ? sheet?.equipment : sheet?.socialEquipment)?.find((equipped) => (equipped.itemId === itemId))?.slot
+			}))
+			.find(({ slot }) => (slot !== undefined));
+		const menuButton = (this.items.querySelector<HTMLButtonElement>(`.action-menu-button[data-item-id="${itemId}"]`)
+			?? ((holding?.slot === undefined) ? null : this.slotMenuButton({
+				layer: holding.layer,
+				slot: holding.slot
+			})));
 
 		(menuButton ?? (this.giveButton.hidden ? getElement('character-sheet-close', HTMLButtonElement) : this.giveButton)).focus();
 	}
@@ -2009,7 +2024,18 @@ export class CharacterSheetDialog
 	 */
 	private focusSlotMenu(chosen: ChosenSlot): void
 	{
-		this.dialog.querySelector<HTMLButtonElement>(`.character-sheet-slot-menu .action-menu-button[data-layer="${chosen.layer}"][data-slot="${chosen.slot}"]`)?.focus();
+		this.slotMenuButton(chosen)?.focus();
+	}
+
+	/**
+	 * A slot's menu button in its list
+	 *
+	 * @param chosen The slot and its layer
+	 * @return The button, or null when the slot has no menu
+	 */
+	private slotMenuButton(chosen: ChosenSlot): HTMLButtonElement | null
+	{
+		return(this.dialog.querySelector<HTMLButtonElement>(`.character-sheet-slot-menu .action-menu-button[data-layer="${chosen.layer}"][data-slot="${chosen.slot}"]`));
 	}
 
 	/**
@@ -2126,10 +2152,11 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Lists the items the character carries and hasn't equipped by name, the way the player's language
-	 * sorts them, with how many of each, and a menu beside each of what can be done with it: everything
-	 * for those who may change the character, and Inspect for others. Equipped items show in the Equipped
-	 * list instead, so an item of which some are equipped lists how many are left
+	 * Lists the items the character carries and hasn't equipped or worn for their look by name, the way the
+	 * player's language sorts them, with how many of each, and a menu beside each of what can be done with
+	 * it: everything for those who may change the character, and Inspect for others. Equipped and worn
+	 * items show in the Equipped and Social lists instead, so an item of which some are in slots lists how
+	 * many are left
 	 *
 	 * @param sheet The character
 	 * @param canChange Whether the sheet offers to change the character
@@ -2140,7 +2167,7 @@ export class CharacterSheetDialog
 			.map((item) => ({
 				item,
 				name: itemName(item, sheet.ruleset),
-				left: (item.quantity - equippedCount(sheet.equipment, item.id))
+				left: (item.quantity - equippedCount(sheet.equipment, item.id) - equippedCount(sheet.socialEquipment, item.id))
 			}))
 			.filter(({ left }) => (left > 0))
 			.sort((a, b) => a.name.localeCompare(b.name, currentLocale()));
@@ -2152,7 +2179,7 @@ export class CharacterSheetDialog
 			const text = this.inspectLink(t({
 				id: 'characterSheet.item',
 				defaultMessage: '{quantity, plural, =1 {{item}} other {{item} x#}}',
-				description: 'On a character\'s sheet, an item they carry and haven\'t equipped, with how many when there is more than one, as a link that inspects it; {item} is the item\'s name, e.g. "Arrow x20"'
+				description: 'On a character\'s sheet, an item they carry that isn\'t equipped or worn for its look, with how many when there is more than one, as a link that inspects it; {item} is the item\'s name, e.g. "Arrow x20"'
 			}, {
 				item: name,
 				quantity: left
@@ -2237,7 +2264,7 @@ export class CharacterSheetDialog
 					{
 						void this.changeLook((shown) => this.api.wearSocially(shown.universeId, shown.sheet.id, socialSlot, item.id), () =>
 						{
-							this.focusItemMenu(item.id);
+							this.focusItemMenu(item.id, 'social');
 						}, (shown) => t({
 							id: 'characterSheet.woreSocially',
 							defaultMessage: '{name} wears {item} on {slot} for its look.',
