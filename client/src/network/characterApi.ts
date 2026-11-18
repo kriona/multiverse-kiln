@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EquipHand, type EquipRequest, type GiveItemsRequest, type ItemQuantity, type UnequipRequest, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EquipHand, type EquipRequest, type EquipRing, type GiveItemsRequest, type ItemQuantity, type UnequipRequest, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
 
 import { sendRequest } from './editorApi';
 
@@ -142,12 +142,14 @@ export class CharacterApi
 	 * @param characterId The character's ID
 	 * @param itemId The item
 	 * @param hand The hands to hold it in, or null for an item that is worn
+	 * @param ring The ring slot to put a ring in, or null for a free one
 	 */
-	async equipItem(universeId: string, characterId: string, itemId: number, hand: EquipHand | null): Promise<void>
+	async equipItem(universeId: string, characterId: string, itemId: number, hand: EquipHand | null, ring: EquipRing | null): Promise<void>
 	{
 		const request: EquipRequest = {
 			itemId,
-			hand
+			hand,
+			ring
 		};
 
 		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/equip`, request);

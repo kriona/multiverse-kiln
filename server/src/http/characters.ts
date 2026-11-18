@@ -9,7 +9,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, EQUIP_RINGS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, giveCharacterItems, keepPf1eAbilityRoll, listCharacters, lockCarriedItems, lockCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails, type LockedCharacter } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
@@ -101,7 +101,8 @@ export const characterItemsRequest = z.object({
  */
 export const equipRequest = z.object({
 	itemId: z.number().int().min(1).max(2147483647),
-	hand: z.enum(EQUIP_HANDS).nullable()
+	hand: z.enum(EQUIP_HANDS).nullable(),
+	ring: z.enum(EQUIP_RINGS).nullable()
 }) satisfies z.ZodType<EquipRequest>;
 
 /**
@@ -210,6 +211,11 @@ const EQUIP_REFUSALS: Record<EquipRefusal, MessageDescriptor> = defineMessages({
 		id: 'error.equipNoTail',
 		defaultMessage: 'The character has no tail to wear that on.',
 		description: 'Why an item wasn\'t equipped from a character\'s sheet: it is worn on the tail, such as a tail blade, and the character\'s race has no tail'
+	},
+	ringSlotsFull: {
+		id: 'error.equipRingSlotsFull',
+		defaultMessage: 'Both ring slots are full. Choose which ring to replace.',
+		description: 'Why a ring wasn\'t equipped from a character\'s sheet: both of the character\'s ring slots filled up before it was equipped, so the item\'s menu now asks whether to equip it as the left or the right ring'
 	}
 });
 
@@ -1013,7 +1019,7 @@ async function lockOwnCharacter(universeId: string, characterId: string, playerI
  *
  * @param universe The universe's ID and ruleset; its live version's items are used
  * @param characterId The character's ID
- * @param request The item and the hands to hold it in
+ * @param request The item, the hands to hold it in and the ring slot to put it in
  * @param playerId The player the character must belong to, or undefined for any player's, as the
  * universe's creators may
  * @param noSuchCharacter Why a character who isn't there can't equip items
@@ -1050,7 +1056,7 @@ export async function equipItem(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 		}
 
 		const race = await findEditorRace(liveVersion(universe.id), universe.ruleset, character.raceId, transaction);
-		const plan = planEquip(universe.ruleset, equipment, items, item, quantity, request.hand, raceHasTail(race));
+		const plan = planEquip(universe.ruleset, equipment, items, item, quantity, request.hand, raceHasTail(race), request.ring);
 
 		if (typeof plan === 'string')
 		{

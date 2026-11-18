@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equippedCount, fitsSlot, handChoices, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equipChangesNothing, equippedCount, fitsSlot, handChoices, pf1eAbilityModifier, ringChoices, RULESET_ABILITIES, SIZE_NAMES, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type EquipRing, type MessageDescriptor } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
 import unequipIcon from 'virtual:icon/ph:backpack';
 import giveIcon from 'virtual:icon/ph:hand-arrow-up';
@@ -91,6 +91,22 @@ const EQUIP_IN_HAND: Record<EquipHand, MessageDescriptor> = defineMessages({
 		id: 'characterSheet.equipBothHands',
 		defaultMessage: 'Equip in both hands',
 		description: 'Item in the menu beside a weapon held in one hand, such as a longsword, on a character\'s sheet, that equips it gripped with both hands'
+	}
+});
+
+/**
+ * The menu items that equip a ring in a ring slot while both are full, by the ring slot
+ */
+const EQUIP_AS_RING: Record<EquipRing, MessageDescriptor> = defineMessages({
+	left: {
+		id: 'characterSheet.equipLeftRing',
+		defaultMessage: 'Equip as left ring',
+		description: 'Item in the menu beside a ring on a character\'s sheet, offered while both ring slots are full, that equips it in the left ring slot in place of what is there'
+	},
+	right: {
+		id: 'characterSheet.equipRightRing',
+		defaultMessage: 'Equip as right ring',
+		description: 'Item in the menu beside a ring on a character\'s sheet, offered while both ring slots are full, that equips it in the right ring slot in place of what is there'
 	}
 });
 
@@ -1036,8 +1052,9 @@ export class CharacterSheetDialog
 	 *
 	 * @param item The item, as the sheet lists it
 	 * @param hand The hands to hold it in, or null for an item that is worn or held in two hands
+	 * @param ring The ring slot to put a ring in, or null for a free one
 	 */
-	private async equip(item: CharacterSheetItem, hand: EquipHand | null): Promise<void>
+	private async equip(item: CharacterSheetItem, hand: EquipHand | null, ring: EquipRing | null): Promise<void>
 	{
 		const current = this.current;
 
@@ -1051,7 +1068,7 @@ export class CharacterSheetDialog
 
 		try
 		{
-			await this.api.equipItem(current.universeId, current.sheet.id, item.id, hand);
+			await this.api.equipItem(current.universeId, current.sheet.id, item.id, hand, ring);
 		}
 		catch (error)
 		{
@@ -1495,9 +1512,10 @@ export class CharacterSheetDialog
 
 	/**
 	 * The menu beside an item of what can be done with it: Equip (in a hand of the player's choosing for
-	 * an item held in one), Unequip, Give, Inspect and Discard for those who may change the character, and
-	 * Inspect for others. Equip is offered while one of the item isn't equipped, and for an item held in
-	 * the hands, in hands it isn't already in; Give while the character is in a group with others
+	 * an item held in one, and as the left or right ring for a ring while both ring slots are full),
+	 * Unequip, Give, Inspect and Discard for those who may change the character, and Inspect for others.
+	 * Each way to equip it is offered when it changes something (equipChangesNothing()); Give while the
+	 * character is in a group with others
 	 *
 	 * @param sheet The character
 	 * @param item The item
@@ -1525,24 +1543,31 @@ export class CharacterSheetDialog
 		{
 			const equipped = equippedCount(sheet.equipment, item.id);
 			const fits = characterSlots(sheet.ruleset, sheet.hasTail).some((slot) => fitsSlot(sheet.ruleset, item.equips, slot));
-			const allEquipped = (equipped >= item.quantity);
-			const hands = handChoices(item).filter((hand) => !(allEquipped && sheet.equipment.some((each) => ((each.itemId === item.id) && (each.slot === ((hand === 'off') ? 'offHand' : 'mainHand')) && (each.bothHands === (hand === 'both'))))));
+			const changesSomething = (hand: EquipHand | null, ring: EquipRing | null): boolean => !equipChangesNothing(sheet.ruleset, sheet.equipment, item, item.quantity, hand, sheet.hasTail, ring);
+			const rings = ringChoices(sheet.ruleset, sheet.equipment, item);
 
-			// A worn or two-handed item fully equipped has nowhere else to go
-			if (fits && (item.equips !== 'oneHand'))
+			if (fits && (rings.length > 0))
 			{
-				if (!allEquipped)
+				actions.push(...rings
+					.filter((ring) => changesSomething(null, ring))
+					.map((ring) => this.equipAction(item, t(EQUIP_AS_RING[ring]), null, ring)));
+			}
+			else if (fits && (item.equips !== 'oneHand'))
+			{
+				if (changesSomething(null, null))
 				{
 					actions.push(this.equipAction(item, t({
 						id: 'characterSheet.equip',
 						defaultMessage: 'Equip',
 						description: 'Item in the menu beside an item on a character\'s sheet that equips it: puts on an item that is worn, or takes up one held in two hands. What was in its slot is unequipped'
-					}), null));
+					}), null, null));
 				}
 			}
 			else if (fits)
 			{
-				actions.push(...hands.map((hand) => this.equipAction(item, t(EQUIP_IN_HAND[hand]), hand)));
+				actions.push(...handChoices(item)
+					.filter((hand) => changesSomething(hand, null))
+					.map((hand) => this.equipAction(item, t(EQUIP_IN_HAND[hand]), hand, null)));
 			}
 
 			if (equipped > 0)
@@ -1616,16 +1641,17 @@ export class CharacterSheetDialog
 	 * @param item The item
 	 * @param label The menu item's text
 	 * @param hand The hands to hold it in, or null for an item that is worn or held in two hands
+	 * @param ring The ring slot to put a ring in, or null for a free one
 	 * @return The menu item
 	 */
-	private equipAction(item: CharacterSheetItem, label: string, hand: EquipHand | null): MenuAction
+	private equipAction(item: CharacterSheetItem, label: string, hand: EquipHand | null, ring: EquipRing | null): MenuAction
 	{
 		return({
 			label,
 			icon: equipIcon,
 			run: () =>
 			{
-				void this.equip(item, hand);
+				void this.equip(item, hand, ring);
 			}
 		});
 	}

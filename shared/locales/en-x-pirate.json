@@ -1115,6 +1115,10 @@
 		"message": "Couldn't change what this hand has strapped on.",
 		"source": "Could not change what the character has equipped."
 	},
+	"characterSheet.equipLeftRing": {
+		"message": "Strap on as port ring",
+		"source": "Equip as left ring"
+	},
 	"characterSheet.equipMainHand": {
 		"message": "Strap on in sword hand",
 		"source": "Equip in main hand"
@@ -1122,6 +1126,10 @@
 	"characterSheet.equipOffHand": {
 		"message": "Strap on in hook hand",
 		"source": "Equip in off hand"
+	},
+	"characterSheet.equipRightRing": {
+		"message": "Strap on as starboard ring",
+		"source": "Equip as right ring"
 	},
 	"characterSheet.equipped": {
 		"message": "Strapped On",
@@ -5738,6 +5746,10 @@
 	"error.equipNoTail": {
 		"message": "That hand has no tail to strap it on.",
 		"source": "The character has no tail to wear that on."
+	},
+	"error.equipRingSlotsFull": {
+		"message": "Both ring fingers be taken. Pick which ring walks the plank.",
+		"source": "Both ring slots are full. Choose which ring to replace."
 	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",

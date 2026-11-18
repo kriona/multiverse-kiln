@@ -577,7 +577,8 @@ Decided:
 	- A shield takes a hand. A character holds one shield at most. An item is a shield by its types (PF1E's `shields`).
 	- PF1E's buckler is worn in the off arm slot and takes no hand. It goes with a two-handed weapon, or with a weapon in each hand. It counts as the character's one shield, so equipping it unequips a shield in a hand, and the other way round.
 - Equipping an item into a slot or hand in use unequips what was there. It doesn't ask, since equipping it again is easy. A two-handed item unequips both hands. A one-handed item unequips a two-handed one.
-- A ring goes in the first free ring slot, or in the left ring's when both are full. Equip doesn't ask which.
+- A ring goes in the first free ring slot, with one Equip in its menu. When both ring slots are full, the menu offers Equip as left ring and Equip as right ring instead, which replace what is there.
+- The menu offers equipping only where it changes something. It leaves out a hand or ring slot that already holds the item the same way, and Equip for a worn item whose slot already holds it.
 - An equipped item is one of the items the character carries. A character with 3 daggers and one in each hand has 3 daggers, 2 of them equipped. Discarding or giving more than the unequipped ones unequips the rest: the off hand first, then the main hand, then worn slots. The dialog says which. An item hidden because it was disabled with remove is unequipped too.
 - Disabled items, and items of books that are off, can still be equipped, unequipped and given. Characters keep using them, as they do now.
 - Equipment is a table of its own, `character_equipment` (character, slot, item). Its rows reference the character's carried items, so discarding the last of an item deletes its rows. A two-handed item is one row, in the main hand.

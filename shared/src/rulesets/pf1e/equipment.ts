@@ -141,6 +141,11 @@ export const PF1E_RING_SLOT_NAMES: Record<string, MessageDescriptor> = defineMes
 export const PF1E_TAIL_LOCATION: Pf1eWornLocation = 'tail';
 
 /**
+ * The worn place with a left and a right slot, which the player chooses between when both are full
+ */
+export const PF1E_RING_LOCATION: Pf1eWornLocation = 'ring';
+
+/**
  * The item types that make an item a shield, of which a character holds one at most
  */
 export const PF1E_SHIELD_TYPES: readonly string[] = ['shields'];

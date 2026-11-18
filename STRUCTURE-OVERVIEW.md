@@ -211,7 +211,8 @@ Hands:
 Equipping:
 - Equip and Unequip are in each item's menu on the [character sheet](#character-sheet), in the lobby, the game, on the universe page and on the player's profile
 - Equipping into a slot or hand in use unequips what was there, without asking. A two-handed item unequips both hands. A one-handed item unequips a two-handed one. A second shield unequips the first
-- A ring goes in the first free ring slot, or in the left ring's when both are full
+- A ring goes in the first free ring slot, with one Equip in its menu. When both ring slots are full, the menu offers Equip as left ring and Equip as right ring instead, which replace what is there
+- The menu offers equipping only where it changes something. It leaves out a hand or ring slot that already holds the item the same way, and Equip for a worn item whose slot already holds it
 - An equipped item is one of the items the character carries: 3 daggers with one in each hand are 3 daggers, 2 of them equipped. Discarding or giving more than the unequipped ones unequips the rest, the off hand first, then the main hand, then worn slots, and the dialog says which
 - Disabled items, and items of [rulebooks](#rulebooks) that are off, can still be equipped, unequipped and given. An item [removed from characters](#disabling-things-players-are-using) is unequipped
 - A save that changes where an item equips, or whether it is a shield, unequips it from every character once it reaches the live version. A save that turns off a race's tail unequips the tail items of that race's characters

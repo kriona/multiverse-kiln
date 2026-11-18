@@ -197,11 +197,12 @@ describe('Equipment routes', () =>
 	 *
 	 * @param itemId The item
 	 * @param hand The hands to hold it in
+	 * @param ring The ring slot to put a ring in
 	 * @return The status
 	 */
-	async function equip(itemId: number, hand: 'main' | 'off' | 'both' | null): Promise<number>
+	async function equip(itemId: number, hand: 'main' | 'off' | 'both' | null, ring: 'left' | 'right' | null = null): Promise<number>
 	{
-		return((await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/equip`, { itemId, hand })).status);
+		return((await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/equip`, { itemId, hand, ring })).status);
 	}
 
 	/**
@@ -222,7 +223,7 @@ describe('Equipment routes', () =>
 		{
 			await takeCharacterItems(brokkId, 'pf1e', [{ itemId, quantity }], transaction);
 
-			answer = equipItem({ id: universeId, ruleset: 'pf1e' }, brokkId, { itemId, hand }, ada.playerId, noSuchCharacter)
+			answer = equipItem({ id: universeId, ruleset: 'pf1e' }, brokkId, { itemId, hand, ring: null }, ada.playerId, noSuchCharacter)
 				.finally(() =>
 				{
 					answered = true;
@@ -282,8 +283,10 @@ describe('Equipment routes', () =>
 		assert.strictEqual(await equip(tailbladeId, null), 409);
 		assert.strictEqual(await equip(-1, null), 400);
 		assert.strictEqual(await equip(longswordId, 'left' as 'main'), 400);
+		assert.strictEqual(await equip(longswordId, 'main', 'middle' as 'left'), 400);
+		assert.strictEqual(await equip(longswordId, 'main', 'left'), 409);
 		assert.strictEqual(await equip(99999999, 'main'), 409);
-		assert.strictEqual((await send(grace, 'POST', `${characterPath(universeId, brokkId)}/items/equip`, { itemId: longswordId, hand: 'main' })).status, 404);
+		assert.strictEqual((await send(grace, 'POST', `${characterPath(universeId, brokkId)}/items/equip`, { itemId: longswordId, hand: 'main', ring: null })).status, 404);
 		assert.deepStrictEqual((await sheetOf(brokkId)).equipment, []);
 	});
 
@@ -293,12 +296,37 @@ describe('Equipment routes', () =>
 		const ratfolkRaceId = await defaultRaceId('ratfolk');
 		const squeak = await inTransaction((transaction) => createCharacter({ ...dwarf, raceId: ratfolkRaceId, items: [{ itemId: tailbladeId, quantity: 1 }] }, transaction));
 
-		assert.strictEqual((await send(ada, 'POST', `${characterPath(universeId, squeak)}/items/equip`, { itemId: tailbladeId, hand: null })).status, 204);
+		assert.strictEqual((await send(ada, 'POST', `${characterPath(universeId, squeak)}/items/equip`, { itemId: tailbladeId, hand: null, ring: null })).status, 204);
 
 		const sheet = await sheetOf(squeak);
 
 		assert.strictEqual(sheet.hasTail, true);
 		assert.deepStrictEqual(sheet.equipment, [at('tail', tailbladeId)]);
+	});
+
+	it('puts a ring in a free ring slot, and in the one chosen when both are full', async () =>
+	{
+		const goldRingId = await addItem(universeId, 'pf1e', 'Gold ring', { category: 'gear', types: [], equips: 'ring' });
+		const silverRingId = await addItem(universeId, 'pf1e', 'Silver ring', { category: 'gear', types: [], equips: 'ring' });
+
+		await giveCharacterItems(brokkId, [
+			{ itemId: goldRingId, quantity: 2 },
+			{ itemId: silverRingId, quantity: 1 }
+		]);
+
+		assert.strictEqual(await equip(goldRingId, null), 204);
+		assert.strictEqual(await equip(goldRingId, null), 204);
+		assert.deepStrictEqual((await sheetOf(brokkId)).equipment, [at('ringLeft', goldRingId), at('ringRight', goldRingId)]);
+
+		const refused = await send<{ error: MessageDescriptor }>(ada, 'POST', `${characterPath(universeId, brokkId)}/items/equip`, { itemId: silverRingId, hand: null, ring: null });
+
+		assert.strictEqual(refused.status, 409);
+		assert.strictEqual(refused.body.error.id, 'error.equipRingSlotsFull');
+		assert.strictEqual(await equip(silverRingId, null, 'right'), 204);
+		assert.deepStrictEqual((await sheetOf(brokkId)).equipment, [at('ringLeft', goldRingId), at('ringRight', silverRingId)]);
+
+		assert.strictEqual(await equip(silverRingId, null, 'left'), 204);
+		assert.deepStrictEqual((await sheetOf(brokkId)).equipment, [at('ringLeft', silverRingId)]);
 	});
 
 	it('unequips from one slot, or everywhere', async () =>
@@ -372,8 +400,8 @@ describe('Equipment routes', () =>
 		const grennId = await inTransaction((transaction) => createCharacter({ ...brokk, ruleset: 'sf1e', raceId: veskId, classId: soldierId, themeId: mercenary.id, items: [{ itemId: armorId, quantity: 1 }, { itemId: rifleId, quantity: 1 }] }, transaction));
 		const path = `${characterPath(starfinderId, grennId)}/items/equip`;
 
-		assert.strictEqual((await send(ada, 'POST', path, { itemId: armorId, hand: null })).status, 204);
-		assert.strictEqual((await send(ada, 'POST', path, { itemId: rifleId, hand: 'both' })).status, 204);
+		assert.strictEqual((await send(ada, 'POST', path, { itemId: armorId, hand: null, ring: null })).status, 204);
+		assert.strictEqual((await send(ada, 'POST', path, { itemId: rifleId, hand: 'both', ring: null })).status, 204);
 		assert.deepStrictEqual((await sheetOf(grennId, ada, starfinderId)).equipment, [at('armor', armorId), at('mainHand', rifleId, true)]);
 	});
 
@@ -505,12 +533,12 @@ describe('Equipment routes', () =>
 
 			await giveCharacterItems(graceCharacterId, [{ itemId: longswordId, quantity: 1 }]);
 
-			assert.strictEqual((await send(ada, 'POST', `${base}/equip`, { itemId: longswordId, hand: 'both' })).status, 204);
+			assert.strictEqual((await send(ada, 'POST', `${base}/equip`, { itemId: longswordId, hand: 'both', ring: null })).status, 204);
 			assert.deepStrictEqual((await sheetOf(graceCharacterId, grace)).equipment, [at('mainHand', longswordId, true)]);
 			assert.strictEqual((await send(ada, 'POST', `${base}/unequip`, { itemId: longswordId, slot: null })).status, 204);
 			assert.strictEqual((await send(ada, 'POST', `${base}/give`, { characterId: brokkId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 204);
 			assert.strictEqual((await sheetOf(brokkId)).items.find((item) => (item.id === longswordId))?.quantity, 2);
-			assert.strictEqual((await send(grace, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/characters/${brokkId}/items/equip`, { itemId: longswordId, hand: 'main' })).status, 403);
+			assert.strictEqual((await send(grace, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/characters/${brokkId}/items/equip`, { itemId: longswordId, hand: 'main', ring: null })).status, 403);
 		});
 	});
 });

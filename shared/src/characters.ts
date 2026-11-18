@@ -37,7 +37,7 @@
  * who gave them what (SessionServerMessageType.ItemsReceived)
  */
 import { UNIVERSES_PATH } from './constants.js';
-import type { EquipHand, EquippedItem } from './equipment.js';
+import type { EquipHand, EquippedItem, EquipRing } from './equipment.js';
 import type { ItemQuantity } from './editor.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
@@ -585,6 +585,12 @@ export interface EquipRequest
 	 * in two hands
 	 */
 	hand: EquipHand | null;
+
+	/**
+	 * The ring slot to put a ring in (ringChoices()), needed when both are full; null for a free one, and
+	 * for an item that isn't a ring
+	 */
+	ring: EquipRing | null;
 }
 
 /**

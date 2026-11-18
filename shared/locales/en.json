@@ -1115,6 +1115,10 @@
 		"defaultMessage": "Could not change what the character has equipped.",
 		"description": "Shown on a character's sheet when equipping or unequipping an item from its menu failed"
 	},
+	"characterSheet.equipLeftRing": {
+		"defaultMessage": "Equip as left ring",
+		"description": "Item in the menu beside a ring on a character's sheet, offered while both ring slots are full, that equips it in the left ring slot in place of what is there"
+	},
 	"characterSheet.equipMainHand": {
 		"defaultMessage": "Equip in main hand",
 		"description": "Item in the menu beside an item held in one hand, such as a dagger or a torch, on a character's sheet, that equips it in the character's main hand"
@@ -1122,6 +1126,10 @@
 	"characterSheet.equipOffHand": {
 		"defaultMessage": "Equip in off hand",
 		"description": "Item in the menu beside an item held in one hand, such as a dagger, a shield or a torch, on a character's sheet, that equips it in the character's other hand"
+	},
+	"characterSheet.equipRightRing": {
+		"defaultMessage": "Equip as right ring",
+		"description": "Item in the menu beside a ring on a character's sheet, offered while both ring slots are full, that equips it in the right ring slot in place of what is there"
 	},
 	"characterSheet.equipped": {
 		"defaultMessage": "Equipped",
@@ -5738,6 +5746,10 @@
 	"error.equipNoTail": {
 		"defaultMessage": "The character has no tail to wear that on.",
 		"description": "Why an item wasn't equipped from a character's sheet: it is worn on the tail, such as a tail blade, and the character's race has no tail"
+	},
+	"error.equipRingSlotsFull": {
+		"defaultMessage": "Both ring slots are full. Choose which ring to replace.",
+		"description": "Why a ring wasn't equipped from a character's sheet: both of the character's ring slots filled up before it was equipped, so the item's menu now asks whether to equip it as the left or the right ring"
 	},
 	"error.faerieCantLoop": {
 		"defaultMessage": "An area whose passage of time is faerie can't loop.",

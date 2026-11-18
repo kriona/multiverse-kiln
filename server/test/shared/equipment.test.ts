@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { characterSlots, DEFAULT_ITEM_EQUIPS, DEFAULT_ITEM_NAMES, equipmentSlots, fitsSlot, handChoices, isItemEquips, isShield, itemEquipsChoices, itemEquipsName, planEquip, slotName, startingEquipment, unequippedByRemoval, type EquipmentItem, type EquippedItem, type EquipPlan, type Ruleset } from '@multiverse-kiln/shared';
+import { characterSlots, DEFAULT_ITEM_EQUIPS, DEFAULT_ITEM_NAMES, equipChangesNothing, equipmentSlots, fitsSlot, handChoices, isItemEquips, isShield, itemEquipsChoices, itemEquipsName, planEquip, ringChoices, slotName, startingEquipment, unequippedByRemoval, type EquipmentItem, type EquippedItem, type EquipPlan, type Ruleset } from '@multiverse-kiln/shared';
 
 const dagger: EquipmentItem = {
 	id: 1,
@@ -67,7 +67,13 @@ const lightShield: EquipmentItem = {
 	types: ['shields'],
 	equips: 'oneHand'
 };
-const items = new Map([dagger, longsword, greatsword, heavyShield, buckler, torch, ring, tailblade, book, chainShirt, lightShield].map((item) => [item.id, item]));
+const silverRing: EquipmentItem = {
+	id: 12,
+	category: 'gear',
+	types: [],
+	equips: 'ring'
+};
+const items = new Map([dagger, longsword, greatsword, heavyShield, buckler, torch, ring, tailblade, book, chainShirt, lightShield, silverRing].map((item) => [item.id, item]));
 
 /**
  * An item equipped in a slot
@@ -94,11 +100,12 @@ function at(slot: string, item: EquipmentItem, bothHands = false): EquippedItem
  * @param quantity How many the character carries
  * @param hand The hands asked for
  * @param ruleset The ruleset
+ * @param ring The ring slot asked for
  * @return The plan
  */
-function plan(equipment: readonly EquippedItem[], item: EquipmentItem, quantity: number, hand: 'main' | 'off' | 'both' | null, ruleset: Ruleset = 'pf1e'): EquipPlan
+function plan(equipment: readonly EquippedItem[], item: EquipmentItem, quantity: number, hand: 'main' | 'off' | 'both' | null, ruleset: Ruleset = 'pf1e', ring: 'left' | 'right' | null = null): EquipPlan
 {
-	const result = planEquip(ruleset, equipment, items, item, quantity, hand, true);
+	const result = planEquip(ruleset, equipment, items, item, quantity, hand, true, ring);
 
 	if (typeof result === 'string')
 	{
@@ -213,6 +220,9 @@ describe('equipment', () =>
 		assert.strictEqual(planEquip('pf1e', [], items, chainShirt, 1, 'main', true), 'notEquippable');
 		assert.strictEqual(planEquip('pf1e', [], items, tailblade, 1, null, false), 'noTail');
 		assert.strictEqual(planEquip('sf1e', [], items, ring, 1, null, true), 'notEquippable');
+		assert.strictEqual(planEquip('pf1e', [], items, dagger, 1, 'main', true, 'left'), 'notEquippable');
+		assert.strictEqual(planEquip('pf1e', [], items, chainShirt, 1, null, true, 'right'), 'notEquippable');
+		assert.strictEqual(planEquip('sf1e', [], items, chainShirt, 1, null, true, 'left'), 'notEquippable');
 	});
 
 	it('equips a longsword and a shield, then a greatsword unequips both', () =>
@@ -266,16 +276,53 @@ describe('equipment', () =>
 		assert.strictEqual(plan([at('ringRight', ring)], ring, 1, null).added, null);
 	});
 
-	it('puts rings in the first free ring slot, or the left one', () =>
+	it('changes nothing for an item already where it would go, with more carried', () =>
+	{
+		const equipment = [at('mainHand', dagger), at('ringLeft', ring), at('ringRight', ring), at('offArm', buckler)];
+
+		for (const [item, quantity, hand, choice] of [[dagger, 2, 'main', null], [ring, 3, null, null], [ring, 3, null, 'left'], [ring, 3, null, 'right'], [buckler, 2, null, null]] as const)
+		{
+			const again = plan(equipment, item, quantity, hand, 'pf1e', choice);
+
+			assert.strictEqual(again.added, null, `item ${item.id} ${choice}`);
+			assert.deepStrictEqual(again.removed, [], `item ${item.id} ${choice}`);
+			assert.strictEqual(equipChangesNothing('pf1e', equipment, item, quantity, hand, true, choice), true, `item ${item.id} ${choice}`);
+		}
+
+		assert.deepStrictEqual(plan(equipment, dagger, 2, 'both').removed, [at('mainHand', dagger)]);
+		assert.strictEqual(equipChangesNothing('pf1e', equipment, dagger, 2, 'both', true, null), false);
+		assert.strictEqual(equipChangesNothing('pf1e', equipment, dagger, 2, 'off', true, null), false);
+		assert.strictEqual(equipChangesNothing('pf1e', [], tailblade, 1, null, false, null), false);
+	});
+
+	it('puts a ring in the first free ring slot', () =>
 	{
 		const first = plan([], ring, 3, null);
 		const second = plan(first.equipment, ring, 3, null);
-		const third = plan(second.equipment, ring, 3, null);
 
 		assert.deepStrictEqual(first.added, at('ringLeft', ring));
 		assert.deepStrictEqual(second.added, at('ringRight', ring));
-		assert.deepStrictEqual(third.added, at('ringLeft', ring));
-		assert.deepStrictEqual(third.removed, [at('ringLeft', ring)]);
+		assert.deepStrictEqual(ringChoices('pf1e', [], ring), []);
+		assert.deepStrictEqual(ringChoices('pf1e', first.equipment, ring), []);
+		assert.strictEqual(equipChangesNothing('pf1e', first.equipment, ring, 1, null, true, null), true);
+	});
+
+	it('puts a ring in the ring slot chosen when both are full', () =>
+	{
+		const full = [at('ringLeft', silverRing), at('ringRight', ring)];
+		const others = [at('ringLeft', silverRing), at('ringRight', silverRing)];
+		const left = plan(full, ring, 2, null, 'pf1e', 'left');
+		const moved = plan(full, ring, 1, null, 'pf1e', 'left');
+
+		assert.deepStrictEqual(ringChoices('pf1e', full, ring), ['left', 'right']);
+		assert.deepStrictEqual(ringChoices('pf1e', full, dagger), []);
+		assert.strictEqual(planEquip('pf1e', others, items, ring, 1, null, true), 'ringSlotsFull');
+		assert.strictEqual(equipChangesNothing('pf1e', others, ring, 1, null, true, null), false);
+		assert.strictEqual(plan(full, ring, 2, null).added, null);
+		assert.deepStrictEqual(left.added, at('ringLeft', ring));
+		assert.deepStrictEqual(left.removed, [at('ringLeft', silverRing)]);
+		assert.deepStrictEqual(moved.equipment, [at('ringLeft', ring)]);
+		assert.strictEqual(plan(full, ring, 2, null, 'pf1e', 'right').added, null);
 	});
 
 	it('lets a character hold one shield, a buckler included', () =>

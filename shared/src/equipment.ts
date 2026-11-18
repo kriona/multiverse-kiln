@@ -8,7 +8,7 @@
  * the appearance slots will reuse; the rules for hands and shields are only for the stats slots
  */
 import { defineMessages, type MessageDescriptor } from './localization.js';
-import { PF1E_DEFAULT_ITEM_EQUIPS, PF1E_RING_SLOT_NAMES, PF1E_SHIELD_TYPES, PF1E_TAIL_LOCATION, PF1E_WORN_LOCATION_NAMES, PF1E_WORN_LOCATIONS, PF1E_WORN_SLOTS } from './rulesets/pf1e/equipment.js';
+import { PF1E_DEFAULT_ITEM_EQUIPS, PF1E_RING_LOCATION, PF1E_RING_SLOT_NAMES, PF1E_SHIELD_TYPES, PF1E_TAIL_LOCATION, PF1E_WORN_LOCATION_NAMES, PF1E_WORN_LOCATIONS, PF1E_WORN_SLOTS } from './rulesets/pf1e/equipment.js';
 import { SF1E_DEFAULT_ITEM_EQUIPS, SF1E_WORN_LOCATION_NAMES, SF1E_WORN_LOCATIONS, SF1E_WORN_SLOTS } from './rulesets/sf1e/equipment.js';
 import type { Ruleset } from './universes.js';
 
@@ -33,6 +33,14 @@ export type HeldEquips = typeof HELD_EQUIPS[number];
 export const EQUIP_HANDS = ['main', 'off', 'both'] as const;
 
 export type EquipHand = typeof EQUIP_HANDS[number];
+
+/**
+ * Which ring slot a ring is equipped in when both are full: the first of the ruleset's ring slots (the
+ * left ring) or the second (the right ring)
+ */
+export const EQUIP_RINGS = ['left', 'right'] as const;
+
+export type EquipRing = typeof EQUIP_RINGS[number];
 
 /**
  * A ruleset's equipment
@@ -65,6 +73,12 @@ export interface RulesetEquipment
 	tailLocation: string | null;
 
 	/**
+	 * The worn place whose two slots are the left and right ring (EQUIP_RINGS), or null for a ruleset
+	 * without one
+	 */
+	ringLocation: string | null;
+
+	/**
 	 * The item types that make an item a shield; empty for a ruleset without shields
 	 */
 	shieldTypes: readonly string[];
@@ -80,6 +94,7 @@ export const RULESET_EQUIPMENT: Record<Ruleset, RulesetEquipment> = {
 		locationNames: PF1E_WORN_LOCATION_NAMES,
 		extraSlotNames: PF1E_RING_SLOT_NAMES,
 		tailLocation: PF1E_TAIL_LOCATION,
+		ringLocation: PF1E_RING_LOCATION,
 		shieldTypes: PF1E_SHIELD_TYPES
 	},
 	sf1e: {
@@ -88,6 +103,7 @@ export const RULESET_EQUIPMENT: Record<Ruleset, RulesetEquipment> = {
 		locationNames: SF1E_WORN_LOCATION_NAMES,
 		extraSlotNames: {},
 		tailLocation: null,
+		ringLocation: null,
 		shieldTypes: []
 	}
 };
@@ -187,8 +203,9 @@ export interface EquipmentItem
  * - notEquippable: it equips nowhere, or the hands asked for don't suit it (both hands for an item that
  *   isn't a weapon, a hand for a worn item)
  * - noTail: it is worn on the tail, and the character's race has none
+ * - ringSlotsFull: it is a ring, both ring slots hold other items, and no ring slot was chosen
  */
-export type EquipRefusal = 'notEquippable' | 'noTail';
+export type EquipRefusal = 'notEquippable' | 'noTail' | 'ringSlotsFull';
 
 /**
  * What equipping an item does: the character's equipment afterward, what it unequips and what it adds
@@ -364,6 +381,29 @@ export function handChoices(item: Pick<EquipmentItem, 'category' | 'equips'>): E
 }
 
 /**
+ * Which ring slots an item can be equipped in, as the item menu offers them
+ *
+ * @param ruleset The ruleset
+ * @param equipment The character's equipment
+ * @param item The item
+ * @return Both ring slots for a ring while both are full; none for a ring while one is free, which takes
+ * it, and for an item that isn't a ring
+ */
+export function ringChoices(ruleset: Ruleset, equipment: readonly EquippedItem[], item: Pick<EquipmentItem, 'equips'>): EquipRing[]
+{
+	const { wornSlots, ringLocation } = RULESET_EQUIPMENT[ruleset];
+
+	if ((ringLocation === null) || (item.equips !== ringLocation))
+	{
+		return([]);
+	}
+
+	const full = wornSlots[ringLocation].every((slot) => equipment.some((equipped) => (equipped.slot === slot)));
+
+	return((full ? [...EQUIP_RINGS] : []));
+}
+
+/**
  * How many of an item are equipped
  *
  * @param equipment The character's equipment
@@ -376,19 +416,41 @@ export function equippedCount(equipment: readonly EquippedItem[], itemId: number
 }
 
 /**
- * The slot equipping an item goes in: a worn item's first free slot of its place, or its first when all
- * are full (a ring goes on the left when both are full), or the main or off hand
+ * Where equipping an item goes
+ */
+interface EquipTarget
+{
+	slot: string;
+	bothHands: boolean;
+
+	/**
+	 * Whether the item being in any slot of its worn place counts as being where it was asked to go: true
+	 * for a worn item when no ring slot was chosen
+	 */
+	anySlotOfPlace: boolean;
+}
+
+/**
+ * The slot equipping an item goes in: the ring slot chosen, a worn item's first free slot of its place,
+ * or one holding the item when none are free, or the first when they hold other items (a ring then needs
+ * a ring slot chosen), or the main or off hand
  *
  * @param ruleset The ruleset
  * @param equipment The character's equipment
  * @param item The item
  * @param hand The hands asked for, or null for a worn item
  * @param hasTail Whether the character's race has a tail
- * @return The slot, whether the item is held in both hands, or why it can't be equipped
+ * @param ring The ring slot chosen for a ring, or null to take a free one
+ * @return Where it goes, or why it can't be equipped
  */
-function targetOf(ruleset: Ruleset, equipment: readonly EquippedItem[], item: EquipmentItem, hand: EquipHand | null, hasTail: boolean): { slot: string; bothHands: boolean } | EquipRefusal
+function targetOf(ruleset: Ruleset, equipment: readonly EquippedItem[], item: EquipmentItem, hand: EquipHand | null, hasTail: boolean, ring: EquipRing | null): EquipTarget | EquipRefusal
 {
-	const { wornSlots, tailLocation } = RULESET_EQUIPMENT[ruleset];
+	const { wornSlots, tailLocation, ringLocation } = RULESET_EQUIPMENT[ruleset];
+
+	if ((ring !== null) && (item.equips !== ringLocation))
+	{
+		return('notEquippable');
+	}
 
 	switch (item.equips)
 	{
@@ -403,7 +465,8 @@ function targetOf(ruleset: Ruleset, equipment: readonly EquippedItem[], item: Eq
 
 			return({
 				slot: ((hand === 'off') ? 'offHand' : 'mainHand'),
-				bothHands: (hand === 'both')
+				bothHands: (hand === 'both'),
+				anySlotOfPlace: false
 			});
 
 		case 'twoHands':
@@ -414,7 +477,8 @@ function targetOf(ruleset: Ruleset, equipment: readonly EquippedItem[], item: Eq
 
 			return({
 				slot: 'mainHand',
-				bothHands: true
+				bothHands: true,
+				anySlotOfPlace: false
 			});
 	}
 
@@ -429,11 +493,27 @@ function targetOf(ruleset: Ruleset, equipment: readonly EquippedItem[], item: Eq
 	}
 
 	const slots = wornSlots[item.equips];
-	const free = slots.find((slot) => !equipment.some((equipped) => (equipped.slot === slot)));
+
+	if (ring !== null)
+	{
+		return({
+			slot: slots[EQUIP_RINGS.indexOf(ring)],
+			bothHands: false,
+			anySlotOfPlace: false
+		});
+	}
+
+	const slot = (slots.find((each) => !equipment.some((equipped) => (equipped.slot === each))) ?? slots.find((each) => equipment.some((equipped) => ((equipped.slot === each) && (equipped.itemId === item.id)))));
+
+	if ((slot === undefined) && (item.equips === ringLocation))
+	{
+		return('ringSlotsFull');
+	}
 
 	return({
-		slot: (free ?? slots[0]),
-		bothHands: false
+		slot: (slot ?? slots[0]),
+		bothHands: false,
+		anySlotOfPlace: true
 	});
 }
 
@@ -449,12 +529,52 @@ function takenSlots(equipped: Pick<EquippedItem, 'slot' | 'bothHands'>): string[
 }
 
 /**
+ * Whether an item is already equipped as asked: one of it is in the slot equipping it goes in, held the
+ * same way, or every one the character carries is equipped and a worn one is in a slot of its place,
+ * when no ring slot was chosen
+ *
+ * @param ruleset The ruleset
+ * @param equipment The character's equipment
+ * @param item The item
+ * @param quantity How many of the item the character carries
+ * @param target Where equipping it goes
+ * @return Whether it is already equipped as asked
+ */
+function isEquippedAsAsked(ruleset: Ruleset, equipment: readonly EquippedItem[], item: EquipmentItem, quantity: number, target: EquipTarget): boolean
+{
+	const own = equipment.filter((equipped) => (equipped.itemId === item.id));
+	const allEquipped = (own.length >= quantity);
+
+	return(own.some((equipped) => ((equipped.bothHands === target.bothHands) && ((equipped.slot === target.slot) || (target.anySlotOfPlace && allEquipped && fitsSlot(ruleset, item.equips, equipped.slot))))));
+}
+
+/**
+ * Whether equipping an item changes nothing because it is already equipped as asked, as planEquip()
+ * decides. False when it can't be equipped as asked
+ *
+ * @param ruleset The ruleset
+ * @param equipment The character's equipment
+ * @param item The item
+ * @param quantity How many of the item the character carries
+ * @param hand The hands to hold it in, or null for a worn item
+ * @param hasTail Whether the character's race has a tail
+ * @param ring The ring slot to put a ring in, or null to take a free one
+ * @return Whether equipping it changes nothing
+ */
+export function equipChangesNothing(ruleset: Ruleset, equipment: readonly EquippedItem[], item: EquipmentItem, quantity: number, hand: EquipHand | null, hasTail: boolean, ring: EquipRing | null): boolean
+{
+	const target = targetOf(ruleset, equipment, item, hand, hasTail, ring);
+
+	return(((typeof target !== 'string') && isEquippedAsAsked(ruleset, equipment, item, quantity, target)));
+}
+
+/**
  * What equipping an item does. What is in the slots it takes is unequipped, without asking: a two-handed
  * item unequips both hands, a one-handed item unequips a two-handed one, and a shield unequips the
  * character's other shield, a buckler on the off arm included. A ring goes in the first free ring slot,
- * or the left one's when both are full. When every one of the item the character carries is already
- * equipped, one moves: the one equipped first in unequipOrder()'s order. An item already equipped as
- * asked stays where it is
+ * or the ring slot chosen, which is needed when both are full. When every one of the item the character
+ * carries is already equipped, one moves: the one equipped first in unequipOrder()'s order. An item
+ * already equipped as asked (equipChangesNothing()) stays where it is
  *
  * @param ruleset The ruleset
  * @param equipment The character's equipment
@@ -463,22 +583,19 @@ function takenSlots(equipped: Pick<EquippedItem, 'slot' | 'bothHands'>): string[
  * @param quantity How many of the item the character carries
  * @param hand The hands to hold it in, or null for a worn item (and allowed for a two-handed one)
  * @param hasTail Whether the character's race has a tail
+ * @param ring The ring slot to put a ring in (ringChoices()), or null to take a free one
  * @return What it does, or why it can't be equipped
  */
-export function planEquip(ruleset: Ruleset, equipment: readonly EquippedItem[], items: ReadonlyMap<number, EquipmentItem>, item: EquipmentItem, quantity: number, hand: EquipHand | null, hasTail: boolean): EquipPlan | EquipRefusal
+export function planEquip(ruleset: Ruleset, equipment: readonly EquippedItem[], items: ReadonlyMap<number, EquipmentItem>, item: EquipmentItem, quantity: number, hand: EquipHand | null, hasTail: boolean, ring: EquipRing | null = null): EquipPlan | EquipRefusal
 {
-	const target = targetOf(ruleset, equipment, item, hand, hasTail);
+	const target = targetOf(ruleset, equipment, item, hand, hasTail, ring);
 
 	if (typeof target === 'string')
 	{
 		return(target);
 	}
 
-	const own = equipment.filter((equipped) => (equipped.itemId === item.id));
-	const allEquipped = (own.length >= quantity);
-	const alreadyThere = own.some((equipped) => ((equipped.bothHands === target.bothHands) && (((item.equips !== 'oneHand') && (item.equips !== 'twoHands')) ? fitsSlot(ruleset, item.equips, equipped.slot) : (equipped.slot === target.slot))));
-
-	if (allEquipped && alreadyThere)
+	if (isEquippedAsAsked(ruleset, equipment, item, quantity, target))
 	{
 		return({
 			equipment: [...equipment],
