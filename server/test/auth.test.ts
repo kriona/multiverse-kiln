@@ -529,7 +529,12 @@ describe('auth routes', () =>
 			const stored = (await pool.query<{ password_hash: string }>('SELECT password_hash FROM players WHERE id = $1', [player.id])).rows[0].password_hash;
 
 			assert.notStrictEqual(stored, oldHash);
-			assert.match(stored, /^\$argon2id\$v=19\$m=19456,p=1,t=2\$/);
+			assert.ok(stored.startsWith('$argon2id$v=19$'), stored);
+			assert.strictEqual(argon2.needsRehash(stored, {
+				memoryCost: 19456,
+				timeCost: 2,
+				parallelism: 1
+			}), false, stored);
 			assert.deepStrictEqual(await eventKinds('ada'), ['loggedIn', 'passwordRehashed']);
 		});
 
