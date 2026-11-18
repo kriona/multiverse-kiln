@@ -57,7 +57,7 @@ export const formMessages = defineMessages({
 	filterAny: {
 		id: 'filter.any',
 		defaultMessage: 'Any',
-		description: 'Choice of a filter that shows everything: on the editor\'s Items, Tilesets or Character List tab (such as items of every type, tiles whether passable or not, or characters of every race), or on the admin pages\' lists of sessions and players (such as players whether server admins or not)'
+		description: 'Choice of a filter that shows everything: on the editor\'s Items, Tilesets or Character List tab or in the dialog for choosing items (such as items of every kind or type, tiles whether passable or not, or characters of every race), or on the admin pages\' lists of sessions and players (such as players whether server admins or not)'
 	},
 	filterYes: {
 		id: 'filter.yes',

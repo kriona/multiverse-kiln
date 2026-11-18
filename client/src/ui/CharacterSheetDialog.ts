@@ -18,7 +18,7 @@ import { unequipNote } from './equipmentText';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { giveItemDialog } from './GiveItemDialog';
-import { inspectItem } from './ItemInspectDialog';
+import { INSPECT_MESSAGES, inspectItem } from './ItemInspectDialog';
 import { CHARACTER_ITEMS_EVENT } from './itemNotices';
 import { createItemIcon, itemDescription, itemName, slotText } from './itemNames';
 import { describeLeaving, showLeaveButton, takeOutOfGroup } from './leavingGroup';
@@ -1525,11 +1525,7 @@ export class CharacterSheetDialog
 	{
 		const actions: MenuAction[] = [];
 		const inspect: MenuAction = {
-			label: t({
-				id: 'characterSheet.inspect',
-				defaultMessage: 'Inspect',
-				description: 'Item in the menu beside an item on a character\'s sheet, and button beside an item in item selection, that opens a dialog showing what the item is: its kind, types, book, where it equips and description'
-			}),
+			label: t(INSPECT_MESSAGES.inspect),
 			icon: inspectIcon,
 			run: () =>
 			{

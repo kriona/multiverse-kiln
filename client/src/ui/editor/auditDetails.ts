@@ -2,7 +2,7 @@ import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES,
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
-import { itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypeName } from '../itemNames';
+import { ITEM_SETTING_NAMES, itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
 import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
@@ -13,9 +13,10 @@ import { FAERIE_TIME_MESSAGE, FOG_OF_WAR_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
 /**
- * Each setting's name in the Audit tab's list of what a save changed: the name its field has in the editor
+ * Each setting's name in the Audit tab's list of what a save changed, but the item settings in
+ * ITEM_SETTING_NAMES: the name its field has in the editor
  */
-const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defineMessages({
+const EDITOR_FIELD_NAMES = defineMessages({
 	name: {
 		id: 'form.name',
 		defaultMessage: 'Name',
@@ -206,21 +207,6 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Existing characters keep playing while disabled',
 		description: 'Names a race\'s or class\'s setting in the list of what a save changed, on the editor\'s Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can\'t play until it is enabled again (no). Chosen in the dialog the editor\'s Save opens when disabling a race or class characters are'
 	},
-	category: {
-		id: 'editor.items.category',
-		defaultMessage: 'Kind',
-		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, and of the filter for it on the Items tab and in the dialog for choosing items; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	types: {
-		id: 'editor.item.types',
-		defaultMessage: 'Types',
-		description: 'Heading of the item editor\'s checkboxes for an item\'s types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	equips: {
-		id: 'editor.item.equips',
-		defaultMessage: 'Equips to',
-		description: 'Label of the item editor\'s field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
 	abilityModifiers: {
 		id: 'editor.race.abilityModifiers',
 		defaultMessage: 'Ability modifiers',
@@ -367,6 +353,14 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		description: 'Names an area\'s neighboring area (walked across without a link) in the list of what a save changed, on the editor\'s Audit tab; its value says which side and which area, e.g. "East: Forest"'
 	}
 });
+
+/**
+ * Each setting's name in the Audit tab's list of what a save changed: the name its field has in the editor
+ */
+const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = {
+	...EDITOR_FIELD_NAMES,
+	...ITEM_SETTING_NAMES
+};
 
 /**
  * How the Audit tab says what a save did to each kind of thing. {name} is the thing's name and {count}

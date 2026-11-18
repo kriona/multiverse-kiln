@@ -44,12 +44,13 @@ An engine for making multiplayer browser-based role-playing games.
   src/app.config.ts  define room types, HTTP routes, Express middleware
   src/transport.ts   HTTPS/WSS transport
   src/rooms/         Room classes (lifecycle hooks, message handlers, tick loop): SessionRoom (one, global: tells
-                     every window who its player is, and when its session ends), LobbyRoom (one per universe),
+                     every window who its player is, when its session ends, and when its player's characters'
+                     items change or they are given items), LobbyRoom (one per universe),
                      GameRoom (one per group, made from the database when a member returns, with the group's chat) and EditorRoom (one
                      per universe: who has its editor open, the editors' chat, and what each window saves). Every room
                      finds its clients' players from their session cookie in onAuth. The two area rooms share
                      AreaPlayers (movement, areas, who sees whom, area links) and AreaCache
-  src/players/       which login sessions have windows connected, changes to characters and groups, players who
+  src/players/       which login sessions have windows connected, changes to characters, their items and groups, players who
                      may no longer play a universe, and players who are no longer server admins, published to the rooms (in memory; accounts, sessions,
                      characters, groups and roles are in the database)
   src/world/         changes the world editor makes, published to the rooms playing in that world, what changes

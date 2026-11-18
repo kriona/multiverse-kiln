@@ -21,22 +21,22 @@ export const PF1E_RULEBOOK_NAMES: Record<Pf1eRulebook, MessageDescriptor> = defi
 	core: {
 		id: 'pf1e.rulebook.core',
 		defaultMessage: 'Core Rulebook',
-		description: 'Name of the main rulebook of Pathfinder First Edition, on the editor\'s Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book\'s official translated edition where there is one, such as the German "Grundregelwerk"'
+		description: 'Name of the main rulebook of Pathfinder First Edition, on the editor\'s Ruleset tab, as the title of its Contents dialog, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book\'s official translated edition where there is one, such as the German "Grundregelwerk"'
 	},
 	apg: {
 		id: 'pf1e.rulebook.apg',
 		defaultMessage: 'Advanced Player\'s Guide',
-		description: 'Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor\'s Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book\'s official translated edition where there is one'
+		description: 'Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor\'s Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book\'s official translated edition where there is one'
 	},
 	arg: {
 		id: 'pf1e.rulebook.arg',
 		defaultMessage: 'Advanced Race Guide',
-		description: 'Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor\'s Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book\'s official translated edition where there is one'
+		description: 'Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor\'s Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book\'s official translated edition where there is one'
 	},
 	acg: {
 		id: 'pf1e.rulebook.acg',
 		defaultMessage: 'Advanced Class Guide',
-		description: 'Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor\'s Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book\'s official translated edition where there is one'
+		description: 'Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor\'s Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book\'s official translated edition where there is one'
 	}
 });
 

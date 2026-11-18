@@ -8,7 +8,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { inspectItem } from '../ItemInspectDialog';
+import { INSPECT_MESSAGES, inspectItem } from '../ItemInspectDialog';
 import { createItemIcon, itemDescription, itemName, itemTypesText } from '../itemNames';
 import { editorMessages } from './editorMessages';
 import { showCategoryOptions, showTypeOptions } from './itemFilters';
@@ -317,11 +317,7 @@ export class ItemSelectDialog
 		choice.className = 'item-select-choice';
 		inspectButton.type = 'button';
 		inspectButton.className = 'secondary';
-		setButtonLabel(inspectButton, inspectIcon, t({
-			id: 'characterSheet.inspect',
-			defaultMessage: 'Inspect',
-			description: 'Item in the menu beside an item on a character\'s sheet, and button beside an item in item selection, that opens a dialog showing what the item is: its kind, types, book, where it equips and description'
-		}));
+		setButtonLabel(inspectButton, inspectIcon, t(INSPECT_MESSAGES.inspect));
 		inspectButton.setAttribute('aria-label', t({
 			id: 'editor.itemSelect.inspectItem',
 			defaultMessage: 'Inspect {item}',

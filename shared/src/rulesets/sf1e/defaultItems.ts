@@ -1939,684 +1939,684 @@ export type Sf1eDefaultItemKey = keyof typeof SF1E_DEFAULT_ITEM_NAMES;
 
 /**
  * The descriptions of the default items, by the weapon or armor they describe: the models of one weapon
- * share its description. Shown in the item editor, when choosing items, on a character's sheet and on the
- * Audit tab
+ * share its description. Shown in the item editor, when choosing items, on a character's sheet, in the
+ * Inspect dialog and on the Audit tab
  */
 const DESCRIPTIONS = defineMessages({
 	survival_knife: {
 		id: 'itemDescription.sf1e.survival_knife',
 		defaultMessage: 'A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion.',
-		description: 'Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	tactical_knife: {
 		id: 'itemDescription.sf1e.tactical_knife',
 		defaultMessage: 'A balanced combat knife of hardened alloy, made for soldiers who want a blade that is quick to draw and hard to break.',
-		description: 'Description of the tactical knife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the tactical knife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	baton: {
 		id: 'itemDescription.sf1e.baton',
 		defaultMessage: 'A short, weighted club of the kind guards and police carry, for knocking foes down without killing them.',
-		description: 'Description of every model of baton, such as the tactical baton, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of baton, such as the tactical baton, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	battleglove: {
 		id: 'itemDescription.sf1e.battleglove',
 		defaultMessage: 'An armored glove that makes a punch hit like a hammer. Better models drive the blow with servos, energy or gravity.',
-		description: 'Description of every model of battleglove, such as the cestus battleglove, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of battleglove, such as the cestus battleglove, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	club: {
 		id: 'itemDescription.sf1e.club',
 		defaultMessage: 'A plain length of wood, pipe or bone swung to bludgeon, found or made almost anywhere.',
-		description: 'Description of the club, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the club, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dagger: {
 		id: 'itemDescription.sf1e.dagger',
 		defaultMessage: 'A short blade honed to a far finer edge than any steel can hold, which slips through armor.',
-		description: 'Description of every model of dagger, such as the ultrathin dagger, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of dagger, such as the ultrathin dagger, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dueling_sword: {
 		id: 'itemDescription.sf1e.dueling_sword',
 		defaultMessage: 'A light, slender sword for quick thrusts and parries, favored by duelists and officers.',
-		description: 'Description of every model of dueling sword, such as the tactical dueling sword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of dueling sword, such as the tactical dueling sword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	incapacitator: {
 		id: 'itemDescription.sf1e.incapacitator',
 		defaultMessage: 'A baton whose tip releases a charge that numbs nerves, for subduing someone without lasting harm.',
-		description: 'Description of the incapacitator, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the incapacitator, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	peacemaker: {
 		id: 'itemDescription.sf1e.peacemaker',
 		defaultMessage: 'A heavy riot baton that stuns with each blow, used by peacekeepers to end fights quickly.',
-		description: 'Description of the peacemaker, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the peacemaker, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	spear: {
 		id: 'itemDescription.sf1e.spear',
 		defaultMessage: 'A long shaft with a sharp head, held in two hands to keep foes at a distance.',
-		description: 'Description of every model of spear, such as the tactical spear, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of spear, such as the tactical spear, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	basic_staff: {
 		id: 'itemDescription.sf1e.basic_staff',
 		defaultMessage: 'A long fighting staff of sturdy alloy, carbon or solid light, swung in two hands to strike and block.',
-		description: 'Description of every model of staff, such as the battle staff, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of staff, such as the battle staff, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	cryopike: {
 		id: 'itemDescription.sf1e.cryopike',
 		defaultMessage: 'A pike whose head is chilled far below freezing, so each thrust leaves frost and numbing cold behind.',
-		description: 'Description of every model of cryopike, such as the tactical cryopike, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of cryopike, such as the tactical cryopike, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	curve_blade: {
 		id: 'itemDescription.sf1e.curve_blade',
 		defaultMessage: 'A long, curving two-handed sword that cuts in wide, flowing arcs.',
-		description: 'Description of every model of curve blade, such as the carbon steel curve blade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of curve blade, such as the carbon steel curve blade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	devastation_blade: {
 		id: 'itemDescription.sf1e.devastation_blade',
 		defaultMessage: 'A massive, jagged sword built by an ancient cult, whose strikes tear at the life of whatever they wound.',
-		description: 'Description of every model of devastation blade, such as the wrack devastation blade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of devastation blade, such as the wrack devastation blade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	doshko: {
 		id: 'itemDescription.sf1e.doshko',
 		defaultMessage: 'The vesk\'s traditional war polearm: a long haft ending in a heavy, cleaver-like blade.',
-		description: 'Description of every model of doshko, such as the tactical doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of doshko, such as the tactical doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	fangblade: {
 		id: 'itemDescription.sf1e.fangblade',
 		defaultMessage: 'A sword whose edge is a row of serrated teeth, made to tear flesh and leave bleeding wounds.',
-		description: 'Description of the fangblade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the fangblade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flame_doshko: {
 		id: 'itemDescription.sf1e.flame_doshko',
 		defaultMessage: 'A doshko whose blade is wreathed in fire, setting its targets alight.',
-		description: 'Description of every model of flame doshko, such as the ember flame doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of flame doshko, such as the ember flame doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	grindblade: {
 		id: 'itemDescription.sf1e.grindblade',
 		defaultMessage: 'A sword whose edge is a whirring saw chain that chews through armor.',
-		description: 'Description of the grindblade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the grindblade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	hammer: {
 		id: 'itemDescription.sf1e.hammer',
 		defaultMessage: 'A war hammer with a dense head that crushes armor. Better models add thrusters or gravity to each blow.',
-		description: 'Description of every model of hammer, such as the assault hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of hammer, such as the assault hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	injection_glove: {
 		id: 'itemDescription.sf1e.injection_glove',
 		defaultMessage: 'A glove with a needle in its palm that injects whatever drug, medicine or poison is loaded into it.',
-		description: 'Description of the injection glove, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the injection glove, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	longsword: {
 		id: 'itemDescription.sf1e.longsword',
 		defaultMessage: 'A straight, double-edged sword, the classic weapon of knights and soldiers, forged with ever finer edges in its better models.',
-		description: 'Description of every model of longsword, such as the tactical longsword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of longsword, such as the tactical longsword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	monowhip: {
 		id: 'itemDescription.sf1e.monowhip',
 		defaultMessage: 'A whip of a single wire so thin it is nearly invisible, which slices through whatever it lashes.',
-		description: 'Description of the monowhip, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the monowhip, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	pike: {
 		id: 'itemDescription.sf1e.pike',
 		defaultMessage: 'A very long spear with a reinforced head, held in two hands to strike foes before they come close.',
-		description: 'Description of every model of pike, such as the tactical pike, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of pike, such as the tactical pike, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	plasma_doshko: {
 		id: 'itemDescription.sf1e.plasma_doshko',
 		defaultMessage: 'A doshko whose blade is a field of superheated plasma that burns and shocks.',
-		description: 'Description of every model of plasma doshko, such as the red star plasma doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of plasma doshko, such as the red star plasma doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	plasma_sword: {
 		id: 'itemDescription.sf1e.plasma_sword',
 		defaultMessage: 'A hilt that projects a blade of glowing plasma, which burns and shocks what it touches.',
-		description: 'Description of every model of plasma sword, such as the tactical plasma sword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of plasma sword, such as the tactical plasma sword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	pulse_gauntlet: {
 		id: 'itemDescription.sf1e.pulse_gauntlet',
 		defaultMessage: 'A heavy gauntlet that releases a burst of sound with each punch, knocking foes off their feet.',
-		description: 'Description of every model of pulse gauntlet, such as the thunderstrike pulse gauntlet, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of pulse gauntlet, such as the thunderstrike pulse gauntlet, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	quantum_entangler: {
 		id: 'itemDescription.sf1e.quantum_entangler',
 		defaultMessage: 'A two-handed weapon that disrupts matter at its smallest scale, staggering whatever it hits.',
-		description: 'Description of every model of quantum entangler, such as the military quantum entangler, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of quantum entangler, such as the military quantum entangler, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shock_truncheon: {
 		id: 'itemDescription.sf1e.shock_truncheon',
 		defaultMessage: 'A metal club that discharges a jolt of electricity with each blow.',
-		description: 'Description of every model of shock truncheon, such as the static shock truncheon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of shock truncheon, such as the static shock truncheon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	skyfire_sword: {
 		id: 'itemDescription.sf1e.skyfire_sword',
 		defaultMessage: 'A sword made for the Skyfire Legion, whose blade glows with heat and burns as it cuts.',
-		description: 'Description of every model of skyfire sword, such as the tactical skyfire sword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of skyfire sword, such as the tactical skyfire sword, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	advanced_staff: {
 		id: 'itemDescription.sf1e.advanced_staff',
 		defaultMessage: 'A fighting staff fitted with emitters that turn aside blows aimed at its wielder.',
-		description: 'Description of every model of staff, such as the sentinel staff, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of staff, such as the sentinel staff, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	starknife: {
 		id: 'itemDescription.sf1e.starknife',
 		defaultMessage: 'A ring with four blades jutting out like the points of a star, wielded up close or thrown. It is sacred to the sun goddess Sarenrae.',
-		description: 'Description of every model of starknife, such as the tactical starknife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of starknife, such as the tactical starknife, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	swoop_hammer: {
 		id: 'itemDescription.sf1e.swoop_hammer',
 		defaultMessage: 'A huge two-handed hammer whose head has thrusters that drive it in sweeping blows.',
-		description: 'Description of every model of swoop hammer, such as the tactical swoop hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of swoop hammer, such as the tactical swoop hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	taclash: {
 		id: 'itemDescription.sf1e.taclash',
 		defaultMessage: 'A whip of tough cable that lashes foes from a step away and can trip them.',
-		description: 'Description of every model of taclash, such as the standard taclash, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of taclash, such as the standard taclash, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	arc_pistol: {
 		id: 'itemDescription.sf1e.arc_pistol',
 		defaultMessage: 'A pistol that fires an arc of electricity, which can leap to a second target nearby.',
-		description: 'Description of every model of arc pistol, such as the static arc pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of arc pistol, such as the static arc pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flame_pistol: {
 		id: 'itemDescription.sf1e.flame_pistol',
 		defaultMessage: 'A pistol that sprays a short burst of burning fuel.',
-		description: 'Description of the flame pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the flame pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	survival_flare_gun: {
 		id: 'itemDescription.sf1e.survival_flare_gun',
 		defaultMessage: 'A pistol for launching bright signal flares, which also burn when fired at a foe.',
-		description: 'Description of the survival flare gun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the survival flare gun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	gyrojet_pistol: {
 		id: 'itemDescription.sf1e.gyrojet_pistol',
 		defaultMessage: 'A pistol that fires small self-propelled rockets, which hit hard against armored foes.',
-		description: 'Description of every model of gyrojet pistol, such as the tactical gyrojet pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of gyrojet pistol, such as the tactical gyrojet pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	laser_pistol: {
 		id: 'itemDescription.sf1e.laser_pistol',
 		defaultMessage: 'A common sidearm that fires beams of focused light, burning what they hit. It runs on batteries.',
-		description: 'Description of every model of laser pistol, such as the azimuth laser pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of laser pistol, such as the azimuth laser pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	needler_pistol: {
 		id: 'itemDescription.sf1e.needler_pistol',
 		defaultMessage: 'A quiet pistol that fires darts, each of which can carry a dose of a drug or poison.',
-		description: 'Description of the needler pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the needler pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	plasma_pistol: {
 		id: 'itemDescription.sf1e.plasma_pistol',
 		defaultMessage: 'A pistol that fires bolts of superheated plasma, which burn and shock.',
-		description: 'Description of every model of plasma pistol, such as the red star plasma pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of plasma pistol, such as the red star plasma pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	pulsecaster_pistol: {
 		id: 'itemDescription.sf1e.pulsecaster_pistol',
 		defaultMessage: 'A pistol that fires pulses of electricity meant to stun rather than kill.',
-		description: 'Description of the pulsecaster pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the pulsecaster pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	semi_auto_pistol: {
 		id: 'itemDescription.sf1e.semi_auto_pistol',
 		defaultMessage: 'A dependable handgun that fires one bullet for each pull of the trigger.',
-		description: 'Description of every model of semi-auto pistol, such as the tactical semi-auto pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of semi-auto pistol, such as the tactical semi-auto pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sonic_pistol: {
 		id: 'itemDescription.sf1e.sonic_pistol',
 		defaultMessage: 'A pistol that fires a focused blast of sound that can deafen its target.',
-		description: 'Description of every model of sonic pistol, such as the thunderstrike sonic pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of sonic pistol, such as the thunderstrike sonic pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	zero_pistol: {
 		id: 'itemDescription.sf1e.zero_pistol',
 		defaultMessage: 'A pistol that fires a blast of supercooled gas, chilling its target and slowing it down.',
-		description: 'Description of every model of zero pistol, such as the frostbite-class zero pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of zero pistol, such as the frostbite-class zero pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	acid_dart_rifle: {
 		id: 'itemDescription.sf1e.acid_dart_rifle',
 		defaultMessage: 'A rifle that fires darts which burst and spray acid when they hit.',
-		description: 'Description of every model of acid dart rifle, such as the tactical acid dart rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of acid dart rifle, such as the tactical acid dart rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	arc_emitter: {
 		id: 'itemDescription.sf1e.arc_emitter',
 		defaultMessage: 'A long gun that sprays a crackling cone of electricity over everything in front of it.',
-		description: 'Description of every model of arc emitter, such as the tactical arc emitter, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of arc emitter, such as the tactical arc emitter, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	arc_rifle: {
 		id: 'itemDescription.sf1e.arc_rifle',
 		defaultMessage: 'A rifle that fires an arc of electricity, which can leap to a second target nearby.',
-		description: 'Description of every model of arc rifle, such as the static arc rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of arc rifle, such as the static arc rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	autobeam_rifle: {
 		id: 'itemDescription.sf1e.autobeam_rifle',
 		defaultMessage: 'A laser rifle that fires beams in rapid bursts, raking a whole area.',
-		description: 'Description of every model of autobeam rifle, such as the tactical autobeam rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of autobeam rifle, such as the tactical autobeam rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	autotarget_rifle: {
 		id: 'itemDescription.sf1e.autotarget_rifle',
 		defaultMessage: 'A rifle with a smart sight that finds its target for the shooter, so even the untrained can hit with it.',
-		description: 'Description of the autotarget rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the autotarget rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	combat_rifle: {
 		id: 'itemDescription.sf1e.combat_rifle',
 		defaultMessage: 'A rugged military rifle that fires heavy rounds, built to keep working in the worst conditions.',
-		description: 'Description of the combat rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the combat rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	crossbolter: {
 		id: 'itemDescription.sf1e.crossbolter',
 		defaultMessage: 'A modern crossbow that hurls heavy metal bolts with great force. The heaviest models are carried as heavy weapons.',
-		description: 'Description of every model of crossbolter, such as the tactical crossbolter, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of crossbolter, such as the tactical crossbolter, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flame_rifle: {
 		id: 'itemDescription.sf1e.flame_rifle',
 		defaultMessage: 'A rifle that sprays a line of burning fuel, setting its targets alight.',
-		description: 'Description of the flame rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the flame rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	gyrojet_rifle: {
 		id: 'itemDescription.sf1e.gyrojet_rifle',
 		defaultMessage: 'A rifle that fires small self-propelled rockets, which hit hard against armored foes.',
-		description: 'Description of every model of gyrojet rifle, such as the tactical gyrojet rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of gyrojet rifle, such as the tactical gyrojet rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	hunting_rifle: {
 		id: 'itemDescription.sf1e.hunting_rifle',
 		defaultMessage: 'A simple, accurate rifle that fires one bullet at a time, made for hunting game.',
-		description: 'Description of the hunting rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the hunting rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	laser_rifle: {
 		id: 'itemDescription.sf1e.laser_rifle',
 		defaultMessage: 'A rifle that fires beams of focused light farther and harder than a laser pistol. It runs on batteries.',
-		description: 'Description of every model of laser rifle, such as the azimuth laser rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of laser rifle, such as the azimuth laser rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	magnetar_rifle: {
 		id: 'itemDescription.sf1e.magnetar_rifle',
 		defaultMessage: 'A rifle that hurls bullets with magnetic coils, firing them in long bursts.',
-		description: 'Description of every model of magnetar rifle, such as the tactical magnetar rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of magnetar rifle, such as the tactical magnetar rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	needler_rifle: {
 		id: 'itemDescription.sf1e.needler_rifle',
 		defaultMessage: 'A quiet rifle that fires darts, each of which can carry a dose of a drug or poison.',
-		description: 'Description of the needler rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the needler rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	plasma_caster: {
 		id: 'itemDescription.sf1e.plasma_caster',
 		defaultMessage: 'A long gun that fires a beam of plasma, burning everything in a line.',
-		description: 'Description of every model of plasma caster, such as the white star plasma caster, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of plasma caster, such as the white star plasma caster, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	plasma_rifle: {
 		id: 'itemDescription.sf1e.plasma_rifle',
 		defaultMessage: 'A rifle that fires bolts of superheated plasma, which burn and shock.',
-		description: 'Description of every model of plasma rifle, such as the red star plasma rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of plasma rifle, such as the red star plasma rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	pulsecaster_rifle: {
 		id: 'itemDescription.sf1e.pulsecaster_rifle',
 		defaultMessage: 'A rifle that fires pulses of electricity meant to stun rather than kill.',
-		description: 'Description of the pulsecaster rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the pulsecaster rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	scattergun: {
 		id: 'itemDescription.sf1e.scattergun',
 		defaultMessage: 'A shotgun that fires a spray of pellets in a cone, hitting everything in front of it.',
-		description: 'Description of every model of scattergun, such as the utility scattergun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of scattergun, such as the utility scattergun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	seeker_rifle: {
 		id: 'itemDescription.sf1e.seeker_rifle',
 		defaultMessage: 'A long-range rifle with a scope that helps the shooter pick out distant targets.',
-		description: 'Description of every model of seeker rifle, such as the tactical seeker rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of seeker rifle, such as the tactical seeker rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sonic_rifle: {
 		id: 'itemDescription.sf1e.sonic_rifle',
 		defaultMessage: 'A rifle that fires a focused blast of sound that can deafen its target.',
-		description: 'Description of every model of sonic rifle, such as the thunderstrike sonic rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of sonic rifle, such as the thunderstrike sonic rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	streetsweeper: {
 		id: 'itemDescription.sf1e.streetsweeper',
 		defaultMessage: 'A riot gun that fires a wide wave of sound to knock crowds down and drive them back.',
-		description: 'Description of every model of streetsweeper, such as the thunderstrike streetsweeper, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of streetsweeper, such as the thunderstrike streetsweeper, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	zero_rifle: {
 		id: 'itemDescription.sf1e.zero_rifle',
 		defaultMessage: 'A rifle that fires a blast of supercooled gas, chilling its target and slowing it down.',
-		description: 'Description of every model of zero rifle, such as the frostbite-class zero rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of zero rifle, such as the frostbite-class zero rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	artillery_laser: {
 		id: 'itemDescription.sf1e.artillery_laser',
 		defaultMessage: 'A massive laser carried in two hands, which fires beams of light that burn through cover.',
-		description: 'Description of every model of artillery laser, such as the azimuth artillery laser, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of artillery laser, such as the azimuth artillery laser, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	autobeam_artillery: {
 		id: 'itemDescription.sf1e.autobeam_artillery',
 		defaultMessage: 'A heavy laser that fires rapid bursts of beams, sweeping a whole area.',
-		description: 'Description of every model of autobeam artillery, such as the tactical autobeam artillery, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of autobeam artillery, such as the tactical autobeam artillery, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flamethrower: {
 		id: 'itemDescription.sf1e.flamethrower',
 		defaultMessage: 'A heavy weapon fed by a tank of fuel, which sprays a wide stream of fire.',
-		description: 'Description of every model of flamethrower, such as the Ifrit-class flamethrower, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of flamethrower, such as the Ifrit-class flamethrower, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	imds_missile_launcher: {
 		id: 'itemDescription.sf1e.imds_missile_launcher',
 		defaultMessage: 'A launcher carried on the shoulder that fires guided missiles, which explode where they land.',
-		description: 'Description of the IMDS missile launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the IMDS missile launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	machine_gun: {
 		id: 'itemDescription.sf1e.machine_gun',
 		defaultMessage: 'A heavy gun that fires a stream of bullets, raking a whole area.',
-		description: 'Description of every model of machine gun, such as the squad machine gun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of machine gun, such as the squad machine gun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	nil_grenade_launcher: {
 		id: 'itemDescription.sf1e.nil_grenade_launcher',
 		defaultMessage: 'A weapon that lobs grenades much farther than they can be thrown.',
-		description: 'Description of every model of NIL grenade launcher, such as the merc NIL grenade launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of NIL grenade launcher, such as the merc NIL grenade launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	plasma_cannon: {
 		id: 'itemDescription.sf1e.plasma_cannon',
 		defaultMessage: 'A heavy gun that fires a line of superheated plasma, which burns and shocks.',
-		description: 'Description of every model of plasma cannon, such as the red star plasma cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of plasma cannon, such as the red star plasma cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	reaction_cannon: {
 		id: 'itemDescription.sf1e.reaction_cannon',
 		defaultMessage: 'A heavy gun that fires large shells with a kick that can knock its user back.',
-		description: 'Description of every model of reaction cannon, such as the light reaction cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of reaction cannon, such as the light reaction cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	screamer: {
 		id: 'itemDescription.sf1e.screamer',
 		defaultMessage: 'A heavy weapon that unleashes a deafening blast of sound over everything in front of it.',
-		description: 'Description of every model of screamer, such as the thunderstrike screamer, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of screamer, such as the thunderstrike screamer, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shock_caster: {
 		id: 'itemDescription.sf1e.shock_caster',
 		defaultMessage: 'A heavy weapon that fires a line of electricity, shocking everything in its path.',
-		description: 'Description of every model of shock caster, such as the static shock caster, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of shock caster, such as the static shock caster, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	stellar_cannon: {
 		id: 'itemDescription.sf1e.stellar_cannon',
 		defaultMessage: 'A heavy gun that fires bursts of concentrated stellar energy, which burn and can blind.',
-		description: 'Description of every model of stellar cannon, such as the light stellar cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of stellar cannon, such as the light stellar cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	x_gen_gun: {
 		id: 'itemDescription.sf1e.x_gen_gun',
 		defaultMessage: 'A heavy gun with spinning barrels that fires bullets at a furious rate.',
-		description: 'Description of every model of X-gen gun, such as the tactical X-gen gun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of X-gen gun, such as the tactical X-gen gun, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	zero_cannon: {
 		id: 'itemDescription.sf1e.zero_cannon',
 		defaultMessage: 'A heavy gun that fires a blast of supercooled gas, freezing what it hits.',
-		description: 'Description of every model of zero cannon, such as the tactical zero cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of zero cannon, such as the tactical zero cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shirren_eye_rifle: {
 		id: 'itemDescription.sf1e.shirren_eye_rifle',
 		defaultMessage: 'A long sniper rifle designed by the shirren, deadly from great distances.',
-		description: 'Description of every model of shirren-eye rifle, such as the tactical shirren-eye rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of shirren-eye rifle, such as the tactical shirren-eye rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	cryo_grenade: {
 		id: 'itemDescription.sf1e.cryo_grenade',
 		defaultMessage: 'A grenade that bursts into a cloud of freezing cold, chilling everyone nearby.',
-		description: 'Description of every model of cryo grenade, such as the cryo grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of cryo grenade, such as the cryo grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flash_grenade: {
 		id: 'itemDescription.sf1e.flash_grenade',
 		defaultMessage: 'A grenade that bursts into a blinding flash of light.',
-		description: 'Description of every model of flash grenade, such as the flash grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of flash grenade, such as the flash grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	frag_grenade: {
 		id: 'itemDescription.sf1e.frag_grenade',
 		defaultMessage: 'A grenade that explodes into a burst of sharp shrapnel.',
-		description: 'Description of every model of frag grenade, such as the frag grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of frag grenade, such as the frag grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	incendiary_grenade: {
 		id: 'itemDescription.sf1e.incendiary_grenade',
 		defaultMessage: 'A grenade that bursts into flames, setting everyone nearby alight.',
-		description: 'Description of every model of incendiary grenade, such as the incendiary grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of incendiary grenade, such as the incendiary grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	screamer_grenade: {
 		id: 'itemDescription.sf1e.screamer_grenade',
 		defaultMessage: 'A grenade that bursts with a deafening shriek of sound.',
-		description: 'Description of every model of screamer grenade, such as the screamer grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of screamer grenade, such as the screamer grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shock_grenade: {
 		id: 'itemDescription.sf1e.shock_grenade',
 		defaultMessage: 'A grenade that releases a burst of electricity, shocking everyone nearby.',
-		description: 'Description of every model of shock grenade, such as the shock grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of shock grenade, such as the shock grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	smoke_grenade: {
 		id: 'itemDescription.sf1e.smoke_grenade',
 		defaultMessage: 'A grenade that fills the area with thick smoke, hiding anyone inside it.',
-		description: 'Description of the smoke grenade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the smoke grenade, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	stickybomb_grenade: {
 		id: 'itemDescription.sf1e.stickybomb_grenade',
 		defaultMessage: 'A grenade that bursts into a spray of sticky goo, gluing anyone nearby in place.',
-		description: 'Description of every model of stickybomb grenade, such as the stickybomb grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of stickybomb grenade, such as the stickybomb grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	bow: {
 		id: 'itemDescription.sf1e.bow',
 		defaultMessage: 'A bow of modern materials that shoots arrows, a weapon of hunters and of worlds without guns.',
-		description: 'Description of the bow, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the bow, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	carbonedge_shuriken: {
 		id: 'itemDescription.sf1e.carbonedge_shuriken',
 		defaultMessage: 'A small, sharp throwing star with carbon edges.',
-		description: 'Description of the carbonedge shuriken, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the carbonedge shuriken, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	nyfiber_net: {
 		id: 'itemDescription.sf1e.nyfiber_net',
 		defaultMessage: 'A net of tough fiber that is thrown to entangle a foe.',
-		description: 'Description of the nyfiber net, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the nyfiber net, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	arrows: {
 		id: 'itemDescription.sf1e.arrows',
 		defaultMessage: 'Arrows for a bow.',
-		description: 'Description of the arrows, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the arrows, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	darts: {
 		id: 'itemDescription.sf1e.darts',
 		defaultMessage: 'Darts for needler pistols, needler rifles and acid dart rifles.',
-		description: 'Description of the darts, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the darts, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flares: {
 		id: 'itemDescription.sf1e.flares',
 		defaultMessage: 'Flares for a survival flare gun.',
-		description: 'Description of the flares, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the flares, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	battery: {
 		id: 'itemDescription.sf1e.battery',
 		defaultMessage: 'A rechargeable battery that powers energy weapons and many devices.',
-		description: 'Description of the battery, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the battery, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	high_capacity_battery: {
 		id: 'itemDescription.sf1e.high_capacity_battery',
 		defaultMessage: 'A battery that holds more charges than a standard one, for powerful energy weapons and devices.',
-		description: 'Description of every model of battery, such as the high-capacity battery, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of battery, such as the high-capacity battery, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	small_arm_rounds: {
 		id: 'itemDescription.sf1e.small_arm_rounds',
 		defaultMessage: 'Bullets for pistols and other small arms.',
-		description: 'Description of the small arm rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the small arm rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	longarm_and_sniper_rounds: {
 		id: 'itemDescription.sf1e.longarm_and_sniper_rounds',
 		defaultMessage: 'Bullets for rifles and sniper rifles.',
-		description: 'Description of the longarm and sniper rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the longarm and sniper rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_rounds: {
 		id: 'itemDescription.sf1e.heavy_rounds',
 		defaultMessage: 'Large bullets for machine guns and other heavy weapons.',
-		description: 'Description of the heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	explosive_heavy_rounds: {
 		id: 'itemDescription.sf1e.explosive_heavy_rounds',
 		defaultMessage: 'Large bullets for heavy weapons that explode where they hit.',
-		description: 'Description of the explosive heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the explosive heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	scattergun_shells: {
 		id: 'itemDescription.sf1e.scattergun_shells',
 		defaultMessage: 'Shells full of pellets for a scattergun.',
-		description: 'Description of the scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	explosive_scattergun_shells: {
 		id: 'itemDescription.sf1e.explosive_scattergun_shells',
 		defaultMessage: 'Scattergun shells that explode where they hit.',
-		description: 'Description of the explosive scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the explosive scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	mini_rockets: {
 		id: 'itemDescription.sf1e.mini_rockets',
 		defaultMessage: 'Small rockets for gyrojet pistols and rifles.',
-		description: 'Description of the mini-rockets, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the mini-rockets, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	missile: {
 		id: 'itemDescription.sf1e.missile',
 		defaultMessage: 'A guided missile for a missile launcher.',
-		description: 'Description of every model of missile, such as the tactical missile, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of missile, such as the tactical missile, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	grenade_arrows: {
 		id: 'itemDescription.sf1e.grenade_arrows',
 		defaultMessage: 'Arrows tipped with a grenade, which goes off where the arrow lands.',
-		description: 'Description of every model of grenade arrows, such as the grenade arrows II, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of grenade arrows, such as the grenade arrows II, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	second_skin: {
 		id: 'itemDescription.sf1e.second_skin',
 		defaultMessage: 'A thin, tight bodysuit of protective fiber, light enough to wear under clothes.',
-		description: 'Description of the second skin, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the second skin, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	estex_suit: {
 		id: 'itemDescription.sf1e.estex_suit',
 		defaultMessage: 'Light armor of padded, interlocking plates, common among explorers and mercenaries.',
-		description: 'Description of every model of estex suit, such as the estex suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of estex suit, such as the estex suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	stationwear: {
 		id: 'itemDescription.sf1e.stationwear',
 		defaultMessage: 'Everyday clothes of a space station, with protective layers woven in so they work as light armor.',
-		description: 'Description of every model of stationwear, such as the flight suit stationwear, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of stationwear, such as the flight suit stationwear, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kasatha_microcord: {
 		id: 'itemDescription.sf1e.kasatha_microcord',
 		defaultMessage: 'Light armor woven from fine, strong cord in the kasathas\' tradition, made to keep the wearer cool.',
-		description: 'Description of every model of kasatha microcord, such as the kasatha microcord I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of kasatha microcord, such as the kasatha microcord I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	freebooter_armor: {
 		id: 'itemDescription.sf1e.freebooter_armor',
 		defaultMessage: 'Light armor of leather and metal plates, favored by space pirates and smugglers.',
-		description: 'Description of every model of freebooter armor, such as the freebooter armor I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of freebooter armor, such as the freebooter armor I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	carbon_skin: {
 		id: 'itemDescription.sf1e.carbon_skin',
 		defaultMessage: 'Light armor of thin carbon plates that are tough yet flexible.',
-		description: 'Description of every model of carbon skin, such as the graphite carbon skin, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of carbon skin, such as the graphite carbon skin, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	lashunta_tempweave: {
 		id: 'itemDescription.sf1e.lashunta_tempweave',
 		defaultMessage: 'Light armor woven in the lashuntas\' tradition, which keeps its wearer comfortable in heat and cold.',
-		description: 'Description of every model of lashunta tempweave, such as the basic lashunta tempweave, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of lashunta tempweave, such as the basic lashunta tempweave, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	defrex_hide: {
 		id: 'itemDescription.sf1e.defrex_hide',
 		defaultMessage: 'Light armor made from the tough hide of the defrex, a large beast.',
-		description: 'Description of the defrex hide, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the defrex hide, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	d_suit: {
 		id: 'itemDescription.sf1e.d_suit',
 		defaultMessage: 'Light armor of layered protective plates, made for defense.',
-		description: 'Description of every model of D-suit, such as the D-suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of D-suit, such as the D-suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	ysoki_refractor_suit: {
 		id: 'itemDescription.sf1e.ysoki_refractor_suit',
 		defaultMessage: 'Light armor made by the ysoki, which bends light to make its wearer harder to see.',
-		description: 'Description of the ysoki refractor suit, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the ysoki refractor suit, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	abadarcorp_travel_suit: {
 		id: 'itemDescription.sf1e.abadarcorp_travel_suit',
 		defaultMessage: 'A stylish suit made by AbadarCorp for travelers, which works as light armor.',
-		description: 'Description of every model of AbadarCorp travel suit, such as the silver AbadarCorp travel suit, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of AbadarCorp travel suit, such as the silver AbadarCorp travel suit, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	hardlight_series: {
 		id: 'itemDescription.sf1e.hardlight_series',
 		defaultMessage: 'Light armor that projects plates of solid light over its wearer.',
-		description: 'Description of every model of hardlight series, such as the squad hardlight series, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of hardlight series, such as the squad hardlight series, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	boardroom_attire: {
 		id: 'itemDescription.sf1e.boardroom_attire',
 		defaultMessage: 'An elegant business suit with protective layers hidden in its weave.',
-		description: 'Description of the boardroom attire, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the boardroom attire, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	echelon_fashion: {
 		id: 'itemDescription.sf1e.echelon_fashion',
 		defaultMessage: 'Fashionable clothing for the elite, with protective layers hidden in its weave.',
-		description: 'Description of every model of echelon fashion, such as the ready-to-wear echelon fashion, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of echelon fashion, such as the ready-to-wear echelon fashion, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	swarmsuit: {
 		id: 'itemDescription.sf1e.swarmsuit',
 		defaultMessage: 'Light armor sealed against stinging insects and other swarms.',
-		description: 'Description of the swarmsuit, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the swarmsuit, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shotalashu_armor: {
 		id: 'itemDescription.sf1e.shotalashu_armor',
 		defaultMessage: 'Light armor made for riders of shotalashus, the lashuntas\' mounts.',
-		description: 'Description of the shotalashu armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the shotalashu armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	ceremonial_plate: {
 		id: 'itemDescription.sf1e.ceremonial_plate',
 		defaultMessage: 'Polished heavy armor worn by soldiers and officers for parades and ceremonies, and in battle.',
-		description: 'Description of every model of ceremonial plate, such as the troop ceremonial plate, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of ceremonial plate, such as the troop ceremonial plate, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	golemforged_plating: {
 		id: 'itemDescription.sf1e.golemforged_plating',
 		defaultMessage: 'Heavy armor of thick plates forged by golems.',
-		description: 'Description of every model of golemforged plating, such as the golemforged plating I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of golemforged plating, such as the golemforged plating I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	lashunta_ringwear: {
 		id: 'itemDescription.sf1e.lashunta_ringwear',
 		defaultMessage: 'Heavy armor of interlocking metal rings in the lashuntas\' tradition.',
-		description: 'Description of every model of lashunta ringwear, such as the lashunta ringwear I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of lashunta ringwear, such as the lashunta ringwear I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	hidden_soldier_armor: {
 		id: 'itemDescription.sf1e.hidden_soldier_armor',
 		defaultMessage: 'Heavy armor that shifts its color to match its surroundings, hiding its wearer.',
-		description: 'Description of the hidden soldier armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the hidden soldier armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	iridishell: {
 		id: 'itemDescription.sf1e.iridishell',
 		defaultMessage: 'Heavy armor of shimmering, iridescent plates like an insect\'s shell.',
-		description: 'Description of every model of iridishell, such as the basic iridishell, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of iridishell, such as the basic iridishell, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	thinplate: {
 		id: 'itemDescription.sf1e.thinplate',
 		defaultMessage: 'Heavy armor of thin, strong plates, lighter than most heavy armor.',
-		description: 'Description of the thinplate, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the thinplate, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	defiance_series: {
 		id: 'itemDescription.sf1e.defiance_series',
 		defaultMessage: 'Military heavy armor made for frontline troops.',
-		description: 'Description of every model of defiance series, such as the squad defiance series, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of defiance series, such as the squad defiance series, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	vesk_overplate: {
 		id: 'itemDescription.sf1e.vesk_overplate',
 		defaultMessage: 'Heavy armor of thick overlapping plates in the vesk\'s style.',
-		description: 'Description of every model of vesk overplate, such as the vesk overplate I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of vesk overplate, such as the vesk overplate I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	skyfire_armor: {
 		id: 'itemDescription.sf1e.skyfire_armor',
 		defaultMessage: 'Heavy armor made for the Skyfire Legion, with plates shaped like wings.',
-		description: 'Description of every model of skyfire armor, such as the pinion skyfire armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of skyfire armor, such as the pinion skyfire armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	vesk_monolith: {
 		id: 'itemDescription.sf1e.vesk_monolith',
 		defaultMessage: 'Massive heavy armor of the vesk, nearly impenetrable.',
-		description: 'Description of every model of vesk monolith, such as the vesk monolith I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of vesk monolith, such as the vesk monolith I, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	aegis_series: {
 		id: 'itemDescription.sf1e.aegis_series',
 		defaultMessage: 'Military heavy armor built to protect its wearer above all.',
-		description: 'Description of every model of aegis series, such as the squad aegis series, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of every model of aegis series, such as the squad aegis series, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	enginerunner: {
 		id: 'itemDescription.sf1e.enginerunner',
 		defaultMessage: 'Heavy armor made for working around engines and machinery.',
-		description: 'Description of the enginerunner, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the enginerunner, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	steelbones: {
 		id: 'itemDescription.sf1e.steelbones',
 		defaultMessage: 'Heavy armor built on a metal frame that braces its wearer\'s bones.',
-		description: 'Description of the steelbones, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the steelbones, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	vitrum_plate: {
 		id: 'itemDescription.sf1e.vitrum_plate',
 		defaultMessage: 'Heavy armor of plates of strong, clear glass.',
-		description: 'Description of the vitrum plate, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the vitrum plate, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	voidshield_armor: {
 		id: 'itemDescription.sf1e.voidshield_armor',
 		defaultMessage: 'Heavy armor that shields its wearer even in the void of space.',
-		description: 'Description of the voidshield armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the voidshield armor, an item in Starfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	}
 });
 
@@ -3184,7 +3184,7 @@ export const SF1E_DEFAULT_ITEMS: Record<Sf1eDefaultItemKey, Sf1eDefaultItem> = {
 
 /**
  * Each default item's description, by the item's key, shown in the item editor, when choosing items, on a
- * character's sheet and on the Audit tab
+ * character's sheet, in the Inspect dialog and on the Audit tab
  */
 export const SF1E_DEFAULT_ITEM_DESCRIPTIONS: Record<string, MessageDescriptor> = Object.fromEntries(Object.entries(SF1E_DEFAULT_ITEMS)
 	.map(([key, item]) => [key, item.description]));

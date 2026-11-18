@@ -21,18 +21,19 @@ export const SF1E_WORN_SLOTS: Record<Sf1eWornLocation, readonly string[]> = {
 };
 
 /**
- * Each worn place's name: in the item editor's choice of where an item equips, and in Inspect
+ * Each worn place's name: the name of its slot on a character's sheet, and where an item equips in the item
+ * editor, Inspect, the Items tab and the Audit tab
  */
 export const SF1E_WORN_LOCATION_NAMES: Record<Sf1eWornLocation, MessageDescriptor> = defineMessages({
 	armor: {
 		id: 'sf1e.slot.armor',
 		defaultMessage: 'Armor',
-		description: 'Equipment slot in Starfinder, where a suit of armor is worn: a row of the Equipment section of a character\'s sheet, a choice in the item editor\'s "Equips to" field, and where an item equips in the Inspect dialog'
+		description: 'Equipment slot in Starfinder, where a suit of armor is worn. A row of the Equipped list on a character\'s sheet, and a choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	},
 	clothing: {
 		id: 'sf1e.slot.clothing',
 		defaultMessage: 'Clothing',
-		description: 'Equipment slot in Starfinder, where everyday clothes or a space suit are worn: a row of the Equipment section of a character\'s sheet, a choice in the item editor\'s "Equips to" field, and where an item equips in the Inspect dialog'
+		description: 'Equipment slot in Starfinder, where everyday clothes or a space suit are worn. A row of the Equipped list on a character\'s sheet, and a choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	}
 });
 

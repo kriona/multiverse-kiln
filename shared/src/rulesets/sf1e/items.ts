@@ -21,17 +21,17 @@ export const SF1E_ITEM_CATEGORY_NAMES: Record<Sf1eItemCategory, MessageDescripto
 	weapon: {
 		id: 'sf1e.itemCategory.weapon',
 		defaultMessage: 'Weapon',
-		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab and a choice in the item editor: knives, guns, grenades, ammunition and the like'
+		description: 'Kind of item in Starfinder: knives, guns, grenades, ammunition and the like. A choice of the Kind filter on the editor\'s Items tab and in the dialog for choosing items, and in the item editor; shown as an item\'s kind in the Inspect dialog and on the Audit tab, and as the name of an item\'s icon for screen readers'
 	},
 	armor: {
 		id: 'sf1e.itemCategory.armor',
 		defaultMessage: 'Armor',
-		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab and a choice in the item editor: armor suits'
+		description: 'Kind of item in Starfinder: armor suits. A choice of the Kind filter on the editor\'s Items tab and in the dialog for choosing items, and in the item editor; shown as an item\'s kind in the Inspect dialog and on the Audit tab, and as the name of an item\'s icon for screen readers'
 	},
 	gear: {
 		id: 'sf1e.itemCategory.gear',
 		defaultMessage: 'Gear',
-		description: 'Kind of item in Starfinder, a filter on the editor\'s Items tab and a choice in the item editor: equipment such as comm units and flashlights'
+		description: 'Kind of item in Starfinder: equipment such as comm units and flashlights. A choice of the Kind filter on the editor\'s Items tab and in the dialog for choosing items, and in the item editor; shown as an item\'s kind in the Inspect dialog and on the Audit tab, and as the name of an item\'s icon for screen readers'
 	}
 });
 

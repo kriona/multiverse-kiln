@@ -123,32 +123,32 @@ export const HELD_EQUIPMENT_NAMES = defineMessages({
 	mainHand: {
 		id: 'equipment.slot.mainHand',
 		defaultMessage: 'Main hand',
-		description: 'Equipment slot: the hand a character holds their main weapon or other item in. A row of the Equipment section of a character\'s sheet, and a choice under Equip in an item\'s menu there'
+		description: 'Equipment slot: the hand a character holds their main weapon or other item in. A row of the Equipped list on a character\'s sheet. The "Equip in main hand" item in an item\'s menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	},
 	offHand: {
 		id: 'equipment.slot.offHand',
 		defaultMessage: 'Off hand',
-		description: 'Equipment slot: a character\'s other hand, for a second weapon, a shield or a torch. A row of the Equipment section of a character\'s sheet, and a choice under Equip in an item\'s menu there'
+		description: 'Equipment slot: a character\'s other hand, for a second weapon, a shield or a torch. A row of the Equipped list on a character\'s sheet. The "Equip in off hand" item in an item\'s menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	},
 	bothHands: {
 		id: 'equipment.slot.bothHands',
 		defaultMessage: 'Both hands',
-		description: 'Where a weapon is held: in both of a character\'s hands, such as a greatsword, or a longsword gripped with two hands. Shown in the Equipment section of a character\'s sheet for the main hand\'s item, and a choice under Equip in an item\'s menu there'
+		description: 'Where a weapon is held: in both of a character\'s hands, such as a greatsword, or a longsword gripped with two hands. It only appears in the Discard and Give dialogs, in "This unequips it from {slots}."'
 	},
 	none: {
 		id: 'equipment.equips.none',
 		defaultMessage: 'Nowhere',
-		description: 'Where an item equips: it can\'t be equipped, such as a book or ammunition. A choice in the item editor\'s "Equips to" field, and where an item equips in the Inspect dialog'
+		description: 'Where an item equips: it can\'t be equipped, such as a book or ammunition. A choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog and on the Audit tab'
 	},
 	oneHand: {
 		id: 'equipment.equips.oneHand',
 		defaultMessage: 'One hand',
-		description: 'Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor\'s "Equips to" field, and where an item equips in the Inspect dialog'
+		description: 'Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab'
 	},
 	twoHands: {
 		id: 'equipment.equips.twoHands',
 		defaultMessage: 'Two hands',
-		description: 'Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor\'s "Equips to" field, and where an item equips in the Inspect dialog'
+		description: 'Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab'
 	}
 });
 

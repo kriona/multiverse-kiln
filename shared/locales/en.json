@@ -1185,7 +1185,7 @@
 	},
 	"characterSheet.inspect": {
 		"defaultMessage": "Inspect",
-		"description": "Item in the menu beside an item on a character's sheet, and button beside an item in item selection, that opens a dialog showing what the item is: its kind, types, book, where it equips and description"
+		"description": "Item in the menu beside an item on a character's sheet, and button beside an item in the dialog for choosing items, that opens a dialog showing what the item is: its kind, types, book, where it equips and description"
 	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
@@ -2929,7 +2929,7 @@
 	},
 	"editor.item.equips": {
 		"defaultMessage": "Equips to",
-		"description": "Label of the item editor's field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the item editor's field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.item.equipsHint": {
 		"defaultMessage": "Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players.",
@@ -2941,7 +2941,7 @@
 	},
 	"editor.item.types": {
 		"defaultMessage": "Types",
-		"description": "Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none, and the label of an item's types in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.itemSelect.chosen": {
 		"defaultMessage": "Chosen",
@@ -2997,7 +2997,7 @@
 	},
 	"editor.items.category": {
 		"defaultMessage": "Kind",
-		"description": "An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the filter for it on the Items tab and in the dialog for choosing items; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "An item's broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item's kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.items.icon": {
 		"defaultMessage": "Icon",
@@ -5445,27 +5445,27 @@
 	},
 	"equipment.equips.none": {
 		"defaultMessage": "Nowhere",
-		"description": "Where an item equips: it can't be equipped, such as a book or ammunition. A choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Where an item equips: it can't be equipped, such as a book or ammunition. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog and on the Audit tab"
 	},
 	"equipment.equips.oneHand": {
 		"defaultMessage": "One hand",
-		"description": "Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
 	},
 	"equipment.equips.twoHands": {
 		"defaultMessage": "Two hands",
-		"description": "Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
 	},
 	"equipment.slot.bothHands": {
 		"defaultMessage": "Both hands",
-		"description": "Where a weapon is held: in both of a character's hands, such as a greatsword, or a longsword gripped with two hands. Shown in the Equipment section of a character's sheet for the main hand's item, and a choice under Equip in an item's menu there"
+		"description": "Where a weapon is held: in both of a character's hands, such as a greatsword, or a longsword gripped with two hands. It only appears in the Discard and Give dialogs, in \"This unequips it from {slots}.\""
 	},
 	"equipment.slot.mainHand": {
 		"defaultMessage": "Main hand",
-		"description": "Equipment slot: the hand a character holds their main weapon or other item in. A row of the Equipment section of a character's sheet, and a choice under Equip in an item's menu there"
+		"description": "Equipment slot: the hand a character holds their main weapon or other item in. A row of the Equipped list on a character's sheet. The \"Equip in main hand\" item in an item's menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"equipment.slot.offHand": {
 		"defaultMessage": "Off hand",
-		"description": "Equipment slot: a character's other hand, for a second weapon, a shield or a torch. A row of the Equipment section of a character's sheet, and a choice under Equip in an item's menu there"
+		"description": "Equipment slot: a character's other hand, for a second weapon, a shield or a torch. A row of the Equipped list on a character's sheet. The \"Equip in off hand\" item in an item's menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"error.alreadyEditor": {
 		"defaultMessage": "{username} already has a role in this universe.",
@@ -6369,7 +6369,7 @@
 	},
 	"filter.any": {
 		"defaultMessage": "Any",
-		"description": "Choice of a filter that shows everything: on the editor's Items, Tilesets or Character List tab (such as items of every type, tiles whether passable or not, or characters of every race), or on the admin pages' lists of sessions and players (such as players whether server admins or not)"
+		"description": "Choice of a filter that shows everything: on the editor's Items, Tilesets or Character List tab or in the dialog for choosing items (such as items of every kind or type, tiles whether passable or not, or characters of every race), or on the admin pages' lists of sessions and players (such as players whether server admins or not)"
 	},
 	"filter.no": {
 		"defaultMessage": "No",
@@ -8929,1143 +8929,1131 @@
 	},
 	"itemDescription.pf1e.agile_breastplate": {
 		"defaultMessage": "A breastplate with a jointed plate over the belly, so its wearer can climb and jump more freely.",
-		"description": "Description of the agile breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the agile breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.agile_half_plate": {
 		"defaultMessage": "Half-plate with jointed plates that let its wearer climb and jump more freely.",
-		"description": "Description of the agile half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the agile half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.armored_coat": {
 		"defaultMessage": "A sturdy leather coat with metal plates sewn into its lining. It guards less than most medium armor, but goes on and off in moments.",
-		"description": "Description of the armored coat, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the armored coat, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.arrows": {
 		"defaultMessage": "Arrows for shortbows and longbows. An arrow that hits is destroyed, while one that misses may be found again.",
-		"description": "Description of the arrows, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the arrows, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.artisans_tools": {
 		"defaultMessage": "The special tools of one craft, such as smithing or woodworking. Without them, crafting is much harder.",
-		"description": "Description of the artisan's tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the artisan's tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.banded_mail": {
 		"defaultMessage": "Overlapping horizontal bands of metal sewn to a backing of leather and chainmail.",
-		"description": "Description of the banded mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the banded mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.bastard_sword": {
 		"defaultMessage": "A long, heavy sword that takes special training to wield in one hand. In both hands, any trained warrior can use it.",
-		"description": "Description of the bastard sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the bastard sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.battleaxe": {
 		"defaultMessage": "A broad-bladed axe made for battle, heavy enough to split a shield.",
-		"description": "Description of the battleaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the battleaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.bells": {
 		"defaultMessage": "A set of small bells rung by shaking or striking them, for performing.",
-		"description": "Description of the bells, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the bells, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.blowgun": {
 		"defaultMessage": "A long, hollow tube that shoots small darts with a breath. The darts do little harm alone, so they are often poisoned.",
-		"description": "Description of the blowgun, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the blowgun, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.blowgun_darts": {
 		"defaultMessage": "Small, light darts for a blowgun, often coated with poison.",
-		"description": "Description of the blowgun darts, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the blowgun darts, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.bolas": {
 		"defaultMessage": "Two or three weights joined by cords, thrown to wrap around a foe's legs and trip them.",
-		"description": "Description of the bolas, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the bolas, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.book_of_puzzles": {
 		"defaultMessage": "A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day.",
-		"description": "Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.book_of_war_prayers": {
 		"defaultMessage": "A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day.",
-		"description": "Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.breastplate": {
 		"defaultMessage": "A fitted metal plate covering the front and back of the torso, worn with a skirt of hardened leather.",
-		"description": "Description of the breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.buckler": {
 		"defaultMessage": "A small metal shield strapped to the forearm, which leaves the hand free to wield a weapon.",
-		"description": "Description of the buckler, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the buckler, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.cestus": {
 		"defaultMessage": "A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things.",
-		"description": "Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.chain_shirt": {
 		"defaultMessage": "A shirt of interlocking metal rings that covers the torso, worn over padding.",
-		"description": "Description of the chain shirt, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the chain shirt, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.chainmail": {
 		"defaultMessage": "A suit of interlocking metal rings over quilted fabric, covering the arms and legs as well as the torso.",
-		"description": "Description of the chainmail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the chainmail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.chimes": {
 		"defaultMessage": "Tuned metal tubes hung from a frame and struck to ring out notes, for performing.",
-		"description": "Description of the chimes, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the chimes, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.claw_blades": {
 		"defaultMessage": "A set of thin blades that fit over a catfolk's claws, making them sharper and harder to stop. Only catfolk with claws can use them.",
-		"description": "Description of the claw blades, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the claw blades, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.climbers_kit": {
 		"defaultMessage": "Special pitons, boot tips, gloves and a harness that make climbing easier.",
-		"description": "Description of the climber's kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the climber's kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.club": {
 		"defaultMessage": "A sturdy piece of wood, easy to find and easy to use. It can be thrown in a pinch.",
-		"description": "Description of the club, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the club, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.composite_longbow": {
 		"defaultMessage": "A longbow of layered horn, wood and sinew. One made for a strong archer adds their strength to its damage.",
-		"description": "Description of the composite longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the composite longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.composite_shortbow": {
 		"defaultMessage": "A shortbow of layered horn, wood and sinew. One made for a strong archer adds their strength to its damage.",
-		"description": "Description of the composite shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the composite shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.crossbow_bolts": {
 		"defaultMessage": "Short, heavy bolts for crossbows.",
-		"description": "Description of the crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dagger": {
 		"defaultMessage": "A short blade for stabbing up close or throwing.",
-		"description": "Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dart": {
 		"defaultMessage": "A small, weighted spike thrown by hand.",
-		"description": "Description of the dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dire_flail": {
 		"defaultMessage": "A shaft with a spiked ball on a chain at each end, so it can be fought with as two weapons. It can trip or disarm a foe.",
-		"description": "Description of the dire flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dire flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.disguise_kit": {
 		"defaultMessage": "Makeup, hair coloring and small props that make a disguise more convincing. It is used up after ten disguises.",
-		"description": "Description of the disguise kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the disguise kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.drum": {
 		"defaultMessage": "A drum beaten with the hands or with sticks, for performing or keeping a marching beat.",
-		"description": "Description of the drum, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the drum, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dwarven_boulder_helmet": {
 		"defaultMessage": "A heavy, reinforced helmet for head-butting foes and shoving them back.",
-		"description": "Description of the dwarven boulder helmet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dwarven boulder helmet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dwarven_double_waraxe": {
 		"defaultMessage": "A heavy shaft with a broad axe head at each end, so it can be fought with as two weapons.",
-		"description": "Description of the dwarven double waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dwarven double waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dwarven_longaxe": {
 		"defaultMessage": "A dwarven axe on a long haft that strikes foes beyond arm's reach.",
-		"description": "Description of the dwarven longaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dwarven longaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dwarven_longhammer": {
 		"defaultMessage": "A heavy dwarven hammer on a long haft that strikes foes beyond arm's reach.",
-		"description": "Description of the dwarven longhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dwarven longhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dwarven_urgrosh": {
 		"defaultMessage": "A dwarven weapon with an axe head at one end and a spearhead at the other, so it can be fought with as two weapons. The spear end can be braced against a charge.",
-		"description": "Description of the dwarven urgrosh, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dwarven urgrosh, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.dwarven_waraxe": {
 		"defaultMessage": "A heavy axe that takes special training to swing in one hand. In both hands, any trained warrior can use it.",
-		"description": "Description of the dwarven waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the dwarven waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.elven_curve_blade": {
 		"defaultMessage": "A long, slightly curved elven sword held in both hands. A nimble fighter can wield it with finesse rather than strength.",
-		"description": "Description of the elven curve blade, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the elven curve blade, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.falchion": {
 		"defaultMessage": "A heavy sword with a curved blade that widens toward the tip, swung in both hands. Its cuts land critical hits often.",
-		"description": "Description of the falchion, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the falchion, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.fiddle": {
 		"defaultMessage": "A stringed instrument held under the chin and played with a bow, for performing.",
-		"description": "Description of the fiddle, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the fiddle, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.flail": {
 		"defaultMessage": "A spiked metal ball swung on a chain from a handle. The chain can wrap around a foe's legs or weapon to trip or disarm them.",
-		"description": "Description of the flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.flute": {
 		"defaultMessage": "A wind instrument played by blowing across a hole near one end, for performing.",
-		"description": "Description of the flute, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the flute, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.footprints_cast": {
 		"defaultMessage": "A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather.",
-		"description": "Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.full_plate": {
 		"defaultMessage": "A suit of shaped, interlocking metal plates covering the whole body, fitted to its wearer. It guards best of all armor, but slows its wearer the most.",
-		"description": "Description of the full plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the full plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.gauntlet": {
 		"defaultMessage": "A metal glove that protects the hand and turns a punch into a lethal blow.",
-		"description": "Description of the gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.glaive": {
 		"defaultMessage": "A single-edged blade on a pole about seven feet long, which strikes foes beyond arm's reach.",
-		"description": "Description of the glaive, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the glaive, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.gnome_hooked_hammer": {
 		"defaultMessage": "A gnome weapon with a hammer head at one end and a long, curved pick at the other, so it can be fought with as two weapons. It can trip a foe.",
-		"description": "Description of the gnome hooked hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the gnome hooked hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.greataxe": {
 		"defaultMessage": "A massive axe swung in both hands, whose blows can cleave a foe in two.",
-		"description": "Description of the greataxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the greataxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.greatclub": {
 		"defaultMessage": "A great length of wood, often banded with iron, swung in both hands.",
-		"description": "Description of the greatclub, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the greatclub, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.greatsword": {
 		"defaultMessage": "A massive sword over five feet long, swung in both hands in great sweeping strokes.",
-		"description": "Description of the greatsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the greatsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.guisarme": {
 		"defaultMessage": "A long pole topped with a curved blade and a hook for pulling foes off their feet. It strikes foes beyond arm's reach.",
-		"description": "Description of the guisarme, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the guisarme, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.halberd": {
 		"defaultMessage": "A long pole topped with an axe blade, a spike and a hook. It can trip foes, and braced against a charge it deals double damage.",
-		"description": "Description of the halberd, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the halberd, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.half_plate": {
 		"defaultMessage": "Chainmail with shaped metal plates over the vital areas, worn with gauntlets and a helmet.",
-		"description": "Description of the half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.halfling_sling_staff": {
 		"defaultMessage": "A short staff with a sling at one end, which hurls stones harder than a sling. It can also be swung as a club.",
-		"description": "Description of the halfling sling staff, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the halfling sling staff, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.hand_crossbow": {
 		"defaultMessage": "A tiny crossbow, drawn back by hand and shot with one hand.",
-		"description": "Description of the hand crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the hand crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.handaxe": {
 		"defaultMessage": "A small axe light enough to swing in one hand, as useful for chopping wood as for fighting.",
-		"description": "Description of the handaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the handaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.harp": {
 		"defaultMessage": "A frame of strings plucked with the fingers, for performing.",
-		"description": "Description of the harp, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the harp, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.healers_kit": {
 		"defaultMessage": "Herbs, salves, bandages and splints that help treat wounds and illness. It is used up after ten uses.",
-		"description": "Description of the healer's kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the healer's kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heartstake_bolt": {
 		"defaultMessage": "A crossbow bolt of solid darkwood made to slay vampires, which can pierce one's heart.",
-		"description": "Description of the heartstake bolt, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heartstake bolt, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_crossbow": {
 		"defaultMessage": "A powerful crossbow drawn back with a small winch. It hits hard, but takes a while to load.",
-		"description": "Description of the heavy crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_flail": {
 		"defaultMessage": "A large flail with spiked balls on chains, swung in both hands. It can trip or disarm a foe.",
-		"description": "Description of the heavy flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_mace": {
 		"defaultMessage": "A long club with a heavy metal head that crushes armor and bone, still light enough to swing in one hand.",
-		"description": "Description of the heavy mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_pick": {
 		"defaultMessage": "A war pick with a long spike that punches through armor, dealing terrible critical hits.",
-		"description": "Description of the heavy pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_repeating_crossbow": {
 		"defaultMessage": "A heavy crossbow with a case holding five bolts, so it shoots again without reloading until the case is empty.",
-		"description": "Description of the heavy repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_steel_shield": {
 		"defaultMessage": "A large steel shield strapped to the forearm and gripped in one hand, too big to hold anything else in that hand.",
-		"description": "Description of the heavy steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.heavy_wooden_shield": {
 		"defaultMessage": "A large wooden shield strapped to the forearm and gripped in one hand, too big to hold anything else in that hand.",
-		"description": "Description of the heavy wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.hide_armor": {
 		"defaultMessage": "Several layers of thick animal hide and fur. It is warm and sturdy, but stiff.",
-		"description": "Description of the hide armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the hide armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.holly_and_mistletoe": {
 		"defaultMessage": "Sprigs of holly and mistletoe that druids and other priests of nature hold as the divine focus of their spells.",
-		"description": "Description of the holly and mistletoe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the holly and mistletoe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.javelin": {
 		"defaultMessage": "A thin spear balanced for throwing. It is clumsy to fight with in hand.",
-		"description": "Description of the javelin, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the javelin, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.jolting_dart": {
 		"defaultMessage": "A crystal dart grown by alchemy that builds up a charge in flight, shocking whoever it hits. It shatters once thrown.",
-		"description": "Description of the jolting dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the jolting dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kama": {
 		"defaultMessage": "A short sickle with a hooked blade, used by monks. It can trip a foe.",
-		"description": "Description of the kama, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the kama, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_long_lash": {
 		"defaultMessage": "A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_pounder_tail": {
 		"defaultMessage": "A squat ball of dull metal a kobold slips over the tip of its tail, turning its tail slap into a crushing blow. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the pounder tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the pounder tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_razored_tail": {
 		"defaultMessage": "A sharp blade a kobold slips over the tip of its tail, turning its tail slap into a slashing blow. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the razored tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the razored tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_spiked_tail": {
 		"defaultMessage": "A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kobold_sweeper_tail": {
 		"defaultMessage": "A sharply curved piece of metal a kobold slips over the tip of its tail to knock foes off their feet. Only kobolds trained to fight with their tails can use it.",
-		"description": "Description of the sweeper tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sweeper tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.kukri": {
 		"defaultMessage": "A heavy knife whose inward-curving blade bites deep, landing critical hits often.",
-		"description": "Description of the kukri, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the kukri, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.lance": {
 		"defaultMessage": "A long, heavy spear for charging on horseback, where it deals double damage. It strikes foes beyond arm's reach.",
-		"description": "Description of the lance, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the lance, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.lasso": {
 		"defaultMessage": "A rope with a sliding loop, thrown to snare and entangle a foe.",
-		"description": "Description of the lasso, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the lasso, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.leather_armor": {
 		"defaultMessage": "A breastplate and shoulder guards of leather hardened by boiling in oil, with softer, more flexible leather elsewhere.",
-		"description": "Description of the leather armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the leather armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_crossbow": {
 		"defaultMessage": "A crossbow drawn back with a lever and loaded with one bolt at a time. Anyone can use it without much training.",
-		"description": "Description of the light crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_fire_ink": {
 		"defaultMessage": "An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read.",
-		"description": "Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_hammer": {
 		"defaultMessage": "A small hammer, handy up close and balanced for throwing.",
-		"description": "Description of the light hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_mace": {
 		"defaultMessage": "A short club with a heavy metal head, easy to swing in one hand.",
-		"description": "Description of the light mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_pick": {
 		"defaultMessage": "A small war pick whose pointed head punches through armor, dealing deadly critical hits.",
-		"description": "Description of the light pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_repeating_crossbow": {
 		"defaultMessage": "A light crossbow with a case holding five bolts, so it shoots again without reloading until the case is empty.",
-		"description": "Description of the light repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_steel_shield": {
 		"defaultMessage": "A small steel shield strapped to the forearm and gripped in one hand, sturdier than a wooden one.",
-		"description": "Description of the light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.light_wooden_shield": {
 		"defaultMessage": "A small wooden shield strapped to the forearm and gripped in one hand. That hand can still carry things, but not wield a weapon.",
-		"description": "Description of the light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.locked_gauntlet": {
 		"defaultMessage": "An armored glove with straps and small chains that lock a weapon in its grip, so it is hard to knock away. It can punch as a gauntlet does.",
-		"description": "Description of the locked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the locked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.longbow": {
 		"defaultMessage": "A bow about as tall as its archer, which shoots arrows far. It can't be shot on horseback.",
-		"description": "Description of the longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.longspear": {
 		"defaultMessage": "A spear over eight feet long that strikes foes beyond arm's reach. Braced against a charge, it deals double damage.",
-		"description": "Description of the longspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the longspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.longsword": {
 		"defaultMessage": "A straight, double-edged sword about three and a half feet long, the favorite of many warriors.",
-		"description": "Description of the longsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the longsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.lute": {
 		"defaultMessage": "A stringed instrument with a rounded back, plucked or strummed, for performing.",
-		"description": "Description of the lute, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the lute, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.mandolin": {
 		"defaultMessage": "A small, bright-sounding stringed instrument plucked with a pick, for performing.",
-		"description": "Description of the mandolin, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the mandolin, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.morningstar": {
 		"defaultMessage": "A heavy club topped with a spiked metal ball, so each blow both crushes and pierces.",
-		"description": "Description of the morningstar, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the morningstar, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.net": {
 		"defaultMessage": "A weighted net thrown over a foe to entangle them, held by a trailing rope.",
-		"description": "Description of the net, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the net, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.nunchaku": {
 		"defaultMessage": "Two short sticks joined by a chain or cord, whirled by monks to strike and to disarm.",
-		"description": "Description of the nunchaku, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the nunchaku, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.orc_double_axe": {
 		"defaultMessage": "A cruel weapon with an axe head at each end of its shaft, so it can be fought with as two weapons.",
-		"description": "Description of the orc double axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the orc double axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.padded_armor": {
 		"defaultMessage": "Quilted layers of cloth and batting. It guards little, but barely hinders its wearer.",
-		"description": "Description of the padded armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the padded armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.pan_pipes": {
 		"defaultMessage": "Reed or wooden pipes of different lengths bound side by side and blown across, for performing.",
-		"description": "Description of the pan pipes, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the pan pipes, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.punching_dagger": {
 		"defaultMessage": "A short, wide blade with a grip across the fist, driven forward like a punch. The weight behind the thrust makes for deadly critical hits.",
-		"description": "Description of the punching dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the punching dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.quarterstaff": {
 		"defaultMessage": "A simple wooden staff about five feet long. Either end can strike, so it can be fought with as two weapons.",
-		"description": "Description of the quarterstaff, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the quarterstaff, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.quickdraw_light_steel_shield": {
 		"defaultMessage": "A light steel shield with special straps, so it can be readied as quickly as drawing a weapon.",
-		"description": "Description of the quickdraw light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the quickdraw light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.quickdraw_light_wooden_shield": {
 		"defaultMessage": "A light wooden shield with special straps, so it can be readied as quickly as drawing a weapon.",
-		"description": "Description of the quickdraw light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the quickdraw light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.quilted_cloth": {
 		"defaultMessage": "Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding.",
-		"description": "Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.ranseur": {
 		"defaultMessage": "A pole with a spearhead flanked by two curved blades, good for disarming foes beyond arm's reach.",
-		"description": "Description of the ranseur, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the ranseur, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.rapier": {
 		"defaultMessage": "A slender sword built for quick thrusts. A nimble fighter can wield it with finesse rather than strength.",
-		"description": "Description of the rapier, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the rapier, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.ratfolk_tailblade": {
 		"defaultMessage": "A small knife strapped to the tip of a ratfolk's tail, so the ratfolk can slash at foes with its tail.",
-		"description": "Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.recorder": {
 		"defaultMessage": "A simple wooden pipe with finger holes, blown at one end, for performing.",
-		"description": "Description of the recorder, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the recorder, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.repeating_crossbow_bolts": {
 		"defaultMessage": "Bolts in a case of five, which loads a repeating crossbow all at once.",
-		"description": "Description of the repeating crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the repeating crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sai": {
 		"defaultMessage": "A blunt metal spike with two curved prongs that catch an enemy's blade. Monks use it to disarm foes and to strike.",
-		"description": "Description of the sai, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sai, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sap": {
 		"defaultMessage": "A small leather bag filled with lead. It knocks foes out rather than killing them.",
-		"description": "Description of the sap, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sap, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.scale_mail": {
 		"defaultMessage": "A coat and leggings of leather covered with overlapping pieces of metal, like the scales of a fish.",
-		"description": "Description of the scale mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the scale mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.scimitar": {
 		"defaultMessage": "A curved sword whose long edge makes its cuts land critical hits often.",
-		"description": "Description of the scimitar, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the scimitar, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.scythe": {
 		"defaultMessage": "A long, curved blade on a pole, made for reaping grain. Its deep cuts deal terrible critical hits and can trip a foe.",
-		"description": "Description of the scythe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the scythe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sea_knife": {
 		"defaultMessage": "A short blade on a long handle, made for fighting while swimming. Its wielder takes a penalty to hit with it.",
-		"description": "Description of the sea-knife, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sea-knife, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.shawm": {
 		"defaultMessage": "A loud, piercing wind instrument with a double reed, for performing outdoors.",
-		"description": "Description of the shawm, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the shawm, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.short_sword": {
 		"defaultMessage": "A short, straight blade, quick and easy to handle.",
-		"description": "Description of the short sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the short sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.shortbow": {
 		"defaultMessage": "A small bow that shoots arrows, easy to use on horseback.",
-		"description": "Description of the shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.shortspear": {
 		"defaultMessage": "A spear about three feet long, light enough to wield in one hand or to throw.",
-		"description": "Description of the shortspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the shortspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.shuriken": {
 		"defaultMessage": "A small, flat metal star with sharp points, thrown by hand. Monks train with it.",
-		"description": "Description of the shuriken, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the shuriken, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.siangham": {
 		"defaultMessage": "A thin, arrow-like shaft of metal that monks use to stab.",
-		"description": "Description of the siangham, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the siangham, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sickle": {
 		"defaultMessage": "A farming tool with a curved blade on a short handle. Its hooked edge can trip a foe.",
-		"description": "Description of the sickle, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sickle, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.silver_holy_symbol": {
 		"defaultMessage": "A silver emblem of a god, worn on a chain. Clerics present it to cast their spells and channel their god's energy.",
-		"description": "Description of the silver holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the silver holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sling": {
 		"defaultMessage": "A leather strap that hurls stones or lead bullets with a whirl of the arm.",
-		"description": "Description of the sling, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sling, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sling_bullets": {
 		"defaultMessage": "Small lead balls for slings and sling staffs. Stones can be slung too, but do less harm.",
-		"description": "Description of the sling bullets, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sling bullets, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.snag_net": {
 		"defaultMessage": "A short, wide net covered in barbed loops. It entangles like a net, and a tug on its rope can trip the foe caught in it.",
-		"description": "Description of the snag net, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the snag net, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.spear": {
 		"defaultMessage": "A spear about five feet long, held in both hands or thrown. Braced against a charge, it deals double damage.",
-		"description": "Description of the spear, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the spear, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.spiked_chain": {
 		"defaultMessage": "A chain about four feet long, covered in spikes and swung in both hands. It can trip or disarm a foe.",
-		"description": "Description of the spiked chain, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the spiked chain, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.spiked_gauntlet": {
 		"defaultMessage": "A metal glove covered in spikes, so a punch pierces as well as bruises.",
-		"description": "Description of the spiked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the spiked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.splint_mail": {
 		"defaultMessage": "Narrow upright strips of metal riveted to a leather backing, worn over padding.",
-		"description": "Description of the splint mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the splint mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.starknife": {
 		"defaultMessage": "A metal ring with four tapered blades pointing outward like a star. It can be swung up close or thrown.",
-		"description": "Description of the starknife, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the starknife, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.studded_leather": {
 		"defaultMessage": "Tough but flexible leather reinforced with close-set metal rivets.",
-		"description": "Description of the studded leather, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the studded leather, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.sword_cane": {
 		"defaultMessage": "A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw.",
-		"description": "Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.thieves_tools": {
 		"defaultMessage": "Picks, probes, a small mirror and pliers for opening locks and disarming traps. Without them, both are much harder.",
-		"description": "Description of the thieves' tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the thieves' tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.throwing_axe": {
 		"defaultMessage": "A small axe weighted to fly true when thrown.",
-		"description": "Description of the throwing axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the throwing axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.tome_of_epics": {
 		"defaultMessage": "A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day.",
-		"description": "Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.tower_shield": {
 		"defaultMessage": "A massive wooden shield almost as tall as its bearer. It can be planted to hide behind completely, but it hinders its bearer's attacks.",
-		"description": "Description of the tower shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the tower shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.trident": {
 		"defaultMessage": "A three-pronged spear, thrust with one hand or thrown. Braced against a charge, it deals double damage.",
-		"description": "Description of the trident, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the trident, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.trumpet": {
 		"defaultMessage": "A brass horn whose notes carry far, for performing and for signals.",
-		"description": "Description of the trumpet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the trumpet, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.two_bladed_sword": {
 		"defaultMessage": "A sword blade at each end of a central grip, so it can be fought with as two weapons.",
-		"description": "Description of the two-bladed sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the two-bladed sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.warhammer": {
 		"defaultMessage": "A heavy hammer whose blows crush armor and deal deadly critical hits.",
-		"description": "Description of the warhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the warhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.whip": {
 		"defaultMessage": "A long leather lash that reaches foes up to 15 feet away to trip or disarm them. Its sting hurts but doesn't kill.",
-		"description": "Description of the whip, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the whip, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.wooden_armor": {
 		"defaultMessage": "Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn't hinder swimming.",
-		"description": "Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.pf1e.wooden_holy_symbol": {
 		"defaultMessage": "A carved wooden emblem of a god, worn on a cord. Clerics present it to cast their spells and channel their god's energy.",
-		"description": "Description of the wooden holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the wooden holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.abadarcorp_travel_suit": {
 		"defaultMessage": "A stylish suit made by AbadarCorp for travelers, which works as light armor.",
-		"description": "Description of every model of AbadarCorp travel suit, such as the silver AbadarCorp travel suit, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of AbadarCorp travel suit, such as the silver AbadarCorp travel suit, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.acid_dart_rifle": {
 		"defaultMessage": "A rifle that fires darts which burst and spray acid when they hit.",
-		"description": "Description of every model of acid dart rifle, such as the tactical acid dart rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of acid dart rifle, such as the tactical acid dart rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.advanced_staff": {
 		"defaultMessage": "A fighting staff fitted with emitters that turn aside blows aimed at its wielder.",
-		"description": "Description of every model of staff, such as the sentinel staff, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of staff, such as the sentinel staff, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.aegis_series": {
 		"defaultMessage": "Military heavy armor built to protect its wearer above all.",
-		"description": "Description of every model of aegis series, such as the squad aegis series, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of aegis series, such as the squad aegis series, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.arc_emitter": {
 		"defaultMessage": "A long gun that sprays a crackling cone of electricity over everything in front of it.",
-		"description": "Description of every model of arc emitter, such as the tactical arc emitter, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of arc emitter, such as the tactical arc emitter, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.arc_pistol": {
 		"defaultMessage": "A pistol that fires an arc of electricity, which can leap to a second target nearby.",
-		"description": "Description of every model of arc pistol, such as the static arc pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of arc pistol, such as the static arc pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.arc_rifle": {
 		"defaultMessage": "A rifle that fires an arc of electricity, which can leap to a second target nearby.",
-		"description": "Description of every model of arc rifle, such as the static arc rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of arc rifle, such as the static arc rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.arrows": {
 		"defaultMessage": "Arrows for a bow.",
-		"description": "Description of the arrows, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the arrows, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.artillery_laser": {
 		"defaultMessage": "A massive laser carried in two hands, which fires beams of light that burn through cover.",
-		"description": "Description of every model of artillery laser, such as the azimuth artillery laser, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of artillery laser, such as the azimuth artillery laser, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.autobeam_artillery": {
 		"defaultMessage": "A heavy laser that fires rapid bursts of beams, sweeping a whole area.",
-		"description": "Description of every model of autobeam artillery, such as the tactical autobeam artillery, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of autobeam artillery, such as the tactical autobeam artillery, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.autobeam_rifle": {
 		"defaultMessage": "A laser rifle that fires beams in rapid bursts, raking a whole area.",
-		"description": "Description of every model of autobeam rifle, such as the tactical autobeam rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of autobeam rifle, such as the tactical autobeam rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.autotarget_rifle": {
 		"defaultMessage": "A rifle with a smart sight that finds its target for the shooter, so even the untrained can hit with it.",
-		"description": "Description of the autotarget rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the autotarget rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.basic_staff": {
 		"defaultMessage": "A long fighting staff of sturdy alloy, carbon or solid light, swung in two hands to strike and block.",
-		"description": "Description of every model of staff, such as the battle staff, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of staff, such as the battle staff, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.baton": {
 		"defaultMessage": "A short, weighted club of the kind guards and police carry, for knocking foes down without killing them.",
-		"description": "Description of every model of baton, such as the tactical baton, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of baton, such as the tactical baton, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.battery": {
 		"defaultMessage": "A rechargeable battery that powers energy weapons and many devices.",
-		"description": "Description of the battery, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the battery, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.battleglove": {
 		"defaultMessage": "An armored glove that makes a punch hit like a hammer. Better models drive the blow with servos, energy or gravity.",
-		"description": "Description of every model of battleglove, such as the cestus battleglove, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of battleglove, such as the cestus battleglove, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.boardroom_attire": {
 		"defaultMessage": "An elegant business suit with protective layers hidden in its weave.",
-		"description": "Description of the boardroom attire, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the boardroom attire, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.bow": {
 		"defaultMessage": "A bow of modern materials that shoots arrows, a weapon of hunters and of worlds without guns.",
-		"description": "Description of the bow, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the bow, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.carbon_skin": {
 		"defaultMessage": "Light armor of thin carbon plates that are tough yet flexible.",
-		"description": "Description of every model of carbon skin, such as the graphite carbon skin, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of carbon skin, such as the graphite carbon skin, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.carbonedge_shuriken": {
 		"defaultMessage": "A small, sharp throwing star with carbon edges.",
-		"description": "Description of the carbonedge shuriken, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the carbonedge shuriken, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.ceremonial_plate": {
 		"defaultMessage": "Polished heavy armor worn by soldiers and officers for parades and ceremonies, and in battle.",
-		"description": "Description of every model of ceremonial plate, such as the troop ceremonial plate, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of ceremonial plate, such as the troop ceremonial plate, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.club": {
 		"defaultMessage": "A plain length of wood, pipe or bone swung to bludgeon, found or made almost anywhere.",
-		"description": "Description of the club, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the club, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.combat_rifle": {
 		"defaultMessage": "A rugged military rifle that fires heavy rounds, built to keep working in the worst conditions.",
-		"description": "Description of the combat rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the combat rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.crossbolter": {
 		"defaultMessage": "A modern crossbow that hurls heavy metal bolts with great force. The heaviest models are carried as heavy weapons.",
-		"description": "Description of every model of crossbolter, such as the tactical crossbolter, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of crossbolter, such as the tactical crossbolter, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.cryo_grenade": {
 		"defaultMessage": "A grenade that bursts into a cloud of freezing cold, chilling everyone nearby.",
-		"description": "Description of every model of cryo grenade, such as the cryo grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of cryo grenade, such as the cryo grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.cryopike": {
 		"defaultMessage": "A pike whose head is chilled far below freezing, so each thrust leaves frost and numbing cold behind.",
-		"description": "Description of every model of cryopike, such as the tactical cryopike, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of cryopike, such as the tactical cryopike, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.curve_blade": {
 		"defaultMessage": "A long, curving two-handed sword that cuts in wide, flowing arcs.",
-		"description": "Description of every model of curve blade, such as the carbon steel curve blade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of curve blade, such as the carbon steel curve blade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.d_suit": {
 		"defaultMessage": "Light armor of layered protective plates, made for defense.",
-		"description": "Description of every model of D-suit, such as the D-suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of D-suit, such as the D-suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.dagger": {
 		"defaultMessage": "A short blade honed to a far finer edge than any steel can hold, which slips through armor.",
-		"description": "Description of every model of dagger, such as the ultrathin dagger, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of dagger, such as the ultrathin dagger, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.darts": {
 		"defaultMessage": "Darts for needler pistols, needler rifles and acid dart rifles.",
-		"description": "Description of the darts, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the darts, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.defiance_series": {
 		"defaultMessage": "Military heavy armor made for frontline troops.",
-		"description": "Description of every model of defiance series, such as the squad defiance series, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of defiance series, such as the squad defiance series, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.defrex_hide": {
 		"defaultMessage": "Light armor made from the tough hide of the defrex, a large beast.",
-		"description": "Description of the defrex hide, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the defrex hide, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.devastation_blade": {
 		"defaultMessage": "A massive, jagged sword built by an ancient cult, whose strikes tear at the life of whatever they wound.",
-		"description": "Description of every model of devastation blade, such as the wrack devastation blade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of devastation blade, such as the wrack devastation blade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.doshko": {
 		"defaultMessage": "The vesk's traditional war polearm: a long haft ending in a heavy, cleaver-like blade.",
-		"description": "Description of every model of doshko, such as the tactical doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of doshko, such as the tactical doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.dueling_sword": {
 		"defaultMessage": "A light, slender sword for quick thrusts and parries, favored by duelists and officers.",
-		"description": "Description of every model of dueling sword, such as the tactical dueling sword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of dueling sword, such as the tactical dueling sword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.echelon_fashion": {
 		"defaultMessage": "Fashionable clothing for the elite, with protective layers hidden in its weave.",
-		"description": "Description of every model of echelon fashion, such as the ready-to-wear echelon fashion, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of echelon fashion, such as the ready-to-wear echelon fashion, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.enginerunner": {
 		"defaultMessage": "Heavy armor made for working around engines and machinery.",
-		"description": "Description of the enginerunner, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the enginerunner, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.estex_suit": {
 		"defaultMessage": "Light armor of padded, interlocking plates, common among explorers and mercenaries.",
-		"description": "Description of every model of estex suit, such as the estex suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of estex suit, such as the estex suit I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.explosive_heavy_rounds": {
 		"defaultMessage": "Large bullets for heavy weapons that explode where they hit.",
-		"description": "Description of the explosive heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the explosive heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.explosive_scattergun_shells": {
 		"defaultMessage": "Scattergun shells that explode where they hit.",
-		"description": "Description of the explosive scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the explosive scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.fangblade": {
 		"defaultMessage": "A sword whose edge is a row of serrated teeth, made to tear flesh and leave bleeding wounds.",
-		"description": "Description of the fangblade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the fangblade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.flame_doshko": {
 		"defaultMessage": "A doshko whose blade is wreathed in fire, setting its targets alight.",
-		"description": "Description of every model of flame doshko, such as the ember flame doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of flame doshko, such as the ember flame doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.flame_pistol": {
 		"defaultMessage": "A pistol that sprays a short burst of burning fuel.",
-		"description": "Description of the flame pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the flame pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.flame_rifle": {
 		"defaultMessage": "A rifle that sprays a line of burning fuel, setting its targets alight.",
-		"description": "Description of the flame rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the flame rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.flamethrower": {
 		"defaultMessage": "A heavy weapon fed by a tank of fuel, which sprays a wide stream of fire.",
-		"description": "Description of every model of flamethrower, such as the Ifrit-class flamethrower, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of flamethrower, such as the Ifrit-class flamethrower, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.flares": {
 		"defaultMessage": "Flares for a survival flare gun.",
-		"description": "Description of the flares, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the flares, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.flash_grenade": {
 		"defaultMessage": "A grenade that bursts into a blinding flash of light.",
-		"description": "Description of every model of flash grenade, such as the flash grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of flash grenade, such as the flash grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.frag_grenade": {
 		"defaultMessage": "A grenade that explodes into a burst of sharp shrapnel.",
-		"description": "Description of every model of frag grenade, such as the frag grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of frag grenade, such as the frag grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.freebooter_armor": {
 		"defaultMessage": "Light armor of leather and metal plates, favored by space pirates and smugglers.",
-		"description": "Description of every model of freebooter armor, such as the freebooter armor I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of freebooter armor, such as the freebooter armor I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.golemforged_plating": {
 		"defaultMessage": "Heavy armor of thick plates forged by golems.",
-		"description": "Description of every model of golemforged plating, such as the golemforged plating I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of golemforged plating, such as the golemforged plating I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.grenade_arrows": {
 		"defaultMessage": "Arrows tipped with a grenade, which goes off where the arrow lands.",
-		"description": "Description of every model of grenade arrows, such as the grenade arrows II, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of grenade arrows, such as the grenade arrows II, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.grindblade": {
 		"defaultMessage": "A sword whose edge is a whirring saw chain that chews through armor.",
-		"description": "Description of the grindblade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the grindblade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.gyrojet_pistol": {
 		"defaultMessage": "A pistol that fires small self-propelled rockets, which hit hard against armored foes.",
-		"description": "Description of every model of gyrojet pistol, such as the tactical gyrojet pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of gyrojet pistol, such as the tactical gyrojet pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.gyrojet_rifle": {
 		"defaultMessage": "A rifle that fires small self-propelled rockets, which hit hard against armored foes.",
-		"description": "Description of every model of gyrojet rifle, such as the tactical gyrojet rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of gyrojet rifle, such as the tactical gyrojet rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.hammer": {
 		"defaultMessage": "A war hammer with a dense head that crushes armor. Better models add thrusters or gravity to each blow.",
-		"description": "Description of every model of hammer, such as the assault hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of hammer, such as the assault hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.hardlight_series": {
 		"defaultMessage": "Light armor that projects plates of solid light over its wearer.",
-		"description": "Description of every model of hardlight series, such as the squad hardlight series, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of hardlight series, such as the squad hardlight series, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.heavy_rounds": {
 		"defaultMessage": "Large bullets for machine guns and other heavy weapons.",
-		"description": "Description of the heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the heavy rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.hidden_soldier_armor": {
 		"defaultMessage": "Heavy armor that shifts its color to match its surroundings, hiding its wearer.",
-		"description": "Description of the hidden soldier armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the hidden soldier armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.high_capacity_battery": {
 		"defaultMessage": "A battery that holds more charges than a standard one, for powerful energy weapons and devices.",
-		"description": "Description of every model of battery, such as the high-capacity battery, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of battery, such as the high-capacity battery, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.hunting_rifle": {
 		"defaultMessage": "A simple, accurate rifle that fires one bullet at a time, made for hunting game.",
-		"description": "Description of the hunting rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the hunting rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.imds_missile_launcher": {
 		"defaultMessage": "A launcher carried on the shoulder that fires guided missiles, which explode where they land.",
-		"description": "Description of the IMDS missile launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the IMDS missile launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.incapacitator": {
 		"defaultMessage": "A baton whose tip releases a charge that numbs nerves, for subduing someone without lasting harm.",
-		"description": "Description of the incapacitator, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the incapacitator, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.incendiary_grenade": {
 		"defaultMessage": "A grenade that bursts into flames, setting everyone nearby alight.",
-		"description": "Description of every model of incendiary grenade, such as the incendiary grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of incendiary grenade, such as the incendiary grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.injection_glove": {
 		"defaultMessage": "A glove with a needle in its palm that injects whatever drug, medicine or poison is loaded into it.",
-		"description": "Description of the injection glove, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the injection glove, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.iridishell": {
 		"defaultMessage": "Heavy armor of shimmering, iridescent plates like an insect's shell.",
-		"description": "Description of every model of iridishell, such as the basic iridishell, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of iridishell, such as the basic iridishell, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.kasatha_microcord": {
 		"defaultMessage": "Light armor woven from fine, strong cord in the kasathas' tradition, made to keep the wearer cool.",
-		"description": "Description of every model of kasatha microcord, such as the kasatha microcord I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of kasatha microcord, such as the kasatha microcord I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.laser_pistol": {
 		"defaultMessage": "A common sidearm that fires beams of focused light, burning what they hit. It runs on batteries.",
-		"description": "Description of every model of laser pistol, such as the azimuth laser pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of laser pistol, such as the azimuth laser pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.laser_rifle": {
 		"defaultMessage": "A rifle that fires beams of focused light farther and harder than a laser pistol. It runs on batteries.",
-		"description": "Description of every model of laser rifle, such as the azimuth laser rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of laser rifle, such as the azimuth laser rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.lashunta_ringwear": {
 		"defaultMessage": "Heavy armor of interlocking metal rings in the lashuntas' tradition.",
-		"description": "Description of every model of lashunta ringwear, such as the lashunta ringwear I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of lashunta ringwear, such as the lashunta ringwear I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.lashunta_tempweave": {
 		"defaultMessage": "Light armor woven in the lashuntas' tradition, which keeps its wearer comfortable in heat and cold.",
-		"description": "Description of every model of lashunta tempweave, such as the basic lashunta tempweave, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of lashunta tempweave, such as the basic lashunta tempweave, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.longarm_and_sniper_rounds": {
 		"defaultMessage": "Bullets for rifles and sniper rifles.",
-		"description": "Description of the longarm and sniper rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the longarm and sniper rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.longsword": {
 		"defaultMessage": "A straight, double-edged sword, the classic weapon of knights and soldiers, forged with ever finer edges in its better models.",
-		"description": "Description of every model of longsword, such as the tactical longsword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of longsword, such as the tactical longsword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.machine_gun": {
 		"defaultMessage": "A heavy gun that fires a stream of bullets, raking a whole area.",
-		"description": "Description of every model of machine gun, such as the squad machine gun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of machine gun, such as the squad machine gun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.magnetar_rifle": {
 		"defaultMessage": "A rifle that hurls bullets with magnetic coils, firing them in long bursts.",
-		"description": "Description of every model of magnetar rifle, such as the tactical magnetar rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of magnetar rifle, such as the tactical magnetar rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.mini_rockets": {
 		"defaultMessage": "Small rockets for gyrojet pistols and rifles.",
-		"description": "Description of the mini-rockets, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the mini-rockets, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.missile": {
 		"defaultMessage": "A guided missile for a missile launcher.",
-		"description": "Description of every model of missile, such as the tactical missile, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of missile, such as the tactical missile, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.monowhip": {
 		"defaultMessage": "A whip of a single wire so thin it is nearly invisible, which slices through whatever it lashes.",
-		"description": "Description of the monowhip, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the monowhip, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.needler_pistol": {
 		"defaultMessage": "A quiet pistol that fires darts, each of which can carry a dose of a drug or poison.",
-		"description": "Description of the needler pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the needler pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.needler_rifle": {
 		"defaultMessage": "A quiet rifle that fires darts, each of which can carry a dose of a drug or poison.",
-		"description": "Description of the needler rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the needler rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.nil_grenade_launcher": {
 		"defaultMessage": "A weapon that lobs grenades much farther than they can be thrown.",
-		"description": "Description of every model of NIL grenade launcher, such as the merc NIL grenade launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of NIL grenade launcher, such as the merc NIL grenade launcher, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.nyfiber_net": {
 		"defaultMessage": "A net of tough fiber that is thrown to entangle a foe.",
-		"description": "Description of the nyfiber net, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the nyfiber net, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.peacemaker": {
 		"defaultMessage": "A heavy riot baton that stuns with each blow, used by peacekeepers to end fights quickly.",
-		"description": "Description of the peacemaker, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the peacemaker, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.pike": {
 		"defaultMessage": "A very long spear with a reinforced head, held in two hands to strike foes before they come close.",
-		"description": "Description of every model of pike, such as the tactical pike, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of pike, such as the tactical pike, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.plasma_cannon": {
 		"defaultMessage": "A heavy gun that fires a line of superheated plasma, which burns and shocks.",
-		"description": "Description of every model of plasma cannon, such as the red star plasma cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of plasma cannon, such as the red star plasma cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.plasma_caster": {
 		"defaultMessage": "A long gun that fires a beam of plasma, burning everything in a line.",
-		"description": "Description of every model of plasma caster, such as the white star plasma caster, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of plasma caster, such as the white star plasma caster, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.plasma_doshko": {
 		"defaultMessage": "A doshko whose blade is a field of superheated plasma that burns and shocks.",
-		"description": "Description of every model of plasma doshko, such as the red star plasma doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of plasma doshko, such as the red star plasma doshko, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.plasma_pistol": {
 		"defaultMessage": "A pistol that fires bolts of superheated plasma, which burn and shock.",
-		"description": "Description of every model of plasma pistol, such as the red star plasma pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of plasma pistol, such as the red star plasma pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.plasma_rifle": {
 		"defaultMessage": "A rifle that fires bolts of superheated plasma, which burn and shock.",
-		"description": "Description of every model of plasma rifle, such as the red star plasma rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of plasma rifle, such as the red star plasma rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.plasma_sword": {
 		"defaultMessage": "A hilt that projects a blade of glowing plasma, which burns and shocks what it touches.",
-		"description": "Description of every model of plasma sword, such as the tactical plasma sword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of plasma sword, such as the tactical plasma sword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.pulse_gauntlet": {
 		"defaultMessage": "A heavy gauntlet that releases a burst of sound with each punch, knocking foes off their feet.",
-		"description": "Description of every model of pulse gauntlet, such as the thunderstrike pulse gauntlet, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of pulse gauntlet, such as the thunderstrike pulse gauntlet, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.pulsecaster_pistol": {
 		"defaultMessage": "A pistol that fires pulses of electricity meant to stun rather than kill.",
-		"description": "Description of the pulsecaster pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the pulsecaster pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.pulsecaster_rifle": {
 		"defaultMessage": "A rifle that fires pulses of electricity meant to stun rather than kill.",
-		"description": "Description of the pulsecaster rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the pulsecaster rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.quantum_entangler": {
 		"defaultMessage": "A two-handed weapon that disrupts matter at its smallest scale, staggering whatever it hits.",
-		"description": "Description of every model of quantum entangler, such as the military quantum entangler, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of quantum entangler, such as the military quantum entangler, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.reaction_cannon": {
 		"defaultMessage": "A heavy gun that fires large shells with a kick that can knock its user back.",
-		"description": "Description of every model of reaction cannon, such as the light reaction cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of reaction cannon, such as the light reaction cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.scattergun": {
 		"defaultMessage": "A shotgun that fires a spray of pellets in a cone, hitting everything in front of it.",
-		"description": "Description of every model of scattergun, such as the utility scattergun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of scattergun, such as the utility scattergun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.scattergun_shells": {
 		"defaultMessage": "Shells full of pellets for a scattergun.",
-		"description": "Description of the scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the scattergun shells, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.screamer": {
 		"defaultMessage": "A heavy weapon that unleashes a deafening blast of sound over everything in front of it.",
-		"description": "Description of every model of screamer, such as the thunderstrike screamer, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of screamer, such as the thunderstrike screamer, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.screamer_grenade": {
 		"defaultMessage": "A grenade that bursts with a deafening shriek of sound.",
-		"description": "Description of every model of screamer grenade, such as the screamer grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of screamer grenade, such as the screamer grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.second_skin": {
 		"defaultMessage": "A thin, tight bodysuit of protective fiber, light enough to wear under clothes.",
-		"description": "Description of the second skin, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the second skin, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.seeker_rifle": {
 		"defaultMessage": "A long-range rifle with a scope that helps the shooter pick out distant targets.",
-		"description": "Description of every model of seeker rifle, such as the tactical seeker rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of seeker rifle, such as the tactical seeker rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.semi_auto_pistol": {
 		"defaultMessage": "A dependable handgun that fires one bullet for each pull of the trigger.",
-		"description": "Description of every model of semi-auto pistol, such as the tactical semi-auto pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of semi-auto pistol, such as the tactical semi-auto pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.shirren_eye_rifle": {
 		"defaultMessage": "A long sniper rifle designed by the shirren, deadly from great distances.",
-		"description": "Description of every model of shirren-eye rifle, such as the tactical shirren-eye rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of shirren-eye rifle, such as the tactical shirren-eye rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.shock_caster": {
 		"defaultMessage": "A heavy weapon that fires a line of electricity, shocking everything in its path.",
-		"description": "Description of every model of shock caster, such as the static shock caster, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of shock caster, such as the static shock caster, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.shock_grenade": {
 		"defaultMessage": "A grenade that releases a burst of electricity, shocking everyone nearby.",
-		"description": "Description of every model of shock grenade, such as the shock grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of shock grenade, such as the shock grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.shock_truncheon": {
 		"defaultMessage": "A metal club that discharges a jolt of electricity with each blow.",
-		"description": "Description of every model of shock truncheon, such as the static shock truncheon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of shock truncheon, such as the static shock truncheon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.shotalashu_armor": {
 		"defaultMessage": "Light armor made for riders of shotalashus, the lashuntas' mounts.",
-		"description": "Description of the shotalashu armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the shotalashu armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.skyfire_armor": {
 		"defaultMessage": "Heavy armor made for the Skyfire Legion, with plates shaped like wings.",
-		"description": "Description of every model of skyfire armor, such as the pinion skyfire armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of skyfire armor, such as the pinion skyfire armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.skyfire_sword": {
 		"defaultMessage": "A sword made for the Skyfire Legion, whose blade glows with heat and burns as it cuts.",
-		"description": "Description of every model of skyfire sword, such as the tactical skyfire sword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of skyfire sword, such as the tactical skyfire sword, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.small_arm_rounds": {
 		"defaultMessage": "Bullets for pistols and other small arms.",
-		"description": "Description of the small arm rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the small arm rounds, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.smoke_grenade": {
 		"defaultMessage": "A grenade that fills the area with thick smoke, hiding anyone inside it.",
-		"description": "Description of the smoke grenade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the smoke grenade, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.sonic_pistol": {
 		"defaultMessage": "A pistol that fires a focused blast of sound that can deafen its target.",
-		"description": "Description of every model of sonic pistol, such as the thunderstrike sonic pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of sonic pistol, such as the thunderstrike sonic pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.sonic_rifle": {
 		"defaultMessage": "A rifle that fires a focused blast of sound that can deafen its target.",
-		"description": "Description of every model of sonic rifle, such as the thunderstrike sonic rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of sonic rifle, such as the thunderstrike sonic rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.spear": {
 		"defaultMessage": "A long shaft with a sharp head, held in two hands to keep foes at a distance.",
-		"description": "Description of every model of spear, such as the tactical spear, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of spear, such as the tactical spear, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.starknife": {
 		"defaultMessage": "A ring with four blades jutting out like the points of a star, wielded up close or thrown. It is sacred to the sun goddess Sarenrae.",
-		"description": "Description of every model of starknife, such as the tactical starknife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of starknife, such as the tactical starknife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.stationwear": {
 		"defaultMessage": "Everyday clothes of a space station, with protective layers woven in so they work as light armor.",
-		"description": "Description of every model of stationwear, such as the flight suit stationwear, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of stationwear, such as the flight suit stationwear, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.steelbones": {
 		"defaultMessage": "Heavy armor built on a metal frame that braces its wearer's bones.",
-		"description": "Description of the steelbones, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the steelbones, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.stellar_cannon": {
 		"defaultMessage": "A heavy gun that fires bursts of concentrated stellar energy, which burn and can blind.",
-		"description": "Description of every model of stellar cannon, such as the light stellar cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of stellar cannon, such as the light stellar cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.stickybomb_grenade": {
 		"defaultMessage": "A grenade that bursts into a spray of sticky goo, gluing anyone nearby in place.",
-		"description": "Description of every model of stickybomb grenade, such as the stickybomb grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of stickybomb grenade, such as the stickybomb grenade I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.streetsweeper": {
 		"defaultMessage": "A riot gun that fires a wide wave of sound to knock crowds down and drive them back.",
-		"description": "Description of every model of streetsweeper, such as the thunderstrike streetsweeper, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of streetsweeper, such as the thunderstrike streetsweeper, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.survival_flare_gun": {
 		"defaultMessage": "A pistol for launching bright signal flares, which also burn when fired at a foe.",
-		"description": "Description of the survival flare gun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the survival flare gun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.survival_knife": {
 		"defaultMessage": "A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion.",
-		"description": "Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the survival knife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.swarmsuit": {
 		"defaultMessage": "Light armor sealed against stinging insects and other swarms.",
-		"description": "Description of the swarmsuit, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the swarmsuit, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.swoop_hammer": {
 		"defaultMessage": "A huge two-handed hammer whose head has thrusters that drive it in sweeping blows.",
-		"description": "Description of every model of swoop hammer, such as the tactical swoop hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of swoop hammer, such as the tactical swoop hammer, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.taclash": {
 		"defaultMessage": "A whip of tough cable that lashes foes from a step away and can trip them.",
-		"description": "Description of every model of taclash, such as the standard taclash, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of taclash, such as the standard taclash, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.tactical_knife": {
 		"defaultMessage": "A balanced combat knife of hardened alloy, made for soldiers who want a blade that is quick to draw and hard to break.",
-		"description": "Description of the tactical knife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the tactical knife, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.thinplate": {
 		"defaultMessage": "Heavy armor of thin, strong plates, lighter than most heavy armor.",
-		"description": "Description of the thinplate, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the thinplate, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.vesk_monolith": {
 		"defaultMessage": "Massive heavy armor of the vesk, nearly impenetrable.",
-		"description": "Description of every model of vesk monolith, such as the vesk monolith I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of vesk monolith, such as the vesk monolith I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.vesk_overplate": {
 		"defaultMessage": "Heavy armor of thick overlapping plates in the vesk's style.",
-		"description": "Description of every model of vesk overplate, such as the vesk overplate I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of vesk overplate, such as the vesk overplate I, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.vitrum_plate": {
 		"defaultMessage": "Heavy armor of plates of strong, clear glass.",
-		"description": "Description of the vitrum plate, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the vitrum plate, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.voidshield_armor": {
 		"defaultMessage": "Heavy armor that shields its wearer even in the void of space.",
-		"description": "Description of the voidshield armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the voidshield armor, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.x_gen_gun": {
 		"defaultMessage": "A heavy gun with spinning barrels that fires bullets at a furious rate.",
-		"description": "Description of every model of X-gen gun, such as the tactical X-gen gun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of X-gen gun, such as the tactical X-gen gun, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.ysoki_refractor_suit": {
 		"defaultMessage": "Light armor made by the ysoki, which bends light to make its wearer harder to see.",
-		"description": "Description of the ysoki refractor suit, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of the ysoki refractor suit, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.zero_cannon": {
 		"defaultMessage": "A heavy gun that fires a blast of supercooled gas, freezing what it hits.",
-		"description": "Description of every model of zero cannon, such as the tactical zero cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of zero cannon, such as the tactical zero cannon, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.zero_pistol": {
 		"defaultMessage": "A pistol that fires a blast of supercooled gas, chilling its target and slowing it down.",
-		"description": "Description of every model of zero pistol, such as the frostbite-class zero pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of zero pistol, such as the frostbite-class zero pistol, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemDescription.sf1e.zero_rifle": {
 		"defaultMessage": "A rifle that fires a blast of supercooled gas, chilling its target and slowing it down.",
-		"description": "Description of every model of zero rifle, such as the frostbite-class zero rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab"
+		"description": "Description of every model of zero rifle, such as the frostbite-class zero rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
 	"itemInspect.book": {
 		"defaultMessage": "Book",
 		"description": "In the Inspect dialog, which shows what an item is, the label of the book of game rules it comes from, such as the Core Rulebook"
 	},
-	"itemInspect.equips": {
-		"defaultMessage": "Equips to",
-		"description": "In the Inspect dialog, which shows what an item is, the label of where it equips, such as One hand, Two hands, Head or Nowhere"
-	},
-	"itemInspect.kind": {
-		"defaultMessage": "Kind",
-		"description": "In the Inspect dialog, which shows what an item is, the label of its kind, such as Weapon"
-	},
 	"itemInspect.noTypes": {
 		"defaultMessage": "None",
 		"description": "In the Inspect dialog, which shows what an item is, in place of its types when it has none"
-	},
-	"itemInspect.types": {
-		"defaultMessage": "Types",
-		"description": "In the Inspect dialog, which shows what an item is, the label of its types, such as light blades and thrown for a dagger"
 	},
 	"itemInspect.universeItem": {
 		"defaultMessage": "Made for this universe",
@@ -11033,15 +11021,15 @@
 	},
 	"pf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: armor and shields"
+		"description": "Kind of item in Pathfinder: armor and shields. A choice of the Kind filter on the editor's Items tab and in the dialog for choosing items, and in the item editor; shown as an item's kind in the Inspect dialog and on the Audit tab, and as the name of an item's icon for screen readers"
 	},
 	"pf1e.itemCategory.gear": {
 		"defaultMessage": "Gear",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: adventuring equipment such as rope, torches, tools and musical instruments"
+		"description": "Kind of item in Pathfinder: adventuring equipment such as rope, torches, tools and musical instruments. A choice of the Kind filter on the editor's Items tab and in the dialog for choosing items, and in the item editor; shown as an item's kind in the Inspect dialog and on the Audit tab, and as the name of an item's icon for screen readers"
 	},
 	"pf1e.itemCategory.weapon": {
 		"defaultMessage": "Weapon",
-		"description": "Kind of item in Pathfinder, a filter on the editor's Items tab and a choice in the item editor: swords, bows, ammunition and the like"
+		"description": "Kind of item in Pathfinder: swords, bows, ammunition and the like. A choice of the Kind filter on the editor's Items tab and in the dialog for choosing items, and in the item editor; shown as an item's kind in the Inspect dialog and on the Audit tab, and as the name of an item's icon for screen readers"
 	},
 	"pf1e.itemType.alchemical": {
 		"defaultMessage": "alchemical",
@@ -11445,19 +11433,19 @@
 	},
 	"pf1e.rulebook.acg": {
 		"defaultMessage": "Advanced Class Guide",
-		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the arcanist, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book's official translated edition where there is one"
 	},
 	"pf1e.rulebook.apg": {
 		"defaultMessage": "Advanced Player's Guide",
-		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
+		"description": "Name of a Pathfinder First Edition rulebook that adds classes such as the witch, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book's official translated edition where there is one"
 	},
 	"pf1e.rulebook.arg": {
 		"defaultMessage": "Advanced Race Guide",
-		"description": "Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, and on the Audit tab. Use the title of the book's official translated edition where there is one"
+		"description": "Name of a Pathfinder First Edition rulebook that adds playable races such as the tiefling, on the editor's Ruleset tab, as the title of its Contents dialog, in the dialog Save shows when it is turned off, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book's official translated edition where there is one"
 	},
 	"pf1e.rulebook.core": {
 		"defaultMessage": "Core Rulebook",
-		"description": "Name of the main rulebook of Pathfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book's official translated edition where there is one, such as the German \"Grundregelwerk\""
+		"description": "Name of the main rulebook of Pathfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book's official translated edition where there is one, such as the German \"Grundregelwerk\""
 	},
 	"pf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -11497,71 +11485,71 @@
 	},
 	"pf1e.slot.armor": {
 		"defaultMessage": "Armor",
-		"description": "Equipment slot in Pathfinder, where a suit of armor is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a suit of armor is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.belt": {
 		"defaultMessage": "Belt",
-		"description": "Equipment slot in Pathfinder, where a belt is worn around the waist: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a belt is worn around the waist. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.body": {
 		"defaultMessage": "Body",
-		"description": "Equipment slot in Pathfinder, where a robe or outfit of clothes is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a robe or outfit of clothes is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.chest": {
 		"defaultMessage": "Chest",
-		"description": "Equipment slot in Pathfinder, where a vest or shirt is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a vest or shirt is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.eyes": {
 		"defaultMessage": "Eyes",
-		"description": "Equipment slot in Pathfinder, where goggles or lenses are worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where goggles or lenses are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.feet": {
 		"defaultMessage": "Feet",
-		"description": "Equipment slot in Pathfinder, where boots or shoes are worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where boots or shoes are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.hands": {
 		"defaultMessage": "Hands",
-		"description": "Equipment slot in Pathfinder, where gloves or gauntlets are worn (not what is held in the hands): a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where gloves or gauntlets are worn (not what is held in the hands). A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.head": {
 		"defaultMessage": "Head",
-		"description": "Equipment slot in Pathfinder, where a helmet or hat is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a helmet or hat is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.headband": {
 		"defaultMessage": "Headband",
-		"description": "Equipment slot in Pathfinder, where a headband or circlet is worn around the forehead: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a headband or circlet is worn around the forehead. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.neck": {
 		"defaultMessage": "Neck",
-		"description": "Equipment slot in Pathfinder, where an amulet or holy symbol is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where an amulet or holy symbol is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.offArm": {
 		"defaultMessage": "Off arm",
-		"description": "Equipment slot in Pathfinder, where a buckler (a small shield) is strapped to the forearm of the arm that doesn't hold the main weapon, leaving that hand free: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a buckler (a small shield) is strapped to the forearm of the arm that doesn't hold the main weapon, leaving that hand free. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.ring": {
 		"defaultMessage": "Ring",
-		"description": "Where an item equips in Pathfinder: on a finger, in either of a character's two ring slots. A choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Where an item equips in Pathfinder: on a finger, in either of a character's two ring slots. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
 	},
 	"pf1e.slot.ringLeft": {
 		"defaultMessage": "Left ring",
-		"description": "Equipment slot in Pathfinder, the first of a character's two ring slots: a row of the Equipment section of a character's sheet"
+		"description": "Equipment slot in Pathfinder, the first of a character's two ring slots. A row of the Equipped list on a character's sheet. The \"Equip as left ring\" item in a ring's menu there equips a ring in this slot. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.ringRight": {
 		"defaultMessage": "Right ring",
-		"description": "Equipment slot in Pathfinder, the second of a character's two ring slots: a row of the Equipment section of a character's sheet"
+		"description": "Equipment slot in Pathfinder, the second of a character's two ring slots. A row of the Equipped list on a character's sheet. The \"Equip as right ring\" item in a ring's menu there equips a ring in this slot. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.shoulders": {
 		"defaultMessage": "Shoulders",
-		"description": "Equipment slot in Pathfinder, where a cloak or cape is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where a cloak or cape is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.tail": {
 		"defaultMessage": "Tail",
-		"description": "Equipment slot in Pathfinder, only for characters whose race has a tail, where a blade or weight is strapped to the tail as a weapon: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, only for characters whose race has a tail, where a blade or weight is strapped to the tail as a weapon. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.wrists": {
 		"defaultMessage": "Wrists",
-		"description": "Equipment slot in Pathfinder, where bracers or bracelets are worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Pathfinder, where bracers or bracelets are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.statMethod.point_buy_custom": {
 		"defaultMessage": "point buy: choose the number of points",
@@ -12701,15 +12689,15 @@
 	},
 	"sf1e.itemCategory.armor": {
 		"defaultMessage": "Armor",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: armor suits"
+		"description": "Kind of item in Starfinder: armor suits. A choice of the Kind filter on the editor's Items tab and in the dialog for choosing items, and in the item editor; shown as an item's kind in the Inspect dialog and on the Audit tab, and as the name of an item's icon for screen readers"
 	},
 	"sf1e.itemCategory.gear": {
 		"defaultMessage": "Gear",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: equipment such as comm units and flashlights"
+		"description": "Kind of item in Starfinder: equipment such as comm units and flashlights. A choice of the Kind filter on the editor's Items tab and in the dialog for choosing items, and in the item editor; shown as an item's kind in the Inspect dialog and on the Audit tab, and as the name of an item's icon for screen readers"
 	},
 	"sf1e.itemCategory.weapon": {
 		"defaultMessage": "Weapon",
-		"description": "Kind of item in Starfinder, a filter on the editor's Items tab and a choice in the item editor: knives, guns, grenades, ammunition and the like"
+		"description": "Kind of item in Starfinder: knives, guns, grenades, ammunition and the like. A choice of the Kind filter on the editor's Items tab and in the dialog for choosing items, and in the item editor; shown as an item's kind in the Inspect dialog and on the Audit tab, and as the name of an item's icon for screen readers"
 	},
 	"sf1e.itemType.advanced_melee": {
 		"defaultMessage": "advanced melee",
@@ -12845,7 +12833,7 @@
 	},
 	"sf1e.rulebook.core": {
 		"defaultMessage": "Starfinder Core Rulebook",
-		"description": "Name of the main rulebook of Starfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog and on the Audit tab. Use the title of the book's official translated edition where there is one, such as the German \"Starfinder Grundregelwerk\""
+		"description": "Name of the main rulebook of Starfinder First Edition, on the editor's Ruleset tab, as the title of its Contents dialog, on the Audit tab, and as the book an item comes from in the Inspect dialog. Use the title of the book's official translated edition where there is one, such as the German \"Starfinder Grundregelwerk\""
 	},
 	"sf1e.size.colossal": {
 		"defaultMessage": "Colossal",
@@ -12885,11 +12873,11 @@
 	},
 	"sf1e.slot.armor": {
 		"defaultMessage": "Armor",
-		"description": "Equipment slot in Starfinder, where a suit of armor is worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Starfinder, where a suit of armor is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"sf1e.slot.clothing": {
 		"defaultMessage": "Clothing",
-		"description": "Equipment slot in Starfinder, where everyday clothes or a space suit are worn: a row of the Equipment section of a character's sheet, a choice in the item editor's \"Equips to\" field, and where an item equips in the Inspect dialog"
+		"description": "Equipment slot in Starfinder, where everyday clothes or a space suit are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"sf1e.theme.ace_pilot": {
 		"defaultMessage": "Ace Pilot",

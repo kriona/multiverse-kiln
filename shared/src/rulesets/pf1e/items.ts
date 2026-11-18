@@ -21,17 +21,17 @@ export const PF1E_ITEM_CATEGORY_NAMES: Record<Pf1eItemCategory, MessageDescripto
 	weapon: {
 		id: 'pf1e.itemCategory.weapon',
 		defaultMessage: 'Weapon',
-		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab and a choice in the item editor: swords, bows, ammunition and the like'
+		description: 'Kind of item in Pathfinder: swords, bows, ammunition and the like. A choice of the Kind filter on the editor\'s Items tab and in the dialog for choosing items, and in the item editor; shown as an item\'s kind in the Inspect dialog and on the Audit tab, and as the name of an item\'s icon for screen readers'
 	},
 	armor: {
 		id: 'pf1e.itemCategory.armor',
 		defaultMessage: 'Armor',
-		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab and a choice in the item editor: armor and shields'
+		description: 'Kind of item in Pathfinder: armor and shields. A choice of the Kind filter on the editor\'s Items tab and in the dialog for choosing items, and in the item editor; shown as an item\'s kind in the Inspect dialog and on the Audit tab, and as the name of an item\'s icon for screen readers'
 	},
 	gear: {
 		id: 'pf1e.itemCategory.gear',
 		defaultMessage: 'Gear',
-		description: 'Kind of item in Pathfinder, a filter on the editor\'s Items tab and a choice in the item editor: adventuring equipment such as rope, torches, tools and musical instruments'
+		description: 'Kind of item in Pathfinder: adventuring equipment such as rope, torches, tools and musical instruments. A choice of the Kind filter on the editor\'s Items tab and in the dialog for choosing items, and in the item editor; shown as an item\'s kind in the Inspect dialog and on the Audit tab, and as the name of an item\'s icon for screen readers'
 	}
 });
 
@@ -942,733 +942,733 @@ export const PF1E_DEFAULT_ITEM_NAMES = defineMessages({
 export type Pf1eDefaultItemKey = keyof typeof PF1E_DEFAULT_ITEM_NAMES;
 
 /**
- * Each default item's description, by the item's key, shown in the item editor, when choosing items, on a character's sheet and on the Audit tab
+ * Each default item's description, by the item's key, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab
  */
 export const PF1E_DEFAULT_ITEM_DESCRIPTIONS: Record<Pf1eDefaultItemKey, MessageDescriptor> = defineMessages({
 	dagger: {
 		id: 'itemDescription.pf1e.dagger',
 		defaultMessage: 'A short blade for stabbing up close or throwing.',
-		description: 'Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	cestus: {
 		id: 'itemDescription.pf1e.cestus',
 		defaultMessage: 'A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things.',
-		description: 'Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the cestus, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sword_cane: {
 		id: 'itemDescription.pf1e.sword_cane',
 		defaultMessage: 'A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw.',
-		description: 'Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sword cane, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	wooden_armor: {
 		id: 'itemDescription.pf1e.wooden_armor',
 		defaultMessage: 'Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn\'t hinder swimming.',
-		description: 'Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the wooden armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	quilted_cloth: {
 		id: 'itemDescription.pf1e.quilted_cloth',
 		defaultMessage: 'Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding.',
-		description: 'Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the quilted cloth, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kobold_long_lash: {
 		id: 'itemDescription.pf1e.kobold_long_lash',
 		defaultMessage: 'A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it.',
-		description: 'Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the long lash tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kobold_spiked_tail: {
 		id: 'itemDescription.pf1e.kobold_spiked_tail',
 		defaultMessage: 'A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it.',
-		description: 'Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the spiked tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	ratfolk_tailblade: {
 		id: 'itemDescription.pf1e.ratfolk_tailblade',
 		defaultMessage: 'A small knife strapped to the tip of a ratfolk\'s tail, so the ratfolk can slash at foes with its tail.',
-		description: 'Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the ratfolk tailblade, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	book_of_puzzles: {
 		id: 'itemDescription.pf1e.book_of_puzzles',
 		defaultMessage: 'A book of ten brainteasers that sharpen the mind. Each puzzle solved gives a second roll on one check to disarm a device, recall knowledge or read someone that day.',
-		description: 'Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the book of puzzles, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	book_of_war_prayers: {
 		id: 'itemDescription.pf1e.book_of_war_prayers',
 		defaultMessage: 'A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day.',
-		description: 'Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the book of war prayers, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	footprints_cast: {
 		id: 'itemDescription.pf1e.footprints_cast',
 		defaultMessage: 'A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather.',
-		description: 'Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the footprints cast, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_fire_ink: {
 		id: 'itemDescription.pf1e.light_fire_ink',
 		defaultMessage: 'An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read.',
-		description: 'Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light fire ink, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	tome_of_epics: {
 		id: 'itemDescription.pf1e.tome_of_epics',
 		defaultMessage: 'A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day.',
-		description: 'Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the tome of epics, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	gauntlet: {
 		id: 'itemDescription.pf1e.gauntlet',
 		defaultMessage: 'A metal glove that protects the hand and turns a punch into a lethal blow.',
-		description: 'Description of the gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	punching_dagger: {
 		id: 'itemDescription.pf1e.punching_dagger',
 		defaultMessage: 'A short, wide blade with a grip across the fist, driven forward like a punch. The weight behind the thrust makes for deadly critical hits.',
-		description: 'Description of the punching dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the punching dagger, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	spiked_gauntlet: {
 		id: 'itemDescription.pf1e.spiked_gauntlet',
 		defaultMessage: 'A metal glove covered in spikes, so a punch pierces as well as bruises.',
-		description: 'Description of the spiked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the spiked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_mace: {
 		id: 'itemDescription.pf1e.light_mace',
 		defaultMessage: 'A short club with a heavy metal head, easy to swing in one hand.',
-		description: 'Description of the light mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sickle: {
 		id: 'itemDescription.pf1e.sickle',
 		defaultMessage: 'A farming tool with a curved blade on a short handle. Its hooked edge can trip a foe.',
-		description: 'Description of the sickle, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sickle, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	club: {
 		id: 'itemDescription.pf1e.club',
 		defaultMessage: 'A sturdy piece of wood, easy to find and easy to use. It can be thrown in a pinch.',
-		description: 'Description of the club, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the club, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_mace: {
 		id: 'itemDescription.pf1e.heavy_mace',
 		defaultMessage: 'A long club with a heavy metal head that crushes armor and bone, still light enough to swing in one hand.',
-		description: 'Description of the heavy mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy mace, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	morningstar: {
 		id: 'itemDescription.pf1e.morningstar',
 		defaultMessage: 'A heavy club topped with a spiked metal ball, so each blow both crushes and pierces.',
-		description: 'Description of the morningstar, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the morningstar, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shortspear: {
 		id: 'itemDescription.pf1e.shortspear',
 		defaultMessage: 'A spear about three feet long, light enough to wield in one hand or to throw.',
-		description: 'Description of the shortspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the shortspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	longspear: {
 		id: 'itemDescription.pf1e.longspear',
 		defaultMessage: 'A spear over eight feet long that strikes foes beyond arm\'s reach. Braced against a charge, it deals double damage.',
-		description: 'Description of the longspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the longspear, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	quarterstaff: {
 		id: 'itemDescription.pf1e.quarterstaff',
 		defaultMessage: 'A simple wooden staff about five feet long. Either end can strike, so it can be fought with as two weapons.',
-		description: 'Description of the quarterstaff, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the quarterstaff, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	spear: {
 		id: 'itemDescription.pf1e.spear',
 		defaultMessage: 'A spear about five feet long, held in both hands or thrown. Braced against a charge, it deals double damage.',
-		description: 'Description of the spear, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the spear, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	blowgun: {
 		id: 'itemDescription.pf1e.blowgun',
 		defaultMessage: 'A long, hollow tube that shoots small darts with a breath. The darts do little harm alone, so they are often poisoned.',
-		description: 'Description of the blowgun, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the blowgun, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_crossbow: {
 		id: 'itemDescription.pf1e.light_crossbow',
 		defaultMessage: 'A crossbow drawn back with a lever and loaded with one bolt at a time. Anyone can use it without much training.',
-		description: 'Description of the light crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_crossbow: {
 		id: 'itemDescription.pf1e.heavy_crossbow',
 		defaultMessage: 'A powerful crossbow drawn back with a small winch. It hits hard, but takes a while to load.',
-		description: 'Description of the heavy crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dart: {
 		id: 'itemDescription.pf1e.dart',
 		defaultMessage: 'A small, weighted spike thrown by hand.',
-		description: 'Description of the dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	javelin: {
 		id: 'itemDescription.pf1e.javelin',
 		defaultMessage: 'A thin spear balanced for throwing. It is clumsy to fight with in hand.',
-		description: 'Description of the javelin, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the javelin, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sling: {
 		id: 'itemDescription.pf1e.sling',
 		defaultMessage: 'A leather strap that hurls stones or lead bullets with a whirl of the arm.',
-		description: 'Description of the sling, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sling, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	throwing_axe: {
 		id: 'itemDescription.pf1e.throwing_axe',
 		defaultMessage: 'A small axe weighted to fly true when thrown.',
-		description: 'Description of the throwing axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the throwing axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_hammer: {
 		id: 'itemDescription.pf1e.light_hammer',
 		defaultMessage: 'A small hammer, handy up close and balanced for throwing.',
-		description: 'Description of the light hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	handaxe: {
 		id: 'itemDescription.pf1e.handaxe',
 		defaultMessage: 'A small axe light enough to swing in one hand, as useful for chopping wood as for fighting.',
-		description: 'Description of the handaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the handaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kukri: {
 		id: 'itemDescription.pf1e.kukri',
 		defaultMessage: 'A heavy knife whose inward-curving blade bites deep, landing critical hits often.',
-		description: 'Description of the kukri, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the kukri, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_pick: {
 		id: 'itemDescription.pf1e.light_pick',
 		defaultMessage: 'A small war pick whose pointed head punches through armor, dealing deadly critical hits.',
-		description: 'Description of the light pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sap: {
 		id: 'itemDescription.pf1e.sap',
 		defaultMessage: 'A small leather bag filled with lead. It knocks foes out rather than killing them.',
-		description: 'Description of the sap, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sap, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	starknife: {
 		id: 'itemDescription.pf1e.starknife',
 		defaultMessage: 'A metal ring with four tapered blades pointing outward like a star. It can be swung up close or thrown.',
-		description: 'Description of the starknife, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the starknife, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	short_sword: {
 		id: 'itemDescription.pf1e.short_sword',
 		defaultMessage: 'A short, straight blade, quick and easy to handle.',
-		description: 'Description of the short sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the short sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	battleaxe: {
 		id: 'itemDescription.pf1e.battleaxe',
 		defaultMessage: 'A broad-bladed axe made for battle, heavy enough to split a shield.',
-		description: 'Description of the battleaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the battleaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flail: {
 		id: 'itemDescription.pf1e.flail',
 		defaultMessage: 'A spiked metal ball swung on a chain from a handle. The chain can wrap around a foe\'s legs or weapon to trip or disarm them.',
-		description: 'Description of the flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	longsword: {
 		id: 'itemDescription.pf1e.longsword',
 		defaultMessage: 'A straight, double-edged sword about three and a half feet long, the favorite of many warriors.',
-		description: 'Description of the longsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the longsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_pick: {
 		id: 'itemDescription.pf1e.heavy_pick',
 		defaultMessage: 'A war pick with a long spike that punches through armor, dealing terrible critical hits.',
-		description: 'Description of the heavy pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy pick, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	rapier: {
 		id: 'itemDescription.pf1e.rapier',
 		defaultMessage: 'A slender sword built for quick thrusts. A nimble fighter can wield it with finesse rather than strength.',
-		description: 'Description of the rapier, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the rapier, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	scimitar: {
 		id: 'itemDescription.pf1e.scimitar',
 		defaultMessage: 'A curved sword whose long edge makes its cuts land critical hits often.',
-		description: 'Description of the scimitar, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the scimitar, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	trident: {
 		id: 'itemDescription.pf1e.trident',
 		defaultMessage: 'A three-pronged spear, thrust with one hand or thrown. Braced against a charge, it deals double damage.',
-		description: 'Description of the trident, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the trident, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	warhammer: {
 		id: 'itemDescription.pf1e.warhammer',
 		defaultMessage: 'A heavy hammer whose blows crush armor and deal deadly critical hits.',
-		description: 'Description of the warhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the warhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	falchion: {
 		id: 'itemDescription.pf1e.falchion',
 		defaultMessage: 'A heavy sword with a curved blade that widens toward the tip, swung in both hands. Its cuts land critical hits often.',
-		description: 'Description of the falchion, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the falchion, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	glaive: {
 		id: 'itemDescription.pf1e.glaive',
 		defaultMessage: 'A single-edged blade on a pole about seven feet long, which strikes foes beyond arm\'s reach.',
-		description: 'Description of the glaive, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the glaive, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	greataxe: {
 		id: 'itemDescription.pf1e.greataxe',
 		defaultMessage: 'A massive axe swung in both hands, whose blows can cleave a foe in two.',
-		description: 'Description of the greataxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the greataxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	greatclub: {
 		id: 'itemDescription.pf1e.greatclub',
 		defaultMessage: 'A great length of wood, often banded with iron, swung in both hands.',
-		description: 'Description of the greatclub, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the greatclub, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_flail: {
 		id: 'itemDescription.pf1e.heavy_flail',
 		defaultMessage: 'A large flail with spiked balls on chains, swung in both hands. It can trip or disarm a foe.',
-		description: 'Description of the heavy flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	greatsword: {
 		id: 'itemDescription.pf1e.greatsword',
 		defaultMessage: 'A massive sword over five feet long, swung in both hands in great sweeping strokes.',
-		description: 'Description of the greatsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the greatsword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	guisarme: {
 		id: 'itemDescription.pf1e.guisarme',
 		defaultMessage: 'A long pole topped with a curved blade and a hook for pulling foes off their feet. It strikes foes beyond arm\'s reach.',
-		description: 'Description of the guisarme, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the guisarme, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	halberd: {
 		id: 'itemDescription.pf1e.halberd',
 		defaultMessage: 'A long pole topped with an axe blade, a spike and a hook. It can trip foes, and braced against a charge it deals double damage.',
-		description: 'Description of the halberd, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the halberd, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	lance: {
 		id: 'itemDescription.pf1e.lance',
 		defaultMessage: 'A long, heavy spear for charging on horseback, where it deals double damage. It strikes foes beyond arm\'s reach.',
-		description: 'Description of the lance, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the lance, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	ranseur: {
 		id: 'itemDescription.pf1e.ranseur',
 		defaultMessage: 'A pole with a spearhead flanked by two curved blades, good for disarming foes beyond arm\'s reach.',
-		description: 'Description of the ranseur, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the ranseur, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	scythe: {
 		id: 'itemDescription.pf1e.scythe',
 		defaultMessage: 'A long, curved blade on a pole, made for reaping grain. Its deep cuts deal terrible critical hits and can trip a foe.',
-		description: 'Description of the scythe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the scythe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shortbow: {
 		id: 'itemDescription.pf1e.shortbow',
 		defaultMessage: 'A small bow that shoots arrows, easy to use on horseback.',
-		description: 'Description of the shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	composite_shortbow: {
 		id: 'itemDescription.pf1e.composite_shortbow',
 		defaultMessage: 'A shortbow of layered horn, wood and sinew. One made for a strong archer adds their strength to its damage.',
-		description: 'Description of the composite shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the composite shortbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	longbow: {
 		id: 'itemDescription.pf1e.longbow',
 		defaultMessage: 'A bow about as tall as its archer, which shoots arrows far. It can\'t be shot on horseback.',
-		description: 'Description of the longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	composite_longbow: {
 		id: 'itemDescription.pf1e.composite_longbow',
 		defaultMessage: 'A longbow of layered horn, wood and sinew. One made for a strong archer adds their strength to its damage.',
-		description: 'Description of the composite longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the composite longbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kama: {
 		id: 'itemDescription.pf1e.kama',
 		defaultMessage: 'A short sickle with a hooked blade, used by monks. It can trip a foe.',
-		description: 'Description of the kama, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the kama, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	nunchaku: {
 		id: 'itemDescription.pf1e.nunchaku',
 		defaultMessage: 'Two short sticks joined by a chain or cord, whirled by monks to strike and to disarm.',
-		description: 'Description of the nunchaku, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the nunchaku, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sai: {
 		id: 'itemDescription.pf1e.sai',
 		defaultMessage: 'A blunt metal spike with two curved prongs that catch an enemy\'s blade. Monks use it to disarm foes and to strike.',
-		description: 'Description of the sai, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sai, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	siangham: {
 		id: 'itemDescription.pf1e.siangham',
 		defaultMessage: 'A thin, arrow-like shaft of metal that monks use to stab.',
-		description: 'Description of the siangham, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the siangham, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	bastard_sword: {
 		id: 'itemDescription.pf1e.bastard_sword',
 		defaultMessage: 'A long, heavy sword that takes special training to wield in one hand. In both hands, any trained warrior can use it.',
-		description: 'Description of the bastard sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the bastard sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dwarven_waraxe: {
 		id: 'itemDescription.pf1e.dwarven_waraxe',
 		defaultMessage: 'A heavy axe that takes special training to swing in one hand. In both hands, any trained warrior can use it.',
-		description: 'Description of the dwarven waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dwarven waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	whip: {
 		id: 'itemDescription.pf1e.whip',
 		defaultMessage: 'A long leather lash that reaches foes up to 15 feet away to trip or disarm them. Its sting hurts but doesn\'t kill.',
-		description: 'Description of the whip, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the whip, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	orc_double_axe: {
 		id: 'itemDescription.pf1e.orc_double_axe',
 		defaultMessage: 'A cruel weapon with an axe head at each end of its shaft, so it can be fought with as two weapons.',
-		description: 'Description of the orc double axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the orc double axe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	spiked_chain: {
 		id: 'itemDescription.pf1e.spiked_chain',
 		defaultMessage: 'A chain about four feet long, covered in spikes and swung in both hands. It can trip or disarm a foe.',
-		description: 'Description of the spiked chain, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the spiked chain, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	elven_curve_blade: {
 		id: 'itemDescription.pf1e.elven_curve_blade',
 		defaultMessage: 'A long, slightly curved elven sword held in both hands. A nimble fighter can wield it with finesse rather than strength.',
-		description: 'Description of the elven curve blade, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the elven curve blade, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dire_flail: {
 		id: 'itemDescription.pf1e.dire_flail',
 		defaultMessage: 'A shaft with a spiked ball on a chain at each end, so it can be fought with as two weapons. It can trip or disarm a foe.',
-		description: 'Description of the dire flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dire flail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	gnome_hooked_hammer: {
 		id: 'itemDescription.pf1e.gnome_hooked_hammer',
 		defaultMessage: 'A gnome weapon with a hammer head at one end and a long, curved pick at the other, so it can be fought with as two weapons. It can trip a foe.',
-		description: 'Description of the gnome hooked hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the gnome hooked hammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	two_bladed_sword: {
 		id: 'itemDescription.pf1e.two_bladed_sword',
 		defaultMessage: 'A sword blade at each end of a central grip, so it can be fought with as two weapons.',
-		description: 'Description of the two-bladed sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the two-bladed sword, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dwarven_urgrosh: {
 		id: 'itemDescription.pf1e.dwarven_urgrosh',
 		defaultMessage: 'A dwarven weapon with an axe head at one end and a spearhead at the other, so it can be fought with as two weapons. The spear end can be braced against a charge.',
-		description: 'Description of the dwarven urgrosh, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dwarven urgrosh, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	bolas: {
 		id: 'itemDescription.pf1e.bolas',
 		defaultMessage: 'Two or three weights joined by cords, thrown to wrap around a foe\'s legs and trip them.',
-		description: 'Description of the bolas, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the bolas, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	hand_crossbow: {
 		id: 'itemDescription.pf1e.hand_crossbow',
 		defaultMessage: 'A tiny crossbow, drawn back by hand and shot with one hand.',
-		description: 'Description of the hand crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the hand crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_repeating_crossbow: {
 		id: 'itemDescription.pf1e.light_repeating_crossbow',
 		defaultMessage: 'A light crossbow with a case holding five bolts, so it shoots again without reloading until the case is empty.',
-		description: 'Description of the light repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_repeating_crossbow: {
 		id: 'itemDescription.pf1e.heavy_repeating_crossbow',
 		defaultMessage: 'A heavy crossbow with a case holding five bolts, so it shoots again without reloading until the case is empty.',
-		description: 'Description of the heavy repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy repeating crossbow, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	net: {
 		id: 'itemDescription.pf1e.net',
 		defaultMessage: 'A weighted net thrown over a foe to entangle them, held by a trailing rope.',
-		description: 'Description of the net, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the net, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shuriken: {
 		id: 'itemDescription.pf1e.shuriken',
 		defaultMessage: 'A small, flat metal star with sharp points, thrown by hand. Monks train with it.',
-		description: 'Description of the shuriken, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the shuriken, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	halfling_sling_staff: {
 		id: 'itemDescription.pf1e.halfling_sling_staff',
 		defaultMessage: 'A short staff with a sling at one end, which hurls stones harder than a sling. It can also be swung as a club.',
-		description: 'Description of the halfling sling staff, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the halfling sling staff, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	arrows: {
 		id: 'itemDescription.pf1e.arrows',
 		defaultMessage: 'Arrows for shortbows and longbows. An arrow that hits is destroyed, while one that misses may be found again.',
-		description: 'Description of the arrows, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the arrows, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	crossbow_bolts: {
 		id: 'itemDescription.pf1e.crossbow_bolts',
 		defaultMessage: 'Short, heavy bolts for crossbows.',
-		description: 'Description of the crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	repeating_crossbow_bolts: {
 		id: 'itemDescription.pf1e.repeating_crossbow_bolts',
 		defaultMessage: 'Bolts in a case of five, which loads a repeating crossbow all at once.',
-		description: 'Description of the repeating crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the repeating crossbow bolts, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	blowgun_darts: {
 		id: 'itemDescription.pf1e.blowgun_darts',
 		defaultMessage: 'Small, light darts for a blowgun, often coated with poison.',
-		description: 'Description of the blowgun darts, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the blowgun darts, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sling_bullets: {
 		id: 'itemDescription.pf1e.sling_bullets',
 		defaultMessage: 'Small lead balls for slings and sling staffs. Stones can be slung too, but do less harm.',
-		description: 'Description of the sling bullets, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sling bullets, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	padded_armor: {
 		id: 'itemDescription.pf1e.padded_armor',
 		defaultMessage: 'Quilted layers of cloth and batting. It guards little, but barely hinders its wearer.',
-		description: 'Description of the padded armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the padded armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	leather_armor: {
 		id: 'itemDescription.pf1e.leather_armor',
 		defaultMessage: 'A breastplate and shoulder guards of leather hardened by boiling in oil, with softer, more flexible leather elsewhere.',
-		description: 'Description of the leather armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the leather armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	studded_leather: {
 		id: 'itemDescription.pf1e.studded_leather',
 		defaultMessage: 'Tough but flexible leather reinforced with close-set metal rivets.',
-		description: 'Description of the studded leather, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the studded leather, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	chain_shirt: {
 		id: 'itemDescription.pf1e.chain_shirt',
 		defaultMessage: 'A shirt of interlocking metal rings that covers the torso, worn over padding.',
-		description: 'Description of the chain shirt, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the chain shirt, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	hide_armor: {
 		id: 'itemDescription.pf1e.hide_armor',
 		defaultMessage: 'Several layers of thick animal hide and fur. It is warm and sturdy, but stiff.',
-		description: 'Description of the hide armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the hide armor, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	scale_mail: {
 		id: 'itemDescription.pf1e.scale_mail',
 		defaultMessage: 'A coat and leggings of leather covered with overlapping pieces of metal, like the scales of a fish.',
-		description: 'Description of the scale mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the scale mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	chainmail: {
 		id: 'itemDescription.pf1e.chainmail',
 		defaultMessage: 'A suit of interlocking metal rings over quilted fabric, covering the arms and legs as well as the torso.',
-		description: 'Description of the chainmail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the chainmail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	breastplate: {
 		id: 'itemDescription.pf1e.breastplate',
 		defaultMessage: 'A fitted metal plate covering the front and back of the torso, worn with a skirt of hardened leather.',
-		description: 'Description of the breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	splint_mail: {
 		id: 'itemDescription.pf1e.splint_mail',
 		defaultMessage: 'Narrow upright strips of metal riveted to a leather backing, worn over padding.',
-		description: 'Description of the splint mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the splint mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	banded_mail: {
 		id: 'itemDescription.pf1e.banded_mail',
 		defaultMessage: 'Overlapping horizontal bands of metal sewn to a backing of leather and chainmail.',
-		description: 'Description of the banded mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the banded mail, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	half_plate: {
 		id: 'itemDescription.pf1e.half_plate',
 		defaultMessage: 'Chainmail with shaped metal plates over the vital areas, worn with gauntlets and a helmet.',
-		description: 'Description of the half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	full_plate: {
 		id: 'itemDescription.pf1e.full_plate',
 		defaultMessage: 'A suit of shaped, interlocking metal plates covering the whole body, fitted to its wearer. It guards best of all armor, but slows its wearer the most.',
-		description: 'Description of the full plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the full plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	locked_gauntlet: {
 		id: 'itemDescription.pf1e.locked_gauntlet',
 		defaultMessage: 'An armored glove with straps and small chains that lock a weapon in its grip, so it is hard to knock away. It can punch as a gauntlet does.',
-		description: 'Description of the locked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the locked gauntlet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	buckler: {
 		id: 'itemDescription.pf1e.buckler',
 		defaultMessage: 'A small metal shield strapped to the forearm, which leaves the hand free to wield a weapon.',
-		description: 'Description of the buckler, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the buckler, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_wooden_shield: {
 		id: 'itemDescription.pf1e.light_wooden_shield',
 		defaultMessage: 'A small wooden shield strapped to the forearm and gripped in one hand. That hand can still carry things, but not wield a weapon.',
-		description: 'Description of the light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	light_steel_shield: {
 		id: 'itemDescription.pf1e.light_steel_shield',
 		defaultMessage: 'A small steel shield strapped to the forearm and gripped in one hand, sturdier than a wooden one.',
-		description: 'Description of the light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_wooden_shield: {
 		id: 'itemDescription.pf1e.heavy_wooden_shield',
 		defaultMessage: 'A large wooden shield strapped to the forearm and gripped in one hand, too big to hold anything else in that hand.',
-		description: 'Description of the heavy wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heavy_steel_shield: {
 		id: 'itemDescription.pf1e.heavy_steel_shield',
 		defaultMessage: 'A large steel shield strapped to the forearm and gripped in one hand, too big to hold anything else in that hand.',
-		description: 'Description of the heavy steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heavy steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	tower_shield: {
 		id: 'itemDescription.pf1e.tower_shield',
 		defaultMessage: 'A massive wooden shield almost as tall as its bearer. It can be planted to hide behind completely, but it hinders its bearer\'s attacks.',
-		description: 'Description of the tower shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the tower shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	artisans_tools: {
 		id: 'itemDescription.pf1e.artisans_tools',
 		defaultMessage: 'The special tools of one craft, such as smithing or woodworking. Without them, crafting is much harder.',
-		description: 'Description of the artisan\'s tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the artisan\'s tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	climbers_kit: {
 		id: 'itemDescription.pf1e.climbers_kit',
 		defaultMessage: 'Special pitons, boot tips, gloves and a harness that make climbing easier.',
-		description: 'Description of the climber\'s kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the climber\'s kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	disguise_kit: {
 		id: 'itemDescription.pf1e.disguise_kit',
 		defaultMessage: 'Makeup, hair coloring and small props that make a disguise more convincing. It is used up after ten disguises.',
-		description: 'Description of the disguise kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the disguise kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	healers_kit: {
 		id: 'itemDescription.pf1e.healers_kit',
 		defaultMessage: 'Herbs, salves, bandages and splints that help treat wounds and illness. It is used up after ten uses.',
-		description: 'Description of the healer\'s kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the healer\'s kit, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	holly_and_mistletoe: {
 		id: 'itemDescription.pf1e.holly_and_mistletoe',
 		defaultMessage: 'Sprigs of holly and mistletoe that druids and other priests of nature hold as the divine focus of their spells.',
-		description: 'Description of the holly and mistletoe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the holly and mistletoe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	wooden_holy_symbol: {
 		id: 'itemDescription.pf1e.wooden_holy_symbol',
 		defaultMessage: 'A carved wooden emblem of a god, worn on a cord. Clerics present it to cast their spells and channel their god\'s energy.',
-		description: 'Description of the wooden holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the wooden holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	silver_holy_symbol: {
 		id: 'itemDescription.pf1e.silver_holy_symbol',
 		defaultMessage: 'A silver emblem of a god, worn on a chain. Clerics present it to cast their spells and channel their god\'s energy.',
-		description: 'Description of the silver holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the silver holy symbol, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	thieves_tools: {
 		id: 'itemDescription.pf1e.thieves_tools',
 		defaultMessage: 'Picks, probes, a small mirror and pliers for opening locks and disarming traps. Without them, both are much harder.',
-		description: 'Description of the thieves\' tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the thieves\' tools, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	bells: {
 		id: 'itemDescription.pf1e.bells',
 		defaultMessage: 'A set of small bells rung by shaking or striking them, for performing.',
-		description: 'Description of the bells, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the bells, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	chimes: {
 		id: 'itemDescription.pf1e.chimes',
 		defaultMessage: 'Tuned metal tubes hung from a frame and struck to ring out notes, for performing.',
-		description: 'Description of the chimes, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the chimes, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	drum: {
 		id: 'itemDescription.pf1e.drum',
 		defaultMessage: 'A drum beaten with the hands or with sticks, for performing or keeping a marching beat.',
-		description: 'Description of the drum, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the drum, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	fiddle: {
 		id: 'itemDescription.pf1e.fiddle',
 		defaultMessage: 'A stringed instrument held under the chin and played with a bow, for performing.',
-		description: 'Description of the fiddle, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the fiddle, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	harp: {
 		id: 'itemDescription.pf1e.harp',
 		defaultMessage: 'A frame of strings plucked with the fingers, for performing.',
-		description: 'Description of the harp, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the harp, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	lute: {
 		id: 'itemDescription.pf1e.lute',
 		defaultMessage: 'A stringed instrument with a rounded back, plucked or strummed, for performing.',
-		description: 'Description of the lute, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the lute, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	mandolin: {
 		id: 'itemDescription.pf1e.mandolin',
 		defaultMessage: 'A small, bright-sounding stringed instrument plucked with a pick, for performing.',
-		description: 'Description of the mandolin, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the mandolin, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	flute: {
 		id: 'itemDescription.pf1e.flute',
 		defaultMessage: 'A wind instrument played by blowing across a hole near one end, for performing.',
-		description: 'Description of the flute, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the flute, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	pan_pipes: {
 		id: 'itemDescription.pf1e.pan_pipes',
 		defaultMessage: 'Reed or wooden pipes of different lengths bound side by side and blown across, for performing.',
-		description: 'Description of the pan pipes, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the pan pipes, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	recorder: {
 		id: 'itemDescription.pf1e.recorder',
 		defaultMessage: 'A simple wooden pipe with finger holes, blown at one end, for performing.',
-		description: 'Description of the recorder, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the recorder, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	shawm: {
 		id: 'itemDescription.pf1e.shawm',
 		defaultMessage: 'A loud, piercing wind instrument with a double reed, for performing outdoors.',
-		description: 'Description of the shawm, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the shawm, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	trumpet: {
 		id: 'itemDescription.pf1e.trumpet',
 		defaultMessage: 'A brass horn whose notes carry far, for performing and for signals.',
-		description: 'Description of the trumpet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the trumpet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	lasso: {
 		id: 'itemDescription.pf1e.lasso',
 		defaultMessage: 'A rope with a sliding loop, thrown to snare and entangle a foe.',
-		description: 'Description of the lasso, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the lasso, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	armored_coat: {
 		id: 'itemDescription.pf1e.armored_coat',
 		defaultMessage: 'A sturdy leather coat with metal plates sewn into its lining. It guards less than most medium armor, but goes on and off in moments.',
-		description: 'Description of the armored coat, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the armored coat, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	agile_breastplate: {
 		id: 'itemDescription.pf1e.agile_breastplate',
 		defaultMessage: 'A breastplate with a jointed plate over the belly, so its wearer can climb and jump more freely.',
-		description: 'Description of the agile breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the agile breastplate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	agile_half_plate: {
 		id: 'itemDescription.pf1e.agile_half_plate',
 		defaultMessage: 'Half-plate with jointed plates that let its wearer climb and jump more freely.',
-		description: 'Description of the agile half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the agile half-plate, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	quickdraw_light_wooden_shield: {
 		id: 'itemDescription.pf1e.quickdraw_light_wooden_shield',
 		defaultMessage: 'A light wooden shield with special straps, so it can be readied as quickly as drawing a weapon.',
-		description: 'Description of the quickdraw light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the quickdraw light wooden shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	quickdraw_light_steel_shield: {
 		id: 'itemDescription.pf1e.quickdraw_light_steel_shield',
 		defaultMessage: 'A light steel shield with special straps, so it can be readied as quickly as drawing a weapon.',
-		description: 'Description of the quickdraw light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the quickdraw light steel shield, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kobold_pounder_tail: {
 		id: 'itemDescription.pf1e.kobold_pounder_tail',
 		defaultMessage: 'A squat ball of dull metal a kobold slips over the tip of its tail, turning its tail slap into a crushing blow. Only kobolds trained to fight with their tails can use it.',
-		description: 'Description of the pounder tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the pounder tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kobold_razored_tail: {
 		id: 'itemDescription.pf1e.kobold_razored_tail',
 		defaultMessage: 'A sharp blade a kobold slips over the tip of its tail, turning its tail slap into a slashing blow. Only kobolds trained to fight with their tails can use it.',
-		description: 'Description of the razored tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the razored tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	kobold_sweeper_tail: {
 		id: 'itemDescription.pf1e.kobold_sweeper_tail',
 		defaultMessage: 'A sharply curved piece of metal a kobold slips over the tip of its tail to knock foes off their feet. Only kobolds trained to fight with their tails can use it.',
-		description: 'Description of the sweeper tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sweeper tail attachment, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	claw_blades: {
 		id: 'itemDescription.pf1e.claw_blades',
 		defaultMessage: 'A set of thin blades that fit over a catfolk\'s claws, making them sharper and harder to stop. Only catfolk with claws can use them.',
-		description: 'Description of the claw blades, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the claw blades, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dwarven_boulder_helmet: {
 		id: 'itemDescription.pf1e.dwarven_boulder_helmet',
 		defaultMessage: 'A heavy, reinforced helmet for head-butting foes and shoving them back.',
-		description: 'Description of the dwarven boulder helmet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dwarven boulder helmet, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dwarven_double_waraxe: {
 		id: 'itemDescription.pf1e.dwarven_double_waraxe',
 		defaultMessage: 'A heavy shaft with a broad axe head at each end, so it can be fought with as two weapons.',
-		description: 'Description of the dwarven double waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dwarven double waraxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dwarven_longaxe: {
 		id: 'itemDescription.pf1e.dwarven_longaxe',
 		defaultMessage: 'A dwarven axe on a long haft that strikes foes beyond arm\'s reach.',
-		description: 'Description of the dwarven longaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dwarven longaxe, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	dwarven_longhammer: {
 		id: 'itemDescription.pf1e.dwarven_longhammer',
 		defaultMessage: 'A heavy dwarven hammer on a long haft that strikes foes beyond arm\'s reach.',
-		description: 'Description of the dwarven longhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the dwarven longhammer, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	sea_knife: {
 		id: 'itemDescription.pf1e.sea_knife',
 		defaultMessage: 'A short blade on a long handle, made for fighting while swimming. Its wielder takes a penalty to hit with it.',
-		description: 'Description of the sea-knife, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the sea-knife, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	jolting_dart: {
 		id: 'itemDescription.pf1e.jolting_dart',
 		defaultMessage: 'A crystal dart grown by alchemy that builds up a charge in flight, shocking whoever it hits. It shatters once thrown.',
-		description: 'Description of the jolting dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the jolting dart, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	snag_net: {
 		id: 'itemDescription.pf1e.snag_net',
 		defaultMessage: 'A short, wide net covered in barbed loops. It entangles like a net, and a tug on its rope can trip the foe caught in it.',
-		description: 'Description of the snag net, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the snag net, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	},
 	heartstake_bolt: {
 		id: 'itemDescription.pf1e.heartstake_bolt',
 		defaultMessage: 'A crossbow bolt of solid darkwood made to slay vampires, which can pierce one\'s heart.',
-		description: 'Description of the heartstake bolt, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet and on the Audit tab'
+		description: 'Description of the heartstake bolt, an item in Pathfinder, shown in the item editor, when choosing items, on a character\'s sheet, in the Inspect dialog and on the Audit tab'
 	}
 });
 

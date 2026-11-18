@@ -1,9 +1,21 @@
-import type { EditorItem, Ruleset } from '@multiverse-kiln/shared';
+import { defineMessages, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
 import { getElement } from './dom';
-import { itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypesText } from './itemNames';
+import { ITEM_SETTING_NAMES, itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypesText } from './itemNames';
 import { rulebookName } from './rulebookNames';
+
+/**
+ * The label of what opens the Inspect dialog: an item in the menu beside an item on a character's sheet,
+ * and the button beside an item in the dialog for choosing items
+ */
+export const INSPECT_MESSAGES = defineMessages({
+	inspect: {
+		id: 'characterSheet.inspect',
+		defaultMessage: 'Inspect',
+		description: 'Item in the menu beside an item on a character\'s sheet, and button beside an item in the dialog for choosing items, that opens a dialog showing what the item is: its kind, types, book, where it equips and description'
+	}
+});
 
 /**
  * What Inspect shows of an item: what a character's sheet and item selection both know of it
@@ -46,16 +58,8 @@ export class ItemInspectDialog
 		const name = itemName(item, ruleset);
 		const description = itemDescription(item, ruleset);
 		const entries: [string, string][] = [
-			[t({
-				id: 'itemInspect.kind',
-				defaultMessage: 'Kind',
-				description: 'In the Inspect dialog, which shows what an item is, the label of its kind, such as Weapon'
-			}), itemCategoryName(item.category, ruleset)],
-			[t({
-				id: 'itemInspect.types',
-				defaultMessage: 'Types',
-				description: 'In the Inspect dialog, which shows what an item is, the label of its types, such as light blades and thrown for a dagger'
-			}), ((item.types.length === 0)
+			[t(ITEM_SETTING_NAMES.category), itemCategoryName(item.category, ruleset)],
+			[t(ITEM_SETTING_NAMES.types), ((item.types.length === 0)
 				? t({
 					id: 'itemInspect.noTypes',
 					defaultMessage: 'None',
@@ -73,11 +77,7 @@ export class ItemInspectDialog
 					description: 'In the Inspect dialog, which shows what an item is, in place of the book it comes from, for an item the universe\'s creators added rather than one from a book of game rules'
 				})
 				: rulebookName(ruleset, item.rulebook))],
-			[t({
-				id: 'itemInspect.equips',
-				defaultMessage: 'Equips to',
-				description: 'In the Inspect dialog, which shows what an item is, the label of where it equips, such as One hand, Two hands, Head or Nowhere'
-			}), itemEquipsText(item.equips, ruleset)]
+			[t(ITEM_SETTING_NAMES.equips), itemEquipsText(item.equips, ruleset)]
 		];
 
 		this.title.textContent = name;

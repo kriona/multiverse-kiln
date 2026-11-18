@@ -1,4 +1,4 @@
-import { DEFAULT_ITEM_DESCRIPTIONS, DEFAULT_ITEM_NAMES, ITEM_KINDS, itemEquipsName, RULESETS, slotName, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_DESCRIPTIONS, DEFAULT_ITEM_NAMES, defineMessages, ITEM_KINDS, itemEquipsName, RULESETS, slotName, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
 import armorIcon from 'virtual:icon/game-icons:breastplate';
 import gearIcon from 'virtual:icon/game-icons:knapsack';
 import weaponIcon from 'virtual:icon/game-icons:broadsword';
@@ -14,6 +14,27 @@ const CATEGORY_ICONS: Record<string, string> = {
 	armor: armorIcon,
 	gear: gearIcon
 };
+
+/**
+ * The names of an item's settings that the item editor, the Inspect dialog and the Audit tab all show
+ */
+export const ITEM_SETTING_NAMES = defineMessages({
+	category: {
+		id: 'editor.items.category',
+		defaultMessage: 'Kind',
+		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item\'s kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	types: {
+		id: 'editor.item.types',
+		defaultMessage: 'Types',
+		description: 'Heading of the item editor\'s checkboxes for an item\'s types, such as light blades and thrown for a dagger, of which an item can have several or none, and the label of an item\'s types in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	equips: {
+		id: 'editor.item.equips',
+		defaultMessage: 'Equips to',
+		description: 'Label of the item editor\'s field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	}
+});
 
 /**
  * An item's name as the player reads it: the universe's name for it, or a default item's name in the

@@ -10051,21 +10051,9 @@
 		"message": "Tome",
 		"source": "Book"
 	},
-	"itemInspect.equips": {
-		"message": "Straps on to",
-		"source": "Equips to"
-	},
-	"itemInspect.kind": {
-		"message": "Kind",
-		"source": "Kind"
-	},
 	"itemInspect.noTypes": {
 		"message": "None",
 		"source": "None"
-	},
-	"itemInspect.types": {
-		"message": "Sorts",
-		"source": "Types"
 	},
 	"itemInspect.universeItem": {
 		"message": "Forged fer this universe",
