@@ -1631,11 +1631,11 @@ export class CharacterSheetDialog
 		}, {
 			slot: name
 		}));
-		setButtonLabel(button, t({
+		setButtonLabel(button, hideIcon, t({
 			id: 'characterSheet.hide',
 			defaultMessage: 'Hide',
 			description: 'Toggle button beside each slot in the Equipped and Social lists of a character\'s sheet; while pressed, the slot is left off the character\'s avatar (the picture of the character), whatever is in it'
-		}), hideIcon);
+		}));
 		button.addEventListener('click', () =>
 		{
 			void this.changeLook((current) => this.api.setSlotHidden(current.universeId, current.sheet.id, slot, !hidden), () =>
