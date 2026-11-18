@@ -529,6 +529,23 @@ button.sort-button
 	padding: 12px 16px;
 	border-bottom: 1px solid $border;
 
+	$tColor1: #160138;
+	$tColor2: #33125b;
+	$tColor3: #001851;
+	$tColor4: #000742;
+	$step1: 25%;
+	$step2: 40%;
+	background: linear-gradient(
+		135deg,
+		$tColor1 0%,
+		$tColor2 $step1,
+		$tColor3 $step2,
+		$tColor4 50%,
+		$tColor3 calc(100% - $step2),
+		$tColor2 calc(100% - $step1),
+		$tColor1 100%
+	);
+
 	a,
 	a:visited
 	{
