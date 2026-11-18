@@ -6,7 +6,7 @@
  * affects nobody, and something disabled more than once does what the last change chose, once. The
  * impact route (editorImpact.ts) warns about the same things, at the change whose choice is used
  */
-import { isRulebookOn, isSf1eRaceRules, isShield, isUsable, RULESET_EQUIPMENT, type AreaEvacuation, type AreaEvacuations, type EditorItem, type GroupSizeLowering, type ItemDisabling, type RaceRules, type Ruleset } from '@multiverse-kiln/shared';
+import { isRulebookOn, isSf1eRaceRules, isShield, isUsable, RULESET_EQUIPMENT, type AreaEvacuation, type AreaEvacuations, type EditorItem, type GroupSizeLowering, type ItemDisabling, type Ruleset } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
@@ -174,13 +174,13 @@ export class SaveDisablings
 	 * change to it
 	 *
 	 * @param raceId The race, by the ID characters hold
-	 * @param rules Its rules before the change
+	 * @param hadTail Whether it had a tail before the change
 	 */
-	raceTail(raceId: number, rules: RaceRules): void
+	raceTail(raceId: number, hadTail: boolean): void
 	{
 		if (!this.tails.has(raceId))
 		{
-			this.tails.set(raceId, (!isSf1eRaceRules(rules) && rules.hasTail));
+			this.tails.set(raceId, hadTail);
 		}
 	}
 

@@ -18,6 +18,7 @@ import { findEditableUniverse, hasDraft, updateUniverseSettings } from '../db/un
 import { areas, classes, items, races, themes } from '../db/schema.js';
 import { draftVersion, liveVersion } from '../db/universeVersions.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
+import { raceHasTail } from './characters.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { SaveDisablings } from './editorDisablings.js';
 import { arrivalRefusal, findBlockedArrivals } from './editorPlaces.js';
@@ -109,7 +110,7 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 
 	for (const race of await loadEditorRaces(live, universe.ruleset, transaction))
 	{
-		disablings.raceTail(race.id, race.rules);
+		disablings.raceTail(race.id, raceHasTail(race));
 	}
 
 	disablings.areas(choices.areas);

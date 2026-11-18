@@ -4,10 +4,10 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, RULESET_EQUIPMENT, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findEditorRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceHasTail, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
@@ -189,17 +189,7 @@ async function noteRaceTail(context: ChangeContext, raceId: number): Promise<voi
 {
 	const { universe, version, transaction } = context;
 
-	if (RULESET_EQUIPMENT[universe.ruleset].tailLocation === null)
-	{
-		return;
-	}
-
-	const race = await findEditorRace(version, universe.ruleset, raceId, transaction);
-
-	if (race)
-	{
-		context.disablings.raceTail(raceId, race.rules);
-	}
+	context.disablings.raceTail(raceId, await findRaceHasTail(version, universe.ruleset, raceId, transaction));
 }
 
 /**

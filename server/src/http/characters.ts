@@ -18,7 +18,7 @@ import { equipItems, listEquipment, unequipSlots } from '../db/equipmentRepo.js'
 import { findMembership, listGroupMembers } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItemsIn } from '../db/itemRepo.js';
-import { findEditorRace, loadEditorRaces } from '../db/raceRepo.js';
+import { findEditorRace, findRaceHasTail, loadEditorRaces } from '../db/raceRepo.js';
 import { findPf1eSettings, findSf1eSettings, loadRulebookSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { findEditorTheme, loadEditorThemes } from '../db/themeRepo.js';
@@ -1067,8 +1067,8 @@ export async function equipItem(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 			return({ status: 409, message: messages.itemNotCarried });
 		}
 
-		const race = await findEditorRace(liveVersion(universe.id), universe.ruleset, character.raceId, transaction);
-		const plan = planEquip(universe.ruleset, equipment, items, item, quantity, request.hand, raceHasTail(race), request.ring);
+		const hasTail = await findRaceHasTail(liveVersion(universe.id), universe.ruleset, character.raceId, transaction);
+		const plan = planEquip(universe.ruleset, equipment, items, item, quantity, request.hand, hasTail, request.ring);
 
 		if (typeof plan === 'string')
 		{

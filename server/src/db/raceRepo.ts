@@ -213,6 +213,46 @@ export async function findRaceStart(version: UniverseVersion, ruleset: Ruleset, 
 }
 
 /**
+ * Whether one race a universe can use has a tail, as findEditorRace() finds its rules, without the rest
+ * of its settings
+ *
+ * @param version The universe's live version or draft
+ * @param ruleset The universe's ruleset
+ * @param raceId The race's ID
+ * @param executor The database, or a transaction
+ * @return True for a race with a tail; false for one without, one of a ruleset without tails, and one the
+ * universe can't use
+ */
+export async function findRaceHasTail(version: UniverseVersion, ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<boolean>
+{
+	// Only Pathfinder races have tails
+	if (ruleset !== 'pf1e')
+	{
+		return(false);
+	}
+
+	const rows = await executor
+		.select({
+			universeId: races.universeId,
+			overridesRaceId: races.overridesRaceId,
+			hasTail: pf1eRaces.hasTail
+		})
+		.from(pf1eRaces)
+		.innerJoin(races, eq(races.id, pf1eRaces.raceId))
+		.where(usableRaces(version, ruleset, raceId));
+	const race = rows.find((row) => (row.overridesRaceId === null));
+
+	if (!race)
+	{
+		return(false);
+	}
+
+	const copy = ((race.universeId === null) ? rows.find((row) => (row.overridesRaceId === raceId)) : undefined);
+
+	return((copy ?? race).hasTail);
+}
+
+/**
  * The races a universe can use, or one of them, as the editor lists them
  *
  * @param version The universe's live version or draft
