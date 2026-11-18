@@ -6,7 +6,7 @@ import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm'
 import { differsBeyondEnabling, isSf1eClassRules, type ClassRaceArea, type ClassRules, type ClassSettings, type EditorClass, type ItemQuantity, type OptionName, type Pf1eClassRules, type Ruleset, type Sf1eClassRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaClass } from '../logic/startingArea.js';
-import { db, type Executor } from './client.js';
+import { db, runIndependent, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { classes, classRaceAreas, classStartingItems, pf1eClasses, sf1eClasses } from './schema.js';
 import { inVersion, type UniverseVersion } from './universeVersions.js';
@@ -239,32 +239,34 @@ export async function findClassStart(version: UniverseVersion, ruleset: Ruleset,
  */
 async function loadClasses(version: UniverseVersion, ruleset: Ruleset, classId: number | undefined, executor: Executor): Promise<EditorClass[]>
 {
-	const rows = await executor
-		.select({
-			id: classes.id,
-			universeId: classes.universeId,
-			overridesClassId: classes.overridesClassId,
-			key: classes.key,
-			name: classes.name,
-			description: classes.description,
-			rulebook: classes.rulebook,
-			enabled: classes.enabled,
-			keepPlaying: classes.keepPlaying,
-			startingPlatinum: classes.startingPlatinum,
-			startingGold: classes.startingGold,
-			startingSilver: classes.startingSilver,
-			startingCopper: classes.startingCopper,
-			startingCredits: classes.startingCredits,
-			startingAreaId: classes.startingAreaId,
-			startingColumn: classes.startingColumn,
-			startingRow: classes.startingRow
-		})
-		.from(classes)
-		.where(usableClasses(version, ruleset, classId))
-		.orderBy(asc(classes.id));
-	const rules = await loadClassRules(version, ruleset, classId, executor);
-	const startingItems = await loadClassStartingItems(version, classId, executor);
-	const raceAreas = await loadClassRaceAreas(version, classId, executor);
+	const [rows, rules, startingItems, raceAreas] = await runIndependent(executor, [
+		async () => executor
+			.select({
+				id: classes.id,
+				universeId: classes.universeId,
+				overridesClassId: classes.overridesClassId,
+				key: classes.key,
+				name: classes.name,
+				description: classes.description,
+				rulebook: classes.rulebook,
+				enabled: classes.enabled,
+				keepPlaying: classes.keepPlaying,
+				startingPlatinum: classes.startingPlatinum,
+				startingGold: classes.startingGold,
+				startingSilver: classes.startingSilver,
+				startingCopper: classes.startingCopper,
+				startingCredits: classes.startingCredits,
+				startingAreaId: classes.startingAreaId,
+				startingColumn: classes.startingColumn,
+				startingRow: classes.startingRow
+			})
+			.from(classes)
+			.where(usableClasses(version, ruleset, classId))
+			.orderBy(asc(classes.id)),
+		() => loadClassRules(version, ruleset, classId, executor),
+		() => loadClassStartingItems(version, classId, executor),
+		() => loadClassRaceAreas(version, classId, executor)
+	]);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesClassId !== null))
 		.map((row) => [row.overridesClassId, row]));

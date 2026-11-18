@@ -5,7 +5,7 @@ import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm'
 import { darkvisionSquares, differsBeyondEnabling, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaRace } from '../logic/startingArea.js';
-import { db, type Executor } from './client.js';
+import { db, runIndependent, type Executor } from './client.js';
 import { fromCoinColumns, toCoinColumns } from './coinColumns.js';
 import { pf1eRaces, races, raceStartingItems, sf1eRaces } from './schema.js';
 import { inVersion, liveVersion, type UniverseVersion } from './universeVersions.js';
@@ -263,31 +263,33 @@ export async function findRaceHasTail(version: UniverseVersion, ruleset: Ruleset
  */
 async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: number | undefined, executor: Executor): Promise<EditorRace[]>
 {
-	const rows = await executor
-		.select({
-			id: races.id,
-			universeId: races.universeId,
-			overridesRaceId: races.overridesRaceId,
-			key: races.key,
-			name: races.name,
-			description: races.description,
-			rulebook: races.rulebook,
-			enabled: races.enabled,
-			keepPlaying: races.keepPlaying,
-			startingPlatinum: races.startingPlatinum,
-			startingGold: races.startingGold,
-			startingSilver: races.startingSilver,
-			startingCopper: races.startingCopper,
-			startingCredits: races.startingCredits,
-			startingAreaId: races.startingAreaId,
-			startingColumn: races.startingColumn,
-			startingRow: races.startingRow
-		})
-		.from(races)
-		.where(usableRaces(version, ruleset, raceId))
-		.orderBy(asc(races.id));
-	const rules = await loadRaceRules(version, ruleset, raceId, executor);
-	const startingItems = await loadRaceStartingItems(version, raceId, executor);
+	const [rows, rules, startingItems] = await runIndependent(executor, [
+		async () => executor
+			.select({
+				id: races.id,
+				universeId: races.universeId,
+				overridesRaceId: races.overridesRaceId,
+				key: races.key,
+				name: races.name,
+				description: races.description,
+				rulebook: races.rulebook,
+				enabled: races.enabled,
+				keepPlaying: races.keepPlaying,
+				startingPlatinum: races.startingPlatinum,
+				startingGold: races.startingGold,
+				startingSilver: races.startingSilver,
+				startingCopper: races.startingCopper,
+				startingCredits: races.startingCredits,
+				startingAreaId: races.startingAreaId,
+				startingColumn: races.startingColumn,
+				startingRow: races.startingRow
+			})
+			.from(races)
+			.where(usableRaces(version, ruleset, raceId))
+			.orderBy(asc(races.id)),
+		() => loadRaceRules(version, ruleset, raceId, executor),
+		() => loadRaceStartingItems(version, raceId, executor)
+	]);
 	const copies = new Map(rows
 		.filter((row) => (row.overridesRaceId !== null))
 		.map((row) => [row.overridesRaceId, row]));

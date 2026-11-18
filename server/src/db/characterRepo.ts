@@ -8,7 +8,7 @@
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import { isPf1eRollMethod, unequippedByRemoval, type AbilityScores, type BarredOptions, type CharacterDraft, type EditorCharacterSortColumn, type EquippedItem, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type SortDirection, type UniverseStage } from '@multiverse-kiln/shared';
 
-import { db, type Executor } from './client.js';
+import { db, runIndependent, type Executor } from './client.js';
 import { listEquipment, listEquipmentOf, unequipSlots } from './equipmentRepo.js';
 import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, players, sf1eCharacters, universes } from './schema.js';
 
@@ -491,45 +491,47 @@ function universeCharacter(universeId: string, characterId: string): SQL | undef
  */
 async function findDetails(condition: SQL | undefined, ruleset: Ruleset, characterId: string, executor: Executor): Promise<CharacterDetails | undefined>
 {
-	const [row] = await executor
-		.select({
-			id: characters.id,
-			playerId: characters.playerId,
-			name: characters.name,
-			raceId: characters.raceId,
-			classId: characters.classId,
-			deleteAt: characters.deleteAt,
-			platinum: characters.platinum,
-			gold: characters.gold,
-			silver: characters.silver,
-			copper: characters.copper,
-			credits: characters.credits
-		})
-		.from(characters)
-		.where(and(
-			condition,
-			notExpired
-		))
-		.limit(1);
-	const abilities = (row ? await findCharacterAbilities(ruleset, characterId, executor) : undefined);
+	// The character's other rows are read by ID alone, so they don't wait for the condition to match
+	const [[row], abilities, carried, equipment] = await runIndependent(executor, [
+		async () => executor
+			.select({
+				id: characters.id,
+				playerId: characters.playerId,
+				name: characters.name,
+				raceId: characters.raceId,
+				classId: characters.classId,
+				deleteAt: characters.deleteAt,
+				platinum: characters.platinum,
+				gold: characters.gold,
+				silver: characters.silver,
+				copper: characters.copper,
+				credits: characters.credits
+			})
+			.from(characters)
+			.where(and(
+				condition,
+				notExpired
+			))
+			.limit(1),
+		() => findCharacterAbilities(ruleset, characterId, executor),
+		async () => executor
+			.select({
+				itemId: characterItems.itemId,
+				quantity: characterItems.quantity
+			})
+			.from(characterItems)
+			.where(and(
+				eq(characterItems.characterId, characterId),
+				eq(characterItems.hidden, false)
+			))
+			.orderBy(asc(characterItems.itemId)),
+		() => listEquipment(characterId, executor)
+	]);
 
 	if (!row || !abilities)
 	{
 		return(undefined);
 	}
-
-	const carried = await executor
-		.select({
-			itemId: characterItems.itemId,
-			quantity: characterItems.quantity
-		})
-		.from(characterItems)
-		.where(and(
-			eq(characterItems.characterId, characterId),
-			eq(characterItems.hidden, false)
-		))
-		.orderBy(asc(characterItems.itemId));
-	const equipment = await listEquipment(characterId, executor);
 
 	return({
 		id: row.id,
