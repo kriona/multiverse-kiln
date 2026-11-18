@@ -3,7 +3,7 @@ import { icons as phosphorIcons } from '@iconify-json/ph';
 import { getIconData, iconToHTML, iconToSVG } from '@iconify/utils';
 import fs from 'fs';
 import path from 'path';
-import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
+import { defineConfig, loadEnv, parseSync, Visitor, type Connect, type ESTree, type Plugin } from 'vite';
 
 import { CATALOG_FILE, catalogText, extractMessages, PAGES, PARTIALS_FOLDER, PSEUDO_CATALOG_FILE, pseudoCatalog, SOURCE_FOLDERS, writeCatalog } from '../shared/scripts/extractMessages.ts';
 import { SITE_NAME } from '../shared/src/constants.ts';
@@ -289,9 +289,115 @@ function icons(): Plugin
 }
 
 /**
- * Removes the descriptions for translators (data-translation-context and data-translation-context-<attribute>) from
- * the pages as they are served and built. The extractor reads them from the source files, and nothing
- * on the page uses them
+ * The properties of a message written in code, which shared/scripts/extractMessages.ts requires each
+ * message's object literal to have, and no others
+ */
+const MESSAGE_PROPERTIES = ['id', 'defaultMessage', 'description'];
+
+/**
+ * A property's name, when it is a plain property written as a name or a string
+ *
+ * @param property The property
+ * @return The name, or undefined for a computed, shorthand or method property, or a spread
+ */
+function plainPropertyName(property: ESTree.ObjectPropertyKind): string | undefined
+{
+	if ((property.type !== 'Property') || property.computed || property.shorthand || property.method || (property.kind !== 'init'))
+	{
+		return(undefined);
+	}
+
+	if (property.key.type === 'Identifier')
+	{
+		return(property.key.name);
+	}
+
+	return((((property.key.type === 'Literal') && (typeof property.key.value === 'string')) ? property.key.value : undefined));
+}
+
+/**
+ * Whether an expression is a string written out: a string literal, or a template literal without
+ * substitutions
+ *
+ * @param expression The expression
+ * @return Whether it is
+ */
+function isStringLiteral(expression: ESTree.Expression): boolean
+{
+	return((((expression.type === 'Literal') && (typeof expression.value === 'string')) || ((expression.type === 'TemplateLiteral') && (expression.expressions.length === 0))));
+}
+
+/**
+ * Code with the description of each message written in it (an object literal with only an id, a
+ * defaultMessage and a description, all string literals, as the extractor reads them) blanked out with
+ * spaces. Line breaks stay, so the rest of the code keeps its place and its source map
+ *
+ * @param file The module's file, whose extension tells the parser the language
+ * @param code The module's code
+ * @return The code without the descriptions, or undefined when it has none or doesn't parse
+ */
+function withoutMessageDescriptions(file: string, code: string): string | undefined
+{
+	const { program, errors } = parseSync(file, code);
+
+	if (errors.length > 0)
+	{
+		return(undefined);
+	}
+
+	const ranges: { start: number; end: number }[] = [];
+
+	new Visitor({
+		ObjectExpression(node)
+		{
+			const { properties } = node;
+			const names = properties.map(plainPropertyName);
+
+			if ((properties.length !== MESSAGE_PROPERTIES.length) || !MESSAGE_PROPERTIES.every((name) => names.includes(name)) || !properties.every((property) => ((property.type === 'Property') && isStringLiteral(property.value))))
+			{
+				return;
+			}
+
+			const index = names.indexOf('description');
+			const description = properties[index];
+			const next = properties[index + 1];
+
+			if ((description.type !== 'Property') || !/^(description|'description'|"description")$/.test(code.slice(description.key.start, description.key.end)))
+			{
+				throw new Error(`${file}: the parser's offsets don't match the code, so its messages' descriptions can't be removed`);
+			}
+
+			// The comma after a description is removed with it, and a description written last leaves the comma before it as a trailing comma
+			ranges.push({
+				start: description.start,
+				end: ((next === undefined) ? description.end : next.start)
+			});
+		}
+	}).visit(program);
+
+	if (ranges.length === 0)
+	{
+		return(undefined);
+	}
+
+	let stripped = '';
+	let position = 0;
+
+	for (const { start, end } of ranges.sort((first, second) => (first.start - second.start)))
+	{
+		stripped += code.slice(position, start) + code.slice(start, end).replace(/[^\r\n]/g, ' ');
+		position = end;
+	}
+
+	return(stripped + code.slice(position));
+}
+
+/**
+ * Removes the descriptions for translators from the pages and code as they are served and built: from
+ * the pages, the data-translation-context and data-translation-context-<attribute> attributes, and from
+ * the code, the description of each message written in it (withoutMessageDescriptions()), the client's
+ * and the shared code's alike. The extractor reads them from the source files, and nothing on the page
+ * uses them
  *
  * @return The plugin
  */
@@ -302,6 +408,22 @@ function stripDescriptions(): Plugin
 		transformIndexHtml(html)
 		{
 			return(html.replace(/\s+data-translation-context(-[\w-]+)?="[^"]*"/g, ''));
+		},
+		transform: {
+			filter: {
+				id: {
+					include: /\.[cm]?[jt]s$/,
+					exclude: /[\\/]node_modules[\\/]/
+				},
+				code: 'defaultMessage'
+			},
+			handler(code, id)
+			{
+				const stripped = withoutMessageDescriptions(id, code);
+
+				// Nothing moves, so the source map stays as it was
+				return(((stripped === undefined) ? undefined : { code: stripped, map: null }));
+			}
 		}
 	});
 }
