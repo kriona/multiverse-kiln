@@ -11,7 +11,7 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { z } from 'zod';
 import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
-import { countCarriedItem, countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findCharacterPlayerId, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, giveCharacterItems, keepPf1eAbilityRoll, listCharacters, lockCarriedItems, lockCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails, type LockedCharacter } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, giveCharacterItems, keepPf1eAbilityRoll, listCharacters, lockCarriedItems, lockCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails, type LockedCharacter } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { equipItems, listEquipment, unequipSlots } from '../db/equipmentRepo.js';
@@ -899,14 +899,14 @@ async function discardRoute(request: Request, response: Response): Promise<void>
  */
 export async function discardItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, items: readonly ItemQuantity[], playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
 {
-	let owner: string | undefined;
+	let changed: LockedCharacter | undefined;
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
-		owner = await findCharacterPlayerId(universe.id, characterId, transaction);
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
 
-		if ((owner === undefined) || ((playerId !== undefined) && (owner !== playerId)))
+		if ('status' in character)
 		{
-			return({ status: 404, message: noSuchCharacter });
+			return(character);
 		}
 
 		if (!await takeCharacterItems(characterId, universe.ruleset, items, transaction))
@@ -914,12 +914,13 @@ export async function discardItems(universe: Pick<PlayableUniverse, 'id' | 'rule
 			return({ status: 409, message: messages.itemsNotCarried });
 		}
 
+		changed = character;
 		return(undefined);
 	});
 
-	if (!refusal && (owner !== undefined))
+	if (changed)
 	{
-		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: owner }]);
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
 	}
 
 	return(refusal);
@@ -981,7 +982,9 @@ const giveRoute = itemRoute(giveItemsRequest, giveItems);
 
 /**
  * Locks a character while their items or equipment change, refusing one who isn't there or isn't the
- * player's
+ * player's. The universe's shared lock comes first, so a world editor save changing where items equip or
+ * taking them waits for the change, or the change waits for the save and reads what it saved. The
+ * character's lock makes two changes to their items wait for each other
  *
  * @param universeId The universe's ID
  * @param characterId The character's ID
@@ -992,6 +995,8 @@ const giveRoute = itemRoute(giveItemsRequest, giveItems);
  */
 async function lockOwnCharacter(universeId: string, characterId: string, playerId: string | undefined, noSuchCharacter: MessageDescriptor, transaction: Executor): Promise<LockedCharacter | Refusal>
 {
+	await lockUniverseShared(universeId, transaction);
+
 	const character = (await lockCharacters(universeId, [characterId], transaction)).get(characterId);
 
 	if (!character || ((playerId !== undefined) && (character.playerId !== playerId)))
@@ -1026,7 +1031,8 @@ export async function equipItem(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 			return(character);
 		}
 
-		const quantity = await countCarriedItem(characterId, request.itemId, transaction);
+		// Locked, so none can be taken between counting them and equipping them
+		const quantity = ((await lockCarriedItems(characterId, [request.itemId], transaction)).get(request.itemId) ?? 0);
 
 		if (quantity === 0)
 		{
@@ -1140,6 +1146,9 @@ export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 	let gift: Gift | undefined;
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
+		// Disabling items with remove waits for the universe's lock, so none is taken while it is given
+		await lockUniverseShared(universe.id, transaction);
+
 		const locked = await lockCharacters(universe.id, [characterId, request.characterId], transaction);
 		const giver = locked.get(characterId);
 		const receiver = locked.get(request.characterId);

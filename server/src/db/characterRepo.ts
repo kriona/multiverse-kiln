@@ -843,31 +843,6 @@ export async function lockCharacters(universeId: string, characterIds: readonly 
 }
 
 /**
- * How many of an item a character carries, leaving out items taken from them while disabled
- *
- * @param characterId The character's ID
- * @param itemId The item, by the ID characters hold
- * @param executor The database, or a transaction
- * @return How many, or 0 when they carry none
- */
-export async function countCarriedItem(characterId: string, itemId: number, executor: Executor = db): Promise<number>
-{
-	const [row] = await executor
-		.select({
-			quantity: characterItems.quantity
-		})
-		.from(characterItems)
-		.where(and(
-			eq(characterItems.characterId, characterId),
-			eq(characterItems.itemId, itemId),
-			eq(characterItems.hidden, false)
-		))
-		.limit(1);
-
-	return((row?.quantity ?? 0));
-}
-
-/**
  * How many of some items a character carries, locking the rows until the transaction ends, leaving out
  * items taken from them while disabled
  *

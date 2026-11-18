@@ -11,7 +11,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { canEditWorld, canManageCharacters, defineMessages, isUsable, MAX_ITEM_QUANTITY, parsePlayerSearch, type CharacterDeletionPayload, type EditableUniverseDetails, type EditorCharacterListPayload, type GroupCharacterRequest, type MessageDescriptor, type OptionName } from '@multiverse-kiln/shared';
 
-import { findCharacterPlayerId, findUniverseCharacterDetails, giveCharacterItems, listUniverseCharacters } from '../db/characterRepo.js';
+import { findCharacterPlayerId, findUniverseCharacterDetails, giveCharacterItems, listUniverseCharacters, lockCharacters } from '../db/characterRepo.js';
 import { loadClassNames } from '../db/classRepo.js';
 import { loadEditorItemsIn } from '../db/itemRepo.js';
 import { loadRaceNames } from '../db/raceRepo.js';
@@ -300,7 +300,7 @@ async function giveItemsRoute(request: Request, response: Response): Promise<voi
 	{
 		// Deleting and disabling items wait for the universe's lock, so none goes while it is given
 		await lockUniverseShared(universeId, transaction);
-		playerId = await findCharacterPlayerId(universeId, characterId, transaction);
+		playerId = (await lockCharacters(universeId, [characterId], transaction)).get(characterId)?.playerId;
 
 		if (playerId === undefined)
 		{

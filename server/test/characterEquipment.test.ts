@@ -1,22 +1,32 @@
 import assert from 'assert';
 import { Client as SDKClient } from '@colyseus/sdk';
-import { characterPath, EDITOR_UNIVERSES_PATH, SESSION_ROOM_NAME, SessionServerMessageType, type CharacterItemsPayload, type CharacterSheet, type CreatedPayload, type EquippedItem, type ItemSettings, type ItemsReceivedPayload, type Ruleset } from '@multiverse-kiln/shared';
+import { characterPath, EDITOR_UNIVERSES_PATH, SESSION_ROOM_NAME, SessionServerMessageType, type CharacterItemsPayload, type CharacterSheet, type CreatedPayload, type EquippedItem, type ItemSettings, type ItemsReceivedPayload, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
 
-import { createCharacter, giveCharacterItems } from '../src/db/characterRepo.js';
+import { createCharacter, giveCharacterItems, setCarriedItemsHidden, takeCharacterItems } from '../src/db/characterRepo.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { findDefaultClassIds } from '../src/db/classRepo.js';
+import { listEquipment, unequipItemsInUniverse } from '../src/db/equipmentRepo.js';
 import { addGroupMember } from '../src/db/groupRepo.js';
-import { createCustomItem } from '../src/db/itemRepo.js';
+import { createCustomItem, updateCustomItem } from '../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { loadEditorThemes } from '../src/db/themeRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
+import { equipItem } from '../src/http/characters.js';
+import type { Refusal } from '../src/http/errors.js';
 import { addCharacter, addGroup, defaultRaceId, dwarfFighter } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
+import { changeWhileWaitingForUniverse, someoneWaitsForALock } from './universeLock.js';
 import { waitUntil } from './waitUntil.js';
+
+const noSuchCharacter: MessageDescriptor = {
+	id: 'error.noSuchCharacter',
+	defaultMessage: 'No such character',
+	description: 'Why a character who isn\'t there can\'t equip items'
+};
 
 /**
  * What a request answered
@@ -194,6 +204,41 @@ describe('Equipment routes', () =>
 		return((await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/equip`, { itemId, hand })).status);
 	}
 
+	/**
+	 * Equips an item on Brokk while another transaction takes some of it, which commits once the equip
+	 * waits for a lock (or has answered)
+	 *
+	 * @param itemId The item
+	 * @param quantity How many the other transaction takes
+	 * @param hand The hands to hold it in
+	 * @return What equipItem() answered
+	 */
+	async function equipWhileTaking(itemId: number, quantity: number, hand: 'main' | 'off' | 'both'): Promise<Refusal | undefined>
+	{
+		let answered = false;
+		let answer: Promise<Refusal | undefined> | undefined;
+
+		await inTransaction(async (transaction) =>
+		{
+			await takeCharacterItems(brokkId, 'pf1e', [{ itemId, quantity }], transaction);
+
+			answer = equipItem({ id: universeId, ruleset: 'pf1e' }, brokkId, { itemId, hand }, ada.playerId, noSuchCharacter)
+				.finally(() =>
+				{
+					answered = true;
+				});
+
+			await waitUntil(async () => (answered || await someoneWaitsForALock()));
+		});
+
+		if (!answer)
+		{
+			throw new Error('The item wasn\'t equipped');
+		}
+
+		return(await answer);
+	}
+
 	it('equips a longsword and a shield, then a greatsword unequips both', async () =>
 	{
 		assert.strictEqual(await equip(longswordId, 'main'), 204);
@@ -280,6 +325,36 @@ describe('Equipment routes', () =>
 
 		assert.strictEqual((await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/discard`, { items: [{ itemId: shortSwordId, quantity: 1 }] })).status, 204);
 		assert.deepStrictEqual((await sheetOf(brokkId)).equipment, [at('mainHand', shortSwordId)]);
+	});
+
+	it('equips from what is left once items being taken are gone', async () =>
+	{
+		await equip(shortSwordId, 'main');
+
+		assert.strictEqual(await equipWhileTaking(shortSwordId, 1, 'off'), undefined);
+		assert.deepStrictEqual(await listEquipment(brokkId), [at('offHand', shortSwordId)]);
+
+		assert.strictEqual((await equipWhileTaking(longswordId, 1, 'main'))?.status, 409);
+		assert.deepStrictEqual(await listEquipment(brokkId), [at('offHand', shortSwordId)]);
+	});
+
+	it('waits for a save changing where an item equips, then refuses it', async () =>
+	{
+		const status = await changeWhileWaitingForUniverse(universeId, () => equip(longswordId, 'main'), async (transaction) =>
+		{
+			await updateCustomItem(liveVersion(universeId), longswordId, {
+				name: 'Longsword',
+				description: null,
+				enabled: true,
+				category: 'weapon',
+				types: ['blades_heavy'],
+				equips: 'none'
+			}, transaction);
+			await unequipItemsInUniverse(universeId, [longswordId], transaction);
+		});
+
+		assert.strictEqual(status, 409);
+		assert.deepStrictEqual(await listEquipment(brokkId), []);
 	});
 
 	it('wears armor and holds a laser rifle in a Starfinder universe', async () =>
@@ -407,6 +482,21 @@ describe('Equipment routes', () =>
 			assert.strictEqual((await send(ada, 'POST', path, { characterId: graceCharacterId, items: [{ itemId: 99999999, quantity: 1 }] })).status, 409);
 			assert.strictEqual((await send(grace, 'POST', path, { characterId: graceCharacterId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 404);
 			assert.strictEqual((await sheetOf(brokkId)).items.find((item) => (item.id === longswordId))?.quantity, 1);
+		});
+
+		it('waits for a save taking an item, then refuses to give it', async () =>
+		{
+			const give = (): Promise<Answer<unknown>> => send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/give`, {
+				characterId: graceCharacterId,
+				items: [{ itemId: longswordId, quantity: 1 }]
+			});
+			const answer = await changeWhileWaitingForUniverse(universeId, give, async (transaction) =>
+			{
+				await setCarriedItemsHidden(universeId, [longswordId], true, transaction);
+			});
+
+			assert.strictEqual(answer.status, 409);
+			assert.strictEqual((await sheetOf(graceCharacterId, grace)).items.find((item) => (item.id === longswordId)), undefined);
 		});
 
 		it('lets the universe\'s creators equip and give a player\'s character\'s items', async () =>
