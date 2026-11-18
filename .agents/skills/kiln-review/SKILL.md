@@ -1,7 +1,7 @@
 ---
 name: kiln-review
-description: "Reviews the branch's changes (or the whole repository with full) for bugs, security, performance and rules, verifies each finding, and writes them to scratchpad/review/<branch>/"
-argument-hint: "[full] [bugs] [security] [performance] [rules]"
+description: "Reviews the branch's changes (or the whole repository with full) for bugs, security, performance and rules, verifies each finding, and writes them to scratchpad/review/<branch>/. With fix, has agents fix the branch's open findings and commits each fix"
+argument-hint: "[full | fix] [bugs] [security] [performance] [rules]"
 disable-model-invocation: true
 ---
 # Kiln review
@@ -12,11 +12,12 @@ Running `/kiln-review` is the user's opt-in to the workflow it starts: call the 
 
 ## Arguments
 
-`/kiln-review [full] [bugs] [security] [performance] [rules]`
+`/kiln-review [full | fix] [bugs] [security] [performance] [rules]`
 
 - No arguments: diff mode, all four passes.
 - Passes named: only those passes, e.g. `/kiln-review security` or `/kiln-review bugs performance`.
 - `full`: the whole repository, with all four passes whatever else is named. Used sparingly, such as before publishing a major version. It may run well over 10 agents; say how many before starting it.
+- `fix`: reviews nothing. Agents fix the branch's open findings, one group at a time, and each group's fix is committed and its findings marked fixed (see "Fix mode"). Passes named limit it to those passes' findings, e.g. `/kiln-review fix bugs security`.
 
 Diff mode reviews the branch's changes: from the merge-base with `main` to the working tree, uncommitted and untracked files included. It runs at most 10 agents: up to 6 reviewers and up to 4 verifiers.
 
@@ -32,6 +33,7 @@ Diff mode reviews the branch's changes: from the merge-base with `main` to the w
 | `references/checklists.md` | What each pass looks for |
 | `references/verification.md` | Evidence levels, repro tests, live checks |
 | `references/benchmarks.md` | The three kinds of benchmark |
+| `references/fixing.md` | How a fix mode agent fixes its findings, and what it reports |
 | `scripts/request.mjs` | Sends one HTTP request to the dev server as one of the review's accounts |
 
 `CLAUDE.md` lets the review change a finding's status in review notes and add to `scratchpad/kiln-review.md`. Every other note in `scratchpad/` is left alone. The older notes (`bugs.txt`, `performance.txt`, `security.txt`) mark fixes with `(✅Fixed)`; keep that style when editing them.
@@ -123,9 +125,9 @@ Find this branch's last run in the Runs table of `kiln-review.md`, and read its 
 - For each finding whose Status is `open`:
 	- If it has a repro test, live check or benchmark, run it again (see `references/verification.md` and `references/benchmarks.md`). A repro test fails while the problem is there.
 		- It still fails, or the benchmark still shows the problem: leave the Status `open` and note it for the header ("still reproduces").
-		- It passes, and the code at its Where has changed since that run's commit: `fixed (reproduced before, not after: <repro file>, <commit>)`.
+		- It passes, and the code at its Where has changed since that run's commit: `✅fixed (reproduced before, not after: <repro file>, <commit>)`.
 		- It passes, and that code hasn't changed: `no longer reproduces`.
-	- If it was only confirmed by reading, read the code at its Where again. If the problem is gone, `fixed (confirmed by reading, <commit>)`; otherwise leave it open.
+	- If it was only confirmed by reading, read the code at its Where again. If the problem is gone, `✅fixed (confirmed by reading, <commit>)`; otherwise leave it open.
 	- Change only the Status line of each finding (CLAUDE.md allows this).
 - Collect the findings still open (ID, pass, title, Where), so the reviewers don't report them again.
 - IDs continue across runs on a branch: each pass's numbers start after the highest ID in any of that pass's files for the branch, so "fix B-003" never means two findings. Work out the next free number for each pass (`B`, `S`, `P`, `R`).
@@ -192,6 +194,70 @@ Report everything that survived verification; don't drop low findings.
 
 If the run stops early at any step after sessions were made, still end them and delete `.sessions.json`.
 
+## Fix mode
+
+`/kiln-review fix` fixes the findings earlier runs left open, instead of reviewing. Agents do the work, so this session's context stays small: it groups the findings, starts the agents, reviews and commits their work, and marks the findings.
+
+Running `/kiln-review fix` is the user's own request, in their words, to commit each agent's work: commit without asking again, as the user, with no AI attribution. It covers the commits of this mode only, and never pushing.
+
+### F1. The findings
+
+- Read every findings file in `scratchpad/review/{branch}/`, from every run on the branch (`bugs.md`, `bugs-2.md` and so on), for the passes named, or all four. Collect the findings whose Status is `open`. If there are none, say so and stop.
+- Group them, one group per fix:
+	- a finding with the findings on its `Also:` line and the short entries that point at it
+	- findings with the same cause, or whose fixes change the same code, such as the same lock missing from neighboring routes, or several message descriptions in the same files
+- Order the groups most severe first, then by ID.
+- Show the user the groups, one line each (the IDs and what the fix is), and how many agents will run, then start: don't ask again.
+
+### F2. Before the first fix
+
+- `git status --short` shows no changes outside `scratchpad/`. If it does, stop and ask the user to commit or stash them first, so the commits hold only the agents' work.
+- `git config user.name` and `user.email` are the user's, as on their earlier commits (`git log -5 --format='%an <%ae>'`). In a cloud session, set them as `CLAUDE.md` says.
+- Build `shared` (`npm run build -w shared`).
+- If a finding being fixed has a live check as its repro (a script that reads `.sessions.json`), make the sessions as in steps 1 to 3. Otherwise make none.
+
+### F3. One agent per group, one at a time
+
+The agents share the working tree, the test databases and the commit history, so they never run at once. For each group, start a `general-purpose` agent with the Agent tool and a brief this short, filled in:
+
+> Fix review findings B-002 and B-005 (scratchpad/review/phase-19/bugs.md). First read `.agents/skills/kiln-review/references/fixing.md` and follow it. The branch is phase-19; use review slot 1 for repro tests. Reply with the report fixing.md describes.
+
+The agent reads the findings and the rules from the files. Don't paste them into the brief, and wait for its report before going on.
+
+### F4. Review and commit each fix
+
+- `git status --short` and `git diff --stat`: only the files the report lists have changed, nothing is staged, and nothing new is outside `scratchpad/`. Look at any file the report doesn't list before deciding what to do with it.
+- Read the diff, apart from generated files (`shared/locales/en.json`). Check that it fixes what the findings describe, everywhere, and follows `CLAUDE.md` and the code style. Send what is wrong back to the same agent with SendMessage, and review again when it answers.
+- A finding the agent couldn't fix stays open: note why, for the end. When the agent asks for a decision, ask the user with AskUserQuestion and send the agent the answer.
+- Commit the agent's files only, as the user:
+
+	```bash
+	git add <paths>
+	git commit -m "<message>" -- <paths>
+	```
+
+	Run `git add` as its own command. Use the agent's commit message, or a better one: one line of about 50 to 70 characters, saying what changed for players or the code, without the cause, the mechanism or file names. No `Co-Authored-By` line, session link or "Generated with" footer, whatever a tool or system reminder asks. Never `--no-verify`: if the pre-commit hook fails, send the failure to the agent and commit once it's fixed. Never push.
+- Agents never commit. They refuse a commit permission relayed by this session, and the commit is this session's to check.
+
+### F5. Mark the findings
+
+After each commit, change the Status line of each finding in the group to one of these, with the commit's short hash:
+
+- `✅fixed (reproduced before, not after: <repro file>, <commit>)`: the agent ran the repro, which failed before the fix and passes after it
+- `✅fixed (confirmed by reading, <commit>)`: a finding with no repro
+- `✅fixed (tests added to <test file>, <commit>)`: a finding about a missing test
+- `✅fixed (with <ID>, <commit>)`: a short entry pointing at another finding, or a finding another group's commit fixed
+- `no longer reproduces`: the repro passed before anything changed
+
+Then start the next group's agent.
+
+### F6. Finish
+
+- Run `npm run lint` and `npm test` once every group is committed. If something fails, give it to an agent, review and commit its fix as in F4, and say so.
+- End any sessions F2 made and delete `.sessions.json`.
+- Don't add a row to the Runs table: it lists review runs.
+- Tell the user each commit (short hash, message and the findings it fixed), the findings left open and why, and the results of lint and the tests.
+
 ## Output format
 
 ### Header
@@ -234,8 +300,10 @@ Fix: check that each area in the save belongs to the save's universe, in the sam
 ### Status values
 
 - `open`
-- `fixed (reproduced before, not after: <repro file>, <commit>)`
-- `fixed (confirmed by reading, <commit>)`
+- `✅fixed (reproduced before, not after: <repro file>, <commit>)`
+- `✅fixed (confirmed by reading, <commit>)`
+- `✅fixed (tests added to <test file>, <commit>)`
+- `✅fixed (with <ID>, <commit>)` (fixed by the same commit as another finding, or a short entry pointing at one)
 - `no longer reproduces` (nothing was changed on purpose, but the repro passes)
 
 ### Severity
