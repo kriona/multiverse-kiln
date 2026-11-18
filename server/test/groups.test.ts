@@ -11,7 +11,11 @@ import { inTransaction } from '../src/db/transactions.js';
 import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
+import type { Refusal } from '../src/http/errors.js';
+import { joinWithInvite, takeOutOfGroup } from '../src/http/groups.js';
 import { groupChanges, type GroupChange } from '../src/players/groupChanges.js';
+import { tryTakeGroupNotice } from '../src/rooms/groupChatNotices.js';
+import { RateLimiter } from '../src/rooms/rateLimiter.js';
 import { addCharacter, addPlayableUniverse, defaultClassId, defaultRaceId, type PlayableUniverse } from './db/fixtures.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
@@ -607,6 +611,72 @@ describe('group routes', () =>
 			});
 			assert.strictEqual((await send(grace, 'POST', `${groupPath(universe.universeId, groupId)}/leave`, { characterId: grace.characterId })).status, 204);
 			assert.strictEqual((await send<CharacterSheet>(grace, 'GET', path)).body.group, null);
+		});
+
+		it('limits how fast a player\'s characters join and leave a group, together, until the window passes', async () =>
+		{
+			let now = 0;
+			const notices = new RateLimiter(2, 3000, () => now);
+			const groupId = await createGroup(ada);
+			const token = await invite(ada, groupId, true);
+			const hopperId = await addCharacter(grace.playerId, universe.universeId, 'Hopper');
+			const alan = await logIn('Alan');
+
+			/**
+			 * Joins the group through the multi-use link, with the limit made here
+			 *
+			 * @param playerId The character's player
+			 * @param characterId The character
+			 * @return The group joined, or why the character didn't join
+			 */
+			function join(playerId: string, characterId: string): Promise<Refusal | GroupJoinedPayload>
+			{
+				return(joinWithInvite(token, playerId, characterId, notices));
+			}
+
+			/**
+			 * Takes one of Grace's characters out of the group, with the limit made here
+			 *
+			 * @param characterId The character
+			 * @return Why they didn't leave, or undefined once they have
+			 */
+			function leave(characterId: string): Promise<Refusal | undefined>
+			{
+				return(takeOutOfGroup(grace.playerId, universe.universeId, groupId, characterId, notices));
+			}
+
+			assert.deepStrictEqual(await join(grace.playerId, grace.characterId), { groupId });
+			assert.strictEqual(await leave(grace.characterId), undefined);
+
+			const joinRefused = await join(grace.playerId, grace.characterId);
+
+			assert.ok('status' in joinRefused);
+			assert.strictEqual(joinRefused.status, 429);
+			assert.strictEqual(joinRefused.message.id, 'error.joinGroupTooFast');
+			assert.strictEqual(await findMembership(grace.characterId), undefined);
+			assert.strictEqual(changes.at(-1)?.kind, 'left');
+
+			// Another player's characters have a limit of their own
+			assert.deepStrictEqual(await join(alan.playerId, alan.characterId), { groupId });
+
+			now = 3000;
+			assert.deepStrictEqual(await join(grace.playerId, grace.characterId), { groupId });
+			assert.deepStrictEqual(await join(grace.playerId, hopperId), { groupId });
+
+			const leaveRefused = await leave(grace.characterId);
+
+			assert.strictEqual(leaveRefused?.status, 429);
+			assert.strictEqual(leaveRefused?.message.id, 'error.leaveGroupTooFast');
+			assert.strictEqual((await findMembership(grace.characterId))?.groupId, groupId);
+
+			// A character already in the group writes no notice, so isn't refused
+			assert.deepStrictEqual(await join(grace.playerId, grace.characterId), { groupId });
+
+			// The anchor being leaving disbands the group, which writes no notice, so it isn't limited
+			assert.ok(tryTakeGroupNotice(groupId, ada.playerId, notices));
+			assert.ok(tryTakeGroupNotice(groupId, ada.playerId, notices));
+			assert.strictEqual(await takeOutOfGroup(ada.playerId, universe.universeId, groupId, ada.characterId, notices), undefined);
+			assert.strictEqual(await findGroup(groupId), undefined);
 		});
 
 		it('refuses another player\'s character, and a character not in the group', async () =>

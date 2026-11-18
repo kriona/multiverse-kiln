@@ -15,7 +15,7 @@ import { findOwnCharacter, type OwnCharacter } from '../db/characterRepo.js';
 import { findClassStart } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
 import { findDifficultyLevel, listDifficultyLevels } from '../db/difficultyRepo.js';
-import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listGroupMembers, lockGroup, type GroupCharacter, type GroupRecord } from '../db/groupRepo.js';
+import { addGroupMember, countGroupMembers, createGroup, createInvite, deleteInvite, findGroup, findInvite, findMembership, leaveGroup, listGroupMembers, lockGroup, type GroupCharacter, type GroupRecord, type LeftGroup } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { findRaceStart } from '../db/raceRepo.js';
 import { inTransaction } from '../db/transactions.js';
@@ -23,6 +23,8 @@ import { lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { chooseStartingArea, type StartingPlace } from '../logic/startingArea.js';
 import { groupChanges } from '../players/groupChanges.js';
+import { groupNoticeRates, tryTakeGroupNotice } from '../rooms/groupChatNotices.js';
+import type { RateLimiter } from '../rooms/rateLimiter.js';
 import { findAllowedUniverse, loadPlayableUniverse, loadTranslator, universeOf, type PlayableUniverse } from './characters.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -109,6 +111,16 @@ const messages = defineMessages({
 		id: 'error.groupFull',
 		defaultMessage: 'The group is full: it already has {max, plural, one {# character} other {# characters}}.',
 		description: 'Why a character couldn\'t join a group with an invite link; {max} is the most characters the universe allows in a group'
+	},
+	joinTooFast: {
+		id: 'error.joinGroupTooFast',
+		defaultMessage: 'You are joining this group too quickly. Wait a moment and try again.',
+		description: 'Why a character couldn\'t join a group with an invite link: the player\'s characters joined, left or gave items in the group faster than allowed, since each join, leave and gift writes a line in the group\'s chat'
+	},
+	leaveTooFast: {
+		id: 'error.leaveGroupTooFast',
+		defaultMessage: 'You are leaving this group too quickly. Wait a moment and try again.',
+		description: 'Why a character couldn\'t leave their group, from the group or their sheet: the player\'s characters joined, left or gave items in the group faster than allowed, since each join, leave and gift writes a line in the group\'s chat'
 	}
 });
 
@@ -326,9 +338,17 @@ async function leaveRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	if (!groupId.success || !await takeOutOfGroup(playerId, universe.id, groupId.data, body.data.characterId))
+	if (!groupId.success)
 	{
 		sendError(response, 404, messages.noSuchGroup);
+		return;
+	}
+
+	const refusal = await takeOutOfGroup(playerId, universe.id, groupId.data, body.data.characterId, groupNoticeRates);
+
+	if (refusal)
+	{
+		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
 	}
 
@@ -336,17 +356,23 @@ async function leaveRoute(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Takes a character out of a group, disbanding it when they are its anchor being, and tells the rooms
+ * Takes a character out of a group, disbanding it when they are its anchor being, and tells the rooms.
+ * A character leaving writes a notice in the group's chat, so it counts toward the limit on the notices
+ * their player's characters write there (tryTakeGroupNotice()). Disbanding deletes the chat, so the
+ * anchor being leaving doesn't count
  *
  * @param playerId The character's player's ID
  * @param universeId The universe's ID
  * @param groupId The group's ID
  * @param characterId The character's ID
- * @return Whether they left: false when the player has no such character, or they aren't in the group
+ * @param notices How fast each player's characters write notices in each group's chat, or null when
+ * the universe's creators take the character out, which isn't limited
+ * @return Why they didn't leave (404 when the player has no such character or they aren't in the group,
+ * 429 when the player's characters write notices in the group too quickly), or undefined once they have
  */
-export async function takeOutOfGroup(playerId: string, universeId: string, groupId: string, characterId: string): Promise<boolean>
+export async function takeOutOfGroup(playerId: string, universeId: string, groupId: string, characterId: string, notices: RateLimiter | null): Promise<Refusal | undefined>
 {
-	const result = await inTransaction(async (transaction) =>
+	const result = await inTransaction(async (transaction): Promise<Refusal | LeftGroup> =>
 	{
 		// The player, then the universe, then the group (leaveGroup locks it): the order making and joining
 		// a group take them in
@@ -355,15 +381,23 @@ export async function takeOutOfGroup(playerId: string, universeId: string, group
 
 		if (!await findOwnCharacter(playerId, universeId, characterId, transaction))
 		{
-			return(undefined);
+			return({ status: 404, message: messages.noSuchGroup });
 		}
 
-		return(leaveGroup(groupId, characterId, transaction));
+		const membership = await findMembership(characterId, transaction);
+
+		// Before anything is written, since a refusal still commits the transaction
+		if ((notices !== null) && (membership?.groupId === groupId) && !membership.isAnchor && !tryTakeGroupNotice(groupId, playerId, notices))
+		{
+			return({ status: 429, message: messages.leaveTooFast });
+		}
+
+		return(((await leaveGroup(groupId, characterId, transaction)) ?? { status: 404, message: messages.noSuchGroup }));
 	});
 
-	if (!result)
+	if ('status' in result)
 	{
-		return(false);
+		return(result);
 	}
 
 	if (result.kind === 'disbanded')
@@ -385,7 +419,7 @@ export async function takeOutOfGroup(playerId: string, universeId: string, group
 		});
 	}
 
-	return(true);
+	return(undefined);
 }
 
 /**
@@ -454,7 +488,7 @@ async function inviteRoute(request: Request, response: Response): Promise<void>
  */
 async function inviteDetailsRoute(request: Request, response: Response): Promise<void>
 {
-	const found = await findInviteGroup(request);
+	const found = await findInviteGroup(request.params.token, playerIdOf(request));
 
 	if (!found)
 	{
@@ -496,8 +530,7 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 }
 
 /**
- * POST INVITES_PATH/:token: puts one of the player's characters in the invite's group, unless it is
- * full. A single-use link is used up. A character already in the group just stays in it
+ * POST INVITES_PATH/:token: puts one of the player's characters in the invite's group (joinWithInvite())
  *
  * @param request The request
  * @param response The response
@@ -505,7 +538,6 @@ async function inviteDetailsRoute(request: Request, response: Response): Promise
 async function acceptInviteRoute(request: Request, response: Response): Promise<void>
 {
 	const body = groupCharacterRequest.safeParse(request.body);
-	const playerId = playerIdOf(request);
 
 	if (!body.success)
 	{
@@ -513,16 +545,39 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 		return;
 	}
 
-	const found = await findInviteGroup(request);
+	const result = await joinWithInvite(request.params.token, playerIdOf(request), body.data.characterId);
 
-	if (!found)
+	if ('status' in result)
 	{
-		sendError(response, 404, messages.inviteGone);
+		sendError(response, result.status, result.message, result.values);
 		return;
 	}
 
+	response.json(result);
+}
+
+/**
+ * Puts one of a player's characters in an invite link's group, unless it is full, and tells the rooms.
+ * A single-use link is used up. A character already in the group just stays in it. Joining writes a
+ * notice in the group's chat, so it counts toward the limit on the notices the player's characters write
+ * there (tryTakeGroupNotice())
+ *
+ * @param token The invite link's token, as the request's path has it
+ * @param playerId The player's ID
+ * @param joiningId The character's ID
+ * @param notices How fast each player's characters write notices in each group's chat
+ * @return The group the character is in, or why they didn't join
+ */
+export async function joinWithInvite(token: unknown, playerId: string, joiningId: string, notices: RateLimiter = groupNoticeRates): Promise<Refusal | GroupJoinedPayload>
+{
+	const found = await findInviteGroup(token, playerId);
+
+	if (!found)
+	{
+		return({ status: 404, message: messages.inviteGone });
+	}
+
 	const { universe, tokenHash } = found;
-	const joiningId = body.data.characterId;
 	const result = await inTransaction(async (transaction): Promise<Refusal | { groupId: string; joined?: GroupCharacter }> =>
 	{
 		// The player, then the universe, then the group: the order making a group and saving the world
@@ -592,6 +647,12 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 			});
 		}
 
+		// Before anything is written, since a refusal still commits the transaction
+		if (!tryTakeGroupNotice(group.id, playerId, notices))
+		{
+			return({ status: 429, message: messages.joinTooFast });
+		}
+
 		await addGroupMember(group.id, joiningId, transaction);
 
 		if (!invite.multiUse)
@@ -614,8 +675,7 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 
 	if ('status' in result)
 	{
-		sendError(response, result.status, result.message, result.values);
-		return;
+		return(result);
 	}
 
 	if (result.joined)
@@ -628,28 +688,27 @@ async function acceptInviteRoute(request: Request, response: Response): Promise<
 		});
 	}
 
-	const payload: GroupJoinedPayload = { groupId: result.groupId };
-
-	response.json(payload);
+	return({ groupId: result.groupId });
 }
 
 /**
- * The group and universe a request's invite link leads to, when the link still works and the player
- * may play the universe, which isn't disabled
+ * The group and universe an invite link leads to, when the link still works and the player may play
+ * the universe, which isn't disabled
  *
- * @param request The request, with the token in its path
+ * @param token The link's token, as a request's path has it; anything that can't be one leads nowhere
+ * @param playerId The player following the link
  * @return The universe, the group and the token's hash, or undefined
  */
-async function findInviteGroup(request: Request): Promise<{ universe: PlayableUniverse; group: GroupRecord; tokenHash: string } | undefined>
+async function findInviteGroup(token: unknown, playerId: string): Promise<{ universe: PlayableUniverse; group: GroupRecord; tokenHash: string } | undefined>
 {
-	const token = inviteToken.safeParse(request.params.token);
+	const parsed = inviteToken.safeParse(token);
 
-	if (!token.success)
+	if (!parsed.success)
 	{
 		return(undefined);
 	}
 
-	const tokenHash = hashToken(token.data);
+	const tokenHash = hashToken(parsed.data);
 	const invite = await findInvite(tokenHash);
 	const group = (invite ? await findGroup(invite.groupId) : undefined);
 
@@ -658,7 +717,7 @@ async function findInviteGroup(request: Request): Promise<{ universe: PlayableUn
 		return(undefined);
 	}
 
-	const universe = await findAllowedUniverse(group.universeId, playerIdOf(request), canPlayUniverse);
+	const universe = await findAllowedUniverse(group.universeId, playerId, canPlayUniverse);
 
 	if (!universe)
 	{

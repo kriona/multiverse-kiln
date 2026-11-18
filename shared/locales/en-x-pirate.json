@@ -5859,6 +5859,10 @@
 		"message": "Booty needs a name.",
 		"source": "An item needs a name."
 	},
+	"error.joinGroupTooFast": {
+		"message": "Ye be boardin' this crew too fast. Wait a moment and try again.",
+		"source": "You are joining this group too quickly. Wait a moment and try again."
+	},
 	"error.lastCreator": {
 		"message": "Every universe needs a captain. Make another hand a captain first.",
 		"source": "A universe needs at least one creator. Make another editor a creator first."
@@ -5870,6 +5874,10 @@
 	"error.lastServerAdmin": {
 		"message": "The ship needs at least one officer, so the last can't be demoted.",
 		"source": "The site needs at least one admin, so the last can't be removed."
+	},
+	"error.leaveGroupTooFast": {
+		"message": "Ye be jumpin' ship from this crew too fast. Wait a moment and try again.",
+		"source": "You are leaving this group too quickly. Wait a moment and try again."
 	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area.",

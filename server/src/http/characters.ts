@@ -31,9 +31,9 @@ import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
 import { characterItemChanges } from '../players/characterItemChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, startingEquipmentOrder, type ScoreSource } from '../logic/characterCreation.js';
-import { postGiftNotice } from '../rooms/groupChatNotices.js';
+import { groupNoticeRates, postGiftNotice, tryTakeGroupNotice } from '../rooms/groupChatNotices.js';
 import { displayText } from '../rooms/payloads.js';
-import { RateLimiter } from '../rooms/rateLimiter.js';
+import type { RateLimiter } from '../rooms/rateLimiter.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { requestLanguages } from './requestLanguages.js';
@@ -196,7 +196,7 @@ const messages = defineMessages({
 	giveTooFast: {
 		id: 'error.giveTooFast',
 		defaultMessage: 'You are giving items too quickly. Wait a moment and try again.',
-		description: 'Why an item wasn\'t given to another character from a character\'s sheet, by their player or from the editor\'s Character List tab: the player\'s characters gave items in their group faster than allowed, since each gift writes a line in the group\'s chat'
+		description: 'Why an item wasn\'t given to another character from a character\'s sheet, by their player or from the editor\'s Character List tab: the player\'s characters gave items in, joined or left their group faster than allowed, since each gift, join and leave writes a line in the group\'s chat'
 	},
 	giveToSelf: {
 		id: 'error.giveToSelf',
@@ -230,20 +230,6 @@ const EQUIP_REFUSALS: Record<EquipRefusal, MessageDescriptor> = defineMessages({
 		description: 'Why a ring wasn\'t equipped from a character\'s sheet: both of the character\'s ring slots filled up before it was equipped, so the item\'s menu now asks whether to equip it as the left or the right ring'
 	}
 });
-
-/**
- * Most gifts one player's characters may give in one group in GIFT_RATE_WINDOW_MS, as many as the chat
- * messages a player may send to it, since each gift writes a line in the group's chat
- */
-const GIFT_RATE_LIMIT = 5;
-
-const GIFT_RATE_WINDOW_MS = 3000;
-
-/**
- * How fast each player's characters give items in each group, whether their player or the universe's
- * creators give them
- */
-const giftRates = new RateLimiter(GIFT_RATE_LIMIT, GIFT_RATE_WINDOW_MS);
 
 const universes = new WeakMap<Request, PlayableUniverse>();
 
@@ -1158,8 +1144,9 @@ export async function unequipItem(universe: Pick<PlayableUniverse, 'id' | 'rules
  * online or not: all of it when asked for as many as they carry or more. Those given that were equipped
  * are unequipped (unequippedByRemoval()), and they arrive unequipped. Once given, both players' windows
  * hear of it, and the group's chat says who gave whom what. Any item the character carries can be given,
- * disabled ones and those whose book is off included. Each gift is a line in the group's chat, so the
- * giving character's player's characters may give only so many in their group at a time
+ * disabled ones and those whose book is off included. Each gift is a line in the group's chat, so it
+ * counts toward the limit on the notices the giving character's player's characters write in their
+ * group (tryTakeGroupNotice()), whether their player or the universe's creators give it
  *
  * @param universe The universe's ID and ruleset; its live version's items name what is given
  * @param characterId The giving character's ID
@@ -1167,10 +1154,10 @@ export async function unequipItem(universe: Pick<PlayableUniverse, 'id' | 'rules
  * @param playerId The player the giving character must belong to, or undefined for any player's, as
  * the universe's creators may
  * @param noSuchCharacter Why a character who isn't there can't give items
- * @param gifts How fast each player's characters give items in each group
+ * @param notices How fast each player's characters write notices in each group's chat
  * @return Why nothing was given, or undefined once it is
  */
-export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: GiveItemsRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor, gifts: RateLimiter = giftRates): Promise<Refusal | undefined>
+export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: GiveItemsRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor, notices: RateLimiter = groupNoticeRates): Promise<Refusal | undefined>
 {
 	if (request.characterId === characterId)
 	{
@@ -1200,7 +1187,7 @@ export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 		}
 
 		// Before anything is written, since a refusal still commits the transaction
-		if (!gifts.tryTake(`${membership.groupId} ${giver.playerId}`))
+		if (!tryTakeGroupNotice(membership.groupId, giver.playerId, notices))
 		{
 			return({ status: 429, message: messages.giveTooFast });
 		}

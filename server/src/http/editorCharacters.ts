@@ -414,7 +414,8 @@ function itemRoute<Body>(body: z.ZodType<Body>, change: (universe: Pick<Editable
 
 /**
  * POST /:universeId/groups/:groupId/leave: takes a player's character out of their group, disbanding it
- * when they are its anchor being
+ * when they are its anchor being. It isn't limited by how fast the player's characters write notices in
+ * the group, so creators can always take out the character of a player who is flooding the group's chat
  *
  * @param request The request, with a GroupCharacterRequest
  * @param response The response
@@ -432,10 +433,16 @@ async function leaveGroupRoute(request: Request, response: Response): Promise<vo
 
 	const universeId = universeContextOf(request).universe.id;
 	const playerId = await findCharacterPlayerId(universeId, body.data.characterId);
+	const refusal: Refusal | undefined = ((groupId.success && (playerId !== undefined))
+		? await takeOutOfGroup(playerId, universeId, groupId.data, body.data.characterId, null)
+		: {
+			status: 404,
+			message: noSuchGroupMessage
+		});
 
-	if (!groupId.success || (playerId === undefined) || !await takeOutOfGroup(playerId, universeId, groupId.data, body.data.characterId))
+	if (refusal)
 	{
-		sendError(response, 404, noSuchGroupMessage);
+		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
 	}
 

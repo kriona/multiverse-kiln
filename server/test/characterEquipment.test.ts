@@ -15,6 +15,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { equipItem, giveItems } from '../src/http/characters.js';
 import type { Refusal } from '../src/http/errors.js';
+import { takeOutOfGroup } from '../src/http/groups.js';
 import { RateLimiter } from '../src/rooms/rateLimiter.js';
 import { addCharacter, addGroup, defaultRaceId, dwarfFighter } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
@@ -552,6 +553,9 @@ describe('Equipment routes', () =>
 			assert.strictEqual(refused?.status, 429);
 			assert.strictEqual(refused?.message.id, 'error.giveTooFast');
 			assert.strictEqual((await sheetOf(brokkId)).items.find((item) => (item.id === longswordId))?.quantity, 1);
+
+			// Leaving writes a line in the group's chat too, so it shares the limit
+			assert.strictEqual((await takeOutOfGroup(ada.playerId, universeId, groupId, karaId, gifts))?.status, 429);
 
 			// Another player's characters in the group have a limit of their own
 			await giveCharacterItems(graceCharacterId, [{ itemId: bookId, quantity: 1 }]);

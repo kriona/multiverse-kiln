@@ -31,7 +31,8 @@
  * - POST characterPath(universeId, characterId)/items/give: gives an item the character carries to
  *   another character in their group (GiveItemsRequest), unequipping those given that were equipped, or
  *   answers 409 when the character isn't in a group with them or doesn't carry the item, and 429 when the
- *   player's characters give items in the group faster than allowed
+ *   player's characters give items in, join or leave the group faster than allowed (each writes a line
+ *   in its chat; see shared/src/groups.ts)
  *
  * Each change to a character's items or equipment is sent to their player's windows
  * (SessionServerMessageType.CharacterItems), and a character given items tells their player's windows

@@ -5781,7 +5781,7 @@
 	},
 	"error.giveTooFast": {
 		"defaultMessage": "You are giving items too quickly. Wait a moment and try again.",
-		"description": "Why an item wasn't given to another character from a character's sheet, by their player or from the editor's Character List tab: the player's characters gave items in their group faster than allowed, since each gift writes a line in the group's chat"
+		"description": "Why an item wasn't given to another character from a character's sheet, by their player or from the editor's Character List tab: the player's characters gave items in, joined or left their group faster than allowed, since each gift, join and leave writes a line in the group's chat"
 	},
 	"error.groupCharacterBarred": {
 		"defaultMessage": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}",
@@ -5859,6 +5859,10 @@
 		"defaultMessage": "An item needs a name.",
 		"description": "Why an item the universe added couldn't be saved: its name was left out"
 	},
+	"error.joinGroupTooFast": {
+		"defaultMessage": "You are joining this group too quickly. Wait a moment and try again.",
+		"description": "Why a character couldn't join a group with an invite link: the player's characters joined, left or gave items in the group faster than allowed, since each join, leave and gift writes a line in the group's chat"
+	},
 	"error.lastCreator": {
 		"defaultMessage": "A universe needs at least one creator. Make another editor a creator first.",
 		"description": "Why changes to a universe's editors couldn't be saved: they would take the role of creator from its last creator, whether by changing their role, removing them or them leaving"
@@ -5870,6 +5874,10 @@
 	"error.lastServerAdmin": {
 		"defaultMessage": "The site needs at least one admin, so the last can't be removed.",
 		"description": "Why a player couldn't be removed from the site's admins on the Admins admin page: they are the only one left"
+	},
+	"error.leaveGroupTooFast": {
+		"defaultMessage": "You are leaving this group too quickly. Wait a moment and try again.",
+		"description": "Why a character couldn't leave their group, from the group or their sheet: the player's characters joined, left or gave items in the group faster than allowed, since each join, leave and gift writes a line in the group's chat"
 	},
 	"error.linkOutOfBounds": {
 		"defaultMessage": "The link's cell must be inside the area.",
