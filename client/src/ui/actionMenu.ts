@@ -1,6 +1,7 @@
 import menuIcon from 'virtual:icon/ph:dots-three-vertical';
 
 import { setButtonLabel } from './dom';
+import { placeUnder } from './popoverPlacement';
 
 /**
  * A command in an action menu
@@ -93,7 +94,7 @@ export function createActionMenu(name: string, actions: readonly MenuAction[]): 
 
 		// Shown, placed and focused at once, so a key pressed right after reaches the item
 		list.showPopover();
-		place(list, button);
+		placeUnder(list, button);
 		list.style.visibility = '';
 		items[(item === 'first') ? 0 : (items.length - 1)]?.focus();
 	}
@@ -166,7 +167,7 @@ export function createActionMenu(name: string, actions: readonly MenuAction[]): 
 			return;
 		}
 
-		place(list, button);
+		placeUnder(list, button);
 		list.style.visibility = '';
 		window.addEventListener('scroll', onScroll, true);
 
@@ -266,29 +267,4 @@ function createItem(action: MenuAction, choose: () => void): HTMLButtonElement
 	});
 
 	return(item);
-}
-
-/**
- * Places an open menu under its button, its end edge lined up with the button's, or above the button
- * when there isn't room below, kept inside the window
- *
- * @param list The menu
- * @param button Its button
- */
-function place(list: HTMLElement, button: HTMLElement): void
-{
-	const margin = 8;
-	const gap = 4;
-	const anchor = button.getBoundingClientRect();
-	const rtl = (getComputedStyle(button).direction === 'rtl');
-	const width = list.offsetWidth;
-	const height = list.offsetHeight;
-	const below = (anchor.bottom + gap);
-	const top = (((below + height) > (window.innerHeight - margin)) && ((anchor.top - gap - height) >= margin))
-		? (anchor.top - gap - height)
-		: below;
-	const left = (rtl ? anchor.left : (anchor.right - width));
-
-	list.style.top = `${top}px`;
-	list.style.left = `${Math.min(Math.max(left, margin), (window.innerWidth - width - margin))}px`;
 }

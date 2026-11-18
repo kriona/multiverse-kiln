@@ -24,6 +24,7 @@ import { unequipNote } from './equipmentText';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { giveItemDialog } from './GiveItemDialog';
+import { setUpInfoTip } from './infoTip';
 import { INSPECT_MESSAGES, inspectItem } from './ItemInspectDialog';
 import { CHARACTER_ITEMS_EVENT } from './itemNotices';
 import { createItemIcon, itemName, slotText } from './itemNames';
@@ -311,6 +312,7 @@ export class CharacterSheetDialog
 	constructor(private readonly api: CharacterSheetApi, groupApi: Pick<GroupApi, 'leaveGroup'>, private readonly charactersChanged: () => void, leaveGroup?: LeaveGroup, private readonly giveItems?: GiveItems)
 	{
 		this.leaveGroup = (leaveGroup ?? ((universeId, groupId, characterId) => takeOutOfGroup(groupApi, universeId, groupId, characterId)));
+		setUpInfoTip(getElement('character-sheet-social-info', HTMLButtonElement), getElement('character-sheet-social-about', HTMLElement));
 		this.appearanceChoices = new AppearanceChoices(getElement('character-appearance-choices', HTMLElement), () =>
 		{
 			this.appearanceTracker.check();

@@ -17,6 +17,16 @@
 		font-size: 1rem;
 		color: $text-muted;
 	}
+
+	.heading-with-info
+	{
+		margin: 0 0 8px;
+
+		h3
+		{
+			margin: 0;
+		}
+	}
 }
 
 // Said of a character given their last rites, with when they will be deleted, or of one in a group

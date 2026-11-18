@@ -762,6 +762,54 @@ button.sort-button
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
+// A heading with an info button beside it. The page's styles move the heading's bottom margin to this
+.heading-with-info
+{
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+// A small i button that shows a short explanation (src/ui/infoTip.ts)
+button.info-button
+{
+	display: inline-flex;
+	align-items: center;
+	padding: 2px;
+	border: none;
+	background: none;
+	color: $text-muted;
+
+	&:hover,
+	&[aria-expanded="true"]
+	{
+		background: none;
+		color: $text;
+	}
+
+	.icon
+	{
+		width: 1.3em;
+		height: 1.3em;
+		margin-inline-end: 0;
+	}
+}
+
+// The explanation an info button shows, a popover in the top layer placed under the button by the script
+.info-tip
+{
+	inset: auto;
+	max-width: min(280px, calc(100vw - 16px));
+	margin: 0;
+	padding: 8px 10px;
+	border: 1px solid $border;
+	border-radius: 6px;
+	background: $background-panel;
+	color: $text;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+	@include small-text;
+}
+
 // A command that loses something, such as Discard
 .action-menu-item.danger-item
 {

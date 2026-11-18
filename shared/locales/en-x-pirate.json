@@ -1543,6 +1543,10 @@
 		"message": "Booty worn only for show. It shows on the likeness in place o' what be strapped on.",
 		"source": "Items worn only for their look. They show on the avatar in place of what is equipped."
 	},
+	"characterSheet.socialInfo": {
+		"message": "What be finery?",
+		"source": "About social slots"
+	},
 	"characterSheet.staminaPoints": {
 		"message": "Wind",
 		"source": "Stamina points"

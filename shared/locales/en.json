@@ -1541,7 +1541,11 @@
 	},
 	"characterSheet.socialAbout": {
 		"defaultMessage": "Items worn only for their look. They show on the avatar in place of what is equipped.",
-		"description": "Under the Social heading on a character's sheet: what its slots are for"
+		"description": "Shown by the i button beside the Social heading on a character's sheet: what its slots are for"
+	},
+	"characterSheet.socialInfo": {
+		"defaultMessage": "About social slots",
+		"description": "Name of the i button beside the Social heading on a character's sheet, which shows what social slots are for"
 	},
 	"characterSheet.staminaPoints": {
 		"defaultMessage": "Stamina points",
