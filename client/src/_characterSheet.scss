@@ -159,11 +159,34 @@ button.character-sheet-delete
 	color: $text-faint;
 }
 
-// As wide as how many of the item the character carries, the most they can discard, plus room for its
-// arrows; the script sets --digits to how many digits that is
-#character-discard-quantity
+// As wide as how many of the item the character carries, the most they can discard or give, plus room
+// for its arrows; the script sets --digits to how many digits that is
+#character-discard-quantity,
+#character-give-quantity
 {
 	max-width: calc((var(--digits, 3) * 1ch) + 4ch);
+}
+
+// A slot with nothing in it, which says Empty in faint text
+.character-sheet-equipped .character-sheet-empty-slot
+{
+	color: $text-faint;
+}
+
+.item-inspect-dialog
+{
+	width: min(420px, calc(100vw - 32px));
+
+	h2
+	{
+		margin: 0 0 12px;
+		overflow-wrap: anywhere;
+	}
+}
+
+.item-inspect-description
+{
+	margin: 12px 0 0;
 }
 
 // Each item's menu sits at the far end of its row

@@ -12,7 +12,7 @@ import { inVersion, type UniverseVersion } from './universeVersions.js';
 /**
  * What a new item needs
  */
-export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'enabled'>;
+export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'equips' | 'enabled'>;
 
 /**
  * The settings of an item a universe added, which always has a name of its own
@@ -40,6 +40,12 @@ export interface FoundItem
 	 * The book a default item comes from; null for an item the universe added
 	 */
 	rulebook: string | null;
+
+	/**
+	 * Its types and where it equips, a default item's from the universe's edited copy when it has one
+	 */
+	types: string[];
+	equips: string;
 }
 
 /**
@@ -203,6 +209,7 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			description: items.description,
 			category: items.category,
 			types: items.types,
+			equips: items.equips,
 			rulebook: items.rulebook,
 			enabled: items.enabled
 		})
@@ -239,11 +246,12 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				description: (custom ? row.description : (copy?.description ?? null)),
 				category: settings.category,
 				types: settings.types,
+				equips: settings.equips,
 				enabled: settings.enabled,
 				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined),
-				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.category !== row.category) || !sameValue(copy.types, row.types)))
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.category !== row.category) || !sameValue(copy.types, row.types) || (copy.equips !== row.equips)))
 			};
 
 			return({
@@ -343,7 +351,11 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 			universeId: items.universeId,
 			rulebook: items.rulebook,
 			enabled: items.enabled,
-			copyEnabled: copies.enabled
+			types: items.types,
+			equips: items.equips,
+			copyEnabled: copies.enabled,
+			copyTypes: copies.types,
+			copyEquips: copies.equips
 		})
 		.from(items)
 		.leftJoin(copies, and(
@@ -369,7 +381,9 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 	return({
 		kind: ((row.universeId === null) ? 'default' : 'custom'),
 		enabled: (row.copyEnabled ?? row.enabled),
-		rulebook: row.rulebook
+		rulebook: row.rulebook,
+		types: (row.copyTypes ?? row.types),
+		equips: (row.copyEquips ?? row.equips)
 	});
 }
 

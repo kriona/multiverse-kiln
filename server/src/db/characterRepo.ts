@@ -6,9 +6,10 @@
  * players only to name and search for the players of the editor's list of a universe's characters
  */
 import { and, asc, count, countDistinct, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql, type SQL } from 'drizzle-orm';
-import { isPf1eRollMethod, type AbilityScores, type BarredOptions, type CharacterDraft, type EditorCharacterSortColumn, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type SortDirection, type UniverseStage } from '@multiverse-kiln/shared';
+import { isPf1eRollMethod, unequippedByRemoval, type AbilityScores, type BarredOptions, type CharacterDraft, type EditorCharacterSortColumn, type EquippedItem, type ItemQuantity, type Money, type Pf1eRollMethod, type Ruleset, type SortDirection, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
+import { listEquipment, listEquipmentOf, unequipSlots } from './equipmentRepo.js';
 import { characterDrafts, characterItems, characters, groupMembers, pf1eAbilityRolls, pf1eCharacters, players, sf1eCharacters, universes } from './schema.js';
 
 /**
@@ -116,6 +117,8 @@ export interface OwnCharacter
  */
 export interface CharacterDetails extends Omit<CharacterRecord, 'groupId'>
 {
+	playerId: string;
+
 	/**
 	 * The theme, by the ID everything else uses for it, in a ruleset with themes; null otherwise
 	 */
@@ -132,6 +135,11 @@ export interface CharacterDetails extends Omit<CharacterRecord, 'groupId'>
 	 * The items the character carries, each listed once by its own ID, by ID
 	 */
 	items: ItemQuantity[];
+
+	/**
+	 * What the character has equipped, by slot key
+	 */
+	equipment: EquippedItem[];
 }
 
 /**
@@ -486,6 +494,7 @@ async function findDetails(condition: SQL | undefined, ruleset: Ruleset, charact
 	const [row] = await executor
 		.select({
 			id: characters.id,
+			playerId: characters.playerId,
 			name: characters.name,
 			raceId: characters.raceId,
 			classId: characters.classId,
@@ -520,9 +529,11 @@ async function findDetails(condition: SQL | undefined, ruleset: Ruleset, charact
 			eq(characterItems.hidden, false)
 		))
 		.orderBy(asc(characterItems.itemId));
+	const equipment = await listEquipment(characterId, executor);
 
 	return({
 		id: row.id,
+		playerId: row.playerId,
 		name: row.name,
 		raceId: row.raceId,
 		classId: row.classId,
@@ -536,13 +547,14 @@ async function findDetails(condition: SQL | undefined, ruleset: Ruleset, charact
 			cp: row.copper,
 			cr: row.credits
 		},
-		items: carried
+		items: carried,
+		equipment
 	});
 }
 
 /**
- * Every one of a player's characters in every universe, with their ability scores, money and items, as
- * findCharacterDetails() finds each, in four queries however many characters there are
+ * Every one of a player's characters in every universe, with their ability scores, money, items and
+ * equipment, as findCharacterDetails() finds each, in five queries however many characters there are
  *
  * @param playerId The player's ID
  * @param executor The database, or a transaction
@@ -624,6 +636,7 @@ export async function listCharacterDetails(playerId: string, executor: Executor 
 		}]))
 	};
 	const items = Map.groupBy(carried, (row) => row.characterId);
+	const equipment = await listEquipmentOf(rows.map((row) => row.id), executor);
 	const details = new Map<string, CharacterDetails>();
 
 	for (const row of rows)
@@ -637,6 +650,7 @@ export async function listCharacterDetails(playerId: string, executor: Executor 
 
 		details.set(row.id, {
 			id: row.id,
+			playerId,
 			name: row.name,
 			raceId: row.raceId,
 			classId: row.classId,
@@ -653,7 +667,8 @@ export async function listCharacterDetails(playerId: string, executor: Executor 
 			items: (items.get(row.id) ?? []).map(({ itemId, quantity }) => ({
 				itemId,
 				quantity
-			}))
+			})),
+			equipment: (equipment.get(row.id) ?? [])
 		});
 	}
 
@@ -783,6 +798,106 @@ export async function findLastPlayedCharacterId(playerId: string, universeId: st
 		.limit(1);
 
 	return(row?.id);
+}
+
+/**
+ * A character locked while their items or equipment change
+ */
+export interface LockedCharacter
+{
+	id: string;
+	playerId: string;
+	name: string;
+	raceId: number;
+}
+
+/**
+ * Locks some characters of a universe, whose last rites aren't over, while their items or equipment
+ * change. They are locked in the order of their IDs, so two requests locking the same characters can't
+ * wait for each other
+ *
+ * @param universeId The universe's ID
+ * @param characterIds The characters' IDs
+ * @param executor A transaction
+ * @return The characters found, by ID; one not in the universe is left out
+ */
+export async function lockCharacters(universeId: string, characterIds: readonly string[], executor: Executor): Promise<Map<string, LockedCharacter>>
+{
+	const rows = await executor
+		.select({
+			id: characters.id,
+			playerId: characters.playerId,
+			name: characters.name,
+			raceId: characters.raceId
+		})
+		.from(characters)
+		.where(and(
+			inArray(characters.id, [...new Set(characterIds)]),
+			eq(characters.universeId, universeId),
+			notExpired
+		))
+		.orderBy(asc(characters.id))
+		.for('update');
+
+	return(new Map(rows.map((row) => [row.id, row])));
+}
+
+/**
+ * How many of an item a character carries, leaving out items taken from them while disabled
+ *
+ * @param characterId The character's ID
+ * @param itemId The item, by the ID characters hold
+ * @param executor The database, or a transaction
+ * @return How many, or 0 when they carry none
+ */
+export async function countCarriedItem(characterId: string, itemId: number, executor: Executor = db): Promise<number>
+{
+	const [row] = await executor
+		.select({
+			quantity: characterItems.quantity
+		})
+		.from(characterItems)
+		.where(and(
+			eq(characterItems.characterId, characterId),
+			eq(characterItems.itemId, itemId),
+			eq(characterItems.hidden, false)
+		))
+		.limit(1);
+
+	return((row?.quantity ?? 0));
+}
+
+/**
+ * How many of some items a character carries, locking the rows until the transaction ends, leaving out
+ * items taken from them while disabled
+ *
+ * @param characterId The character's ID
+ * @param itemIds The items, by the IDs characters hold
+ * @param executor A transaction
+ * @return How many of each they carry, by item ID; an item they don't carry is left out
+ */
+export async function lockCarriedItems(characterId: string, itemIds: readonly number[], executor: Executor): Promise<Map<number, number>>
+{
+	if (itemIds.length === 0)
+	{
+		return(new Map());
+	}
+
+	const rows = await executor
+		.select({
+			itemId: characterItems.itemId,
+			quantity: characterItems.quantity
+		})
+		.from(characterItems)
+		.where(and(
+			eq(characterItems.characterId, characterId),
+			eq(characterItems.hidden, false),
+			inArray(characterItems.itemId, [...itemIds])
+		))
+		.orderBy(asc(characterItems.itemId))
+		.for('update');
+
+	return(new Map(rows.map((row) => [row.itemId, row.quantity])));
 }
 
 /**
@@ -1393,15 +1508,17 @@ export async function giveCharacterItems(characterId: string, items: readonly It
 
 /**
  * Takes items from what a character carries: all of an item when asked for as many as they carry or
- * more. Items hidden while disabled aren't carried, so they can't be taken. Locks the rows it reads,
- * so it is meant for a transaction
+ * more. Items hidden while disabled aren't carried, so they can't be taken. Taking more of an item than
+ * are unequipped unequips the rest (unequippedByRemoval()); taking all of it unequips it everywhere.
+ * Locks the rows it reads, so it is meant for a transaction
  *
  * @param characterId The character's ID
+ * @param ruleset The universe's ruleset, whose slots set the order equipped items are unequipped in
  * @param items The items, each listed once, and how many of each to take
  * @param executor A transaction
  * @return Whether the items were taken: false, taking nothing, when the character doesn't carry one of them
  */
-export async function takeCharacterItems(characterId: string, items: readonly ItemQuantity[], executor: Executor): Promise<boolean>
+export async function takeCharacterItems(characterId: string, ruleset: Ruleset, items: readonly ItemQuantity[], executor: Executor): Promise<boolean>
 {
 	if (items.length === 0)
 	{
@@ -1431,6 +1548,15 @@ export async function takeCharacterItems(characterId: string, items: readonly It
 		.filter(({ itemId, quantity }) => (quantity >= (quantities.get(itemId) ?? 0)))
 		.map(({ itemId }) => itemId));
 	const remaining = items.filter(({ itemId }) => !emptied.has(itemId));
+
+	// Emptied items' equipment rows go with their rows, by the foreign key
+	if (remaining.length > 0)
+	{
+		const equipment = await listEquipment(characterId, executor);
+		const unequipped = remaining.flatMap(({ itemId, quantity }) => unequippedByRemoval(ruleset, equipment, itemId, ((quantities.get(itemId) ?? 0) - quantity)));
+
+		await unequipSlots(characterId, unequipped.map((equipped) => equipped.slot), executor);
+	}
 
 	if (emptied.size > 0)
 	{

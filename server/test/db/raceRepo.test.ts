@@ -124,6 +124,7 @@ describe('raceRepo', () =>
 				...lizardfolk.rules,
 				darkvision: 'superior',
 				lightSensitivity: true,
+				hasTail: true,
 				size: 'large'
 			}
 		};

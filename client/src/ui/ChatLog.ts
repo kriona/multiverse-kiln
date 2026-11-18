@@ -1,7 +1,8 @@
-import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatNotice } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, MAX_CHAT_MESSAGE_LENGTH, type ChatNotice, type ChatNoticeDetails, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale, t } from '../localization';
 import { getElement, setUnreadChatCount } from './dom';
+import { optionItemName } from './itemNames';
 import { showToast } from './toast';
 
 /**
@@ -31,6 +32,11 @@ export interface ChatLine
 	 * absent for a message a player wrote
 	 */
 	notice?: ChatNotice | null;
+
+	/**
+	 * In a kept chat, what a gave notice says beyond who gave the items; null or absent otherwise
+	 */
+	details?: ChatNoticeDetails | null;
 
 	text: string;
 
@@ -94,7 +100,13 @@ export class ChatLog
 	 * Who wrote each message on screen, and when, oldest first, for counting those that are unread, with
 	 * what each notice says
 	 */
-	private messages: Pick<ChatLine, 'playerId' | 'sentAt' | 'notice'>[] = [];
+	private messages: Pick<ChatLine, 'playerId' | 'sentAt' | 'notice' | 'details'>[] = [];
+
+	/**
+	 * The ruleset of the universe the chat is in, which names default items in notices; undefined until
+	 * it is known
+	 */
+	private ruleset: Ruleset | undefined;
 
 	/**
 	 * When the newest message the player has seen was sent, in milliseconds since the epoch: others'
@@ -170,6 +182,16 @@ export class ChatLog
 	setOwnPlayer(playerId: string): void
 	{
 		this.ownPlayerId = playerId;
+	}
+
+	/**
+	 * Sets the ruleset of the universe the chat is in, which names the default items notices tell of
+	 *
+	 * @param ruleset The ruleset
+	 */
+	setRuleset(ruleset: Ruleset): void
+	{
+		this.ruleset = ruleset;
 	}
 
 	/**
@@ -291,7 +313,7 @@ export class ChatLog
 				line.querySelector('.chat-notice-text')?.replaceChildren(noticeText(notice, chatAuthorName({
 					playerId: null,
 					name: ''
-				})));
+				}), (message.details ?? null), this.ruleset));
 			}
 			else if (name instanceof HTMLElement)
 			{
@@ -427,7 +449,7 @@ export class ChatLog
 			const text = document.createElement('span');
 
 			text.className = 'chat-notice-text';
-			text.textContent = noticeText(notice, chatAuthorName(message));
+			text.textContent = noticeText(notice, chatAuthorName(message), (message.details ?? null), this.ruleset);
 			line.className = 'chat-notice';
 			line.append(time, text);
 		}
@@ -453,7 +475,8 @@ export class ChatLog
 		this.messages.push({
 			playerId: message.playerId,
 			sentAt: message.sentAt,
-			notice
+			notice,
+			details: (message.details ?? null)
 		});
 
 		while (this.log.childElementCount > this.maxLines)
@@ -470,9 +493,12 @@ export class ChatLog
  *
  * @param notice The notice
  * @param name The name of the character it is about, or the stand-in for a deleted account
+ * @param details What a gave notice says beyond who gave the items; null for other notices
+ * @param ruleset The ruleset of the universe the chat is in, which names default items, or undefined
+ * when it isn't known
  * @return The sentence
  */
-export function noticeText(notice: ChatNotice, name: string): string
+export function noticeText(notice: ChatNotice, name: string, details: ChatNoticeDetails | null, ruleset: Ruleset | undefined): string
 {
 	switch (notice)
 	{
@@ -506,6 +532,20 @@ export function noticeText(notice: ChatNotice, name: string): string
 				description: 'In a group\'s chat, shown in place of a message when a character leaves the group, in any way: from the group or their sheet, because the universe\'s group size was lowered, or because their player deleted their account. {name} is the character\'s name, or "[deleted user]" once their player has deleted their account'
 			}, {
 				name
+			}));
+		}
+
+		case 'gave':
+		{
+			return(t({
+				id: 'chat.gave',
+				defaultMessage: '{name} gave {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.',
+				description: 'In a group\'s chat, shown in place of a message when a character gives items to another character in the group from their sheet. {name} is the giver\'s name, or "[deleted user]" once their player has deleted their account, {receiver} the name of the character given them, {item} the item\'s name and {quantity} how many, written as a character\'s sheet writes it, e.g. "arrows x20"'
+			}, {
+				name,
+				receiver: (details?.receiver ?? ''),
+				item: ((details === null) ? '' : optionItemName(details.item, ruleset)),
+				quantity: (details?.quantity ?? 1)
 			}));
 		}
 	}

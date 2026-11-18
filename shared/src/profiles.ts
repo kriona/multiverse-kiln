@@ -477,6 +477,12 @@ export interface ExportedCharacter
 	items: {
 		name: string;
 		quantity: number;
+
+		/**
+		 * The slots it is equipped in (equipmentSlots()), as many as are equipped; mainHand for one held
+		 * in both hands
+		 */
+		equipped: string[];
 	}[];
 
 	/**

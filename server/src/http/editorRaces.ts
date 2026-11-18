@@ -4,10 +4,10 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, RULESET_EQUIPMENT, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findEditorRace, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
@@ -97,7 +97,8 @@ export async function createRaceChange(context: ChangeContext, ref: NewRef, sett
 }
 
 /**
- * Changes one of the universe's races, or stores its edited copy of a default race
+ * Changes one of the universe's races, or stores its edited copy of a default race. Taking its tail away
+ * unequips its characters' tail slots once the save reaches the live version
  *
  * @param context The save
  * @param id The race
@@ -121,6 +122,7 @@ export async function saveRaceChange(context: ChangeContext, id: NumberRef, sett
 	}
 
 	await checkRace(context, raceId, settings);
+	await noteRaceTail(context, raceId);
 
 	if (kind === 'default')
 	{
@@ -152,6 +154,7 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 	// Default races are enabled, so restoring one never leaves the universe without an enabled race
 	if (kind === 'default')
 	{
+		await noteRaceTail(context, raceId);
 		await restoreDefaultRace(version, raceId, transaction);
 		await deleteUniverseTextOf(version, 'race', raceId, transaction);
 		return;
@@ -173,6 +176,30 @@ export async function removeRaceChange(context: ChangeContext, id: NumberRef): P
 
 	await deleteCustomRace(version, raceId, transaction);
 	await deleteUniverseTextOf(version, 'race', raceId, transaction);
+}
+
+/**
+ * Notes whether a race the change saves or restores has a tail, so a save taking it away unequips its
+ * characters' tail slots once every change is saved (see editorDisablings.ts)
+ *
+ * @param context The save
+ * @param raceId The race
+ */
+async function noteRaceTail(context: ChangeContext, raceId: number): Promise<void>
+{
+	const { universe, version, transaction } = context;
+
+	if (RULESET_EQUIPMENT[universe.ruleset].tailLocation === null)
+	{
+		return;
+	}
+
+	const race = await findEditorRace(version, universe.ruleset, raceId, transaction);
+
+	if (race)
+	{
+		context.disablings.raceTail(raceId, race.rules);
+	}
 }
 
 /**

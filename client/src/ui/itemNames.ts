@@ -1,4 +1,4 @@
-import { DEFAULT_ITEM_DESCRIPTIONS, DEFAULT_ITEM_NAMES, ITEM_KINDS, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_DESCRIPTIONS, DEFAULT_ITEM_NAMES, ITEM_KINDS, itemEquipsName, RULESETS, slotName, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
 import armorIcon from 'virtual:icon/game-icons:breastplate';
 import gearIcon from 'virtual:icon/game-icons:knapsack';
 import weaponIcon from 'virtual:icon/game-icons:broadsword';
@@ -33,6 +33,56 @@ export function itemName(item: Pick<EditorItem, 'key' | 'name'>, ruleset: Rulese
 	const message = ((item.key === null) ? undefined : DEFAULT_ITEM_NAMES[ruleset][item.key]);
 
 	return(((message === undefined) ? (item.key ?? '') : t(message)));
+}
+
+/**
+ * An item's name as the player reads it, where its universe's ruleset may not be known, such as a toast
+ * or a chat notice telling of a gift: the universe's name for it, or a default item's name in the
+ * player's language, looked up in the ruleset given or else the first ruleset with that key
+ *
+ * @param item The item
+ * @param ruleset The universe's ruleset, or undefined when it isn't known
+ * @return The name
+ */
+export function optionItemName(item: Pick<EditorItem, 'key' | 'name'>, ruleset: Ruleset | undefined): string
+{
+	if ((ruleset !== undefined) || (item.name !== null) || (item.key === null))
+	{
+		return(itemName(item, (ruleset ?? 'pf1e')));
+	}
+
+	const key = item.key;
+	const found = RULESETS.find((each) => Object.hasOwn(DEFAULT_ITEM_NAMES[each], key));
+
+	return(itemName(item, (found ?? 'pf1e')));
+}
+
+/**
+ * Where an item equips, in the player's language
+ *
+ * @param equips Where it equips (itemEquipsChoices())
+ * @param ruleset The universe's ruleset
+ * @return The name, or the key for a place the ruleset doesn't have
+ */
+export function itemEquipsText(equips: string, ruleset: Ruleset): string
+{
+	const message = itemEquipsName(ruleset, equips);
+
+	return(((message === undefined) ? equips : t(message)));
+}
+
+/**
+ * A slot's name, in the player's language
+ *
+ * @param slot The slot (equipmentSlots())
+ * @param ruleset The universe's ruleset
+ * @return The name, or the key for a slot the ruleset doesn't have
+ */
+export function slotText(slot: string, ruleset: Ruleset): string
+{
+	const message = slotName(ruleset, slot);
+
+	return(((message === undefined) ? slot : t(message)));
 }
 
 /**

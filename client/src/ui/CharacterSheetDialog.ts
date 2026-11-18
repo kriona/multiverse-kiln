@@ -1,5 +1,9 @@
-import { ABILITY_NAMES, DARKVISION_NAMES, defineMessages, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterSheet, type CharacterSheetItem } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equippedCount, fitsSlot, handChoices, pf1eAbilityModifier, RULESET_ABILITIES, SIZE_NAMES, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type MessageDescriptor } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
+import unequipIcon from 'virtual:icon/ph:backpack';
+import giveIcon from 'virtual:icon/ph:hand-arrow-up';
+import equipIcon from 'virtual:icon/ph:hand-grabbing';
+import inspectIcon from 'virtual:icon/ph:magnifying-glass';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 import discardIcon from 'virtual:icon/ph:trash';
 
@@ -7,12 +11,16 @@ import { currentLocale, formatToNodes, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import type { GroupApi } from '../network/groupApi';
-import { createActionMenu } from './actionMenu';
+import { createActionMenu, type MenuAction } from './actionMenu';
 import { announce } from './announcer';
 import { getElement, setButtonLabel, showMessage } from './dom';
+import { unequipNote } from './equipmentText';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
-import { createItemIcon, itemDescription, itemName } from './itemNames';
+import { giveItemDialog } from './GiveItemDialog';
+import { inspectItem } from './ItemInspectDialog';
+import { CHARACTER_ITEMS_EVENT } from './itemNotices';
+import { createItemIcon, itemDescription, itemName, slotText } from './itemNames';
 import { describeLeaving, showLeaveButton, takeOutOfGroup } from './leavingGroup';
 import { moneyElement } from './moneyField';
 import { characterDescription, themeName } from './raceAndClassNames';
@@ -26,7 +34,7 @@ export type LeaveGroup = (universeId: string, groupId: string, characterId: stri
  * The routes that load and delete the characters a sheet shows: the player's own (CharacterApi), or
  * any player's for the editor's Character List tab (EditorApi)
  */
-export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter' | 'discardItems'>;
+export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter' | 'discardItems' | 'equipItem' | 'unequipItem' | 'giveItemsTo'>;
 
 /**
  * Asks which items to give a character and gives them; resolves with how many different items were
@@ -57,6 +65,32 @@ const sheetMessages = defineMessages({
 		id: 'characterSheet.loadFailed',
 		defaultMessage: 'Could not load the character sheet.',
 		description: 'Shown in a character\'s sheet when the character couldn\'t be loaded'
+	},
+	equipFailed: {
+		id: 'characterSheet.equipFailed',
+		defaultMessage: 'Could not change what the character has equipped.',
+		description: 'Shown on a character\'s sheet when equipping or unequipping an item from its menu failed'
+	}
+});
+
+/**
+ * The menu items that equip an item in particular hands, by the hands
+ */
+const EQUIP_IN_HAND: Record<EquipHand, MessageDescriptor> = defineMessages({
+	main: {
+		id: 'characterSheet.equipMainHand',
+		defaultMessage: 'Equip in main hand',
+		description: 'Item in the menu beside an item held in one hand, such as a dagger or a torch, on a character\'s sheet, that equips it in the character\'s main hand'
+	},
+	off: {
+		id: 'characterSheet.equipOffHand',
+		defaultMessage: 'Equip in off hand',
+		description: 'Item in the menu beside an item held in one hand, such as a dagger, a shield or a torch, on a character\'s sheet, that equips it in the character\'s other hand'
+	},
+	both: {
+		id: 'characterSheet.equipBothHands',
+		defaultMessage: 'Equip in both hands',
+		description: 'Item in the menu beside a weapon held in one hand, such as a longsword, on a character\'s sheet, that equips it gripped with both hands'
 	}
 });
 
@@ -72,8 +106,11 @@ const sheetMessages = defineMessages({
  * to the first question once they have left. A character in a group who can't play, because their race
  * or class is disabled, can also leave the group from their sheet. The editor's Character List tab
  * shows any player's character in it, offering the same to creators, along with Give Items, and nothing
- * to change to builders. Each item the character carries has a menu of what can be done with it, which
- * offers Discard, asking how many
+ * to change to builders. It lists what the character has equipped in each slot. Each item the character
+ * carries has a menu of what can be done with it: Equip, Unequip, Give (to another character in the
+ * group, asking whom and how many), Inspect and Discard (asking how many), or only Inspect for those who
+ * can't change the character. Discard and Give say which equipped ones they unequip. A change to the
+ * character's items made anywhere else, such as in another window or by a gift, shows on the open sheet
  */
 export class CharacterSheetDialog
 {
@@ -86,6 +123,7 @@ export class CharacterSheetDialog
 	private readonly body = getElement('character-sheet-body', HTMLElement);
 	private readonly abilityRows = getElement('character-sheet-ability-rows', HTMLTableSectionElement);
 	private readonly traits = getElement('character-sheet-traits', HTMLDListElement);
+	private readonly equipped = getElement('character-sheet-equipped', HTMLDListElement);
 	private readonly items = getElement('character-sheet-items', HTMLUListElement);
 	private readonly noItems = getElement('character-sheet-no-items', HTMLElement);
 	private readonly deleteButton = getElement('character-sheet-delete', HTMLButtonElement);
@@ -113,6 +151,7 @@ export class CharacterSheetDialog
 	private readonly discardQuantityText = getElement('character-discard-quantity-text', HTMLElement);
 	private readonly discardQuestion = getElement('character-discard-question', HTMLElement);
 	private readonly discardQuantity = getElement('character-discard-quantity', HTMLInputElement);
+	private readonly discardUnequips = getElement('character-discard-unequips', HTMLElement);
 	private readonly discardError = getElement('character-discard-error', HTMLElement);
 	private readonly discardConfirm = getElement('character-discard-confirm', HTMLButtonElement);
 	private readonly discardCancel = getElement('character-discard-cancel', HTMLButtonElement);
@@ -184,6 +223,19 @@ export class CharacterSheetDialog
 		this.discardQuantity.addEventListener('input', () =>
 		{
 			setFieldError(this.discardQuantity, undefined);
+			this.showDiscardUnequips();
+		});
+
+		// A change made anywhere else, such as in another window or by a gift, shows on the open sheet
+		window.addEventListener(CHARACTER_ITEMS_EVENT, (event) =>
+		{
+			const { universeId, characterId } = (event as CustomEvent<CharacterItemsPayload>).detail;
+			const current = this.current;
+
+			if (current && (current.universeId === universeId) && (current.sheet.id === characterId))
+			{
+				void this.reload(current);
+			}
 		});
 
 		this.discardForm.addEventListener('submit', (event) =>
@@ -356,6 +408,7 @@ export class CharacterSheetDialog
 		this.status.textContent = '';
 		this.showAbilities(sheet);
 		this.showTraits(sheet);
+		this.showEquipment(sheet);
 		this.showItems(sheet, canChange);
 		this.showDeletion(sheet, canChange);
 		this.body.hidden = false;
@@ -804,6 +857,7 @@ export class CharacterSheetDialog
 		this.discardQuantity.max = String(item.quantity);
 		this.discardQuantity.value = String(item.quantity);
 		this.discardQuantity.style.setProperty('--digits', String(String(item.quantity).length));
+		this.showDiscardUnequips();
 		this.discardConfirm.disabled = false;
 		this.discardCancel.disabled = false;
 		this.discardDialog.showModal();
@@ -816,6 +870,21 @@ export class CharacterSheetDialog
 		{
 			this.discardCancel.focus();
 		}
+	}
+
+	/**
+	 * Says, in the dialog asking how many of an item to discard, which equipped ones discarding them
+	 * unequips. The note is emptied while hidden, since the dialog's description reads it
+	 */
+	private showDiscardUnequips(): void
+	{
+		const sheet = this.current?.sheet;
+		const item = this.discarding;
+		const quantity = (((item?.quantity ?? 1) > 1) ? this.discardQuantity.valueAsNumber : 1);
+		const note = ((sheet && item && Number.isInteger(quantity)) ? unequipNote(sheet.ruleset, sheet.equipment, item.id, (item.quantity - quantity)) : '');
+
+		this.discardUnequips.textContent = note;
+		this.discardUnequips.hidden = (note === '');
 	}
 
 	/**
@@ -874,11 +943,7 @@ export class CharacterSheetDialog
 
 		this.discardDialog.close();
 		await this.reload(current);
-
-		// The item's row is gone when all of it was discarded, so focus goes on to the sheet's buttons
-		const menuButton = this.items.querySelector<HTMLButtonElement>(`.action-menu-button[data-item-id="${item.id}"]`);
-
-		(menuButton ?? (this.giveButton.hidden ? getElement('character-sheet-close', HTMLButtonElement) : this.giveButton)).focus();
+		this.focusItemMenu(item.id);
 		announce(t({
 			id: 'characterSheet.itemsDiscarded',
 			defaultMessage: '{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}.',
@@ -888,6 +953,147 @@ export class CharacterSheetDialog
 			item: itemName(item, current.sheet.ruleset),
 			quantity
 		}));
+	}
+
+	/**
+	 * Puts focus back on an item's menu button once the sheet has been drawn again, or on the sheet's
+	 * buttons when the item's row is gone, such as when all of it was discarded or given away
+	 *
+	 * @param itemId The item
+	 */
+	private focusItemMenu(itemId: number): void
+	{
+		const menuButton = this.items.querySelector<HTMLButtonElement>(`.action-menu-button[data-item-id="${itemId}"]`);
+
+		(menuButton ?? (this.giveButton.hidden ? getElement('character-sheet-close', HTMLButtonElement) : this.giveButton)).focus();
+	}
+
+	/**
+	 * Equips an item the character shown carries, then shows the sheet with it equipped. What was in its
+	 * slots is unequipped
+	 *
+	 * @param item The item, as the sheet lists it
+	 * @param hand The hands to hold it in, or null for an item that is worn or held in two hands
+	 */
+	private async equip(item: CharacterSheetItem, hand: EquipHand | null): Promise<void>
+	{
+		const current = this.current;
+
+		if (!current || this.busy)
+		{
+			return;
+		}
+
+		this.busy = true;
+
+		try
+		{
+			await this.api.equipItem(current.universeId, current.sheet.id, item.id, hand);
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, sheetMessages.equipFailed));
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+		}
+
+		showMessage(this.error, undefined);
+		await this.reload(current);
+		this.focusItemMenu(item.id);
+		announce(t({
+			id: 'characterSheet.equippedAnnouncement',
+			defaultMessage: '{name} equipped {item}.',
+			description: 'Read out by screen readers once an item was equipped from its menu on a character\'s sheet; {name} is the character\'s name and {item} the item\'s name. What was in its slot is unequipped, which the sheet\'s Equipped list shows'
+		}, {
+			name: current.sheet.name,
+			item: itemName(item, current.sheet.ruleset)
+		}));
+	}
+
+	/**
+	 * Unequips an item the character shown has equipped, everywhere it is, then shows the sheet without it
+	 * equipped
+	 *
+	 * @param item The item, as the sheet lists it
+	 */
+	private async unequip(item: CharacterSheetItem): Promise<void>
+	{
+		const current = this.current;
+
+		if (!current || this.busy)
+		{
+			return;
+		}
+
+		this.busy = true;
+
+		try
+		{
+			await this.api.unequipItem(current.universeId, current.sheet.id, item.id, null);
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, sheetMessages.equipFailed));
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+		}
+
+		showMessage(this.error, undefined);
+		await this.reload(current);
+		this.focusItemMenu(item.id);
+		announce(t({
+			id: 'characterSheet.unequipped',
+			defaultMessage: '{name} unequipped {item}.',
+			description: 'Read out by screen readers once an item was unequipped from its menu on a character\'s sheet; {name} is the character\'s name and {item} the item\'s name. The character still carries it'
+		}, {
+			name: current.sheet.name,
+			item: itemName(item, current.sheet.ruleset)
+		}));
+	}
+
+	/**
+	 * Asks which character in the group to give an item the character shown carries to, and how many,
+	 * then gives them and shows the sheet without them
+	 *
+	 * @param item The item, as the sheet lists it
+	 */
+	private askToGive(item: CharacterSheetItem): void
+	{
+		const current = this.current;
+
+		if (!current || this.busy)
+		{
+			return;
+		}
+
+		giveItemDialog().open(current.sheet, item, (receiverId, quantity) => this.api.giveItemsTo(current.universeId, current.sheet.id, receiverId, [
+			{
+				itemId: item.id,
+				quantity
+			}
+		]), (receiver, quantity) =>
+		{
+			void this.reload(current).then(() =>
+			{
+				this.focusItemMenu(item.id);
+			});
+			announce(t({
+				id: 'characterSheet.itemsGivenTo',
+				defaultMessage: '{name} gave {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.',
+				description: 'Read out by screen readers once a character gave an item to another character in their group from their sheet; {name} is the giver\'s name, {receiver} the name of the character given it, {item} the item\'s name and {quantity} how many, written as the sheet writes it, e.g. "arrows x20"'
+			}, {
+				name: current.sheet.name,
+				receiver,
+				item: itemName(item, current.sheet.ruleset),
+				quantity
+			}));
+		});
 	}
 
 	/**
@@ -1037,8 +1243,69 @@ export class CharacterSheetDialog
 	}
 
 	/**
+	 * Lists each of the character's equipment slots with the item in it, or Empty. An item held in both
+	 * hands shows in the main hand, and the off hand says it is taken
+	 *
+	 * @param sheet The character
+	 */
+	private showEquipment(sheet: CharacterSheet): void
+	{
+		const itemsById = new Map(sheet.items.map((item) => [item.id, item]));
+		const bySlot = new Map(sheet.equipment.map((equipped) => [equipped.slot, equipped]));
+		const held = bySlot.get('mainHand');
+		const empty = t({
+			id: 'characterSheet.emptySlot',
+			defaultMessage: 'Empty',
+			description: 'On a character\'s sheet, in the Equipped list, beside an equipment slot with nothing in it'
+		});
+
+		this.equipped.replaceChildren(...characterSlots(sheet.ruleset, sheet.hasTail).flatMap((slot) =>
+		{
+			const term = document.createElement('dt');
+			const value = document.createElement('dd');
+			const equipped = bySlot.get(slot);
+			const item = ((equipped === undefined) ? undefined : itemsById.get(equipped.itemId));
+
+			term.textContent = slotText(slot, sheet.ruleset);
+
+			if (item && equipped?.bothHands)
+			{
+				value.textContent = t({
+					id: 'characterSheet.inBothHands',
+					defaultMessage: '{item} (both hands)',
+					description: 'On a character\'s sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item\'s name'
+				}, {
+					item: itemName(item, sheet.ruleset)
+				});
+			}
+			else if (item)
+			{
+				value.textContent = itemName(item, sheet.ruleset);
+			}
+			else if ((slot === 'offHand') && held?.bothHands && itemsById.has(held.itemId))
+			{
+				value.textContent = t({
+					id: 'characterSheet.offHandTaken',
+					defaultMessage: 'Holding {item} with the main hand',
+					description: 'On a character\'s sheet, in the Equipped list, beside the off hand when the item in the main hand is held in both hands, such as a greatsword; {item} is that item\'s name'
+				}, {
+					item: itemName(itemsById.get(held.itemId) ?? { key: null, name: null }, sheet.ruleset)
+				});
+			}
+			else
+			{
+				value.textContent = empty;
+				value.className = 'character-sheet-empty-slot';
+			}
+
+			return([term, value]);
+		}));
+	}
+
+	/**
 	 * Lists the items the character carries by name, the way the player's language sorts them, with how
-	 * many of each and their descriptions, and a menu beside each of what can be done with it for those who may change the character
+	 * many of each, how many are equipped and their descriptions, and a menu beside each of what can be
+	 * done with it: everything for those who may change the character, and Inspect for others
 	 *
 	 * @param sheet The character
 	 * @param canChange Whether the sheet offers to change the character
@@ -1059,15 +1326,27 @@ export class CharacterSheetDialog
 			const nameText = document.createElement('span');
 			const description = itemDescription(item, sheet.ruleset);
 
+			const equipped = equippedCount(sheet.equipment, item.id);
+
 			text.className = 'character-sheet-item-text';
-			nameText.textContent = t({
-				id: 'characterSheet.item',
-				defaultMessage: '{quantity, plural, =1 {{item}} other {{item} x#}}',
-				description: 'On a character\'s sheet, an item they carry, with how many when there is more than one; {item} is the item\'s name, e.g. "Arrow x20"'
-			}, {
-				item: name,
-				quantity: item.quantity
-			});
+			nameText.textContent = ((equipped === 0)
+				? t({
+					id: 'characterSheet.item',
+					defaultMessage: '{quantity, plural, =1 {{item}} other {{item} x#}}',
+					description: 'On a character\'s sheet, an item they carry, with how many when there is more than one; {item} is the item\'s name, e.g. "Arrow x20"'
+				}, {
+					item: name,
+					quantity: item.quantity
+				})
+				: t({
+					id: 'characterSheet.itemEquipped',
+					defaultMessage: '{quantity, plural, =1 {{item} (equipped)} other {{item} x# ({equipped, number} equipped)}}',
+					description: 'On a character\'s sheet, an item they carry that they have equipped, with how many they carry when there is more than one and how many of those are equipped; {item} is the item\'s name, e.g. "Dagger x3 (2 equipped)"'
+				}, {
+					item: name,
+					quantity: item.quantity,
+					equipped
+				}));
 			text.append(nameText);
 
 			if (description !== '')
@@ -1079,12 +1358,7 @@ export class CharacterSheetDialog
 				text.append(descriptionText);
 			}
 
-			row.append(createItemIcon(item.category, sheet.ruleset), text);
-
-			if (canChange)
-			{
-				row.append(this.createItemMenu(item, name));
-			}
+			row.append(createItemIcon(item.category, sheet.ruleset), text, this.createItemMenu(sheet, item, name, canChange));
 
 			return(row);
 		}));
@@ -1092,22 +1366,90 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * The menu beside an item of what can be done with it: Discard
+	 * The menu beside an item of what can be done with it: Equip (in a hand of the player's choosing for
+	 * an item held in one), Unequip, Give, Inspect and Discard for those who may change the character, and
+	 * Inspect for others. Equip is offered while one of the item isn't equipped, and for an item held in
+	 * the hands, in hands it isn't already in; Give while the character is in a group with others
 	 *
+	 * @param sheet The character
 	 * @param item The item
 	 * @param name The item's name
+	 * @param canChange Whether the sheet offers to change the character
 	 * @return The menu's button, and the menu
 	 */
-	private createItemMenu(item: CharacterSheetItem, name: string): HTMLElement
+	private createItemMenu(sheet: CharacterSheet, item: CharacterSheetItem, name: string, canChange: boolean): HTMLElement
 	{
-		const menu = createActionMenu(t({
-			id: 'characterSheet.itemMenu',
-			defaultMessage: 'Actions for {item}',
-			description: 'Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character\'s sheet, which opens a menu of what can be done with the item, such as Discard; {item} is the item\'s name'
-		}, {
-			item: name
-		}), [
+		const actions: MenuAction[] = [];
+		const inspect: MenuAction = {
+			label: t({
+				id: 'characterSheet.inspect',
+				defaultMessage: 'Inspect',
+				description: 'Item in the menu beside an item on a character\'s sheet, and button beside an item in item selection, that opens a dialog showing what the item is: its kind, types, book, where it equips and description'
+			}),
+			icon: inspectIcon,
+			run: () =>
 			{
+				inspectItem(item, sheet.ruleset);
+			}
+		};
+
+		if (canChange)
+		{
+			const equipped = equippedCount(sheet.equipment, item.id);
+			const fits = characterSlots(sheet.ruleset, sheet.hasTail).some((slot) => fitsSlot(sheet.ruleset, item.equips, slot));
+			const allEquipped = (equipped >= item.quantity);
+			const hands = handChoices(item).filter((hand) => !(allEquipped && sheet.equipment.some((each) => ((each.itemId === item.id) && (each.slot === ((hand === 'off') ? 'offHand' : 'mainHand')) && (each.bothHands === (hand === 'both'))))));
+
+			// A worn or two-handed item fully equipped has nowhere else to go
+			if (fits && (item.equips !== 'oneHand'))
+			{
+				if (!allEquipped)
+				{
+					actions.push(this.equipAction(item, t({
+						id: 'characterSheet.equip',
+						defaultMessage: 'Equip',
+						description: 'Item in the menu beside an item on a character\'s sheet that equips it: puts on an item that is worn, or takes up one held in two hands. What was in its slot is unequipped'
+					}), null));
+				}
+			}
+			else if (fits)
+			{
+				actions.push(...hands.map((hand) => this.equipAction(item, t(EQUIP_IN_HAND[hand]), hand)));
+			}
+
+			if (equipped > 0)
+			{
+				actions.push({
+					label: t({
+						id: 'characterSheet.unequip',
+						defaultMessage: 'Unequip',
+						description: 'Item in the menu beside an item on a character\'s sheet that unequips it everywhere it is equipped. The character still carries it'
+					}),
+					icon: unequipIcon,
+					run: () =>
+					{
+						void this.unequip(item);
+					}
+				});
+			}
+
+			if ((sheet.group?.members.length ?? 0) > 0)
+			{
+				actions.push({
+					label: t({
+						id: 'characterSheet.give',
+						defaultMessage: 'Give',
+						description: 'Item in the menu beside an item on a character\'s sheet that asks which character in the group to give it to, and how many'
+					}),
+					icon: giveIcon,
+					run: () =>
+					{
+						this.askToGive(item);
+					}
+				});
+			}
+
+			actions.push(inspect, {
 				label: t({
 					id: 'characterSheet.discard',
 					defaultMessage: 'Discard',
@@ -1119,12 +1461,44 @@ export class CharacterSheetDialog
 				{
 					this.askToDiscard(item);
 				}
-			}
-		]);
+			});
+		}
+		else
+		{
+			actions.push(inspect);
+		}
+
+		const menu = createActionMenu(t({
+			id: 'characterSheet.itemMenu',
+			defaultMessage: 'Actions for {item}',
+			description: 'Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character\'s sheet, which opens a menu of what can be done with the item, such as Equip, Give, Inspect and Discard; {item} is the item\'s name'
+		}, {
+			item: name
+		}), actions);
 
 		menu.classList.add('character-sheet-item-menu');
 		menu.querySelector<HTMLButtonElement>('.action-menu-button')?.setAttribute('data-item-id', String(item.id));
 
 		return(menu);
+	}
+
+	/**
+	 * A menu item that equips an item
+	 *
+	 * @param item The item
+	 * @param label The menu item's text
+	 * @param hand The hands to hold it in, or null for an item that is worn or held in two hands
+	 * @return The menu item
+	 */
+	private equipAction(item: CharacterSheetItem, label: string, hand: EquipHand | null): MenuAction
+	{
+		return({
+			label,
+			icon: equipIcon,
+			run: () =>
+			{
+				void this.equip(item, hand);
+			}
+		});
 	}
 }

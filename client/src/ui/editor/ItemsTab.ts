@@ -4,7 +4,7 @@ import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemCategoryName, itemName, itemTypeName, itemTypesText } from '../itemNames';
+import { createItemIcon, itemCategoryName, itemEquipsText, itemName, itemTypeName, itemTypesText } from '../itemNames';
 import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { afterSwitchSlides } from '../toggleSwitch';
@@ -494,7 +494,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			createItemIcon(item.category, universe.ruleset),
 			nameButton,
 			enabledSwitch,
-			itemTypesText(item.types, universe.ruleset),
+			describeItem(item, universe.ruleset),
 			joinTags(...tags)
 		];
 
@@ -545,6 +545,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			description: item.description,
 			category: item.category,
 			types: item.types,
+			equips: item.equips,
 			enabled
 		});
 		afterSwitchSlides(() =>
@@ -603,6 +604,39 @@ function filterValue(select: HTMLSelectElement): boolean | undefined
 }
 
 /**
+ * An item's summary in the list: its types, and where it equips when it equips somewhere
+ *
+ * @param item The item
+ * @param ruleset The universe's ruleset
+ * @return The summary, or an empty string for an item of no type that equips nowhere
+ */
+function describeItem(item: ItemSettings, ruleset: Ruleset): string
+{
+	const types = itemTypesText(item.types, ruleset);
+
+	if (item.equips === 'none')
+	{
+		return(types);
+	}
+
+	const equips = itemEquipsText(item.equips, ruleset);
+
+	if (types === '')
+	{
+		return(equips);
+	}
+
+	return(t({
+		id: 'editor.items.summary',
+		defaultMessage: '{types}; {equips}',
+		description: 'An item\'s summary in the editor\'s Items tab: {types} is the list of its types, such as "light blades and thrown", and {equips} where it equips, such as "One hand" or "Head"'
+	}, {
+		types,
+		equips
+	}));
+}
+
+/**
  * An item the universe added, as the list shows it before it is saved
  *
  * @param id The item's ID
@@ -635,6 +669,7 @@ function settingsOf(item: ItemSettings): ItemSettings
 		description: item.description,
 		category: item.category,
 		types: item.types,
+		equips: item.equips,
 		enabled: item.enabled
 	});
 }

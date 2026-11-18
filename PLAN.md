@@ -598,17 +598,17 @@ Decided:
 	- Rules read only the stats slots. Nothing in this phase draws equipment.
 
 Steps (the equipment first, then the default items in their own commits):
-- [ ] Slots and where items equip in `/shared` for each ruleset, with names as messages, and pure functions with unit tests: whether an item fits a slot, the hands, ring and shield rules, what equipping something unequips, and which equipped ones discarding or giving unequips
-- [ ] Where an item equips: a column on items, set from `/shared` for the default items by the migration, a field in the item editor, the Items tab's summary, the audit, export and import. A save changing it, or whether the item is a shield, unequips the item from characters
-- [ ] "Has a tail" on PF1E races: a column set for the default races by the migration, a checkbox in the race editor, the audit, export and import. A save turning it off unequips the race's characters' tail items
-- [ ] `character_equipment` and its repository, with tests against the test database: equipping, unequipping, and discarding or hiding items that are equipped
-- [ ] Routes to equip, unequip and give items, for the character's player and the universe's creators, checking the rules on the server. Each change to a character's items, Discard's included, is published through the session room. Create Character equips the starting items
-- [ ] The character sheet's Equipment section: each slot with what is in it. Each item's menu gets Equip (Main hand, Off hand or Both hands for a one-handed weapon), Unequip, Give, Inspect and Discard. An open sheet updates when the character's items change, on every page that shows it
-- [ ] The Give dialog: which character in the group, and how many. The receiving player gets a toast, and the group's chat a line
-- [ ] The Inspect dialog, from the item menu and from item selection
-- [ ] The Character List's sheet: equipment, with the same item menu as the player's
-- [ ] The default items from the reviewed list: names, descriptions, kinds, types, books and where each equips in `/shared`, and custom migrations adding their rows. The new gear and ammunition types, a migration converting PF1E's torch type and SF1E's types (and an import converting an older export's)
-- [ ] Pirate translation of the new messages
+- [✅] Slots and where items equip in `/shared` for each ruleset, with names as messages, and pure functions with unit tests: whether an item fits a slot, the hands, ring and shield rules, what equipping something unequips, and which equipped ones discarding or giving unequips
+- [✅] Where an item equips: a column on items, set from `/shared` for the default items by the migration, a field in the item editor, the Items tab's summary, the audit, export and import. A save changing it, or whether the item is a shield, unequips the item from characters
+- [✅] "Has a tail" on PF1E races: a column set for the default races by the migration, a checkbox in the race editor, the audit, export and import. A save turning it off unequips the race's characters' tail items
+- [✅] `character_equipment` and its repository, with tests against the test database: equipping, unequipping, and discarding or hiding items that are equipped
+- [✅] Routes to equip, unequip and give items, for the character's player and the universe's creators, checking the rules on the server. Each change to a character's items, Discard's included, is published through the session room. Create Character equips the starting items
+- [✅] The character sheet's Equipment section: each slot with what is in it. Each item's menu gets Equip (Main hand, Off hand or Both hands for a one-handed weapon), Unequip, Give, Inspect and Discard. An open sheet updates when the character's items change, on every page that shows it
+- [✅] The Give dialog: which character in the group, and how many. The receiving player gets a toast, and the group's chat a line
+- [✅] The Inspect dialog, from the item menu and from item selection
+- [✅] The Character List's sheet: equipment, with the same item menu as the player's
+- [✅] The default items from the reviewed list: names, descriptions, kinds, types, books and where each equips in `/shared`, and custom migrations adding their rows. The new gear and ammunition types, a migration converting PF1E's torch type and SF1E's types (and an import converting an older export's)
+- [✅] Pirate translation of the new messages
 - [ ] Check the sheet and the dialogs with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
 
 **Done when:** a PF1E fighter equips a longsword and a heavy steel shield, then a greatsword, which unequips both. A rogue holds a short sword in each hand. An SF1E soldier wears armor and holds a laser rifle. The fighter gives a dagger to another character in the group, and that character's player sees it arrive. Inspecting the greatsword shows that it is a two-handed heavy blade from the Core Rulebook.

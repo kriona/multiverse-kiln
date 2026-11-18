@@ -1,4 +1,5 @@
 import { isRulebookOn, MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem } from '@multiverse-kiln/shared';
+import inspectIcon from 'virtual:icon/ph:magnifying-glass';
 import removeIcon from 'virtual:icon/ph:x';
 
 import { t } from '../../localization';
@@ -7,6 +8,7 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { inspectItem } from '../ItemInspectDialog';
 import { createItemIcon, itemDescription, itemName, itemTypesText } from '../itemNames';
 import { editorMessages } from './editorMessages';
 import type { RulebookChoice } from './rulebookChoice';
@@ -254,13 +256,51 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * One item's choice: a checkbox with the item's icon, name, type, whether it is disabled and its description
+	 * One item's choice: a checkbox with the item's icon, name, type, whether it is disabled and its
+	 * description, and beside it an Inspect button showing what the item is
 	 *
 	 * @param item The item
 	 * @param universe The universe whose item it is
-	 * @return The choice's label, holding its checkbox
+	 * @return The choice: its label, holding its checkbox, and its Inspect button
 	 */
-	private createChoice(item: EditorItem, universe: EditableUniverse): HTMLLabelElement
+	private createChoice(item: EditorItem, universe: EditableUniverse): HTMLElement
+	{
+		const choice = document.createElement('div');
+		const inspectButton = document.createElement('button');
+		const displayName = itemName(item, universe.ruleset);
+
+		choice.className = 'item-select-choice';
+		inspectButton.type = 'button';
+		inspectButton.className = 'secondary';
+		setButtonLabel(inspectButton, inspectIcon, t({
+			id: 'characterSheet.inspect',
+			defaultMessage: 'Inspect',
+			description: 'Item in the menu beside an item on a character\'s sheet, and button beside an item in item selection, that opens a dialog showing what the item is: its kind, types, book, where it equips and description'
+		}));
+		inspectButton.setAttribute('aria-label', t({
+			id: 'editor.itemSelect.inspectItem',
+			defaultMessage: 'Inspect {item}',
+			description: 'Name of the Inspect button beside an item in the dialog for choosing items, for screen readers; {item} is the item\'s name'
+		}, {
+			item: displayName
+		}));
+		inspectButton.addEventListener('click', () =>
+		{
+			inspectItem(item, universe.ruleset);
+		});
+		choice.append(this.createChoiceLabel(item, universe), inspectButton);
+
+		return(choice);
+	}
+
+	/**
+	 * One item's checkbox, with the item's icon, name, type, whether it is disabled and its description
+	 *
+	 * @param item The item
+	 * @param universe The universe whose item it is
+	 * @return The label, holding the checkbox
+	 */
+	private createChoiceLabel(item: EditorItem, universe: EditableUniverse): HTMLLabelElement
 	{
 		const label = document.createElement('label');
 		const input = document.createElement('input');

@@ -1,8 +1,8 @@
-import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, singleItemTypeKind, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, currentItemTypes, singleItemTypeKind, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
 import { difficultyName } from '../difficultyNames';
-import { itemCategoryName, itemDescription, itemName, itemTypeName } from '../itemNames';
+import { itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
 import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
@@ -216,6 +216,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Types',
 		description: 'Heading of the item editor\'s checkboxes for an item\'s types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
+	equips: {
+		id: 'editor.item.equips',
+		defaultMessage: 'Equips to',
+		description: 'Label of the item editor\'s field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
 	abilityModifiers: {
 		id: 'editor.race.abilityModifiers',
 		defaultMessage: 'Ability modifiers',
@@ -235,6 +240,11 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'character.lightSensitivity',
 		defaultMessage: 'Light sensitivity',
 		description: 'Whether bright light dazzles a character: the label on a character\'s sheet, and the race editor\'s checkbox for whether it dazzles the race\'s characters; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	hasTail: {
+		id: 'editor.race.hasTail',
+		defaultMessage: 'Has a tail',
+		description: 'Checkbox in the race editor, in Pathfinder, for whether the race\'s characters have a tail; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	size: {
 		id: 'editor.race.size',
@@ -563,7 +573,8 @@ export function describeFieldChange(change: AuditFieldChange, detail: UniverseEd
 /**
  * A setting a save recorded, as the settings the editor has now. The Audit tab lists saves for 90 days
  * (universe_edits), so it reads settings that saves recorded before they changed: an item's one type
- * becomes its category and types, and a setting the Audit tab has no name for is left out
+ * becomes its category and types, types renamed since become the types that replaced them, and a setting
+ * the Audit tab has no name for is left out
  *
  * @param change The setting and its value, as the save recorded it
  * @param ruleset The universe's ruleset
@@ -595,6 +606,14 @@ function currentFieldChanges(change: AuditFieldChange, ruleset: Ruleset): AuditF
 				value: [...kind.types]
 			}
 		]);
+	}
+
+	if ((recorded.field === 'types') && Array.isArray(recorded.value))
+	{
+		return([{
+			field: 'types',
+			value: currentItemTypes(ruleset, recorded.value)
+		}]);
 	}
 
 	return((Object.hasOwn(AUDIT_FIELD_NAMES, recorded.field) ? [change] : []));
@@ -676,6 +695,8 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(itemCategoryName(change.value, ruleset));
 		case 'types':
 			return(listOrNone(change.value.map((type) => itemTypeName(type, ruleset))));
+		case 'equips':
+			return(itemEquipsText(change.value, ruleset));
 		case 'abilityModifiers':
 		{
 			const modifiers = change.value;
@@ -747,6 +768,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'keepPlaying':
 		case 'floatingBonus':
 		case 'lightSensitivity':
+		case 'hasTail':
 		case 'isDefault':
 		case 'permadeath':
 		case 'loopsEastWest':

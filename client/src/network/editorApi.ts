@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type CharacterDeletionPayload, type CharacterItemsRequest, type CharacterSheet, type GroupCharacterRequest, type ItemQuantity, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload,type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery,type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type CharacterDeletionPayload, type CharacterItemsRequest, type CharacterSheet, type EquipHand, type EquipRequest, type GiveItemsRequest, type UnequipRequest, type GroupCharacterRequest, type ItemQuantity, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -366,6 +366,62 @@ export class EditorApi
 		const request: CharacterItemsRequest = { items };
 
 		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items/discard`, request, undefined, 'live');
+	}
+
+	/**
+	 * Equips an item a player's character in a universe carries, as one of its creators, unequipping what
+	 * was in its slots
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param itemId The item
+	 * @param hand The hands to hold it in, or null for an item that is worn
+	 */
+	async equipItem(universeId: string, characterId: string, itemId: number, hand: EquipHand | null): Promise<void>
+	{
+		const request: EquipRequest = {
+			itemId,
+			hand
+		};
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items/equip`, request, undefined, 'live');
+	}
+
+	/**
+	 * Unequips an item a player's character in a universe has equipped, as one of its creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param itemId The item
+	 * @param slot The slot to unequip it from, or null for everywhere it is equipped
+	 */
+	async unequipItem(universeId: string, characterId: string, itemId: number, slot: string | null): Promise<void>
+	{
+		const request: UnequipRequest = {
+			itemId,
+			slot
+		};
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items/unequip`, request, undefined, 'live');
+	}
+
+	/**
+	 * Gives items a player's character in a universe carries to another character in their group, as one
+	 * of the universe's creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character giving them
+	 * @param receiverId The character given them
+	 * @param items The items, each listed once, with how many of each to give
+	 */
+	async giveItemsTo(universeId: string, characterId: string, receiverId: string, items: ItemQuantity[]): Promise<void>
+	{
+		const request: GiveItemsRequest = {
+			characterId: receiverId,
+			items
+		};
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items/give`, request, undefined, 'live');
 	}
 
 	/**

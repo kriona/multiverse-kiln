@@ -6,14 +6,17 @@
  * affects nobody, and something disabled more than once does what the last change chose, once. The
  * impact route (editorImpact.ts) warns about the same things, at the change whose choice is used
  */
-import { isRulebookOn, isUsable, type AreaEvacuation, type AreaEvacuations, type GroupSizeLowering, type ItemDisabling } from '@multiverse-kiln/shared';
+import { isRulebookOn, isSf1eRaceRules, isShield, isUsable, RULESET_EQUIPMENT, type AreaEvacuation, type AreaEvacuations, type GroupSizeLowering, type ItemDisabling, type RaceRules, type Ruleset } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
+import { unequipItemsInUniverse, unequipSlotsOfRaces, type EquipmentOwner } from '../db/equipmentRepo.js';
 import { clearGroupStartingAreas, deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
 import { listEditorItems } from '../db/itemRepo.js';
+import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadRulebookSettings } from '../db/rulesetRepo.js';
 import { areasById, areasInTree, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
+import { characterItemChanges } from '../players/characterItemChanges.js';
 import { groupChanges } from '../players/groupChanges.js';
 import type { AreaPlace } from '../world/areaChanges.js';
 import type { ChangeContext } from './editorChangeContext.js';
@@ -58,6 +61,27 @@ interface ItemState
 }
 
 /**
+ * An item as a change finds it, as far as equipping it goes
+ */
+interface ItemEquipping
+{
+	id: number;
+	types: readonly string[];
+	equips: string;
+}
+
+/**
+ * Some characters with their players, each once
+ *
+ * @param owners The characters, each any number of times
+ * @return Each character once
+ */
+function uniqueOwners(owners: readonly EquipmentOwner[]): EquipmentOwner[]
+{
+	return([...new Map(owners.map((owner) => [owner.characterId, owner])).values()]);
+}
+
+/**
  * What a change chose for the characters carrying an item
  */
 interface ItemChoices
@@ -94,7 +118,8 @@ interface Evacuation
 
 /**
  * The items, areas and group size one save enables, disables or lowers, and what happens to the players
- * using them once every change is saved
+ * using them once every change is saved. It also unequips the items whose place to equip, or whether they
+ * are shields, the save changes, and the tail slots of the races it takes the tail from
  */
 export class SaveDisablings
 {
@@ -109,6 +134,53 @@ export class SaveDisablings
 	 * The group size before the save, and what the last change lowering it below that chose
 	 */
 	private groupSize: { before: number; choice: GroupSizeLowering | undefined } | undefined;
+
+	/**
+	 * Where each item the save changes or restores equipped, and whether it was a shield, as the save
+	 * found it, by the item's ID
+	 */
+	private readonly equipping = new Map<number, { equips: string; shield: boolean }>();
+
+	/**
+	 * The races the save changes or restores that had a tail as the save found them, by ID; false for
+	 * one that had none
+	 */
+	private readonly tails = new Map<number, boolean>();
+
+	/**
+	 * Notes how a change finds an item it changes or restores, for unequipping it once every change is
+	 * saved if where it equips, or whether it is a shield, changed. How the save found it comes from the
+	 * first change to it
+	 *
+	 * @param ruleset The universe's ruleset
+	 * @param item The item before the change
+	 */
+	itemEquipping(ruleset: Ruleset, item: ItemEquipping): void
+	{
+		if (!this.equipping.has(item.id))
+		{
+			this.equipping.set(item.id, {
+				equips: item.equips,
+				shield: isShield(ruleset, item.types)
+			});
+		}
+	}
+
+	/**
+	 * Notes how a change finds a race it changes or restores, for unequipping its characters' tail slots
+	 * once every change is saved if it no longer has a tail. How the save found it comes from the first
+	 * change to it
+	 *
+	 * @param raceId The race, by the ID characters hold
+	 * @param rules Its rules before the change
+	 */
+	raceTail(raceId: number, rules: RaceRules): void
+	{
+		if (!this.tails.has(raceId))
+		{
+			this.tails.set(raceId, (!isSf1eRaceRules(rules) && rules.hasTail));
+		}
+	}
 
 	/**
 	 * Notes a change to an item that enables or disables it, restores it, or turns its book on or off. How
@@ -163,9 +235,10 @@ export class SaveDisablings
 
 	/**
 	 * Once every change is saved: takes disabled items from the characters carrying them, or gives back
-	 * those enabled again, moves the characters out of disabled areas and group characters out of areas
-	 * put below the lobby region, and brings groups larger than a lowered group size down to it, as the
-	 * changes chose
+	 * those enabled again, unequips what the changes made equip differently, moves the characters out of
+	 * disabled areas and group characters out of areas put below the lobby region, and brings groups
+	 * larger than a lowered group size down to it, as the changes chose. The players of the characters
+	 * whose equipment changed are told once the save commits
 	 *
 	 * @param context The save
 	 * @param places The areas the save disables, and those it puts below the lobby region
@@ -178,26 +251,104 @@ export class SaveDisablings
 			return;
 		}
 
-		await this.finishItems(context);
+		const unequipped = [
+			...await this.finishItems(context),
+			...await this.finishEquipping(context),
+			...await this.finishTails(context)
+		];
+
 		await this.finishAreas(context, places.disabled);
 		await leaveLobbyAreas(context, places.enteredLobby);
 		await this.finishGroupSize(context);
+
+		if (unequipped.length > 0)
+		{
+			const universeId = context.universe.id;
+
+			context.onCommit.push(() =>
+			{
+				characterItemChanges.publishChanged(universeId, uniqueOwners(unequipped));
+			});
+		}
+	}
+
+	/**
+	 * Unequips the items the save changed where they equip, or whether they are shields, from every
+	 * character, without asking: their players equip them again
+	 *
+	 * @param context The save
+	 * @return The characters who had one equipped
+	 */
+	private async finishEquipping(context: ChangeContext): Promise<EquipmentOwner[]>
+	{
+		const { universe, transaction } = context;
+
+		if (this.equipping.size === 0)
+		{
+			return([]);
+		}
+
+		// An item the save deleted isn't listed, and nobody carries it
+		const { items } = await listEditorItems(context.version, universe.ruleset, { ids: [...this.equipping.keys()] }, transaction);
+		const changed = items
+			.filter((item) =>
+			{
+				const before = this.equipping.get(item.id);
+
+				return((before !== undefined) && ((before.equips !== item.equips) || (before.shield !== isShield(universe.ruleset, item.types))));
+			})
+			.map((item) => item.id);
+
+		return(unequipItemsInUniverse(universe.id, changed, transaction));
+	}
+
+	/**
+	 * Unequips the tail slots of the characters of the races the save took the tail from
+	 *
+	 * @param context The save
+	 * @return The characters who had something there
+	 */
+	private async finishTails(context: ChangeContext): Promise<EquipmentOwner[]>
+	{
+		const { universe, transaction } = context;
+		const { tailLocation, wornSlots } = RULESET_EQUIPMENT[universe.ruleset];
+		const hadTails = [...this.tails]
+			.filter(([, hadTail]) => hadTail)
+			.map(([raceId]) => raceId);
+
+		if ((tailLocation === null) || (hadTails.length === 0))
+		{
+			return([]);
+		}
+
+		// A race the save deleted isn't listed, and no character is of it
+		const races = new Map((await loadEditorRaces(context.version, universe.ruleset, transaction)).map((race) => [race.id, race]));
+		const lostTails = hadTails.filter((raceId) =>
+		{
+			const rules = races.get(raceId)?.rules;
+
+			return((rules !== undefined) && (isSf1eRaceRules(rules) || !rules.hasTail));
+		});
+
+		return(unequipSlotsOfRaces(universe.id, lostTails, wornSlots[tailLocation], transaction));
 	}
 
 	/**
 	 * Hides the items the save disables with remove on the characters carrying them, and shows those it
 	 * makes usable again. An item disabled with remove is taken whatever its book, and turning a book off
-	 * with remove takes the items enabled in it, as the impact route asks about them
+	 * with remove takes the items enabled in it, as the impact route asks about them. A taken item is
+	 * unequipped too, and comes back unequipped
 	 *
 	 * @param context The save
+	 * @return The characters who had a taken item equipped
 	 */
-	private async finishItems(context: ChangeContext): Promise<void>
+	private async finishItems(context: ChangeContext): Promise<EquipmentOwner[]>
 	{
 		const { universe, transaction } = context;
 
 		if (this.items.size === 0)
 		{
-			return;
+			return([]);
 		}
 
 		// An item the save deleted isn't listed, and nobody carries it
@@ -231,6 +382,8 @@ export class SaveDisablings
 
 		await setCarriedItemsHidden(universe.id, taken, true, transaction);
 		await setCarriedItemsHidden(universe.id, givenBack, false, transaction);
+
+		return(unequipItemsInUniverse(universe.id, taken, transaction));
 	}
 
 	/**

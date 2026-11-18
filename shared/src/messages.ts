@@ -1,4 +1,5 @@
 import type { AreaBounds } from './areaCells.js';
+import type { OptionName } from './characters.js';
 import type { AreaNeighbors } from './areaNeighbors.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
@@ -395,7 +396,19 @@ export enum SessionServerMessageType
 	/**
 	 * Who the window's player is, sent on joining and when the window's session ends (payload: AccountPayload)
 	 */
-	Account = 'account'
+	Account = 'account',
+
+	/**
+	 * One of the player's characters' items or equipment changed, so a sheet showing them loads them again
+	 * (payload: CharacterItemsPayload)
+	 */
+	CharacterItems = 'characterItems',
+
+	/**
+	 * Another character gave one of the player's characters items, for a toast saying who gave them what
+	 * (payload: ItemsReceivedPayload)
+	 */
+	ItemsReceived = 'itemsReceived'
 }
 
 /**
@@ -528,6 +541,43 @@ export interface AccountPayload
 }
 
 /**
+ * Payload of SessionServerMessageType.CharacterItems
+ */
+export interface CharacterItemsPayload
+{
+	universeId: string;
+	characterId: string;
+}
+
+/**
+ * Payload of SessionServerMessageType.ItemsReceived: who gave which of the player's characters what
+ */
+export interface ItemsReceivedPayload
+{
+	universeId: string;
+
+	/**
+	 * The universe's ruleset, whose default items' keys name their items
+	 */
+	ruleset: Ruleset;
+
+	characterId: string;
+
+	/**
+	 * The names of the character who gave the items and the one who got them
+	 */
+	giver: string;
+	receiver: string;
+
+	/**
+	 * The item given, by the universe's name for it or a default item's key
+	 */
+	item: OptionName;
+
+	quantity: number;
+}
+
+/**
  * One lobby chat message
  */
 export interface ChatMessage
@@ -569,14 +619,34 @@ export const MAX_KEPT_CHAT_MESSAGES = 200;
  * - created: a character created the group, as its anchor being
  * - joined: a character joined the group
  * - left: a character left the group
+ * - gave: a character gave another items (ChatNoticeDetails)
  */
 export const CHAT_NOTICES = [
 	'created',
 	'joined',
-	'left'
+	'left',
+	'gave'
 ] as const;
 
 export type ChatNotice = typeof CHAT_NOTICES[number];
+
+/**
+ * What a gave notice says beyond the character it is about, who gave the items
+ */
+export interface ChatNoticeDetails
+{
+	/**
+	 * The name of the character given the items, as it was then
+	 */
+	receiver: string;
+
+	/**
+	 * The item given, by the universe's name for it or a default item's key
+	 */
+	item: OptionName;
+
+	quantity: number;
+}
 
 /**
  * One message of a chat that is kept: a group's or the editors'
@@ -601,6 +671,11 @@ export interface KeptChatMessage
 	 * with text empty; null for a message a player wrote
 	 */
 	notice: ChatNotice | null;
+
+	/**
+	 * What a gave notice says beyond who it is about; null for other notices and for messages
+	 */
+	details: ChatNoticeDetails | null;
 
 	/**
 	 * In the editors' chat, the writer's username; null in a group's chat, and once their account is deleted

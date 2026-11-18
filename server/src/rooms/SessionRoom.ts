@@ -1,8 +1,9 @@
 import { ErrorCode, Room, type AuthContext, type Client, type CloseCode } from 'colyseus';
-import { SessionServerMessageType, type AccountPayload } from '@multiverse-kiln/shared';
+import { SessionServerMessageType, type AccountPayload, type CharacterItemsPayload } from '@multiverse-kiln/shared';
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
+import { characterItemChanges, type CharacterItemChange } from '../players/characterItemChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { JoinChanges } from './joinChanges.js';
 import { withoutErrorDetails } from './roomErrors.js';
@@ -46,7 +47,8 @@ function windowOf(client: SessionClient): SessionWindow
  *
  * There is one session room, which every window of every page but the login page joins as soon as it
  * loads (client/src/pageStart.ts) and stays in until it closes, logged in or not. It tells each window who its player is, from its session cookie,
- * and tells a session's windows when the session ends. Being connected counts as using the session, so
+ * tells a session's windows when the session ends, and tells a player's windows when their characters'
+ * items or equipment change (characterItemChanges). Being connected counts as using the session, so
  * an open page keeps it from ending for want of use
  */
 export class SessionRoom extends Room<{ client: SessionClient }>
@@ -67,11 +69,18 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	private readonly windows = new Map<string, Set<SessionClient>>();
 
 	/**
+	 * The logged-in clients of each player in the room, by player ID (server-only)
+	 */
+	private readonly playerWindows = new Map<string, Set<SessionClient>>();
+
+	/**
 	 * Sessions ending while windows join, which their lookups may miss
 	 */
 	private readonly joinChanges = new JoinChanges<'session', SessionWindow>();
 
 	private stopListening?: () => void;
+
+	private stopFollowingItems?: () => void;
 
 	messages = {};
 
@@ -92,6 +101,72 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			this.joinChanges.note('session');
 			this.onSessionsEnd(sessionIds);
 		});
+		this.stopFollowingItems = characterItemChanges.onChange((change) =>
+		{
+			this.onCharacterItemChange(change);
+		});
+	}
+
+	/**
+	 * Tells every window of a character's player that the character's items changed, or who gave them what
+	 *
+	 * @param change The change
+	 */
+	private onCharacterItemChange(change: CharacterItemChange): void
+	{
+		for (const client of this.playerWindows.get(change.playerId) ?? [])
+		{
+			if (change.kind === 'changed')
+			{
+				const payload: CharacterItemsPayload = {
+					universeId: change.universeId,
+					characterId: change.characterId
+				};
+
+				client.send(SessionServerMessageType.CharacterItems, payload);
+			}
+			else
+			{
+				client.send(SessionServerMessageType.ItemsReceived, change.received);
+			}
+		}
+	}
+
+	/**
+	 * Adds a logged-in window to its player's
+	 *
+	 * @param client The window
+	 * @param playerId Its player's ID
+	 */
+	private addPlayerWindow(client: SessionClient, playerId: string): void
+	{
+		let clients = this.playerWindows.get(playerId);
+
+		if (!clients)
+		{
+			clients = new Set();
+			this.playerWindows.set(playerId, clients);
+		}
+
+		clients.add(client);
+	}
+
+	/**
+	 * Takes a window from its player's
+	 *
+	 * @param client The window
+	 * @param playerId Its player's ID
+	 */
+	private removePlayerWindow(client: SessionClient, playerId: string): void
+	{
+		const clients = this.playerWindows.get(playerId);
+
+		clients?.delete(client);
+
+		if (clients?.size === 0)
+		{
+			this.playerWindows.delete(playerId);
+		}
 	}
 
 	/**
@@ -153,6 +228,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			}
 
 			clients.add(client);
+			this.addPlayerWindow(client, session.playerId);
 			connectedSessions.connect(client, session.sessionId);
 		}
 
@@ -179,6 +255,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			{
 				this.windows.delete(session.sessionId);
 			}
+
+			this.removePlayerWindow(client, session.playerId);
 		}
 
 		connectedSessions.disconnect(client);
@@ -207,6 +285,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	onDispose(): void
 	{
 		this.stopListening?.();
+		this.stopFollowingItems?.();
 
 		if (SessionRoom.current === this)
 		{
@@ -226,6 +305,13 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 		{
 			for (const client of this.windows.get(sessionId) ?? [])
 			{
+				const ended = windowOf(client).session;
+
+				if (ended)
+				{
+					this.removePlayerWindow(client, ended.playerId);
+				}
+
 				windowOf(client).session = null;
 				windowOf(client).serverAdmin = false;
 				this.sendAccount(client, null, false);

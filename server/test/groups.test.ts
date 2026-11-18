@@ -595,7 +595,12 @@ describe('group routes', () =>
 			assert.deepStrictEqual({ group, barredBy }, {
 				group: {
 					groupId,
-					isAnchor: false
+					isAnchor: false,
+					members: [{
+						characterId: ada.characterId,
+						name: 'Ada',
+						own: false
+					}]
 				},
 				barredBy: 'race'
 			});
@@ -624,9 +629,16 @@ describe('group routes', () =>
 
 				assert.strictEqual((await send(member, 'DELETE', path)).status, 409);
 				assert.strictEqual((await send(member, 'PUT', `${path}/deletion`)).status, 409);
+				const other = ((member === ada) ? grace : ada);
+
 				assert.deepStrictEqual((await send<CharacterSheet>(member, 'GET', path)).body.group, {
 					groupId,
-					isAnchor: (member === ada)
+					isAnchor: (member === ada),
+					members: [{
+						characterId: other.characterId,
+						name: ((other === ada) ? 'Ada' : 'Grace'),
+						own: false
+					}]
 				});
 			}
 

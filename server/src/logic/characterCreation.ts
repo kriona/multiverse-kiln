@@ -3,7 +3,7 @@
  * player chose, adding their race's modifiers and theme's bonus, and putting together what they start
  * with from the universe, their race and their class
  */
-import { FLOATING_ABILITY_BONUSES, isValidPf1ePointBuy, isValidSf1eAbilityBuy, RULESET_ABILITIES, SF1E_THEME_ABILITY_BONUS, type Ability, type AbilityScores, type ItemQuantity, type RaceRules, type Ruleset, type Sf1eThemeRules } from '@multiverse-kiln/shared';
+import { FLOATING_ABILITY_BONUSES, isValidPf1ePointBuy, isValidSf1eAbilityBuy, RULESET_ABILITIES, SF1E_THEME_ABILITY_BONUS, type Ability, type AbilityScores, type EquipmentItem, type ItemQuantity, type RaceRules, type Ruleset, type Sf1eThemeRules } from '@multiverse-kiln/shared';
 
 import { isArrangementOfRolls } from './abilityRolls.js';
 
@@ -132,4 +132,47 @@ export function combineStartingItems(lists: readonly (readonly ItemQuantity[])[]
 			itemId,
 			quantity
 		})));
+}
+
+/**
+ * The items a new character was given, in the order startingEquipment() equips them: the class's list,
+ * then the race's, then the universe's, each by name. An item in more than one list comes where it is
+ * first, with all of it the character was given
+ *
+ * @param lists The class's, race's and universe's starting equipment, in that order
+ * @param given The items the character was given (combineStartingItems())
+ * @param items The given items, by ID
+ * @param nameOf An item's name, as the universe names it
+ * @return The items, each once, and how many of each the character has
+ */
+export function startingEquipmentOrder(lists: readonly (readonly ItemQuantity[])[], given: readonly ItemQuantity[], items: ReadonlyMap<number, EquipmentItem>, nameOf: (itemId: number) => string): { item: EquipmentItem; quantity: number }[]
+{
+	const quantities = new Map(given.map(({ itemId, quantity }) => [itemId, quantity]));
+	const ordered: { item: EquipmentItem; quantity: number }[] = [];
+	const seen = new Set<number>();
+
+	for (const list of lists)
+	{
+		const listed = list
+			.map(({ itemId }) => itemId)
+			.filter((itemId) => (quantities.has(itemId) && !seen.has(itemId)))
+			.sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'en'));
+
+		for (const itemId of listed)
+		{
+			const item = items.get(itemId);
+
+			seen.add(itemId);
+
+			if (item)
+			{
+				ordered.push({
+					item,
+					quantity: (quantities.get(itemId) ?? 0)
+				});
+			}
+		}
+	}
+
+	return(ordered);
 }

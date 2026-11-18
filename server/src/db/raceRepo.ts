@@ -419,6 +419,7 @@ async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, raceId:
 					floatingBonus: pf1eRaces.floatingBonus,
 					darkvision: pf1eRaces.darkvision,
 					lightSensitivity: pf1eRaces.lightSensitivity,
+					hasTail: pf1eRaces.hasTail,
 					size: pf1eRaces.size
 				})
 				.from(pf1eRaces)
@@ -437,6 +438,7 @@ async function loadRaceRules(version: UniverseVersion, ruleset: Ruleset, raceId:
 				floatingBonus: row.floatingBonus,
 				darkvision: row.darkvision,
 				lightSensitivity: row.lightSensitivity,
+				hasTail: row.hasTail,
 				size: row.size
 			}])));
 		}
@@ -813,6 +815,7 @@ function pf1eRaceColumns(rules: Pf1eRaceRules): Omit<typeof pf1eRaces.$inferInse
 		floatingBonus: rules.floatingBonus,
 		darkvision: rules.darkvision,
 		lightSensitivity: rules.lightSensitivity,
+		hasTail: rules.hasTail,
 		size: rules.size
 	});
 }

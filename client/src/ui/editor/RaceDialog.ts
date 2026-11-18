@@ -37,6 +37,9 @@ export class RaceDialog
 	private readonly floatingBonus = getElement('race-floating', HTMLInputElement);
 	private readonly darkvision = getElement('race-darkvision', HTMLSelectElement);
 	private readonly lightSensitivity = getElement('race-light-sensitivity', HTMLInputElement);
+	private readonly hasTailField = getElement('race-has-tail-field', HTMLElement);
+	private readonly hasTail = getElement('race-has-tail', HTMLInputElement);
+	private readonly hasTailHint = getElement('race-has-tail-hint', HTMLElement);
 	private readonly size = getElement('race-size', HTMLSelectElement);
 	private readonly hitPointsField = getElement('race-hit-points-field', HTMLElement);
 	private readonly hitPoints = getElement('race-hit-points', HTMLInputElement);
@@ -218,6 +221,9 @@ export class RaceDialog
 		setOptions(this.darkvision, namedOptions(DARKVISIONS, DARKVISION_NAMES));
 		this.darkvision.value = rules.darkvision;
 		this.lightSensitivity.checked = rules.lightSensitivity;
+		this.hasTailField.hidden = isSf1eRaceRules(rules);
+		this.hasTailHint.hidden = isSf1eRaceRules(rules);
+		this.hasTail.checked = (('hasTail' in rules) && rules.hasTail);
 		setOptions(this.size, namedOptions(RULESET_SIZES[universe.ruleset], SIZE_NAMES[universe.ruleset]));
 		this.size.value = rules.size;
 		this.hitPointsField.hidden = !isSf1eRaceRules(rules);
@@ -232,7 +238,7 @@ export class RaceDialog
 		this.cancelButton.textContent = t(editable ? formMessages.cancel : formMessages.close);
 
 		// Only the inputs are locked for a player who can't edit, so Close still works
-		for (const input of [this.name, this.description.field, this.enabled, this.floatingBonus, this.darkvision, this.lightSensitivity, this.size, this.startingMoney, ...Object.values(this.modifiers)])
+		for (const input of [this.name, this.description.field, this.enabled, this.floatingBonus, this.darkvision, this.lightSensitivity, this.hasTail, this.size, this.startingMoney, ...Object.values(this.modifiers)])
 		{
 			input.disabled = !editable;
 		}
@@ -373,6 +379,7 @@ export class RaceDialog
 		{
 			return({
 				...common,
+				hasTail: this.hasTail.checked,
 				size: this.size.value as Pf1eSize
 			});
 		}

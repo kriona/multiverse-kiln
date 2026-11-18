@@ -904,6 +904,41 @@
       "when": 1794873371583,
       "tag": "0128_theme_descriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 129,
+      "version": "7",
+      "when": 1794887375018,
+      "tag": "0129_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 130,
+      "version": "7",
+      "when": 1794887384181,
+      "tag": "0130_default_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 131,
+      "version": "7",
+      "when": 1794887558001,
+      "tag": "0131_item_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 132,
+      "version": "7",
+      "when": 1794887559898,
+      "tag": "0132_pf1e_default_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 133,
+      "version": "7",
+      "when": 1794887561834,
+      "tag": "0133_sf1e_default_items",
+      "breakpoints": true
     }
   ]
 }

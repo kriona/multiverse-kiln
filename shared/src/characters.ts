@@ -22,9 +22,23 @@
  * - DELETE characterPath(universeId, characterId)/deletion: restores a character given their last rites
  * - POST characterPath(universeId, characterId)/items/discard: discards items the character carries
  *   (CharacterItemsRequest), all of an item when asked for as many as they carry or more, or answers
- *   409 when they don't carry one of them
+ *   409 when they don't carry one of them. Discarding more than are unequipped unequips the rest
+ *   (unequippedByRemoval())
+ * - POST characterPath(universeId, characterId)/items/equip: equips an item the character carries
+ *   (EquipRequest), unequipping what was in its slots (planEquip()), or answers 409 when they don't carry
+ *   it or it can't be equipped as asked
+ * - POST characterPath(universeId, characterId)/items/unequip: unequips an item (UnequipRequest)
+ * - POST characterPath(universeId, characterId)/items/give: gives items the character carries to another
+ *   character in their group (GiveItemsRequest), unequipping those given that were equipped, or answers
+ *   409 when the character isn't in a group with them or doesn't carry the items
+ *
+ * Each change to a character's items or equipment is sent to their player's windows
+ * (SessionServerMessageType.CharacterItems), and a character given items tells their player's windows
+ * who gave them what (SessionServerMessageType.ItemsReceived)
  */
 import { UNIVERSES_PATH } from './constants.js';
+import type { EquipHand, EquippedItem } from './equipment.js';
+import type { ItemQuantity } from './editor.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
 import { isRulebookBarred, type RulebookSettings } from './rulebooks.js';
@@ -421,7 +435,39 @@ export interface CharacterSheetItem extends OptionName
 	 */
 	category: string;
 
+	/**
+	 * The item's types, keys of the ruleset's ITEM_KINDS, in the order the ruleset lists them
+	 */
+	types: string[];
+
+	/**
+	 * Where the item equips: one of itemEquipsChoices()
+	 */
+	equips: string;
+
+	/**
+	 * The book a default item comes from (RULESET_RULEBOOKS); null for an item the universe added
+	 */
+	rulebook: string | null;
+
+	/**
+	 * How many the character carries, the equipped ones included
+	 */
 	quantity: number;
+}
+
+/**
+ * Another character in the group of a character on their sheet, who can be given items
+ */
+export interface CharacterSheetGroupMember
+{
+	characterId: string;
+	name: string;
+
+	/**
+	 * Whether the character is one of the same player's
+	 */
+	own: boolean;
 }
 
 /**
@@ -435,6 +481,11 @@ export interface CharacterSheetGroup
 	 * Whether the character is the group's anchor being, whose leaving disbands it
 	 */
 	isAnchor: boolean;
+
+	/**
+	 * The group's other characters, by name
+	 */
+	members: CharacterSheetGroupMember[];
 }
 
 /**
@@ -509,4 +560,62 @@ export interface CharacterSheet
 	 * The items the character carries, by ID
 	 */
 	items: CharacterSheetItem[];
+
+	/**
+	 * Whether the character's race has a tail, as the universe sets it now, which gives them the tail slot
+	 * (characterSlots())
+	 */
+	hasTail: boolean;
+
+	/**
+	 * What the character has equipped, by slot in the order the sheet lists them. Each is one of the items
+	 */
+	equipment: EquippedItem[];
+}
+
+/**
+ * Body of POST characterPath(universeId, characterId)/items/equip, and of the editor's .../items/equip
+ */
+export interface EquipRequest
+{
+	/**
+	 * An item the character carries
+	 */
+	itemId: number;
+
+	/**
+	 * The hands to hold it in (handChoices()); null for an item that is worn, and allowed for one held
+	 * in two hands
+	 */
+	hand: EquipHand | null;
+}
+
+/**
+ * Body of POST characterPath(universeId, characterId)/items/unequip, and of the editor's .../items/unequip
+ */
+export interface UnequipRequest
+{
+	itemId: number;
+
+	/**
+	 * The slot to unequip it from, or null for everywhere it is equipped
+	 */
+	slot: string | null;
+}
+
+/**
+ * Body of POST characterPath(universeId, characterId)/items/give, and of the editor's .../items/give
+ */
+export interface GiveItemsRequest
+{
+	/**
+	 * Another character in the same group, the player's own included
+	 */
+	characterId: string;
+
+	/**
+	 * 1 to MAX_ITEMS_PER_CHARACTER_CHANGE different items the character carries, each listed once, and
+	 * how many of each to give; all of an item when asked for as many as they carry or more
+	 */
+	items: ItemQuantity[];
 }

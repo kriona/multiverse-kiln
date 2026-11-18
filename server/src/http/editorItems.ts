@@ -4,7 +4,7 @@
  */
 import type express from 'express';
 import type { Request, Response } from 'express';
-import { canEditWorld, defineMessages, isItemKind, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef } from '@multiverse-kiln/shared';
+import { canEditWorld, defineMessages, isItemEquips, isItemKind, MAX_CUSTOM_ITEMS, type ItemDisabling, type ItemSettings, type NewRef, type NumberRef, type Ruleset } from '@multiverse-kiln/shared';
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
@@ -36,8 +36,32 @@ const messages = defineMessages({
 		id: 'error.unknownItemType',
 		defaultMessage: 'The universe\'s ruleset has no such kind or type of item.',
 		description: 'Why an item couldn\'t be saved: the kind (such as weapons) or a type (such as light blades) chosen for it isn\'t one of the game rules\', or a type isn\'t of its kind'
+	},
+	unknownItemEquips: {
+		id: 'error.unknownItemEquips',
+		defaultMessage: 'The universe\'s ruleset has nowhere like that to equip an item.',
+		description: 'Why an item couldn\'t be saved: where it equips (such as one hand or the head), chosen in the item editor\'s "Equips to" field, isn\'t one of the game rules\''
 	}
 });
+
+/**
+ * Refuses an item's kind, types or place to equip that the universe's ruleset doesn't have
+ *
+ * @param ruleset The universe's ruleset
+ * @param settings The item's settings
+ */
+function checkItemSettings(ruleset: Ruleset, settings: ItemSettings): void
+{
+	if (!isItemKind(ruleset, settings))
+	{
+		refuse(400, messages.unknownItemType);
+	}
+
+	if (!isItemEquips(ruleset, settings.equips))
+	{
+		refuse(400, messages.unknownItemEquips);
+	}
+}
 
 /**
  * Adds the item route to a universe's router
@@ -87,10 +111,7 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 		refuse(400, messages.itemNeedsName);
 	}
 
-	if (!isItemKind(universe.ruleset, settings))
-	{
-		refuse(400, messages.unknownItemType);
-	}
+	checkItemSettings(universe.ruleset, settings);
 
 	if (await countCustomItems(version, transaction) >= MAX_CUSTOM_ITEMS)
 	{
@@ -109,7 +130,8 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 /**
  * Changes one of the universe's items, or stores its edited copy of a default item. Once the save has
  * saved every change, an item it disables with remove is taken from the characters carrying it, and one
- * it enables gives back what was taken (see editorDisablings.ts)
+ * it enables gives back what was taken, and an item that equips somewhere else, or became or stopped
+ * being a shield, is unequipped (see editorDisablings.ts)
  *
  * @param context The save
  * @param id The item
@@ -128,12 +150,9 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 		refuse(404, messages.noSuchItem);
 	}
 
-	if (!isItemKind(universe.ruleset, settings))
-	{
-		refuse(400, messages.unknownItemType);
-	}
-
+	checkItemSettings(universe.ruleset, settings);
 	context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context), { whenDisabled: (settings.enabled ? undefined : whenDisabled) });
+	context.disablings.itemEquipping(universe.ruleset, { ...item, id: itemId });
 
 	if (item.kind === 'default')
 	{
@@ -171,6 +190,7 @@ export async function removeItemChange(context: ChangeContext, id: NumberRef): P
 	if (item.kind === 'default')
 	{
 		context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context));
+		context.disablings.itemEquipping(universe.ruleset, { ...item, id: itemId });
 		await restoreDefaultItem(version, itemId, transaction);
 		await deleteUniverseTextOf(version, 'item', itemId, transaction);
 		return;

@@ -160,7 +160,8 @@ const startingItemList = z.array(z.object({
 export const tileIdParameter = z.coerce.number().int().min(1).max(2147483647);
 
 /**
- * The key of an item type or category. Whether the universe's ruleset has it is checked as it is saved
+ * The key of an item type or category, or of where an item equips. Whether the universe's ruleset has it
+ * is checked as it is saved
  */
 const itemKindKey = z.string().trim().min(1).max(40);
 
@@ -437,6 +438,7 @@ const itemSettings = z.object({
 	description: displayText(MAX_ITEM_DESCRIPTION_LENGTH).nullable(),
 	category: itemKindKey,
 	types: z.array(itemKindKey).max(MAX_ITEM_TYPE_LIST_LENGTH),
+	equips: itemKindKey,
 	enabled: z.boolean()
 }) satisfies z.ZodType<ItemSettings>;
 
@@ -493,6 +495,7 @@ const raceRules = {
 		floatingBonus: z.boolean(),
 		darkvision: z.enum(DARKVISIONS),
 		lightSensitivity: z.boolean(),
+		hasTail: z.boolean(),
 		size: z.enum(PF1E_SIZES)
 	}),
 	sf1e: z.object({
