@@ -28,12 +28,12 @@ export const SF1E_WORN_LOCATION_NAMES: Record<Sf1eWornLocation, MessageDescripto
 	armor: {
 		id: 'sf1e.slot.armor',
 		defaultMessage: 'Armor',
-		description: 'Equipment slot in Starfinder, where a suit of armor is worn. A row of the Equipped list on a character\'s sheet, and a choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
+		description: 'Equipment slot in Starfinder, where a suit of armor is worn. A row of the Equipped list on a character\'s sheet, and a choice in the item editor\'s "Equips to" field and in the Items tab\'s filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	},
 	clothing: {
 		id: 'sf1e.slot.clothing',
 		defaultMessage: 'Clothing',
-		description: 'Equipment slot in Starfinder, where everyday clothes or a space suit are worn. A row of the Equipped list on a character\'s sheet, and a choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
+		description: 'Equipment slot in Starfinder, where everyday clothes or a space suit are worn. A row of the Equipped list on a character\'s sheet, and a choice in the item editor\'s "Equips to" field and in the Items tab\'s filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	}
 });
 

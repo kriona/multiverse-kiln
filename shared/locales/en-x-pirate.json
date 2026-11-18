@@ -2999,6 +2999,10 @@
 		"message": "Kind",
 		"source": "Kind"
 	},
+	"editor.items.heading": {
+		"message": "Booty",
+		"source": "Items"
+	},
 	"editor.items.icon": {
 		"message": "Picture",
 		"source": "Icon"

@@ -834,6 +834,7 @@ It needs a filter control that includes:
 - "is enabled" toggle, set to Yes when the tab opens
 - "is custom" toggle
 - "is edited from default" toggle
+- where items equip ("Equips to"): nowhere, one hand, two hands or one of the ruleset's worn slots, offering only those some item has among the items the Enabled, Custom and Edited from default filters and the books on match
 - toggles for each property
 	- for example, a toggle for `weapons`, and then a toggle for `light blades`
 	- note that these toggles will be based on the ruleset
@@ -852,7 +853,7 @@ For PF1E, the Core Rulebook's only default item for now is a dagger; for SF1E, a
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 
-Each item is in one of the ruleset's categories (its kind), and has any number of that category's types, or none. The filters use both: the Kind filter matches an item's category, and the Type filter matches an item with that type among its others. The Type filter offers only the chosen kind's types, and only those some item has among the items the other filters (Enabled, Custom, Edited from default and the books on) match. For PF1E:
+Each item is in one of the ruleset's categories (its kind), and has any number of that category's types, or none. The filters use both: the Kind filter matches an item's category, and the Type filter matches an item with that type among its others. The Type filter offers only the chosen kind's types, and only those some item has among the items the other filters (Enabled, Custom, Edited from default, Equips to and the books on) match. For PF1E:
 - `weapons`: the fighter's weapon groups from the Core Rulebook's Weapon Training: axes, heavy blades, light blades, bows, close, crossbows, double, flails, hammers, monk, natural, polearms, spears and thrown. A weapon has every group it is in, such as light blades and thrown for a dagger. A weapon in no group, such as a kobold's tail attachment, and ammunition have no type. Firearms, siege engines and tribal come from books the engine doesn't have yet
 - `armor`: light armor, medium armor, heavy armor and shields
 - `gear`: rope, torch. Other gear has no type

@@ -452,6 +452,7 @@ export const itemListQuery = z.object({
 	edited: booleanText.optional(),
 	category: itemKindKey.optional(),
 	type: itemKindKey.optional(),
+	equips: itemKindKey.optional(),
 	ids: z.string()
 		.transform((text) => text.split(',').map(Number))
 		.pipe(z.array(z.number().int().min(1).max(2147483647)).min(1).max(MAX_STARTING_ITEMS))

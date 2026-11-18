@@ -138,17 +138,17 @@ export const HELD_EQUIPMENT_NAMES = defineMessages({
 	none: {
 		id: 'equipment.equips.none',
 		defaultMessage: 'Nowhere',
-		description: 'Where an item equips: it can\'t be equipped, such as a book or ammunition. A choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog and on the Audit tab'
+		description: 'Where an item equips: it can\'t be equipped, such as a book or ammunition. A choice in the item editor\'s "Equips to" field and in the Items tab\'s filter for it. Also shows where an item equips in the Inspect dialog and on the Audit tab'
 	},
 	oneHand: {
 		id: 'equipment.equips.oneHand',
 		defaultMessage: 'One hand',
-		description: 'Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab'
+		description: 'Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor\'s "Equips to" field and in the Items tab\'s filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab'
 	},
 	twoHands: {
 		id: 'equipment.equips.twoHands',
 		defaultMessage: 'Two hands',
-		description: 'Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor\'s "Equips to" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab'
+		description: 'Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor\'s "Equips to" field and in the Items tab\'s filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor\'s Items tab and on the Audit tab'
 	}
 });
 

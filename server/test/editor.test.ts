@@ -1144,6 +1144,8 @@ describe('World editor API', () =>
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, rusty)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...rusty, rulebook: 'core', custom: false, edited: true, editedSettings: true }]);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${otherId}/items?edited=true`)).body.items, []);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true&equips=oneHand`)).body.items.map((item) => item.id), [daggerId]);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true&equips=twoHands`)).body.items, []);
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', daggerId)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, []);

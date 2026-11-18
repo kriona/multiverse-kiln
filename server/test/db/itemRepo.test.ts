@@ -249,11 +249,11 @@ describe('itemRepo', () =>
 
 	describe('listEditorItems', () =>
 	{
-		it('filters by name, enabled, custom, edited, category and type, and pages', async () =>
+		it('filters by name, enabled, custom, edited, category, type and where items equip, and pages', async () =>
 		{
 			const universeId = await addUniverse();
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
-			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, enabled: false });
+			const swordId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, equips: 'twoHands', enabled: false });
 
 			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, ...daggerKind, enabled: false });
 
@@ -274,6 +274,9 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'blades_light' }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'blades_heavy' }), [swordId]);
 			assert.deepStrictEqual(await listedIds(universeId, { category: 'armor' }), []);
+			assert.deepStrictEqual(await listedIds(universeId, { equips: 'oneHand' }), [await daggerId(), torchId]);
+			assert.deepStrictEqual(await listedIds(universeId, { equips: 'twoHands' }), [swordId]);
+			assert.deepStrictEqual(await listedIds(universeId, { equips: 'head' }), []);
 
 			const page = await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], ids: await daggerAndOwnIds(universeId), offset: 1, limit: 1 });
 
@@ -316,6 +319,35 @@ describe('itemRepo', () =>
 			// The other filters do
 			assert.deepStrictEqual(await typesOf({ enabled: true }), ['blades_light', 'light_source', 'thrown']);
 			assert.deepStrictEqual(await typesOf({ custom: true, enabled: false }), ['blades_heavy']);
+			assert.deepStrictEqual(await typesOf({ equips: 'oneHand', custom: true }), ['blades_heavy', 'light_source']);
+			assert.deepStrictEqual(await typesOf({ equips: 'twoHands' }), []);
+		});
+
+		it('lists where the items every filter but name, kind, type and equips matches equip', async () =>
+		{
+			const universeId = await addUniverse();
+
+			await createCustomItem(liveVersion(universeId), 'pf1e', torch);
+			await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, equips: 'twoHands', enabled: false });
+
+			const ids = await daggerAndOwnIds(universeId);
+
+			/**
+			 * Where the dagger and the universe's own items listed equip, sorted
+			 *
+			 * @param query The filters
+			 * @return The places
+			 */
+			const equipsOf = async (query: ItemListQuery): Promise<string[]> => (await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], ids, ...query })).equips.sort();
+
+			assert.deepStrictEqual(await equipsOf({}), ['oneHand', 'twoHands']);
+
+			// Typing a name, or choosing a kind, type or place, doesn't change the places offered, even with no item listed
+			assert.deepStrictEqual(await equipsOf({ name: 'torch', category: 'armor', type: 'thrown', equips: 'head' }), ['oneHand', 'twoHands']);
+
+			// The other filters do
+			assert.deepStrictEqual(await equipsOf({ enabled: true }), ['oneHand']);
+			assert.deepStrictEqual(await equipsOf({ custom: true, enabled: false }), ['twoHands']);
 		});
 
 		it('lists the items of the core rulebook, the books asked for and the universe\'s own', async () =>

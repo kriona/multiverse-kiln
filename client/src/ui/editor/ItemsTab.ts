@@ -10,7 +10,7 @@ import { TableSorter } from '../tableSorter';
 import { afterSwitchSlides } from '../toggleSwitch';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
-import { showCategoryOptions, showTypeOptions } from './itemFilters';
+import { showCategoryOptions, showEquipsOptions, showTypeOptions } from './itemFilters';
 import { createEnabledSwitch } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
@@ -33,6 +33,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	private readonly nameFilter = getElement('item-filter-name', HTMLInputElement);
 	private readonly categoryFilter = getElement('item-filter-category', HTMLSelectElement);
 	private readonly typeFilter = getElement('item-filter-type', HTMLSelectElement);
+	private readonly equipsFilter = getElement('item-filter-equips', HTMLSelectElement);
 	private readonly enabledFilter = getElement('item-filter-enabled', HTMLSelectElement);
 	private readonly customFilter = getElement('item-filter-custom', HTMLSelectElement);
 	private readonly editedFilter = getElement('item-filter-edited', HTMLSelectElement);
@@ -134,7 +135,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			]);
 		}
 
-		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter, this.typeFilter])
+		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter, this.typeFilter, this.equipsFilter])
 		{
 			filter.addEventListener('change', () =>
 			{
@@ -200,6 +201,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		this.typesWithItems = new Set();
 		showCategoryOptions(this.categoryFilter, universe.ruleset);
 		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
+		this.equipsFilter.value = '';
+		showEquipsOptions(this.equipsFilter, universe.ruleset, new Set());
 		this.enabledFilter.value = 'true';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
@@ -306,6 +309,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			name: (this.nameFilter.value.trim() || undefined),
 			category: (this.categoryFilter.value || undefined),
 			type: (this.typeFilter.value || undefined),
+			equips: (this.equipsFilter.value || undefined),
 			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
@@ -356,6 +360,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		this.items = page.items;
 		this.typesWithItems = new Set(page.types);
 		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
+		showEquipsOptions(this.equipsFilter, universe.ruleset, new Set(page.equips));
 
 		for (const item of page.items)
 		{

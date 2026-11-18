@@ -1668,6 +1668,11 @@ export interface ItemListQuery
 	type?: string;
 
 	/**
+	 * Where items equip (itemEquipsChoices()), e.g. head: only items that equip there
+	 */
+	equips?: string;
+
+	/**
 	 * Only these items, by ID, up to MAX_STARTING_ITEMS of them (a comma-separated list in the query string)
 	 */
 	ids?: number[];
@@ -1719,6 +1724,12 @@ export interface ItemListPayload
 	 * filter offers only types with items, whatever is typed and whichever kind is chosen
 	 */
 	types: string[];
+
+	/**
+	 * Everywhere some item equips among the items every filter but name, kind, type and equips matches, so
+	 * an equips filter offers only places with items, whatever is typed and whichever kind and type are chosen
+	 */
+	equips: string[];
 }
 
 /**

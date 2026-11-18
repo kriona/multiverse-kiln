@@ -295,14 +295,15 @@ function notesSortKey(item: EditorItem): number
  * @param ruleset The universe's ruleset
  * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
- * @return The page, how many items match in all, and the types of the items the filters but name, kind
- * and type match
+ * @return The page, how many items match in all, the types of the items the filters but name, kind and
+ * type match, and where the items the filters but name, kind, type and equips match equip
  */
 export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset, query: ItemListQuery, executor: Executor = db): Promise<ItemListPayload>
 {
 	const name = query.name?.toLowerCase();
 	const ids = ((query.ids === undefined) ? undefined : new Set(query.ids));
 	const types = new Set<string>();
+	const equips = new Set<string>();
 
 	// A default item that kept its name matches by its English name, since the server doesn't have the translations
 	const matching = (await loadNamedItems(version, ruleset, executor)).filter(({ item, englishName }) =>
@@ -316,6 +317,13 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 		);
 
 		if (!offered)
+		{
+			return(false);
+		}
+
+		equips.add(item.equips);
+
+		if ((query.equips !== undefined) && (item.equips !== query.equips))
 		{
 			return(false);
 		}
@@ -344,7 +352,8 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 			.slice(offset, offset + (query.limit ?? matching.length))
 			.map(({ item }) => item),
 		total: matching.length,
-		types: [...types]
+		types: [...types],
+		equips: [...equips]
 	});
 }
 

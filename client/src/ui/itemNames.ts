@@ -32,7 +32,7 @@ export const ITEM_SETTING_NAMES = defineMessages({
 	equips: {
 		id: 'editor.item.equips',
 		defaultMessage: 'Equips to',
-		description: 'Label of the item editor\'s field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'Label of the item editor\'s field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, of the filter for it on the Items tab, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	}
 });
 

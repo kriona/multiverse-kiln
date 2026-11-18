@@ -2929,7 +2929,7 @@
 	},
 	"editor.item.equips": {
 		"defaultMessage": "Equips to",
-		"description": "Label of the item editor's field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab"
+		"description": "Label of the item editor's field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, of the filter for it on the Items tab, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
 	"editor.item.equipsHint": {
 		"defaultMessage": "Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players.",
@@ -2998,6 +2998,10 @@
 	"editor.items.category": {
 		"defaultMessage": "Kind",
 		"description": "An item's broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item's kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.items.heading": {
+		"defaultMessage": "Items",
+		"description": "Heading of the editor's Items tab, listing the items the universe can give characters"
 	},
 	"editor.items.icon": {
 		"defaultMessage": "Icon",
@@ -5445,15 +5449,15 @@
 	},
 	"equipment.equips.none": {
 		"defaultMessage": "Nowhere",
-		"description": "Where an item equips: it can't be equipped, such as a book or ammunition. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog and on the Audit tab"
+		"description": "Where an item equips: it can't be equipped, such as a book or ammunition. A choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog and on the Audit tab"
 	},
 	"equipment.equips.oneHand": {
 		"defaultMessage": "One hand",
-		"description": "Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
+		"description": "Where an item equips: held in either hand, such as a dagger, a shield or a torch. A choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
 	},
 	"equipment.equips.twoHands": {
 		"defaultMessage": "Two hands",
-		"description": "Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
+		"description": "Where an item equips: held in both hands at once, such as a greatsword, a bow or a rifle. A choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
 	},
 	"equipment.slot.bothHands": {
 		"defaultMessage": "Both hands",
@@ -11485,51 +11489,51 @@
 	},
 	"pf1e.slot.armor": {
 		"defaultMessage": "Armor",
-		"description": "Equipment slot in Pathfinder, where a suit of armor is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a suit of armor is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.belt": {
 		"defaultMessage": "Belt",
-		"description": "Equipment slot in Pathfinder, where a belt is worn around the waist. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a belt is worn around the waist. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.body": {
 		"defaultMessage": "Body",
-		"description": "Equipment slot in Pathfinder, where a robe or outfit of clothes is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a robe or outfit of clothes is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.chest": {
 		"defaultMessage": "Chest",
-		"description": "Equipment slot in Pathfinder, where a vest or shirt is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a vest or shirt is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.eyes": {
 		"defaultMessage": "Eyes",
-		"description": "Equipment slot in Pathfinder, where goggles or lenses are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where goggles or lenses are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.feet": {
 		"defaultMessage": "Feet",
-		"description": "Equipment slot in Pathfinder, where boots or shoes are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where boots or shoes are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.hands": {
 		"defaultMessage": "Hands",
-		"description": "Equipment slot in Pathfinder, where gloves or gauntlets are worn (not what is held in the hands). A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where gloves or gauntlets are worn (not what is held in the hands). A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.head": {
 		"defaultMessage": "Head",
-		"description": "Equipment slot in Pathfinder, where a helmet or hat is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a helmet or hat is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.headband": {
 		"defaultMessage": "Headband",
-		"description": "Equipment slot in Pathfinder, where a headband or circlet is worn around the forehead. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a headband or circlet is worn around the forehead. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.neck": {
 		"defaultMessage": "Neck",
-		"description": "Equipment slot in Pathfinder, where an amulet or holy symbol is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where an amulet or holy symbol is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.offArm": {
 		"defaultMessage": "Off arm",
-		"description": "Equipment slot in Pathfinder, where a buckler (a small shield) is strapped to the forearm of the arm that doesn't hold the main weapon, leaving that hand free. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a buckler (a small shield) is strapped to the forearm of the arm that doesn't hold the main weapon, leaving that hand free. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.ring": {
 		"defaultMessage": "Ring",
-		"description": "Where an item equips in Pathfinder: on a finger, in either of a character's two ring slots. A choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
+		"description": "Where an item equips in Pathfinder: on a finger, in either of a character's two ring slots. A choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab"
 	},
 	"pf1e.slot.ringLeft": {
 		"defaultMessage": "Left ring",
@@ -11541,15 +11545,15 @@
 	},
 	"pf1e.slot.shoulders": {
 		"defaultMessage": "Shoulders",
-		"description": "Equipment slot in Pathfinder, where a cloak or cape is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where a cloak or cape is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.tail": {
 		"defaultMessage": "Tail",
-		"description": "Equipment slot in Pathfinder, only for characters whose race has a tail, where a blade or weight is strapped to the tail as a weapon. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, only for characters whose race has a tail, where a blade or weight is strapped to the tail as a weapon. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.slot.wrists": {
 		"defaultMessage": "Wrists",
-		"description": "Equipment slot in Pathfinder, where bracers or bracelets are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Pathfinder, where bracers or bracelets are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"pf1e.statMethod.point_buy_custom": {
 		"defaultMessage": "point buy: choose the number of points",
@@ -12873,11 +12877,11 @@
 	},
 	"sf1e.slot.armor": {
 		"defaultMessage": "Armor",
-		"description": "Equipment slot in Starfinder, where a suit of armor is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Starfinder, where a suit of armor is worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"sf1e.slot.clothing": {
 		"defaultMessage": "Clothing",
-		"description": "Equipment slot in Starfinder, where everyday clothes or a space suit are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
+		"description": "Equipment slot in Starfinder, where everyday clothes or a space suit are worn. A row of the Equipped list on a character's sheet, and a choice in the item editor's \"Equips to\" field and in the Items tab's filter for it. Also shows where an item equips in the Inspect dialog, in its summary on the editor's Items tab and on the Audit tab. In the Discard and Give dialogs, it can appear in \"This unequips it from {slots}.\""
 	},
 	"sf1e.theme.ace_pilot": {
 		"defaultMessage": "Ace Pilot",
