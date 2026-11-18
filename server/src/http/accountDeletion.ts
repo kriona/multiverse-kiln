@@ -12,6 +12,8 @@ import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { AUTH_ACCOUNT_DELETE_PATH, defineMessages, LAST_SERVER_ADMIN_DELETION, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, UNHANDABLE_TWO_FACTOR_UNIVERSE_DELETION, UNHANDABLE_UNIVERSE_DELETION, type AccountDeleteRequest } from '@multiverse-kiln/shared';
 
+import { avatarStorageKey } from '../avatars/characterAvatars.js';
+import { listCharacterIdsOf } from '../db/avatarRepo.js';
 import { forgetChatAuthor } from '../db/chatRepo.js';
 import type { Executor } from '../db/client.js';
 import { lockContinuation } from '../db/emailCodeRepo.js';
@@ -337,6 +339,8 @@ async function deleteAccount(playerId: string, decisions: ReadonlyMap<string, st
 	const displayName = await findDisplayName(playerId, executor);
 	const sessionIds = await deletePlayerSessions(playerId, executor);
 
+	// The player's characters in the universes that remain go with the player
+	storageKeys.push(...(await listCharacterIdsOf({ playerId }, executor)).map(avatarStorageKey));
 	await forgetChatAuthor(playerId, executor);
 	await deletePlayer(playerId, executor);
 

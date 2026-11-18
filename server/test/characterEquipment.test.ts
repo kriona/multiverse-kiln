@@ -117,6 +117,7 @@ function addItem(universeId: string, ruleset: Ruleset, name: string, settings: P
 	return(createCustomItem(liveVersion(universeId), ruleset, {
 		name,
 		description: null,
+		looksLikeItemId: null,
 		enabled: true,
 		...settings
 	}));
@@ -378,7 +379,8 @@ describe('Equipment routes', () =>
 				enabled: true,
 				category: 'weapon',
 				types: ['blades_heavy'],
-				equips: 'none'
+				equips: 'none',
+				looksLikeItemId: null
 			}, transaction);
 			await unequipItemsInUniverse(universeId, [longswordId], transaction);
 		});
@@ -440,7 +442,8 @@ describe('Equipment routes', () =>
 						characterId: graceCharacterId,
 						name: 'Mara',
 						race: { key: 'dwarf', name: null },
-						characterClass: { key: 'fighter', name: null }
+						characterClass: { key: 'fighter', name: null },
+						avatarHash: null
 					}
 				]);
 

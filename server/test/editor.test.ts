@@ -41,6 +41,7 @@ const torch: ItemSettings = {
 	category: 'gear',
 	types: ['light_source'],
 	equips: 'oneHand',
+	looksLikeItemId: null,
 	enabled: true
 };
 
@@ -54,6 +55,7 @@ const lizardfolk: RaceSettings = {
 	startingAreaId: null,
 	startingColumn: 0,
 	startingRow: 0,
+	looksLikeRaceId: null,
 	rules: NEW_PF1E_RACE_RULES
 };
 
@@ -195,9 +197,9 @@ function deleteTileset(editor: Editor, universeId: string, graphicId: string): P
  */
 function raceSettingsOf(race: EditorRace): RaceSettings
 {
-	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
+	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, looksLikeRaceId, rules } = race;
 
-	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules });
+	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, looksLikeRaceId, rules });
 }
 
 /**
@@ -1139,7 +1141,7 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
-			const rusty = { name: 'rusty dagger', description: null, category: 'weapon', types: ['blades_light'], equips: 'oneHand', enabled: false };
+			const rusty = { name: 'rusty dagger', description: null, category: 'weapon', types: ['blades_light'], equips: 'oneHand', looksLikeItemId: null, enabled: false };
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, rusty)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...rusty, rulebook: 'core', custom: false, edited: true, editedSettings: true }]);
@@ -1149,6 +1151,28 @@ describe('World editor API', () =>
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', daggerId)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, []);
+		});
+
+		it('saves what a custom item looks like, only one of the ruleset\'s own items, and only for a custom item', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
+			const created = await createIn(ada, universeId, 'Item', { ...torch, looksLikeItemId: daggerId });
+			const otherItemId = (await createIn(ada, universeId, 'Item', { ...torch, name: 'Lamp' })).body.id;
+			const blasterId = (await findDefaultItemIds('sf1e')).values().next().value as number;
+			const listed = async (): Promise<number | null | undefined> => (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?ids=${created.body.id}`)).body.items[0]?.looksLikeItemId;
+
+			assert.strictEqual(created.status, 200);
+			assert.strictEqual(await listed(), daggerId);
+
+			for (const looksLikeItemId of [otherItemId, blasterId, 2147483647])
+			{
+				assert.strictEqual((await saveIn(ada, universeId, 'Item', created.body.id, { ...torch, looksLikeItemId })).body.error.id, 'error.invalidItemLooksLike', String(looksLikeItemId));
+			}
+
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, { ...torch, name: null, looksLikeItemId: daggerId })).body.error.id, 'error.invalidItemLooksLike');
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', created.body.id, torch)).status, 200);
+			assert.strictEqual(await listed(), null);
 		});
 
 		it('deletes a custom item, and answers 404 for one of another universe', async () =>
@@ -1301,6 +1325,28 @@ describe('World editor API', () =>
 
 			assert.strictEqual(response.body.error.id, 'error.unusableStartingItem');
 			assert.deepStrictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.filter((race) => race.custom), []);
+		});
+
+		it('saves what a custom race looks like, only one of the ruleset\'s own races, and only for a custom race', async () =>
+		{
+			const universeId = await createUniverse(ada);
+			const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+			const dwarf = races.find((race) => (race.key === 'dwarf')) as EditorRace;
+			const created = await createIn(ada, universeId, 'Race', { ...lizardfolk, looksLikeRaceId: dwarf.id });
+			const otherRaceId = (await createIn(ada, universeId, 'Race', { ...lizardfolk, name: 'Molefolk' })).body.id;
+			const starfinderId = await createUniverse(ada, 'Starfinder', 'sf1e');
+			const vesk = (await send<RaceListPayload>(ada, 'GET', `/${starfinderId}/races`)).body.races.find((race) => (race.key === 'vesk')) as EditorRace;
+
+			assert.strictEqual(created.status, 200);
+			assert.strictEqual((await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races.find((race) => (race.id === created.body.id))?.looksLikeRaceId, dwarf.id);
+
+			for (const looksLikeRaceId of [otherRaceId, vesk.id, 2147483647])
+			{
+				assert.strictEqual((await saveIn(ada, universeId, 'Race', created.body.id, { ...lizardfolk, looksLikeRaceId })).body.error.id, 'error.invalidRaceLooksLike', String(looksLikeRaceId));
+			}
+
+			assert.strictEqual((await saveIn(ada, universeId, 'Race', dwarf.id, { ...raceSettingsOf(dwarf), looksLikeRaceId: dwarf.id })).body.error.id, 'error.invalidRaceLooksLike');
+			assert.strictEqual((await saveIn(ada, universeId, 'Race', created.body.id, { ...lizardfolk, looksLikeRaceId: null })).status, 200);
 		});
 
 		it('keeps at least one race enabled', async () =>

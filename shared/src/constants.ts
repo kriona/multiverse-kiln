@@ -119,3 +119,9 @@ export const VIEW_HEIGHT = VIEW_ROWS * GRID_CELL_SIZE;
  * Colyseus's default, set explicitly on the room so the client's interpolation can rely on it
  */
 export const PATCH_INTERVAL_MS = 50;
+
+/**
+ * Where the server answers 204 while its dev tools are on (ENABLE_DEV_TOOLS), and 404 otherwise, so the
+ * client's dev-only pages, such as the avatar positioning tool, can tell
+ */
+export const DEV_TOOLS_PATH = '/dev/tools';

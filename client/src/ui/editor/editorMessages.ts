@@ -24,6 +24,16 @@ export const editorMessages = defineMessages({
 		defaultMessage: 'Disabled',
 		description: 'In the dialogs for choosing areas or items, under the name of one players can\'t use: an area they can\'t go into, or an item characters can\'t be given'
 	},
+	looksLike: {
+		id: 'editor.looksLike',
+		defaultMessage: 'Looks like',
+		description: 'Label of the field, in the race and item editors, for a race or item the universe added: one of the game rules\' own races or items whose art it uses on characters\' avatars (pictures of the characters), since only those have art. Also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	looksLikeNone: {
+		id: 'editor.looksLike.none',
+		defaultMessage: 'Nothing (no art)',
+		description: 'In the race and item editors\' "Looks like" field, the choice for a race or item the universe added that uses no art on characters\' avatars: characters of such a race have no avatar, and such an item isn\'t drawn. Also the field\'s value on the editor\'s Audit tab once a save chose it'
+	},
 	restore: {
 		id: 'editor.restore',
 		defaultMessage: 'Restore Default',

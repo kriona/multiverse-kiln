@@ -8,7 +8,7 @@ import { canEditWorld, defineMessages, isItemEquips, isItemKind, MAX_CUSTOM_ITEM
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
-import { countCustomItems, createCustomItem, deleteCustomItem, findItem, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findItem, isDefaultItem, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
 import { isRaceStartingItem } from '../db/raceRepo.js';
 import { isStartingItem } from '../db/startingItemRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
@@ -41,8 +41,31 @@ const messages = defineMessages({
 		id: 'error.unknownItemEquips',
 		defaultMessage: 'The universe\'s ruleset has nowhere like that to equip an item.',
 		description: 'Why an item couldn\'t be saved: where it equips (such as one hand or the head), chosen in the item editor\'s "Equips to" field, isn\'t one of the game rules\''
+	},
+	invalidItemLooksLike: {
+		id: 'error.invalidItemLooksLike',
+		defaultMessage: 'An item can only look like one of the game rules\' own items, and only an item the universe added can choose one.',
+		description: 'Why an item couldn\'t be saved: the item chosen in the item editor\'s "Looks like" field (whose drawing the item uses on characters\' avatars) isn\'t one of the ruleset\'s default items, or the item being saved is a default item, which always uses its own drawing'
 	}
 });
+
+/**
+ * Refuses an item's "Looks like" unless it is none, or a default item of the universe's ruleset chosen
+ * for an item the universe added
+ *
+ * @param context The save
+ * @param custom Whether the universe added the item
+ * @param settings The item's settings
+ */
+async function checkItemLooksLike(context: ChangeContext, custom: boolean, settings: ItemSettings): Promise<void>
+{
+	const { looksLikeItemId } = settings;
+
+	if ((looksLikeItemId !== null) && (!custom || !await isDefaultItem(context.universe.ruleset, looksLikeItemId, context.transaction)))
+	{
+		refuse(400, messages.invalidItemLooksLike);
+	}
+}
 
 /**
  * Refuses an item's kind, types or place to equip that the universe's ruleset doesn't have
@@ -112,6 +135,7 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
 	}
 
 	checkItemSettings(universe.ruleset, settings);
+	await checkItemLooksLike(context, true, settings);
 
 	if (await countCustomItems(version, transaction) >= MAX_CUSTOM_ITEMS)
 	{
@@ -151,6 +175,7 @@ export async function saveItemChange(context: ChangeContext, id: NumberRef, sett
 	}
 
 	checkItemSettings(universe.ruleset, settings);
+	await checkItemLooksLike(context, (item.kind === 'custom'), settings);
 	context.disablings.item({ ...item, id: itemId }, await savedRulebooks(context), { whenDisabled: (settings.enabled ? undefined : whenDisabled) });
 	context.disablings.itemEquipping(universe.ruleset, { ...item, id: itemId });
 

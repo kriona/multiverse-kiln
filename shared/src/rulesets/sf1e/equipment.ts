@@ -38,6 +38,12 @@ export const SF1E_WORN_LOCATION_NAMES: Record<Sf1eWornLocation, MessageDescripto
 });
 
 /**
+ * The order an avatar draws the slots' items in over the base, from the first drawn to the last, so the
+ * last is in front. A part of a drawing can choose another slot's layer, or to go behind the base
+ */
+export const SF1E_SLOT_DRAW_ORDER: readonly string[] = ['clothing', 'armor', 'offHand', 'mainHand'];
+
+/**
  * Where each default item equips: nowhere, one hand, two hands or a worn place (SF1E_WORN_LOCATIONS)
  */
 export const SF1E_DEFAULT_ITEM_EQUIPS: Record<string, string> = Object.fromEntries(Object.entries(SF1E_DEFAULT_ITEMS)

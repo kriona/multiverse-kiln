@@ -356,8 +356,8 @@ describe('characterRepo', () =>
 			assert.strictEqual(await restoreCharacter(playerId, universeId, goneId), undefined);
 			assert.strictEqual(await scheduleCharacterDeletion(playerId, universeId, goneId, daysFromNow(7)), undefined);
 
-			assert.strictEqual(await purgeExpiredCharacters(), 1);
-			assert.strictEqual(await purgeExpiredCharacters(), 0);
+			assert.deepStrictEqual(await purgeExpiredCharacters(), [goneId]);
+			assert.deepStrictEqual(await purgeExpiredCharacters(), []);
 			assert.strictEqual(await deleteCharacter(playerId, universeId, goneId), false);
 			assert.deepStrictEqual((await listCharacters(playerId, universeId)).map(({ id }) => id), [waitingId]);
 		});
@@ -372,7 +372,8 @@ describe('characterRepo', () =>
 			classId: null,
 			baseScores: null,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance: null
 		};
 
 		assert.strictEqual(await findCharacterDraft(playerId, universeId), undefined);

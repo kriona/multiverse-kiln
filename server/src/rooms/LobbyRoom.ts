@@ -624,7 +624,10 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		if (character)
 		{
 			this.playing.set(playerId, character);
-			this.state.members.set(playerId, new LobbyMember({ name: character.name }));
+			this.state.members.set(playerId, new LobbyMember({
+				name: character.name,
+				characterId: character.id
+			}));
 		}
 		else if (!isNewPlayer && !this.playing.has(playerId) && choosable)
 		{
@@ -742,7 +745,10 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.playing.set(playerId, character);
 		this.areaPlayers.setAppearance(playerId, this.appearanceOf(character));
-		this.state.members.set(playerId, new LobbyMember({ name: character.name }));
+		this.state.members.set(playerId, new LobbyMember({
+			name: character.name,
+			characterId: character.id
+		}));
 
 		for (const client of this.areaPlayers.getClients(playerId))
 		{

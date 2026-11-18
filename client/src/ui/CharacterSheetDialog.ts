@@ -1,5 +1,7 @@
-import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equipChangesNothing, equippedCount, fitsSlot, handChoices, pf1eAbilityModifier, ringChoices, RULESET_ABILITIES, SIZE_NAMES, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type EquipRing, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equipChangesNothing, equippedCount, fitsSlot, fitsSocialSlot, handChoices, pf1eAbilityModifier, ringChoices, RULESET_ABILITIES, SIZE_NAMES, socialSlotFor, socialSlots, type CharacterAppearance, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type EquipmentLayer, type EquipRing, type MessageDescriptor } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
+import wearIcon from 'virtual:icon/game-icons:cape';
+import hideIcon from 'virtual:icon/ph:eye-slash';
 import unequipIcon from 'virtual:icon/ph:backpack';
 import giveIcon from 'virtual:icon/ph:hand-arrow-up';
 import equipIcon from 'virtual:icon/ph:hand-grabbing';
@@ -13,6 +15,9 @@ import { describeEditorError } from '../network/editorApi';
 import type { GroupApi } from '../network/groupApi';
 import { createActionMenu, type MenuAction } from './actionMenu';
 import { announce } from './announcer';
+import { AppearanceChoices } from './AppearanceChoices';
+import { avatarElement } from './avatarImages';
+import { ChangeTracker } from './changeTracker';
 import { getElement, setButtonLabel, showMessage } from './dom';
 import { unequipNote } from './equipmentText';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
@@ -34,7 +39,7 @@ export type LeaveGroup = (universeId: string, groupId: string, characterId: stri
  * The routes that load and delete the characters a sheet shows: the player's own (CharacterApi), or
  * any player's for the editor's Character List tab (EditorApi)
  */
-export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter' | 'discardItems' | 'equipItem' | 'unequipItem' | 'giveItemsTo'>;
+export type CharacterSheetApi = Pick<CharacterApi, 'getCharacterSheet' | 'deleteCharacter' | 'scheduleCharacterDeletion' | 'restoreCharacter' | 'discardItems' | 'equipItem' | 'unequipItem' | 'giveItemsTo' | 'wearSocially' | 'setSlotHidden' | 'changeAppearance'>;
 
 /**
  * Asks which items to give a character and gives them; resolves with how many different items were
@@ -55,6 +60,21 @@ interface ShownCharacter
 	 * their items, and give them items where the page can
 	 */
 	canChange: boolean;
+
+	/**
+	 * Whether the Appearance dialog offers to change the character's body type: only to the universe's
+	 * creators
+	 */
+	canChangeBodyType: boolean;
+}
+
+/**
+ * A slot the slot dialog chooses the item for
+ */
+interface ChosenSlot
+{
+	layer: EquipmentLayer;
+	slot: string;
 }
 
 /**
@@ -70,6 +90,16 @@ const sheetMessages = defineMessages({
 		id: 'characterSheet.equipFailed',
 		defaultMessage: 'Could not change what the character has equipped.',
 		description: 'Shown on a character\'s sheet when equipping or unequipping an item from its menu failed'
+	},
+	lookFailed: {
+		id: 'characterSheet.lookFailed',
+		defaultMessage: 'Could not change how the character looks.',
+		description: 'Shown on a character\'s sheet, or in its Appearance dialog, when wearing an item for its look, hiding a slot from the avatar (the picture of the character) or changing the appearance failed'
+	},
+	empty: {
+		id: 'characterSheet.emptySlot',
+		defaultMessage: 'Empty',
+		description: 'On a character\'s sheet, in the Equipped and Social lists, beside a slot with nothing in it; also the choice in the dialog choosing a slot\'s item that takes the item out'
 	}
 });
 
@@ -145,6 +175,11 @@ const EQUIP_AS_RING: Record<EquipRing, MessageDescriptor> = defineMessages({
  * can't change the character. Discard and Give say which equipped ones they unequip. A change to the
  * character's items made anywhere else, such as in another window or by a gift, shows on the open sheet
  * and is read out
+ *
+ * It shows the character's avatar, with an Appearance button changing its art type and background (and
+ * body type, for the universe's creators). The Social list has the slots for items worn only for how they
+ * look, which the item menu's Wear socially fills. In both lists, each slot's name chooses its item, and
+ * its Hide toggle leaves it off the avatar
  */
 export class CharacterSheetDialog
 {
@@ -158,6 +193,25 @@ export class CharacterSheetDialog
 	private readonly abilityRows = getElement('character-sheet-ability-rows', HTMLTableSectionElement);
 	private readonly traits = getElement('character-sheet-traits', HTMLDListElement);
 	private readonly equipped = getElement('character-sheet-equipped', HTMLDListElement);
+	private readonly social = getElement('character-sheet-social', HTMLDListElement);
+	private readonly avatar = getElement('character-sheet-avatar', HTMLElement);
+	private readonly appearanceButton = getElement('character-sheet-appearance', HTMLButtonElement);
+	private readonly slotDialog = getElement('character-slot-dialog', HTMLDialogElement);
+	private readonly slotTitle = getElement('character-slot-title', HTMLElement);
+	private readonly slotAbout = getElement('character-slot-about', HTMLElement);
+	private readonly slotChoices = getElement('character-slot-choices', HTMLUListElement);
+	private readonly slotError = getElement('character-slot-error', HTMLElement);
+	private readonly appearanceDialog = getElement('character-appearance-dialog', HTMLDialogElement);
+	private readonly appearanceForm = getElement('character-appearance-form', HTMLFormElement);
+	private readonly appearanceError = getElement('character-appearance-error', HTMLElement);
+	private readonly appearanceSave = getElement('character-appearance-save', HTMLButtonElement);
+	private readonly appearanceChoices: AppearanceChoices;
+	private readonly appearanceTracker: ChangeTracker;
+
+	/**
+	 * The slot the slot dialog is choosing the item for, while it is open
+	 */
+	private choosingSlot: ChosenSlot | undefined;
 	private readonly items = getElement('character-sheet-items', HTMLUListElement);
 	private readonly noItems = getElement('character-sheet-no-items', HTMLElement);
 	private readonly deleteButton = getElement('character-sheet-delete', HTMLButtonElement);
@@ -254,6 +308,51 @@ export class CharacterSheetDialog
 	constructor(private readonly api: CharacterSheetApi, groupApi: Pick<GroupApi, 'leaveGroup'>, private readonly charactersChanged: () => void, leaveGroup?: LeaveGroup, private readonly giveItems?: GiveItems)
 	{
 		this.leaveGroup = (leaveGroup ?? ((universeId, groupId, characterId) => takeOutOfGroup(groupApi, universeId, groupId, characterId)));
+		this.appearanceChoices = new AppearanceChoices(getElement('character-appearance-choices', HTMLElement), () =>
+		{
+			this.appearanceTracker.check();
+		});
+		this.appearanceTracker = new ChangeTracker({
+			root: this.appearanceForm,
+			state: () => this.appearanceChoices.value()
+		});
+		this.appearanceTracker.guardDialog(this.appearanceDialog);
+
+		this.appearanceButton.addEventListener('click', () =>
+		{
+			this.openAppearance();
+		});
+
+		getElement('character-appearance-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			if (this.appearanceTracker.confirmDiscard())
+			{
+				this.appearanceDialog.close();
+			}
+		});
+
+		this.appearanceForm.addEventListener('submit', (event) =>
+		{
+			event.preventDefault();
+			void this.saveAppearance();
+		});
+
+		getElement('character-slot-cancel', HTMLButtonElement).addEventListener('click', () =>
+		{
+			this.slotDialog.close();
+		});
+
+		this.slotDialog.addEventListener('close', () =>
+		{
+			const chosen = this.choosingSlot;
+
+			this.choosingSlot = undefined;
+
+			if (chosen && this.dialog.open)
+			{
+				this.focusSlotButton(chosen);
+			}
+		});
 
 		this.discardCancel.addEventListener('click', () =>
 		{
@@ -405,8 +504,10 @@ export class CharacterSheetDialog
 	 * @param characterId The character's ID
 	 * @param name The character's name, shown while the rest loads
 	 * @param canChange Whether the sheet offers to change the character: delete, restore, take out of their group, give items and discard items
+	 * @param canChangeBodyType Whether the Appearance dialog offers to change the character's body type,
+	 * which only the universe's creators can
 	 */
-	async open(universeId: string, characterId: string, name: string, canChange = true): Promise<void>
+	async open(universeId: string, characterId: string, name: string, canChange = true, canChangeBodyType = false): Promise<void>
 	{
 		const version = ++this.version;
 
@@ -423,6 +524,7 @@ export class CharacterSheetDialog
 		this.restoreButton.hidden = true;
 		this.leaveButton.hidden = true;
 		this.giveButton.hidden = true;
+		this.appearanceButton.hidden = true;
 		this.current = undefined;
 		showMessage(this.error, undefined);
 		this.dialog.showModal();
@@ -450,7 +552,8 @@ export class CharacterSheetDialog
 			this.current = {
 				universeId,
 				sheet,
-				canChange
+				canChange,
+				canChangeBodyType
 			};
 			this.show(sheet, canChange);
 		}
@@ -469,9 +572,12 @@ export class CharacterSheetDialog
 		this.title.textContent = sheet.name;
 		this.summary.textContent = characterDescription(sheet, sheet.ruleset);
 		this.status.textContent = '';
+		this.avatar.replaceChildren(avatarElement(sheet, sheet.ruleset, 'full'));
+		this.appearanceButton.hidden = !canChange;
 		this.showAbilities(sheet);
 		this.showTraits(sheet);
-		this.showEquipment(sheet);
+		this.showSlots(sheet, 'stats', canChange);
+		this.showSlots(sheet, 'social', canChange);
 		this.showItems(sheet, canChange);
 		this.showDeletion(sheet, canChange);
 		this.body.hidden = false;
@@ -1395,34 +1501,42 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Lists each of the character's equipment slots with the item in it, or Empty. An item held in both
-	 * hands shows in the main hand, and the off hand says it is taken
+	 * Lists each of the character's slots of a layer with the item in it, or Empty: the equipment slots in
+	 * the Equipped list, and the social slots in the Social list. An item held in both hands shows in the
+	 * main hand, and the off hand says it is taken. For those who may change the character, each slot's
+	 * name is a button choosing its item, and each slot has a Hide toggle that leaves it off the avatar
 	 *
 	 * @param sheet The character
+	 * @param layer Which slots
+	 * @param canChange Whether the sheet offers to change the character
 	 */
-	private showEquipment(sheet: CharacterSheet): void
+	private showSlots(sheet: CharacterSheet, layer: EquipmentLayer, canChange: boolean): void
 	{
 		const itemsById = new Map(sheet.items.map((item) => [item.id, item]));
-		const bySlot = new Map(sheet.equipment.map((equipped) => [equipped.slot, equipped]));
+		const bySlot = new Map(((layer === 'stats') ? sheet.equipment : sheet.socialEquipment).map((equipped) => [equipped.slot, equipped]));
 		const held = bySlot.get('mainHand');
-		const empty = t({
-			id: 'characterSheet.emptySlot',
-			defaultMessage: 'Empty',
-			description: 'On a character\'s sheet, in the Equipped list, beside an equipment slot with nothing in it'
-		});
+		const slots = ((layer === 'stats') ? characterSlots(sheet.ruleset, sheet.hasTail) : socialSlots(sheet.ruleset));
+		const list = ((layer === 'stats') ? this.equipped : this.social);
 
-		this.equipped.replaceChildren(...characterSlots(sheet.ruleset, sheet.hasTail).flatMap((slot) =>
+		list.replaceChildren(...slots.flatMap((slot) =>
 		{
 			const term = document.createElement('dt');
 			const value = document.createElement('dd');
+			const valueText = document.createElement('span');
 			const equipped = bySlot.get(slot);
 			const item = ((equipped === undefined) ? undefined : itemsById.get(equipped.itemId));
 
-			term.textContent = slotText(slot, sheet.ruleset);
+			term.append(this.slotLabel(sheet, layer, slot, canChange));
+			value.append(valueText);
+
+			if (canChange)
+			{
+				value.append(this.hideToggle(sheet, layer, slot));
+			}
 
 			if (item && equipped?.bothHands)
 			{
-				value.textContent = t({
+				valueText.textContent = t({
 					id: 'characterSheet.inBothHands',
 					defaultMessage: '{item} (both hands)',
 					description: 'On a character\'s sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item\'s name'
@@ -1432,11 +1546,11 @@ export class CharacterSheetDialog
 			}
 			else if (item)
 			{
-				value.textContent = itemName(item, sheet.ruleset);
+				valueText.textContent = itemName(item, sheet.ruleset);
 			}
 			else if ((slot === 'offHand') && held?.bothHands && itemsById.has(held.itemId))
 			{
-				value.textContent = t({
+				valueText.textContent = t({
 					id: 'characterSheet.offHandTaken',
 					defaultMessage: 'Holding {item} with the main hand',
 					description: 'On a character\'s sheet, in the Equipped list, beside the off hand when the item in the main hand is held in both hands, such as a greatsword; {item} is that item\'s name'
@@ -1446,11 +1560,435 @@ export class CharacterSheetDialog
 			}
 			else
 			{
-				value.textContent = empty;
-				value.className = 'character-sheet-empty-slot';
+				valueText.textContent = t(sheetMessages.empty);
+				valueText.className = 'character-sheet-empty-slot';
 			}
 
 			return([term, value]);
+		}));
+	}
+
+	/**
+	 * A slot's name in its list: a button choosing its item for those who may change the character
+	 *
+	 * @param sheet The character
+	 * @param layer The slot's layer
+	 * @param slot The slot
+	 * @param canChange Whether the sheet offers to change the character
+	 * @return The name, or the button
+	 */
+	private slotLabel(sheet: CharacterSheet, layer: EquipmentLayer, slot: string, canChange: boolean): Node
+	{
+		const name = slotText(slot, sheet.ruleset);
+
+		if (!canChange)
+		{
+			return(document.createTextNode(name));
+		}
+
+		const button = document.createElement('button');
+
+		button.type = 'button';
+		button.className = 'link-button character-sheet-slot-button';
+		button.textContent = name;
+		button.dataset.layer = layer;
+		button.dataset.slot = slot;
+		button.addEventListener('click', () =>
+		{
+			this.chooseSlotItem({
+				layer,
+				slot
+			});
+		});
+
+		return(button);
+	}
+
+	/**
+	 * A slot's Hide toggle: pressed while the slot is hidden from the avatar. A slot is hidden in both
+	 * layers at once, so its toggles in the Equipped and Social lists agree
+	 *
+	 * @param sheet The character
+	 * @param layer The list it is in
+	 * @param slot The slot
+	 * @return The button
+	 */
+	private hideToggle(sheet: CharacterSheet, layer: EquipmentLayer, slot: string): HTMLButtonElement
+	{
+		const button = document.createElement('button');
+		const hidden = sheet.hiddenSlots.includes(slot);
+		const name = slotText(slot, sheet.ruleset);
+
+		button.type = 'button';
+		button.className = 'secondary character-sheet-hide';
+		button.dataset.layer = layer;
+		button.dataset.hideSlot = slot;
+		button.setAttribute('aria-pressed', String(hidden));
+		button.setAttribute('aria-label', t({
+			id: 'characterSheet.hideSlot',
+			defaultMessage: 'Hide {slot}',
+			description: 'Name for screen readers of the Hide toggle beside a slot in the Equipped and Social lists of a character\'s sheet; while pressed, the slot is left off the character\'s avatar (the picture of the character), whatever is in it. {slot} is the slot\'s name, such as Shoulders'
+		}, {
+			slot: name
+		}));
+		setButtonLabel(button, t({
+			id: 'characterSheet.hide',
+			defaultMessage: 'Hide',
+			description: 'Toggle button beside each slot in the Equipped and Social lists of a character\'s sheet; while pressed, the slot is left off the character\'s avatar (the picture of the character), whatever is in it'
+		}), hideIcon);
+		button.addEventListener('click', () =>
+		{
+			void this.changeLook((current) => this.api.setSlotHidden(current.universeId, current.sheet.id, slot, !hidden), () =>
+			{
+				this.dialog.querySelector<HTMLButtonElement>(`button[data-layer="${layer}"][data-hide-slot="${slot}"]`)?.focus();
+			}, (current) => t({
+				id: 'characterSheet.slotHiddenAnnouncement',
+				defaultMessage: '{hidden, select, true {{slot} is hidden on {name}\'s avatar.} other {{slot} shows on {name}\'s avatar again.}}',
+				description: 'Read out by screen readers once the Hide toggle beside a slot on a character\'s sheet was pressed or released; {slot} is the slot\'s name, such as Shoulders, and {name} the character\'s name'
+			}, {
+				hidden: String(!hidden),
+				slot: name,
+				name: current.sheet.name
+			}));
+		});
+
+		return(button);
+	}
+
+	/**
+	 * Opens the dialog choosing the item in a slot: the items the character carries that fit it, and Empty
+	 *
+	 * @param chosen The slot and its layer
+	 */
+	private chooseSlotItem(chosen: ChosenSlot): void
+	{
+		const current = this.current;
+
+		if (!current || this.busy)
+		{
+			return;
+		}
+
+		const { sheet } = current;
+		const { layer, slot } = chosen;
+		const inSlot = ((layer === 'stats') ? sheet.equipment : sheet.socialEquipment).find((equipped) => (equipped.slot === slot));
+		const name = slotText(slot, sheet.ruleset);
+		const fitting = sheet.items
+			.filter((item) => ((layer === 'stats') ? this.fitsStatsSlot(item, slot) : fitsSocialSlot(sheet.ruleset, item, slot)))
+			.map((item) => ({
+				item,
+				name: itemName(item, sheet.ruleset)
+			}))
+			.sort((a, b) => a.name.localeCompare(b.name, currentLocale()));
+
+		this.choosingSlot = chosen;
+		this.slotTitle.textContent = ((layer === 'stats')
+			? t({
+				id: 'characterSheet.chooseSlotItem',
+				defaultMessage: 'Equip in {slot}',
+				description: 'Title of the dialog, opened by a slot\'s name in the Equipped list of a character\'s sheet, that chooses the item equipped there; {slot} is the slot\'s name, such as Main hand'
+			}, {
+				slot: name
+			})
+			: t({
+				id: 'characterSheet.chooseSocialItem',
+				defaultMessage: 'Wear on {slot} for its look',
+				description: 'Title of the dialog, opened by a slot\'s name in the Social list of a character\'s sheet, that chooses the item worn there only for how it looks on the character\'s avatar (the picture of the character); {slot} is the slot\'s name, such as Shoulders'
+			}, {
+				slot: name
+			}));
+		this.slotAbout.textContent = ((fitting.length === 0)
+			? t({
+				id: 'characterSheet.nothingFits',
+				defaultMessage: '{name} carries nothing that goes there.',
+				description: 'In the dialog choosing the item in one of a character\'s slots, from their sheet, when they carry no item that fits the slot; {name} is the character\'s name'
+			}, {
+				name: sheet.name
+			})
+			: t({
+				id: 'characterSheet.chooseItem',
+				defaultMessage: 'Choose an item {name} carries.',
+				description: 'In the dialog choosing the item in one of a character\'s slots, from their sheet, above the items that fit the slot; {name} is the character\'s name'
+			}, {
+				name: sheet.name
+			}));
+		showMessage(this.slotError, undefined);
+
+		const choice = (text: string, chosenItem: CharacterSheetItem | null, isCurrent: boolean): HTMLLIElement =>
+		{
+			const row = document.createElement('li');
+			const button = document.createElement('button');
+
+			button.type = 'button';
+			button.className = 'secondary';
+			button.textContent = text;
+
+			if (isCurrent)
+			{
+				button.setAttribute('aria-current', 'true');
+			}
+
+			button.addEventListener('click', () =>
+			{
+				void this.putInSlot(chosen, chosenItem, inSlot?.itemId ?? null);
+			});
+			row.append(button);
+
+			return(row);
+		};
+
+		this.slotChoices.replaceChildren(
+			choice(t(sheetMessages.empty), null, (inSlot === undefined)),
+			...fitting.map(({ item, name: itemText }) => choice(itemText, item, (inSlot?.itemId === item.id)))
+		);
+		this.slotDialog.showModal();
+		(this.slotChoices.querySelector<HTMLButtonElement>('[aria-current="true"]') ?? this.slotTitle).focus();
+	}
+
+	/**
+	 * Whether an item the character carries fits one of their stats slots as the slot dialog offers it: a
+	 * worn item in its place's slots, a one-handed item in either hand, a two-handed one in the main hand
+	 *
+	 * @param item The item
+	 * @param slot The slot
+	 * @return True when it fits
+	 */
+	private fitsStatsSlot(item: CharacterSheetItem, slot: string): boolean
+	{
+		const sheet = this.current?.sheet;
+
+		return((sheet !== undefined) && fitsSlot(sheet.ruleset, item.equips, slot));
+	}
+
+	/**
+	 * Puts the item chosen in the slot dialog's slot, or takes out what is there, then closes the dialog
+	 * and shows the sheet with the change
+	 *
+	 * @param chosen The slot and its layer
+	 * @param item The item, or null to empty the slot
+	 * @param inSlot The item in the slot now, or null
+	 */
+	private async putInSlot(chosen: ChosenSlot, item: CharacterSheetItem | null, inSlot: number | null): Promise<void>
+	{
+		const current = this.current;
+
+		if (!current || this.busy || ((item?.id ?? null) === inSlot))
+		{
+			this.slotDialog.close();
+			return;
+		}
+
+		const { layer, slot } = chosen;
+
+		const send = async (): Promise<void> =>
+		{
+			if (layer === 'social')
+			{
+				await this.api.wearSocially(current.universeId, current.sheet.id, slot, (item?.id ?? null));
+			}
+			else if (item === null)
+			{
+				await this.api.unequipItem(current.universeId, current.sheet.id, inSlot ?? 0, slot);
+			}
+			else
+			{
+				await this.api.equipItem(current.universeId, current.sheet.id, item.id, this.handFor(item, slot), this.ringFor(slot));
+			}
+		};
+
+		this.busy = true;
+		this.changingItems++;
+
+		try
+		{
+			await send();
+		}
+		catch (error)
+		{
+			showMessage(this.slotError, describeEditorError(error, ((layer === 'stats') ? sheetMessages.equipFailed : sheetMessages.lookFailed)));
+			this.finishChangingItems();
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+		}
+
+		this.slotDialog.close();
+		showMessage(this.error, undefined);
+		await this.reload(current);
+		this.finishChangingItems();
+		this.focusSlotButton(chosen);
+		announce(t({
+			id: 'characterSheet.slotChanged',
+			defaultMessage: '{item, select, none {{slot} is empty.} other {{name} has {item} in {slot}.}}',
+			description: 'Read out by screen readers once the item in one of a character\'s slots was chosen from their sheet; {slot} is the slot\'s name, such as Shoulders, {name} the character\'s name, and {item} the item\'s name, or "none" when the slot was emptied'
+		}, {
+			item: ((item === null) ? 'none' : itemName(item, current.sheet.ruleset)),
+			slot: slotText(slot, current.sheet.ruleset),
+			name: current.sheet.name
+		}));
+	}
+
+	/**
+	 * The hands equipping an item in a slot holds it in
+	 *
+	 * @param item The item
+	 * @param slot The slot
+	 * @return Both hands for a two-handed item, the main or off hand for a one-handed item, and null for a
+	 * worn one
+	 */
+	private handFor(item: CharacterSheetItem, slot: string): EquipHand | null
+	{
+		if (item.equips === 'twoHands')
+		{
+			return('both');
+		}
+
+		if (item.equips !== 'oneHand')
+		{
+			return(null);
+		}
+
+		return(((slot === 'offHand') ? 'off' : 'main'));
+	}
+
+	/**
+	 * The ring slot equipping a ring in a slot puts it in
+	 *
+	 * @param slot The slot
+	 * @return The left or right ring for a ring slot, and null for others
+	 */
+	private ringFor(slot: string): EquipRing | null
+	{
+		if (slot === 'ringLeft')
+		{
+			return('left');
+		}
+
+		return(((slot === 'ringRight') ? 'right' : null));
+	}
+
+	/**
+	 * Puts focus on a slot's name in its list, once the sheet has been drawn again
+	 *
+	 * @param chosen The slot and its layer
+	 */
+	private focusSlotButton(chosen: ChosenSlot): void
+	{
+		this.dialog.querySelector<HTMLButtonElement>(`.character-sheet-slot-button[data-layer="${chosen.layer}"][data-slot="${chosen.slot}"]`)?.focus();
+	}
+
+	/**
+	 * Makes a change to how the character shown looks, then shows the sheet with it and reads out what
+	 * changed
+	 *
+	 * @param send Sends the change
+	 * @param refocus Puts focus back where it was, once the sheet is drawn again
+	 * @param announcement What to read out once it is made
+	 */
+	private async changeLook(send: (current: ShownCharacter) => Promise<void>, refocus: () => void, announcement: (current: ShownCharacter) => string): Promise<void>
+	{
+		const current = this.current;
+
+		if (!current || this.busy)
+		{
+			return;
+		}
+
+		this.busy = true;
+		this.changingItems++;
+
+		try
+		{
+			await send(current);
+		}
+		catch (error)
+		{
+			showMessage(this.error, describeEditorError(error, sheetMessages.lookFailed));
+			this.finishChangingItems();
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+		}
+
+		showMessage(this.error, undefined);
+		await this.reload(current);
+		this.finishChangingItems();
+		refocus();
+		announce(announcement(current));
+	}
+
+	/**
+	 * Opens the Appearance dialog with the character's art type and background, and their body type for
+	 * the universe's creators
+	 */
+	private openAppearance(): void
+	{
+		const current = this.current;
+
+		if (!current)
+		{
+			return;
+		}
+
+		this.appearanceChoices.show(current.sheet.ruleset, current.sheet.avatarKey, current.sheet.appearance, current.canChangeBodyType);
+		showMessage(this.appearanceError, undefined);
+		this.appearanceSave.disabled = false;
+		this.appearanceDialog.showModal();
+		this.appearanceTracker.markSaved();
+	}
+
+	/**
+	 * Saves the Appearance dialog's choices, then closes it and shows the sheet with the new avatar
+	 */
+	private async saveAppearance(): Promise<void>
+	{
+		const current = this.current;
+
+		if (!current || this.busy)
+		{
+			return;
+		}
+
+		const appearance: CharacterAppearance = {
+			...this.appearanceChoices.value(),
+			bodyType: (current.canChangeBodyType ? this.appearanceChoices.value().bodyType : current.sheet.appearance.bodyType)
+		};
+
+		this.busy = true;
+		this.appearanceSave.disabled = true;
+		this.changingItems++;
+
+		try
+		{
+			await this.api.changeAppearance(current.universeId, current.sheet.id, appearance);
+		}
+		catch (error)
+		{
+			showMessage(this.appearanceError, describeEditorError(error, sheetMessages.lookFailed));
+			this.finishChangingItems();
+			return;
+		}
+		finally
+		{
+			this.busy = false;
+			this.appearanceSave.disabled = false;
+		}
+
+		this.appearanceTracker.markSaved();
+		this.appearanceDialog.close();
+		await this.reload(current);
+		this.finishChangingItems();
+		this.appearanceButton.focus();
+		announce(t({
+			id: 'characterSheet.appearanceSaved',
+			defaultMessage: '{name}\'s appearance has changed.',
+			description: 'Read out by screen readers once the Appearance dialog on a character\'s sheet saved how their avatar (the picture of the character) is drawn; {name} is the character\'s name'
+		}, {
+			name: current.sheet.name
 		}));
 	}
 
@@ -1571,6 +2109,35 @@ export class CharacterSheetDialog
 				actions.push(...handChoices(item)
 					.filter((hand) => changesSomething(hand, null))
 					.map((hand) => this.equipAction(item, t(EQUIP_IN_HAND[hand]), hand, null)));
+			}
+
+			const socialSlot = socialSlotFor(sheet.ruleset, sheet.socialEquipment, item);
+
+			if ((socialSlot !== undefined) && !sheet.socialEquipment.some((worn) => ((worn.slot === socialSlot) && (worn.itemId === item.id))))
+			{
+				actions.push({
+					label: t({
+						id: 'characterSheet.wearSocially',
+						defaultMessage: 'Wear socially',
+						description: 'Item in the menu beside an item on a character\'s sheet that wears it in its social slot: only for how it looks on the character\'s avatar (the picture of the character), in place of what is equipped there. It gives nothing'
+					}),
+					icon: wearIcon,
+					run: () =>
+					{
+						void this.changeLook((shown) => this.api.wearSocially(shown.universeId, shown.sheet.id, socialSlot, item.id), () =>
+						{
+							this.focusItemMenu(item.id);
+						}, (shown) => t({
+							id: 'characterSheet.woreSocially',
+							defaultMessage: '{name} wears {item} on {slot} for its look.',
+							description: 'Read out by screen readers once an item was worn in a social slot from its menu on a character\'s sheet; {name} is the character\'s name, {item} the item\'s name and {slot} the slot\'s name, such as Shoulders'
+						}, {
+							name: shown.sheet.name,
+							item: itemName(item, shown.sheet.ruleset),
+							slot: slotText(socialSlot, shown.sheet.ruleset)
+						}));
+					}
+				});
 			}
 
 			if (equipped > 0)

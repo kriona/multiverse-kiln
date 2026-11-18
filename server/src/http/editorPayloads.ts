@@ -439,6 +439,7 @@ const itemSettings = z.object({
 	category: itemKindKey,
 	types: z.array(itemKindKey).max(MAX_ITEM_TYPE_LIST_LENGTH),
 	equips: itemKindKey,
+	looksLikeItemId: numericId.nullable(),
 	enabled: z.boolean()
 }) satisfies z.ZodType<ItemSettings>;
 
@@ -552,6 +553,7 @@ const raceSettings = byRuleset((ruleset) => z.object({
 	...startingExtrasFields(ruleset),
 	name: displayText(MAX_RACE_NAME_LENGTH).nullable(),
 	description: displayText(MAX_RACE_DESCRIPTION_LENGTH).nullable(),
+	looksLikeRaceId: numericId.nullable(),
 	rules: raceRules[ruleset]
 }) satisfies z.ZodType<RaceSettings>);
 

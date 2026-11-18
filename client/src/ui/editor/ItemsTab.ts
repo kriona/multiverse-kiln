@@ -529,6 +529,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			category: item.category,
 			types: item.types,
 			equips: item.equips,
+			looksLikeItemId: item.looksLikeItemId,
 			enabled
 		});
 		afterSwitchSlides(() =>
@@ -557,7 +558,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			this.dialog.open(this.universe, item, this.changes.edit(item?.id, loadedFrom((item === undefined) ? undefined : this.known.get(item.id))), () =>
 			{
 				this.render();
-			});
+			}, this.api);
 		}
 	}
 }
@@ -640,6 +641,7 @@ function settingsOf(item: ItemSettings): ItemSettings
 		category: item.category,
 		types: item.types,
 		equips: item.equips,
+		looksLikeItemId: item.looksLikeItemId,
 		enabled: item.enabled
 	});
 }

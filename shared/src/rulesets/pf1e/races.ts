@@ -4,6 +4,7 @@
  * Open Game Content from the Pathfinder Roleplaying Game Core Rulebook and Advanced Race Guide, used under
  * the Open Game License 1.0a (client/license.html). Each race's book is in rulebooks.ts
  */
+import { STARTING_BODY_TYPES, type BodyType } from '../../avatars/bodyTypes.js';
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 import { emptyPf1eAbilityScores, type Pf1eAbilityScores } from './abilities.js';
 import type { Darkvision } from '../../vision.js';
@@ -507,6 +508,50 @@ export const PF1E_RACES = {
 } as const satisfies Record<string, Pf1eRaceDefaults>;
 
 export type Pf1eRaceKey = keyof typeof PF1E_RACES;
+
+/**
+ * The body types each default race's avatars are drawn in, the same for every art type (see Avatars in
+ * STRUCTURE-OVERVIEW.md). A character with a body type their race's list doesn't have is drawn as its first
+ */
+export const PF1E_RACE_BODY_TYPES: Record<Pf1eRaceKey, readonly BodyType[]> = {
+	catfolk: STARTING_BODY_TYPES,
+	drow: STARTING_BODY_TYPES,
+	dwarf: STARTING_BODY_TYPES,
+	elf: STARTING_BODY_TYPES,
+	gnome: STARTING_BODY_TYPES,
+	goblin: STARTING_BODY_TYPES,
+	half_elf: STARTING_BODY_TYPES,
+	half_orc: STARTING_BODY_TYPES,
+	halfling: STARTING_BODY_TYPES,
+	hobgoblin: STARTING_BODY_TYPES,
+	human: STARTING_BODY_TYPES,
+	ratfolk: STARTING_BODY_TYPES,
+	aasimar: STARTING_BODY_TYPES,
+	changeling: STARTING_BODY_TYPES,
+	dhampir: STARTING_BODY_TYPES,
+	duergar: STARTING_BODY_TYPES,
+	fetchling: STARTING_BODY_TYPES,
+	gillman: STARTING_BODY_TYPES,
+	grippli: STARTING_BODY_TYPES,
+	ifrit: STARTING_BODY_TYPES,
+	kitsune: STARTING_BODY_TYPES,
+	kobold: STARTING_BODY_TYPES,
+	merfolk: STARTING_BODY_TYPES,
+	nagaji: STARTING_BODY_TYPES,
+	orc: STARTING_BODY_TYPES,
+	oread: STARTING_BODY_TYPES,
+	samsaran: STARTING_BODY_TYPES,
+	strix: STARTING_BODY_TYPES,
+	suli: STARTING_BODY_TYPES,
+	svirfneblin: STARTING_BODY_TYPES,
+	sylph: STARTING_BODY_TYPES,
+	tengu: STARTING_BODY_TYPES,
+	tiefling: STARTING_BODY_TYPES,
+	undine: STARTING_BODY_TYPES,
+	vanara: STARTING_BODY_TYPES,
+	vishkanya: STARTING_BODY_TYPES,
+	wayang: STARTING_BODY_TYPES
+};
 
 /**
  * Each default race's name

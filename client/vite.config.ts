@@ -574,7 +574,7 @@ export default defineConfig(({ command, mode }) =>
 		build: {
 			target: 'es2022',
 			rolldownOptions: {
-				// Home, a universe's page, the game, the world editor, Create Character, the licenses, the privacy policy, the admin pages, the login page and profiles (see src/pages.ts)
+				// Home, a universe's page, the game, the world editor, Create Character, the licenses, the privacy policy, the admin pages, the login page, profiles and the avatar positioning tool (see src/pages.ts)
 				input: {
 					main: path.resolve(import.meta.dirname, 'index.html'),
 					universe: path.resolve(import.meta.dirname, 'universe.html'),
@@ -591,7 +591,8 @@ export default defineConfig(({ command, mode }) =>
 					adminUniverses: path.resolve(import.meta.dirname, 'admin/universes.html'),
 					adminTranslations: path.resolve(import.meta.dirname, 'admin/translations.html'),
 					login: path.resolve(import.meta.dirname, 'login.html'),
-					profile: path.resolve(import.meta.dirname, 'profile.html')
+					profile: path.resolve(import.meta.dirname, 'profile.html'),
+					avatarPositions: path.resolve(import.meta.dirname, 'avatar-positions.html')
 				}
 			}
 		}

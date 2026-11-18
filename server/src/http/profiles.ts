@@ -11,6 +11,7 @@ import express, { type Application, type NextFunction, type Request, type Respon
 import { z } from 'zod';
 import { canPlayUniverse, defineMessages, DISALLOWED_TEXT_CHARACTERS, DISMISSIBLE_NOTICES, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PLAYER_NAME_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, PLAYERS_PATH, PROFILE_LANGUAGES, PROFILE_PATH, SOCIAL_SITES, SOCIAL_USERNAME_PATTERNS, UNIVERSE_STAGES, type CharacterVisibilityRequest, type DismissibleNotice, type OptionName, type OwnProfilePayload, type PlayerProfilePayload, type ProfileCharacter, type ProfileField, type ProfileLocaleRequest, type ProfileUpdateRequest, type SocialSite, type SocialUsernames } from '@multiverse-kiln/shared';
 
+import { avatarHashesOf } from '../avatars/characterAvatars.js';
 import { listProfileCharacters, setCharacterVisibility, type ProfileCharacterRecord } from '../db/characterRepo.js';
 import { loadLiveClassNames } from '../db/classRepo.js';
 import { AccountTakenError, dismissNotice, findOwnProfile, findProfileByUsername, forgetDismissedNotice, forgetDismissedNotices, replaceProfileLocale, saveProfile } from '../db/playerRepo.js';
@@ -224,9 +225,10 @@ async function nameCharacters(request: Request, records: ProfileCharacterRecord[
 		translationLanguages: record.translationLanguages
 	}]));
 	const translators = await UniverseTextTranslator.loadAll([...universes.values()], await requestLanguages(request), ['universe', 'race', 'class']);
-	const [raceNames, classNames] = await Promise.all([
+	const [raceNames, classNames, avatarHashes] = await Promise.all([
 		loadLiveRaceNames([...universes.values()]),
-		loadLiveClassNames([...universes.values()])
+		loadLiveClassNames([...universes.values()]),
+		avatarHashesOf(records.map((record) => record.id))
 	]);
 	const unnamed: OptionName = { key: null, name: null };
 
@@ -247,6 +249,7 @@ async function nameCharacters(request: Request, records: ProfileCharacterRecord[
 				name: (translator?.text('universe', record.universeId, 'name', record.universeName) ?? record.universeName),
 				ruleset: record.ruleset
 			},
+			avatarHash: (avatarHashes.get(record.id) ?? null),
 			visibleOnProfile: record.visibleOnProfile
 		});
 	}));

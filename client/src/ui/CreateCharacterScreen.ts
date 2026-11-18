@@ -5,6 +5,7 @@ import type { CharacterApi } from '../network/characterApi';
 import { describeEditorError } from '../network/editorApi';
 import { universePageUrl } from '../pages';
 import { announce } from './announcer';
+import { AppearanceChoices } from './AppearanceChoices';
 import { ChangeTracker } from './changeTracker';
 import { getElement, setOptions, setPageTitle, showMessage, titleLink, type SelectOption } from './dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
@@ -77,6 +78,14 @@ export class CreateCharacterScreen
 	private readonly backButton = getElement('character-back', HTMLButtonElement);
 	private readonly nextButton = getElement('character-next', HTMLButtonElement);
 	private readonly createButton = getElement('character-create', HTMLButtonElement);
+
+	/**
+	 * The Appearance step's choices: body type, art type and background, with a preview
+	 */
+	private readonly appearance = new AppearanceChoices(getElement('character-appearance', HTMLElement), () =>
+	{
+		this.queueSave();
+	});
 
 	private readonly rows: Record<Ability, AbilityRow>;
 
@@ -351,6 +360,7 @@ export class CreateCharacterScreen
 		this.characterClass.value = String(options.classes.find((characterClass) => (characterClass.id === draft?.classId))?.id ?? '');
 		this.theme.value = String(options.themes.find((theme) => (theme.id === draft?.themeId))?.id ?? '');
 		this.setBaseScores(draft?.baseScores ?? null);
+		this.appearance.show(options.ruleset, (this.chosenRace()?.avatarKey ?? null), (draft?.appearance ?? null), true);
 		this.floatingLabel.hidden = true;
 		this.showClass();
 		this.showTheme();
@@ -576,6 +586,7 @@ export class CreateCharacterScreen
 		this.floatingLabel.hidden = !floatingBonus;
 		showDescription(this.raceDescription, ((race && this.options) ? raceDescription(race, this.options.ruleset) : ''));
 		this.raceSummary.textContent = (race ? this.describeRace(race) : '');
+		this.appearance.show((this.options?.ruleset ?? 'pf1e'), (race?.avatarKey ?? null), this.appearance.value(), true);
 		this.showScores();
 	}
 
@@ -886,7 +897,7 @@ export class CreateCharacterScreen
 			defaultMessage: 'Not chosen yet',
 			description: 'In the review step of Create Character, shown for the name, race, class or theme when the player hasn\'t chosen one'
 		});
-		const entries: [string, string][] = [
+		const entries: [string, string | Node][] = [
 			[t({
 				id: 'character.review.name',
 				defaultMessage: 'Name',
@@ -907,6 +918,11 @@ export class CreateCharacterScreen
 					ability: this.abilityName(floatingAbility)
 				})
 				: (race ? raceName(race, ruleset) : notChosen))],
+			[t({
+				id: 'character.review.appearance',
+				defaultMessage: 'Appearance',
+				description: 'In the review step of Create Character, the label of the body type, art type and background chosen for the character\'s avatar (the picture of the character), shown with a preview'
+			}), this.reviewAppearance()],
 			[t({
 				id: 'character.review.class',
 				defaultMessage: 'Class',
@@ -938,10 +954,26 @@ export class CreateCharacterScreen
 			const valueElement = document.createElement('dd');
 
 			termElement.textContent = term;
-			valueElement.textContent = value;
+			valueElement.append(value);
 
 			return([termElement, valueElement]);
 		}));
+	}
+
+	/**
+	 * The appearance chosen, for the review: its choices in words, then the preview
+	 *
+	 * @return The review's value
+	 */
+	private reviewAppearance(): Node
+	{
+		const value = document.createDocumentFragment();
+		const words = document.createElement('span');
+
+		words.textContent = this.appearance.describe();
+		value.append(words, this.appearance.createPreview());
+
+		return(value);
 	}
 
 	/**
@@ -1157,7 +1189,8 @@ export class CreateCharacterScreen
 				classId: characterClass.id,
 				themeId: (theme?.id ?? null),
 				baseScores,
-				floatingAbility: this.chosenFloatingAbility()
+				floatingAbility: this.chosenFloatingAbility(),
+				appearance: this.appearance.value()
 			});
 		}
 		catch (error)
@@ -1192,7 +1225,8 @@ export class CreateCharacterScreen
 			classId: (this.chosenClass()?.id ?? null),
 			themeId: (this.chosenTheme()?.id ?? null),
 			baseScores: (options ? this.baseScores(options) : null),
-			floatingAbility: this.chosenFloatingAbility()
+			floatingAbility: this.chosenFloatingAbility(),
+			appearance: this.appearance.value()
 		});
 	}
 

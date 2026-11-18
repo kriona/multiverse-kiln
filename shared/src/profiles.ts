@@ -172,6 +172,11 @@ export interface ProfileCharacter
 	race: OptionName;
 	characterClass: OptionName;
 	universe: ProfileUniverse;
+
+	/**
+	 * The hash of the character's avatar now, to load it with (avatarPath()); null when they have none
+	 */
+	avatarHash: string | null;
 }
 
 /**

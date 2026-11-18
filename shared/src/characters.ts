@@ -33,11 +33,20 @@
  *   answers 409 when the character isn't in a group with them or doesn't carry the item, and 429 when the
  *   player's characters give items in, join or leave the group faster than allowed (each writes a line
  *   in its chat; see shared/src/groups.ts)
+ * - POST characterPath(universeId, characterId)/social: wears an item the character carries in a social
+ *   slot, or empties it (SocialSlotRequest), or answers 409 when they don't carry it or it doesn't fit
+ *   (fitsSocialSlot())
+ * - POST characterPath(universeId, characterId)/hidden-slots: hides a slot from the character's avatar, or
+ *   shows it again (HiddenSlotRequest)
+ * - PUT characterPath(universeId, characterId)/appearance: changes the character's art type and background
+ *   (AppearanceRequest), or answers 403 when it changes their body type, which only the universe's
+ *   creators can, from the editor's Character List
  *
- * Each change to a character's items or equipment is sent to their player's windows
+ * Each change to a character's items, equipment or look is sent to their player's windows
  * (SessionServerMessageType.CharacterItems), and a character given items tells their player's windows
  * who gave them what (SessionServerMessageType.ItemsReceived)
  */
+import { AVATAR_PREVIEWS_PATH, AVATARS_PATH } from './avatars/manifest.js';
 import { UNIVERSES_PATH } from './constants.js';
 import type { EquipHand, EquippedItem, EquipRing } from './equipment.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
@@ -164,6 +173,37 @@ export function characterBar(character: { raceId: number; classId: number }, bar
 }
 
 /**
+ * The path of a character's avatar, drawn as their look is now
+ *
+ * @param characterId The character's ID
+ * @param avatarHash The hash of their look now, which the server sends with the character, so browsers
+ * keep it for good; null when it isn't known, such as for others in a room, which browsers check with the
+ * server each time they show it
+ * @return The path, on the server
+ */
+export function avatarPath(characterId: string, avatarHash: string | null): string
+{
+	const path = `${AVATARS_PATH}/${encodeURIComponent(characterId)}.png`;
+
+	return(((avatarHash === null) ? path : `${path}?look=${encodeURIComponent(avatarHash)}`));
+}
+
+/**
+ * The path of Create Character's preview of a base over a background
+ *
+ * @param artType The art type
+ * @param ruleset The ruleset
+ * @param raceKey The key of the default race the race is drawn as
+ * @param bodyType The body type
+ * @param background The background
+ * @return The path, on the server
+ */
+export function avatarPreviewPath(artType: string, ruleset: Ruleset, raceKey: string, bodyType: string, background: string): string
+{
+	return(`${AVATAR_PREVIEWS_PATH}/${encodeURIComponent(artType)}/${ruleset}/${encodeURIComponent(`${raceKey}-${bodyType}-${background}`)}.png`);
+}
+
+/**
  * One of the player's characters, as the lobby lists them
  */
 export interface CharacterSummary
@@ -172,6 +212,11 @@ export interface CharacterSummary
 	name: string;
 	race: OptionName;
 	characterClass: OptionName;
+
+	/**
+	 * The hash of the character's avatar now, to load it with (avatarPath()); null when they have none
+	 */
+	avatarHash: string | null;
 
 	/**
 	 * When the character is deleted (an ISO 8601 time), once given their last rites; null otherwise.
@@ -233,6 +278,13 @@ export interface CharacterRaceOption extends OptionName
 	description: string | null;
 
 	rules: RaceRules;
+
+	/**
+	 * The key of the default race its characters' avatars are drawn as: its own, or the one it "looks
+	 * like"; null when it has no avatar. Its body types and art types are in the avatar manifest
+	 * (raceBodyTypes(), artTypesFor())
+	 */
+	avatarKey: string | null;
 }
 
 /**
@@ -285,6 +337,7 @@ export type AbilityOptions =
 export const CHARACTER_STEPS = [
 	'name',
 	'race',
+	'appearance',
 	'class',
 	'theme',
 	'abilities',
@@ -336,6 +389,22 @@ export interface CharacterDraft
 	baseScores: AbilityScores | null;
 
 	floatingAbility: Ability | null;
+
+	/**
+	 * How the character's avatar is drawn, or null before the player has chosen
+	 */
+	appearance: CharacterAppearance | null;
+}
+
+/**
+ * How a character's avatar is drawn: their body type (BODY_TYPES), art type (ART_TYPES) and background
+ * (BACKGROUNDS)
+ */
+export interface CharacterAppearance
+{
+	bodyType: string;
+	artType: string;
+	background: string;
 }
 
 /**
@@ -416,6 +485,12 @@ export interface NewCharacterRequest
 	 * null otherwise
 	 */
 	floatingAbility: Ability | null;
+
+	/**
+	 * How their avatar is drawn. The body type must be one of the race's (raceBodyTypes()); the player
+	 * can't change it once the character is made
+	 */
+	appearance: CharacterAppearance;
 }
 
 /**
@@ -466,6 +541,11 @@ export interface CharacterSheetGroupMember
 	name: string;
 	race: OptionName;
 	characterClass: OptionName;
+
+	/**
+	 * The hash of their avatar now (avatarPath()), or null when they have none
+	 */
+	avatarHash: string | null;
 }
 
 /**
@@ -569,6 +649,34 @@ export interface CharacterSheet
 	 * What the character has equipped, by slot in the order the sheet lists them. Each is one of the items
 	 */
 	equipment: EquippedItem[];
+
+	/**
+	 * What the character wears in their social slots, only for how it looks, by slot in the order the
+	 * sheet lists them (socialSlots()). Each is one of the items
+	 */
+	socialEquipment: EquippedItem[];
+
+	/**
+	 * The slots their avatar draws empty
+	 */
+	hiddenSlots: string[];
+
+	/**
+	 * How their avatar is drawn, as chosen; it may fall back to another art type or body type
+	 * (avatarPicture())
+	 */
+	appearance: CharacterAppearance;
+
+	/**
+	 * The key of the default race their avatar is drawn as (CharacterRaceOption.avatarKey), for the
+	 * Appearance dialog's choices; null when their race has no avatar
+	 */
+	avatarKey: string | null;
+
+	/**
+	 * The hash of their avatar now, to load it with (avatarPath()); null when they have none
+	 */
+	avatarHash: string | null;
 }
 
 /**
@@ -606,6 +714,44 @@ export interface UnequipRequest
 	 */
 	slot: string | null;
 }
+
+/**
+ * Body of POST characterPath(universeId, characterId)/social, and of the editor's .../social
+ */
+export interface SocialSlotRequest
+{
+	/**
+	 * One of the ruleset's social slots (socialSlots())
+	 */
+	slot: string;
+
+	/**
+	 * An item the character carries that fits the slot (fitsSocialSlot()), or null to empty it
+	 */
+	itemId: number | null;
+}
+
+/**
+ * Body of POST characterPath(universeId, characterId)/hidden-slots, and of the editor's .../hidden-slots
+ */
+export interface HiddenSlotRequest
+{
+	/**
+	 * One of the ruleset's slots (equipmentSlots())
+	 */
+	slot: string;
+
+	/**
+	 * Whether the avatar draws it empty
+	 */
+	hidden: boolean;
+}
+
+/**
+ * Body of PUT characterPath(universeId, characterId)/appearance, and of the editor's .../appearance. The
+ * player's route refuses a body type other than the character's own
+ */
+export type AppearanceRequest = CharacterAppearance;
 
 /**
  * Body of POST characterPath(universeId, characterId)/items/give, and of the editor's .../items/give

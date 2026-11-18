@@ -1047,6 +1047,16 @@
 								<select id="item-equips" aria-describedby="item-equips-hint"></select>
 							</label>
 							<p id="item-equips-hint" class="hint" data-message="editor.item.equipsHint" data-translation-context="Explains the item editor's Equips to field">Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players.</p>
+							<div id="item-looks-like-field" class="form-group">
+								<div class="field-label">
+									<span id="item-looks-like-label" data-message="editor.looksLike" data-translation-context="Label of the field, in the race and item editors, for a race or item the universe added: one of the game rules' own races or items whose art it uses on characters' avatars (pictures of the characters), since only those have art. Also names the setting in the list of what a save changed, on the editor's Audit tab">Looks like</span>
+									<div class="combobox-field">
+										<input id="item-looks-like" type="text" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="item-looks-like-options" aria-labelledby="item-looks-like-label" aria-describedby="item-looks-like-hint" data-untracked placeholder="Nothing (no art)" data-message-placeholder="editor.looksLike.none" data-translation-context-placeholder="In the race and item editors' &quot;Looks like&quot; field, the choice for a race or item the universe added that uses no art on characters' avatars: characters of such a race have no avatar, and such an item isn't drawn. Also the field's value on the editor's Audit tab once a save chose it" />
+										<ul id="item-looks-like-options" class="combobox-options" role="listbox" aria-labelledby="item-looks-like-label" hidden></ul>
+									</div>
+								</div>
+								<p id="item-looks-like-hint" class="hint" data-message="editor.item.looksLikeHint" data-translation-context="Explains the item editor's Looks like field, shown only for an item the universe added; typing part of a name finds the game's items">The game's own item whose drawing shows this item on characters' avatars. Type to find one.</p>
+							</div>
 							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
@@ -1099,6 +1109,13 @@
 								Description
 								<textarea id="race-description" class="description-field" rows="2"></textarea>
 							</label>
+							<div id="race-looks-like-field" class="form-group">
+								<label data-message="editor.looksLike" data-translation-context="Label of the field, in the race and item editors, for a race or item the universe added: one of the game rules' own races or items whose art it uses on characters' avatars (pictures of the characters), since only those have art. Also names the setting in the list of what a save changed, on the editor's Audit tab">
+									Looks like
+									<select id="race-looks-like" aria-describedby="race-looks-like-hint" data-untracked></select>
+								</label>
+								<p id="race-looks-like-hint" class="hint" data-message="editor.race.looksLikeHint" data-translation-context="Explains the race editor's Looks like field, shown only for a race the universe added">Characters of this race are drawn on their avatars as this race, with its body types.</p>
+							</div>
 							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="race-enabled" type="checkbox" />
 								Enabled

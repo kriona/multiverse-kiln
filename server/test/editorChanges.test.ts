@@ -39,6 +39,7 @@ const missingRace: EditorChange = {
 		startingAreaId: null,
 		startingColumn: 0,
 		startingRow: 0,
+		looksLikeRaceId: null,
 		rules: NEW_PF1E_RACE_RULES
 	}
 };
@@ -107,7 +108,7 @@ describe('Saving editor changes', () =>
 		const universeId = await createUniverse(ada);
 		const response = await saveChanges(ada, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } },
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true } },
 			missingRace
 		]);
 		const items = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body;
@@ -240,7 +241,7 @@ describe('Saving editor changes', () =>
 
 		await saveAll(builder, universeId, [
 			{ kind: 'createTile', ref: 'new:lava', settings: lava },
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true } }
 		]);
 		assert.deepStrictEqual(await customTileNames(ada, universeId), ['Lava']);
 		assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body.items.map((item) => item.name), ['Torch']);

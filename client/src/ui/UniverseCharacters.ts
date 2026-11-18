@@ -6,6 +6,7 @@ import { describeEditorError } from '../network/editorApi';
 import { characterMessages } from './characterMessages';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { getElement, showMessage } from './dom';
+import { avatarElement } from './avatarImages';
 import { characterDescription } from './raceAndClassNames';
 
 /**
@@ -92,7 +93,7 @@ export class UniverseCharacters
 			description.textContent = characterDescription(character, characters.ruleset);
 			button.type = 'button';
 			button.className = 'universe-character-choice';
-			button.append(name, ' ', description);
+			button.append(avatarElement(character, characters.ruleset, 'thumbnail'), name, ' ', description);
 
 			if (character.deleteAt !== null)
 			{

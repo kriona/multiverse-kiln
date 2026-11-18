@@ -1,6 +1,7 @@
 import type { ProfileCharacter } from '@multiverse-kiln/shared';
 
 import { universePageUrl } from '../pages';
+import { avatarElement } from './avatarImages';
 import { characterDescription } from './raceAndClassNames';
 
 /**
@@ -38,12 +39,12 @@ export function showProfileCharacters<C extends ProfileCharacter>(container: HTM
 }
 
 /**
- * A character's name and their race and class, as a profile lists them
+ * A character's avatar, name, and race and class, as a profile lists them
  *
  * @param character The character
- * @return The name, and the race and class after it
+ * @return The avatar's thumbnail, the name, and the race and class after it
  */
-export function characterLabel(character: ProfileCharacter): HTMLElement[]
+export function profileCharacterLabel(character: ProfileCharacter): HTMLElement[]
 {
 	const name = document.createElement('strong');
 	const description = document.createElement('span');
@@ -52,5 +53,5 @@ export function characterLabel(character: ProfileCharacter): HTMLElement[]
 	description.className = 'profile-character-description';
 	description.textContent = characterDescription(character, character.universe.ruleset);
 
-	return([name, description]);
+	return([avatarElement(character, character.universe.ruleset, 'thumbnail'), name, description]);
 }

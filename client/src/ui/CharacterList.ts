@@ -4,6 +4,7 @@ import sheetIcon from 'virtual:icon/ph:scroll';
 import { t } from '../localization';
 import { characterMessages } from './characterMessages';
 import { setButtonLabel } from './dom';
+import { avatarElement } from './avatarImages';
 import { characterDescription } from './raceAndClassNames';
 
 /**
@@ -81,7 +82,7 @@ export class CharacterList
 		button.type = 'button';
 		button.className = 'character-choice';
 		button.setAttribute('aria-pressed', String(isPlaying));
-		button.append(name, ' ', description);
+		button.append(avatarElement(character, characters.ruleset, 'portrait'), name, ' ', description);
 
 		// Kept focusable, so a screen reader still reads the character and when they go, or why they can't play
 		if (character.deleteAt !== null)

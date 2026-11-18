@@ -6,6 +6,7 @@ import { currentLocale, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
 import { universePageUrl } from '../pages';
 import { announce } from './announcer';
+import { avatarFrame } from './avatarImages';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
 import { ChatLog } from './ChatLog';
@@ -834,6 +835,7 @@ export class GroupScreen
 					notes: new Intl.ListFormat(currentLocale(), { style: 'short', type: 'unit' }).format(notes)
 				})
 				: member.name);
+			item.prepend(avatarFrame(characterId, undefined, '', 'portrait'));
 			item.classList.toggle('member-own', (member.playerId === this.ownPlayerId));
 			item.classList.toggle('member-away', !member.present);
 

@@ -272,7 +272,8 @@ Drawing and caching:
 - what an avatar draws is one pure function in `/shared`: the background, the parts behind the base, the base, then the items' parts in layer order. It returns the layers and their hash
 - the server composes the avatar with sharp and stores one PNG per character in object storage (`avatars/<character ID>.png`), overwritten when the look changes. No versions are kept
 - `characters.avatar_hash` is the hash of the layers the stored PNG was made from. Pages load `/avatars/<character ID>.png?look=<hash>`, with the hash the server sends with the character, cached for good. When the hash asked for isn't the stored one, the server composes the PNG again first. So changing equipment, a universe save that unequips items or changes "Looks like", and new art all show without anything composing the avatar at the time
-- Create Character's preview is the base and the background, without items. The server composes one file for each art type, race, body type and background, shared by every player who chooses it (`avatars/previews/<art type>/<race key>-<body type>-<background>.png`, served at `/avatar-previews/`), and composes it again when its files' hash changes. Nothing is saved to a character until it is made
+- the lobby's and group's lists of who's there know each character's ID but not their hash, so they load those avatars without one, and the browser asks each time whether they changed (their ETag is the hash)
+- Create Character's preview is the base and the background, without items. The server composes one file for each art type, ruleset, race, body type and background, shared by every player who chooses it (`avatars/previews/<art type>/<ruleset>/<race key>-<body type>-<background>.png`, served at `/avatar-previews/<art type>/<ruleset>/`), and composes it again when its files' hash changes. Nothing is saved to a character until it is made
 - avatars and previews are served to anyone with the address, like uploaded tilesets. Deleting a character, an account or a universe deletes its characters' avatars
 
 Where avatars show:
@@ -281,7 +282,9 @@ Where avatars show:
 - a head-and-shoulders crop beside each character in the [lobby](#lobby)'s list of who's here, the player's characters and the group's members
 - a thumbnail beside each character on the [profile](#profile-edit) and the [universe page](#universe-page)
 
-The alt text is the character's name with their race and class, "Mara (Dwarf Fighter)", from `characterLabel()` (`client/src/ui/raceAndClassNames.ts`), which the [Give](#equipment) dialog uses too.
+The alt text is the character's name with their race and class, "Mara (Dwarf Fighter)", from `characterLabel()` (`client/src/ui/raceAndClassNames.ts`), which the [Give](#equipment) dialog uses too. The crops and thumbnails sit beside the character's name, so their alt text is empty and screen readers don't read the name twice.
+
+How to add hand-drawn bases and item drawings is in `shared/assets/avatars/README.md`.
 
 The positioning tool (`avatar-positions.html`, only with dev tools on) places item drawings. It chooses an art type, an item drawing, a race and a body type, and moves each part on the base by dragging or with the arrow keys, the off hand and right ring included. It shows each x/y, lists the bases a drawing still has no offsets for, and copies the drawing's offsets as TypeScript to paste into the manifest. It doesn't write files.
 

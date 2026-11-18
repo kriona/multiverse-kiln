@@ -75,6 +75,7 @@ describe('universeDraftRepo', () =>
 			category: 'gear',
 			types: ['light_source'],
 			equips: 'oneHand',
+			looksLikeItemId: null,
 			enabled: true
 		});
 
@@ -180,7 +181,7 @@ describe('universeDraftRepo', () =>
 			const draftTorch = (await loadEditorItems(draft, 'pf1e')).find((item) => (item.name === 'Torch'));
 
 			assert.ok(draftTorch);
-			await updateCustomItem(draft, draftTorch.id, { name: 'Lantern', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true });
+			await updateCustomItem(draft, draftTorch.id, { name: 'Lantern', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true });
 			await updateAreaSettings(await draftAreaOf(universeId, squareAreaId), { name: 'Market' });
 			await updateUniverseSettings(draft, { shortDescription: 'Draft' });
 

@@ -5,6 +5,11 @@
 	<p id="character-sheet-error" class="form-error" role="alert" hidden></p>
 	<p id="character-sheet-pending" class="notice character-sheet-notice" hidden></p>
 	<div id="character-sheet-body" class="character-sheet" hidden>
+		<section class="character-sheet-avatar-section" aria-labelledby="character-sheet-avatar-heading">
+			<h3 id="character-sheet-avatar-heading" class="visually-hidden" data-message="characterSheet.avatar" data-translation-context="Heading, read only by screen readers, of the picture of the character at the top of their sheet">Avatar</h3>
+			<div id="character-sheet-avatar" class="character-sheet-avatar"></div>
+			<button id="character-sheet-appearance" type="button" class="secondary" hidden data-shortcut="Alt+A" data-message="characterSheet.appearance" data-translation-context="Button under a character's avatar (the picture of the character) on their sheet that opens the dialog changing how it is drawn: its art type and background, and for the universe's creators its body type"><!-- icon ph:paint-brush -->Appearance</button>
+		</section>
 		<section aria-labelledby="character-sheet-abilities-heading">
 			<h3 id="character-sheet-abilities-heading" data-message="abilities.heading" data-translation-context="Heading of a character's six ability scores: on their sheet, and the part of Create Character where the player sets them">Ability scores</h3>
 			<table class="character-sheet-abilities" aria-labelledby="character-sheet-abilities-heading">
@@ -26,6 +31,11 @@
 			<h3 id="character-sheet-equipped-heading" data-message="characterSheet.equipped" data-translation-context="Heading on a character's sheet of their equipment slots, such as Head, Armor and Main hand, each with the item equipped in it or Empty">Equipped</h3>
 			<dl id="character-sheet-equipped" class="character-sheet-traits character-sheet-equipped"></dl>
 		</section>
+		<section aria-labelledby="character-sheet-social-heading" aria-describedby="character-sheet-social-about">
+			<h3 id="character-sheet-social-heading" data-message="characterSheet.social" data-translation-context="Heading on a character's sheet of their social slots: items worn only for how they look on the character's avatar (the picture of the character), which give nothing">Social</h3>
+			<p id="character-sheet-social-about" class="character-sheet-none" data-message="characterSheet.socialAbout" data-translation-context="Under the Social heading on a character's sheet: what its slots are for">Items worn only for their look. They show on the avatar in place of what is equipped.</p>
+			<dl id="character-sheet-social" class="character-sheet-traits character-sheet-equipped"></dl>
+		</section>
 		<section aria-labelledby="character-sheet-items-heading">
 			<h3 id="character-sheet-items-heading" data-message="characterSheet.items" data-translation-context="Heading on a character's sheet of the items they carry">Equipment</h3>
 			<ul id="character-sheet-items" class="character-sheet-items"></ul>
@@ -39,6 +49,26 @@
 		<button id="character-sheet-give" type="button" class="secondary" hidden data-shortcut="Alt+I" data-message="characterSheet.giveItems" data-translation-context="Button on a character's sheet, shown to the universe's creators from the editor's Character List tab, that opens the dialog for choosing items and how many of each to add to what the character carries"><!-- icon ph:gift -->Give Items</button>
 		<button id="character-sheet-close" type="button" class="secondary" data-message="dialog.close" data-translation-context="Button that closes a dialog that only shows something, with nothing to change">Close</button>
 	</div>
+</dialog>
+<dialog id="character-slot-dialog" class="panel dialog character-slot-dialog" aria-labelledby="character-slot-title" aria-describedby="character-slot-about">
+	<h2 id="character-slot-title" tabindex="-1"></h2>
+	<p id="character-slot-about"></p>
+	<ul id="character-slot-choices" class="character-slot-choices"></ul>
+	<p id="character-slot-error" class="form-error" role="alert" hidden></p>
+	<div class="dialog-buttons">
+		<button id="character-slot-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+	</div>
+</dialog>
+<dialog id="character-appearance-dialog" class="panel dialog character-appearance-dialog" aria-labelledby="character-appearance-title">
+	<form id="character-appearance-form" class="form" novalidate>
+		<h2 id="character-appearance-title" data-message="characterSheet.appearanceTitle" data-translation-context="Title of the dialog, opened from a character's sheet, that changes how their avatar (the picture of the character) is drawn">Appearance</h2>
+		<div id="character-appearance-choices" class="appearance-choices"></div>
+		<p id="character-appearance-error" class="form-error" role="alert" hidden></p>
+		<div class="dialog-buttons">
+			<button id="character-appearance-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+			<button id="character-appearance-save" type="submit" data-shortcut="Alt+S" aria-describedby="character-appearance-error" data-message="form.save" data-translation-context="Button that stores the form's changes in the database"><!-- icon ph:floppy-disk -->Save</button>
+		</div>
+	</form>
 </dialog>
 <dialog id="character-discard-dialog" class="panel dialog" aria-labelledby="character-discard-title" aria-describedby="character-discard-question character-discard-unequips">
 	<form id="character-discard-form" class="form" novalidate>

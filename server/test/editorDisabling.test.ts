@@ -25,9 +25,9 @@ import { getTestServer, testServerUrl } from './testServer.js';
  */
 function raceSettings(race: EditorRace, changes: Partial<RaceSettings>): RaceSettings
 {
-	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules } = race;
+	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, looksLikeRaceId, rules } = race;
 
-	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules, ...changes });
+	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, looksLikeRaceId, rules, ...changes });
 }
 
 describe('Disabling things players are using', () =>
@@ -164,7 +164,7 @@ describe('Disabling things players are using', () =>
 	it('takes a carried item from characters when disabled with remove, and gives it back', async () =>
 	{
 		const dagger = await defaultItem('dagger');
-		const disable: EditorChange = { kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, enabled: false }, whenDisabled: 'remove' };
+		const disable: EditorChange = { kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, looksLikeItemId: null, enabled: false }, whenDisabled: 'remove' };
 		const carried = await brokkItems();
 
 		assert.ok(carried.some((item) => (item.itemId === dagger.id)));
@@ -173,7 +173,7 @@ describe('Disabling things players are using', () =>
 		await saveAll(ada, universe.universeId, [disable]);
 		assert.ok(!(await brokkItems()).some((item) => (item.itemId === dagger.id)));
 
-		await saveAll(ada, universe.universeId, [{ kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, enabled: true } }]);
+		await saveAll(ada, universe.universeId, [{ kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, looksLikeItemId: null, enabled: true } }]);
 		assert.deepStrictEqual(await brokkItems(), carried);
 
 		// Restoring the default item enables it, which gives it back too
@@ -186,8 +186,8 @@ describe('Disabling things players are using', () =>
 	{
 		const dagger = await defaultItem('dagger');
 		const created = await saveAll(ada, universe.universeId, [
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } },
-			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', description: null, category: 'gear', types: ['rope'], equips: 'none', enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true } },
+			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', description: null, category: 'gear', types: ['rope'], equips: 'none', looksLikeItemId: null, enabled: true } }
 		]);
 		const torch = { id: Number(created['new:torch']), name: 'Torch', category: 'gear', types: ['light_source'], equips: 'oneHand' };
 		const rope = { id: Number(created['new:rope']), name: 'Rope', category: 'gear', types: ['rope'], equips: 'none' };
@@ -202,7 +202,7 @@ describe('Disabling things players are using', () =>
 		const idsOf = (...carried: { id: number }[]): number[] => carried
 			.map((item) => item.id)
 			.sort((a, b) => (a - b));
-		const saveItem = (item: { id: number; name: string | null; category: string; types: string[]; equips: string }, enabled: boolean): EditorChange => ({ kind: 'saveItem', id: item.id, settings: { name: item.name, description: null, category: item.category, types: item.types, equips: item.equips, enabled }, whenDisabled: (enabled ? undefined : 'remove') });
+		const saveItem = (item: { id: number; name: string | null; category: string; types: string[]; equips: string }, enabled: boolean): EditorChange => ({ kind: 'saveItem', id: item.id, settings: { name: item.name, description: null, category: item.category, types: item.types, equips: item.equips, looksLikeItemId: null, enabled }, whenDisabled: (enabled ? undefined : 'remove') });
 
 		assert.deepStrictEqual(await carriedIds(), idsOf(dagger, torch, rope));
 
@@ -218,7 +218,7 @@ describe('Disabling things players are using', () =>
 		const dagger = await defaultItem('dagger');
 		const carried = await brokkItems();
 
-		await saveAll(ada, universe.universeId, [{ kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, enabled: false }, whenDisabled: 'keep' }]);
+		await saveAll(ada, universe.universeId, [{ kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, looksLikeItemId: null, enabled: false }, whenDisabled: 'keep' }]);
 
 		assert.deepStrictEqual(await brokkItems(), carried);
 	});
@@ -431,7 +431,7 @@ describe('Disabling things players are using', () =>
 	{
 		const dagger = await defaultItem('dagger');
 		const carried = await brokkItems();
-		const saveDagger = (enabled: boolean, whenDisabled?: 'keep' | 'remove'): EditorChange => ({ kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, enabled }, whenDisabled });
+		const saveDagger = (enabled: boolean, whenDisabled?: 'keep' | 'remove'): EditorChange => ({ kind: 'saveItem', id: dagger.id, settings: { name: null, description: null, category: dagger.category, types: dagger.types, equips: dagger.equips, looksLikeItemId: null, enabled }, whenDisabled });
 		const hasDagger = async (): Promise<boolean> => (await brokkItems()).some((item) => (item.itemId === dagger.id));
 
 		// Disabled with remove, then enabled again: nothing is taken

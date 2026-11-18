@@ -334,7 +334,8 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = {
 	...INDOORS_NAMES,
 	...VISION_LABELS,
 	name: editorMessages.name,
-	description: editorMessages.description
+	description: editorMessages.description,
+	looksLike: editorMessages.looksLike
 };
 
 /**
@@ -666,6 +667,13 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(listOrNone(change.value.map((type) => itemTypeName(type, ruleset))));
 		case 'equips':
 			return(itemEquipsText(change.value, ruleset));
+		case 'looksLike':
+			if (change.value === null)
+			{
+				return(t(editorMessages.looksLikeNone));
+			}
+
+			return(((detail.subject === 'race') ? raceName(change.value, ruleset) : itemName(change.value, ruleset)));
 		case 'abilityModifiers':
 		{
 			const modifiers = change.value;

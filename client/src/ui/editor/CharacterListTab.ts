@@ -415,7 +415,7 @@ export class CharacterListTab
 			// The role the editor has now, which may have changed since the list was loaded
 			const role = (this.universe?.role ?? universe.role);
 
-			void this.sheet.open(universe.id, character.id, character.name, canManageCharacters(role));
+			void this.sheet.open(universe.id, character.id, character.name, canManageCharacters(role), canManageCharacters(role));
 		});
 		name.append(nameButton);
 		description.textContent = characterDescription(character, universe.ruleset);

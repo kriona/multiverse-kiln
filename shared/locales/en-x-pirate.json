@@ -655,6 +655,26 @@
 		"message": "Max number o' universes each hand can create",
 		"source": "Max number of universes each player can create"
 	},
+	"appearance.artType": {
+		"message": "Painter's hand",
+		"source": "Art type"
+	},
+	"appearance.background": {
+		"message": "Backdrop",
+		"source": "Background"
+	},
+	"appearance.bodyType": {
+		"message": "Build",
+		"source": "Body type"
+	},
+	"appearance.none": {
+		"message": "No likeness be painted o' these folk yet.",
+		"source": "Nothing is drawn for this race yet."
+	},
+	"appearance.preview": {
+		"message": "A peek at the likeness",
+		"source": "Preview of the avatar"
+	},
 	"area.announce.appeared": {
 		"message": "{count, plural, one {{players} heaves into view.} other {{players} heave into view.}}",
 		"source": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}"
@@ -735,6 +755,170 @@
 		"message": "Press E to go through",
 		"source": "Press E to go through"
 	},
+	"avatar.artType.stickFigure": {
+		"message": "Scratched in the sand",
+		"source": "Stick figure"
+	},
+	"avatar.background.darkGreen": {
+		"message": "Deep sea green",
+		"source": "Dark green"
+	},
+	"avatar.background.darkRed": {
+		"message": "Blood red",
+		"source": "Dark red"
+	},
+	"avatar.bodyType.femmeThick": {
+		"message": "Lass, stout",
+		"source": "Femme thick"
+	},
+	"avatar.bodyType.femmeThin": {
+		"message": "Lass, lean",
+		"source": "Femme thin"
+	},
+	"avatar.bodyType.mascThick": {
+		"message": "Lad, stout",
+		"source": "Masc thick"
+	},
+	"avatar.bodyType.mascThin": {
+		"message": "Lad, lean",
+		"source": "Masc thin"
+	},
+	"avatar.none": {
+		"message": "No likeness painted yet",
+		"source": "No avatar yet"
+	},
+	"avatarPositions.artType": {
+		"message": "Painter's hand",
+		"source": "Art type"
+	},
+	"avatarPositions.bodyType": {
+		"message": "Build",
+		"source": "Body type"
+	},
+	"avatarPositions.canvas": {
+		"message": "The drawin's pieces on the likeness",
+		"source": "The drawing's parts on the base"
+	},
+	"avatarPositions.copied": {
+		"message": "Copied. Paste it over the drawin' in the painter's file.",
+		"source": "Copied. Paste it over the drawing in the art type's file."
+	},
+	"avatarPositions.copy": {
+		"message": "Copy drawin'",
+		"source": "Copy drawing"
+	},
+	"avatarPositions.copyFailed": {
+		"message": "The spyglass wouldn't let ye copy.",
+		"source": "The browser didn't allow copying."
+	},
+	"avatarPositions.drawing": {
+		"message": "Drawin'",
+		"source": "Drawing"
+	},
+	"avatarPositions.drawingFor": {
+		"message": "For {races}; builds: {bodyTypes}; slots: {slots}",
+		"source": "For {races}; body types: {bodyTypes}; slots: {slots}"
+	},
+	"avatarPositions.drawingNumber": {
+		"message": "Drawin' {number}",
+		"source": "Drawing {number}"
+	},
+	"avatarPositions.empty": {
+		"message": "Nothin' be drawn yet. Stow the files in shared/assets/avatars/, an' the likenesses an' booty drawin's in the painter's file in shared/src/avatars/, then come back to place the drawin's.",
+		"source": "Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art type's file in shared/src/avatars/, then come back to place the drawings."
+	},
+	"avatarPositions.every": {
+		"message": "every last one",
+		"source": "every one"
+	},
+	"avatarPositions.heading": {
+		"message": "Likeness Placin'",
+		"source": "Avatar Positions"
+	},
+	"avatarPositions.intro": {
+		"message": "Pick a booty drawin' an' a likeness, haul each piece into place, then copy the drawin' an' paste it over the same drawin' in the painter's file in shared/src/avatars/. Nothin' be stowed here.",
+		"source": "Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art type's file in shared/src/avatars/. Nothing is saved here."
+	},
+	"avatarPositions.item": {
+		"message": "Booty",
+		"source": "Item"
+	},
+	"avatarPositions.keys.move": {
+		"message": "Arrow keys",
+		"source": "Arrow keys"
+	},
+	"avatarPositions.keys.moveDescription": {
+		"message": "Shift the chosen piece one pixel, or 10 with Shift",
+		"source": "Move the chosen part one pixel, or 10 with Shift"
+	},
+	"avatarPositions.mirroredPartName": {
+		"message": "Piece {number}, flipped in the {slot}: {file}",
+		"source": "Part {number}, flipped in the {slot}: {file}"
+	},
+	"avatarPositions.missing": {
+		"message": "Likenesses still to place",
+		"source": "Bases still to place"
+	},
+	"avatarPositions.missingFiles": {
+		"message": "The manifest names {count, plural, one {a file that ain't} other {files that ain't}} in shared/assets/avatars/: {files}",
+		"source": "The manifest names {count, plural, one {a file that isn't} other {files that aren't}} in shared/assets/avatars/: {files}"
+	},
+	"avatarPositions.missingFlipped": {
+		"message": "{race}, {bodyType}: {count, plural, one {# flipped piece has} other {# flipped pieces have}} no place",
+		"source": "{race}, {bodyType}: {count, plural, one {# flipped part has} other {# flipped parts have}} no offset"
+	},
+	"avatarPositions.missingParts": {
+		"message": "{race}, {bodyType}: {count, plural, one {# piece has} other {# pieces have}} no place",
+		"source": "{race}, {bodyType}: {count, plural, one {# part has} other {# parts have}} no offset"
+	},
+	"avatarPositions.moved": {
+		"message": "{part} at {x}, {y}",
+		"source": "{part} at {x}, {y}"
+	},
+	"avatarPositions.noBases": {
+		"message": "None o' the folk this drawin' be for has a likeness drawn by this painter yet.",
+		"source": "None of the races this drawing is for has a base drawn in this art type yet."
+	},
+	"avatarPositions.noItems": {
+		"message": "This painter has no booty drawin's for these rules yet.",
+		"source": "This art type has no item drawings for this ruleset yet."
+	},
+	"avatarPositions.noneMissing": {
+		"message": "The drawin' has a place on every likeness it be for.",
+		"source": "The drawing has offsets for every base it is for."
+	},
+	"avatarPositions.notPlaced": {
+		"message": "Not placed on this likeness yet",
+		"source": "Not placed on this base yet"
+	},
+	"avatarPositions.partName": {
+		"message": "Piece {number}: {file}",
+		"source": "Part {number}: {file}"
+	},
+	"avatarPositions.parts": {
+		"message": "Pieces",
+		"source": "Parts"
+	},
+	"avatarPositions.partsHint": {
+		"message": "Pick a piece, then drag it on the picture, shift it with the arrow keys (Shift moves 10 pixels), or write where its top left corner goes.",
+		"source": "Choose a part, then drag it on the picture, move it with the arrow keys (Shift moves 10 pixels), or type where its top left corner goes."
+	},
+	"avatarPositions.race": {
+		"message": "Folk",
+		"source": "Race"
+	},
+	"avatarPositions.ruleset": {
+		"message": "Articles",
+		"source": "Ruleset"
+	},
+	"avatarPositions.title": {
+		"message": "Likeness Placin'",
+		"source": "Avatar Positions"
+	},
+	"avatarPositions.unavailable": {
+		"message": "The placin' tool only works on a shipwright's own computer, with the server's dev tools on (ENABLE_DEV_TOOLS).",
+		"source": "The positioning tool only works on a developer's own computer, with the server's dev tools on (ENABLE_DEV_TOOLS)."
+	},
 	"botCheck.checking": {
 		"message": "Checkin' ye ain't a bot. This usually takes a few seconds an' needs naught from ye.",
 		"source": "Checking that you aren't a bot. This usually takes a few seconds and needs nothing from you."
@@ -766,6 +950,10 @@
 	"botCheck.tryAgain": {
 		"message": "Try the check again",
 		"source": "Try the check again"
+	},
+	"character.appearanceHint": {
+		"message": "A hand's build be set once they sign on. The painter's hand an' backdrop can change later.",
+		"source": "The body type can't be changed once the character is made. The art type and background can."
 	},
 	"character.back": {
 		"message": "Astern",
@@ -903,6 +1091,10 @@
 		"message": "Sees in the dark",
 		"source": "Darkvision"
 	},
+	"character.heading.appearance": {
+		"message": "Choose yer rig an' colors",
+		"source": "Choose an appearance"
+	},
 	"character.heading.class": {
 		"message": "Choose a callin'",
 		"source": "Choose a class"
@@ -922,6 +1114,10 @@
 	"character.heading.theme": {
 		"message": "Spin yer yarn",
 		"source": "Choose a theme"
+	},
+	"character.label": {
+		"message": "{name} ({description})",
+		"source": "{name} ({description})"
 	},
 	"character.lightSensitivity": {
 		"message": "Blinded by the sun",
@@ -954,6 +1150,10 @@
 	"character.raceAndClass": {
 		"message": "{race} {class}",
 		"source": "{race} {class}"
+	},
+	"character.review.appearance": {
+		"message": "Rig an' colors",
+		"source": "Appearance"
 	},
 	"character.review.class": {
 		"message": "Callin'",
@@ -1002,6 +1202,10 @@
 	"character.step.abilities": {
 		"message": "Knacks",
 		"source": "Ability scores"
+	},
+	"character.step.appearance": {
+		"message": "Rig an' colors",
+		"source": "Appearance"
 	},
 	"character.step.class": {
 		"message": "Callin'",
@@ -1070,6 +1274,34 @@
 	"characterDelete.title": {
 		"message": "Throw Hand Overboard",
 		"source": "Delete Character"
+	},
+	"characterSheet.appearance": {
+		"message": "Rig an' Colors",
+		"source": "Appearance"
+	},
+	"characterSheet.appearanceSaved": {
+		"message": "{name}'s likeness has been painted anew.",
+		"source": "{name}'s appearance has changed."
+	},
+	"characterSheet.appearanceTitle": {
+		"message": "Rig an' Colors",
+		"source": "Appearance"
+	},
+	"characterSheet.avatar": {
+		"message": "Likeness",
+		"source": "Avatar"
+	},
+	"characterSheet.chooseItem": {
+		"message": "Pick a bit o' booty {name} carries.",
+		"source": "Choose an item {name} carries."
+	},
+	"characterSheet.chooseSlotItem": {
+		"message": "Strap on to {slot}",
+		"source": "Equip in {slot}"
+	},
+	"characterSheet.chooseSocialItem": {
+		"message": "Flaunt on {slot} for show",
+		"source": "Wear on {slot} for its look"
 	},
 	"characterSheet.delete": {
 		"message": "Throw Overboard",
@@ -1171,9 +1403,13 @@
 		"message": "Hand it to",
 		"source": "Give to"
 	},
-	"characterSheet.giveToCharacter": {
-		"message": "{name} ({description})",
-		"source": "{name} ({description})"
+	"characterSheet.hide": {
+		"message": "Stash",
+		"source": "Hide"
+	},
+	"characterSheet.hideSlot": {
+		"message": "Stash {slot}",
+		"source": "Hide {slot}"
 	},
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",
@@ -1235,6 +1471,10 @@
 		"message": "Unrollin' the papers...",
 		"source": "Loading the character sheet..."
 	},
+	"characterSheet.lookFailed": {
+		"message": "Couldn't change how this hand looks.",
+		"source": "Could not change how the character looks."
+	},
 	"characterSheet.money": {
 		"message": "Purse",
 		"source": "Money"
@@ -1242,6 +1482,10 @@
 	"characterSheet.noItems": {
 		"message": "Empty-handed, savvy?",
 		"source": "Carries nothing."
+	},
+	"characterSheet.nothingFits": {
+		"message": "{name} carries nothin' that goes there.",
+		"source": "{name} carries nothing that goes there."
 	},
 	"characterSheet.offHandTaken": {
 		"message": "Grippin' {item} wi' the sword hand",
@@ -1267,6 +1511,22 @@
 		"message": "Heft",
 		"source": "Size"
 	},
+	"characterSheet.slotChanged": {
+		"message": "{item, select, none {{slot} be bare.} other {{name} has {item} on {slot}.}}",
+		"source": "{item, select, none {{slot} is empty.} other {{name} has {item} in {slot}.}}"
+	},
+	"characterSheet.slotHiddenAnnouncement": {
+		"message": "{hidden, select, true {{slot} be stashed from {name}'s likeness.} other {{slot} shows on {name}'s likeness again.}}",
+		"source": "{hidden, select, true {{slot} is hidden on {name}'s avatar.} other {{slot} shows on {name}'s avatar again.}}"
+	},
+	"characterSheet.social": {
+		"message": "Finery",
+		"source": "Social"
+	},
+	"characterSheet.socialAbout": {
+		"message": "Booty worn only for show. It shows on the likeness in place o' what be strapped on.",
+		"source": "Items worn only for their look. They show on the avatar in place of what is equipped."
+	},
 	"characterSheet.staminaPoints": {
 		"message": "Wind",
 		"source": "Stamina points"
@@ -1290,6 +1550,14 @@
 	"characterSheet.unequipped": {
 		"message": "{name} unstrapped {item}.",
 		"source": "{name} unequipped {item}."
+	},
+	"characterSheet.wearSocially": {
+		"message": "Flaunt",
+		"source": "Wear socially"
+	},
+	"characterSheet.woreSocially": {
+		"message": "{name} flaunts {item} on {slot} for show.",
+		"source": "{name} wears {item} on {slot} for its look."
 	},
 	"characters.barred": {
 		"message": "{bar, select, race {Can't sail: yer folk be closed} other {Can't sail: yer callin' be closed}}",
@@ -2935,6 +3203,14 @@
 		"message": "Where hands strap on the booty, whatever its kind. Changin' it unstraps the booty from every hand once the change reaches the crews.",
 		"source": "Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players."
 	},
+	"editor.item.looksLikeFailed": {
+		"message": "Couldn't haul up the booty it can look like.",
+		"source": "Could not load the items it can look like."
+	},
+	"editor.item.looksLikeHint": {
+		"message": "The ship's own booty whose drawin' shows this booty on hands' likenesses. Type to find one.",
+		"source": "The game's own item whose drawing shows this item on characters' avatars. Type to find one."
+	},
 	"editor.item.type": {
 		"message": "Sort",
 		"source": "Type"
@@ -3194,6 +3470,14 @@
 	"editor.lobby.timeHint": {
 		"message": "Nothin' ye do in the tavern takes any time, so the hours in every area below the tavern's sea pass by this 'stead o' their own way.",
 		"source": "Actions take no time in the lobby, so the time of day in every area below the lobby region follows this instead of their own passage of time."
+	},
+	"editor.looksLike": {
+		"message": "Looks like",
+		"source": "Looks like"
+	},
+	"editor.looksLike.none": {
+		"message": "Nothin' (no paint)",
+		"source": "Nothing (no art)"
 	},
 	"editor.neighborAdd.added": {
 		"message": "Charted {area} {side, select, north {north} east {east} south {south} other {west}} o' this area.",
@@ -3814,6 +4098,14 @@
 	"editor.race.lightSensitivityHint": {
 		"message": "Bright light dazzles this folk's hands, so they see but half as far in broad daylight.",
 		"source": "Bright light dazzles the race's characters, so they see only half as far in full daylight."
+	},
+	"editor.race.looksLikeFailed": {
+		"message": "Couldn't haul up the folk it can look like.",
+		"source": "Could not load the races it can look like."
+	},
+	"editor.race.looksLikeHint": {
+		"message": "Hands o' these folk be painted as these folk on their likenesses, with their builds.",
+		"source": "Characters of this race are drawn on their avatars as this race, with its body types."
 	},
 	"editor.race.size": {
 		"message": "Heft",
@@ -5667,6 +5959,14 @@
 		"message": "That code ain't right, or was already spent. Check yer device's clock keeps true time, an' enter the newest code, or use a recovery code.",
 		"source": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code."
 	},
+	"error.bodyTypeFixed": {
+		"message": "Only the universe's captains can change a hand's build.",
+		"source": "Only the universe's creators can change a character's body type."
+	},
+	"error.bodyTypeUnavailable": {
+		"message": "That build ain't drawn for this hand's folk. Pick another.",
+		"source": "That body type isn't drawn for the character's race. Choose another."
+	},
 	"error.builderDraftRequiredSave": {
 		"message": "Shipwrights make their changes to this universe in her draft while she be open to every soul, so changes to the live version can't be stowed. Open the draft, or lay one down, an' make yer changes there.",
 		"source": "Builders make their changes to this universe in its draft while it's ready for everyone, so changes to the live version can't be saved. Open the draft, or start one, and make your changes there."
@@ -5831,6 +6131,14 @@
 		"message": "The ship's hold be full of other chests bein' hauled in. Try again in a minute.",
 		"source": "The server is busy importing other files. Try again in a minute."
 	},
+	"error.invalidItemLooksLike": {
+		"message": "Booty can only look like the ship's own booty, an' only booty the universe added can pick one.",
+		"source": "An item can only look like one of the game rules' own items, and only an item the universe added can choose one."
+	},
+	"error.invalidRaceLooksLike": {
+		"message": "Folk can only look like the ship's own folk, an' only folk the universe added can pick one.",
+		"source": "A race can only look like one of the game rules' own races, and only a race the universe added can choose one."
+	},
 	"error.invalidRequest": {
 		"message": "That request be no good ({problem}).",
 		"source": "The request isn't valid ({problem})."
@@ -5927,6 +6235,14 @@
 		"message": "That area be lost at sea.",
 		"source": "The area doesn't exist."
 	},
+	"error.noSuchAvatar": {
+		"message": "That hand has no likeness.",
+		"source": "The character has no avatar."
+	},
+	"error.noSuchAvatarPreview": {
+		"message": "Nothin' be painted for that rig.",
+		"source": "Nothing is drawn for that appearance."
+	},
 	"error.noSuchCharacter": {
 		"message": "That hand be lost at sea, or sails under another flag.",
 		"source": "The character doesn't exist, or isn't yours."
@@ -5995,6 +6311,10 @@
 		"message": "The tile picked to paint over it be lost at sea.",
 		"source": "The tile chosen to replace it doesn't exist."
 	},
+	"error.noSuchSlot": {
+		"message": "That hand has no such slot.",
+		"source": "The character has no such slot."
+	},
 	"error.noSuchTheme": {
 		"message": "That yarn be lost at sea.",
 		"source": "The theme doesn't exist."
@@ -6042,6 +6362,10 @@
 	"error.notServerAdmin": {
 		"message": "Only the ship's officers can set foot here.",
 		"source": "Only the site's admins can use this page."
+	},
+	"error.notSocial": {
+		"message": "That booty can't be flaunted there.",
+		"source": "That item can't be worn there for its look."
 	},
 	"error.onlyAnchorInvites": {
 		"message": "Only the anchor bein's sailor can call others aboard.",
@@ -6146,6 +6470,10 @@
 	"error.scoresChanged": {
 		"message": "The universe has changed how knacks be scored. Close Sign On a Hand an' open it again.",
 		"source": "The universe has changed how ability scores are made. Close Create Character and open it again."
+	},
+	"error.socialItemNotCarried": {
+		"message": "That hand don't carry that booty no more.",
+		"source": "The character doesn't carry that item any more."
 	},
 	"error.somethingWentWrong": {
 		"message": "Somethin' went awry in the server's hold.",
@@ -10112,12 +10440,12 @@
 		"source": "Alegreya's license"
 	},
 	"license.artwork": {
-		"message": "Flag an' tile charts",
-		"source": "Logo and tilesets"
+		"message": "Flag, tile charts an' likenesses",
+		"source": "Logo, tilesets and avatars"
 	},
 	"license.artworkCredit": {
-		"message": "The flag an' the ship's own tile charts be the handiwork o' {artist}.",
-		"source": "The logo and the default tilesets were drawn by {artist}."
+		"message": "The flag, the ship's own tile charts an' the Lucia likenesses be the handiwork o' {artist}.",
+		"source": "The logo, the default tilesets and the Lucia avatar art were drawn by {artist}."
 	},
 	"license.assets": {
 		"message": "Art an' other treasures",

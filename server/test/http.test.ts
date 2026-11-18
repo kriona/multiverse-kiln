@@ -2,7 +2,7 @@ import assert from 'assert';
 import { randomBytes, randomUUID } from 'crypto';
 import http from 'http';
 
-import { ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, EDITOR_UNIVERSES_PATH, invitePath, isLocalizedMessage, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_NOTICES_PATH, PROFILE_PATH, profileNoticePath, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, TILE_GRAPHICS_PATH, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSES_PATH, type ErrorPayload, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseStage } from '@multiverse-kiln/shared';
+import { AVATAR_PREVIEWS_PATH, AVATARS_PATH, ADMIN_ADMINS_PATH, ADMIN_ADMINS_SEARCH_PATH, ADMIN_PATH, ADMIN_PLAYERS_PATH, ADMIN_SESSIONS_PATH, ADMIN_UNIVERSES_PATH, AUTH_PROVIDERS_PATH, AUTH_SESSION_PATH, DEV_TOOLS_PATH, EDITOR_UNIVERSES_PATH,invitePath, isLocalizedMessage, PUBLIC_SITE_SETTINGS_PATH, playerProfilePath, PROFILE_LOCALE_PATH, PROFILE_NOTICES_PATH, PROFILE_PATH, profileNoticePath, MAX_UNIVERSES_PER_PAGE, SITE_SETTINGS_PATH, TILE_GRAPHICS_PATH, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSES_PATH, type ErrorPayload, type UniverseDetails, type UniverseListPayload, type UniversePagePayload, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { adminDb } from '../src/db/adminClient.js';
 import { addServerAdmin } from '../src/db/serverAdminRepo.js';
@@ -139,9 +139,29 @@ describe('HTTP responses', () =>
 		assert.strictEqual(response.status, 404);
 	});
 
+	it('does not answer the dev tools check without dev tools', async () =>
+	{
+		const response = await fetch(`${testServerUrl}${DEV_TOOLS_PATH}`);
+
+		assert.strictEqual(response.status, 404);
+	});
+
+	it('answers an avatar or preview that isn\'t there with a message, not sniffable', async () =>
+	{
+		for (const route of [`${AVATARS_PATH}/00000000-0000-4000-8000-000000000000.png`, `${AVATAR_PREVIEWS_PATH}/stickFigure/pf1e/dwarf-mascThick-darkGreen.png`, `${AVATAR_PREVIEWS_PATH}/nothing/pf1e/dwarf-mascThick-darkGreen.png`])
+		{
+			const response = await fetch(`${testServerUrl}${route}`);
+			const body = await response.text();
+
+			assert.strictEqual(response.status, 404, route);
+			assert.strictEqual(response.headers.get('x-content-type-options'), 'nosniff', route);
+			assert.ok(isLocalizedMessage((JSON.parse(body) as ErrorPayload).error), `${route}: ${body}`);
+		}
+	});
+
 	it('answers a path it can\'t decode with an error message, not a stack trace', async () =>
 	{
-		for (const route of [`${UNIVERSES_PATH}/%E0%A4`, `${TILE_GRAPHICS_PATH}/%E0%A4`])
+		for (const route of [`${UNIVERSES_PATH}/%E0%A4`, `${TILE_GRAPHICS_PATH}/%E0%A4`, `${AVATARS_PATH}/%E0%A4`, `${AVATAR_PREVIEWS_PATH}/stickFigure/pf1e/%E0%A4`])
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 			const body = await response.text();

@@ -7,7 +7,7 @@ import type { Request, Response } from 'express';
 import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceHasTail, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceHasTail, findRaceKind, isDefaultRace, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
@@ -37,6 +37,11 @@ const messages = defineMessages({
 		id: 'error.raceInUse',
 		defaultMessage: 'Characters are this race, so it can\'t be deleted. Disable it instead.',
 		description: 'Why a race the universe added couldn\'t be deleted: players have made characters of it; disabling it only stops new characters choosing it'
+	},
+	invalidRaceLooksLike: {
+		id: 'error.invalidRaceLooksLike',
+		defaultMessage: 'A race can only look like one of the game rules\' own races, and only a race the universe added can choose one.',
+		description: 'Why a race couldn\'t be saved: the race chosen in the race editor\'s "Looks like" field (whose body types and art its characters\' avatars use) isn\'t one of the ruleset\'s default races, or the race being saved is a default race, which always uses its own art'
 	}
 });
 
@@ -93,6 +98,7 @@ export async function createRaceChange(context: ChangeContext, ref: NewRef, sett
 	}
 
 	await checkRace(context, undefined, settings);
+	await checkRaceLooksLike(context, true, settings);
 	recordRef(context, ref, await createCustomRace(version, universe.ruleset, { ...settings, name }, transaction));
 }
 
@@ -122,6 +128,7 @@ export async function saveRaceChange(context: ChangeContext, id: NumberRef, sett
 	}
 
 	await checkRace(context, raceId, settings);
+	await checkRaceLooksLike(context, (kind === 'custom'), settings);
 	await noteRaceTail(context, raceId);
 
 	if (kind === 'default')
@@ -190,6 +197,24 @@ async function noteRaceTail(context: ChangeContext, raceId: number): Promise<voi
 	const { universe, version, transaction } = context;
 
 	context.disablings.raceTail(raceId, await findRaceHasTail(version, universe.ruleset, raceId, transaction));
+}
+
+/**
+ * Refuses a race's "Looks like" unless it is none, or a default race of the universe's ruleset chosen for
+ * a race the universe added
+ *
+ * @param context The save
+ * @param custom Whether the universe added the race
+ * @param settings The race's settings
+ */
+async function checkRaceLooksLike(context: ChangeContext, custom: boolean, settings: RaceSettings): Promise<void>
+{
+	const { looksLikeRaceId } = settings;
+
+	if ((looksLikeRaceId !== null) && (!custom || !await isDefaultRace(context.universe.ruleset, looksLikeRaceId, context.transaction)))
+	{
+		refuse(400, messages.invalidRaceLooksLike);
+	}
 }
 
 /**

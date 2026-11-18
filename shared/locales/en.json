@@ -655,6 +655,26 @@
 		"defaultMessage": "Max number of universes each player can create",
 		"description": "Label of the field on the site settings page for the most universes one player may create"
 	},
+	"appearance.artType": {
+		"defaultMessage": "Art type",
+		"description": "Heading of the choice of how a character's avatar (the picture of the character) is drawn, such as Stick figure, or in the style of an artist named after them: on Create Character's Appearance step, and in the Appearance dialog of a character's sheet"
+	},
+	"appearance.background": {
+		"defaultMessage": "Background",
+		"description": "Heading of the choice of the background behind a character's avatar (the picture of the character), such as Dark green: on Create Character's Appearance step, and in the Appearance dialog of a character's sheet"
+	},
+	"appearance.bodyType": {
+		"defaultMessage": "Body type",
+		"description": "Heading of the choice of a character's body type for their avatar (the picture of the character), such as Femme thin: on Create Character's Appearance step, and in the Appearance dialog of a character's sheet for the universe's creators"
+	},
+	"appearance.none": {
+		"defaultMessage": "Nothing is drawn for this race yet.",
+		"description": "Shown in place of the preview of a character's avatar (the picture of the character) on Create Character's Appearance and review steps and in the Appearance dialog of a character's sheet, when no art is drawn for their race"
+	},
+	"appearance.preview": {
+		"defaultMessage": "Preview of the avatar",
+		"description": "Text read by screen readers for the preview of a character's avatar (the picture of the character), without their items, on Create Character's Appearance and review steps and in the Appearance dialog of a character's sheet"
+	},
 	"area.announce.appeared": {
 		"defaultMessage": "{count, plural, one {{players} comes into view.} other {{players} come into view.}}",
 		"description": "Read out by screen readers when other players come into view in the area; {players} is a list of their names"
@@ -735,6 +755,170 @@
 		"defaultMessage": "Press E to go through",
 		"description": "Shown under the player on a cell linking to another area, such as a door; the E key is the same in every language"
 	},
+	"avatar.artType.stickFigure": {
+		"defaultMessage": "Stick figure",
+		"description": "An art type for a character's avatar (the picture of the character): drawn as a simple stick figure. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet, beside art types named after the artists who drew them"
+	},
+	"avatar.background.darkGreen": {
+		"defaultMessage": "Dark green",
+		"description": "A background behind a character's avatar (the picture of the character): a dark green gradient. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+	},
+	"avatar.background.darkRed": {
+		"defaultMessage": "Dark red",
+		"description": "A background behind a character's avatar (the picture of the character): a dark red gradient. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+	},
+	"avatar.bodyType.femmeThick": {
+		"defaultMessage": "Femme thick",
+		"description": "A body type for a character's avatar (the picture of the character): feminine and heavily built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+	},
+	"avatar.bodyType.femmeThin": {
+		"defaultMessage": "Femme thin",
+		"description": "A body type for a character's avatar (the picture of the character): feminine and slightly built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+	},
+	"avatar.bodyType.mascThick": {
+		"defaultMessage": "Masc thick",
+		"description": "A body type for a character's avatar (the picture of the character): masculine and heavily built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+	},
+	"avatar.bodyType.mascThin": {
+		"defaultMessage": "Masc thin",
+		"description": "A body type for a character's avatar (the picture of the character): masculine and slightly built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+	},
+	"avatar.none": {
+		"defaultMessage": "No avatar yet",
+		"description": "Shown on a character's sheet in place of their avatar (a picture of the character) when nothing is drawn yet for their race, or their race looks like no default race"
+	},
+	"avatarPositions.artType": {
+		"defaultMessage": "Art type",
+		"description": "Label of the avatar positioning tool's choice of art type, such as the stick figure or an artist's style"
+	},
+	"avatarPositions.bodyType": {
+		"defaultMessage": "Body type",
+		"description": "Label of the avatar positioning tool's choice of body type, such as masc thick, whose base the drawing is placed on"
+	},
+	"avatarPositions.canvas": {
+		"defaultMessage": "The drawing's parts on the base",
+		"description": "Accessible name of the avatar positioning tool's picture of the drawing on the chosen base. Its parts are moved from the list of parts beside it"
+	},
+	"avatarPositions.copied": {
+		"defaultMessage": "Copied. Paste it over the drawing in the art type's file.",
+		"description": "On the avatar positioning tool, beside the Copy drawing button once the drawing has been copied as code"
+	},
+	"avatarPositions.copy": {
+		"defaultMessage": "Copy drawing",
+		"description": "Button on the avatar positioning tool that copies the chosen drawing, with its offsets, as code to paste into the avatar manifest"
+	},
+	"avatarPositions.copyFailed": {
+		"defaultMessage": "The browser didn't allow copying.",
+		"description": "On the avatar positioning tool, beside the Copy drawing button when the browser refused to copy to the clipboard"
+	},
+	"avatarPositions.drawing": {
+		"defaultMessage": "Drawing",
+		"description": "Label of the avatar positioning tool's choice among an item's drawings, which can differ by race, body type and slot"
+	},
+	"avatarPositions.drawingFor": {
+		"defaultMessage": "For {races}; body types: {bodyTypes}; slots: {slots}",
+		"description": "On the avatar positioning tool, under the choices, what the chosen item drawing is for: {races}, {bodyTypes} and {slots} are lists of names, and the last two can be \"every one\""
+	},
+	"avatarPositions.drawingNumber": {
+		"defaultMessage": "Drawing {number}",
+		"description": "A choice in the avatar positioning tool's list of an item's drawings; {number} counts them from 1 in the order the manifest lists them"
+	},
+	"avatarPositions.empty": {
+		"defaultMessage": "Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art type's file in shared/src/avatars/, then come back to place the drawings.",
+		"description": "On the avatar positioning tool, a developer's page, while no item drawings have been added to the avatar manifest yet, so there is nothing to place"
+	},
+	"avatarPositions.every": {
+		"defaultMessage": "every one",
+		"description": "On the avatar positioning tool, in \"For {races}; body types: {bodyTypes}; slots: {slots}\", in place of the body types or slots when the drawing doesn't narrow them"
+	},
+	"avatarPositions.heading": {
+		"defaultMessage": "Avatar Positions",
+		"description": "Heading of the avatar positioning tool, a developer's page for placing item drawings on the bases of characters' avatars"
+	},
+	"avatarPositions.intro": {
+		"defaultMessage": "Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art type's file in shared/src/avatars/. Nothing is saved here.",
+		"description": "Explains the avatar positioning tool at the top of the page: choose a drawing and a base, move its parts, then copy the offsets into the avatar manifest's code"
+	},
+	"avatarPositions.item": {
+		"defaultMessage": "Item",
+		"description": "Label of the avatar positioning tool's choice of the item whose drawing is placed"
+	},
+	"avatarPositions.keys.move": {
+		"defaultMessage": "Arrow keys",
+		"description": "In the list of keyboard shortcuts on the avatar positioning tool, the keys that move the chosen part; the keys are the same in every language"
+	},
+	"avatarPositions.keys.moveDescription": {
+		"defaultMessage": "Move the chosen part one pixel, or 10 with Shift",
+		"description": "In the list of keyboard shortcuts on the avatar positioning tool, what the arrow keys do while a part's button in the list of parts has focus"
+	},
+	"avatarPositions.mirroredPartName": {
+		"defaultMessage": "Part {number}, flipped in the {slot}: {file}",
+		"description": "On the avatar positioning tool, the flipped copy of a part of the chosen item drawing, drawn in the off hand or the right ring, in the list of parts and in what is read out as it moves; {number} counts the drawing's parts from 1, {slot} names the slot (such as Off hand), and {file} is its image's file name"
+	},
+	"avatarPositions.missing": {
+		"defaultMessage": "Bases still to place",
+		"description": "Heading of the avatar positioning tool's list of the bases the chosen drawing has no offsets for yet, so it isn't drawn on them"
+	},
+	"avatarPositions.missingFiles": {
+		"defaultMessage": "The manifest names {count, plural, one {a file that isn't} other {files that aren't}} in shared/assets/avatars/: {files}",
+		"description": "On the avatar positioning tool, when the avatar manifest names image files that haven't been added to the art folder; {files} lists their paths"
+	},
+	"avatarPositions.missingFlipped": {
+		"defaultMessage": "{race}, {bodyType}: {count, plural, one {# flipped part has} other {# flipped parts have}} no offset",
+		"description": "On the avatar positioning tool, a base in the list of bases still to place, as a button that shows that base; {race} and {bodyType} name the base, and {count} counts the drawing's parts with no offset there for their flipped copy in the off hand or right ring, which the game doesn't draw there on it"
+	},
+	"avatarPositions.missingParts": {
+		"defaultMessage": "{race}, {bodyType}: {count, plural, one {# part has} other {# parts have}} no offset",
+		"description": "On the avatar positioning tool, a base in the list of bases still to place, as a button that shows that base; {race} and {bodyType} name the base, and {count} counts the drawing's parts with no offset there, which the game doesn't draw on it"
+	},
+	"avatarPositions.moved": {
+		"defaultMessage": "{part} at {x}, {y}",
+		"description": "Read out by screen readers on the avatar positioning tool when a part is moved; {part} names it, and {x} and {y} are where its top left corner is on the base, in pixels"
+	},
+	"avatarPositions.noBases": {
+		"defaultMessage": "None of the races this drawing is for has a base drawn in this art type yet.",
+		"description": "On the avatar positioning tool, when no race the chosen item drawing lists has a base (the drawing of the race's body) in the chosen art type"
+	},
+	"avatarPositions.noItems": {
+		"defaultMessage": "This art type has no item drawings for this ruleset yet.",
+		"description": "On the avatar positioning tool, when the chosen art type has no item drawings in the chosen ruleset's part of the manifest"
+	},
+	"avatarPositions.noneMissing": {
+		"defaultMessage": "The drawing has offsets for every base it is for.",
+		"description": "On the avatar positioning tool, in place of the list of bases still to place, when the chosen drawing has offsets for every base it is for"
+	},
+	"avatarPositions.notPlaced": {
+		"defaultMessage": "Not placed on this base yet",
+		"description": "On the avatar positioning tool, beside a part in the list of parts that has no offset for the chosen base, so the game doesn't draw it there. Moving it gives it one"
+	},
+	"avatarPositions.partName": {
+		"defaultMessage": "Part {number}: {file}",
+		"description": "On the avatar positioning tool, a part of the chosen item drawing in the list of parts and in what is read out as it moves; {number} counts the drawing's parts from 1, and {file} is its image's file name"
+	},
+	"avatarPositions.parts": {
+		"defaultMessage": "Parts",
+		"description": "Heading of the avatar positioning tool's list of the parts of the chosen drawing, each with where it goes on the base"
+	},
+	"avatarPositions.partsHint": {
+		"defaultMessage": "Choose a part, then drag it on the picture, move it with the arrow keys (Shift moves 10 pixels), or type where its top left corner goes.",
+		"description": "Under the heading of the avatar positioning tool's list of parts: how to move a part"
+	},
+	"avatarPositions.race": {
+		"defaultMessage": "Race",
+		"description": "Label of the avatar positioning tool's choice of race, whose base the drawing is placed on"
+	},
+	"avatarPositions.ruleset": {
+		"defaultMessage": "Ruleset",
+		"description": "Label of the avatar positioning tool's choice of ruleset (Pathfinder or Starfinder), whose items and races it lists"
+	},
+	"avatarPositions.title": {
+		"defaultMessage": "Avatar Positions",
+		"description": "The browser tab's title for the avatar positioning tool, a developer's page for placing item drawings on avatar bases, before the game engine's name"
+	},
+	"avatarPositions.unavailable": {
+		"defaultMessage": "The positioning tool only works on a developer's own computer, with the server's dev tools on (ENABLE_DEV_TOOLS).",
+		"description": "On the avatar positioning tool, a developer's page, when the server doesn't have its dev tools turned on (the ENABLE_DEV_TOOLS setting), or can't be reached"
+	},
 	"botCheck.checking": {
 		"defaultMessage": "Checking that you aren't a bot. This usually takes a few seconds and needs nothing from you.",
 		"description": "Shown above a form's button while a bot check (Cloudflare Turnstile) runs, after many tries for an address or from a network, and again once the player has done what it asked; read out to screen readers. Most checks finish on their own"
@@ -766,6 +950,10 @@
 	"botCheck.tryAgain": {
 		"defaultMessage": "Try the check again",
 		"description": "Button under a bot check (Cloudflare Turnstile) that failed or expired, which starts a new check"
+	},
+	"character.appearanceHint": {
+		"defaultMessage": "The body type can't be changed once the character is made. The art type and background can.",
+		"description": "On Create Character's Appearance step, under its heading"
 	},
 	"character.back": {
 		"defaultMessage": "Back",
@@ -903,6 +1091,10 @@
 		"defaultMessage": "Darkvision",
 		"description": "How far a character can see in the dark, if at all: the label on a character's sheet, and of the race editor's field for how far the race's characters can; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
+	"character.heading.appearance": {
+		"defaultMessage": "Choose an appearance",
+		"description": "Heading of the Create Character step where the player chooses how the character's avatar (the picture of the character) is drawn"
+	},
 	"character.heading.class": {
 		"defaultMessage": "Choose a class",
 		"description": "Heading of the Create Character step where the player chooses the character's class"
@@ -922,6 +1114,10 @@
 	"character.heading.theme": {
 		"defaultMessage": "Choose a theme",
 		"description": "Heading of the Create Character step, in Starfinder, where the player chooses the character's theme (a background, such as ace pilot)"
+	},
+	"character.label": {
+		"defaultMessage": "{name} ({description})",
+		"description": "A character's name with their race and class, e.g. \"Mara (Dwarf Fighter)\": the text a screen reader reads for the character's avatar (a picture of the character) wherever it shows, and a choice in the dialog that gives an item to another character in the group; {name} is the character's name and {description} their race and class"
 	},
 	"character.lightSensitivity": {
 		"defaultMessage": "Light sensitivity",
@@ -954,6 +1150,10 @@
 	"character.raceAndClass": {
 		"defaultMessage": "{race} {class}",
 		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles, in the world editor's list of every character in the universe, and in brackets after each character's name in the Give dialog on a character's sheet. Reorder them as your language needs"
+	},
+	"character.review.appearance": {
+		"defaultMessage": "Appearance",
+		"description": "In the review step of Create Character, the label of the body type, art type and background chosen for the character's avatar (the picture of the character), shown with a preview"
 	},
 	"character.review.class": {
 		"defaultMessage": "Class",
@@ -1002,6 +1202,10 @@
 	"character.step.abilities": {
 		"defaultMessage": "Ability scores",
 		"description": "Step of Create Character where the player sets the character's ability scores"
+	},
+	"character.step.appearance": {
+		"defaultMessage": "Appearance",
+		"description": "Step of Create Character where the player chooses how the character's avatar (the picture of the character) is drawn: body type, art type and background"
 	},
 	"character.step.class": {
 		"defaultMessage": "Class",
@@ -1071,6 +1275,34 @@
 		"defaultMessage": "Delete Character",
 		"description": "Title of the dialog that asks whether to delete a character"
 	},
+	"characterSheet.appearance": {
+		"defaultMessage": "Appearance",
+		"description": "Button under a character's avatar (the picture of the character) on their sheet that opens the dialog changing how it is drawn: its art type and background, and for the universe's creators its body type"
+	},
+	"characterSheet.appearanceSaved": {
+		"defaultMessage": "{name}'s appearance has changed.",
+		"description": "Read out by screen readers once the Appearance dialog on a character's sheet saved how their avatar (the picture of the character) is drawn; {name} is the character's name"
+	},
+	"characterSheet.appearanceTitle": {
+		"defaultMessage": "Appearance",
+		"description": "Title of the dialog, opened from a character's sheet, that changes how their avatar (the picture of the character) is drawn"
+	},
+	"characterSheet.avatar": {
+		"defaultMessage": "Avatar",
+		"description": "Heading, read only by screen readers, of the picture of the character at the top of their sheet"
+	},
+	"characterSheet.chooseItem": {
+		"defaultMessage": "Choose an item {name} carries.",
+		"description": "In the dialog choosing the item in one of a character's slots, from their sheet, above the items that fit the slot; {name} is the character's name"
+	},
+	"characterSheet.chooseSlotItem": {
+		"defaultMessage": "Equip in {slot}",
+		"description": "Title of the dialog, opened by a slot's name in the Equipped list of a character's sheet, that chooses the item equipped there; {slot} is the slot's name, such as Main hand"
+	},
+	"characterSheet.chooseSocialItem": {
+		"defaultMessage": "Wear on {slot} for its look",
+		"description": "Title of the dialog, opened by a slot's name in the Social list of a character's sheet, that chooses the item worn there only for how it looks on the character's avatar (the picture of the character); {slot} is the slot's name, such as Shoulders"
+	},
 	"characterSheet.delete": {
 		"defaultMessage": "Delete",
 		"description": "Button on a character's sheet that starts deleting the character, asking first"
@@ -1101,7 +1333,7 @@
 	},
 	"characterSheet.emptySlot": {
 		"defaultMessage": "Empty",
-		"description": "On a character's sheet, in the Equipped list, beside an equipment slot with nothing in it"
+		"description": "On a character's sheet, in the Equipped and Social lists, beside a slot with nothing in it; also the choice in the dialog choosing a slot's item that takes the item out"
 	},
 	"characterSheet.equip": {
 		"defaultMessage": "Equip",
@@ -1171,9 +1403,13 @@
 		"defaultMessage": "Give to",
 		"description": "Label of the field, in the dialog opened by Give in an item's menu on a character's sheet, for which character in the group to give the item to"
 	},
-	"characterSheet.giveToCharacter": {
-		"defaultMessage": "{name} ({description})",
-		"description": "A choice in the dialog that gives an item to another character in the group; {name} is the character's name and {description} their race and class, e.g. \"Dwarf Fighter\""
+	"characterSheet.hide": {
+		"defaultMessage": "Hide",
+		"description": "Toggle button beside each slot in the Equipped and Social lists of a character's sheet; while pressed, the slot is left off the character's avatar (the picture of the character), whatever is in it"
+	},
+	"characterSheet.hideSlot": {
+		"defaultMessage": "Hide {slot}",
+		"description": "Name for screen readers of the Hide toggle beside a slot in the Equipped and Social lists of a character's sheet; while pressed, the slot is left off the character's avatar (the picture of the character), whatever is in it. {slot} is the slot's name, such as Shoulders"
 	},
 	"characterSheet.hitPoints": {
 		"defaultMessage": "Hit points",
@@ -1235,6 +1471,10 @@
 		"defaultMessage": "Loading the character sheet...",
 		"description": "Shown in a character's sheet while the character loads"
 	},
+	"characterSheet.lookFailed": {
+		"defaultMessage": "Could not change how the character looks.",
+		"description": "Shown on a character's sheet, or in its Appearance dialog, when wearing an item for its look, hiding a slot from the avatar (the picture of the character) or changing the appearance failed"
+	},
 	"characterSheet.money": {
 		"defaultMessage": "Money",
 		"description": "On a character's sheet, the label of the coins they carry, such as 15gp 5sp"
@@ -1242,6 +1482,10 @@
 	"characterSheet.noItems": {
 		"defaultMessage": "Carries nothing.",
 		"description": "Shown on a character's sheet instead of their equipment when they carry no items"
+	},
+	"characterSheet.nothingFits": {
+		"defaultMessage": "{name} carries nothing that goes there.",
+		"description": "In the dialog choosing the item in one of a character's slots, from their sheet, when they carry no item that fits the slot; {name} is the character's name"
 	},
 	"characterSheet.offHandTaken": {
 		"defaultMessage": "Holding {item} with the main hand",
@@ -1267,6 +1511,22 @@
 		"defaultMessage": "Size",
 		"description": "On a character's sheet, the label of their size, such as Medium"
 	},
+	"characterSheet.slotChanged": {
+		"defaultMessage": "{item, select, none {{slot} is empty.} other {{name} has {item} in {slot}.}}",
+		"description": "Read out by screen readers once the item in one of a character's slots was chosen from their sheet; {slot} is the slot's name, such as Shoulders, {name} the character's name, and {item} the item's name, or \"none\" when the slot was emptied"
+	},
+	"characterSheet.slotHiddenAnnouncement": {
+		"defaultMessage": "{hidden, select, true {{slot} is hidden on {name}'s avatar.} other {{slot} shows on {name}'s avatar again.}}",
+		"description": "Read out by screen readers once the Hide toggle beside a slot on a character's sheet was pressed or released; {slot} is the slot's name, such as Shoulders, and {name} the character's name"
+	},
+	"characterSheet.social": {
+		"defaultMessage": "Social",
+		"description": "Heading on a character's sheet of their social slots: items worn only for how they look on the character's avatar (the picture of the character), which give nothing"
+	},
+	"characterSheet.socialAbout": {
+		"defaultMessage": "Items worn only for their look. They show on the avatar in place of what is equipped.",
+		"description": "Under the Social heading on a character's sheet: what its slots are for"
+	},
 	"characterSheet.staminaPoints": {
 		"defaultMessage": "Stamina points",
 		"description": "On a character's sheet in Starfinder, the label of their stamina points, which are lost before hit points and come back with rest"
@@ -1290,6 +1550,14 @@
 	"characterSheet.unequipped": {
 		"defaultMessage": "{name} unequipped {item}.",
 		"description": "Read out by screen readers once an item was unequipped from its menu on a character's sheet; {name} is the character's name and {item} the item's name. The character still carries it"
+	},
+	"characterSheet.wearSocially": {
+		"defaultMessage": "Wear socially",
+		"description": "Item in the menu beside an item on a character's sheet that wears it in its social slot: only for how it looks on the character's avatar (the picture of the character), in place of what is equipped there. It gives nothing"
+	},
+	"characterSheet.woreSocially": {
+		"defaultMessage": "{name} wears {item} on {slot} for its look.",
+		"description": "Read out by screen readers once an item was worn in a social slot from its menu on a character's sheet; {name} is the character's name, {item} the item's name and {slot} the slot's name, such as Shoulders"
 	},
 	"characters.barred": {
 		"defaultMessage": "{bar, select, race {Can't play: your race is disabled} other {Can't play: your class is disabled}}",
@@ -2935,6 +3203,14 @@
 		"defaultMessage": "Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players.",
 		"description": "Explains the item editor's Equips to field"
 	},
+	"editor.item.looksLikeFailed": {
+		"defaultMessage": "Could not load the items it can look like.",
+		"description": "Shown in the item editor when the game's own items, which the Looks like field chooses from, couldn't be loaded"
+	},
+	"editor.item.looksLikeHint": {
+		"defaultMessage": "The game's own item whose drawing shows this item on characters' avatars. Type to find one.",
+		"description": "Explains the item editor's Looks like field, shown only for an item the universe added; typing part of a name finds the game's items"
+	},
 	"editor.item.type": {
 		"defaultMessage": "Type",
 		"description": "Label of the filter for items of one type, such as light blades or light armor, on the Items tab and in the dialog for choosing items"
@@ -3194,6 +3470,14 @@
 	"editor.lobby.timeHint": {
 		"defaultMessage": "Actions take no time in the lobby, so the time of day in every area below the lobby region follows this instead of their own passage of time.",
 		"description": "Explains the lobby's passage of time on the editor's Lobby tab"
+	},
+	"editor.looksLike": {
+		"defaultMessage": "Looks like",
+		"description": "Label of the field, in the race and item editors, for a race or item the universe added: one of the game rules' own races or items whose art it uses on characters' avatars (pictures of the characters), since only those have art. Also names the setting in the list of what a save changed, on the editor's Audit tab"
+	},
+	"editor.looksLike.none": {
+		"defaultMessage": "Nothing (no art)",
+		"description": "In the race and item editors' \"Looks like\" field, the choice for a race or item the universe added that uses no art on characters' avatars: characters of such a race have no avatar, and such an item isn't drawn. Also the field's value on the editor's Audit tab once a save chose it"
 	},
 	"editor.neighborAdd.added": {
 		"defaultMessage": "Added {area} {side, select, north {north} east {east} south {south} other {west}} of this area.",
@@ -3582,6 +3866,14 @@
 	"editor.race.lightSensitivityHint": {
 		"defaultMessage": "Bright light dazzles the race's characters, so they see only half as far in full daylight.",
 		"description": "Explains the race editor's Light sensitivity checkbox"
+	},
+	"editor.race.looksLikeFailed": {
+		"defaultMessage": "Could not load the races it can look like.",
+		"description": "Shown in the race editor when the game's own races, which the Looks like field chooses from, couldn't be loaded"
+	},
+	"editor.race.looksLikeHint": {
+		"defaultMessage": "Characters of this race are drawn on their avatars as this race, with its body types.",
+		"description": "Explains the race editor's Looks like field, shown only for a race the universe added"
 	},
 	"editor.race.size": {
 		"defaultMessage": "Size",
@@ -5667,6 +5959,14 @@
 		"defaultMessage": "That code isn't right, or was already used. Check that your device's clock is right, and enter the newest code, or use a recovery code.",
 		"description": "Shown under the two-factor code field when the authenticator or recovery code is wrong, or was already used"
 	},
+	"error.bodyTypeFixed": {
+		"defaultMessage": "Only the universe's creators can change a character's body type.",
+		"description": "Why a character's appearance wasn't changed from their sheet: the player asked to change the body type of their avatar, which they can only choose when making the character"
+	},
+	"error.bodyTypeUnavailable": {
+		"defaultMessage": "That body type isn't drawn for the character's race. Choose another.",
+		"description": "Why a character wasn't made, or their appearance changed: the body type chosen for their avatar isn't one of their race's, perhaps because the universe's creators changed what the race looks like"
+	},
 	"error.builderDraftRequiredSave": {
 		"defaultMessage": "Builders make their changes to this universe in its draft while it's ready for everyone, so changes to the live version can't be saved. Open the draft, or start one, and make your changes there.",
 		"description": "Why the world editor couldn't save: the player is a builder, the universe is in the stage \"let there be light\" (open to everyone), and its creators require builders to make their changes in its draft, a copy players don't see until a creator applies it. Starting a draft and leaving the universe can still be saved"
@@ -5831,6 +6131,14 @@
 		"defaultMessage": "The server is busy importing other files. Try again in a minute.",
 		"description": "Why a file wasn't imported into a universe's draft, or previewed: other players are importing as many files as the server reads at once"
 	},
+	"error.invalidItemLooksLike": {
+		"defaultMessage": "An item can only look like one of the game rules' own items, and only an item the universe added can choose one.",
+		"description": "Why an item couldn't be saved: the item chosen in the item editor's \"Looks like\" field (whose drawing the item uses on characters' avatars) isn't one of the ruleset's default items, or the item being saved is a default item, which always uses its own drawing"
+	},
+	"error.invalidRaceLooksLike": {
+		"defaultMessage": "A race can only look like one of the game rules' own races, and only a race the universe added can choose one.",
+		"description": "Why a race couldn't be saved: the race chosen in the race editor's \"Looks like\" field (whose body types and art its characters' avatars use) isn't one of the ruleset's default races, or the race being saved is a default race, which always uses its own art"
+	},
 	"error.invalidRequest": {
 		"defaultMessage": "The request isn't valid ({problem}).",
 		"description": "Why the server refused a request the page should never send; {problem} is a technical description in English"
@@ -5927,6 +6235,14 @@
 		"defaultMessage": "The area doesn't exist.",
 		"description": "Why a request about an area failed: it was deleted, perhaps by another editor"
 	},
+	"error.noSuchAvatar": {
+		"defaultMessage": "The character has no avatar.",
+		"description": "Why a character's avatar (the picture of the character) couldn't be loaded: there is no such character, or nothing is drawn for their race yet"
+	},
+	"error.noSuchAvatarPreview": {
+		"defaultMessage": "Nothing is drawn for that appearance.",
+		"description": "Why the preview of a character's avatar on Create Character's Appearance step couldn't be loaded: no art is drawn for the race, body type and art type chosen"
+	},
 	"error.noSuchCharacter": {
 		"defaultMessage": "The character doesn't exist, or isn't yours.",
 		"description": "Why a character's sheet couldn't be shown: the character isn't one of the player's in this universe"
@@ -5995,6 +6311,10 @@
 		"defaultMessage": "The tile chosen to replace it doesn't exist.",
 		"description": "Why a tile couldn't be deleted: the tile chosen to paint the areas with in its place isn't one of the universe's tiles, perhaps because it was deleted"
 	},
+	"error.noSuchSlot": {
+		"defaultMessage": "The character has no such slot.",
+		"description": "Why a slot wasn't hidden from or shown on a character's avatar, or an item worn in it for its look: the slot isn't one of the universe's ruleset's"
+	},
 	"error.noSuchTheme": {
 		"defaultMessage": "The theme doesn't exist.",
 		"description": "Why a request about a theme (a character background, such as ace pilot or scholar) failed: it was deleted, perhaps by another editor"
@@ -6042,6 +6362,10 @@
 	"error.notServerAdmin": {
 		"defaultMessage": "Only the site's admins can use this page.",
 		"description": "Why an admin page, such as the site settings or the list of players, was refused: the player isn't one of the site's admins"
+	},
+	"error.notSocial": {
+		"defaultMessage": "That item can't be worn there for its look.",
+		"description": "Why an item wasn't worn in a social slot (worn only for how it looks on the character's avatar) from a character's sheet: it doesn't go in that slot, or it is a weapon or shield, perhaps because the universe's creators changed where it equips"
 	},
 	"error.onlyAnchorInvites": {
 		"defaultMessage": "Only the anchor being's player can invite others to the group.",
@@ -6146,6 +6470,10 @@
 	"error.scoresChanged": {
 		"defaultMessage": "The universe has changed how ability scores are made. Close Create Character and open it again.",
 		"description": "Why a new character wasn't made: the universe's editor changed between rolling and buying ability scores, or how they are rolled, while the player was making the character"
+	},
+	"error.socialItemNotCarried": {
+		"defaultMessage": "The character doesn't carry that item any more.",
+		"description": "Why an item wasn't worn in a social slot (worn only for how it looks on the character's avatar) from a character's sheet: the character no longer carries it, perhaps because it was discarded or given away in another window first"
 	},
 	"error.somethingWentWrong": {
 		"defaultMessage": "Something went wrong on the server.",
@@ -10112,12 +10440,12 @@
 		"description": "On the license page, a link to the text of the license that comes with the Alegreya font, in English"
 	},
 	"license.artwork": {
-		"defaultMessage": "Logo and tilesets",
-		"description": "Heading of the license page's section crediting the artist who made the game's logo and default tilesets, and its link in the page's contents"
+		"defaultMessage": "Logo, tilesets and avatars",
+		"description": "Heading of the license page's section crediting the artist who made the game's logo, default tilesets and avatar art, and its link in the page's contents"
 	},
 	"license.artworkCredit": {
-		"defaultMessage": "The logo and the default tilesets were drawn by {artist}.",
-		"description": "On the license page, crediting the artist who made the game's logo and the default tilesets (the tile images new areas are drawn with); {artist} is the artist's name, linking to their portfolio, the same in every language"
+		"defaultMessage": "The logo, the default tilesets and the Lucia avatar art were drawn by {artist}.",
+		"description": "On the license page, crediting the artist who made the game's logo, the default tilesets (the tile images new areas are drawn with) and the avatar art of the Lucia art type (the pictures of characters); {artist} is the artist's name, linking to their portfolio, the same in every language"
 	},
 	"license.assets": {
 		"defaultMessage": "Art and other assets",

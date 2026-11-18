@@ -7,7 +7,7 @@ import { unequipNote } from './equipmentText';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { itemName } from './itemNames';
-import { characterDescription } from './raceAndClassNames';
+import { characterLabel } from './raceAndClassNames';
 
 /**
  * Gives some of an item to another character; rejects when it couldn't
@@ -127,14 +127,7 @@ export class GiveItemDialog
 			const option = document.createElement('option');
 
 			option.value = member.characterId;
-			option.textContent = t({
-				id: 'characterSheet.giveToCharacter',
-				defaultMessage: '{name} ({description})',
-				description: 'A choice in the dialog that gives an item to another character in the group; {name} is the character\'s name and {description} their race and class, e.g. "Dwarf Fighter"'
-			}, {
-				name: member.name,
-				description: characterDescription(member, sheet.ruleset)
-			});
+			option.textContent = characterLabel(member, sheet.ruleset);
 
 			return(option);
 		}));

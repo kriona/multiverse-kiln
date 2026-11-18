@@ -1,5 +1,5 @@
 import { ServerError, type Client } from '@colyseus/sdk';
-import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload, type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type CharacterDeletionPayload, type CharacterItemsRequest, type CharacterSheet, type EquipHand, type EquipRequest, type EquipRing, type GiveItemsRequest, type UnequipRequest, type GroupCharacterRequest, type ItemQuantity, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { EDITOR_UNIVERSES_PATH, EDITOR_VERSION_PARAM, isLocalizedMessage, UNIVERSE_DELETION_PATH, UNIVERSE_EXPORT_PATH, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, type UniverseImportPreview, type UniverseDeleteRequest, type UniverseDeletionPayload, type UniverseVersionName, MAX_TILES_PER_PAGE, type UniverseTextListPayload, type UniverseTextListQuery, type ChunkListPayload, type ChunkRange, type ClassListPayload, type CreatedPayload, type DifficultyLevel, type DifficultyLevelListPayload, type EditableUniverse, type EditableUniverseListPayload, type CharacterDeletionPayload, type CharacterItemsRequest, type CharacterSheet, type EquipHand, type EquipRequest, type EquipRing, type GiveItemsRequest, type UnequipRequest, type AppearanceRequest, type HiddenSlotRequest, type SocialSlotRequest, type GroupCharacterRequest, type ItemQuantity, type EditorCharacterListPayload, type EditorCharacterListQuery, type EditorClass, type EditorRace, type UniverseEditListPayload, type UniverseEditListQuery, type EditorTile, type EditorArea, type EditorAreaLink, type ItemListPayload, type ItemListQuery, type NewUniverseRequest, type RaceListPayload, type RulesetSettings, type EditorTheme, type ThemeListPayload, type TileGraphicListPayload, type TileListPayload, type TileListQuery, type TileUsagePayload, type UploadedTileGraphic, type AreaLinkListPayload, type AreaListPayload, type MessageSource, type MessageValues, type EditorChange, type ChangeImpact, type SaveChangesPayload, type SaveChangesRequest, type SaveImpactPayload, type PlayerMatch, type PlayerSearchPayload, type PlayerSearchQuery, type UniverseEditorListPayload, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { localizedText, t } from '../localization';
 
@@ -405,6 +405,56 @@ export class EditorApi
 		};
 
 		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/items/unequip`, request, undefined, 'live');
+	}
+
+	/**
+	 * Wears an item a player's character in a universe carries in a social slot, or empties it, as one of
+	 * the universe's creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param slot The social slot
+	 * @param itemId The item, or null to empty the slot
+	 */
+	async wearSocially(universeId: string, characterId: string, slot: string, itemId: number | null): Promise<void>
+	{
+		const request: SocialSlotRequest = {
+			slot,
+			itemId
+		};
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/social`, request, undefined, 'live');
+	}
+
+	/**
+	 * Hides a slot from a player's character's avatar, or shows it again, as one of the universe's creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param slot The slot
+	 * @param hidden Whether to hide it
+	 */
+	async setSlotHidden(universeId: string, characterId: string, slot: string, hidden: boolean): Promise<void>
+	{
+		const request: HiddenSlotRequest = {
+			slot,
+			hidden
+		};
+
+		await this.send('POST', `${editorCharacterPath(universeId, characterId)}/hidden-slots`, request, undefined, 'live');
+	}
+
+	/**
+	 * Changes how a player's character's avatar is drawn, their body type included, as one of the
+	 * universe's creators
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param appearance The body type, art type and background
+	 */
+	async changeAppearance(universeId: string, characterId: string, appearance: AppearanceRequest): Promise<void>
+	{
+		await this.send('PUT', `${editorCharacterPath(universeId, characterId)}/appearance`, appearance, undefined, 'live');
 	}
 
 	/**

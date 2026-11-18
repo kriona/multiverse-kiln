@@ -4,6 +4,7 @@
  * Open Game Content from the Starfinder Roleplaying Game Core Rulebook, used under the Open Game License
  * 1.0a (client/license.html)
  */
+import { STARTING_BODY_TYPES, type BodyType } from '../../avatars/bodyTypes.js';
 import { defineMessages, type MessageDescriptor } from '../../localization.js';
 import { emptySf1eAbilityScores, type Sf1eAbilityScores } from './abilities.js';
 import type { Darkvision } from '../../vision.js';
@@ -185,6 +186,20 @@ export const SF1E_RACES = {
 } as const satisfies Record<string, Sf1eRaceDefaults>;
 
 export type Sf1eRaceKey = keyof typeof SF1E_RACES;
+
+/**
+ * The body types each default race's avatars are drawn in, the same for every art type (see Avatars in
+ * STRUCTURE-OVERVIEW.md). A character with a body type their race's list doesn't have is drawn as its first
+ */
+export const SF1E_RACE_BODY_TYPES: Record<Sf1eRaceKey, readonly BodyType[]> = {
+	android: STARTING_BODY_TYPES,
+	human: STARTING_BODY_TYPES,
+	kasatha: STARTING_BODY_TYPES,
+	lashunta: STARTING_BODY_TYPES,
+	shirren: STARTING_BODY_TYPES,
+	vesk: STARTING_BODY_TYPES,
+	ysoki: STARTING_BODY_TYPES
+};
 
 /**
  * Each default race's name

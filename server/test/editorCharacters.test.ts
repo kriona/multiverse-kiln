@@ -197,7 +197,7 @@ describe('A character\'s sheet in the editor', () =>
 	it('lets creators give a character enabled items, adding to what they carry', async () =>
 	{
 		const [first] = await usableItems();
-		const torch = await saveChange<number>(ada, universeId, { kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } });
+		const torch = await saveChange<number>(ada, universeId, { kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true } });
 		const second = { id: torch.body.id };
 		const before = (await send<CharacterSheet>(ada, 'GET', `/${universeId}/characters/${characterId}`)).body.items;
 		const carried = (itemId: number, sheet: CharacterSheet['items']): number => (sheet.find((item) => (item.id === itemId))?.quantity ?? 0);
@@ -223,7 +223,7 @@ describe('A character\'s sheet in the editor', () =>
 	it('refuses to give disabled items, unknown items, or to builders', async () =>
 	{
 		const [item] = await usableItems();
-		const saved = await saveChanges(ada, universeId, [{ kind: 'saveItem', id: item.id, settings: { name: item.name, description: null, category: item.category, types: item.types, equips: item.equips, enabled: false }, whenDisabled: 'keep' }]);
+		const saved = await saveChanges(ada, universeId, [{ kind: 'saveItem', id: item.id, settings: { name: item.name, description: null, category: item.category, types: item.types, equips: item.equips, looksLikeItemId: null, enabled: false }, whenDisabled: 'keep' }]);
 		const give = (editor: Editor, items: unknown) => send(editor, 'POST', `/${universeId}/characters/${characterId}/items`, { body: { items } });
 
 		assert.strictEqual(saved.status, 200, JSON.stringify(saved.body));
@@ -242,7 +242,7 @@ describe('A character\'s sheet in the editor', () =>
 	it('lets creators discard a character\'s items, all of an item when asked for as many or more', async () =>
 	{
 		const [dagger] = await usableItems();
-		const torch = await saveChange<number>(ada, universeId, { kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } });
+		const torch = await saveChange<number>(ada, universeId, { kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true } });
 		const torchId = torch.body.id;
 		const remove = (editor: Editor, items: unknown) => send(editor, 'POST', `/${universeId}/characters/${characterId}/items/discard`, { body: { items } });
 		const carried = async (itemId: number): Promise<number> => ((await send<CharacterSheet>(ada, 'GET', `/${universeId}/characters/${characterId}`)).body.items.find((item) => (item.id === itemId))?.quantity ?? 0);

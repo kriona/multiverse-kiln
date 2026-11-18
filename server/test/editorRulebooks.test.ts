@@ -100,6 +100,7 @@ describe('Rulebooks', () =>
 				category: item.category,
 				types: item.types,
 				equips: item.equips,
+				looksLikeItemId: null,
 				enabled
 			},
 			whenDisabled

@@ -1,10 +1,11 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
 import http from 'http';
-import { DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_REGIONS, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type AreaListPayload, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedRegion, type ExportedTilesets, type ExportedTranslations, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
+import { DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, EDITOR_UNIVERSES_PATH, emptyMoney, MAX_AREA_LINKS, MAX_AREA_SIDE, MAX_AREAS_PER_UNIVERSE, MAX_UNIVERSE_IMPORT_JSON_BYTES, MAX_UNIVERSE_IMPORT_JSON_FILE_BYTES, MAX_UPLOADED_TILE_GRAPHICS, NEW_PF1E_RACE_RULES, sourceTextHash, UNIVERSE_EXPORT_AREA_LEGEND, UNIVERSE_EXPORT_AREAS, UNIVERSE_EXPORT_CLASSES, UNIVERSE_EXPORT_ITEMS, UNIVERSE_EXPORT_LIVE_IDS, UNIVERSE_EXPORT_MANIFEST, UNIVERSE_EXPORT_PATH, UNIVERSE_EXPORT_SIGNATURE, UNIVERSE_EXPORT_RACES, UNIVERSE_EXPORT_REGIONS, UNIVERSE_EXPORT_TILESETS, UNIVERSE_EXPORT_TRANSLATIONS, UNIVERSE_IMPORT_PATH, UNIVERSE_IMPORT_PREVIEW_PATH, UNIVERSE_IMPORT_RIGHTS_PARAM, VOID_CELL, type AreaListPayload, type EditableUniverse, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type ErrorPayload, type ExportedArea, type ExportedLiveIds, type ExportedRegion, type ExportedTilesets, type ExportedTranslations, type ItemListPayload, type RaceListPayload, type TileSettings, type UniverseExport, type UniverseImportPreview } from '@multiverse-kiln/shared';
 
 import { readZip, zipArchive, zipFile } from '../src/archives/zip.js';
 import { adminDb } from '../src/db/adminClient.js';
+import { findDefaultItemIds } from '../src/db/itemRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
 import { createTileGraphic, tileGraphicStorageKey } from '../src/db/tileGraphicRepo.js';
 import { listUniverseEdits } from '../src/db/universeEditRepo.js';
@@ -371,7 +372,7 @@ describe('importing a universe', () =>
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, uploadedGraphicId: 'new:mossy' } },
 			{ kind: 'editCells', areaId: caveId, changes: [[0, 0, 'new:moss'], [12, -3, VOID_CELL]] },
 			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
-			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } },
+			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true } },
 			{ kind: 'saveTranslatorNote', text: { kind: 'area', thingId: caveId, field: 'name' }, note: 'A dark place' },
 			{ kind: 'saveNoTranslation', text: { kind: 'universe', thingId: kilnhavenId, field: 'name' }, noTranslation: true }
 		]);
@@ -391,6 +392,7 @@ describe('importing a universe', () =>
 					startingAreaId: caveId,
 					startingColumn: 0,
 					startingRow: 0,
+					looksLikeRaceId: null,
 					rules: NEW_PF1E_RACE_RULES
 				}
 			},
@@ -835,8 +837,8 @@ describe('importing a universe', () =>
 		const starfinderId = await createUniverse(ada, 'Starfall', 'sf1e');
 
 		await saveAll(ada, starfinderId, [
-			{ kind: 'createItem', ref: 'new:blaster', settings: { name: 'Blaster', description: null, category: 'weapon', types: ['small_arms'], equips: 'oneHand', enabled: true } },
-			{ kind: 'createItem', ref: 'new:beacon', settings: { name: 'Beacon', description: null, category: 'gear', types: ['light_source'], equips: 'none', enabled: true } }
+			{ kind: 'createItem', ref: 'new:blaster', settings: { name: 'Blaster', description: null, category: 'weapon', types: ['small_arms'], equips: 'oneHand', looksLikeItemId: null, enabled: true } },
+			{ kind: 'createItem', ref: 'new:beacon', settings: { name: 'Beacon', description: null, category: 'gear', types: ['light_source'], equips: 'none', looksLikeItemId: null, enabled: true } }
 		]);
 
 		const contents = await contentsOf(await exportArchive(ada, starfinderId));
@@ -894,6 +896,65 @@ describe('importing a universe', () =>
 		assert.strictEqual(draft.items?.find((item) => (item.name === 'Lantern'))?.equips, 'none');
 		assert.strictEqual(tailOf(draft.races?.find((race) => (race.key === 'kobold'))), true);
 		assert.strictEqual(tailOf(draft.races?.find((race) => (race.name === 'Molefolk'))), false);
+	});
+
+	it('imports what races and items look like by the defaults\' keys, and none from a file exported before they had it', async () =>
+	{
+		const races = (await send<RaceListPayload>(ada, 'GET', `/${kilnhavenId}/races`)).body.races;
+		const longswordId = (await findDefaultItemIds('pf1e')).get('longsword') as number;
+		const elf = races.find((race) => (race.key === 'elf')) as EditorRace;
+		const mole = races.find((race) => (race.name === 'Molefolk')) as EditorRace;
+		const lantern = (await send<ItemListPayload>(ada, 'GET', `/${kilnhavenId}/items?custom=true`)).body.items.find((item) => (item.name === 'Lantern')) as EditorItem;
+
+		await saveAll(ada, kilnhavenId, [
+			{ kind: 'saveRace', id: mole.id, settings: { ...mole, looksLikeRaceId: elf.id } },
+			{ kind: 'saveItem', id: lantern.id, settings: { ...lantern, looksLikeItemId: longswordId } }
+		]);
+
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const otherId = await createUniverse(ada, 'Otherhaven');
+		const looksOf = async (): Promise<[number | null | undefined, number | null | undefined]> =>
+		{
+			const draft = await draftOf(ada, otherId);
+
+			return([draft.races?.find((race) => (race.name === 'Molefolk'))?.looksLikeRaceId, draft.items?.find((item) => (item.name === 'Lantern'))?.looksLikeItemId]);
+		};
+
+		assert.strictEqual(contents.races?.find((race) => (race.name === 'Molefolk'))?.looksLikeRaceId, elf.id);
+
+		// Another site gives the defaults other IDs, which the file's lists name with their keys
+		contents.items = contents.items?.map((item) => ((item.id === longswordId) ? { ...item, id: 999999 } : ((item.name === 'Lantern') ? { ...item, looksLikeItemId: 999999 } : item)));
+		contents.races = contents.races?.map((race) => ((race.id === elf.id) ? { ...race, id: 999999 } : ((race.name === 'Molefolk') ? { ...race, looksLikeRaceId: 999999 } : race)));
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const imported = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+		assert.deepStrictEqual(await looksOf(), [elf.id, longswordId]);
+
+		// A default the file doesn't list looks like none
+		contents.races = contents.races?.map((race) => ((race.name === 'Molefolk') ? { ...race, looksLikeRaceId: 999998 } : race));
+
+		const unlisted = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(unlisted.status, 204, JSON.stringify(unlisted.body));
+		assert.deepStrictEqual(await looksOf(), [null, longswordId]);
+
+		/**
+		 * A race or item as a file exported before they had "Looks like" holds it
+		 *
+		 * @param thing The race or item
+		 * @return The same, without it
+		 */
+		const withoutLooks = <T extends object>(thing: T): T => Object.fromEntries(Object.entries(thing).filter(([field]) => !field.startsWith('looksLike'))) as T;
+
+		contents.races = contents.races?.map(withoutLooks);
+		contents.items = contents.items?.map(withoutLooks);
+
+		const old = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(old.status, 204, JSON.stringify(old.body));
+		assert.deepStrictEqual(await looksOf(), [null, null]);
 	});
 
 	it('imports the descriptions of items, races and classes with their translations, and none from a file exported before they had them', async () =>

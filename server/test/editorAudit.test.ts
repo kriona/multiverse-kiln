@@ -210,6 +210,39 @@ describe('The editor\'s audit of saves', () =>
 		]);
 	});
 
+	it('names what a custom race or item looks like, and none', async () =>
+	{
+		const races = (await send<RaceListPayload>(ada, 'GET', `/${universeId}/races`)).body.races;
+		const items = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items`)).body.items;
+		const dwarf = races.find((race) => (race.key === 'dwarf'))!;
+		const dagger = items.find((item) => (item.key === 'dagger'))!;
+		const mole = { ...dwarf, name: 'Molefolk', looksLikeRaceId: null };
+		const shiv = { ...dagger, name: 'Shiv', looksLikeItemId: null };
+		const created = await saveChanges(ada, universeId, [
+			{ kind: 'createRace', ref: 'new:mole', settings: mole },
+			{ kind: 'createItem', ref: 'new:shiv', settings: shiv }
+		]);
+		const moleId = Number(created.body.ids['new:mole']);
+		const shivId = Number(created.body.ids['new:shiv']);
+
+		assert.strictEqual(created.status, 200);
+		assert.strictEqual((await saveChanges(ada, universeId, [
+			{ kind: 'saveRace', id: moleId, settings: { ...mole, looksLikeRaceId: dwarf.id } },
+			{ kind: 'saveItem', id: shivId, settings: { ...shiv, looksLikeItemId: dagger.id } }
+		])).status, 200);
+		assert.strictEqual((await saveChanges(ada, universeId, [{ kind: 'saveRace', id: moleId, settings: mole }])).status, 200);
+
+		const [cleared, chosen] = (await send<UniverseEditListPayload>(ada, 'GET', `/${universeId}/audit`)).body.edits;
+
+		assert.deepStrictEqual(chosen.details, [
+			{ subject: 'race', action: 'changed', target: { key: null, name: 'Molefolk' }, fields: [{ field: 'looksLike', value: { key: 'dwarf', name: null } }], count: 1 },
+			{ subject: 'item', action: 'changed', target: { key: null, name: 'Shiv' }, fields: [{ field: 'looksLike', value: { key: 'dagger', name: null } }], count: 1 }
+		]);
+		assert.deepStrictEqual(cleared.details, [
+			{ subject: 'race', action: 'changed', target: { key: null, name: 'Molefolk' }, fields: [{ field: 'looksLike', value: null }], count: 1 }
+		]);
+	});
+
 	it('describes changes to editors, settings, classes and difficulty levels, naming what settings name', async () =>
 	{
 		const grace = await logIn('Grace');

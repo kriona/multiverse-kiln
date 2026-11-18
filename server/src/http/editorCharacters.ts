@@ -2,7 +2,8 @@
  * The world editor's routes for the characters made in a universe (listed in shared/src/editor.ts), for
  * the Character List tab: listing them and showing their sheets, and for creators, deleting them, giving
  * them their last rites, restoring them, taking them out of their groups, giving and discarding items,
- * and equipping, unequipping and giving away what they carry.
+ * equipping, unequipping and giving away what they carry, wearing items in their social slots, hiding
+ * slots from their avatars, and changing their appearance, their body type included.
  * Characters belong to their players rather than the universe, so these change them immediately, as
  * their players' own routes do
  */
@@ -20,7 +21,7 @@ import { inTransaction } from '../db/transactions.js';
 import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { characterItemChanges } from '../players/characterItemChanges.js';
-import { characterItemsRequest, characterSheetOf, deleteCharacterNow, discardItems, equipItem, equipRequest, giveItems, giveItemsRequest as giveToCharacterRequest, giveLastRites, restoreCharacterOf, unequipItem, unequipRequest } from './characters.js';
+import { appearanceRequest, changeAppearance, characterItemsRequest, characterSheetOf, deleteCharacterNow, discardItems, equipItem, equipRequest, giveItems, giveItemsRequest as giveToCharacterRequest, giveLastRites, hiddenSlotRequest, restoreCharacterOf, setHiddenSlot, socialSlotRequest, unequipItem, unequipRequest, wearSocialItem } from './characters.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { editorCharacterListQuery } from './editorPayloads.js';
 import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -79,6 +80,9 @@ export function addCharacterListRoutes(router: express.Router): void
 	router.post('/characters/:characterId/items/equip', ...manage, itemRoute(equipRequest, equipItem));
 	router.post('/characters/:characterId/items/unequip', ...manage, itemRoute(unequipRequest, unequipItem));
 	router.post('/characters/:characterId/items/give', ...manage, itemRoute(giveToCharacterRequest, giveItems));
+	router.post('/characters/:characterId/social', ...manage, itemRoute(socialSlotRequest, wearSocialItem));
+	router.post('/characters/:characterId/hidden-slots', ...manage, itemRoute(hiddenSlotRequest, setHiddenSlot));
+	router.put('/characters/:characterId/appearance', ...manage, itemRoute(appearanceRequest, (universe, characterId, request, playerId, noSuchCharacter) => changeAppearance(universe, characterId, request, playerId, noSuchCharacter, true)));
 	router.post('/groups/:groupId/leave', ...manage, leaveGroupRoute);
 }
 

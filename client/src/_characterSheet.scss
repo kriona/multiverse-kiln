@@ -200,3 +200,77 @@ button.character-sheet-delete
 	margin: 0;
 	color: $text-faint;
 }
+
+// The avatar, with the Appearance button under it
+.character-sheet-avatar-section
+{
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+// A slot's name, which chooses its item
+.character-sheet-slot-button
+{
+	color: $text-muted;
+	text-align: start;
+}
+
+// The Equipped and Social lists keep each slot's Hide toggle at the end of its row
+.character-sheet-equipped dd
+{
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+
+	> span
+	{
+		flex: 1;
+	}
+}
+
+// A pressed toggle has a thicker, brighter border, so it doesn't show by color alone
+button.character-sheet-hide
+{
+	@include small-text;
+	padding: 2px 8px;
+
+	&[aria-pressed="true"]
+	{
+		border: 2px solid $text;
+		background-color: $background-secondary-hover;
+	}
+}
+
+.character-slot-dialog
+{
+	width: min(420px, calc(100vw - 32px));
+}
+
+// The items a slot can hold, one under another
+.character-slot-choices
+{
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0 0 12px;
+	padding: 0;
+	list-style: none;
+
+	button
+	{
+		width: 100%;
+		text-align: start;
+	}
+
+	button[aria-current="true"]
+	{
+		border: 2px solid $accent;
+	}
+}
+
+.character-appearance-dialog
+{
+	width: min(560px, calc(100vw - 32px));
+}

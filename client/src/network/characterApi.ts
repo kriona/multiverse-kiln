@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EquipHand, type EquipRequest, type EquipRing, type GiveItemsRequest, type ItemQuantity, type UnequipRequest, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EquipHand, type EquipRequest, type EquipRing, type GiveItemsRequest, type ItemQuantity, type UnequipRequest, type AppearanceRequest, type HiddenSlotRequest, type SocialSlotRequest, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
 
 import { sendRequest } from './editorApi';
 
@@ -171,6 +171,54 @@ export class CharacterApi
 		};
 
 		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/unequip`, request);
+	}
+
+	/**
+	 * Wears an item one of the player's characters carries in a social slot, or empties it
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param slot The social slot
+	 * @param itemId The item, or null to empty the slot
+	 */
+	async wearSocially(universeId: string, characterId: string, slot: string, itemId: number | null): Promise<void>
+	{
+		const request: SocialSlotRequest = {
+			slot,
+			itemId
+		};
+
+		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/social`, request);
+	}
+
+	/**
+	 * Hides a slot from one of the player's characters' avatar, or shows it again
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param slot The slot
+	 * @param hidden Whether to hide it
+	 */
+	async setSlotHidden(universeId: string, characterId: string, slot: string, hidden: boolean): Promise<void>
+	{
+		const request: HiddenSlotRequest = {
+			slot,
+			hidden
+		};
+
+		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/hidden-slots`, request);
+	}
+
+	/**
+	 * Changes one of the player's characters' art type and background; the server refuses a new body type
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param appearance The body type, art type and background
+	 */
+	async changeAppearance(universeId: string, characterId: string, appearance: AppearanceRequest): Promise<void>
+	{
+		await sendRequest(this.client, 'PUT', `${characterPath(universeId, characterId)}/appearance`, appearance);
 	}
 
 	/**

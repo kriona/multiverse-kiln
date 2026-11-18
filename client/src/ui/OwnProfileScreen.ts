@@ -19,7 +19,7 @@ import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors
 import { formMessages } from './formMessages';
 import { languageChoices } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
-import { characterLabel, showProfileCharacters } from './profileCharacters';
+import { profileCharacterLabel, showProfileCharacters } from './profileCharacters';
 import { ProviderLinkDialog } from './ProviderLinkDialog';
 import { RecoveryCodesDialog } from './RecoveryCodesDialog';
 import { SearchSelect } from './SearchSelect';
@@ -891,7 +891,7 @@ export class OwnProfileScreen
 		item.className = 'profile-character';
 		button.type = 'button';
 		button.className = 'profile-character-choice';
-		button.append(...characterLabel(character));
+		button.append(...profileCharacterLabel(character));
 		button.addEventListener('click', () =>
 		{
 			void this.sheet.open(character.universe.id, character.id, character.name);

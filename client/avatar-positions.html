@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- include head.html -->
+		<title data-message="avatarPositions.title" data-translation-context="The browser tab's title for the avatar positioning tool, a developer's page for placing item drawings on avatar bases, before the game engine's name">Avatar Positions</title>
+		<link rel="stylesheet" href="/src/avatarPositions.scss" />
+	</head>
+	<body>
+		<main>
+			<section class="positions-page">
+				<header class="toolbar">
+					<!-- include site-name.html -->
+					<h1 data-message="avatarPositions.heading" data-translation-context="Heading of the avatar positioning tool, a developer's page for placing item drawings on the bases of characters' avatars">Avatar Positions</h1>
+					<!-- include account.html -->
+				</header>
+				<div class="positions-body">
+					<p id="positions-loading" data-message="page.loading" data-translation-context="Shown while a page or part of one loads, such as the site settings, the choices in Create Character, an area in the editor, or a universe's page">Loading...</p>
+					<p id="positions-unavailable" class="panel" hidden data-message="avatarPositions.unavailable" data-translation-context="On the avatar positioning tool, a developer's page, when the server doesn't have its dev tools turned on (the ENABLE_DEV_TOOLS setting), or can't be reached">The positioning tool only works on a developer's own computer, with the server's dev tools on (ENABLE_DEV_TOOLS).</p>
+					<p id="positions-empty" class="panel" hidden data-message="avatarPositions.empty" data-translation-context="On the avatar positioning tool, a developer's page, while no item drawings have been added to the avatar manifest yet, so there is nothing to place">Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art type's file in shared/src/avatars/, then come back to place the drawings.</p>
+					<div id="positions-tool" class="positions-tool" hidden>
+						<p class="positions-intro" data-message="avatarPositions.intro" data-translation-context="Explains the avatar positioning tool at the top of the page: choose a drawing and a base, move its parts, then copy the offsets into the avatar manifest's code">Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art type's file in shared/src/avatars/. Nothing is saved here.</p>
+						<div class="positions-choices">
+							<label><span data-message="avatarPositions.artType" data-translation-context="Label of the avatar positioning tool's choice of art type, such as the stick figure or an artist's style">Art type</span> <select id="positions-art-type"></select></label>
+							<label><span data-message="avatarPositions.ruleset" data-translation-context="Label of the avatar positioning tool's choice of ruleset (Pathfinder or Starfinder), whose items and races it lists">Ruleset</span> <select id="positions-ruleset"></select></label>
+							<label><span data-message="avatarPositions.item" data-translation-context="Label of the avatar positioning tool's choice of the item whose drawing is placed">Item</span> <select id="positions-item"></select></label>
+							<label><span data-message="avatarPositions.drawing" data-translation-context="Label of the avatar positioning tool's choice among an item's drawings, which can differ by race, body type and slot">Drawing</span> <select id="positions-drawing"></select></label>
+							<label><span data-message="avatarPositions.race" data-translation-context="Label of the avatar positioning tool's choice of race, whose base the drawing is placed on">Race</span> <select id="positions-race"></select></label>
+							<label><span data-message="avatarPositions.bodyType" data-translation-context="Label of the avatar positioning tool's choice of body type, such as masc thick, whose base the drawing is placed on">Body type</span> <select id="positions-body-type"></select></label>
+						</div>
+						<p id="positions-drawing-details" class="hint"></p>
+						<p id="positions-problem" class="positions-problem" hidden></p>
+						<div class="positions-workspace">
+							<canvas id="positions-canvas" class="positions-canvas" width="200" height="300" data-message-aria-label="avatarPositions.canvas" data-translation-context-aria-label="Accessible name of the avatar positioning tool's picture of the drawing on the chosen base. Its parts are moved from the list of parts beside it" aria-label="The drawing's parts on the base"></canvas>
+							<div class="positions-side">
+								<section id="positions-parts-section" aria-labelledby="positions-parts-heading">
+									<h2 id="positions-parts-heading" data-message="avatarPositions.parts" data-translation-context="Heading of the avatar positioning tool's list of the parts of the chosen drawing, each with where it goes on the base">Parts</h2>
+									<p id="positions-parts-hint" class="hint" data-message="avatarPositions.partsHint" data-translation-context="Under the heading of the avatar positioning tool's list of parts: how to move a part">Choose a part, then drag it on the picture, move it with the arrow keys (Shift moves 10 pixels), or type where its top left corner goes.</p>
+									<ul id="positions-part-list" class="positions-part-list"></ul>
+								</section>
+								<section aria-labelledby="positions-missing-heading">
+									<h2 id="positions-missing-heading" data-message="avatarPositions.missing" data-translation-context="Heading of the avatar positioning tool's list of the bases the chosen drawing has no offsets for yet, so it isn't drawn on them">Bases still to place</h2>
+									<ul id="positions-missing" class="positions-missing"></ul>
+									<p id="positions-none-missing" class="hint" hidden data-message="avatarPositions.noneMissing" data-translation-context="On the avatar positioning tool, in place of the list of bases still to place, when the chosen drawing has offsets for every base it is for">The drawing has offsets for every base it is for.</p>
+								</section>
+								<div class="positions-copy">
+									<button id="positions-copy" type="button" data-shortcut="Alt+C" data-message="avatarPositions.copy" data-translation-context="Button on the avatar positioning tool that copies the chosen drawing, with its offsets, as code to paste into the avatar manifest"><!-- icon ph:copy -->Copy drawing</button>
+									<span id="positions-copy-status" class="positions-copy-status" role="status"></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+		<!-- include footer.html -->
+		<!-- include accessibility.html -->
+		<script type="module" src="/src/avatarPositions.ts"></script>
+	</body>
+</html>

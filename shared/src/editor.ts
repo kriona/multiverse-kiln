@@ -47,6 +47,9 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * - POST   /:universeId/characters/:characterId/items/equip    EquipRequest: equips an item the character carries, as their player can (canManageCharacters())
  * - POST   /:universeId/characters/:characterId/items/unequip  UnequipRequest: unequips an item, as their player can (canManageCharacters())
  * - POST   /:universeId/characters/:characterId/items/give     GiveItemsRequest: gives an item the character carries to another character in their group, as their player can (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/social         SocialSlotRequest: wears an item the character carries in a social slot, or empties it, as their player can (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/hidden-slots   HiddenSlotRequest: hides a slot from the character's avatar, or shows it, as their player can (canManageCharacters())
+ * - PUT    /:universeId/characters/:characterId/appearance     AppearanceRequest: changes how the character's avatar is drawn, their body type included, which their player can't (canManageCharacters())
  * - POST   /:universeId/groups/:groupId/leave      GroupCharacterRequest: takes any player's character out of their group, disbanding it for the anchor being (canManageCharacters())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
@@ -950,6 +953,7 @@ export const AUDIT_FIELDS = [
 	'category',
 	'types',
 	'equips',
+	'looksLike',
 	'abilityModifiers',
 	'floatingBonus',
 	'darkvision',
@@ -1121,6 +1125,12 @@ export interface AuditFieldValues
 	 * Where an item equips (itemEquipsChoices())
 	 */
 	equips: string;
+
+	/**
+	 * The default race or item a race or item the universe added looks like on avatars, by name when
+	 * saved; null for none
+	 */
+	looksLike: OptionName | null;
 	abilityModifiers: Partial<Record<Ability, number>>;
 	floatingBonus: boolean;
 	darkvision: Darkvision;
@@ -1589,6 +1599,13 @@ export interface ItemSettings
 	equips: string;
 
 	/**
+	 * "Looks like": the ID of the default item of the same ruleset whose drawings an item the universe
+	 * added uses on avatars, or null to draw nothing. Always null for a default item and its edited copy,
+	 * which use their own
+	 */
+	looksLikeItemId: number | null;
+
+	/**
 	 * Whether characters can be given the item
 	 */
 	enabled: boolean;
@@ -1821,6 +1838,13 @@ export interface RaceSettings extends StartingExtras
 	 * again. It has no effect while the race is enabled
 	 */
 	keepPlaying: boolean;
+
+	/**
+	 * "Looks like": the ID of the default race of the same ruleset whose body types and art a race the
+	 * universe added uses for its characters' avatars, or null to give them none. Always null for a default
+	 * race and its edited copy, which use their own
+	 */
+	looksLikeRaceId: number | null;
 
 	/**
 	 * The race's rules under the universe's ruleset

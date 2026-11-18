@@ -2,6 +2,7 @@
  * Races: the only module that reads or writes the races, pf1e_races, sf1e_races and race_starting_items tables
  */
 import { and, asc, count, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { darkvisionSquares, differsBeyondEnabling, isSf1eRaceRules, type EditorRace, type Sight, type ItemQuantity, type OptionName, type Pf1eRaceRules, type RaceRules, type RaceSettings, type Ruleset, type Sf1eRaceRules } from '@multiverse-kiln/shared';
 
 import type { StartingAreaRace } from '../logic/startingArea.js';
@@ -44,6 +45,60 @@ export async function findDefaultRaceIds(ruleset: Ruleset, executor: Executor = 
 	return(new Map(rows
 		.filter((row) => (row.key !== null))
 		.map((row) => [row.key as string, row.id])));
+}
+
+/**
+ * The key of the default race each of some races is drawn as on avatars: a default race's own key, or the
+ * key of the default race a race the universe added "looks like"
+ *
+ * @param raceIds The races, by the IDs characters hold
+ * @param executor The database, or a transaction
+ * @return Each race's key, by ID; null for a race the universe added that looks like none
+ */
+export async function findAvatarRaceKeys(raceIds: readonly number[], executor: Executor = db): Promise<Map<number, string | null>>
+{
+	if (raceIds.length === 0)
+	{
+		return(new Map());
+	}
+
+	const looksLike = alias(races, 'looks_like');
+	const rows = await executor
+		.select({
+			id: races.id,
+			key: races.key,
+			looksLikeKey: looksLike.key
+		})
+		.from(races)
+		.leftJoin(looksLike, eq(looksLike.id, races.avatarRaceId))
+		.where(inArray(races.id, [...new Set(raceIds)]));
+
+	return(new Map(rows.map((row) => [row.id, (row.key ?? row.looksLikeKey)])));
+}
+
+/**
+ * Whether an ID is one of a ruleset's default races, which a race a universe added can "look like"
+ *
+ * @param ruleset The ruleset
+ * @param raceId The ID
+ * @param executor The database, or a transaction
+ * @return True when it is
+ */
+export async function isDefaultRace(ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.select({
+			id: races.id
+		})
+		.from(races)
+		.where(and(
+			eq(races.id, raceId),
+			eq(races.ruleset, ruleset),
+			isNull(races.universeId)
+		))
+		.limit(1);
+
+	return(rows.length > 0);
 }
 
 /**
@@ -282,7 +337,8 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				startingCredits: races.startingCredits,
 				startingAreaId: races.startingAreaId,
 				startingColumn: races.startingColumn,
-				startingRow: races.startingRow
+				startingRow: races.startingRow,
+				avatarRaceId: races.avatarRaceId
 			})
 			.from(races)
 			.where(usableRaces(version, ruleset, raceId))
@@ -330,6 +386,7 @@ async function loadRaces(version: UniverseVersion, ruleset: Ruleset, raceId: num
 				startingAreaId: settings.startingAreaId,
 				startingColumn: settings.startingColumn,
 				startingRow: settings.startingRow,
+				looksLikeRaceId: (custom ? row.avatarRaceId : null),
 				rules: raceRules,
 				rulebook: row.rulebook,
 				custom,
@@ -633,7 +690,8 @@ export async function createCustomRace(version: UniverseVersion, ruleset: Rulese
 			ruleset,
 			universeId: version.universeId,
 			draft: version.draft,
-			...raceColumns(settings)
+			...raceColumns(settings),
+			avatarRaceId: settings.looksLikeRaceId
 		})
 		.returning({ id: races.id });
 
@@ -655,7 +713,10 @@ export async function updateCustomRace(version: UniverseVersion, ruleset: Rulese
 {
 	await executor
 		.update(races)
-		.set(raceColumns(settings))
+		.set({
+			...raceColumns(settings),
+			avatarRaceId: settings.looksLikeRaceId
+		})
 		.where(and(
 			eq(races.id, raceId),
 			inVersion(races, version)
@@ -669,7 +730,8 @@ export async function updateCustomRace(version: UniverseVersion, ruleset: Rulese
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultRaceId The default race's ID, from findRaceKind() as default
- * @param settings The copy's settings; a null name or description keeps the default race's
+ * @param settings The copy's settings; a null name or description keeps the default race's, and its
+ * "Looks like" is left out, since a default race uses its own art
  * @param executor A transaction
  */
 export async function saveEditedDefaultRace(version: UniverseVersion, ruleset: Ruleset, defaultRaceId: number, settings: RaceSettings, executor: Executor): Promise<void>

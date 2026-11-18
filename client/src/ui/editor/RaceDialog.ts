@@ -1,6 +1,6 @@
 import { ABILITY_NAMES, canEditUniverseSettings, DARKVISION_NAMES, DARKVISIONS, DISALLOWED_TEXT_CHARACTERS, emptyMoney, emptyPf1eAbilityScores, FLOATING_ABILITY_BONUSES, isSf1eRaceRules, MAX_RACE_DESCRIPTION_LENGTH, MAX_RACE_NAME_LENGTH, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_RACE_ABILITY_MODIFIER, RULESET_SIZES, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_RACE_HIT_POINTS, SIZE_NAMES, type Ability, type AbilityScores, type Darkvision, type EditableUniverse, type EditorRace, type Pf1eSize, type RaceRules, type RaceSettings, type Sf1eSize } from '@multiverse-kiln/shared';
 
-import { t } from '../../localization';
+import { currentLocale, t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
 import { ChangeTracker } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
@@ -33,6 +33,8 @@ export class RaceDialog
 	private readonly title = getElement('race-dialog-title', HTMLElement);
 	private readonly name = getElement('race-name', HTMLInputElement);
 	private readonly description = new DescriptionField(getElement('race-description', HTMLTextAreaElement), MAX_RACE_DESCRIPTION_LENGTH);
+	private readonly looksLikeField = getElement('race-looks-like-field', HTMLElement);
+	private readonly looksLike = getElement('race-looks-like', HTMLSelectElement);
 	private readonly enabled = getElement('race-enabled', HTMLInputElement);
 	private readonly floatingBonus = getElement('race-floating', HTMLInputElement);
 	private readonly darkvision = getElement('race-darkvision', HTMLSelectElement);
@@ -83,6 +85,12 @@ export class RaceDialog
 	private edit: StagedEdit<RaceSettings> | undefined;
 
 	/**
+	 * The default race a race the universe added looks like on avatars, by ID, or null for none. Kept apart
+	 * from its field, whose choices load after the dialog opens
+	 */
+	private looksLikeRaceId: number | null = null;
+
+	/**
 	 * The universe's starting area's name, which characters of a race without an area start in
 	 */
 	private universeAreaName = '';
@@ -129,7 +137,12 @@ export class RaceDialog
 		});
 		this.changes = new ChangeTracker({
 			root: this.form,
-			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell]
+			state: () => [this.startingItems.value, this.startingArea.value, this.startingArea.cell, this.looksLikeRaceId]
+		});
+		this.looksLike.addEventListener('change', () =>
+		{
+			this.looksLikeRaceId = ((this.looksLike.value === '') ? null : Number(this.looksLike.value));
+			this.changes.check();
 		});
 		this.changes.guardDialog(this.dialog);
 		this.following = new FollowedDialog(this.dialog, this.title, this.changes);
@@ -209,6 +222,10 @@ export class RaceDialog
 		this.name.value = name;
 		this.description.show((race ? raceDescription(race, universe.ruleset) : ''), ((race?.custom === false) ? raceDescription({ key: race.key, description: null }, universe.ruleset) : ''));
 		this.enabled.checked = (race?.enabled ?? true);
+		this.looksLikeRaceId = (race?.looksLikeRaceId ?? null);
+		this.looksLikeField.hidden = (race?.custom === false);
+		this.looksLike.disabled = true;
+		this.showLooksLikeChoices(universe, []);
 
 		for (const ability of PF1E_ABILITIES)
 		{
@@ -258,7 +275,16 @@ export class RaceDialog
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.dialog);
 		void this.startingItems.show(universe, (race?.startingItems ?? []));
-		void this.loadAreaNames(universe);
+
+		const version = ++this.openVersion;
+
+		void this.loadAreaNames(universe, version);
+
+		if (!this.looksLikeField.hidden)
+		{
+			void this.loadLooksLikeChoices(universe, version, editable);
+		}
+
 		this.following.show();
 		this.changes.markSaved();
 	}
@@ -267,11 +293,10 @@ export class RaceDialog
 	 * Loads the areas' names, for the race's starting area and the universe's
 	 *
 	 * @param universe The universe
+	 * @param version The dialog's opening, so names that arrive after it opens again are ignored
 	 */
-	private async loadAreaNames(universe: EditableUniverse): Promise<void>
+	private async loadAreaNames(universe: EditableUniverse, version: number): Promise<void>
 	{
-		const version = ++this.openVersion;
-
 		try
 		{
 			const { areas } = await this.api.listAreas(universe.id);
@@ -291,6 +316,58 @@ export class RaceDialog
 				showMessage(this.error, describeEditorError(error, startingAreaMessages.loadFailed));
 			}
 		}
+	}
+
+	/**
+	 * Loads the ruleset's default races into the Looks like field, which a race the universe added chooses from
+	 *
+	 * @param universe The universe
+	 * @param version The dialog's opening, so races that arrive after it opens again are ignored
+	 * @param editable Whether the player can change the field
+	 */
+	private async loadLooksLikeChoices(universe: EditableUniverse, version: number, editable: boolean): Promise<void>
+	{
+		try
+		{
+			const races = await this.api.listRaces(universe.id);
+
+			if (version === this.openVersion)
+			{
+				this.showLooksLikeChoices(universe, races.filter((race) => !race.custom));
+				this.looksLike.disabled = !editable;
+			}
+		}
+		catch (error)
+		{
+			if (version === this.openVersion)
+			{
+				showMessage(this.error, describeEditorError(error, {
+					id: 'editor.race.looksLikeFailed',
+					defaultMessage: 'Could not load the races it can look like.',
+					description: 'Shown in the race editor when the game\'s own races, which the Looks like field chooses from, couldn\'t be loaded'
+				}));
+			}
+		}
+	}
+
+	/**
+	 * Fills the Looks like field: None, then the default races by their engine names, choosing the race's
+	 *
+	 * @param universe The universe
+	 * @param defaults The ruleset's default races
+	 */
+	private showLooksLikeChoices(universe: EditableUniverse, defaults: readonly EditorRace[]): void
+	{
+		const collator = new Intl.Collator(currentLocale());
+		const choices = defaults
+			.map((race) => ({
+				value: String(race.id),
+				label: raceName({ key: race.key, name: null }, universe.ruleset)
+			}))
+			.sort((a, b) => collator.compare(a.label, b.label));
+
+		setOptions(this.looksLike, [{ value: '', label: t(editorMessages.looksLikeNone) }, ...choices]);
+		this.looksLike.value = ((this.looksLikeRaceId === null) ? '' : String(this.looksLikeRaceId));
 	}
 
 	/**
@@ -354,6 +431,7 @@ export class RaceDialog
 			startingAreaId: this.startingArea.value,
 			startingColumn: this.startingArea.cell.column,
 			startingRow: this.startingArea.cell.row,
+			looksLikeRaceId: ((this.race?.custom === false) ? null : this.looksLikeRaceId),
 			rules
 		});
 		this.close();

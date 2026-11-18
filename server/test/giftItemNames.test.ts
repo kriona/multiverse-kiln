@@ -185,7 +185,8 @@ describe('Gift item names', () =>
 			enabled: true,
 			category: 'gear',
 			types: [],
-			equips: 'none'
+			equips: 'none',
+			looksLikeItemId: null
 		};
 
 		lanternId = await createCustomItem(liveVersion(universe.universeId), 'pf1e', { ...settings, name: 'Lantern' });
@@ -288,7 +289,8 @@ describe('Gift item names', () =>
 			enabled: true,
 			category: 'gear',
 			types: [],
-			equips: 'none'
+			equips: 'none',
+			looksLikeItemId: null
 		});
 		await inTransaction(async (transaction) =>
 		{

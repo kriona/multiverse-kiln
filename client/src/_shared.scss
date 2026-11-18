@@ -1719,3 +1719,93 @@ input[type="checkbox"].toggle-switch
 		}
 	}
 }
+
+// A character's avatar (src/ui/avatarImages.ts): the picture the server draws, 200x300, shown whole on a
+// character's sheet, as a head-and-shoulders crop beside characters in the lobby's and group's lists,
+// and small beside characters on profiles and the universe page
+.avatar
+{
+	display: inline-block;
+	flex: none;
+	overflow: hidden;
+	border-radius: 4px;
+	background-color: $background-field;
+
+	img
+	{
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+}
+
+.avatar-full
+{
+	width: 200px;
+	aspect-ratio: 2 / 3;
+	border: 1px solid $border;
+}
+
+// The top of the picture, where the head and shoulders are
+.avatar-portrait
+{
+	width: 32px;
+	height: 32px;
+	margin-inline-end: 8px;
+	vertical-align: middle;
+
+	img
+	{
+		width: 64px;
+		max-width: none;
+		margin-left: -16px;
+	}
+}
+
+.avatar-thumbnail
+{
+	width: 40px;
+	aspect-ratio: 2 / 3;
+	margin-inline-end: 8px;
+	vertical-align: middle;
+}
+
+// Said in place of the picture of a character nothing is drawn for
+.avatar-none
+{
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 12px;
+	text-align: center;
+	color: $text-faint;
+}
+
+// The choices of how a character's avatar is drawn, beside its preview (src/ui/AppearanceChoices.ts)
+.appearance-choices
+{
+	display: grid;
+	grid-template-columns: auto 1fr;
+	grid-auto-rows: min-content;
+	gap: 12px 16px;
+
+	.appearance-preview
+	{
+		grid-row: span 3;
+	}
+
+	fieldset.choice
+	{
+		flex-wrap: wrap;
+	}
+
+	@media (max-width: 520px)
+	{
+		grid-template-columns: 1fr;
+
+		.appearance-preview
+		{
+			grid-row: auto;
+		}
+	}
+}

@@ -25,7 +25,7 @@ describe('startingItemRepo', () =>
 	{
 		const universeId = await addUniverse('Mine');
 		const otherId = await addUniverse('Theirs');
-		const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true });
+		const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true });
 		const daggerId = (await findDefaultItemIds('pf1e')).get('dagger') as number;
 
 		await inTransaction(async (transaction) =>
@@ -44,7 +44,7 @@ describe('startingItemRepo', () =>
 	it('loses an item when it is deleted, and everything when the universe is', async () =>
 	{
 		const universeId = await addUniverse();
-		const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true });
+		const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', looksLikeItemId: null, enabled: true });
 
 		await inTransaction((transaction) => replaceStartingItems(liveVersion(universeId), [{ itemId: torchId, quantity: 2 }], transaction));
 		await deleteCustomItem(liveVersion(universeId), torchId);

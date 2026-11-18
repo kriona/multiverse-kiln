@@ -138,6 +138,26 @@ export function characterDescription(character: { race: Named; characterClass: N
 }
 
 /**
+ * A character's name with their race and class, e.g. "Mara (Dwarf Fighter)": their avatar's alt text,
+ * and how the Give dialog lists them
+ *
+ * @param character The character, or anything else with a name, race and class, such as their sheet
+ * @param ruleset The universe's ruleset
+ * @return The label
+ */
+export function characterLabel(character: { name: string; race: Named; characterClass: Named }, ruleset: Ruleset): string
+{
+	return(t({
+		id: 'character.label',
+		defaultMessage: '{name} ({description})',
+		description: 'A character\'s name with their race and class, e.g. "Mara (Dwarf Fighter)": the text a screen reader reads for the character\'s avatar (a picture of the character) wherever it shows, and a choice in the dialog that gives an item to another character in the group; {name} is the character\'s name and {description} their race and class'
+	}, {
+		name: character.name,
+		description: characterDescription(character, ruleset)
+	}));
+}
+
+/**
  * A race's or class's name as the player reads it
  *
  * @param named The race or class

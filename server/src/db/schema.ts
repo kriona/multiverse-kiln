@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { bigint, boolean, check, customType, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS, FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, EDITOR_ROLES, MAX_REGION_NAME_LENGTH, type ChatNoticeDetails, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS, DEFAULT_ART_TYPE, DEFAULT_BACKGROUND, DEFAULT_BODY_TYPE,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, EDITOR_ROLES, MAX_REGION_NAME_LENGTH, type ChatNoticeDetails, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -806,10 +806,18 @@ export const items = pgTable('items', {
 	 */
 	rulebook: text('rulebook'),
 
+	/**
+	 * "Looks like": the default item of the same ruleset whose drawings an item the universe added uses on
+	 * avatars; null draws nothing. Always null on default items and their edited copies, which use their own
+	 */
+	avatarItemId: integer('avatar_item_id').references((): AnyPgColumn => items.id, { onDelete: 'set null' }),
+
 	enabled: boolean('enabled').notNull().default(true),
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('items_ruleset_key_unique').on(table.ruleset, table.key),
+	index('items_avatar_item_id_index').on(table.avatarItemId),
+	check('items_avatar_on_added', sql`${table.avatarItemId} IS NULL OR (${table.universeId} IS NOT NULL AND ${table.overridesItemId} IS NULL)`),
 	check('items_rulebook_on_defaults', sql`(${table.universeId} IS NULL) = (${table.rulebook} IS NOT NULL)`),
 	unique('items_universe_overrides_unique').on(table.universeId, table.draft, table.overridesItemId),
 	index('items_universe_id_index').on(table.universeId),
@@ -904,9 +912,18 @@ export const races = pgTable('races', {
 	startingColumn: integer('starting_column').notNull().default(0),
 	startingRow: integer('starting_row').notNull().default(0),
 
+	/**
+	 * "Looks like": the default race of the same ruleset whose body types and art a race the universe
+	 * added uses for its characters' avatars; null gives them none. Always null on default races and their
+	 * edited copies, which use their own
+	 */
+	avatarRaceId: integer('avatar_race_id').references((): AnyPgColumn => races.id, { onDelete: 'set null' }),
+
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
 	unique('races_ruleset_key_unique').on(table.ruleset, table.key),
+	index('races_avatar_race_id_index').on(table.avatarRaceId),
+	check('races_avatar_on_added', sql`${table.avatarRaceId} IS NULL OR (${table.universeId} IS NOT NULL AND ${table.overridesRaceId} IS NULL)`),
 	check('races_rulebook_on_defaults', sql`(${table.universeId} IS NULL) = (${table.rulebook} IS NOT NULL)`),
 	unique('races_universe_overrides_unique').on(table.universeId, table.draft, table.overridesRaceId),
 	index('races_universe_id_index').on(table.universeId),
@@ -1526,7 +1543,23 @@ export const characters = pgTable('characters', {
 	 * Whether the player's profile lists the character when the player chose not to list all of them
 	 * (players.showCharacters)
 	 */
-	visibleOnProfile: boolean('visible_on_profile').notNull().default(true)
+	visibleOnProfile: boolean('visible_on_profile').notNull().default(true),
+
+	/**
+	 * How the character's avatar is drawn: their body type (BODY_TYPES in /shared), which only the
+	 * universe's creators can change once they are made, their art type (ART_TYPES) and their
+	 * background (BACKGROUNDS). The avatar falls back to another when the art isn't drawn (avatarPicture())
+	 */
+	bodyType: text('body_type').notNull().default(DEFAULT_BODY_TYPE),
+	artType: text('art_type').notNull().default(DEFAULT_ART_TYPE),
+	background: text('background').notNull().default(DEFAULT_BACKGROUND),
+
+	/**
+	 * The hash of the layers the character's stored avatar (avatars/<character ID>.png in object storage)
+	 * was made from; null until it is first made. When it isn't the hash of their look now, the avatar is
+	 * made again before it is served
+	 */
+	avatarHash: text('avatar_hash')
 }, (table) => [
 	index('characters_player_universe_index').on(table.playerId, table.universeId),
 	index('characters_universe_id_index').on(table.universeId),
@@ -1593,15 +1626,22 @@ export const characterItems = pgTable('character_items', {
 ]);
 
 /**
- * What each character has equipped: one row per slot holding an item (equipmentSlots() in /shared)
+ * What each character has in their slots: one row per slot holding an item (equipmentSlots() in /shared),
+ * in one of two layers. Items in the stats layer are equipped, and rules read them; items in the social
+ * layer (socialSlots()) are worn only for how they look on the avatar, and don't count as equipped
  *
  * Each row is one of the items the character carries, so discarding the last of an item deletes its rows;
- * the code keeps no more of an item equipped than the character carries. A two-handed item, and a
- * one-handed weapon held in both hands, is one row in the main hand with both_hands set. Keyed by character
- * and slot, so a layer for slots worn only for their look can join the key later
+ * the code keeps no more of an item equipped in the stats layer than the character carries. A two-handed
+ * item, and a one-handed weapon held in both hands, is one row in the main hand with both_hands set
  */
 export const characterEquipment = pgTable('character_equipment', {
 	characterId: uuid('character_id').notNull(),
+
+	/**
+	 * stats or social (EQUIPMENT_LAYERS in /shared)
+	 */
+	layer: text('layer').notNull().default('stats'),
+
 	slot: text('slot').notNull(),
 	itemId: integer('item_id').notNull(),
 
@@ -1610,14 +1650,26 @@ export const characterEquipment = pgTable('character_equipment', {
 	 */
 	bothHands: boolean('both_hands').notNull().default(false)
 }, (table) => [
-	primaryKey({ columns: [table.characterId, table.slot] }),
+	primaryKey({ columns: [table.characterId, table.layer, table.slot] }),
 	foreignKey({
 		name: 'character_equipment_carried_item_fk',
 		columns: [table.characterId, table.itemId],
 		foreignColumns: [characterItems.characterId, characterItems.itemId]
 	}).onDelete('cascade'),
 	index('character_equipment_item_index').on(table.itemId, table.characterId),
-	check('character_equipment_both_hands_in_main_hand', sql`NOT ${table.bothHands} OR ${table.slot} = 'mainHand'`)
+	check('character_equipment_both_hands_in_main_hand', sql`NOT ${table.bothHands} OR ${table.slot} = 'mainHand'`),
+	check('character_equipment_layer', sql`${table.layer} IN ('stats', 'social')`),
+	check('character_equipment_social_not_held', sql`${table.layer} = 'stats' OR NOT ${table.bothHands}`)
+]);
+
+/**
+ * The slots each character's avatar draws empty, whatever is in them, until the player shows them again
+ */
+export const characterHiddenSlots = pgTable('character_hidden_slots', {
+	characterId: uuid('character_id').notNull().references(() => characters.id, { onDelete: 'cascade' }),
+	slot: text('slot').notNull()
+}, (table) => [
+	primaryKey({ columns: [table.characterId, table.slot] })
 ]);
 
 /**

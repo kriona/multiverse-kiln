@@ -5,12 +5,24 @@
  *
  * An item equips nowhere, in one hand, in two hands or in one of the ruleset's worn places (most a slot
  * of their own; PF1E's ring is either of two ring slots). Whether an item fits a slot is fitsSlot(), which
- * the appearance slots will reuse; the rules for hands and shields are only for the stats slots
+ * the social slots reuse (fitsSocialSlot()); the rules for hands and shields are only for the stats slots
+ *
+ * A character's slots come in two layers: the stats slots, whose items count as equipped and which rules
+ * read, and the social slots, for items worn only for how they look on the avatar (see Social slots in
+ * STRUCTURE-OVERVIEW.md)
  */
 import { defineMessages, type MessageDescriptor } from './localization.js';
-import { PF1E_DEFAULT_ITEM_EQUIPS, PF1E_RING_LOCATION, PF1E_RING_SLOT_NAMES, PF1E_SHIELD_TYPES, PF1E_TAIL_LOCATION, PF1E_WORN_LOCATION_NAMES, PF1E_WORN_LOCATIONS, PF1E_WORN_SLOTS } from './rulesets/pf1e/equipment.js';
-import { SF1E_DEFAULT_ITEM_EQUIPS, SF1E_WORN_LOCATION_NAMES, SF1E_WORN_LOCATIONS, SF1E_WORN_SLOTS } from './rulesets/sf1e/equipment.js';
+import { PF1E_DEFAULT_ITEM_EQUIPS, PF1E_NON_SOCIAL_LOCATIONS, PF1E_RING_LOCATION, PF1E_RING_SLOT_NAMES, PF1E_SHIELD_TYPES, PF1E_SLOT_DRAW_ORDER, PF1E_TAIL_LOCATION, PF1E_WORN_LOCATION_NAMES, PF1E_WORN_LOCATIONS, PF1E_WORN_SLOTS } from './rulesets/pf1e/equipment.js';
+import { SF1E_DEFAULT_ITEM_EQUIPS, SF1E_SLOT_DRAW_ORDER, SF1E_WORN_LOCATION_NAMES, SF1E_WORN_LOCATIONS, SF1E_WORN_SLOTS } from './rulesets/sf1e/equipment.js';
 import type { Ruleset } from './universes.js';
+
+/**
+ * The layers of a character's slots: stats, whose items count as equipped, and social, whose items are
+ * only worn for how they look
+ */
+export const EQUIPMENT_LAYERS = ['stats', 'social'] as const;
+
+export type EquipmentLayer = typeof EQUIPMENT_LAYERS[number];
 
 /**
  * The hand slots, which every ruleset has after its worn slots
@@ -82,6 +94,16 @@ export interface RulesetEquipment
 	 * The item types that make an item a shield; empty for a ruleset without shields
 	 */
 	shieldTypes: readonly string[];
+
+	/**
+	 * The order an avatar draws the slots' items in over the base, from the first drawn to the last
+	 */
+	drawOrder: readonly string[];
+
+	/**
+	 * The worn places that have no social slot, such as PF1E's tail and off arm
+	 */
+	nonSocialLocations: readonly string[];
 }
 
 /**
@@ -95,7 +117,9 @@ export const RULESET_EQUIPMENT: Record<Ruleset, RulesetEquipment> = {
 		extraSlotNames: PF1E_RING_SLOT_NAMES,
 		tailLocation: PF1E_TAIL_LOCATION,
 		ringLocation: PF1E_RING_LOCATION,
-		shieldTypes: PF1E_SHIELD_TYPES
+		shieldTypes: PF1E_SHIELD_TYPES,
+		drawOrder: PF1E_SLOT_DRAW_ORDER,
+		nonSocialLocations: PF1E_NON_SOCIAL_LOCATIONS
 	},
 	sf1e: {
 		wornLocations: SF1E_WORN_LOCATIONS,
@@ -104,7 +128,9 @@ export const RULESET_EQUIPMENT: Record<Ruleset, RulesetEquipment> = {
 		extraSlotNames: {},
 		tailLocation: null,
 		ringLocation: null,
-		shieldTypes: []
+		shieldTypes: [],
+		drawOrder: SF1E_SLOT_DRAW_ORDER,
+		nonSocialLocations: []
 	}
 };
 
@@ -356,6 +382,52 @@ export function isShield(ruleset: Ruleset, types: readonly string[]): boolean
 	const { shieldTypes } = RULESET_EQUIPMENT[ruleset];
 
 	return(types.some((type) => shieldTypes.includes(type)));
+}
+
+/**
+ * A ruleset's social slots, in the order the character sheet lists them: its worn slots, but those of
+ * the places without social slots (RulesetEquipment.nonSocialLocations). The hands have none
+ *
+ * @param ruleset The ruleset
+ * @return The slots' keys
+ */
+export function socialSlots(ruleset: Ruleset): string[]
+{
+	const { wornLocations, wornSlots, nonSocialLocations } = RULESET_EQUIPMENT[ruleset];
+
+	return(wornLocations
+		.filter((location) => !nonSocialLocations.includes(location))
+		.flatMap((location) => wornSlots[location]));
+}
+
+/**
+ * Whether an item can be worn in a social slot: it fits the slot (fitsSlot()), and it is neither a
+ * weapon nor a shield, even one worn rather than held, such as a dwarven boulder helmet
+ *
+ * @param ruleset The ruleset
+ * @param item The item
+ * @param slot The social slot
+ * @return True when it can
+ */
+export function fitsSocialSlot(ruleset: Ruleset, item: Pick<EquipmentItem, 'category' | 'types' | 'equips'>, slot: string): boolean
+{
+	return(socialSlots(ruleset).includes(slot) && (item.category !== 'weapon') && !isShield(ruleset, item.types) && fitsSlot(ruleset, item.equips, slot));
+}
+
+/**
+ * The social slot "Wear socially" puts an item in: the first of the slots it fits that is free, or one
+ * already holding it, or the first
+ *
+ * @param ruleset The ruleset
+ * @param social What the character wears in their social slots
+ * @param item The item
+ * @return The slot, or undefined for an item that fits no social slot
+ */
+export function socialSlotFor(ruleset: Ruleset, social: readonly EquippedItem[], item: Pick<EquipmentItem, 'id' | 'category' | 'types' | 'equips'>): string | undefined
+{
+	const slots = socialSlots(ruleset).filter((slot) => fitsSocialSlot(ruleset, item, slot));
+
+	return(slots.find((slot) => !social.some((worn) => (worn.slot === slot))) ?? slots.find((slot) => social.some((worn) => ((worn.slot === slot) && (worn.itemId === item.id)))) ?? slots[0]);
 }
 
 /**

@@ -5,6 +5,7 @@ import { currentLocale, t } from '../localization';
 import type { LobbyConnection } from '../network/serverConnection';
 import { universePageUrl } from '../pages';
 import { announce } from './announcer';
+import { avatarFrame } from './avatarImages';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
 import { ChatLog } from './ChatLog';
@@ -82,6 +83,11 @@ export class LobbyScreen
 	 * Names of the players in the lobby, by player ID
 	 */
 	private readonly members = new Map<string, string>();
+
+	/**
+	 * The characters the players in the lobby play, by player ID, to show their avatars
+	 */
+	private readonly memberCharacters = new Map<string, string>();
 
 	/**
 	 * The lobby the screen is drawing, if any
@@ -235,12 +241,14 @@ export class LobbyScreen
 		this.unbinds.push(callbacks.onAdd('members', (member: LobbyMember, playerId: string) =>
 		{
 			this.members.set(playerId, member.name);
+			this.memberCharacters.set(playerId, member.characterId);
 			this.queueMemberList();
 		}));
 
 		this.unbinds.push(callbacks.onRemove('members', (_member: LobbyMember, playerId: string) =>
 		{
 			this.members.delete(playerId);
+			this.memberCharacters.delete(playerId);
 			this.queueMemberList();
 		}));
 	}
@@ -289,6 +297,7 @@ export class LobbyScreen
 		this.showArea();
 
 		this.members.clear();
+		this.memberCharacters.clear();
 		this.chat.clear();
 		this.characters = undefined;
 		this.playingId = undefined;
@@ -491,40 +500,55 @@ export class LobbyScreen
 
 		const own = ((this.ownPlayerId !== undefined) ? this.members.get(this.ownPlayerId) : undefined);
 		const isGhost = ((own === undefined) && (this.playingId === null));
-		const listed: string[] = [];
+		const listed: { name: string; playerId: string | undefined }[] = [];
 
 		// Said in words as well as in color, for players who can't tell the colors apart and for screen readers
 		if (own !== undefined)
 		{
-			listed.push(t({
-				id: 'lobby.ownName',
-				defaultMessage: '{name} (you)',
-				description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
-			}, {
-				name: own
-			}));
+			listed.push({
+				name: t({
+					id: 'lobby.ownName',
+					defaultMessage: '{name} (you)',
+					description: 'In the list of players in the lobby, the player\'s own name; {name} is the name'
+				}, {
+					name: own
+				}),
+				playerId: this.ownPlayerId
+			});
 		}
 		else if (isGhost)
 		{
-			listed.push(t({
-				id: 'lobby.ownGhost',
-				defaultMessage: 'You (a ghost)',
-				description: 'In the list of players in the lobby, the player themself while they play no character: a ghost, whom only they see listed'
-			}));
+			listed.push({
+				name: t({
+					id: 'lobby.ownGhost',
+					defaultMessage: 'You (a ghost)',
+					description: 'In the list of players in the lobby, the player themself while they play no character: a ghost, whom only they see listed'
+				}),
+				playerId: undefined
+			});
 		}
 
 		const ownCount = listed.length;
 
-		for (const [, name] of others.slice(0, MAX_LISTED_PLAYERS - ownCount))
+		for (const [playerId, name] of others.slice(0, MAX_LISTED_PLAYERS - ownCount))
 		{
-			listed.push(name);
+			listed.push({
+				name,
+				playerId
+			});
 		}
 
-		this.memberList.replaceChildren(...listed.map((name, index) =>
+		this.memberList.replaceChildren(...listed.map(({ name, playerId }, index) =>
 		{
 			const item = document.createElement('li');
+			const characterId = ((playerId === undefined) ? undefined : this.memberCharacters.get(playerId));
 
-			item.textContent = name;
+			if (characterId)
+			{
+				item.append(avatarFrame(characterId, undefined, '', 'portrait'));
+			}
+
+			item.append(name);
 			item.classList.toggle('member-own', (index < ownCount));
 
 			return(item);

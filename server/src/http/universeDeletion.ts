@@ -13,6 +13,8 @@ import type { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { canDeleteUniverse, deletesUniverseAsAdmin, MAX_LOCALE_LENGTH, MAX_PASSWORD_LENGTH, MAX_TWO_FACTOR_CODE_INPUT_LENGTH, MAX_USERNAME_LENGTH, SOURCE_LOCALE, UNIVERSE_DELETION_PATH, UNIVERSE_DELETION_PREVENTED, type UniverseDeleteRequest, type UniverseDeletionPayload } from '@multiverse-kiln/shared';
 
+import { avatarStorageKey } from '../avatars/characterAvatars.js';
+import { listCharacterIdsOf } from '../db/avatarRepo.js';
 import { countUniverseCharacters } from '../db/characterRepo.js';
 import type { Executor } from '../db/client.js';
 import { deleteEmailCode, lockContinuation } from '../db/emailCodeRepo.js';
@@ -389,11 +391,15 @@ export async function emailUniverseDeleted(universeName: string, editorIds: read
  *
  * @param universeId The universe
  * @param executor A transaction, which deleteObjects() follows once it commits
- * @return Where its uploaded tile graphics are in object storage, to delete once the transaction commits
+ * @return Where its uploaded tile graphics and its characters' avatars are in object storage, to delete
+ * once the transaction commits
  */
 export async function deleteUniverseWithUploads(universeId: string, executor: Executor): Promise<string[]>
 {
-	const storageKeys = await listTileGraphicStorageKeys(universeId, executor);
+	const storageKeys = [
+		...await listTileGraphicStorageKeys(universeId, executor),
+		...(await listCharacterIdsOf({ universeId }, executor)).map(avatarStorageKey)
+	];
 
 	await deleteUniverse(universeId, executor);
 

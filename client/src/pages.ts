@@ -30,6 +30,8 @@
  * - login.html: logging in, creating an account and resetting a forgotten password, linked to from
  *   Home's toolbar. The game, the world editor and Create Character send a browser that isn't logged in
  *   here with ?next=<their address>, and it goes back there once logged in
+ * - avatar-positions.html: the avatar positioning tool at /avatar-positions, for developers placing item
+ *   drawings on the avatar bases. Nothing links to it, and it only works while the server's dev tools are on
  *
  * Every page takes ?locale= to choose a language, as the language picker in the footer does (see src/localization.ts)
  */

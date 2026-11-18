@@ -604,7 +604,8 @@ describe('group routes', () =>
 						characterId: ada.characterId,
 						name: 'Ada',
 						race: { key: 'dwarf', name: null },
-						characterClass: { key: 'fighter', name: null }
+						characterClass: { key: 'fighter', name: null },
+						avatarHash: null
 					}]
 				},
 				barredBy: 'race'
@@ -709,7 +710,8 @@ describe('group routes', () =>
 						characterId: other.characterId,
 						name: ((other === ada) ? 'Ada' : 'Grace'),
 						race: { key: 'dwarf', name: null },
-						characterClass: { key: 'fighter', name: null }
+						characterClass: { key: 'fighter', name: null },
+						avatarHash: null
 					}]
 				});
 			}

@@ -666,7 +666,8 @@ Decided:
 	- What an avatar draws is one pure function in `/shared`: given the manifest and the character's race, body type, art type, background, equipment and hidden slots, it returns the layers (the background, the parts behind the base, the base, then the items' parts in layer order) and their hash.
 	- The server composes the avatar with sharp and stores one PNG per character in object storage (`avatars/<character ID>.png`), overwritten when the look changes. No versions are kept.
 	- `characters.avatar_hash` is the hash of the layers the stored PNG was made from. The server sends each character's current hash with their data, and pages load `/avatars/<character ID>.png?look=<hash>`, cached for good. When the hash asked for isn't the stored one, the server composes the PNG again first. Equipment changes, universe saves that unequip items or change "Looks like", and new art all show this way, without each having to compose the avatar.
-	- Create Character's preview is the base and the background, without items. The server composes one file for each art type, race, body type and background, shared by every player who chooses it (`avatars/previews/<art type>/<race key>-<body type>-<background>.png`, served at `/avatar-previews/`), and composes it again when the hash of its files changes (kept in the object's metadata). A universe's own race uses its "Looks like" race's key. Nothing is saved to a character until it is made. The browser composes nothing, apart from the positioning tool.
+	- The lobby's and group's lists of who's there get each character's ID in the room's state, but not their hash: those avatars are loaded without one, and the browser asks each time whether they changed (their ETag is the hash), so the rooms don't read the database outside their lifecycle hooks.
+	- Create Character's preview is the base and the background, without items. The server composes one file for each art type, ruleset, race, body type and background, shared by every player who chooses it (`avatars/previews/<art type>/<ruleset>/<race key>-<body type>-<background>.png`, served at `/avatar-previews/<art type>/<ruleset>/`; race keys such as human are in both rulesets), and composes it again when the hash of its files changes (kept in the object's metadata). Its ETag is the hash. A universe's own race uses its "Looks like" race's key. Nothing is saved to a character until it is made. The browser composes nothing, apart from the positioning tool.
 	- Avatars and previews are served to anyone with the address, like `/tile-graphics/`. Character IDs are random UUIDs, and an avatar shows only what is drawn.
 	- Deleting a character, an account or a universe deletes its characters' avatars.
 - Where avatars show
@@ -674,23 +675,24 @@ Decided:
 	- Create Character's Appearance step and review.
 	- A head-and-shoulders crop (CSS) beside each character in the lobby's list of who's here, the player's characters and the group's members.
 	- A thumbnail beside each character on the profile and the universe page.
-	- The alt text is the character's name with their race and class, "Mara (Dwarf Fighter)". It comes from one function, `characterLabel()`, beside `characterDescription()` in `client/src/ui/raceAndClassNames.ts`, and the Give dialog uses it too in place of its own message. Nothing else builds a character's description.
+	- The alt text is the character's name with their race and class, "Mara (Dwarf Fighter)". It comes from one function, `characterLabel()`, beside `characterDescription()` in `client/src/ui/raceAndClassNames.ts`, and the Give dialog uses it too in place of its own message. Nothing else builds a character's description. The crops and thumbnails sit beside the character's name, inside the same button, so their alt text is empty and screen readers don't read the name twice.
 - Later, not in this phase: sprites in the game's areas, universes uploading avatar art, avatar art in cross-universe play, and more backgrounds.
 
 Steps:
-- [ ] The manifest in `/shared`: art types, the body types of each default race, bases, item drawings (races, body types, slots, parts, layers, offsets, and the off hand and right ring offsets) and backgrounds, with names as messages. The slot draw order in each ruleset's `equipment.ts`
-- [ ] The pure function returning an avatar's layers and their hash, with unit tests: matching drawings, the off hand and right ring flipped with their own offsets, parts behind the base, social items over stats items, hidden slots, missing art, and the art type and body type fallbacks
-- [ ] The background script and the two background PNGs
-- [ ] `body_type`, `art_type`, `background` and `avatar_hash` on `characters`, `layer` on `character_equipment` and the `character_hidden_slots` table, with their migration and repository tests against the test database
-- [ ] "Looks like" on universe races and items: the columns, the race and item editors, the audit, export and import
-- [ ] Composing avatars and previews with sharp, storing them in object storage, and the `/avatars/` and `/avatar-previews/` routes, which compose again when the hash changes. Deleting avatars with characters, accounts and universes. Cover the routes in `server/test/http.test.ts`
-- [ ] Routes to wear and remove social items, hide and show slots, and change the art type, background and body type (creators only), for the player and the universe's creators, checking the rules on the server. Each change is published through the session room, like equipment changes
-- [ ] Create Character's Appearance step, with the preview
-- [ ] The character sheet: the avatar, the Social section, slot names as buttons opening the item picker, Hide toggles, Wear socially in the item menu, and the Appearance dialog (the body type only for creators)
-- [ ] Avatars in the lobby's and group's lists, on the profile and on the universe page. `characterLabel()` for their alt text and the Give dialog
-- [ ] The positioning tool
-- [ ] The license page's credit
-- [ ] Pirate translation of the new messages
+- [✅] The manifest in `/shared`: art types, the body types of each default race, bases, item drawings (races, body types, slots, parts, layers, offsets, and the off hand and right ring offsets) and backgrounds, with names as messages. The slot draw order in each ruleset's `equipment.ts`
+- [✅] The pure function returning an avatar's layers and their hash, with unit tests: matching drawings, the off hand and right ring flipped with their own offsets, parts behind the base, social items over stats items, hidden slots, missing art, and the art type and body type fallbacks
+- [✅] The background script and the two background PNGs
+- [✅] `body_type`, `art_type`, `background` and `avatar_hash` on `characters`, `layer` on `character_equipment` and the `character_hidden_slots` table, with their migration and repository tests against the test database
+- [✅] "Looks like" on universe races and items: the columns, the race and item editors, the audit, export and import
+- [✅] Composing avatars and previews with sharp, storing them in object storage, and the `/avatars/` and `/avatar-previews/` routes, which compose again when the hash changes. Deleting avatars with characters, accounts and universes. Cover the routes in `server/test/http.test.ts`
+- [✅] Routes to wear and remove social items, hide and show slots, and change the art type, background and body type (creators only), for the player and the universe's creators, checking the rules on the server. Each change is published through the session room, like equipment changes
+- [✅] Create Character's Appearance step, with the preview
+- [✅] The character sheet: the avatar, the Social section, slot names as buttons opening the item picker, Hide toggles, Wear socially in the item menu, and the Appearance dialog (the body type only for creators)
+- [✅] Avatars in the lobby's and group's lists, on the profile and on the universe page. `characterLabel()` for their alt text and the Give dialog
+- [✅] The positioning tool
+- [✅] The license page's credit
+- [✅] Pirate translation of the new messages
+- [ ] Draw the art: human bases and a few item drawings in the Lucia art type and stick figures, added as `shared/assets/avatars/README.md` describes
 - [ ] Check the new step, the sheet, the dialogs and the positioning tool with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
 
 **Done when:** with human bases and a few item drawings in place, a player makes a femme thin human with the Lucia art type and the dark red background, seeing the preview as they choose. Her sheet shows her avatar in her equipped leather armor, holding a short sword in each hand, the off hand's flipped. Wearing a cloak socially draws it over her armor. Hiding the shoulders slot leaves the cloak off. Switching to the stick figure redraws her. Another player sees her avatar beside her name in the lobby, and only a creator can change her body type.

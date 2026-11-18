@@ -20,8 +20,10 @@ import { startUniverseEditSweep } from './universeEditSweep.js';
 import { isDevToolsEnabled } from './devTools.js';
 import { addAdminRoutes } from './http/admin.js';
 import { addAuthRoutes } from './http/auth.js';
+import { addAvatarRoutes } from './http/avatars.js';
 import { addCharacterRoutes } from './http/characters.js';
 import { addDevBotLoginRoute } from './http/devLogin.js';
+import { addDevToolsCheckRoute } from './http/devToolsCheck.js';
 import { clientAddressSource } from './http/clientNetwork.js';
 import { addEditorRoutes } from './http/editor.js';
 import { handleUnansweredError } from './http/errors.js';
@@ -106,6 +108,7 @@ const server = defineServer({
 		addGroupRoutes(app, allowedOrigins);
 		addEditorRoutes(app, allowedOrigins);
 		addTileGraphicRoute(app);
+		addAvatarRoutes(app);
 		addAdminRoutes(app, allowedOrigins);
 		addProfileRoutes(app, allowedOrigins);
 
@@ -116,6 +119,9 @@ const server = defineServer({
 
 			// Bots, such as the load test's, log in without email
 			addDevBotLoginRoute(app);
+
+			// Dev-only pages, such as the avatar positioning tool, ask whether they can be used
+			addDevToolsCheckRoute(app);
 
 			// @colyseus/playground lets anyone join rooms with arbitrary options
 			app.use('/', playground());

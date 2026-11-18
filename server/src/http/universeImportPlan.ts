@@ -661,6 +661,32 @@ function withRaceTail(ruleset: Ruleset, race: Record<string, unknown>): Record<s
 }
 
 /**
+ * What a race or item the file holds "looks like" on avatars, as the draft names it: the file names one
+ * of the ruleset's defaults by its ID there, which the same list gives with its key, and the draft has
+ * the default with that key. A file exported before races and items had it, a default it doesn't list
+ * and a key this site doesn't have all give none, as does a default race or item, which uses its own art
+ *
+ * @param thing The race or item, as the file holds it
+ * @param field Its setting, looksLikeRaceId or looksLikeItemId
+ * @param fileThings The file's list it is in, which gives each default's key
+ * @param draftDefaults The draft's defaults, by key
+ * @return The default's ID in the draft, or null for none
+ */
+function looksLikeTarget(thing: Record<string, unknown>, field: 'looksLikeRaceId' | 'looksLikeItemId', fileThings: readonly { id: number; key: string | null }[], draftDefaults: ReadonlyMap<string | null, { id: number }>): number | null
+{
+	const fileId = thing[field];
+
+	if ((thing.key !== null) || (typeof fileId !== 'number'))
+	{
+		return(null);
+	}
+
+	const key = (fileThings.find((each) => (each.id === fileId))?.key ?? null);
+
+	return((((key === null) ? undefined : draftDefaults.get(key))?.id ?? null));
+}
+
+/**
  * A file's ruleset settings, with only the core rulebook on when the file was exported before universes
  * chose their books
  *
@@ -1148,9 +1174,14 @@ class ImportPlanner
 			.filter((item) => (item.key !== null))
 			.map((item) => [item.key, item]));
 
-		for (const item of (this.manifest.items ?? []))
+		const fileItems = (this.manifest.items ?? []);
+
+		for (const item of fileItems)
 		{
-			const settings = pickDescribed(withItemEquips(this.ruleset, withItemKind(this.ruleset, item)), ITEM_FIELDS);
+			const settings = {
+				...pickDescribed(withItemEquips(this.ruleset, withItemKind(this.ruleset, item)), ITEM_FIELDS),
+				looksLikeItemId: looksLikeTarget(item, 'looksLikeItemId', fileItems, defaults)
+			};
 			const where = `item ${item.id}`;
 
 			if (item.key !== null)
@@ -1722,9 +1753,15 @@ class ImportPlanner
 	 */
 	private planRaces(): void
 	{
-		this.planOptions('Race', 'race', (this.manifest.races ?? []), this.target.races, this.matchers.races, this.raceTargets, (race, ids) => ({
+		const fileRaces = (this.manifest.races ?? []);
+		const defaults = new Map(this.target.races
+			.filter((race) => (race.key !== null))
+			.map((race) => [race.key, race]));
+
+		this.planOptions('Race', 'race', fileRaces, this.target.races, this.matchers.races, this.raceTargets, (race, ids) => ({
 			...pickDescribed(withRaceTail(this.ruleset, race), OPTION_FIELDS),
-			...this.startingExtras(race, `race ${race.id}`, ids)
+			...this.startingExtras(race, `race ${race.id}`, ids),
+			looksLikeRaceId: looksLikeTarget(race, 'looksLikeRaceId', fileRaces, defaults)
 		}));
 	}
 

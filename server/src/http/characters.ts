@@ -9,22 +9,25 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, EQUIP_RINGS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, localize, type LocalizedMessage, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type ChatNoticeDetails, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, ART_TYPES, BACKGROUNDS, BODY_TYPES, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ART_TYPE, DEFAULT_BACKGROUND, DEFAULT_BODY_TYPE, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, EQUIP_RINGS, equipmentSlots, fitsSocialSlot, planEquip, raceBodyTypes, socialSlots, startingEquipment, type AppearanceRequest, type HiddenSlotRequest, type SocialSlotRequest, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, localize, type LocalizedMessage, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type ChatNoticeDetails, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
+import { avatarHashesOf, avatarStorageKey, findCharacterAvatars } from '../avatars/characterAvatars.js';
+import { findStoredLooks, setCharacterAppearance, setSlotHidden } from '../db/avatarRepo.js';
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, giveCharacterItems, keepPf1eAbilityRoll, listCharacters, lockCarriedItems, lockCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails, type LockedCharacter } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
-import { equipItems, listEquipment, unequipSlots } from '../db/equipmentRepo.js';
+import { equipItems, listEquipment, listSocialEquipment, unequipSlots, wearSocially } from '../db/equipmentRepo.js';
 import { findMembership, listGroupMembers } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItemsIn } from '../db/itemRepo.js';
-import { findEditorRace, findRaceHasTail, loadEditorRaces } from '../db/raceRepo.js';
+import { findAvatarRaceKeys, findEditorRace, findRaceHasTail, loadEditorRaces } from '../db/raceRepo.js';
 import { findPf1eSettings, findSf1eSettings, loadRulebookSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { findEditorTheme, loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
 import { findEditableUniverse, findUniverse, lockUniverseShared } from '../db/universeRepo.js';
+import { deleteObjects } from '../storage/objectStorage.js';
 import type { WantedText } from '../db/universeTextRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
@@ -50,6 +53,32 @@ export type PlayableUniverse = EditableUniverseDetails;
 const baseScore = z.number().int().min(0).max(Math.max(PF1E_MAX_POINT_BUY_SCORE, SF1E_MAX_BOUGHT_SCORE));
 
 /**
+ * AppearanceRequest, and the appearance of NewCharacterRequest and CharacterDraft. Whether the body type
+ * is one of the race's is checked by the route
+ */
+export const appearanceRequest = z.object({
+	bodyType: z.enum(BODY_TYPES),
+	artType: z.enum(ART_TYPES),
+	background: z.enum(BACKGROUNDS)
+}) satisfies z.ZodType<AppearanceRequest>;
+
+/**
+ * SocialSlotRequest. Whether the character carries the item, and it fits the slot, is checked by the route
+ */
+export const socialSlotRequest = z.object({
+	slot: z.string().min(1).max(40),
+	itemId: z.number().int().min(1).max(2147483647).nullable()
+}) satisfies z.ZodType<SocialSlotRequest>;
+
+/**
+ * HiddenSlotRequest. Whether the slot is one of the ruleset's is checked by the route
+ */
+export const hiddenSlotRequest = z.object({
+	slot: z.string().min(1).max(40),
+	hidden: z.boolean()
+}) satisfies z.ZodType<HiddenSlotRequest>;
+
+/**
  * NewCharacterRequest. Whether the race, class, theme and scores are allowed is checked by the route
  */
 const newCharacterRequest = z.object({
@@ -65,7 +94,8 @@ const newCharacterRequest = z.object({
 		wisdom: baseScore,
 		charisma: baseScore
 	}),
-	floatingAbility: z.enum(PF1E_ABILITIES).nullable()
+	floatingAbility: z.enum(PF1E_ABILITIES).nullable(),
+	appearance: appearanceRequest
 }) satisfies z.ZodType<NewCharacterRequest>;
 
 /**
@@ -80,7 +110,9 @@ const characterDraft = z.object({
 	// Progress saved before themes existed has none
 	themeId: z.number().int().min(1).max(2147483647).nullable().default(null),
 	baseScores: newCharacterRequest.shape.baseScores.nullable(),
-	floatingAbility: z.enum(PF1E_ABILITIES).nullable()
+	floatingAbility: z.enum(PF1E_ABILITIES).nullable(),
+	// Progress saved before avatars existed has none
+	appearance: appearanceRequest.nullable().default(null)
 }) satisfies z.ZodType<CharacterDraft>;
 
 /**
@@ -207,6 +239,31 @@ const messages = defineMessages({
 		id: 'error.giveNotInGroup',
 		defaultMessage: 'Items can only be given to another character in the same group.',
 		description: 'Why items weren\'t given from a character\'s sheet: the giving character isn\'t in a group, or the character chosen to get them isn\'t in it any more'
+	},
+	socialItemNotCarried: {
+		id: 'error.socialItemNotCarried',
+		defaultMessage: 'The character doesn\'t carry that item any more.',
+		description: 'Why an item wasn\'t worn in a social slot (worn only for how it looks on the character\'s avatar) from a character\'s sheet: the character no longer carries it, perhaps because it was discarded or given away in another window first'
+	},
+	notSocial: {
+		id: 'error.notSocial',
+		defaultMessage: 'That item can\'t be worn there for its look.',
+		description: 'Why an item wasn\'t worn in a social slot (worn only for how it looks on the character\'s avatar) from a character\'s sheet: it doesn\'t go in that slot, or it is a weapon or shield, perhaps because the universe\'s creators changed where it equips'
+	},
+	noSuchSlot: {
+		id: 'error.noSuchSlot',
+		defaultMessage: 'The character has no such slot.',
+		description: 'Why a slot wasn\'t hidden from or shown on a character\'s avatar, or an item worn in it for its look: the slot isn\'t one of the universe\'s ruleset\'s'
+	},
+	bodyTypeFixed: {
+		id: 'error.bodyTypeFixed',
+		defaultMessage: 'Only the universe\'s creators can change a character\'s body type.',
+		description: 'Why a character\'s appearance wasn\'t changed from their sheet: the player asked to change the body type of their avatar, which they can only choose when making the character'
+	},
+	bodyTypeUnavailable: {
+		id: 'error.bodyTypeUnavailable',
+		defaultMessage: 'That body type isn\'t drawn for the character\'s race. Choose another.',
+		description: 'Why a character wasn\'t made, or their appearance changed: the body type chosen for their avatar isn\'t one of their race\'s, perhaps because the universe\'s creators changed what the race looks like'
 	}
 });
 
@@ -266,6 +323,9 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 	router.post('/:characterId/items/equip', loadPlayableUniverse, equipRoute);
 	router.post('/:characterId/items/unequip', loadPlayableUniverse, unequipRoute);
 	router.post('/:characterId/items/give', loadPlayableUniverse, giveRoute);
+	router.post('/:characterId/social', loadPlayableUniverse, socialRoute);
+	router.post('/:characterId/hidden-slots', loadPlayableUniverse, hiddenSlotRoute);
+	router.put('/:characterId/appearance', loadPlayableUniverse, appearanceRoute);
 	router.use(handleCharacterError);
 
 	app.use(`${UNIVERSES_PATH}/:universeId/characters`, router);
@@ -382,6 +442,7 @@ async function listRoute(request: Request, response: Response): Promise<void>
 	const lastPlayedId = await findLastPlayedCharacterId(playerId, universe.id, barred);
 	const raceNames = new Map(races.map(({ id, key, name }) => [id, translator.name('race', id, { key, name })]));
 	const classNames = new Map(classes.map(({ id, key, name }) => [id, translator.name('class', id, { key, name })]));
+	const avatarHashes = await avatarHashesOf(characters.map((character) => character.id));
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: CharacterListPayload = {
 		ruleset: universe.ruleset,
@@ -390,6 +451,7 @@ async function listRoute(request: Request, response: Response): Promise<void>
 			name,
 			race: (raceNames.get(raceId) ?? unnamed),
 			characterClass: (classNames.get(classId) ?? unnamed),
+			avatarHash: (avatarHashes.get(id) ?? null),
 			deleteAt: (deleteAt?.toISOString() ?? null),
 			barredBy: characterBar({ raceId, classId }, barred),
 			groupId
@@ -467,8 +529,13 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 			},
 			'coin'
 		]));
-	const [{ membership, members }, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
+	// The group's characters are shown with their avatars too
+	const avatarsLoad = groupLoad
+		.then(({ members }) => findCharacterAvatars([character.id, ...members.map((member) => member.characterId)]));
+	const [{ membership, members }, avatars, socialEquipment, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
 		groupLoad,
+		avatarsLoad,
+		listSocialEquipment(character.id),
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
 		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
@@ -514,6 +581,7 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 	const characterClass = classes.find((option) => (option.id === character.classId));
 	const theme = themes.find((option) => (option.id === character.themeId));
 	const itemsById = new Map(items.map((item) => [item.id, item]));
+	const avatar = avatars.get(character.id);
 	const { hitPoints, staminaPoints } = ((universe.ruleset === 'sf1e')
 		? sf1ePoints(race, characterClass, character.abilityScores.constitution)
 		: { hitPoints: null, staminaPoints: null });
@@ -536,7 +604,8 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 						characterId: member.characterId,
 						name: member.name,
 						race: raceNameOf(member.raceId),
-						characterClass: classNameOf(member.classId)
+						characterClass: classNameOf(member.classId),
+						avatarHash: (avatars.get(member.characterId)?.picture?.hash ?? null)
 					}))
 					.sort((a, b) => a.name.localeCompare(b.name))
 			}),
@@ -575,7 +644,16 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 			}));
 		}),
 		hasTail: raceHasTail(race),
-		equipment: sortedEquipment(universe.ruleset, character.equipment)
+		equipment: sortedEquipment(universe.ruleset, character.equipment),
+		socialEquipment: sortedEquipment(universe.ruleset, socialEquipment),
+		hiddenSlots: (avatar?.look.hiddenSlots ?? []),
+		appearance: {
+			bodyType: (avatar?.look.bodyType ?? DEFAULT_BODY_TYPE),
+			artType: (avatar?.look.artType ?? DEFAULT_ART_TYPE),
+			background: (avatar?.look.background ?? DEFAULT_BACKGROUND)
+		},
+		avatarKey: (avatar?.raceKey ?? null),
+		avatarHash: (avatar?.picture?.hash ?? null)
 	};
 
 	return(payload);
@@ -733,6 +811,7 @@ export async function deleteCharacterNow(playerId: string, universeId: string, c
 			universeId,
 			characterId
 		});
+		await deleteObjects([avatarStorageKey(characterId)]);
 	}
 
 	return(refusal);
@@ -999,6 +1078,23 @@ const unequipRoute = itemRoute(unequipRequest, unequipItem);
 const giveRoute = itemRoute(giveItemsRequest, giveItems);
 
 /**
+ * POST /:characterId/social: wears an item one of the player's characters carries in a social slot, or
+ * empties it
+ */
+const socialRoute = itemRoute(socialSlotRequest, wearSocialItem);
+
+/**
+ * POST /:characterId/hidden-slots: hides a slot from one of the player's characters' avatar, or shows it
+ */
+const hiddenSlotRoute = itemRoute(hiddenSlotRequest, setHiddenSlot);
+
+/**
+ * PUT /:characterId/appearance: changes one of the player's characters' art type and background, but
+ * not their body type
+ */
+const appearanceRoute = itemRoute(appearanceRequest, (universe, characterId, request, playerId, noSuchCharacter) => changeAppearance(universe, characterId, request, playerId, noSuchCharacter, false));
+
+/**
  * Locks a character while their items or equipment change, refusing one who isn't there or isn't the
  * player's. The universe's shared lock comes first, so a world editor save changing where items equip or
  * taking them waits for the change, or the change waits for the save and reads what it saved. The
@@ -1137,6 +1233,195 @@ export async function unequipItem(universe: Pick<PlayableUniverse, 'id' | 'rules
 	}
 
 	return(refusal);
+}
+
+/**
+ * Wears an item a character carries in one of their social slots, replacing what was there, or empties
+ * the slot. It doesn't count as equipped, and leaves the stats slots as they are. Any item they carry
+ * that fits the slot can be worn, disabled ones and those whose book is off included
+ *
+ * @param universe The universe's ID and ruleset; its live version's items are used
+ * @param characterId The character's ID
+ * @param request The slot, and the item or null
+ * @param playerId The player the character must belong to, or undefined for any player's, as the
+ * universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't wear items
+ * @return Why nothing changed, or undefined once it has
+ */
+export async function wearSocialItem(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: SocialSlotRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+{
+	if (!socialSlots(universe.ruleset).includes(request.slot))
+	{
+		return({ status: 400, message: messages.noSuchSlot });
+	}
+
+	let changed: LockedCharacter | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
+
+		if ('status' in character)
+		{
+			return(character);
+		}
+
+		if (request.itemId !== null)
+		{
+			// Locked, so it can't be taken between checking it and wearing it
+			const carried = ((await lockCarriedItems(characterId, [request.itemId], transaction)).get(request.itemId) ?? 0);
+			const [item] = ((carried === 0) ? [] : await loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, [request.itemId], transaction));
+
+			if (!item)
+			{
+				return({ status: 409, message: messages.socialItemNotCarried });
+			}
+
+			if (!fitsSocialSlot(universe.ruleset, item, request.slot))
+			{
+				return({ status: 409, message: messages.notSocial });
+			}
+		}
+
+		if (await wearSocially(characterId, request.slot, request.itemId, transaction))
+		{
+			changed = character;
+		}
+
+		return(undefined);
+	});
+
+	if (changed)
+	{
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Hides one of a character's slots from their avatar, or shows it again. A hidden slot draws nothing,
+ * whatever is in it, until it is shown
+ *
+ * @param universe The universe's ID and ruleset
+ * @param characterId The character's ID
+ * @param request The slot, and whether to hide it
+ * @param playerId The player the character must belong to, or undefined for any player's, as the
+ * universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't hide slots
+ * @return Why nothing changed, or undefined once it has
+ */
+export async function setHiddenSlot(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: HiddenSlotRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+{
+	if (!equipmentSlots(universe.ruleset).includes(request.slot))
+	{
+		return({ status: 400, message: messages.noSuchSlot });
+	}
+
+	let changed: LockedCharacter | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
+
+		if ('status' in character)
+		{
+			return(character);
+		}
+
+		if (await setSlotHidden(characterId, request.slot, request.hidden, transaction))
+		{
+			changed = character;
+		}
+
+		return(undefined);
+	});
+
+	if (changed)
+	{
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Changes how a character's avatar is drawn: their art type and background, and their body type when
+ * allowed, which must be one of their race's. An art type without a base for them falls back as their
+ * avatar is drawn (avatarPicture())
+ *
+ * @param universe The universe's ID and ruleset; its live version's races are used
+ * @param characterId The character's ID
+ * @param request The appearance
+ * @param playerId The player the character must belong to, or undefined for any player's, as the
+ * universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't be changed
+ * @param mayChangeBodyType Whether the body type may change: only the universe's creators may
+ * @return Why nothing changed, or undefined once it has
+ */
+export async function changeAppearance(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: AppearanceRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor, mayChangeBodyType: boolean): Promise<Refusal | undefined>
+{
+	let changed: LockedCharacter | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
+
+		if ('status' in character)
+		{
+			return(character);
+		}
+
+		const look = (await findStoredLooks([characterId], transaction)).get(characterId);
+
+		if (!look)
+		{
+			return({ status: 404, message: noSuchCharacter });
+		}
+
+		if (request.bodyType !== look.bodyType)
+		{
+			if (!mayChangeBodyType)
+			{
+				return({ status: 403, message: messages.bodyTypeFixed });
+			}
+
+			const raceKey = ((await findAvatarRaceKeys([character.raceId], transaction)).get(character.raceId) ?? null);
+
+			if (!isAllowedBodyType(universe.ruleset, raceKey, request.bodyType))
+			{
+				return({ status: 409, message: messages.bodyTypeUnavailable });
+			}
+		}
+
+		if ((request.bodyType !== look.bodyType) || (request.artType !== look.artType) || (request.background !== look.background))
+		{
+			await setCharacterAppearance(characterId, request, transaction);
+			changed = character;
+		}
+
+		return(undefined);
+	});
+
+	if (changed)
+	{
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Whether a character of a race can have a body type: one of the race's, or any body type for a race with
+ * no avatar, which has none to choose from
+ *
+ * @param ruleset The universe's ruleset
+ * @param raceKey The key of the default race the race is drawn as, or null for none
+ * @param bodyType The body type
+ * @return True when it can
+ */
+function isAllowedBodyType(ruleset: Ruleset, raceKey: string | null, bodyType: string): boolean
+{
+	const bodyTypes = raceBodyTypes(ruleset, raceKey);
+
+	return((bodyTypes.length === 0) || bodyTypes.some((each) => (each === bodyType)));
 }
 
 /**
@@ -1352,13 +1637,20 @@ async function newCharacterRoute(request: Request, response: Response): Promise<
 
 	// Progress saved by an older version of Create Character is dropped rather than refused
 	const draft = characterDraft.safeParse(storedDraft);
+	const usableRaces = races.filter((race) => isUsable(race, rulebooks));
+	const raceKeys = await findAvatarRaceKeys(usableRaces.map((race) => race.id));
 	const payload: NewCharacterOptions = {
 		universeName: translator.text('universe', universe.id, 'name', universe.name),
 		ruleset: universe.ruleset,
 		abilities,
-		races: races
-			.filter((race) => isUsable(race, rulebooks))
-			.map(({ id, key, name, description, rules }) => translator.described('race', id, { id, key, name, description, rules })),
+		races: usableRaces.map(({ id, key, name, description, rules }) => translator.described('race', id, {
+			id,
+			key,
+			name,
+			description,
+			rules,
+			avatarKey: (raceKeys.get(id) ?? null)
+		})),
 		classes: classes
 			.filter((characterClass) => isUsable(characterClass, rulebooks))
 			.map(({ id, key, name, description, rules }) => translator.described('class', id, { id, key, name, description, rules })),
@@ -1466,7 +1758,7 @@ async function createRoute(request: Request, response: Response): Promise<void>
 
 	const playerId = playerIdOf(request);
 	const { id: universeId } = universeOf(request);
-	const { name, raceId, classId, themeId, baseScores, floatingAbility } = body.data;
+	const { name, raceId, classId, themeId, baseScores, floatingAbility, appearance } = body.data;
 
 	if (isReservedName(name))
 	{
@@ -1521,6 +1813,14 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			return({
 				status: 409,
 				message: messages.raceUnavailable
+			});
+		}
+
+		if (!isAllowedBodyType(universe.ruleset, ((await findAvatarRaceKeys([race.id], transaction)).get(race.id) ?? null), appearance.bodyType))
+		{
+			return({
+				status: 409,
+				message: messages.bodyTypeUnavailable
 			});
 		}
 
@@ -1579,7 +1879,8 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			themeId: (theme?.id ?? null),
 			abilityScores: finalAbilityScores(universe.ruleset, baseScores, bonuses),
 			money: addMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
-			items
+			items,
+			...appearance
 		}, transaction);
 		const equipmentOrder = startingEquipmentOrder([characterClass.startingItems, race.startingItems, universe.startingItems], items, usableItems, (itemId) => itemName(universe.ruleset, usableItems.get(itemId)));
 

@@ -1,6 +1,7 @@
 /**
  * Characters: the only module that reads or writes the characters, pf1e_characters, sf1e_characters,
- * character_items, character_drafts and pf1e_ability_rolls tables. It reads group_members only to
+ * character_items, character_drafts and pf1e_ability_rolls tables, but for the columns of characters that
+ * say how their avatar is drawn after they are made (avatarRepo.ts). It reads group_members only to
  * tell which characters are in a group, universes only to name a profile's characters' universes and
  * find the rulesets of a player's characters, and
  * players only to name and search for the players of the editor's list of a universe's characters
@@ -194,6 +195,13 @@ export interface NewCharacter
 	 * The items the character carries, each listed once by its own ID
 	 */
 	items: readonly ItemQuantity[];
+
+	/**
+	 * How their avatar is drawn; each left out is the table's default
+	 */
+	bodyType?: string;
+	artType?: string;
+	background?: string;
 }
 
 /**
@@ -1064,16 +1072,16 @@ export async function restoreCharacter(playerId: string, universeId: string, cha
  * Deletes every character whose last rites' time has come
  *
  * @param executor The database, or a transaction
- * @return How many were deleted
+ * @return The IDs of those deleted
  */
-export async function purgeExpiredCharacters(executor: Executor = db): Promise<number>
+export async function purgeExpiredCharacters(executor: Executor = db): Promise<string[]>
 {
 	const deleted = await executor
 		.delete(characters)
 		.where(lte(characters.deleteAt, sql`now()`))
 		.returning({ id: characters.id });
 
-	return(deleted.length);
+	return(deleted.map((row) => row.id));
 }
 
 /**
@@ -1099,7 +1107,10 @@ export async function createCharacter(character: NewCharacter, executor: Executo
 			gold: money.gp,
 			silver: money.sp,
 			copper: money.cp,
-			credits: money.cr
+			credits: money.cr,
+			bodyType: character.bodyType,
+			artType: character.artType,
+			background: character.background
 		})
 		.returning({ id: characters.id });
 

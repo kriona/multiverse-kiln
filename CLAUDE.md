@@ -17,7 +17,7 @@ An engine for making multiplayer browser-based role-playing games.
 
 ```
 /client          Phaser game (Vite). Uses `@colyseus/sdk` (formerly colyseus.js) to connect to the server.
-                 Sixteen pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
+                 Seventeen pages, linked without .html (/game): index.html (Home; src/main.ts, src/style.scss),
                  universe.html (a universe's page at /universe/<slug or id>; src/universe.ts, src/universe.scss),
                  game.html (lobby and game at /game/<slug or id>, apart from Home so other pages can be open in
                  other tabs while playing; src/game.ts, src/style.scss), edit.html (the
@@ -33,8 +33,10 @@ An engine for making multiplayer browser-based role-playing games.
                  language files from; src/adminSettings.ts, src/adminSessions.ts, src/adminPlayers.ts,
                  src/adminAdmins.ts, src/adminUniverses.ts, src/adminTranslations.ts), sharing src/AdminPage.ts and src/admin.scss, login.html (logging
                  in, creating an account and resetting a password, at /login?next=<page to go back to>; src/login.ts,
-                 src/LoginPage.ts, src/login.scss) and profile.html (the player's own profile at /profile, and
-                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile, Site admin for server admins and Log out, Site Admin in the admin tools' toolbars and their refusal notice, status and notice screens,
+                 src/LoginPage.ts, src/login.scss), profile.html (the player's own profile at /profile, and
+                 other players' at /player/<username>; src/profile.ts, src/ProfilePage.ts, src/profile.scss) and
+                 avatar-positions.html (the tool placing avatar item drawings, only with dev tools on, at
+                 /avatar-positions; src/avatarPositions.ts, src/avatarPositions.scss). HTML the pages share (the tags every <head> starts with, the logged-in player's name at the end of each toolbar, opening a menu with Edit profile, Site admin for server admins and Log out, Site Admin in the admin tools' toolbars and their refusal notice, status and notice screens,
                  the dialogs turning on 2FA and showing recovery codes (on the profile and Home), footer, the keyboard shortcut list and screen reader live regions) lives in partials/, included with <!-- include footer.html --> (vite.config.ts).
                  Both styles use src/_shared.scss, and
                  src/pages.ts holds the addresses that link the pages. src/localization.ts shows text in the
@@ -60,6 +62,8 @@ An engine for making multiplayer browser-based role-playing games.
   src/db/            Drizzle client, schema, and repository modules
   src/storage/       object storage for uploads (any S3-compatible service; SeaweedFS locally)
   src/images/        checking and re-encoding uploaded images, such as tilesets
+  src/avatars/       characters' avatars: reading the engine's avatar art, composing it with sharp, and storing
+                     each character's avatar and Create Character's previews in object storage
   src/archives/      making and reading zip archives, such as a universe's export
   src/auth/          logins: sessions (the session cookie to a player, sessions.ts), password hashing, keyed
                      hashes, tokens, rate limits, the breached password check, the Google and Discord
@@ -78,7 +82,10 @@ An engine for making multiplayer browser-based role-playing games.
                  each ruleset's data and rules (src/rulesets/<ruleset>/, Open Game Content for PF1E and
                  SF1E; see client/license.html), and what the rulesets share: money (src/money.ts) and
                  the abilities, sizes, races, classes and themes tables (src/racesAndClasses.ts),
-                 messages and the Translator (src/localization.ts)
+                 messages and the Translator (src/localization.ts), and the avatar manifest and what an
+                 avatar draws (src/avatars/)
+  assets/avatars/    the hand-drawn avatar art each art type ships, and the backgrounds; README.md says how to
+                     add art
   locales/           en.json, the English catalog extracted from the code, and each translation's file, which
                      stores each message with the English it was made from (en-x-pirate.json is Pirate, a
                      test language). The client's dev server writes en-XA.json, the pseudo-language's

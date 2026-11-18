@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload, type ItemSettings, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceListPayload, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterAppearance, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload, type ItemSettings, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceListPayload, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { adminDb, inAdminTransaction } from '../src/db/adminClient.js';
 import { countCharacters } from '../src/db/characterRepo.js';
@@ -31,6 +31,15 @@ interface Answer<T>
 	status: number;
 	body: T;
 }
+
+/**
+ * How the test characters' avatars are drawn
+ */
+const appearance: CharacterAppearance = {
+	bodyType: 'femmeThin',
+	artType: 'stickFigure',
+	background: 'darkRed'
+};
 
 // 7 + 5 + 2 + 0 + 0 + 1 = 15 points
 const standardBuy: Pf1eAbilityScores = {
@@ -196,7 +205,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: inRolledOrder(abilities.rolls),
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 	}
 
@@ -336,6 +346,7 @@ describe('Character routes', () =>
 				name: 'Brokk',
 				race: { key: 'dwarf', name: null },
 				characterClass: { key: 'fighter', name: null },
+				avatarHash: null,
 				deleteAt: null,
 				barredBy: null,
 				groupId: null
@@ -392,7 +403,14 @@ describe('Character routes', () =>
 				slot: 'mainHand',
 				itemId: items[0].id,
 				bothHands: false
-			}]
+			}],
+			socialEquipment: [],
+			hiddenSlots: [],
+			appearance,
+			avatarKey: 'dwarf',
+
+			// Nothing is drawn yet
+			avatarHash: null
 		});
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
 		assert.deepStrictEqual(items.map(({ key, category, types, equips, rulebook, quantity }) => ({ key, category, types, equips, rulebook, quantity })), [{ key: 'dagger', category: 'weapon', types: ['blades_light', 'thrown'], equips: 'oneHand', rulebook: 'core', quantity: 1 }]);
@@ -598,7 +616,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		};
 		const over = await send(ada, 'POST', charactersPath(universeId), {
 			...request,
@@ -622,7 +641,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		};
 
 		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), human)).status, 400);
@@ -644,6 +664,7 @@ describe('Character routes', () =>
 			startingAreaId: null,
 			startingColumn: 0,
 			startingRow: 0,
+			looksLikeRaceId: null,
 			rules: NEW_PF1E_RACE_RULES
 		};
 		const raceId = (await saveEditorChange(ada, universeId, { kind: 'createRace', ref: 'new:race', settings: lizardfolk })).body.ids['new:race'];
@@ -653,7 +674,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 
 		assert.strictEqual(answer.status, 409);
@@ -667,6 +689,7 @@ describe('Character routes', () =>
 		const item = (name: string, settings: Pick<ItemSettings, 'category' | 'types' | 'equips'>): Promise<number> => createCustomItem(liveVersion(universeId), 'pf1e', {
 			name,
 			description: null,
+			looksLikeItemId: null,
 			enabled: true,
 			...settings
 		});
@@ -684,7 +707,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 
 		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
@@ -719,6 +743,7 @@ describe('Character routes', () =>
 			startingAreaId: null,
 			startingColumn: 0,
 			startingRow: 0,
+			looksLikeRaceId: null,
 			rules: NEW_PF1E_RACE_RULES
 		};
 		const raceId = Number((await saveEditorChange(ada, universeId, { kind: 'createRace', ref: 'new:race', settings: lizardfolk })).body.ids['new:race']);
@@ -729,7 +754,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 
 		assert.strictEqual((await saveEditorChange(ada, universeId, { kind: 'removeRace', id: raceId })).status, 409);
@@ -749,7 +775,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		};
 
 		for (let count = 0; count < 3; count++)
@@ -787,7 +814,8 @@ describe('Character routes', () =>
 			classId: null,
 			baseScores: null,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		};
 
 		assert.strictEqual((await newOptions()).draft, null);
@@ -812,7 +840,8 @@ describe('Character routes', () =>
 			classId: null,
 			baseScores: null,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 
 		assert.strictEqual(answer.status, 400);
@@ -829,7 +858,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: request.baseScores,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 		assert.strictEqual((await send(ada, 'POST', charactersPath(universeId), request)).status, 201);
 		assert.strictEqual((await newOptions()).draft, null);
@@ -845,7 +875,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 
 		assert.strictEqual(answer.status, 400);
@@ -862,7 +893,8 @@ describe('Character routes', () =>
 			classId: fighterId,
 			baseScores: standardBuy,
 			themeId: null,
-			floatingAbility: null
+			floatingAbility: null,
+			appearance
 		});
 
 		assert.strictEqual(answer.status, 400);
@@ -910,7 +942,8 @@ describe('Character routes', () =>
 					wisdom: 10,
 					charisma: 10
 				},
-				floatingAbility: null
+				floatingAbility: null,
+				appearance
 			};
 		});
 
@@ -976,7 +1009,8 @@ describe('Character routes', () =>
 				classId: fighterId,
 				baseScores: standardBuy,
 				themeId: request.themeId,
-				floatingAbility: null
+				floatingAbility: null,
+				appearance
 			});
 
 			assert.strictEqual(answer.status, 409);

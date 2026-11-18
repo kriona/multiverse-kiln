@@ -3,10 +3,12 @@
  * server starts, then every hour. It runs on its own timer, never in a room's simulation tick. Until a
  * sweep deletes them, the repositories hide them
  */
+import { avatarStorageKey } from './avatars/characterAvatars.js';
 import { purgeExpiredCharacters } from './db/characterRepo.js';
 import { listExpiredMemberships, listMembersOfGroups, purgeExpiredInvites } from './db/groupRepo.js';
 import { inTransaction } from './db/transactions.js';
 import { deletionChange, groupChanges, type GroupChange } from './players/groupChanges.js';
+import { deleteObjects } from './storage/objectStorage.js';
 
 /**
  * How often the sweep runs
@@ -41,9 +43,10 @@ async function sweep(): Promise<void>
 			groupChanges.publish(change);
 		}
 
-		if (deleted > 0)
+		if (deleted.length > 0)
 		{
-			console.log('Deleted', deleted, 'characters whose last rites were over');
+			await deleteObjects(deleted.map(avatarStorageKey));
+			console.log('Deleted', deleted.length, 'characters whose last rites were over');
 		}
 	}
 	catch (error)

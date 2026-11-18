@@ -1,10 +1,14 @@
 /**
  * Equipment: the only module that reads or writes the character_equipment table, what each character has
- * equipped. It reads characters only to find a universe's characters and their players. The rules for
- * what equipping does are pure functions in /shared (shared/src/equipment.ts); this stores their outcome
+ * in their stats and social slots. It reads characters only to find a universe's characters and their
+ * players. The rules for what equipping does are pure functions in /shared (shared/src/equipment.ts);
+ * this stores their outcome
+ *
+ * Equipping means the stats layer: listEquipment(), equipItems() and unequipSlots() only see it. The
+ * social layer's items are worn only for how they look (listSocialEquipment(), wearSocially())
  */
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import type { EquippedItem } from '@multiverse-kiln/shared';
+import type { EquipmentLayer, EquippedItem } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { characterEquipment, characters } from './schema.js';
@@ -19,13 +23,22 @@ export interface EquipmentOwner
 }
 
 /**
- * What a character has equipped
+ * An item in one of a character's slots, with the slot's layer
+ */
+export interface LayeredItem extends EquippedItem
+{
+	layer: EquipmentLayer;
+}
+
+/**
+ * What a character has in one layer of their slots
  *
  * @param characterId The character's ID
+ * @param layer The layer
  * @param executor The database, or a transaction
- * @return The equipped items, in no particular order
+ * @return The items, by slot key
  */
-export async function listEquipment(characterId: string, executor: Executor = db): Promise<EquippedItem[]>
+async function listLayer(characterId: string, layer: EquipmentLayer, executor: Executor): Promise<EquippedItem[]>
 {
 	return(executor
 		.select({
@@ -34,18 +47,45 @@ export async function listEquipment(characterId: string, executor: Executor = db
 			bothHands: characterEquipment.bothHands
 		})
 		.from(characterEquipment)
-		.where(eq(characterEquipment.characterId, characterId))
+		.where(and(
+			eq(characterEquipment.characterId, characterId),
+			eq(characterEquipment.layer, layer)
+		))
 		.orderBy(asc(characterEquipment.slot)));
 }
 
 /**
- * What each of some characters has equipped, in one query
+ * What a character has equipped: their stats slots
+ *
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The equipped items, by slot key
+ */
+export async function listEquipment(characterId: string, executor: Executor = db): Promise<EquippedItem[]>
+{
+	return(listLayer(characterId, 'stats', executor));
+}
+
+/**
+ * What a character wears in their social slots
+ *
+ * @param characterId The character's ID
+ * @param executor The database, or a transaction
+ * @return The items, by slot key
+ */
+export async function listSocialEquipment(characterId: string, executor: Executor = db): Promise<EquippedItem[]>
+{
+	return(listLayer(characterId, 'social', executor));
+}
+
+/**
+ * What each of some characters has in both layers of their slots, in one query
  *
  * @param characterIds The characters' IDs
  * @param executor The database, or a transaction
- * @return Each character's equipped items, by character ID; a character with none is left out
+ * @return Each character's items, by character ID; a character with none is left out
  */
-export async function listEquipmentOf(characterIds: readonly string[], executor: Executor = db): Promise<Map<string, EquippedItem[]>>
+export async function listLayeredEquipmentOf(characterIds: readonly string[], executor: Executor = db): Promise<Map<string, LayeredItem[]>>
 {
 	if (characterIds.length === 0)
 	{
@@ -55,16 +95,18 @@ export async function listEquipmentOf(characterIds: readonly string[], executor:
 	const rows = await executor
 		.select({
 			characterId: characterEquipment.characterId,
+			layer: characterEquipment.layer,
 			slot: characterEquipment.slot,
 			itemId: characterEquipment.itemId,
 			bothHands: characterEquipment.bothHands
 		})
 		.from(characterEquipment)
 		.where(sql`${characterEquipment.characterId} = ANY(${sql.param([...new Set(characterIds)])}::uuid[])`)
-		.orderBy(asc(characterEquipment.characterId), asc(characterEquipment.slot));
+		.orderBy(asc(characterEquipment.characterId), asc(characterEquipment.layer), asc(characterEquipment.slot));
 	const grouped = Map.groupBy(rows, (row) => row.characterId);
 
-	return(new Map([...grouped].map(([characterId, equipped]) => [characterId, equipped.map(({ slot, itemId, bothHands }) => ({
+	return(new Map([...grouped].map(([characterId, items]) => [characterId, items.map(({ layer, slot, itemId, bothHands }) => ({
+		layer: ((layer === 'social') ? 'social' : 'stats'),
 		slot,
 		itemId,
 		bothHands
@@ -72,7 +114,29 @@ export async function listEquipmentOf(characterIds: readonly string[], executor:
 }
 
 /**
- * Equips items in slots, replacing what was in them. Each item must be one the character carries
+ * What each of some characters has equipped in their stats slots, in one query
+ *
+ * @param characterIds The characters' IDs
+ * @param executor The database, or a transaction
+ * @return Each character's equipped items, by character ID; a character with none is left out
+ */
+export async function listEquipmentOf(characterIds: readonly string[], executor: Executor = db): Promise<Map<string, EquippedItem[]>>
+{
+	const layered = await listLayeredEquipmentOf(characterIds, executor);
+
+	return(new Map([...layered]
+		.map(([characterId, items]): [string, EquippedItem[]] => [characterId, items
+			.filter((item) => (item.layer === 'stats'))
+			.map(({ slot, itemId, bothHands }) => ({
+				slot,
+				itemId,
+				bothHands
+			}))])
+		.filter(([, items]) => (items.length > 0))));
+}
+
+/**
+ * Equips items in stats slots, replacing what was in them. Each item must be one the character carries
  *
  * @param characterId The character's ID
  * @param equipment The items and their slots
@@ -89,12 +153,13 @@ export async function equipItems(characterId: string, equipment: readonly Equipp
 		.insert(characterEquipment)
 		.values(equipment.map(({ slot, itemId, bothHands }) => ({
 			characterId,
+			layer: 'stats',
 			slot,
 			itemId,
 			bothHands
 		})))
 		.onConflictDoUpdate({
-			target: [characterEquipment.characterId, characterEquipment.slot],
+			target: [characterEquipment.characterId, characterEquipment.layer, characterEquipment.slot],
 			set: {
 				itemId: sql`excluded.item_id`,
 				bothHands: sql`excluded.both_hands`
@@ -103,7 +168,7 @@ export async function equipItems(characterId: string, equipment: readonly Equipp
 }
 
 /**
- * Unequips what is in some of a character's slots
+ * Unequips what is in some of a character's stats slots
  *
  * @param characterId The character's ID
  * @param slots The slots
@@ -120,19 +185,72 @@ export async function unequipSlots(characterId: string, slots: readonly string[]
 		.delete(characterEquipment)
 		.where(and(
 			eq(characterEquipment.characterId, characterId),
+			eq(characterEquipment.layer, 'stats'),
 			inArray(characterEquipment.slot, [...new Set(slots)])
 		));
 }
 
 /**
- * Unequips some items from every character of a universe who has them equipped, in one statement, as a
- * save changing where they equip, or whether they are shields or weapons, does, and taking them while
- * disabled. The IDs go in one array parameter, since a save can change thousands of items
+ * Wears an item in a social slot, replacing what was there, or empties the slot. The item must be one the
+ * character carries
+ *
+ * @param characterId The character's ID
+ * @param slot The social slot
+ * @param itemId The item, or null to empty the slot
+ * @param executor The database, or a transaction
+ * @return Whether the slot changed
+ */
+export async function wearSocially(characterId: string, slot: string, itemId: number | null, executor: Executor = db): Promise<boolean>
+{
+	if (itemId === null)
+	{
+		const removed = await executor
+			.delete(characterEquipment)
+			.where(and(
+				eq(characterEquipment.characterId, characterId),
+				eq(characterEquipment.layer, 'social'),
+				eq(characterEquipment.slot, slot)
+			))
+			.returning({
+				slot: characterEquipment.slot
+			});
+
+		return(removed.length > 0);
+	}
+
+	const written = await executor
+		.insert(characterEquipment)
+		.values({
+			characterId,
+			layer: 'social',
+			slot,
+			itemId,
+			bothHands: false
+		})
+		.onConflictDoUpdate({
+			target: [characterEquipment.characterId, characterEquipment.layer, characterEquipment.slot],
+			set: {
+				itemId: sql`excluded.item_id`
+			},
+			setWhere: sql`${characterEquipment.itemId} <> excluded.item_id`
+		})
+		.returning({
+			slot: characterEquipment.slot
+		});
+
+	return(written.length > 0);
+}
+
+/**
+ * Takes some items out of both layers of every slot of every character of a universe who has them there,
+ * in one statement, as a save changing where they equip, or whether they are shields or weapons, does,
+ * and taking them while disabled. The IDs go in one array parameter, since a save can change thousands
+ * of items
  *
  * @param universeId The universe's ID
  * @param itemIds The items, by the IDs characters hold
  * @param executor The database, or a transaction
- * @return The characters who had one equipped
+ * @return The characters who had one in a slot
  */
 export async function unequipItemsInUniverse(universeId: string, itemIds: readonly number[], executor: Executor = db): Promise<EquipmentOwner[]>
 {

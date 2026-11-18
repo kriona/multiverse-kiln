@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_ITEM_EQUIPS, DEFAULT_ITEM_KINDS, DEFAULT_ITEM_NAMES, isItemKind, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_RULEBOOKS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
-import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findAvatarItemKeys, findDefaultItemIds, findItem, isDefaultItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse } from './fixtures.js';
 
@@ -12,6 +12,7 @@ const rustyDagger: ItemSettings = {
 	category: 'weapon',
 	types: ['blades_light', 'thrown'],
 	equips: 'oneHand',
+	looksLikeItemId: null,
 	enabled: true
 };
 
@@ -21,27 +22,31 @@ const torch: CustomItemSettings = {
 	category: 'gear',
 	types: ['light_source'],
 	equips: 'oneHand',
+	looksLikeItemId: null,
 	enabled: true
 };
 
 /**
- * The default dagger's description, category, types and where it equips
+ * The default dagger's description, category, types and where it equips, and that it looks like no
+ * other item
  */
 const daggerKind = {
 	description: null,
 	category: 'weapon',
 	types: ['blades_light', 'thrown'],
-	equips: 'oneHand'
+	equips: 'oneHand',
+	looksLikeItemId: null
 };
 
 /**
- * A longsword's description, category, types and where it equips
+ * A longsword's description, category, types and where it equips, and that it looks like no other item
  */
 const longswordKind = {
 	description: null,
 	category: 'weapon',
 	types: ['blades_heavy'],
-	equips: 'oneHand'
+	equips: 'oneHand',
+	looksLikeItemId: null
 };
 
 /**
@@ -284,7 +289,7 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(page.items.map((item) => item.id), [torchId]);
 
 			// Changing a default item's types alone is an edit
-			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, description: null, category: 'weapon', types: ['blades_light'], equips: 'oneHand', enabled: false });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', await daggerId(), { name: null, description: null, category: 'weapon', types: ['blades_light'], equips: 'oneHand', looksLikeItemId: null, enabled: false });
 			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [await daggerId()]);
 			assert.deepStrictEqual(await listedIds(universeId, { type: 'thrown' }), []);
 
@@ -473,6 +478,28 @@ describe('itemRepo', () =>
 
 			await updateCustomItem(liveVersion(universeId), torchId, torch);
 			assert.strictEqual((await findTorch())?.description, null);
+		});
+
+		it('saves and loads what a universe\'s own item looks like, and its key on avatars', async () =>
+		{
+			const universeId = await addUniverse();
+			const dagger = await daggerId();
+			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', { ...torch, looksLikeItemId: dagger });
+			const findTorch = async (): Promise<EditorItem | undefined> => (await loadEditorItems(liveVersion(universeId), 'pf1e')).find((item) => (item.id === torchId));
+
+			assert.strictEqual((await findTorch())?.looksLikeItemId, dagger);
+			assert.deepStrictEqual(await findAvatarItemKeys([torchId, dagger]), new Map([[torchId, 'dagger'], [dagger, 'dagger']]));
+			assert.strictEqual(await isDefaultItem('pf1e', dagger), true);
+			assert.strictEqual(await isDefaultItem('sf1e', dagger), false);
+			assert.strictEqual(await isDefaultItem('pf1e', torchId), false);
+
+			await updateCustomItem(liveVersion(universeId), torchId, torch);
+			assert.strictEqual((await findTorch())?.looksLikeItemId, null);
+			assert.deepStrictEqual(await findAvatarItemKeys([torchId]), new Map([[torchId, null]]));
+
+			// A default item, and its edited copy, use their own drawings
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { ...rustyDagger, looksLikeItemId: torchId });
+			assert.strictEqual((await loadEditorItemsIn(liveVersion(universeId), 'pf1e', [dagger]))[0]?.looksLikeItemId, null);
 		});
 
 		it('keeps a default item\'s description, gives it the universe\'s, and restores it', async () =>

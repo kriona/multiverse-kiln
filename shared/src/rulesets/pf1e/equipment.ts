@@ -152,6 +152,17 @@ export const PF1E_RING_LOCATION: Pf1eWornLocation = 'ring';
 export const PF1E_SHIELD_TYPES: readonly string[] = ['shields'];
 
 /**
+ * The order an avatar draws the slots' items in over the base, from the first drawn to the last, so the
+ * last is in front. A part of a drawing can choose another slot's layer, or to go behind the base
+ */
+export const PF1E_SLOT_DRAW_ORDER: readonly string[] = ['tail', 'feet', 'body', 'chest', 'armor', 'wrists', 'hands', 'ringLeft', 'ringRight', 'belt', 'neck', 'shoulders', 'eyes', 'headband', 'head', 'offArm', 'offHand', 'mainHand'];
+
+/**
+ * The worn places without a social slot: the tail and the off arm hold weapons and shields
+ */
+export const PF1E_NON_SOCIAL_LOCATIONS: readonly Pf1eWornLocation[] = ['tail', 'offArm'];
+
+/**
  * Where each default item equips: nowhere, one hand, two hands or a worn place (PF1E_WORN_LOCATIONS).
  * This is apart from the item's kind: a dwarven boulder helmet is a weapon worn on the head, and a torch
  * is gear held in a hand

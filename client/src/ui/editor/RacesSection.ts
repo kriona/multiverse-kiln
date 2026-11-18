@@ -59,6 +59,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 				startingAreaId: race.startingAreaId,
 				startingColumn: race.startingColumn,
 				startingRow: race.startingRow,
+				looksLikeRaceId: race.looksLikeRaceId,
 				rules: race.rules
 			}),
 			describe: describeRace,

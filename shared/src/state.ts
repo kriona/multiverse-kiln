@@ -96,7 +96,12 @@ export type GameState = SchemaType<typeof GameState>;
  * is the character's. Ghosts aren't members
  */
 export const LobbyMember = schema({
-	name: t.string()
+	name: t.string(),
+
+	/**
+	 * The character's ID, to show their avatar (avatarPath())
+	 */
+	characterId: t.string()
 }, 'LobbyMember');
 export type LobbyMember = SchemaType<typeof LobbyMember>;
 

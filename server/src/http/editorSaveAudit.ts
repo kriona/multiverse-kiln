@@ -66,7 +66,9 @@ const SUBJECT_FIELD_KEYS: Partial<Record<AuditSubject, ReadonlyMap<string, Audit
 	class: new Map([
 		['hitPoints', 'hitPointsPerLevel'],
 		['staminaPoints', 'staminaPointsPerLevel']
-	])
+	]),
+	race: new Map([['looksLikeRaceId', 'looksLike']]),
+	item: new Map([['looksLikeItemId', 'looksLike']])
 };
 
 /**
@@ -1097,6 +1099,16 @@ export class SaveAudit
 					field,
 					value: ((after.defaultTileId === null) ? null : await this.nameIn(this.tiles, resolveNumberRef(this.context, after.defaultTileId as NumberRef)))
 				});
+
+			case 'looksLike':
+			{
+				const looksLikeId = after[key];
+
+				return({
+					field,
+					value: ((typeof looksLikeId === 'number') ? await this.nameIn(((key === 'looksLikeRaceId') ? this.races : this.items), looksLikeId) : null)
+				});
+			}
 
 			default:
 				// Every other field holds its setting's value as saved

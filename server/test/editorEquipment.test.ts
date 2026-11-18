@@ -20,9 +20,9 @@ import { getTestServer } from './testServer.js';
  */
 function itemSettings(item: EditorItem, changes: Partial<ItemSettings>): ItemSettings
 {
-	const { name, description, category, types, equips, enabled } = item;
+	const { name, description, category, types, equips, looksLikeItemId, enabled } = item;
 
-	return({ name, description, category, types, equips, enabled, ...changes });
+	return({ name, description, category, types, equips, looksLikeItemId, enabled, ...changes });
 }
 
 /**
@@ -34,9 +34,9 @@ function itemSettings(item: EditorItem, changes: Partial<ItemSettings>): ItemSet
  */
 function raceSettings(race: EditorRace, rules: Record<string, unknown>): RaceSettings
 {
-	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow } = race;
+	const { name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, looksLikeRaceId } = race;
 
-	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, rules: { ...race.rules, ...rules } });
+	return({ name, description, enabled, keepPlaying, startingMoney, startingItems, startingAreaId, startingColumn, startingRow, looksLikeRaceId, rules: { ...race.rules, ...rules } });
 }
 
 describe('Unequipping when the world editor changes how items equip', () =>

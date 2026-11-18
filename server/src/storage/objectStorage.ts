@@ -95,8 +95,10 @@ function storage(): StorageSettings
  * @param key Where it goes, e.g. tile-graphics/<universe ID>/<graphic ID>.png
  * @param body The file
  * @param contentType Its media type, e.g. image/png
+ * @param metadata Values kept with the file, such as the hash of what it was made from: keys of lower case
+ * letters, digits and hyphens, and values of printable ASCII
  */
-export async function putObject(key: string, body: Buffer, contentType: string): Promise<void>
+export async function putObject(key: string, body: Buffer, contentType: string, metadata?: Record<string, string>): Promise<void>
 {
 	const { client, bucket } = storage();
 
@@ -104,7 +106,8 @@ export async function putObject(key: string, body: Buffer, contentType: string):
 		Bucket: bucket,
 		Key: key,
 		Body: body,
-		ContentType: contentType
+		ContentType: contentType,
+		Metadata: metadata
 	}));
 }
 
@@ -116,6 +119,17 @@ export async function putObject(key: string, body: Buffer, contentType: string):
  */
 export async function getObject(key: string): Promise<Buffer | undefined>
 {
+	return((await getObjectWithMetadata(key))?.body);
+}
+
+/**
+ * Reads a stored file with the metadata it was stored with
+ *
+ * @param key Its key
+ * @return The file and its metadata, or undefined when nothing is stored under the key
+ */
+export async function getObjectWithMetadata(key: string): Promise<{ body: Buffer; metadata: Record<string, string> } | undefined>
+{
 	const { client, bucket } = storage();
 
 	try
@@ -126,7 +140,15 @@ export async function getObject(key: string): Promise<Buffer | undefined>
 		}));
 		const bytes = await response.Body?.transformToByteArray();
 
-		return(((bytes === undefined) ? undefined : Buffer.from(bytes)));
+		if (bytes === undefined)
+		{
+			return(undefined);
+		}
+
+		return({
+			body: Buffer.from(bytes),
+			metadata: (response.Metadata ?? {})
+		});
 	}
 	catch (error)
 	{

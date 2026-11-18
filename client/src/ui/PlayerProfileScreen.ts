@@ -4,7 +4,7 @@ import { currentLocale, formatNodeList, t } from '../localization';
 import { getElement, setPageTitle, showScreen } from './dom';
 import { SOCIAL_SITE_NAMES, socialSiteIcon } from './socialSites';
 import { describeTimeZone } from './timeZones';
-import { characterLabel, showProfileCharacters } from './profileCharacters';
+import { profileCharacterLabel, showProfileCharacters } from './profileCharacters';
 
 /**
  * The address of a player's page on a social site, built from their username so it can only go to that
@@ -112,7 +112,7 @@ export class PlayerProfileScreen
 			const item = document.createElement('li');
 
 			item.className = 'profile-character';
-			item.append(...characterLabel(character));
+			item.append(...profileCharacterLabel(character));
 
 			return(item);
 		});

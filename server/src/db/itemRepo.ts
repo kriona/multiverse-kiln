@@ -10,9 +10,63 @@ import { items } from './schema.js';
 import { inVersion, type UniverseVersion } from './universeVersions.js';
 
 /**
+ * The key of the default item each of some items is drawn as on avatars: a default item's own key, or
+ * the key of the default item an item the universe added "looks like"
+ *
+ * @param itemIds The items, by the IDs characters hold
+ * @param executor The database, or a transaction
+ * @return Each item's key, by ID; null for an item the universe added that looks like none
+ */
+export async function findAvatarItemKeys(itemIds: readonly number[], executor: Executor = db): Promise<Map<number, string | null>>
+{
+	if (itemIds.length === 0)
+	{
+		return(new Map());
+	}
+
+	const looksLike = alias(items, 'looks_like');
+	const rows = await executor
+		.select({
+			id: items.id,
+			key: items.key,
+			looksLikeKey: looksLike.key
+		})
+		.from(items)
+		.leftJoin(looksLike, eq(looksLike.id, items.avatarItemId))
+		.where(sql`${items.id} = ANY(${sql.param([...new Set(itemIds)])}::integer[])`);
+
+	return(new Map(rows.map((row) => [row.id, (row.key ?? row.looksLikeKey)])));
+}
+
+/**
+ * Whether an ID is one of a ruleset's default items, which an item a universe added can "look like"
+ *
+ * @param ruleset The ruleset
+ * @param itemId The ID
+ * @param executor The database, or a transaction
+ * @return True when it is
+ */
+export async function isDefaultItem(ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<boolean>
+{
+	const rows = await executor
+		.select({
+			id: items.id
+		})
+		.from(items)
+		.where(and(
+			eq(items.id, itemId),
+			eq(items.ruleset, ruleset),
+			isNull(items.universeId)
+		))
+		.limit(1);
+
+	return(rows.length > 0);
+}
+
+/**
  * What a new item needs
  */
-export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'equips' | 'enabled'>;
+export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'equips' | 'enabled'> & Partial<Pick<typeof items.$inferInsert, 'description' | 'avatarItemId'>>;
 
 /**
  * The settings of an item a universe added, which always has a name of its own
@@ -212,7 +266,8 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			types: items.types,
 			equips: items.equips,
 			rulebook: items.rulebook,
-			enabled: items.enabled
+			enabled: items.enabled,
+			avatarItemId: items.avatarItemId
 		})
 		.from(items)
 		.where(and(
@@ -248,6 +303,7 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				category: settings.category,
 				types: settings.types,
 				equips: settings.equips,
+				looksLikeItemId: (custom ? row.avatarItemId : null),
 				enabled: settings.enabled,
 				rulebook: row.rulebook,
 				custom,
@@ -454,8 +510,29 @@ export async function createCustomItem(version: UniverseVersion, ruleset: Rulese
 		universeId: version.universeId,
 		draft: version.draft,
 		key: null,
-		...settings
+		...itemColumns(settings),
+		name: settings.name,
+		avatarItemId: settings.looksLikeItemId
 	}, executor));
+}
+
+/**
+ * The items table's columns for an item's settings, but its "Looks like", which only an item the universe
+ * added has
+ *
+ * @param settings The settings
+ * @return The columns' values
+ */
+function itemColumns(settings: ItemSettings): Pick<typeof items.$inferInsert, 'name' | 'description' | 'category' | 'types' | 'equips' | 'enabled'>
+{
+	return({
+		name: settings.name,
+		description: settings.description,
+		category: settings.category,
+		types: settings.types,
+		equips: settings.equips,
+		enabled: settings.enabled
+	});
 }
 
 /**
@@ -470,7 +547,10 @@ export async function updateCustomItem(version: UniverseVersion, itemId: number,
 {
 	await executor
 		.update(items)
-		.set(settings)
+		.set({
+			...itemColumns(settings),
+			avatarItemId: settings.looksLikeItemId
+		})
 		.where(and(
 			eq(items.id, itemId),
 			inVersion(items, version)
@@ -483,11 +563,14 @@ export async function updateCustomItem(version: UniverseVersion, itemId: number,
  * @param version The universe's live version or draft
  * @param ruleset The universe's ruleset
  * @param defaultItemId The default item's ID, from findItem() as default
- * @param settings The copy's settings; a null name or description keeps the default item's
+ * @param settings The copy's settings; a null name or description keeps the default item's, and its
+ * "Looks like" is left out, since a default item uses its own drawings
  * @param executor The database, or a transaction
  */
 export async function saveEditedDefaultItem(version: UniverseVersion, ruleset: Ruleset, defaultItemId: number, settings: ItemSettings, executor: Executor = db): Promise<void>
 {
+	const columns = itemColumns(settings);
+
 	await executor
 		.insert(items)
 		.values({
@@ -495,11 +578,11 @@ export async function saveEditedDefaultItem(version: UniverseVersion, ruleset: R
 			universeId: version.universeId,
 			draft: version.draft,
 			overridesItemId: defaultItemId,
-			...settings
+			...columns
 		})
 		.onConflictDoUpdate({
 			target: [items.universeId, items.draft, items.overridesItemId],
-			set: settings
+			set: columns
 		});
 }
 

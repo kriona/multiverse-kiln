@@ -1,0 +1,138 @@
+// The avatar positioning tool (avatar-positions.html), a developer's page for placing item drawings on
+// the avatar bases
+
+@use 'shared' as *;
+
+.positions-page
+{
+	flex: 1;
+	overflow-y: auto;
+}
+
+.positions-body
+{
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 16px;
+}
+
+.positions-intro
+{
+	margin-top: 0;
+}
+
+.positions-choices
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+
+	label
+	{
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+}
+
+.positions-problem
+{
+	color: $text-muted;
+}
+
+.positions-workspace
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 24px;
+	margin-top: 16px;
+}
+
+// Drawn at twice the avatar's size, without smoothing, so single pixels can be placed
+.positions-canvas
+{
+	width: 400px;
+	height: 600px;
+	border: 1px solid $border;
+	image-rendering: pixelated;
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	cursor: grab;
+}
+
+.positions-canvas.dragging
+{
+	cursor: grabbing;
+}
+
+.positions-side
+{
+	flex: 1;
+	min-width: 280px;
+
+	h2
+	{
+		margin-top: 0;
+	}
+}
+
+.positions-part-list,
+.positions-missing
+{
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.positions-part
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+
+	input
+	{
+		width: 5em;
+	}
+
+	.hint
+	{
+		flex-basis: 100%;
+		margin: 0;
+	}
+
+	.hint:empty
+	{
+		display: none;
+	}
+}
+
+.positions-part-handle
+{
+	cursor: grab;
+}
+
+// Not by color alone: the chosen part's button is outlined as well as colored
+.positions-part-handle[aria-pressed='true']
+{
+	outline: 2px dashed $accent-text;
+	outline-offset: 2px;
+	color: $accent-text;
+}
+
+.positions-copy
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.positions-copy-status
+{
+	color: $text-muted;
+}
