@@ -2,7 +2,7 @@ import assert from 'assert';
 import { createHash } from 'crypto';
 import { chooseUniverseLanguage, findTranslation, isTranslationOutOfDate, PIRATE_LOCALE, PSEUDO_LOCALE, sourceTextHash, translationLanguagesFor, UNIVERSE_LANGUAGES, universeLanguageOf, universeText } from '@multiverse-kiln/shared';
 
-import { acceptedLanguages } from '../../src/http/requestLanguages.js';
+import { acceptedLanguages, windowLanguages } from '../../src/http/requestLanguages.js';
 
 describe('universe text (shared)', () =>
 {
@@ -132,6 +132,22 @@ describe('universe text (shared)', () =>
 		it('keeps Pirate, so universes can be shown in it', () =>
 		{
 			assert.deepStrictEqual(acceptedLanguages(`${PIRATE_LOCALE}, en-US`), [PIRATE_LOCALE, 'en-US']);
+		});
+	});
+
+	describe('windowLanguages (server)', () =>
+	{
+		it('puts the profile\'s language first, then those the window sent, in canonical form', () =>
+		{
+			assert.deepStrictEqual(windowLanguages('de', ['fr-ca', 'en']), ['de', 'fr-CA', 'en']);
+			assert.deepStrictEqual(windowLanguages(null, ['fr-ca']), ['fr-CA']);
+			assert.deepStrictEqual(windowLanguages('de', undefined), ['de']);
+		});
+
+		it('leaves out what isn\'t a language tag, and keeps at most ten of those sent', () =>
+		{
+			assert.deepStrictEqual(windowLanguages(null, ['*', 'not a tag', '', 'x'.repeat(40), 'pt-br']), ['pt-BR']);
+			assert.strictEqual(windowLanguages(null, new Array<string>(50).fill('en')).length, 10);
 		});
 	});
 

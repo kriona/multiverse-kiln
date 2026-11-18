@@ -3,9 +3,11 @@ import { SessionServerMessageType, type AccountPayload, type CharacterItemsPaylo
 
 import { resolveSession, type SessionIdentity } from '../auth/sessions.js';
 import { isServerAdmin } from '../db/serverAdminRepo.js';
+import { windowLanguages } from '../http/requestLanguages.js';
 import { characterItemChanges, type CharacterItemChange } from '../players/characterItemChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { JoinChanges } from './joinChanges.js';
+import { sessionJoinOptions } from './payloads.js';
 import { withoutErrorDetails } from './roomErrors.js';
 
 /**
@@ -22,6 +24,11 @@ interface SessionWindow
 	 * Whether the session's player is a server admin, as of when the window joined
 	 */
 	serverAdmin: boolean;
+
+	/**
+	 * The languages the window sent as it joined (SessionJoinOptions), for languagesOf()
+	 */
+	sentLanguages: string[] | undefined;
 }
 
 type SessionClient = Client<{ auth: SessionWindow }>;
@@ -40,6 +47,20 @@ function windowOf(client: SessionClient): SessionWindow
 	}
 
 	return(client.auth);
+}
+
+/**
+ * The languages a session client wants universe text in, most wanted first: its player's profile
+ * language, then those it sent as it joined (windowLanguages())
+ *
+ * @param client A client that has passed onAuth
+ * @return The languages
+ */
+function languagesOf(client: SessionClient): string[]
+{
+	const { session, sentLanguages } = windowOf(client);
+
+	return(windowLanguages((session?.locale ?? null), sentLanguages));
 }
 
 /**
@@ -108,7 +129,8 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	}
 
 	/**
-	 * Tells every window of a character's player that the character's items changed, or who gave them what
+	 * Tells every window of a character's player that the character's items changed, or who gave them
+	 * what, naming the item in the window's language
 	 *
 	 * @param change The change
 	 */
@@ -127,7 +149,7 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 			}
 			else
 			{
-				client.send(SessionServerMessageType.ItemsReceived, change.received);
+				client.send(SessionServerMessageType.ItemsReceived, change.received(languagesOf(client)));
 			}
 		}
 	}
@@ -175,17 +197,19 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 * wrong (withoutErrorDetails())
 	 *
 	 * @param client The joining client
-	 * @param _options Join options from the client (unused)
+	 * @param options The client's SessionJoinOptions; a window that sends none is still admitted
 	 * @param context The connection's request headers, which carry the session cookie
 	 * @return The window's identity, stored as client.auth
 	 */
-	async onAuth(client: Client, _options: unknown, context: AuthContext): Promise<SessionWindow>
+	async onAuth(client: Client, options: unknown, context: AuthContext): Promise<SessionWindow>
 	{
 		const cookieHeader = context.headers.get('cookie');
+		const joinOptions = sessionJoinOptions.safeParse(options);
+		const sentLanguages = (joinOptions.success ? joinOptions.data.languages : undefined);
 
-		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader));
+		this.joinChanges.startLookup(client, () => this.lookUp(cookieHeader, sentLanguages));
 
-		return(withoutErrorDetails('Admitting a window to the session room', ErrorCode.APPLICATION_ERROR, () => this.lookUp(cookieHeader)));
+		return(withoutErrorDetails('Admitting a window to the session room', ErrorCode.APPLICATION_ERROR, () => this.lookUp(cookieHeader, sentLanguages)));
 	}
 
 	/**
@@ -267,15 +291,17 @@ export class SessionRoom extends Room<{ client: SessionClient }>
 	 * Looks a joining window up: its session, and whether its player is a server admin
 	 *
 	 * @param cookieHeader The connection's Cookie header
+	 * @param sentLanguages The languages the window sent as it joined, if any
 	 * @return Its identity
 	 */
-	private async lookUp(cookieHeader: string | null): Promise<SessionWindow>
+	private async lookUp(cookieHeader: string | null, sentLanguages: string[] | undefined): Promise<SessionWindow>
 	{
 		const session = ((await resolveSession(cookieHeader)) ?? null);
 
 		return({
 			session,
-			serverAdmin: (session ? await isServerAdmin(session.playerId) : false)
+			serverAdmin: (session ? await isServerAdmin(session.playerId) : false),
+			sentLanguages
 		});
 	}
 

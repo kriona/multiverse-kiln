@@ -480,6 +480,7 @@ describe('Equipment routes', () =>
 				assert.deepStrictEqual(notice?.details, {
 					receiver: 'Mara',
 					item: { key: 'dagger', name: null },
+					itemId: daggerId,
 					quantity: 1
 				});
 

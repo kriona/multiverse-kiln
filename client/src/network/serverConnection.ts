@@ -1,5 +1,5 @@
 import { Client, type Room } from '@colyseus/sdk';
-import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type EditorJoinOptions, type GameJoinOptions, type LobbyJoinOptions, type UniverseListPayload, type UniversePagePayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
+import { EDITOR_ROOM_NAME, EditorState, GAME_ROOM_NAME, GameState, LOBBY_ROOM_NAME, LobbyState, ServerMessageType, SESSION_ROOM_NAME, SessionServerMessageType, UNIVERSES_PATH, type AccountPayload, type EditorJoinOptions, type GameJoinOptions, type LobbyJoinOptions, type SessionJoinOptions, type UniverseListPayload, type UniversePagePayload, type UniverseTextPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 
 import { wantedLanguages } from '../localization';
 import { leaveOnPageHide } from '../pageLifecycle';
@@ -228,14 +228,16 @@ function readyJoinedRoom(room: Parameters<typeof leaveOnPageHide>[0] & { reconne
  * that aren't logged in too. Whatever the browser remembers for the player (rememberedValues.ts) is
  * kept as long as the session room says the session lasts, and forgotten once it says the browser isn't
  * logged in. Every room joined here is left as the page is left (leaveOnPageHide in pageLifecycle.ts), and
- * leaves as soon as its connection drops (readyJoinedRoom)
+ * leaves as soon as its connection drops (readyJoinedRoom). The session room names the items in gift
+ * toasts in the languages the player wants
  *
  * @return The client and the joined session room
  */
 export async function connectToServer(): Promise<ServerConnection>
 {
 	const client = createClient();
-	const session = await client.joinOrCreate(SESSION_ROOM_NAME);
+	const options: SessionJoinOptions = { languages: wantedLanguages() };
+	const session = await client.joinOrCreate(SESSION_ROOM_NAME, options);
 
 	readyJoinedRoom(session);
 
@@ -322,7 +324,8 @@ export async function joinEditorRoom(client: Client, universeId: string): Promis
  * Joins a group's game room to play one of the player's characters in it; the server makes the room
  * from the database when nobody is playing the group
  *
- * Passing the shared GameState class lets the SDK decode state into typed instances
+ * Passing the shared GameState class lets the SDK decode state into typed instances. The room names the
+ * items in the group's chat in the languages the player wants
  *
  * @param client Client for the server
  * @param groupId The group's ID
@@ -331,7 +334,11 @@ export async function joinEditorRoom(client: Client, universeId: string): Promis
  */
 export async function joinGroup(client: Client, groupId: string, characterId: string): Promise<GameConnection>
 {
-	const options: GameJoinOptions = { groupId, characterId };
+	const options: GameJoinOptions = {
+		groupId,
+		characterId,
+		languages: wantedLanguages()
+	};
 	const room = await client.joinOrCreate<GameState>(GAME_ROOM_NAME, options, GameState);
 
 	readyJoinedRoom(room);

@@ -1,7 +1,7 @@
 import type { ChatNotice, ChatNoticeDetails } from '@multiverse-kiln/shared';
 
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
-import { postNotice, type NoticeSubject } from './keptChat.js';
+import { postNotice, type NoticeDetailsIn, type NoticeSubject } from './keptChat.js';
 import { RateLimiter } from './rateLimiter.js';
 
 /**
@@ -69,16 +69,18 @@ export function startGroupChatNotices(): () => void
  * @param universeId The group's universe
  * @param groupId The group
  * @param giver The character who gave the items, and their player
- * @param details Who got what
+ * @param details Who got what, with the item's name in the universe's source language
+ * @param detailsIn The same with the item's name in each window's languages, for the windows of the
+ * group's room
  * @return Resolves once it is taken in or written, or has failed to be
  */
-export function postGiftNotice(universeId: string, groupId: string, giver: NoticeSubject, details: ChatNoticeDetails): Promise<void>
+export function postGiftNotice(universeId: string, groupId: string, giver: NoticeSubject, details: ChatNoticeDetails, detailsIn: NoticeDetailsIn): Promise<void>
 {
 	return(postNotice({
 		kind: 'group',
 		universeId,
 		groupId
-	}, 'gave', giver, details));
+	}, 'gave', giver, details, detailsIn));
 }
 
 /**

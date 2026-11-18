@@ -37,6 +37,12 @@ export interface NoticeSubject
 }
 
 /**
+ * A notice's details as a window shows them, in the languages it wants universe text in, most wanted
+ * first (windowLanguages()), such as a gave notice's with the item's name translated
+ */
+export type NoticeDetailsIn = (languages: readonly string[]) => ChatNoticeDetails;
+
+/**
  * Who wrote a message to a kept chat
  */
 export interface ChatAuthor
@@ -103,10 +109,11 @@ export class KeptChatLog
 	private saving: Promise<void> = Promise.resolve();
 
 	/**
-	 * @param onNotice Called with each notice the log takes in, for the room to send its windows; a log
-	 * without it takes in no notices
+	 * @param onNotice Called with each notice the log takes in, for the room to send its windows, and
+	 * its details in each window's languages when they depend on them; a log without it takes in no
+	 * notices
 	 */
-	constructor(private readonly onNotice?: (message: KeptChatMessage) => void)
+	constructor(private readonly onNotice?: (message: KeptChatMessage, detailsIn: NoticeDetailsIn | undefined) => void)
 	{
 	}
 
@@ -309,14 +316,15 @@ export class KeptChatLog
 	 * @param notice What it says
 	 * @param subject Who it is about
 	 * @param details What a gave notice says beyond who it is about; null for other notices
+	 * @param detailsIn The details in each window's languages, when they depend on them
 	 */
-	addNotice(notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null): void
+	addNotice(notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null, detailsIn?: NoticeDetailsIn): void
 	{
 		const message = noticeMessage(notice, subject, details);
 
 		this.messages = [...this.messages, message].slice(-MAX_KEPT_CHAT_MESSAGES);
 		this.unsaved.push(keptNotice(message));
-		this.onNotice?.(message);
+		this.onNotice?.(message, detailsIn);
 	}
 
 	/**
@@ -463,15 +471,17 @@ export class KeptChatLog
  * @param notice What it says
  * @param subject Who it is about
  * @param details What a gave notice says beyond who it is about; null for other notices
+ * @param detailsIn The details in each window's languages, when they depend on them, for the windows of
+ * a room that has the chat open
  * @return Resolves once a log has taken it in, or it is written to the database or has failed to be
  */
-export function postNotice(chat: KeptChat, notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null = null): Promise<void>
+export function postNotice(chat: KeptChat, notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null = null, detailsIn?: NoticeDetailsIn): Promise<void>
 {
 	const log = openLogs.get(chatKey(chat));
 
 	if (log)
 	{
-		log.addNotice(notice, subject, details);
+		log.addNotice(notice, subject, details, detailsIn);
 		return(Promise.resolve());
 	}
 

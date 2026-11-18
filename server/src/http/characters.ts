@@ -9,7 +9,7 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, EQUIP_RINGS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, localize, type LocalizedMessage, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, EQUIP_RINGS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, localize, type LocalizedMessage, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type ChatNoticeDetails, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, giveCharacterItems, keepPf1eAbilityRoll, listCharacters, lockCarriedItems, lockCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails, type LockedCharacter } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
@@ -24,7 +24,7 @@ import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { findEditorTheme, loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
+import { findEditableUniverse, findUniverse, lockUniverseShared } from '../db/universeRepo.js';
 import type { WantedText } from '../db/universeTextRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
@@ -1148,7 +1148,8 @@ export async function unequipItem(universe: Pick<PlayableUniverse, 'id' | 'rules
  * counts toward the limit on the notices the giving character's player's characters write in their
  * group (tryTakeGroupNotice()), whether their player or the universe's creators give it
  *
- * @param universe The universe's ID and ruleset; its live version's items name what is given
+ * @param universe The universe's ID and ruleset; its live version's items name what is given, in each
+ * player's language
  * @param characterId The giving character's ID
  * @param request Who gets the item, and how many
  * @param playerId The player the giving character must belong to, or undefined for any player's, as
@@ -1212,6 +1213,7 @@ export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 			groupId: membership.groupId,
 			giver,
 			receiver,
+			itemId: given.itemId,
 			item: {
 				key: (item?.key ?? null),
 				name: (item?.name ?? null)
@@ -1224,7 +1226,7 @@ export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 
 	if (gift)
 	{
-		announceGift(universe, characterId, gift);
+		await announceGift(universe, characterId, gift);
 	}
 
 	return(refusal);
@@ -1238,6 +1240,7 @@ interface Gift
 	groupId: string;
 	giver: LockedCharacter;
 	receiver: LockedCharacter;
+	itemId: number;
 
 	/**
 	 * The item given, named as the universe names it
@@ -1249,16 +1252,48 @@ interface Gift
 
 /**
  * Tells both players' windows that the characters' items changed, the receiver's who gave them what,
- * and the group's chat
+ * and the group's chat, naming the item in each window's language with the translations of the
+ * universe's live version, which characters play. The gift is saved by then, so when the translations
+ * can't be loaded the item is named in the universe's source language
  *
  * @param universe The universe's ID and ruleset
  * @param giverId The giving character's ID
  * @param gift What was given
  */
-function announceGift(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, giverId: string, gift: Gift): void
+async function announceGift(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, giverId: string, gift: Gift): Promise<void>
 {
-	const { giver, receiver, item, quantity } = gift;
+	const { giver, receiver, itemId, item, quantity } = gift;
 	const universeId = universe.id;
+	let translatorFor: (languages: readonly string[]) => UniverseTextTranslator = () => UniverseTextTranslator.sourceText();
+
+	try
+	{
+		// The universe the editor's route passes has the languages of the version the editor has open
+		const live = await findUniverse(universeId);
+
+		if (live)
+		{
+			translatorFor = await UniverseTextTranslator.loadEveryLanguage(live, [{ kind: 'item', thingIds: [itemId] }]);
+		}
+	}
+	catch (error)
+	{
+		console.error('Could not load the translations of item', itemId, 'given in universe', universeId, error);
+	}
+
+	/**
+	 * The item's name in a window's language
+	 *
+	 * @param languages The languages the window wants universe text in, most wanted first
+	 * @return The name
+	 */
+	const itemIn = (languages: readonly string[]): OptionName => translatorFor(languages).name('item', itemId, item);
+	const details: ChatNoticeDetails = {
+		receiver: receiver.name,
+		item,
+		itemId,
+		quantity
+	};
 
 	characterItemChanges.publishChanged(universeId, [
 		{
@@ -1274,23 +1309,22 @@ function announceGift(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, giverI
 	characterItemChanges.publish({
 		kind: 'received',
 		playerId: receiver.playerId,
-		received: {
+		received: (languages) => ({
 			universeId,
 			characterId: receiver.id,
 			giver: giver.name,
 			receiver: receiver.name,
-			item: receivedItemName(universe.ruleset, item),
+			item: receivedItemName(universe.ruleset, itemIn(languages)),
 			quantity
-		}
+		})
 	});
 	void postGiftNotice(universeId, gift.groupId, {
 		playerId: giver.playerId,
 		name: giver.name
-	}, {
-		receiver: receiver.name,
-		item,
-		quantity
-	});
+	}, details, (languages) => ({
+		...details,
+		item: itemIn(languages)
+	}));
 }
 
 /**
@@ -1601,7 +1635,7 @@ function itemName(ruleset: Ruleset, item: EditorItem | undefined): string
  * or a default item's name as a message, which the page shows in the player's language
  *
  * @param ruleset The universe's ruleset
- * @param item The item's name or key
+ * @param item The item's name, translated into the window's language, or its key
  * @return The name or message, or the key of a default item the ruleset doesn't have
  */
 function receivedItemName(ruleset: Ruleset, item: OptionName): string | LocalizedMessage

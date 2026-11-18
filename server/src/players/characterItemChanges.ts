@@ -4,11 +4,13 @@ import type { ItemsReceivedPayload } from '@multiverse-kiln/shared';
  * A change to a character's items or equipment, for their player's windows
  *
  * - changed: the character's items or equipment changed, so a sheet showing them loads them again
- * - received: another character gave the character items, for a toast saying who gave them what
+ * - received: another character gave the character items, for a toast saying who gave them what, with
+ *   the item named in each window's language: received() gives the toast for the languages a window
+ *   wants universe text in, most wanted first (windowLanguages())
  */
 export type CharacterItemChange =
 	| { kind: 'changed'; playerId: string; universeId: string; characterId: string }
-	| { kind: 'received'; playerId: string; received: ItemsReceivedPayload };
+	| { kind: 'received'; playerId: string; received: (languages: readonly string[]) => ItemsReceivedPayload };
 
 /**
  * Called after every change

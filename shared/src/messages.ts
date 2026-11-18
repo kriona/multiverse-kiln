@@ -158,6 +158,25 @@ export interface GameJoinOptions
 	 * The character the window controls: one of the player's characters in the group
 	 */
 	characterId: string;
+
+	/**
+	 * The languages the player wants universe text in, most wanted first, as the client sends them in
+	 * Accept-Language: the room names the items in the group's chat in them, after the language on the
+	 * player's profile. Left out, it uses only the profile's
+	 */
+	languages?: string[];
+}
+
+/**
+ * Options a client joins the session room with
+ */
+export interface SessionJoinOptions
+{
+	/**
+	 * The languages the player wants universe text in, as in GameJoinOptions: the room names the items
+	 * in the toasts telling the player of gifts in them
+	 */
+	languages?: string[];
 }
 
 /**
@@ -565,8 +584,10 @@ export interface ItemsReceivedPayload
 	receiver: string;
 
 	/**
-	 * The item's name: the universe's name for it, or a default item's name as a message for the page to
-	 * show in the player's language, so a page needn't load every default item's name to show it
+	 * The item's name: the universe's name for it, translated into the window's language when the
+	 * universe has a translation (SessionJoinOptions.languages), or a default item's name as a message
+	 * for the page to show in the player's language, so a page needn't load every default item's name to
+	 * show it
 	 */
 	item: string | LocalizedMessage;
 
@@ -637,9 +658,17 @@ export interface ChatNoticeDetails
 	receiver: string;
 
 	/**
-	 * The item given, by the universe's name for it or a default item's key
+	 * The item given, by the universe's name for it or a default item's key. The chat keeps its name as
+	 * it was when it was given; the group's room sends each window the item's name as it is now, in the
+	 * window's language (GameJoinOptions.languages), and this one once the item is deleted
 	 */
 	item: OptionName;
+
+	/**
+	 * The item's ID, which the group's room finds its name as it is now by; a notice without one shows
+	 * the name it keeps
+	 */
+	itemId?: number;
 
 	quantity: number;
 }
