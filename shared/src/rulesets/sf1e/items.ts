@@ -71,96 +71,96 @@ export const SF1E_ITEM_TYPE_NAMES: Record<Sf1eItemType, MessageDescriptor> = def
 	basic_melee: {
 		id: 'sf1e.itemType.basic_melee',
 		defaultMessage: 'basic melee',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: simple weapons for fighting up close, such as knives, batons and spears. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers simple weapons for fighting up close, such as knives, batons and spears. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	advanced_melee: {
 		id: 'sf1e.itemType.advanced_melee',
 		defaultMessage: 'advanced melee',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: weapons for fighting up close that take training, such as longswords, plasma swords and pikes. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons for fighting up close that take training, such as longswords, plasma swords and pikes. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	small_arms: {
 		id: 'sf1e.itemType.small_arms',
 		defaultMessage: 'small arms',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: guns held in one hand, such as laser and semi-auto pistols. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers guns held in one hand, such as laser and semi-auto pistols. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	longarms: {
 		id: 'sf1e.itemType.longarms',
 		defaultMessage: 'longarms',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: guns held in two hands, such as rifles and scatterguns. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers guns held in two hands, such as rifles and scatterguns. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	heavy_weapons: {
 		id: 'sf1e.itemType.heavy_weapons',
 		defaultMessage: 'heavy weapons',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: large, powerful guns such as machine guns, flamethrowers and cannons. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers large, powerful guns such as machine guns, flamethrowers and cannons. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	sniper_weapons: {
 		id: 'sf1e.itemType.sniper_weapons',
 		defaultMessage: 'sniper weapons',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: rifles for hitting targets very far away. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers rifles for hitting targets very far away. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	grenades: {
 		id: 'sf1e.itemType.grenades',
 		defaultMessage: 'grenades',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: small bombs thrown by hand. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers small bombs thrown by hand. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	special_weapons: {
 		id: 'sf1e.itemType.special_weapons',
 		defaultMessage: 'special weapons',
-		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories, shown beside an item\'s name: unusual weapons that each take their own training, such as bows, nets and shuriken. Use the category\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Starfinder, one of the Core Rulebook\'s weapon categories. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers unusual weapons that each take their own training, such as bows, nets and shuriken. Use the category\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	ammunition: {
 		id: 'sf1e.itemType.ammunition',
 		defaultMessage: 'ammunition',
-		description: 'Type of weapon in Starfinder, shown beside an item\'s name: what a weapon fires or uses up, such as batteries, rounds, arrows and missiles'
+		description: 'Type of weapon in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers what a weapon fires or uses up, such as batteries, rounds, arrows and missiles'
 	},
 	light_armor: {
 		id: 'sf1e.itemType.light_armor',
 		defaultMessage: 'light armor',
-		description: 'Type of armor in Starfinder, shown beside an item\'s name: armor light enough to move freely in, such as a second skin or a flight suit'
+		description: 'Type of armor in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor light enough to move freely in, such as a second skin or a flight suit'
 	},
 	heavy_armor: {
 		id: 'sf1e.itemType.heavy_armor',
 		defaultMessage: 'heavy armor',
-		description: 'Type of armor in Starfinder, shown beside an item\'s name: thick armor that slows its wearer'
+		description: 'Type of armor in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers thick armor that slows its wearer'
 	},
 	alchemical: {
 		id: 'sf1e.itemType.alchemical',
 		defaultMessage: 'alchemical',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: mixtures and substances made by chemistry or alchemy'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers mixtures and substances made by chemistry or alchemy'
 	},
 	clothing: {
 		id: 'sf1e.itemType.clothing',
 		defaultMessage: 'clothing',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: clothes, such as everyday wear or a space suit'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers clothes, such as everyday wear or a space suit'
 	},
 	drug: {
 		id: 'sf1e.itemType.drug',
 		defaultMessage: 'drug',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: a substance taken for its effect on the body or mind, such as a painkiller or a sedative'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a substance taken for its effect on the body or mind, such as a painkiller or a sedative'
 	},
 	food_and_drink: {
 		id: 'sf1e.itemType.food_and_drink',
 		defaultMessage: 'food and drink',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: meals, rations and drinks'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers meals, rations and drinks'
 	},
 	light_source: {
 		id: 'sf1e.itemType.light_source',
 		defaultMessage: 'light source',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: something that gives light, such as a flashlight or a lantern'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers something that gives light, such as a flashlight or a lantern'
 	},
 	medicinal: {
 		id: 'sf1e.itemType.medicinal',
 		defaultMessage: 'medicinal',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: medicine and supplies for healing, such as a medpatch'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers medicine and supplies for healing, such as a medpatch'
 	},
 	poison: {
 		id: 'sf1e.itemType.poison',
 		defaultMessage: 'poison',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: a substance that harms whoever takes it in'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a substance that harms whoever takes it in'
 	},
 	tool: {
 		id: 'sf1e.itemType.tool',
 		defaultMessage: 'tool',
-		description: 'Type of item in Starfinder, shown beside an item\'s name: kits and tools used for a skill, such as an engineering kit'
+		description: 'Type of item in Starfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers kits and tools used for a skill, such as an engineering kit'
 	}
 });

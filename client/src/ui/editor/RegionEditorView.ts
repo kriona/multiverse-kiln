@@ -1,4 +1,4 @@
-import { DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type LoadedSettings, type MessageValues, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
+import { defineMessages, DISALLOWED_TEXT_CHARACTERS, editsEveryPlace, INHERITED_SETTINGS, MAX_REGION_NAME_LENGTH, placeKey, type EditableUniverse, type EditorRegion, type LoadedSettings, type MessageDescriptor, type MessageValues, type NumberRef, type PlaceRef, type RegionChangeUpdate, type SavedEditDetail, type UniverseEditorSummary } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
@@ -21,6 +21,17 @@ import { labelRemoveButton } from './stagedChanges';
  * How a save names a region: a saved one by its ID, and one added since the tab was last saved by its ref
  */
 type RefParents = (parents: readonly PlaceRef[]) => PlaceRef[];
+
+/**
+ * Shown under the name field of the Add Region dialog and the region editor when another region has the name
+ */
+export const REGION_NAME_TAKEN: MessageDescriptor = defineMessages({
+	nameTaken: {
+		id: 'editor.regionAdd.nameTaken',
+		defaultMessage: 'Another region is already named that.',
+		description: 'Shown under the name field of the Add Region dialog or region editor when another region has the name, not counting capitals'
+	}
+}).nameTaken;
 
 /**
  * The region editor on the Areas tab (see Editor: Region in STRUCTURE-OVERVIEW.md): a region's name,
@@ -561,11 +572,7 @@ export class RegionEditorView
 
 		if (this.host.regions().some((other) => ((other.id !== region.id) && (other.name.toLowerCase() === lower))))
 		{
-			reportFieldError(this.name, t({
-				id: 'editor.regionAdd.nameTaken',
-				defaultMessage: 'Another region is already named that.',
-				description: 'Shown under the name field of the Add Region dialog or region editor when another region has the name, not counting capitals'
-			}));
+			reportFieldError(this.name, t(REGION_NAME_TAKEN));
 			return(false);
 		}
 

@@ -11033,107 +11033,107 @@
 	},
 	"pf1e.itemType.alchemical": {
 		"defaultMessage": "alchemical",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a substance made by alchemy, such as alchemist's fire, acid or a sunrod"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a substance made by alchemy, such as alchemist's fire, acid or a sunrod"
 	},
 	"pf1e.itemType.ammunition": {
 		"defaultMessage": "ammunition",
-		"description": "Type of weapon in Pathfinder, shown beside an item's name: what bows, crossbows, slings and blowguns shoot, such as arrows, bolts and sling bullets"
+		"description": "Type of weapon in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers what bows, crossbows, slings and blowguns shoot, such as arrows, bolts and sling bullets"
 	},
 	"pf1e.itemType.axes": {
 		"defaultMessage": "axes",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: battleaxes, handaxes, picks and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers battleaxes, handaxes, picks and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.blades_heavy": {
 		"defaultMessage": "heavy blades",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: longswords, scimitars, greatswords and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers longswords, scimitars, greatswords and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.blades_light": {
 		"defaultMessage": "light blades",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: daggers, short swords, rapiers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers daggers, short swords, rapiers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.bows": {
 		"defaultMessage": "bows",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: shortbows and longbows. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers shortbows and longbows. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.close": {
 		"defaultMessage": "close",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.clothing": {
 		"defaultMessage": "clothing",
-		"description": "Type of item in Pathfinder, shown beside an item's name: clothes, such as a traveler's outfit or a cloak"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers clothes, such as a traveler's outfit or a cloak"
 	},
 	"pf1e.itemType.crossbows": {
 		"defaultMessage": "crossbows",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: light, heavy and hand crossbows. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers light, heavy and hand crossbows. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.double": {
 		"defaultMessage": "double",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons with a striking end at each end, such as a quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons with a striking end at each end, such as a quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.flails": {
 		"defaultMessage": "flails",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: flails, chains and whips. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers flails, chains and whips. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.food_and_drink": {
 		"defaultMessage": "food and drink",
-		"description": "Type of item in Pathfinder, shown beside an item's name: something to eat or drink, such as trail rations"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers something to eat or drink, such as trail rations"
 	},
 	"pf1e.itemType.hammers": {
 		"defaultMessage": "hammers",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: clubs, maces, warhammers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers clubs, maces, warhammers and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.heavy_armor": {
 		"defaultMessage": "heavy armor",
-		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as full plate, which slows its wearer the most"
+		"description": "Type of armor in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor such as full plate, which slows its wearer the most"
 	},
 	"pf1e.itemType.light_armor": {
 		"defaultMessage": "light armor",
-		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as leather armor or a chain shirt, which barely slows its wearer"
+		"description": "Type of armor in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor such as leather armor or a chain shirt, which barely slows its wearer"
 	},
 	"pf1e.itemType.light_source": {
 		"defaultMessage": "light source",
-		"description": "Type of item in Pathfinder, shown beside an item's name: something that gives light, such as a torch, candle or lantern"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers something that gives light, such as a torch, candle or lantern"
 	},
 	"pf1e.itemType.medium_armor": {
 		"defaultMessage": "medium armor",
-		"description": "Type of armor in Pathfinder, shown beside an item's name: armor such as hide or a breastplate, which slows its wearer"
+		"description": "Type of armor in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor such as hide or a breastplate, which slows its wearer"
 	},
 	"pf1e.itemType.monk": {
 		"defaultMessage": "monk",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: the weapons monks train with, such as a kama or quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers the weapons monks train with, such as a kama or quarterstaff. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.natural": {
 		"defaultMessage": "natural",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: unarmed strikes and natural weapons such as claws. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers unarmed strikes and natural weapons such as claws. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.poison": {
 		"defaultMessage": "poison",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a poison, such as a venom applied to a blade"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a poison, such as a venom applied to a blade"
 	},
 	"pf1e.itemType.polearms": {
 		"defaultMessage": "polearms",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: halberds, glaives and other blades on long poles. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers halberds, glaives and other blades on long poles. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.rope": {
 		"defaultMessage": "rope",
-		"description": "Type of item in Pathfinder, shown beside an item's name: a length of rope"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a length of rope"
 	},
 	"pf1e.itemType.shields": {
 		"defaultMessage": "shields",
-		"description": "Type of armor in Pathfinder, shown beside an item's name: shields of every size, from bucklers to tower shields"
+		"description": "Type of armor in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers shields of every size, from bucklers to tower shields"
 	},
 	"pf1e.itemType.spears": {
 		"defaultMessage": "spears",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: spears, javelins, lances and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers spears, javelins, lances and the like. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.thrown": {
 		"defaultMessage": "thrown",
-		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups, shown beside an item's name: weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Pathfinder, one of the fighter's weapon groups. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group's name in the official translation of the Core Rulebook where there is one"
 	},
 	"pf1e.itemType.tool": {
 		"defaultMessage": "tool",
-		"description": "Type of item in Pathfinder, shown beside an item's name: tools and kits that help with a skill, such as thieves' tools, a healer's kit or a musical instrument"
+		"description": "Type of item in Pathfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers tools and kits that help with a skill, such as thieves' tools, a healer's kit or a musical instrument"
 	},
 	"pf1e.race.aasimar": {
 		"defaultMessage": "Aasimar",
@@ -12701,79 +12701,79 @@
 	},
 	"sf1e.itemType.advanced_melee": {
 		"defaultMessage": "advanced melee",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: weapons for fighting up close that take training, such as longswords, plasma swords and pikes. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons for fighting up close that take training, such as longswords, plasma swords and pikes. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.alchemical": {
 		"defaultMessage": "alchemical",
-		"description": "Type of item in Starfinder, shown beside an item's name: mixtures and substances made by chemistry or alchemy"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers mixtures and substances made by chemistry or alchemy"
 	},
 	"sf1e.itemType.ammunition": {
 		"defaultMessage": "ammunition",
-		"description": "Type of weapon in Starfinder, shown beside an item's name: what a weapon fires or uses up, such as batteries, rounds, arrows and missiles"
+		"description": "Type of weapon in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers what a weapon fires or uses up, such as batteries, rounds, arrows and missiles"
 	},
 	"sf1e.itemType.basic_melee": {
 		"defaultMessage": "basic melee",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: simple weapons for fighting up close, such as knives, batons and spears. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers simple weapons for fighting up close, such as knives, batons and spears. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.clothing": {
 		"defaultMessage": "clothing",
-		"description": "Type of item in Starfinder, shown beside an item's name: clothes, such as everyday wear or a space suit"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers clothes, such as everyday wear or a space suit"
 	},
 	"sf1e.itemType.drug": {
 		"defaultMessage": "drug",
-		"description": "Type of item in Starfinder, shown beside an item's name: a substance taken for its effect on the body or mind, such as a painkiller or a sedative"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a substance taken for its effect on the body or mind, such as a painkiller or a sedative"
 	},
 	"sf1e.itemType.food_and_drink": {
 		"defaultMessage": "food and drink",
-		"description": "Type of item in Starfinder, shown beside an item's name: meals, rations and drinks"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers meals, rations and drinks"
 	},
 	"sf1e.itemType.grenades": {
 		"defaultMessage": "grenades",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: small bombs thrown by hand. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers small bombs thrown by hand. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.heavy_armor": {
 		"defaultMessage": "heavy armor",
-		"description": "Type of armor in Starfinder, shown beside an item's name: thick armor that slows its wearer"
+		"description": "Type of armor in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers thick armor that slows its wearer"
 	},
 	"sf1e.itemType.heavy_weapons": {
 		"defaultMessage": "heavy weapons",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: large, powerful guns such as machine guns, flamethrowers and cannons. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers large, powerful guns such as machine guns, flamethrowers and cannons. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.light_armor": {
 		"defaultMessage": "light armor",
-		"description": "Type of armor in Starfinder, shown beside an item's name: armor light enough to move freely in, such as a second skin or a flight suit"
+		"description": "Type of armor in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor light enough to move freely in, such as a second skin or a flight suit"
 	},
 	"sf1e.itemType.light_source": {
 		"defaultMessage": "light source",
-		"description": "Type of item in Starfinder, shown beside an item's name: something that gives light, such as a flashlight or a lantern"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers something that gives light, such as a flashlight or a lantern"
 	},
 	"sf1e.itemType.longarms": {
 		"defaultMessage": "longarms",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: guns held in two hands, such as rifles and scatterguns. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers guns held in two hands, such as rifles and scatterguns. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.medicinal": {
 		"defaultMessage": "medicinal",
-		"description": "Type of item in Starfinder, shown beside an item's name: medicine and supplies for healing, such as a medpatch"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers medicine and supplies for healing, such as a medpatch"
 	},
 	"sf1e.itemType.poison": {
 		"defaultMessage": "poison",
-		"description": "Type of item in Starfinder, shown beside an item's name: a substance that harms whoever takes it in"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a substance that harms whoever takes it in"
 	},
 	"sf1e.itemType.small_arms": {
 		"defaultMessage": "small arms",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: guns held in one hand, such as laser and semi-auto pistols. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers guns held in one hand, such as laser and semi-auto pistols. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.sniper_weapons": {
 		"defaultMessage": "sniper weapons",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: rifles for hitting targets very far away. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers rifles for hitting targets very far away. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.special_weapons": {
 		"defaultMessage": "special weapons",
-		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories, shown beside an item's name: unusual weapons that each take their own training, such as bows, nets and shuriken. Use the category's name in the official translation of the Core Rulebook where there is one"
+		"description": "Type of weapon in Starfinder, one of the Core Rulebook's weapon categories. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers unusual weapons that each take their own training, such as bows, nets and shuriken. Use the category's name in the official translation of the Core Rulebook where there is one"
 	},
 	"sf1e.itemType.tool": {
 		"defaultMessage": "tool",
-		"description": "Type of item in Starfinder, shown beside an item's name: kits and tools used for a skill, such as an engineering kit"
+		"description": "Type of item in Starfinder. A choice of the Type filter on the editor's Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item's list of types in the Items tab's Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers kits and tools used for a skill, such as an engineering kit"
 	},
 	"sf1e.race.android": {
 		"defaultMessage": "Android",

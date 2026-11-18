@@ -79,132 +79,132 @@ export const PF1E_ITEM_TYPE_NAMES: Record<Pf1eItemType, MessageDescriptor> = def
 	axes: {
 		id: 'pf1e.itemType.axes',
 		defaultMessage: 'axes',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: battleaxes, handaxes, picks and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers battleaxes, handaxes, picks and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	blades_heavy: {
 		id: 'pf1e.itemType.blades_heavy',
 		defaultMessage: 'heavy blades',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: longswords, scimitars, greatswords and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers longswords, scimitars, greatswords and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	blades_light: {
 		id: 'pf1e.itemType.blades_light',
 		defaultMessage: 'light blades',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: daggers, short swords, rapiers and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers daggers, short swords, rapiers and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	bows: {
 		id: 'pf1e.itemType.bows',
 		defaultMessage: 'bows',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: shortbows and longbows. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers shortbows and longbows. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	close: {
 		id: 'pf1e.itemType.close',
 		defaultMessage: 'close',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons for fighting up close, such as gauntlets, a cestus or a shield used to bash. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	crossbows: {
 		id: 'pf1e.itemType.crossbows',
 		defaultMessage: 'crossbows',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: light, heavy and hand crossbows. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers light, heavy and hand crossbows. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	double: {
 		id: 'pf1e.itemType.double',
 		defaultMessage: 'double',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: weapons with a striking end at each end, such as a quarterstaff. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons with a striking end at each end, such as a quarterstaff. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	flails: {
 		id: 'pf1e.itemType.flails',
 		defaultMessage: 'flails',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: flails, chains and whips. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers flails, chains and whips. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	hammers: {
 		id: 'pf1e.itemType.hammers',
 		defaultMessage: 'hammers',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: clubs, maces, warhammers and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers clubs, maces, warhammers and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	monk: {
 		id: 'pf1e.itemType.monk',
 		defaultMessage: 'monk',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: the weapons monks train with, such as a kama or quarterstaff. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers the weapons monks train with, such as a kama or quarterstaff. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	natural: {
 		id: 'pf1e.itemType.natural',
 		defaultMessage: 'natural',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: unarmed strikes and natural weapons such as claws. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers unarmed strikes and natural weapons such as claws. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	polearms: {
 		id: 'pf1e.itemType.polearms',
 		defaultMessage: 'polearms',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: halberds, glaives and other blades on long poles. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers halberds, glaives and other blades on long poles. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	spears: {
 		id: 'pf1e.itemType.spears',
 		defaultMessage: 'spears',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: spears, javelins, lances and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers spears, javelins, lances and the like. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	thrown: {
 		id: 'pf1e.itemType.thrown',
 		defaultMessage: 'thrown',
-		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups, shown beside an item\'s name: weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group\'s name in the official translation of the Core Rulebook where there is one'
+		description: 'Type of weapon in Pathfinder, one of the fighter\'s weapon groups. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers weapons made to be thrown, such as darts, or that can be, such as a dagger. Use the group\'s name in the official translation of the Core Rulebook where there is one'
 	},
 	ammunition: {
 		id: 'pf1e.itemType.ammunition',
 		defaultMessage: 'ammunition',
-		description: 'Type of weapon in Pathfinder, shown beside an item\'s name: what bows, crossbows, slings and blowguns shoot, such as arrows, bolts and sling bullets'
+		description: 'Type of weapon in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers what bows, crossbows, slings and blowguns shoot, such as arrows, bolts and sling bullets'
 	},
 	light_armor: {
 		id: 'pf1e.itemType.light_armor',
 		defaultMessage: 'light armor',
-		description: 'Type of armor in Pathfinder, shown beside an item\'s name: armor such as leather armor or a chain shirt, which barely slows its wearer'
+		description: 'Type of armor in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor such as leather armor or a chain shirt, which barely slows its wearer'
 	},
 	medium_armor: {
 		id: 'pf1e.itemType.medium_armor',
 		defaultMessage: 'medium armor',
-		description: 'Type of armor in Pathfinder, shown beside an item\'s name: armor such as hide or a breastplate, which slows its wearer'
+		description: 'Type of armor in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor such as hide or a breastplate, which slows its wearer'
 	},
 	heavy_armor: {
 		id: 'pf1e.itemType.heavy_armor',
 		defaultMessage: 'heavy armor',
-		description: 'Type of armor in Pathfinder, shown beside an item\'s name: armor such as full plate, which slows its wearer the most'
+		description: 'Type of armor in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers armor such as full plate, which slows its wearer the most'
 	},
 	shields: {
 		id: 'pf1e.itemType.shields',
 		defaultMessage: 'shields',
-		description: 'Type of armor in Pathfinder, shown beside an item\'s name: shields of every size, from bucklers to tower shields'
+		description: 'Type of armor in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers shields of every size, from bucklers to tower shields'
 	},
 	alchemical: {
 		id: 'pf1e.itemType.alchemical',
 		defaultMessage: 'alchemical',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a substance made by alchemy, such as alchemist\'s fire, acid or a sunrod'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a substance made by alchemy, such as alchemist\'s fire, acid or a sunrod'
 	},
 	clothing: {
 		id: 'pf1e.itemType.clothing',
 		defaultMessage: 'clothing',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: clothes, such as a traveler\'s outfit or a cloak'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers clothes, such as a traveler\'s outfit or a cloak'
 	},
 	food_and_drink: {
 		id: 'pf1e.itemType.food_and_drink',
 		defaultMessage: 'food and drink',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: something to eat or drink, such as trail rations'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers something to eat or drink, such as trail rations'
 	},
 	light_source: {
 		id: 'pf1e.itemType.light_source',
 		defaultMessage: 'light source',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: something that gives light, such as a torch, candle or lantern'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers something that gives light, such as a torch, candle or lantern'
 	},
 	poison: {
 		id: 'pf1e.itemType.poison',
 		defaultMessage: 'poison',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a poison, such as a venom applied to a blade'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a poison, such as a venom applied to a blade'
 	},
 	rope: {
 		id: 'pf1e.itemType.rope',
 		defaultMessage: 'rope',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: a length of rope'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers a length of rope'
 	},
 	tool: {
 		id: 'pf1e.itemType.tool',
 		defaultMessage: 'tool',
-		description: 'Type of item in Pathfinder, shown beside an item\'s name: tools and kits that help with a skill, such as thieves\' tools, a healer\'s kit or a musical instrument'
+		description: 'Type of item in Pathfinder. A choice of the Type filter on the editor\'s Items tab and in the dialog for choosing items, and a checkbox in the item editor; shown in an item\'s list of types in the Items tab\'s Summary column, under its name in the dialog for choosing items, in the Inspect dialog and on the Audit tab. It covers tools and kits that help with a skill, such as thieves\' tools, a healer\'s kit or a musical instrument'
 	}
 });
 
