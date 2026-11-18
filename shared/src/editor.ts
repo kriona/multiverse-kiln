@@ -46,7 +46,7 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * - POST   /:universeId/characters/:characterId/items/discard  CharacterItemsRequest: discards items the character carries, as their player can, all of an item when asked for as many as they carry or more (canManageCharacters())
  * - POST   /:universeId/characters/:characterId/items/equip    EquipRequest: equips an item the character carries, as their player can (canManageCharacters())
  * - POST   /:universeId/characters/:characterId/items/unequip  UnequipRequest: unequips an item, as their player can (canManageCharacters())
- * - POST   /:universeId/characters/:characterId/items/give     GiveItemsRequest: gives items the character carries to another character in their group, as their player can (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items/give     GiveItemsRequest: gives an item the character carries to another character in their group, as their player can (canManageCharacters())
  * - POST   /:universeId/groups/:groupId/leave      GroupCharacterRequest: takes any player's character out of their group, disbanding it for the anchor being (canManageCharacters())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())

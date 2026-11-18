@@ -5763,6 +5763,10 @@
 		"defaultMessage": "Choose the ability that gets the race's bonus, and only for a race that has one.",
 		"description": "Why a new character wasn't made: a race that lets the player choose an ability to raise had none chosen, or another race had one"
 	},
+	"error.giveItemNotCarried": {
+		"defaultMessage": "The character doesn't carry that item any more.",
+		"description": "Why an item wasn't given to another character from a character's sheet, by their player or from the editor's Character List tab: the character no longer carries it, perhaps because it was discarded or given away in another window first"
+	},
 	"error.giveItemsUnavailable": {
 		"defaultMessage": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again.",
 		"description": "Why items weren't given to a character from their sheet on the editor's Character List tab: an item chosen was deleted, disabled or had its rulebook (a book of optional rules) turned off, perhaps while the creator was choosing"
@@ -5774,6 +5778,10 @@
 	"error.giveToSelf": {
 		"defaultMessage": "Choose another character to give the items to.",
 		"description": "Why items weren't given from a character's sheet: the character chosen to get them was the one giving them"
+	},
+	"error.giveTooFast": {
+		"defaultMessage": "You are giving items too quickly. Wait a moment and try again.",
+		"description": "Why an item wasn't given to another character from a character's sheet, by their player or from the editor's Character List tab: the player's characters gave items in their group faster than allowed, since each gift writes a line in the group's chat"
 	},
 	"error.groupCharacterBarred": {
 		"defaultMessage": "{bar, select, race {That character's race is disabled, so they can't play.} other {That character's class is disabled, so they can't play.}}",

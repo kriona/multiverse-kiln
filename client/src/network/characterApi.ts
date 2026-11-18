@@ -174,18 +174,19 @@ export class CharacterApi
 	}
 
 	/**
-	 * Gives items one of the player's characters carries to another character in their group
+	 * Gives an item one of the player's characters carries to another character in their group
 	 *
 	 * @param universeId The universe's ID
-	 * @param characterId The character giving them
-	 * @param receiverId The character given them
-	 * @param items The items, each listed once, with how many of each to give
+	 * @param characterId The character giving it
+	 * @param receiverId The character given it
+	 * @param item The item, with how many to give
 	 */
-	async giveItemsTo(universeId: string, characterId: string, receiverId: string, items: ItemQuantity[]): Promise<void>
+	async giveItemsTo(universeId: string, characterId: string, receiverId: string, item: ItemQuantity): Promise<void>
 	{
 		const request: GiveItemsRequest = {
 			characterId: receiverId,
-			items
+			itemId: item.itemId,
+			quantity: item.quantity
 		};
 
 		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/give`, request);

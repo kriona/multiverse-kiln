@@ -5763,6 +5763,10 @@
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
 	},
+	"error.giveItemNotCarried": {
+		"message": "That hand don't carry that booty no more.",
+		"source": "The character doesn't carry that item any more."
+	},
 	"error.giveItemsUnavailable": {
 		"message": "Some o' that booty can't be handed o'er: it were sunk or stowed away, or its rulebook be shut. Pick the booty again.",
 		"source": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again."
@@ -5774,6 +5778,10 @@
 	"error.giveToSelf": {
 		"message": "Pick another hand to give the booty to.",
 		"source": "Choose another character to give the items to."
+	},
+	"error.giveTooFast": {
+		"message": "Ye be handin' out booty too fast. Wait a moment and try again.",
+		"source": "You are giving items too quickly. Wait a moment and try again."
 	},
 	"error.groupCharacterBarred": {
 		"message": "{bar, select, race {That hand's folk be closed, so they can't sail.} other {That hand's callin' be closed, so they can't sail.}}",

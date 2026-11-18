@@ -28,9 +28,10 @@
  *   (EquipRequest), unequipping what was in its slots (planEquip()), or answers 409 when they don't carry
  *   it or it can't be equipped as asked
  * - POST characterPath(universeId, characterId)/items/unequip: unequips an item (UnequipRequest)
- * - POST characterPath(universeId, characterId)/items/give: gives items the character carries to another
- *   character in their group (GiveItemsRequest), unequipping those given that were equipped, or answers
- *   409 when the character isn't in a group with them or doesn't carry the items
+ * - POST characterPath(universeId, characterId)/items/give: gives an item the character carries to
+ *   another character in their group (GiveItemsRequest), unequipping those given that were equipped, or
+ *   answers 409 when the character isn't in a group with them or doesn't carry the item, and 429 when the
+ *   player's characters give items in the group faster than allowed
  *
  * Each change to a character's items or equipment is sent to their player's windows
  * (SessionServerMessageType.CharacterItems), and a character given items tells their player's windows
@@ -38,7 +39,6 @@
  */
 import { UNIVERSES_PATH } from './constants.js';
 import type { EquipHand, EquippedItem, EquipRing } from './equipment.js';
-import type { ItemQuantity } from './editor.js';
 import type { Money, UniverseCoinAbbreviations, UniverseCoinNames } from './money.js';
 import { rulesetHasThemes, type Ability, type AbilityScores, type ClassRules, type RaceRules, type Size } from './racesAndClasses.js';
 import { isRulebookBarred, type RulebookSettings } from './rulebooks.js';
@@ -617,8 +617,12 @@ export interface GiveItemsRequest
 	characterId: string;
 
 	/**
-	 * 1 to MAX_ITEMS_PER_CHARACTER_CHANGE different items the character carries, each listed once, and
-	 * how many of each to give; all of an item when asked for as many as they carry or more
+	 * An item the character carries (an EditorItem's ID)
 	 */
-	items: ItemQuantity[];
+	itemId: number;
+
+	/**
+	 * How many of it to give; all of it when asked for as many as the character carries or more
+	 */
+	quantity: number;
 }

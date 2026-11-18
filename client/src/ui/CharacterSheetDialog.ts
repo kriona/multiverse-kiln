@@ -1163,12 +1163,10 @@ export class CharacterSheetDialog
 
 			try
 			{
-				await this.api.giveItemsTo(current.universeId, current.sheet.id, receiverId, [
-					{
-						itemId: item.id,
-						quantity
-					}
-				]);
+				await this.api.giveItemsTo(current.universeId, current.sheet.id, receiverId, {
+					itemId: item.id,
+					quantity
+				});
 			}
 			catch (error)
 			{

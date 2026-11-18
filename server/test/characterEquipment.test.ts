@@ -13,8 +13,9 @@ import { loadEditorThemes } from '../src/db/themeRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
 import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
-import { equipItem } from '../src/http/characters.js';
+import { equipItem, giveItems } from '../src/http/characters.js';
 import type { Refusal } from '../src/http/errors.js';
+import { RateLimiter } from '../src/rooms/rateLimiter.js';
 import { addCharacter, addGroup, defaultRaceId, dwarfFighter } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
@@ -444,7 +445,8 @@ describe('Equipment routes', () =>
 
 				const answer = await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/give`, {
 					characterId: graceCharacterId,
-					items: [{ itemId: daggerId, quantity: 1 }]
+					itemId: daggerId,
+					quantity: 1
 				});
 
 				assert.strictEqual(answer.status, 204, JSON.stringify(answer.body));
@@ -491,7 +493,8 @@ describe('Equipment routes', () =>
 
 			const answer = await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/give`, {
 				characterId: graceCharacterId,
-				items: [{ itemId: shortSwordId, quantity: 5 }]
+				itemId: shortSwordId,
+				quantity: 5
 			});
 
 			assert.strictEqual(answer.status, 204);
@@ -505,18 +508,66 @@ describe('Equipment routes', () =>
 			const outsiderId = await addCharacter(grace.playerId, universeId, 'Loner');
 			const path = `${characterPath(universeId, brokkId)}/items/give`;
 
-			assert.strictEqual((await send(ada, 'POST', path, { characterId: outsiderId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 409);
-			assert.strictEqual((await send(ada, 'POST', path, { characterId: brokkId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 400);
-			assert.strictEqual((await send(ada, 'POST', path, { characterId: graceCharacterId, items: [{ itemId: 99999999, quantity: 1 }] })).status, 409);
-			assert.strictEqual((await send(grace, 'POST', path, { characterId: graceCharacterId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 404);
+			const notCarried = await send<{ error: MessageDescriptor }>(ada, 'POST', path, { characterId: graceCharacterId, itemId: 99999999, quantity: 1 });
+
+			assert.strictEqual((await send(ada, 'POST', path, { characterId: outsiderId, itemId: longswordId, quantity: 1 })).status, 409);
+			assert.strictEqual((await send(ada, 'POST', path, { characterId: brokkId, itemId: longswordId, quantity: 1 })).status, 400);
+			assert.strictEqual((await send(ada, 'POST', path, { characterId: graceCharacterId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 400);
+			assert.strictEqual(notCarried.status, 409);
+			assert.strictEqual(notCarried.body.error.id, 'error.giveItemNotCarried');
+			assert.strictEqual((await send(grace, 'POST', path, { characterId: graceCharacterId, itemId: longswordId, quantity: 1 })).status, 404);
 			assert.strictEqual((await sheetOf(brokkId)).items.find((item) => (item.id === longswordId))?.quantity, 1);
+		});
+
+		it('refuses gifts past the limit for the player in the group until the window passes', async () =>
+		{
+			let now = 0;
+			const gifts = new RateLimiter(2, 3000, () => now);
+			const karaId = await addCharacter(ada.playerId, universeId, 'Kara');
+			const universe = {
+				id: universeId,
+				ruleset: 'pf1e' as const
+			};
+
+			/**
+			 * Gives one of an item from one of Ada's characters to another, through the gift limit made here
+			 *
+			 * @param from The giving character
+			 * @param to The character given it
+			 * @param itemId The item
+			 * @return Why it wasn't given, or undefined once it is
+			 */
+			function give(from: string, to: string, itemId: number = longswordId): Promise<Refusal | undefined>
+			{
+				return(giveItems(universe, from, { characterId: to, itemId, quantity: 1 }, ada.playerId, noSuchCharacter, gifts));
+			}
+
+			await inTransaction((transaction) => addGroupMember(groupId, karaId, transaction));
+
+			assert.strictEqual(await give(brokkId, karaId), undefined);
+			assert.strictEqual(await give(karaId, brokkId), undefined);
+
+			const refused = await give(brokkId, karaId);
+
+			assert.strictEqual(refused?.status, 429);
+			assert.strictEqual(refused?.message.id, 'error.giveTooFast');
+			assert.strictEqual((await sheetOf(brokkId)).items.find((item) => (item.id === longswordId))?.quantity, 1);
+
+			// Another player's characters in the group have a limit of their own
+			await giveCharacterItems(graceCharacterId, [{ itemId: bookId, quantity: 1 }]);
+			assert.strictEqual(await giveItems(universe, graceCharacterId, { characterId: brokkId, itemId: bookId, quantity: 1 }, grace.playerId, noSuchCharacter, gifts), undefined);
+
+			now = 3000;
+			assert.strictEqual(await give(brokkId, karaId), undefined);
+			assert.strictEqual((await sheetOf(karaId)).items.find((item) => (item.id === longswordId))?.quantity, 1);
 		});
 
 		it('waits for a save taking an item, then refuses to give it', async () =>
 		{
 			const give = (): Promise<Answer<unknown>> => send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/give`, {
 				characterId: graceCharacterId,
-				items: [{ itemId: longswordId, quantity: 1 }]
+				itemId: longswordId,
+				quantity: 1
 			});
 			const answer = await changeWhileWaitingForUniverse(universeId, give, async (transaction) =>
 			{
@@ -536,7 +587,7 @@ describe('Equipment routes', () =>
 			assert.strictEqual((await send(ada, 'POST', `${base}/equip`, { itemId: longswordId, hand: 'both', ring: null })).status, 204);
 			assert.deepStrictEqual((await sheetOf(graceCharacterId, grace)).equipment, [at('mainHand', longswordId, true)]);
 			assert.strictEqual((await send(ada, 'POST', `${base}/unequip`, { itemId: longswordId, slot: null })).status, 204);
-			assert.strictEqual((await send(ada, 'POST', `${base}/give`, { characterId: brokkId, items: [{ itemId: longswordId, quantity: 1 }] })).status, 204);
+			assert.strictEqual((await send(ada, 'POST', `${base}/give`, { characterId: brokkId, itemId: longswordId, quantity: 1 })).status, 204);
 			assert.strictEqual((await sheetOf(brokkId)).items.find((item) => (item.id === longswordId))?.quantity, 2);
 			assert.strictEqual((await send(grace, 'POST', `${EDITOR_UNIVERSES_PATH}/${universeId}/characters/${brokkId}/items/equip`, { itemId: longswordId, hand: 'main', ring: null })).status, 403);
 		});

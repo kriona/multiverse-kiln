@@ -33,6 +33,7 @@ import { characterItemChanges } from '../players/characterItemChanges.js';
 import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, startingEquipmentOrder, type ScoreSource } from '../logic/characterCreation.js';
 import { postGiftNotice } from '../rooms/groupChatNotices.js';
 import { displayText } from '../rooms/payloads.js';
+import { RateLimiter } from '../rooms/rateLimiter.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { requestLanguages } from './requestLanguages.js';
@@ -114,12 +115,13 @@ export const unequipRequest = z.object({
 }) satisfies z.ZodType<UnequipRequest>;
 
 /**
- * GiveItemsRequest. Whether the other character is in the group, and the items are carried, is checked
+ * GiveItemsRequest. Whether the other character is in the group, and the item is carried, is checked
  * by the route
  */
 export const giveItemsRequest = z.object({
 	characterId: z.uuid(),
-	items: characterItemsRequest.shape.items
+	itemId: z.number().int().min(1).max(2147483647),
+	quantity: z.number().int().min(1).max(2147483647)
 }) satisfies z.ZodType<GiveItemsRequest>;
 
 /**
@@ -186,6 +188,16 @@ const messages = defineMessages({
 		defaultMessage: 'The character doesn\'t carry that item any more.',
 		description: 'Why an item wasn\'t equipped from a character\'s sheet: the character no longer carries it, perhaps because it was discarded or given away in another window first'
 	},
+	giveItemNotCarried: {
+		id: 'error.giveItemNotCarried',
+		defaultMessage: 'The character doesn\'t carry that item any more.',
+		description: 'Why an item wasn\'t given to another character from a character\'s sheet, by their player or from the editor\'s Character List tab: the character no longer carries it, perhaps because it was discarded or given away in another window first'
+	},
+	giveTooFast: {
+		id: 'error.giveTooFast',
+		defaultMessage: 'You are giving items too quickly. Wait a moment and try again.',
+		description: 'Why an item wasn\'t given to another character from a character\'s sheet, by their player or from the editor\'s Character List tab: the player\'s characters gave items in their group faster than allowed, since each gift writes a line in the group\'s chat'
+	},
 	giveToSelf: {
 		id: 'error.giveToSelf',
 		defaultMessage: 'Choose another character to give the items to.',
@@ -218,6 +230,20 @@ const EQUIP_REFUSALS: Record<EquipRefusal, MessageDescriptor> = defineMessages({
 		description: 'Why a ring wasn\'t equipped from a character\'s sheet: both of the character\'s ring slots filled up before it was equipped, so the item\'s menu now asks whether to equip it as the left or the right ring'
 	}
 });
+
+/**
+ * Most gifts one player's characters may give in one group in GIFT_RATE_WINDOW_MS, as many as the chat
+ * messages a player may send to it, since each gift writes a line in the group's chat
+ */
+const GIFT_RATE_LIMIT = 5;
+
+const GIFT_RATE_WINDOW_MS = 3000;
+
+/**
+ * How fast each player's characters give items in each group, whether their player or the universe's
+ * creators give them
+ */
+const giftRates = new RateLimiter(GIFT_RATE_LIMIT, GIFT_RATE_WINDOW_MS);
 
 const universes = new WeakMap<Request, PlayableUniverse>();
 
@@ -1128,21 +1154,23 @@ export async function unequipItem(universe: Pick<PlayableUniverse, 'id' | 'rules
 }
 
 /**
- * Gives items a character carries to another character in their group, the same player's included,
- * online or not: all of an item when asked for as many as they carry or more. Those given that were
- * equipped are unequipped (unequippedByRemoval()), and they arrive unequipped. Once given, both players'
- * windows hear of it, and the group's chat says who gave whom what. Any item the character carries can be
- * given, disabled ones and those whose book is off included
+ * Gives an item a character carries to another character in their group, the same player's included,
+ * online or not: all of it when asked for as many as they carry or more. Those given that were equipped
+ * are unequipped (unequippedByRemoval()), and they arrive unequipped. Once given, both players' windows
+ * hear of it, and the group's chat says who gave whom what. Any item the character carries can be given,
+ * disabled ones and those whose book is off included. Each gift is a line in the group's chat, so the
+ * giving character's player's characters may give only so many in their group at a time
  *
  * @param universe The universe's ID and ruleset; its live version's items name what is given
  * @param characterId The giving character's ID
- * @param request Who gets the items, and how many of each
+ * @param request Who gets the item, and how many
  * @param playerId The player the giving character must belong to, or undefined for any player's, as
  * the universe's creators may
  * @param noSuchCharacter Why a character who isn't there can't give items
+ * @param gifts How fast each player's characters give items in each group
  * @return Why nothing was given, or undefined once it is
  */
-export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: GiveItemsRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: GiveItemsRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor, gifts: RateLimiter = giftRates): Promise<Refusal | undefined>
 {
 	if (request.characterId === characterId)
 	{
@@ -1171,33 +1199,37 @@ export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset
 			return({ status: 409, message: messages.notInGroupWith });
 		}
 
-		const carried = await lockCarriedItems(characterId, request.items.map((item) => item.itemId), transaction);
-		const given = request.items.map(({ itemId, quantity }) => ({
-			itemId,
-			quantity: Math.min(quantity, (carried.get(itemId) ?? 0))
-		}));
-
-		if (given.some((item) => (item.quantity === 0)) || !await takeCharacterItems(characterId, universe.ruleset, given, transaction))
+		// Before anything is written, since a refusal still commits the transaction
+		if (!gifts.tryTake(`${membership.groupId} ${giver.playerId}`))
 		{
-			return({ status: 409, message: messages.itemsNotCarried });
+			return({ status: 429, message: messages.giveTooFast });
 		}
 
-		await giveCharacterItems(receiver.id, given, transaction);
+		const carried = ((await lockCarriedItems(characterId, [request.itemId], transaction)).get(request.itemId) ?? 0);
+		const given: ItemQuantity = {
+			itemId: request.itemId,
+			quantity: Math.min(request.quantity, carried)
+		};
 
-		const items = new Map((await loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, given.map((item) => item.itemId), transaction))
-			.map((item) => [item.id, item]));
+		if ((given.quantity === 0) || !await takeCharacterItems(characterId, universe.ruleset, [given], transaction))
+		{
+			return({ status: 409, message: messages.giveItemNotCarried });
+		}
+
+		await giveCharacterItems(receiver.id, [given], transaction);
+
+		const item = (await loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, [given.itemId], transaction))
+			.find((found) => (found.id === given.itemId));
 
 		gift = {
 			groupId: membership.groupId,
 			giver,
 			receiver,
-			items: given.map(({ itemId, quantity }) => ({
-				item: {
-					key: (items.get(itemId)?.key ?? null),
-					name: (items.get(itemId)?.name ?? null)
-				},
-				quantity
-			}))
+			item: {
+				key: (item?.key ?? null),
+				name: (item?.name ?? null)
+			},
+			quantity: given.quantity
 		};
 
 		return(undefined);
@@ -1221,9 +1253,11 @@ interface Gift
 	receiver: LockedCharacter;
 
 	/**
-	 * Each item given, named as the universe names it, and how many
+	 * The item given, named as the universe names it
 	 */
-	items: { item: OptionName; quantity: number }[];
+	item: OptionName;
+
+	quantity: number;
 }
 
 /**
@@ -1236,7 +1270,7 @@ interface Gift
  */
 function announceGift(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, giverId: string, gift: Gift): void
 {
-	const { giver, receiver } = gift;
+	const { giver, receiver, item, quantity } = gift;
 	const universeId = universe.id;
 
 	characterItemChanges.publishChanged(universeId, [
@@ -1250,30 +1284,27 @@ function announceGift(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, giverI
 		}
 	]);
 
-	for (const { item, quantity } of gift.items)
-	{
-		characterItemChanges.publish({
-			kind: 'received',
-			playerId: receiver.playerId,
-			received: {
-				universeId,
-				ruleset: universe.ruleset,
-				characterId: receiver.id,
-				giver: giver.name,
-				receiver: receiver.name,
-				item,
-				quantity
-			}
-		});
-		void postGiftNotice(universeId, gift.groupId, {
-			playerId: giver.playerId,
-			name: giver.name
-		}, {
+	characterItemChanges.publish({
+		kind: 'received',
+		playerId: receiver.playerId,
+		received: {
+			universeId,
+			ruleset: universe.ruleset,
+			characterId: receiver.id,
+			giver: giver.name,
 			receiver: receiver.name,
 			item,
 			quantity
-		});
-	}
+		}
+	});
+	void postGiftNotice(universeId, gift.groupId, {
+		playerId: giver.playerId,
+		name: giver.name
+	}, {
+		receiver: receiver.name,
+		item,
+		quantity
+	});
 }
 
 /**
