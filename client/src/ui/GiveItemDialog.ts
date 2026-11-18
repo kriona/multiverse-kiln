@@ -32,9 +32,8 @@ interface Giving
 /**
  * The dialog opened by Give in an item's menu on a character's sheet (pages that use it include
  * partials/character-sheet.html): "Give [item]", choosing another character in the group, by name, race
- * and class, the player's own included, and for more than one of the item, how many, all of it to start
- * with. It says which
- * equipped ones giving them unequips. The items arrive at once, wherever the other character is
+ * and class, the player's own included, and for more than one of the item, how many, 1 to start with.
+ * It says which equipped ones giving them unequips. The items arrive at once, wherever the other character is
  */
 export class GiveItemDialog
 {
@@ -150,7 +149,7 @@ export class GiveItemDialog
 		showMessage(this.error, undefined);
 		this.quantityLabel.hidden = !several;
 		this.quantity.max = String(item.quantity);
-		this.quantity.value = String(item.quantity);
+		this.quantity.value = '1';
 		this.quantity.style.setProperty('--digits', String(String(item.quantity).length));
 		this.confirm.disabled = false;
 		this.cancel.disabled = false;
