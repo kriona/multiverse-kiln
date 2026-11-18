@@ -160,12 +160,13 @@ If a universe allows it, and you are in the universe's lobby, you may enter a po
 	- an avatar, a larger view of the character showing all their worn items. Every item needs avatar art drawn by an artist
 
 ## Create Character
-Based entirely on the universe's ruleset. It is a page of its own, reached from the lobby, that goes through steps (name, race, class, a theme in SF1E, ability scores, then a review) and returns to the lobby when the character is made. Rulesets will add more steps, so there may be a lot to work through:
+Based entirely on the universe's ruleset. It is a page of its own, reached from the lobby, that goes through steps (name, race, appearance, class, a theme in SF1E, ability scores, then a review) and returns to the lobby when the character is made. Rulesets will add more steps, so there may be a lot to work through:
 - the player's progress is saved on the server a moment after each change and when the step changes, so they can go back to the lobby, close the browser, or switch browsers, and pick up on the step they were on. "Start over" throws the progress away
 - progress is checked against the universe only when the character is made; a race or class that has since been disabled is left out when the progress loads
 
 For PF1E, the server rolls the ability scores (or checks the point buy choices) using the universe's [stat rolling](#pf1e) setting; the client never sends ability scores of its own. The player can rearrange rolled scores among the abilities, with the class's primary ability as a hint.
 - the server keeps a player's rolled scores until they make a character with them, so leaving Create Character or starting over doesn't roll again. If the universe changes how it rolls, the next visit rolls again
+- the Appearance step chooses the character's body type, art type and background, with a preview of their [avatar](#avatars) without items. The player can't change the body type once the character is made
 - the player chooses a name, an enabled race and an enabled class, from the [rulebooks](#rulebooks) that are on. The race, class and theme fields start blank, so the player must choose each rather than taking whatever is first. The chosen race's, class's and theme's descriptions are shown. A race with a floating ability bonus asks which ability gets it
 - the character starts with the universe's, race's and class's starting money added coin by coin, and their starting equipment added together (enabled items only). Where they start is chosen when a group is made around them (see [starting area](#tab-characters))
 - the lobby lists the player's characters in the universe
@@ -175,11 +176,13 @@ For SF1E, every ability score starts at 10, and the player spends the universe's
 
 ## Character sheet
 A modal dialog showing one of the player's characters, opened from the [lobby](#lobby) and the [universe page](#universe-page) (later the [profile](#profile-edit) too). Only the character's player can see it, and the universe's creators and builders from the editor's [Character List](#tab-character-list). For PF1E it shows:
+- the character's [avatar](#avatars), with an Appearance button that changes their art type and background (and their body type, for the universe's creators)
 - the name, race and class
 - each ability score (with the race's modifiers added) and the modifier it gives
 - size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
-- what the character has equipped: each of the ruleset's slots with the item in it, or Empty (see [Equipment](#equipment))
+- what the character has equipped: each of the ruleset's slots with the item in it, or Empty (see [Equipment](#equipment)). Each slot's name is a button that picks the item for it, and each slot has a Hide toggle that leaves it off the avatar
+- Social: each [social slot](#social-slots) with the item worn in it for its look, or Empty, with the same buttons and Hide toggles
 - equipment, sorted by name, with how many of each, how many are equipped, and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it: Equip (Main hand, Off hand or Both hands for a weapon held in one hand), Unequip, Give, Inspect and Discard (see [Equipment](#equipment)). Discard opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
 
 For SF1E it also shows the theme, hit points (the race's and the class's) and stamina points (the class's plus the Constitution modifier, at least 0), from the race and class as the universe sets them now.
@@ -209,7 +212,7 @@ Hands:
 - A shield takes a hand, and a character holds one shield at most. PF1E's buckler is worn in the off arm slot and takes no hand. It counts as the character's one shield
 
 Equipping:
-- Equip and Unequip are in each item's menu on the [character sheet](#character-sheet), in the lobby, the game, on the universe page and on the player's profile
+- Equip and Unequip are in each item's menu on the [character sheet](#character-sheet), in the lobby, the game, on the universe page and on the player's profile. Each slot's name on the sheet is a button too, opening a picker of the carried items that fit it
 - Equipping into a slot or hand in use unequips what was there, without asking. A two-handed item unequips both hands. A one-handed item unequips a two-handed one. A second shield unequips the first
 - A ring goes in the first free ring slot, with one Equip in its menu. When both ring slots are full, the menu offers Equip as left ring and Equip as right ring instead, which replace what is there
 - The menu offers equipping only where it changes something. It leaves out a hand or ring slot that already holds the item the same way, and Equip for a worn item whose slot already holds it
@@ -225,7 +228,62 @@ Inspect opens a dialog with the item's name, kind, types, book, where it equips 
 
 The universe's creators change a character's sheet from the [Character List](#tab-character-list) as the player can, with the same item menu. Items they give with Give Items arrive unequipped.
 
-Later, appearance slots will repeat the stats slots, all but the hands, for items worn only for how they look. The avatar draws them over the stats items, and a Hide option skips an equipped item when drawing it. So slot keys belong to the ruleset rather than to a set of slots, `character_equipment` is keyed by character and slot so a layer column can join the key, and whether an item fits a slot is one pure function the appearance slots reuse. The hands and shield rules apply only to the stats slots.
+### Social slots
+Social slots are for items worn only for how they look. They give nothing, and rules read only the stats slots. The [avatar](#avatars) draws a slot's social item in place of its stats item.
+- They are each ruleset's worn slots except the main hand, off hand, off arm and tail: decorative gloves (PF1E's hands slot), but no decorative weapons. A weapon or shield can't go in a social slot, even one worn elsewhere, such as the dwarven boulder helmet
+- A social slot holds an item the character carries that fits the slot, checked by the same pure function as the stats slots. The hands and shield rules apply only to the stats slots
+- A social item doesn't count as equipped. A character can have Cloak A in the stats shoulders slot for its bonuses and Cloak B in the social one, and a character carrying one cloak can have it in both. Giving or discarding never unequips a social item until the last of the item goes, which takes it out of its social slots too. An item [removed from characters](#disabling-things-players-are-using) leaves its social slots as well
+- `character_equipment` has a `layer` column, `stats` or `social`, in its primary key with the character and slot
+
+The [character sheet](#character-sheet) has a Social section after Equipment. In both, each slot's name is a button that opens a picker of the carried items that fit it, with Empty to take the item out. The item menu offers Wear socially for an item that fits a social slot. Each slot also has a Hide toggle (see [Avatars](#avatars)).
+
+## Avatars
+A character's avatar is a picture of their race and body type, wearing what they have equipped, over a background. Every piece of art is drawn by a person; none of it is AI generated. The engine ships the art, as it does the default tilesets: the files are in `shared/assets/avatars/<art type>/`, and a manifest in `/shared` (`shared/src/avatars/`) lists them. Universes uploading their own avatar art comes later.
+
+Art types:
+- `stickFigure`, named "Stick figure" (a message), and `lucia`, named "Lucia" after the artist, which isn't translated (`translate="no"`)
+- some races have only stick figures while the rest is drawn
+
+Bases:
+- a base is a race and body type drawn in one art type, a PNG 200 pixels wide and 300 tall
+- each default race has one list of body types in `/shared`, the same for every art type: masc thick, masc thin, femme thick and femme thin for now, changed as the art is drawn. Body type names are messages. An art type may not have drawn every base yet
+- a universe's own race has "Looks like", a default race of the same ruleset (see [Races](#races)). Its characters use that race's body types and art. A race with no "Looks like" has no avatar
+
+Item drawings:
+- a PNG cropped to the item. Each art type maps a default item's key to its drawings. A universe's own item draws as the default item it "Looks like" (see [Editor: Item](#editor-item)), and an item with none draws nothing
+- a drawing lists the races it is for, and can narrow to some of their body types and some slots. The most specific match wins: a longsword can be one drawing for humans and elves and another for halflings, and leather armor one per body type
+- a drawing can have several parts, each an image with a layer of its own, such as a cloak's front over the base and its back behind it. Several items or drawings can use the same image file
+- each part has an x/y offset for each base the drawing is used on
+- the off hand and the right ring draw the main hand's and left ring's drawing flipped horizontally, with an x/y of their own for each base, set by hand rather than mirrored. A drawing with no off hand offset for a base draws nothing in the off hand there. Holding an item in both hands has drawings of its own
+- an item with no drawing for the art type, race and body type draws nothing
+- layers follow the slot draw order, a list in each ruleset's `equipment.ts`. A part can set its own layer, behind the base included
+
+Backgrounds: a dark green gradient and a dark red gradient for now, 200x300 PNGs made from gradient stops by a script in `server/scripts/`. Their names are messages.
+
+A character's look:
+- body type, art type and background are chosen on Create Character's Appearance step, with a preview
+- the player can't change the body type afterward. The universe's creators can, from the [Character List](#tab-character-list)'s sheet
+- the sheet's Appearance dialog changes the art type and background, for the player and for creators
+- only art types with a base for the character's race and body type are offered. A race with no art in any art type skips the art type choice
+- an art type that no longer has a base for the character falls back to the stick figure, and to no avatar when that has none either. A body type the race's list doesn't have, such as after its "Looks like" changes, is drawn as the list's first
+- each slot draws its social item, or else its stats item. A hidden slot draws nothing, neither item, and stays hidden when the items in it change. Hidden slots are kept in `character_hidden_slots`
+
+Drawing and caching:
+- what an avatar draws is one pure function in `/shared`: the background, the parts behind the base, the base, then the items' parts in layer order. It returns the layers and their hash
+- the server composes the avatar with sharp and stores one PNG per character in object storage (`avatars/<character ID>.png`), overwritten when the look changes. No versions are kept
+- `characters.avatar_hash` is the hash of the layers the stored PNG was made from. Pages load `/avatars/<character ID>.png?look=<hash>`, with the hash the server sends with the character, cached for good. When the hash asked for isn't the stored one, the server composes the PNG again first. So changing equipment, a universe save that unequips items or changes "Looks like", and new art all show without anything composing the avatar at the time
+- Create Character's preview is the base and the background, without items. The server composes one file for each art type, race, body type and background, shared by every player who chooses it (`avatars/previews/<art type>/<race key>-<body type>-<background>.png`, served at `/avatar-previews/`), and composes it again when its files' hash changes. Nothing is saved to a character until it is made
+- avatars and previews are served to anyone with the address, like uploaded tilesets. Deleting a character, an account or a universe deletes its characters' avatars
+
+Where avatars show:
+- the [character sheet](#character-sheet), full size, wherever it opens. A character with no avatar shows "No avatar yet"
+- Create Character's Appearance step and review
+- a head-and-shoulders crop beside each character in the [lobby](#lobby)'s list of who's here, the player's characters and the group's members
+- a thumbnail beside each character on the [profile](#profile-edit) and the [universe page](#universe-page)
+
+The alt text is the character's name with their race and class, "Mara (Dwarf Fighter)", from `characterLabel()` (`client/src/ui/raceAndClassNames.ts`), which the [Give](#equipment) dialog uses too.
+
+The positioning tool (`avatar-positions.html`, only with dev tools on) places item drawings. It chooses an art type, an item drawing, a race and a body type, and moves each part on the base by dragging or with the arrow keys, the off hand and right ring included. It shows each x/y, lists the bases a drawing still has no offsets for, and copies the drawing's offsets as TypeScript to paste into the manifest. It doesn't write files.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
@@ -656,6 +714,7 @@ You can edit each race:
 - Additional starting equipment, lets you [select items](#selection-item)
 - Additional starting [money](#field-money)
 - Starting [area](#selection-area), lets you override
+- Looks like, for a race the universe added: a default race of the same ruleset, whose body types and art its characters' [avatars](#avatars) use. None leaves them without an avatar. A default race and its edited copy use their own art and don't have it
 - for PF1E:
 	- ability modifiers? lists abilities (`strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma`) and a number field for each (minimum -99, maximum 99)
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
@@ -712,7 +771,7 @@ You can edit each class:
 	- stamina points per level, 0 to 99
 
 ### Tab: Character List
-Lists every character players have made in the universe, for creators and builders (the server refuses other roles too): each character's name, their race and class (as the lobby shows them, e.g. "Dwarf Fighter"), their player's name (linking to their profile) and @username, when they were made, and notes saying whether they are in a group or waiting for their [last rites](#deleting-a-character) to end. Characters whose last rites are over aren't listed. A search narrows the list by the character's name or the player's username or name, ignoring capitals; text starting with @ matches usernames only. Filters choose a race, a class (disabled ones and those of [rulebooks](#rulebooks) that are off included, since characters may still have them) and whether the character is in a group. The server searches, filters and sorts (by name until the Name, Player or Created heading is clicked, see [sortable tables](#sortable-tables)), and the list shows 500 characters a page. Clicking a character's name shows their [character sheet](#character-sheet), with the universe's text as written rather than translated. Creators (and site admins) get the sheet's Delete, Restore and Leave group buttons, each item's menu, and the same questions the character's player gets (see [Deleting a character](#deleting-a-character)), so they can take a character out of their group, disbanding it for the anchor being, and then delete them. Creators also get Give Items, which opens [item selection](#selection-item) titled "Give Items to [character]", finding only the live version's enabled items whose books are on (whichever version the editor has open, since characters play the live version), and adds the items chosen to what the character carries, each quantity added to what they already have. Builders only see the sheet. Characters belong to their players rather than the universe, so these change them immediately rather than waiting for Save, and the tab has nothing to save. They are refused while the universe is [disabled](#admin), except to a site admin.
+Lists every character players have made in the universe, for creators and builders (the server refuses other roles too): each character's name, their race and class (as the lobby shows them, e.g. "Dwarf Fighter"), their player's name (linking to their profile) and @username, when they were made, and notes saying whether they are in a group or waiting for their [last rites](#deleting-a-character) to end. Characters whose last rites are over aren't listed. A search narrows the list by the character's name or the player's username or name, ignoring capitals; text starting with @ matches usernames only. Filters choose a race, a class (disabled ones and those of [rulebooks](#rulebooks) that are off included, since characters may still have them) and whether the character is in a group. The server searches, filters and sorts (by name until the Name, Player or Created heading is clicked, see [sortable tables](#sortable-tables)), and the list shows 500 characters a page. Clicking a character's name shows their [character sheet](#character-sheet), with the universe's text as written rather than translated. Creators (and site admins) get the sheet's Delete, Restore and Leave group buttons, each item's menu, the slots' pickers and Hide toggles, the Appearance dialog with the body type (which only creators can change once a character is made; see [Avatars](#avatars)), and the same questions the character's player gets (see [Deleting a character](#deleting-a-character)), so they can take a character out of their group, disbanding it for the anchor being, and then delete them. Creators also get Give Items, which opens [item selection](#selection-item) titled "Give Items to [character]", finding only the live version's enabled items whose books are on (whichever version the editor has open, since characters play the live version), and adds the items chosen to what the character carries, each quantity added to what they already have. Builders only see the sheet. Characters belong to their players rather than the universe, so these change them immediately rather than waiting for Save, and the tab has nothing to save. They are refused while the universe is [disabled](#admin), except to a site admin.
 
 ### Tab: Tilesets
 shows you a table of all tiles in the game, populated from the default for your ruleset and any tiles you have created. Default tiles can be edited: the edit applies to your universe only, and can be undone to restore the default. Disabling a default tile is such an edit, so a universe can leave out the ruleset's tiles it doesn't want. A tile you created can be deleted once no area uses it.
@@ -1013,6 +1072,7 @@ modal dialog, lets you type to search and filter by kind and type (as on the [It
 - kind (e.g., "Weapon"), one of the ruleset's item categories
 - types: a checkbox for each of the kind's types (e.g., "light blades" and "thrown" for a dagger). Any number can be checked, or none. Changing the kind clears them
 - equips to: nowhere, one of the ruleset's worn slots, one hand or two hands (see [Equipment](#equipment))
+- looks like, for an item the universe added: a default item of the same ruleset, whose drawings it uses on [avatars](#avatars). None draws nothing. A default item and its edited copy use their own drawings and don't have it
 - a checkbox for "Enabled?", checked by default
 
 ## Selection: Area

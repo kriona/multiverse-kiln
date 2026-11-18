@@ -109,7 +109,7 @@ Built in four steps: the server API, the editor pages, the area editor's cells, 
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 22). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 23). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its cells are the next item
 - [✅] Area cells editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller area clears the undo history
@@ -215,7 +215,7 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
-- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 22. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 23. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
@@ -241,14 +241,14 @@ Decided:
 
 Decided:
 - Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
-- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 20's hosting choice has to keep.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 21's hosting choice has to keep.
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
-- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 20), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 20 sets them for the host.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 21), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 21 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now; Phase 17 adds bot checks for suspicious logins.
@@ -474,7 +474,7 @@ The login and email code limits (Phase 14) stop guessing, but their only answer 
 
 Decided:
 - Cloudflare Turnstile, not reCAPTCHA: it has no image puzzles, so it works with a keyboard and a screen reader (Cloudflare states WCAG 2.1 AA), it is free without a monthly limit, and it doesn't send players to Google. It is a widget and one server-side check, so it doesn't need the site behind Cloudflare's proxy.
-- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 20); it would change `CLIENT_ADDRESS_HEADER`.
+- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 21); it would change `CLIENT_ADDRESS_HEADER`.
 - What a check promises: a request past the soft limit goes through only once a check has been passed, so every guess costs something. It doesn't promise to stop every bot: services that solve checks for money exist, so the limits stay the real defense, and a check only slows guessing and makes it cost more.
 - Only suspicious requests are checked: past a soft limit, below the hard limit that refuses them today. Most players never see one, and their browser never contacts Cloudflare: the page loads Turnstile's script only when the server asks for a check.
 - Which requests: logging in with a password, the wrong passwords typed while logged in that count against the same limits (a logged-in player is asked too, once someone else's guesses have passed the address's soft limit), and sending an email code (registering, resetting a password, changing an email address, linking a login). Google and Discord logins aren't checked: the provider checks them. A dormant account's code isn't checked on its own: only someone who has just given the right password gets one, in a login that was checked if it needed to be, and "send another code" sends the password again, so it is a login try.
@@ -592,7 +592,7 @@ Decided:
 - The Core Rulebook's adventuring gear (backpacks, rope, torches, tents, trail rations and the like) is left out. Each piece is added once the code supports what it does (Later, below). PF1E's alchemical items (acid, alchemist's fire, sunrods and the like) are left out for the time being too.
 - Types: PF1E gear gets new types (alchemical, clothing, food and drink, light source, poison, tool), and its torch type becomes light source. Both rulesets get an ammunition weapon type. SF1E's types, which are each one item now, become its weapon categories, ammunition, light and heavy armor, and the same gear types, plus drug and medicinal.
 - SF1E's items with tiers are one item per tier, named with the tier first, in the engine's lowercase style: "tactical longsword", "frag grenade I".
-- Later, not in this phase (Later, below): a second set of slots for appearance only, and hiding an equipped item from the avatar. This phase keeps the way open:
+- Later, not in this phase (Phase 20): a second set of slots for appearance only, and hiding an equipped item from the avatar. This phase keeps the way open:
 	- Slot keys belong to the ruleset, not to a set of slots, so the appearance slots reuse them (all but the hands).
 	- `character_equipment` is keyed by character and slot. A `layer` column (stats or appearance) and a `hidden` flag can join it later without moving rows.
 	- Whether an item fits a slot is one pure function in `/shared`. The appearance slots reuse it. The rules for hands and shields are separate, and only the stats slots use them.
@@ -614,14 +614,95 @@ Steps (the equipment first, then the default items in their own commits):
 
 **Done when:** a PF1E fighter equips a longsword and a heavy steel shield, then a greatsword, which unequips both. A rogue holds a short sword in each hand. An SF1E soldier wears armor and holds a laser rifle. The fighter gives a dagger to another character in the group, and that character's player sees it arrive. Inspecting the greatsword shows that it is a two-handed heavy blade from the Core Rulebook.
 
-## Phase 20: Cloud deployment
+## Phase 20: Avatars
+
+Each character gets an avatar: a picture of their race and body type, wearing what they have equipped, over a background they choose. The art is drawn by hand in more than one art type, the stick figure and Lucia, and ships with the engine. Characters also get social slots, for items worn only for how they look, and can hide a slot from the avatar. See Avatars and Social slots in `STRUCTURE-OVERVIEW.md`.
+
+Decided:
+- Art
+	- All art is drawn by a person. None of it is AI generated, and no code or agent draws placeholder art. This phase ships the code and the manifest. Bases and item drawings are added as they are drawn. Tests use solid-color rectangles they make in code.
+	- The engine ships the art, like the default tilesets: files in `shared/assets/avatars/<art type>/`, which the server reads to compose avatars and the client imports through Vite. Universes uploading their own avatar art comes later.
+	- A manifest in `/shared` (`shared/src/avatars/`) lists the art types, bases, item drawings and backgrounds.
+	- Art types: `stickFigure` and `lucia`. "Stick figure" is a message. "Lucia" is the artist's name, so it isn't a message: the manifest holds it as plain text, and the pages show it with `translate="no"`. Some races have only stick figures while the rest is drawn.
+	- Lucia Pan's credit on the license page (`license.artworkCredit`) names the avatar art too.
+- Bases and body types
+	- A base is a race and body type drawn in one art type: a PNG 200 pixels wide and 300 tall.
+	- Each default race, in both rulesets, has one list of body types in its ruleset's races data in `/shared`, the same for every art type. Every race starts with masc thick, masc thin, femme thick and femme thin, and the lists change as the art is drawn. Body type names are messages.
+	- An art type may not have drawn every base yet.
+- Item drawings
+	- An item drawing is a PNG cropped to the item. Each art type maps a default item's key to its drawings.
+	- A drawing lists the races it is for, and can narrow to some of their body types and to some slots. The most specific match wins. A longsword can be one drawing for humans and elves and another for halflings. Leather armor can have one per body type.
+	- A drawing can have several parts, each an image with its own layer, such as a cloak's front over the base and its back behind it. Several items or drawings can use the same image file.
+	- Each part has an x/y offset for each base the drawing is used on.
+	- The off hand and the right ring draw the main hand's and the left ring's drawing flipped horizontally, so they need no second file. They have an x/y of their own for each base, set by hand: nothing is worked out from a mirror. A drawing with no off hand offset for a base draws nothing in the off hand on that base.
+	- Holding an item in both hands has drawings of its own, since a two-handed grip looks different.
+	- An item with no drawing for the art type, race and body type draws nothing.
+	- Layers follow the slot draw order, a list in each ruleset's `equipment.ts`. A part can set its own layer, behind the base included.
+	- A positioning tool, `client/avatar-positions.html`, works only with dev tools on (`ENABLE_DEV_TOOLS`). It chooses an art type, an item drawing, a race and a body type, and moves each part on the base by dragging or with the arrow keys, the off hand and right ring included. It shows each x/y, lists the bases a drawing still has no offsets for, and copies the drawing's offsets as TypeScript to paste into the manifest. It doesn't write files.
+- Backgrounds: a dark green gradient and a dark red gradient. They are 200x300 PNGs made from gradient stops by a script in `server/scripts/`, not drawn art. Their names are messages.
+- Universe-added races and items
+	- A race the universe added has "Looks like" (`races.avatar_race_id`), a default race of the same ruleset, in the race editor. Its characters use that race's body types and art. A race with no "Looks like" has no avatar.
+	- An item the universe added has "Looks like" too (`items.avatar_item_id`), a default item of the same ruleset, in the item editor. An item with none draws nothing.
+	- Default races and items, and their edited copies, use their own art and don't have "Looks like".
+	- Both are staged until Save like the rest of the editor, and go into the audit, export and import. An export made before this phase imports with neither set.
+- A character's look
+	- `characters` gets `body_type`, `art_type` and `background` columns. Existing characters get masc thick, the stick figure and the dark green background.
+	- Create Character gets an Appearance step after the race step: body type, art type and background, with a preview. It is saved in the character draft like the other steps.
+	- The player chooses the body type only in Create Character. The universe's creators can change it afterward from the Character List's sheet. The server refuses the change from anyone else.
+	- The art type and background can be changed afterward in the character sheet's Appearance dialog, by the player and by creators from the Character List.
+	- Only art types with a base for the character's race and body type are offered. A race with no art in any art type skips the art type choice.
+	- An art type that no longer has a base for the character falls back to the stick figure, and to no avatar when that has none either. A body type the race's list doesn't have, such as after its "Looks like" changes, is drawn as the list's first.
+- Social slots
+	- Social slots are for items worn only for how they look. They give nothing. Each slot draws its social item in place of its stats item.
+	- They are each ruleset's worn slots except the main hand, off hand, off arm and tail: decorative gloves (PF1E's hands slot), but no decorative weapons. A weapon or shield can't go in a social slot, even one worn elsewhere, such as the dwarven boulder helmet.
+	- A social slot holds an item the character carries, checked by the same fit function as the stats slots (Phase 19). The hands and shield rules apply only to the stats slots.
+	- A social item doesn't count as equipped. A character can have Cloak A in the stats shoulders slot for its bonuses and Cloak B in the social one. A character carrying one cloak can have it in both. Giving or discarding never unequips a social item until the last of the item goes, which takes it out of its social slots too. An item removed from characters (disabled with remove) leaves its social slots as well.
+	- `character_equipment` gets a `layer` column (`stats` or `social`) in its primary key. Rules read only the stats layer.
+	- In the sheet's Equipment and Social sections, each slot's name is a button that opens a picker of the carried items that fit it, with Empty to take the item out. The item menu gets Wear socially for an item that fits a social slot. The Character List's sheet does the same for creators.
+- Hiding
+	- A slot can be hidden from the avatar. A hidden slot draws nothing, neither its social item nor its stats item, and stays hidden when the items in it change.
+	- Hidden slots are a table, `character_hidden_slots` (character, slot). Each slot on the sheet has a Hide toggle.
+- Drawing and caching
+	- What an avatar draws is one pure function in `/shared`: given the manifest and the character's race, body type, art type, background, equipment and hidden slots, it returns the layers (the background, the parts behind the base, the base, then the items' parts in layer order) and their hash.
+	- The server composes the avatar with sharp and stores one PNG per character in object storage (`avatars/<character ID>.png`), overwritten when the look changes. No versions are kept.
+	- `characters.avatar_hash` is the hash of the layers the stored PNG was made from. The server sends each character's current hash with their data, and pages load `/avatars/<character ID>.png?look=<hash>`, cached for good. When the hash asked for isn't the stored one, the server composes the PNG again first. Equipment changes, universe saves that unequip items or change "Looks like", and new art all show this way, without each having to compose the avatar.
+	- Create Character's preview is the base and the background, without items. The server composes one file for each art type, race, body type and background, shared by every player who chooses it (`avatars/previews/<art type>/<race key>-<body type>-<background>.png`, served at `/avatar-previews/`), and composes it again when the hash of its files changes (kept in the object's metadata). A universe's own race uses its "Looks like" race's key. Nothing is saved to a character until it is made. The browser composes nothing, apart from the positioning tool.
+	- Avatars and previews are served to anyone with the address, like `/tile-graphics/`. Character IDs are random UUIDs, and an avatar shows only what is drawn.
+	- Deleting a character, an account or a universe deletes its characters' avatars.
+- Where avatars show
+	- The character sheet, full size, wherever it opens: the lobby, the game, the universe page, the profile and the Character List. A character with no avatar shows "No avatar yet".
+	- Create Character's Appearance step and review.
+	- A head-and-shoulders crop (CSS) beside each character in the lobby's list of who's here, the player's characters and the group's members.
+	- A thumbnail beside each character on the profile and the universe page.
+	- The alt text is the character's name with their race and class, "Mara (Dwarf Fighter)". It comes from one function, `characterLabel()`, beside `characterDescription()` in `client/src/ui/raceAndClassNames.ts`, and the Give dialog uses it too in place of its own message. Nothing else builds a character's description.
+- Later, not in this phase: sprites in the game's areas, universes uploading avatar art, avatar art in cross-universe play, and more backgrounds.
+
+Steps:
+- [ ] The manifest in `/shared`: art types, the body types of each default race, bases, item drawings (races, body types, slots, parts, layers, offsets, and the off hand and right ring offsets) and backgrounds, with names as messages. The slot draw order in each ruleset's `equipment.ts`
+- [ ] The pure function returning an avatar's layers and their hash, with unit tests: matching drawings, the off hand and right ring flipped with their own offsets, parts behind the base, social items over stats items, hidden slots, missing art, and the art type and body type fallbacks
+- [ ] The background script and the two background PNGs
+- [ ] `body_type`, `art_type`, `background` and `avatar_hash` on `characters`, `layer` on `character_equipment` and the `character_hidden_slots` table, with their migration and repository tests against the test database
+- [ ] "Looks like" on universe races and items: the columns, the race and item editors, the audit, export and import
+- [ ] Composing avatars and previews with sharp, storing them in object storage, and the `/avatars/` and `/avatar-previews/` routes, which compose again when the hash changes. Deleting avatars with characters, accounts and universes. Cover the routes in `server/test/http.test.ts`
+- [ ] Routes to wear and remove social items, hide and show slots, and change the art type, background and body type (creators only), for the player and the universe's creators, checking the rules on the server. Each change is published through the session room, like equipment changes
+- [ ] Create Character's Appearance step, with the preview
+- [ ] The character sheet: the avatar, the Social section, slot names as buttons opening the item picker, Hide toggles, Wear socially in the item menu, and the Appearance dialog (the body type only for creators)
+- [ ] Avatars in the lobby's and group's lists, on the profile and on the universe page. `characterLabel()` for their alt text and the Give dialog
+- [ ] The positioning tool
+- [ ] The license page's credit
+- [ ] Pirate translation of the new messages
+- [ ] Check the new step, the sheet, the dialogs and the positioning tool with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
+
+**Done when:** with human bases and a few item drawings in place, a player makes a femme thin human with the Lucia art type and the dark red background, seeing the preview as they choose. Her sheet shows her avatar in her equipped leather armor, holding a short sword in each hand, the off hand's flipped. Wearing a cloak socially draws it over her armor. Hiding the shoulders slot leaves the cloak off. Switching to the stick figure redraws her. Another player sees her avatar beside her name in the lobby, and only a creator can change her body type.
+
+## Phase 21: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
 
 - [ ] Choose the S3-compatible service for uploads, make its bucket (private: the game server serves the files), and set the `STORAGE_*` variables in the Colyseus Cloud dashboard
 - [ ] Choose the email service, set up its sending domain (SPF, DKIM and DMARC), and set `SMTP_URL` (over TLS) and `EMAIL_FROM` in the Colyseus Cloud dashboard, with an `AUTH_HMAC_KEY` of its own
-- [ ] Check the deploy includes `shared/locales/`: the server reads the translations from it to write emails in each player's language
+- [ ] Check the deploy includes `shared/locales/` and `shared/assets/avatars/`: the server reads the translations from the first to write emails in each player's language, and composes avatars from the second
 - [ ] Choose where the production client is hosted (Colyseus Cloud only hosts the game server), and whether QA/staging uses a subdomain or its own domain. The host must serve `<name>.html` for `/<name>` (the pages link to `/edit`, `/license` and so on), and each of `PATH_PAGES` for every address under its path, such as `game.html` for `/game/<slug>`, `universe.html` for `/universe/<slug>` and `edit.html` for `/edit/<universe ID>`; see `client/src/pages.ts`
 - [ ] Create Neon project with `dev` and `prod` branches, in the region nearest the planned Colyseus Cloud location. Use Postgres 18 to match `docker-compose.yml`
 - [ ] Create the migration, app and admin roles on each Neon branch with the same ownership and grants as the scripts in `docker/postgres/init/`, using `docker/postgres/neon/01-roles.sql` and `02-grants.sql` (roles made in the Neon console join `neon_superuser`); the server gets only the app role's and the admin role's pooled connection strings (`DATABASE_URL`, `ADMIN_DATABASE_URL`)
@@ -631,13 +712,13 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 - [ ] Before running more than one game server process: Redis presence and driver, and the in-memory publishers (`server/src/players/`, `server/src/world/`) carried over it, so the rooms and routes of one universe (editor rooms, lobbies, groups and the change routes) reach each other across processes
 - [ ] Point a production client build at the `wss://` endpoint
 - [ ] Set security headers on the client host and test them against the production build:
-	- `Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets; `challenges.cloudflare.com` is Turnstile's script and widget, Phase 17)
+	- `Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data: blob: https://<game server>; media-src 'self' data: blob:; connect-src 'self' https://<game server> wss://<game server>; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests` (Phaser needs `data:`/`blob:` for some textures and audio; the game server in `img-src` is for uploaded tilesets and avatars; `challenges.cloudflare.com` is Turnstile's script and widget, Phase 17)
 	- `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`
 - [ ] Check whether Colyseus Cloud's proxy sends `Strict-Transport-Security` for the game server; add it if not
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 21: Robustness and polish
+## Phase 22: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -651,11 +732,11 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 22: Images and moderation
+## Phase 23: Images and moderation
 
 Needed before universes are open to the public.
 
-- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 20)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 21)
 - [ ] "I have the rights to use this image" on every upload (tilesets have it)
 - [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
@@ -663,7 +744,7 @@ Needed before universes are open to the public.
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 23: Messages
+## Phase 24: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -681,8 +762,8 @@ Needed before universes are open to the public.
 - One-off event messages for effects (hits, explosions)
 - The overworld map and its scale
 - Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"
-- Character sprites and avatars, and art for each item
-- Appearance slots: a second set of each ruleset's slots, all but the hands, for items worn only for how they look. They give no rules benefit. The avatar draws an item in an appearance slot over the item in the same stats slot. A Hide option on an equipped item skips it when the avatar is drawn. Phase 19 leaves room for both
+- Character sprites in the game's areas
+- Avatar art a universe uploads for its own races and items, or in place of the engine's (Phase 20 ships the engine's), and more backgrounds
 - PF1E's adventuring gear, added case by case as the code supports each piece: tents, bedrolls and blankets with the sleep setting, torches, candles and lanterns once they light an area, rope and grappling hooks with climbing, manacles with capturing, and so on (`scratchpad/equipment-items.md` lists them)
 - PF1E's alchemical items from the Core Rulebook, the Advanced Player's Guide and the Advanced Race Guide (`scratchpad/equipment-items.md` lists them)
 - Items' rules details (price, weight, damage, armor), for the default items from their books and in the item editor for every item, shown by Inspect, with combat. Special materials (mithral, adamantine) as a property of an item, and masterwork as a flag on an item
@@ -710,22 +791,22 @@ Needed before universes are open to the public.
 - How groups are listed in the lobby (Phase 11)
 - How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
 - Auth approach, account linking and the email sending service (Phase 14)
-- Which S3-compatible service stores uploads in production, and its bucket (Phase 20)
-- Telling users with the same name apart (Phase 23)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 21)
+- Telling users with the same name apart (Phase 24)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 21)
+- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 22)
 - Whether to offer machine translation of chat (later)
 - Whether characters must eat and drink, and so whether meals, ale, wine and the like become items (Phase 19 has only SF1E's rations)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
 - Whether players are shown the name of the area they are in (on screen, or when they go into another area or cross a seam into a neighbor); it is only read out to screen readers so far
-- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 20). The host's proxies decide which forwarding header the server trusts for clients' addresses
-- Client host, and a subdomain or separate domain for QA/staging (Phase 20)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 21). The host's proxies decide which forwarding header the server trusts for clients' addresses
+- Client host, and a subdomain or separate domain for QA/staging (Phase 21)
 
 ---
 
 ## TODO
 
-- [ ] Confirm the client address header on the game server's host (Phase 20; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+- [ ] Confirm the client address header on the game server's host (Phase 21; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
 	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
 	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
 	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header
