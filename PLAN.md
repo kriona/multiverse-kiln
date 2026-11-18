@@ -609,7 +609,7 @@ Steps (the equipment first, then the default items in their own commits):
 - [✅] The Character List's sheet: equipment, with the same item menu as the player's
 - [✅] The default items from the reviewed list: names, descriptions, kinds, types, books and where each equips in `/shared`, and custom migrations adding their rows. The new gear and ammunition types, a migration converting PF1E's torch type and SF1E's types (and an import converting an older export's)
 - [✅] Pirate translation of the new messages
-- [ ] Check the sheet and the dialogs with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
+- [✅] Check the sheet and the dialogs with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
 
 **Done when:** a PF1E fighter equips a longsword and a heavy steel shield, then a greatsword, which unequips both. A rogue holds a short sword in each hand. An SF1E soldier wears armor and holds a laser rifle. The fighter gives a dagger to another character in the group, and that character's player sees it arrive. Inspecting the greatsword shows that it is a two-handed heavy blade from the Core Rulebook.
 
