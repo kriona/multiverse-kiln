@@ -49,6 +49,8 @@ npm install
 
 Always run `npm install` from the **repository root**, never from inside `client`, `server`, or `shared`. The root install sets up all three packages and links `shared` into the others.
 
+The repository's `.npmrc` lets npm install packages from git, which npm 12 refuses by default. Colyseus needs one: uWebSockets.js, which is only published on GitHub. The lockfile pins the exact commit.
+
 The repository's agent skills (documentation written for AI coding agents) are committed in `.agents/skills/`: the official ones for [Colyseus](https://github.com/colyseus/skill) and [Phaser](https://github.com/phaserjs/phaser/tree/master/skills), Chrome's [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) for the pages' HTML, CSS and DOM code, and the project's own. `npm install` links each of them into `.claude/skills/` (git-ignored), where Claude Code loads them, so every clone and worktree gets them. Run `npm run skills:link` to link them again, such as after adding a skill.
 
 The third-party skills were installed with these commands, which also update them:
