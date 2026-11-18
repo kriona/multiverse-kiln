@@ -1244,13 +1244,13 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Takes an item the character shown has equipped out of one of their slots, then shows the sheet with
-	 * the slot empty
+	 * Takes an item the character shown has equipped or worn for its look out of one of their slots, then
+	 * shows the sheet with the slot empty
 	 *
 	 * @param item The item, as the sheet lists it
-	 * @param slot The slot
+	 * @param chosen The slot and its layer
 	 */
-	private async unequip(item: CharacterSheetItem, slot: string): Promise<void>
+	private async unequip(item: CharacterSheetItem, chosen: ChosenSlot): Promise<void>
 	{
 		const current = this.current;
 
@@ -1259,16 +1259,25 @@ export class CharacterSheetDialog
 			return;
 		}
 
+		const { layer, slot } = chosen;
+
 		this.busy = true;
 		this.changingItems++;
 
 		try
 		{
-			await this.api.unequipItem(current.universeId, current.sheet.id, item.id, slot);
+			if (layer === 'social')
+			{
+				await this.api.wearSocially(current.universeId, current.sheet.id, slot, null);
+			}
+			else
+			{
+				await this.api.unequipItem(current.universeId, current.sheet.id, item.id, slot);
+			}
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, sheetMessages.equipFailed));
+			showMessage(this.error, describeEditorError(error, ((layer === 'stats') ? sheetMessages.equipFailed : sheetMessages.lookFailed)));
 			this.finishChangingItems();
 			return;
 		}
@@ -1280,14 +1289,11 @@ export class CharacterSheetDialog
 		showMessage(this.error, undefined);
 		await this.reload(current);
 		this.finishChangingItems();
-		this.focusSlotMenu({
-			layer: 'stats',
-			slot
-		});
+		this.focusSlotMenu(chosen);
 		announce(t({
 			id: 'characterSheet.unequipped',
 			defaultMessage: '{name} unequipped {item}.',
-			description: 'Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipment list of a character\'s sheet; {name} is the character\'s name and {item} the item\'s name. The character still carries it'
+			description: 'Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipment or Social Equipment list of a character\'s sheet; {name} is the character\'s name and {item} the item\'s name. The character still carries it'
 		}, {
 			name: current.sheet.name,
 			item: itemName(item, current.sheet.ruleset)
@@ -1677,10 +1683,10 @@ export class CharacterSheetDialog
 
 	/**
 	 * A slot's menu. For those who may change the character: Choose item, which opens the dialog choosing
-	 * its item, then Unequip and Inspect for an item in an equipment slot, then Hide on avatar or Show on
-	 * avatar. For others, Inspect for an item in an equipment slot. A slot is hidden in both layers at once,
-	 * so its menus in the Equipment and Social Equipment lists agree. Inspecting the slot's item shows the rest of the
-	 * menu in the Inspect dialog
+	 * its item, then Unequip for a slot with an item in it, then Inspect for an item in an equipment slot,
+	 * then Hide on avatar or Show on avatar. For others, Inspect for an item in an equipment slot. A slot
+	 * is hidden in both layers at once, so its menus in the Equipment and Social Equipment lists agree.
+	 * Inspecting the slot's item shows the rest of the menu in the Inspect dialog
 	 *
 	 * @param sheet The character
 	 * @param layer The list it is in
@@ -1699,18 +1705,18 @@ export class CharacterSheetDialog
 			slot
 		};
 		const equipped = ((layer === 'stats') ? item : undefined);
-		const unequip: MenuAction[] = ((equipped === undefined)
+		const unequip: MenuAction[] = ((item === undefined)
 			? []
 			: [{
 				label: t({
 					id: 'characterSheet.unequip',
 					defaultMessage: 'Unequip',
-					description: 'Item in the menu beside a slot in the Equipment list of a character\'s sheet that takes the item out of the slot. The character still carries it'
+					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet that takes the item out of the slot. The character still carries it'
 				}),
 				icon: unequipIcon,
 				run: () =>
 				{
-					void this.unequip(equipped, slot);
+					void this.unequip(item, chosen);
 				}
 			}]);
 		const inspect: MenuAction[] = ((equipped === undefined)

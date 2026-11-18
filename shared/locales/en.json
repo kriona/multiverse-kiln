@@ -1561,7 +1561,7 @@
 	},
 	"characterSheet.unequip": {
 		"defaultMessage": "Unequip",
-		"description": "Item in the menu beside a slot in the Equipment list of a character's sheet that takes the item out of the slot. The character still carries it"
+		"description": "Item in the menu beside a slot in the Equipment and Social Equipment lists of a character's sheet that takes the item out of the slot. The character still carries it"
 	},
 	"characterSheet.unequipNote": {
 		"defaultMessage": "This unequips it from {slots}.",
@@ -1569,7 +1569,7 @@
 	},
 	"characterSheet.unequipped": {
 		"defaultMessage": "{name} unequipped {item}.",
-		"description": "Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipment list of a character's sheet; {name} is the character's name and {item} the item's name. The character still carries it"
+		"description": "Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipment or Social Equipment list of a character's sheet; {name} is the character's name and {item} the item's name. The character still carries it"
 	},
 	"characterSheet.wearSocially": {
 		"defaultMessage": "Wear socially",
