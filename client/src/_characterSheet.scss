@@ -183,8 +183,22 @@ button.character-sheet-delete
 
 	h2
 	{
-		margin: 0 0 12px;
+		margin: 0;
 		overflow-wrap: anywhere;
+	}
+}
+
+// The item's name, with its menu at the far end when it was inspected from a character's sheet
+.item-inspect-heading
+{
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+
+	#item-inspect-menu
+	{
+		margin-inline-start: auto;
 	}
 }
 

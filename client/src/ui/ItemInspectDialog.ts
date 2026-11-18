@@ -1,6 +1,7 @@
 import { defineMessages, type EditorItem, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../localization';
+import { createActionMenu, type MenuAction } from './actionMenu';
 import { getElement } from './dom';
 import { ITEM_SETTING_NAMES, itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypesText } from './itemNames';
 
@@ -22,16 +23,34 @@ export const INSPECT_MESSAGES = defineMessages({
 export type InspectedItem = Pick<EditorItem, 'key' | 'name' | 'description' | 'category' | 'types' | 'equips'>;
 
 /**
+ * A menu of what can be done with the inspected item, shown beside its name, such as the one beside it
+ * on a character's sheet
+ */
+export interface InspectMenu
+{
+	/**
+	 * The menu button's name for screen readers and its tooltip, e.g. "Actions for Dagger"
+	 */
+	name: string;
+
+	/**
+	 * The commands. Each closes the dialog before it runs
+	 */
+	actions: readonly MenuAction[];
+}
+
+/**
  * The dialog showing what an item is (pages that use it include partials/character-sheet.html): its
- * name, kind, types, where it equips and description. It is opened from an item's menu on a
- * character's sheet and from item selection, over whatever dialog is open, and gives focus back to what
- * opened it when it closes. Rules details such as weight and damage aren't tracked yet; once items have
- * them, it shows them too
+ * name, kind, types, where it equips and description. It is opened from an item on a character's sheet
+ * and from item selection, over whatever dialog is open, and gives focus back to what opened it when it
+ * closes. From the sheet, the item's menu shows beside its name. Rules details such as weight and damage
+ * aren't tracked yet; once items have them, it shows them too
  */
 export class ItemInspectDialog
 {
 	private readonly dialog = getElement('item-inspect-dialog', HTMLDialogElement);
 	private readonly title = getElement('item-inspect-title', HTMLElement);
+	private readonly menu = getElement('item-inspect-menu', HTMLElement);
 	private readonly details = getElement('item-inspect-details', HTMLDListElement);
 	private readonly description = getElement('item-inspect-description', HTMLElement);
 
@@ -51,8 +70,9 @@ export class ItemInspectDialog
 	 *
 	 * @param item The item
 	 * @param ruleset The universe's ruleset
+	 * @param menu A menu of what can be done with the item, if any
 	 */
-	open(item: InspectedItem, ruleset: Ruleset): void
+	open(item: InspectedItem, ruleset: Ruleset, menu?: InspectMenu): void
 	{
 		const name = itemName(item, ruleset);
 		const description = itemDescription(item, ruleset);
@@ -69,6 +89,16 @@ export class ItemInspectDialog
 		];
 
 		this.title.textContent = name;
+		this.menu.replaceChildren(...((menu === undefined)
+			? []
+			: [createActionMenu(menu.name, menu.actions.map((action) => ({
+				...action,
+				run: () =>
+				{
+					this.dialog.close();
+					action.run();
+				}
+			})))]));
 		this.details.replaceChildren(...entries.flatMap(([term, value]) =>
 		{
 			const termElement = document.createElement('dt');
@@ -96,9 +126,10 @@ let shared: ItemInspectDialog | undefined;
  *
  * @param item The item
  * @param ruleset The universe's ruleset
+ * @param menu A menu of what can be done with the item, if any
  */
-export function inspectItem(item: InspectedItem, ruleset: Ruleset): void
+export function inspectItem(item: InspectedItem, ruleset: Ruleset, menu?: InspectMenu): void
 {
 	shared ??= new ItemInspectDialog();
-	shared.open(item, ruleset);
+	shared.open(item, ruleset, menu);
 }

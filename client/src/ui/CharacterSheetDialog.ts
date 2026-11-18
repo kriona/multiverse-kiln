@@ -102,6 +102,11 @@ const sheetMessages = defineMessages({
 		id: 'characterSheet.emptySlot',
 		defaultMessage: 'Empty',
 		description: 'The choice in the dialog choosing the item in one of a character\'s slots, from their sheet, that takes the item out'
+	},
+	itemMenu: {
+		id: 'characterSheet.itemMenu',
+		defaultMessage: 'Actions for {item}',
+		description: 'Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character\'s sheet, and beside its name in the Inspect dialog opened from the sheet, which opens a menu of what can be done with the item, such as Equip, Give and Discard; {item} is the item\'s name'
 	}
 });
 
@@ -1535,23 +1540,24 @@ export class CharacterSheetDialog
 			const equipped = bySlot.get(slot);
 			const item = ((equipped === undefined) ? undefined : itemsById.get(equipped.itemId));
 			const hidden = sheet.hiddenSlots.includes(slot);
+			const { menu, inspect } = this.slotMenu(sheet, layer, slot, item, hidden, canChange);
 
 			term.textContent = slotText(slot, sheet.ruleset);
 			value.append(valueText);
 
-			if (item && equipped?.bothHands)
+			if (item && inspect && equipped?.bothHands)
 			{
 				valueText.replaceChildren(...formatToNodes({
 					id: 'characterSheet.inBothHands',
 					defaultMessage: '{item} (both hands)',
 					description: 'On a character\'s sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item\'s name, a link that inspects it'
 				}, {
-					item: this.inspectLink(item, itemName(item, sheet.ruleset), sheet.ruleset)
+					item: this.inspectLink(itemName(item, sheet.ruleset), inspect)
 				}));
 			}
-			else if (item)
+			else if (item && inspect)
 			{
-				valueText.append(this.inspectLink(item, itemName(item, sheet.ruleset), sheet.ruleset));
+				valueText.append(this.inspectLink(itemName(item, sheet.ruleset), inspect));
 			}
 			else if ((slot === 'offHand') && held?.bothHands && itemsById.has(held.itemId))
 			{
@@ -1581,8 +1587,6 @@ export class CharacterSheetDialog
 				valueText.append(this.hiddenMark());
 			}
 
-			const menu = this.slotMenu(sheet, layer, slot, item, hidden, canChange);
-
 			if (menu)
 			{
 				value.append(menu);
@@ -1595,24 +1599,40 @@ export class CharacterSheetDialog
 	/**
 	 * An item's name on the sheet as a link-styled button that inspects it
 	 *
-	 * @param item The item
 	 * @param text What the button says: the item's name, with how many where the sheet shows that
-	 * @param ruleset The universe's ruleset
+	 * @param inspect Opens the Inspect dialog on the item, with its menu
 	 * @return The button
 	 */
-	private inspectLink(item: CharacterSheetItem, text: string, ruleset: Ruleset): HTMLButtonElement
+	private inspectLink(text: string, inspect: () => void): HTMLButtonElement
 	{
 		const button = document.createElement('button');
 
 		button.type = 'button';
 		button.className = 'link-button character-sheet-item-link';
 		button.textContent = text;
-		button.addEventListener('click', () =>
-		{
-			inspectItem(item, ruleset);
-		});
+		button.addEventListener('click', inspect);
 
 		return(button);
+	}
+
+	/**
+	 * Opens the Inspect dialog on an item on the sheet, with a menu of what else the menu it was inspected
+	 * from offers, if anything
+	 *
+	 * @param item The item
+	 * @param ruleset The universe's ruleset
+	 * @param actions The rest of that menu, without Inspect
+	 */
+	private inspect(item: CharacterSheetItem, ruleset: Ruleset, actions: readonly MenuAction[]): void
+	{
+		inspectItem(item, ruleset, ((actions.length === 0)
+			? undefined
+			: {
+				name: t(sheetMessages.itemMenu, {
+					item: itemName(item, ruleset)
+				}),
+				actions
+			}));
 	}
 
 	/**
@@ -1644,7 +1664,8 @@ export class CharacterSheetDialog
 	 * A slot's menu. For those who may change the character: Choose item, which opens the dialog choosing
 	 * its item, then Unequip and Inspect for an item in an Equipped slot, then Hide on avatar or Show on
 	 * avatar. For others, Inspect for an item in an Equipped slot. A slot is hidden in both layers at once,
-	 * so its menus in the Equipped and Social lists agree
+	 * so its menus in the Equipped and Social lists agree. Inspecting the slot's item shows the rest of the
+	 * menu in the Inspect dialog
 	 *
 	 * @param sheet The character
 	 * @param layer The list it is in
@@ -1652,9 +1673,10 @@ export class CharacterSheetDialog
 	 * @param item The item in the slot, if any
 	 * @param hidden Whether the slot is hidden from the avatar
 	 * @param canChange Whether the sheet offers to change the character
-	 * @return The menu's button and the menu, or undefined when it would have nothing in it
+	 * @return The menu's button and the menu, or undefined when it would have nothing in it, and what
+	 * inspects the slot's item, if it has one
 	 */
-	private slotMenu(sheet: CharacterSheet, layer: EquipmentLayer, slot: string, item: CharacterSheetItem | undefined, hidden: boolean, canChange: boolean): HTMLElement | undefined
+	private slotMenu(sheet: CharacterSheet, layer: EquipmentLayer, slot: string, item: CharacterSheetItem | undefined, hidden: boolean, canChange: boolean): { menu: HTMLElement | undefined; inspect: (() => void) | undefined }
 	{
 		const name = slotText(slot, sheet.ruleset);
 		const chosen: ChosenSlot = {
@@ -1683,7 +1705,7 @@ export class CharacterSheetDialog
 				icon: inspectIcon,
 				run: () =>
 				{
-					inspectItem(equipped, sheet.ruleset);
+					openInspect?.();
 				}
 			}]);
 		const choose: MenuAction = {
@@ -1728,10 +1750,19 @@ export class CharacterSheetDialog
 			}
 		};
 		const actions = (canChange ? [choose, ...unequip, ...inspect, toggleHidden] : inspect);
+		const openInspect = ((item === undefined)
+			? undefined
+			: (): void =>
+			{
+				this.inspect(item, sheet.ruleset, (canChange ? [choose, ...unequip, toggleHidden] : []));
+			});
 
 		if (actions.length === 0)
 		{
-			return(undefined);
+			return({
+				menu: undefined,
+				inspect: openInspect
+			});
 		}
 
 		const menu = createActionMenu(t({
@@ -1751,7 +1782,10 @@ export class CharacterSheetDialog
 			button.dataset.slot = slot;
 		}
 
-		return(menu);
+		return({
+			menu,
+			inspect: openInspect
+		});
 	}
 
 	/**
@@ -2114,16 +2148,17 @@ export class CharacterSheetDialog
 		this.items.replaceChildren(...items.map(({ item, name, left }) =>
 		{
 			const row = document.createElement('li');
-			const text = this.inspectLink(item, t({
+			const { menu, inspect } = this.createItemMenu(sheet, item, name, canChange);
+			const text = this.inspectLink(t({
 				id: 'characterSheet.item',
 				defaultMessage: '{quantity, plural, =1 {{item}} other {{item} x#}}',
 				description: 'On a character\'s sheet, an item they carry and haven\'t equipped, with how many when there is more than one, as a link that inspects it; {item} is the item\'s name, e.g. "Arrow x20"'
 			}, {
 				item: name,
 				quantity: left
-			}), sheet.ruleset);
+			}), inspect);
 
-			row.append(createItemIcon(item.category, sheet.ruleset), text, this.createItemMenu(sheet, item, name, canChange));
+			row.append(createItemIcon(item.category, sheet.ruleset), text, menu);
 
 			return(row);
 		}));
@@ -2136,24 +2171,25 @@ export class CharacterSheetDialog
 	 * an item held in one, and as the left or right ring for a ring while both ring slots are full),
 	 * Wear socially, Give, Inspect and Discard for those who may change the character, and Inspect for others.
 	 * Each way to equip it is offered when it changes something (equipChangesNothing()); Give while the
-	 * character is in a group with others
+	 * character is in a group with others. Inspect shows the rest of the menu in the Inspect dialog
 	 *
 	 * @param sheet The character
 	 * @param item The item
 	 * @param name The item's name
 	 * @param canChange Whether the sheet offers to change the character
-	 * @return The menu's button, and the menu
+	 * @return The menu's button and the menu, and what inspects the item
 	 */
-	private createItemMenu(sheet: CharacterSheet, item: CharacterSheetItem, name: string, canChange: boolean): HTMLElement
+	private createItemMenu(sheet: CharacterSheet, item: CharacterSheetItem, name: string, canChange: boolean): { menu: HTMLElement; inspect: () => void }
 	{
 		const actions: MenuAction[] = [];
+		const openInspect = (): void =>
+		{
+			this.inspect(item, sheet.ruleset, actions.filter((action) => (action !== inspect)));
+		};
 		const inspect: MenuAction = {
 			label: t(INSPECT_MESSAGES.inspect),
 			icon: inspectIcon,
-			run: () =>
-			{
-				inspectItem(item, sheet.ruleset);
-			}
+			run: openInspect
 		};
 
 		if (canChange)
@@ -2250,18 +2286,17 @@ export class CharacterSheetDialog
 			actions.push(inspect);
 		}
 
-		const menu = createActionMenu(t({
-			id: 'characterSheet.itemMenu',
-			defaultMessage: 'Actions for {item}',
-			description: 'Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character\'s sheet, which opens a menu of what can be done with the item, such as Equip, Give, Inspect and Discard; {item} is the item\'s name'
-		}, {
+		const menu = createActionMenu(t(sheetMessages.itemMenu, {
 			item: name
 		}), actions);
 
 		menu.classList.add('character-sheet-item-menu');
 		menu.querySelector<HTMLButtonElement>('.action-menu-button')?.setAttribute('data-item-id', String(item.id));
 
-		return(menu);
+		return({
+			menu,
+			inspect: openInspect
+		});
 	}
 
 	/**

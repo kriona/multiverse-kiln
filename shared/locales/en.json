@@ -1429,7 +1429,7 @@
 	},
 	"characterSheet.itemMenu": {
 		"defaultMessage": "Actions for {item}",
-		"description": "Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character's sheet, which opens a menu of what can be done with the item, such as Equip, Give, Inspect and Discard; {item} is the item's name"
+		"description": "Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character's sheet, and beside its name in the Inspect dialog opened from the sheet, which opens a menu of what can be done with the item, such as Equip, Give and Discard; {item} is the item's name"
 	},
 	"characterSheet.items": {
 		"defaultMessage": "Equipment",
