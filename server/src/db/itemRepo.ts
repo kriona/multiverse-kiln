@@ -294,25 +294,40 @@ function notesSortKey(item: EditorItem): number
  * @param ruleset The universe's ruleset
  * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
- * @return The page, and how many items match in all
+ * @return The page, how many items match in all, and the types of the items the filters but name, kind
+ * and type match
  */
 export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset, query: ItemListQuery, executor: Executor = db): Promise<ItemListPayload>
 {
 	const name = query.name?.toLowerCase();
 	const ids = ((query.ids === undefined) ? undefined : new Set(query.ids));
+	const types = new Set<string>();
 
 	// A default item that kept its name matches by its English name, since the server doesn't have the translations
 	const matching = (await loadNamedItems(version, ruleset, executor)).filter(({ item, englishName }) =>
 	{
-		return(
-			((name === undefined) || englishName.toLowerCase().includes(name))
-			&& ((query.enabled === undefined) || (item.enabled === query.enabled))
+		const offered = (
+			((query.enabled === undefined) || (item.enabled === query.enabled))
 			&& ((query.custom === undefined) || (item.custom === query.custom))
 			&& ((query.edited === undefined) || (item.editedSettings === query.edited))
-			&& ((query.category === undefined) || (item.category === query.category))
-			&& ((query.type === undefined) || item.types.includes(query.type))
 			&& ((ids === undefined) || ids.has(item.id))
 			&& ((query.rulebooks === undefined) || isRulebookOn(query.rulebooks, item.rulebook))
+		);
+
+		if (!offered)
+		{
+			return(false);
+		}
+
+		for (const type of item.types)
+		{
+			types.add(type);
+		}
+
+		return(
+			((name === undefined) || englishName.toLowerCase().includes(name))
+			&& ((query.category === undefined) || (item.category === query.category))
+			&& ((query.type === undefined) || item.types.includes(query.type))
 		);
 	});
 	const offset = (query.offset ?? 0);
@@ -327,7 +342,8 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 		items: sorted
 			.slice(offset, offset + (query.limit ?? matching.length))
 			.map(({ item }) => item),
-		total: matching.length
+		total: matching.length,
+		types: [...types]
 	});
 }
 

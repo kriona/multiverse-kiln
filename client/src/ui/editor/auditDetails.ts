@@ -209,7 +209,7 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 	category: {
 		id: 'editor.items.category',
 		defaultMessage: 'Kind',
-		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab\'s filter for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, and of the filter for it on the Items tab and in the dialog for choosing items; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	types: {
 		id: 'editor.item.types',

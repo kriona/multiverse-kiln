@@ -767,11 +767,11 @@
 					<section id="editor-panel-items" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-items" hidden>
 						<div class="filters">
 							<input id="item-filter-name" type="search" placeholder="Search by name" aria-label="Search items by name" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
-							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the filter for it on the Items tab and in the dialog for choosing items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Kind
 								<select id="item-filter-category"></select>
 							</label>
-							<label data-message="editor.item.type" data-translation-context="Label of the Items tab's filter for items of one type, such as light blades or light armor">
+							<label data-message="editor.item.type" data-translation-context="Label of the filter for items of one type, such as light blades or light armor, on the Items tab and in the dialog for choosing items">
 								Type
 								<select id="item-filter-type"></select>
 							</label>
@@ -1034,7 +1034,7 @@
 								Description
 								<textarea id="item-description" class="description-field" rows="2"></textarea>
 							</label>
-							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the filter for it on the Items tab and in the dialog for choosing items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Kind
 								<select id="item-category"></select>
 							</label>
@@ -1064,7 +1064,17 @@
 				<dialog id="item-select-dialog" class="panel dialog item-select-dialog" aria-labelledby="item-select-title">
 					<form id="item-select-form" class="form" novalidate>
 						<h2 id="item-select-title" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
-						<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
+						<div class="filters">
+							<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the filter for it on the Items tab and in the dialog for choosing items; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Kind
+								<select id="item-select-category"></select>
+							</label>
+							<label data-message="editor.item.type" data-translation-context="Label of the filter for items of one type, such as light blades or light armor, on the Items tab and in the dialog for choosing items">
+								Type
+								<select id="item-select-type"></select>
+							</label>
+						</div>
 						<fieldset id="item-select-results" class="choice stacked item-select-results" aria-label="Items" data-message-aria-label="editor.itemSelect.results" data-translation-context-aria-label="Name of the list of items to choose from, for screen readers"></fieldset>
 						<p id="item-select-none" class="universe-empty" data-message="editor.items.none" data-translation-context="Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items" hidden>No items match.</p>
 						<h3 data-message="editor.itemSelect.chosen" data-translation-context="Heading of the list of items chosen so far in the dialog for choosing items, each with how many">Chosen</h3>

@@ -1637,6 +1637,18 @@ html:has(.area-cells-editor.full-page) body
 {
 	width: min(480px, calc(100vw - 32px));
 
+	// The form spaces the filters from the results, and the search takes a row of its own above the
+	// kind and type, which the dialog is too narrow to fit beside it
+	.filters
+	{
+		margin-bottom: 0;
+
+		input[type="search"]
+		{
+			flex-basis: 100%;
+		}
+	}
+
 	.item-select-results
 	{
 		max-height: 220px;

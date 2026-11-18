@@ -1,15 +1,16 @@
-import { canEditWorld, canEditItemsOpen, categoryItemTypes, differsBeyondEnabling, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, differsBeyondEnabling, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
+import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemCategoryName, itemEquipsText, itemName, itemTypeName, itemTypesText } from '../itemNames';
+import { createItemIcon, itemEquipsText, itemName, itemTypesText } from '../itemNames';
 import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { afterSwitchSlides } from '../toggleSwitch';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import { showCategoryOptions, showTypeOptions } from './itemFilters';
 import { createEnabledSwitch } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
@@ -71,6 +72,11 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	 * The page of items shown, as it was last loaded
 	 */
 	private items: EditorItem[] = [];
+
+	/**
+	 * The types some item has, as the page last loaded says, which the type filter offers
+	 */
+	private typesWithItems = new Set<string>();
 
 	/**
 	 * Every item loaded since the universe was opened, by ID, to name an item whose change failed to save
@@ -141,7 +147,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		{
 			if (this.universe)
 			{
-				this.showTypeOptions(this.universe.ruleset);
+				showTypeOptions(this.categoryFilter, this.typeFilter, this.universe.ruleset, this.typesWithItems);
 			}
 
 			this.offset = 0;
@@ -183,8 +189,6 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	 */
 	open(universe: EditableUniverse): void
 	{
-		const kinds = ITEM_KINDS[universe.ruleset];
-
 		this.universe = universe;
 		this.offset = 0;
 		this.items = [];
@@ -193,15 +197,9 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		this.changedSince.clear();
 		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
-		setOptions(this.categoryFilter, [
-			anyOption(),
-			...kinds.categories.map((category) => ({
-				value: category,
-				label: itemCategoryName(category, universe.ruleset)
-			}))
-		]);
-		this.categoryFilter.value = '';
-		this.showTypeOptions(universe.ruleset);
+		this.typesWithItems = new Set();
+		showCategoryOptions(this.categoryFilter, universe.ruleset);
+		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
 		this.enabledFilter.value = '';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
@@ -288,28 +286,6 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Offers the types in the category chosen, or every type when none is, keeping the type chosen if it
-	 * is still offered
-	 *
-	 * @param ruleset The universe's ruleset
-	 */
-	private showTypeOptions(ruleset: Ruleset): void
-	{
-		const category = this.categoryFilter.value;
-		const chosen = this.typeFilter.value;
-		const types = ((category === '') ? Object.keys(ITEM_KINDS[ruleset].types) : categoryItemTypes(ruleset, category));
-
-		setOptions(this.typeFilter, [
-			anyOption(),
-			...types.map((type) => ({
-				value: type,
-				label: itemTypeName(type, ruleset)
-			}))
-		]);
-		this.typeFilter.value = (types.includes(chosen) ? chosen : '');
-	}
-
-	/**
 	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since.
 	 * It waits for the books on to be known, which loads the page once they are
 	 *
@@ -378,6 +354,8 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		}
 
 		this.items = page.items;
+		this.typesWithItems = new Set(page.types);
+		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
 
 		for (const item of page.items)
 		{
@@ -577,19 +555,6 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			});
 		}
 	}
-}
-
-/**
- * The choice of a kind or type filter that shows every item
- *
- * @return The choice
- */
-function anyOption(): SelectOption
-{
-	return({
-		value: '',
-		label: t(formMessages.filterAny)
-	});
 }
 
 /**

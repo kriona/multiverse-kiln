@@ -290,6 +290,34 @@ describe('itemRepo', () =>
 			assert.deepStrictEqual(await listedIds(universeId, { edited: true }), [await daggerId()]);
 		});
 
+		it('lists the types of the items every filter but name, kind and type matches', async () =>
+		{
+			const universeId = await addUniverse();
+
+			await createCustomItem(liveVersion(universeId), 'pf1e', torch);
+			await createCustomItem(liveVersion(universeId), 'pf1e', { name: 'Old Sword', ...longswordKind, enabled: false });
+
+			const ids = await daggerAndOwnIds(universeId);
+
+			/**
+			 * The types listed among the dagger and the universe's own items, sorted
+			 *
+			 * @param query The filters
+			 * @return The types
+			 */
+			const typesOf = async (query: ItemListQuery): Promise<string[]> => (await listEditorItems(liveVersion(universeId), 'pf1e', { rulebooks: [], ids, ...query })).types.sort();
+			const every = ['blades_heavy', 'blades_light', 'light_source', 'thrown'];
+
+			assert.deepStrictEqual(await typesOf({}), every);
+
+			// Typing a name, or choosing a kind or type, doesn't change the types offered, even with no item listed
+			assert.deepStrictEqual(await typesOf({ name: 'torch', category: 'armor', type: 'thrown' }), every);
+
+			// The other filters do
+			assert.deepStrictEqual(await typesOf({ enabled: true }), ['blades_light', 'light_source', 'thrown']);
+			assert.deepStrictEqual(await typesOf({ custom: true, enabled: false }), ['blades_heavy']);
+		});
+
 		it('lists the items of the core rulebook, the books asked for and the universe\'s own', async () =>
 		{
 			const universeId = await addUniverse();

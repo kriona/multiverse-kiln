@@ -1713,6 +1713,12 @@ export interface ItemListPayload
 	 * How many items match, on every page
 	 */
 	total: number;
+
+	/**
+	 * Every type some item has among the items every filter but name, kind and type matches, so a type
+	 * filter offers only types with items, whatever is typed and whichever kind is chosen
+	 */
+	types: string[];
 }
 
 /**
