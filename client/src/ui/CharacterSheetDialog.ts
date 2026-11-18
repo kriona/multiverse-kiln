@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equipChangesNothing, equippedCount, fitsSlot, fitsSocialSlot, handChoices, pf1eAbilityModifier, ringChoices, RULESET_ABILITIES, SIZE_NAMES, socialSlotFor, socialSlots, type CharacterAppearance, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type EquipmentLayer, type EquipRing, type MessageDescriptor } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSlots, DARKVISION_NAMES, defineMessages, equipChangesNothing, equippedCount, fitsSlot, fitsSocialSlot, handChoices, pf1eAbilityModifier, ringChoices, RULESET_ABILITIES, SIZE_NAMES, socialSlotFor, socialSlots, type CharacterAppearance, type CharacterItemsPayload, type CharacterSheet, type CharacterSheetItem, type EquipHand, type EquipmentLayer, type EquipRing, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
 import lastRitesIcon from 'virtual:icon/game-icons:candle-light';
 import wearIcon from 'virtual:icon/game-icons:cape';
 import showIcon from 'virtual:icon/ph:eye';
@@ -1541,17 +1541,17 @@ export class CharacterSheetDialog
 
 			if (item && equipped?.bothHands)
 			{
-				valueText.textContent = t({
+				valueText.replaceChildren(...formatToNodes({
 					id: 'characterSheet.inBothHands',
 					defaultMessage: '{item} (both hands)',
-					description: 'On a character\'s sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item\'s name'
+					description: 'On a character\'s sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item\'s name, a link that inspects it'
 				}, {
-					item: itemName(item, sheet.ruleset)
-				});
+					item: this.inspectLink(item, itemName(item, sheet.ruleset), sheet.ruleset)
+				}));
 			}
 			else if (item)
 			{
-				valueText.textContent = itemName(item, sheet.ruleset);
+				valueText.append(this.inspectLink(item, itemName(item, sheet.ruleset), sheet.ruleset));
 			}
 			else if ((slot === 'offHand') && held?.bothHands && itemsById.has(held.itemId))
 			{
@@ -1590,6 +1590,29 @@ export class CharacterSheetDialog
 
 			return([term, value]);
 		}));
+	}
+
+	/**
+	 * An item's name on the sheet as a link-styled button that inspects it
+	 *
+	 * @param item The item
+	 * @param text What the button says: the item's name, with how many where the sheet shows that
+	 * @param ruleset The universe's ruleset
+	 * @return The button
+	 */
+	private inspectLink(item: CharacterSheetItem, text: string, ruleset: Ruleset): HTMLButtonElement
+	{
+		const button = document.createElement('button');
+
+		button.type = 'button';
+		button.className = 'link-button character-sheet-item-link';
+		button.textContent = text;
+		button.addEventListener('click', () =>
+		{
+			inspectItem(item, ruleset);
+		});
+
+		return(button);
 	}
 
 	/**
@@ -2091,16 +2114,15 @@ export class CharacterSheetDialog
 		this.items.replaceChildren(...items.map(({ item, name, left }) =>
 		{
 			const row = document.createElement('li');
-			const text = document.createElement('span');
-
-			text.textContent = t({
+			const text = this.inspectLink(item, t({
 				id: 'characterSheet.item',
 				defaultMessage: '{quantity, plural, =1 {{item}} other {{item} x#}}',
-				description: 'On a character\'s sheet, an item they carry and haven\'t equipped, with how many when there is more than one; {item} is the item\'s name, e.g. "Arrow x20"'
+				description: 'On a character\'s sheet, an item they carry and haven\'t equipped, with how many when there is more than one, as a link that inspects it; {item} is the item\'s name, e.g. "Arrow x20"'
 			}, {
 				item: name,
 				quantity: left
-			});
+			}), sheet.ruleset);
+
 			row.append(createItemIcon(item.category, sheet.ruleset), text, this.createItemMenu(sheet, item, name, canChange));
 
 			return(row);

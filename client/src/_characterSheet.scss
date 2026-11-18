@@ -193,6 +193,12 @@ button.character-sheet-delete
 	margin: 12px 0 0;
 }
 
+// An item's name, which inspects it
+button.character-sheet-item-link
+{
+	text-align: start;
+}
+
 // Each item's menu sits at the far end of its row
 .character-sheet-item-menu
 {

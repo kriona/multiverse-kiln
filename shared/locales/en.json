@@ -1417,7 +1417,7 @@
 	},
 	"characterSheet.inBothHands": {
 		"defaultMessage": "{item} (both hands)",
-		"description": "On a character's sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item's name"
+		"description": "On a character's sheet, in the Equipped list, beside the main hand when the item there is held in both hands, such as a greatsword; {item} is the item's name, a link that inspects it"
 	},
 	"characterSheet.inspect": {
 		"defaultMessage": "Inspect",
@@ -1425,7 +1425,7 @@
 	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
-		"description": "On a character's sheet, an item they carry and haven't equipped, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
+		"description": "On a character's sheet, an item they carry and haven't equipped, with how many when there is more than one, as a link that inspects it; {item} is the item's name, e.g. \"Arrow x20\""
 	},
 	"characterSheet.itemMenu": {
 		"defaultMessage": "Actions for {item}",
