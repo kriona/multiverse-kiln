@@ -4,7 +4,8 @@
  * step and the Appearance dialog on a character's sheet use it
  *
  * Only the art types with a base for the race and body type are offered, and the art type choice is left
- * out for a race no art type has drawn. The preview is drawn by the server and shared by everyone who
+ * out for a race no art type has drawn. Only drawn backgrounds are offered, and the choice is left out
+ * while none are. The preview is drawn by the server and shared by everyone who
  * chooses the same
  */
 import { artTypesFor, AVATAR_MANIFEST, avatarPreviewPath, BACKGROUND_NAMES, BACKGROUNDS, BODY_TYPE_NAMES, drawnArtType, drawnBodyType, raceBodyTypes, type CharacterAppearance, type Ruleset } from '@multiverse-kiln/shared';
@@ -121,19 +122,28 @@ export class AppearanceChoices
 
 	/**
 	 * Draws the choices and the preview for the race and the choices made, choosing an art type the body
-	 * type has a base in when the one chosen has none
+	 * type has a base in when the one chosen has none, and a drawn background when the one chosen isn't
 	 */
 	private render(): void
 	{
 		const { ruleset, raceKey } = this;
 		const bodyTypes = raceBodyTypes(ruleset, raceKey);
 		const artTypes = artTypesFor(AVATAR_MANIFEST, ruleset, raceKey, this.appearance.bodyType);
+		const backgrounds = BACKGROUNDS.filter((background) => Object.hasOwn(AVATAR_MANIFEST.backgrounds, background));
 
 		if ((artTypes.length > 0) && !artTypes.includes(this.appearance.artType))
 		{
 			this.appearance = {
 				...this.appearance,
 				artType: artTypes[0]
+			};
+		}
+
+		if ((backgrounds.length > 0) && !(backgrounds as readonly string[]).includes(this.appearance.background))
+		{
+			this.appearance = {
+				...this.appearance,
+				background: backgrounds[0]
 			};
 		}
 
@@ -156,12 +166,12 @@ export class AppearanceChoices
 			return([artType, ((typeof name === 'string') ? name : t(name)), (typeof name === 'string')]);
 		}));
 
-		this.backgrounds.hidden = (bodyTypes.length === 0);
+		this.backgrounds.hidden = ((bodyTypes.length === 0) || (backgrounds.length === 0));
 		this.fill(this.backgrounds, 'background', t({
 			id: 'appearance.background',
 			defaultMessage: 'Background',
 			description: 'Heading of the choice of the background behind a character\'s avatar (the picture of the character), such as Dark green: on Create Character\'s Appearance step, and in the Appearance dialog of a character\'s sheet'
-		}), BACKGROUNDS.map((background) => [background, t(BACKGROUND_NAMES[background]), false]));
+		}), backgrounds.map((background) => [background, t(BACKGROUND_NAMES[background]), false]));
 
 		this.showPreview();
 	}

@@ -8,7 +8,7 @@
  *
  * This is the only place the browser composes avatar art: the server makes every avatar players see
  */
-import { AVATAR_HEIGHT, AVATAR_MANIFEST, AVATAR_WIDTH, BEHIND_BASE_LAYER, BODY_TYPE_NAMES, BODY_TYPES, BOTH_HANDS_POSITION, DEFAULT_BACKGROUND, DEFAULT_ITEM_EQUIPS, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEV_TOOLS_PATH, HELD_EQUIPMENT_NAMES, RULESET_EQUIPMENT, RULESET_NAMES, RULESETS, defineMessages, isBodyType, slotName, type AvatarPoint, type BodyType, type ItemDrawing, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
+import { AVATAR_HEIGHT, AVATAR_MANIFEST, AVATAR_WIDTH, BEHIND_BASE_LAYER, BODY_TYPE_NAMES, BODY_TYPES, BOTH_HANDS_POSITION, DEFAULT_ITEM_EQUIPS, DEFAULT_ITEM_NAMES, DEFAULT_RACE_NAMES, DEV_TOOLS_PATH, HELD_EQUIPMENT_NAMES, RULESET_EQUIPMENT, RULESET_NAMES, RULESETS, defineMessages, isBodyType, slotName, type AvatarPoint, type BodyType, type ItemDrawing, type MessageDescriptor, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from './localization';
 import { serverHttpUrl } from './network/serverConnection';
@@ -871,7 +871,7 @@ class PositioningTool
 	}
 
 	/**
-	 * Draws the background, the chosen base and the chosen drawing's parts on it, the chosen part outlined,
+	 * Draws the first drawn background, if any, the chosen base and the chosen drawing's parts on it, the chosen part outlined,
 	 * and says which files the manifest names that aren't there
 	 */
 	private async draw(): Promise<void>
@@ -880,7 +880,7 @@ class PositioningTool
 		const bodyType = this.bodyType;
 		const base = ((bodyType === undefined) ? undefined : this.art.bases[this.ruleset][this.raceSelect.value]?.[bodyType]);
 		const artType = this.artTypeSelect.value;
-		const background = AVATAR_MANIFEST.backgrounds[DEFAULT_BACKGROUND];
+		const background: string | undefined = Object.values(AVATAR_MANIFEST.backgrounds)[0];
 		const refs = ((base === undefined) ? [] : this.partRefs());
 		const parts = this.parts();
 		const ordered = [
@@ -889,7 +889,7 @@ class PositioningTool
 			...refs.filter((ref) => (parts[ref.index].layer !== BEHIND_BASE_LAYER))
 		];
 		const [backgroundImage, baseImage, ...partImages] = await Promise.all([
-			this.load(background),
+			((background === undefined) ? Promise.resolve(null) : this.load(background)),
 			((base === undefined) ? Promise.resolve(null) : this.load(`${artType}/${base}`)),
 			...ordered.map((ref) => ((ref === null) ? Promise.resolve(null) : this.load(`${artType}/${parts[ref.index].file}`)))
 		]);

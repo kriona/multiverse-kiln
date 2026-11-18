@@ -5,7 +5,7 @@ them together into each character's avatar (see Avatars in `STRUCTURE-OVERVIEW.m
 
 ```
 shared/assets/avatars/
-	backgrounds/          made by a script, not drawn (npm run avatars:backgrounds -w server)
+	backgrounds/          the backgrounds, shared by every art type
 	stickFigure/          the Stick figure art type
 		bases/
 		items/
@@ -15,7 +15,30 @@ shared/assets/avatars/
 ```
 
 Each art type's folder has a file in `shared/src/avatars/` that lists what is drawn: `stickFigure.ts`
-and `lucia.ts`. A PNG that isn't listed there isn't used.
+and `lucia.ts`. The backgrounds are listed in `shared/src/avatars/index.ts`. A PNG that isn't listed
+isn't used.
+
+## Drawing a background
+
+A background goes behind every art type's base.
+
+- PNG, exactly 200 pixels wide and 300 tall, filling the whole picture.
+- The backgrounds are dark green and dark red (`darkGreen`, `darkRed`, in `BACKGROUNDS` in
+  `shared/src/avatars/manifest.ts`).
+
+Save it as, for example, `backgrounds/darkGreen.png`, and list it in `AVATAR_MANIFEST` in `index.ts`:
+
+```ts
+backgrounds: {
+	darkGreen: 'backgrounds/darkGreen.png'
+} satisfies Partial<Record<AvatarBackground, string>>
+```
+
+Create Character offers only the backgrounds listed, and leaves the choice out until one is. An avatar
+whose background isn't drawn has nothing behind it.
+
+A new background also needs its key in `BACKGROUNDS` and its name in `BACKGROUND_NAMES`, both in
+`manifest.ts`.
 
 ## Drawing a base
 

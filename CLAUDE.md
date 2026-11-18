@@ -84,7 +84,7 @@ An engine for making multiplayer browser-based role-playing games.
                  the abilities, sizes, races, classes and themes tables (src/racesAndClasses.ts),
                  messages and the Translator (src/localization.ts), and the avatar manifest and what an
                  avatar draws (src/avatars/)
-  assets/avatars/    the hand-drawn avatar art each art type ships, and the backgrounds; README.md says how to
+  assets/avatars/    the hand-drawn avatar art: each art type's, and the backgrounds; README.md says how to
                      add art
   locales/           en.json, the English catalog extracted from the code, and each translation's file, which
                      stores each message with the English it was made from (en-x-pirate.json is Pirate, a

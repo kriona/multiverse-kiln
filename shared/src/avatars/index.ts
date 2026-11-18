@@ -4,7 +4,7 @@
  */
 import { LUCIA_ART } from './lucia.js';
 import { STICK_FIGURE_ART } from './stickFigure.js';
-import { BACKGROUNDS, type AvatarManifest } from './manifest.js';
+import type { AvatarBackground, AvatarManifest } from './manifest.js';
 
 export * from './bodyTypes.js';
 export * from './layers.js';
@@ -36,5 +36,9 @@ export const AVATAR_MANIFEST: AvatarManifest = {
 		stickFigure: STICK_FIGURE_ART,
 		lucia: LUCIA_ART
 	} satisfies Record<ArtType, AvatarManifest['artTypes'][string]>,
-	backgrounds: Object.fromEntries(BACKGROUNDS.map((background) => [background, `backgrounds/${background}.png`]))
+	// Each background drawn so far
+	backgrounds: {
+		darkGreen: 'backgrounds/darkGreen.png',
+		darkRed: 'backgrounds/darkRed.png'
+	} satisfies Partial<Record<AvatarBackground, string>>
 };

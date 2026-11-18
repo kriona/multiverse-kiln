@@ -258,7 +258,7 @@ Item drawings:
 - an item with no drawing for the art type, race and body type draws nothing
 - layers follow the slot draw order, a list in each ruleset's `equipment.ts`. A part can set its own layer, behind the base included
 
-Backgrounds: a dark green gradient and a dark red gradient for now, 200x300 PNGs made from gradient stops by a script in `server/scripts/`. Their names are messages.
+Backgrounds: dark green and dark red for now, 200x300 PNGs drawn by hand like the rest of the art. Only the drawn ones are offered, and the choice is left out until one is; an avatar whose background isn't drawn has nothing behind it. Their names are messages.
 
 A character's look:
 - body type, art type and background are chosen on Create Character's Appearance step, with a preview

@@ -138,7 +138,8 @@ export interface AvatarManifest
 	artTypes: Readonly<Record<string, ArtTypeManifest>>;
 
 	/**
-	 * Each background's PNG, relative to shared/assets/avatars/, by key, in the order they are offered
+	 * Each drawn background's PNG, relative to shared/assets/avatars/, by key. Only these are offered, in
+	 * the order of BACKGROUNDS, and an avatar whose background isn't drawn has none behind it
 	 */
 	backgrounds: Readonly<Record<string, string>>;
 }
@@ -149,7 +150,7 @@ export interface AvatarManifest
 export const DEFAULT_ART_TYPE = 'stickFigure';
 
 /**
- * The backgrounds, in the order they are offered
+ * The backgrounds a character can have, in the order they are offered once drawn
  */
 export const BACKGROUNDS = ['darkGreen', 'darkRed'] as const;
 
@@ -167,12 +168,12 @@ export const BACKGROUND_NAMES: Record<AvatarBackground, MessageDescriptor> = def
 	darkGreen: {
 		id: 'avatar.background.darkGreen',
 		defaultMessage: 'Dark green',
-		description: 'A background behind a character\'s avatar (the picture of the character): a dark green gradient. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet'
+		description: 'A background behind a character\'s avatar (the picture of the character): dark green. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet'
 	},
 	darkRed: {
 		id: 'avatar.background.darkRed',
 		defaultMessage: 'Dark red',
-		description: 'A background behind a character\'s avatar (the picture of the character): a dark red gradient. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet'
+		description: 'A background behind a character\'s avatar (the picture of the character): dark red. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet'
 	}
 });
 

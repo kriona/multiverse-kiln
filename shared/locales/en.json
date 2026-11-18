@@ -761,11 +761,11 @@
 	},
 	"avatar.background.darkGreen": {
 		"defaultMessage": "Dark green",
-		"description": "A background behind a character's avatar (the picture of the character): a dark green gradient. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+		"description": "A background behind a character's avatar (the picture of the character): dark green. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.background.darkRed": {
 		"defaultMessage": "Dark red",
-		"description": "A background behind a character's avatar (the picture of the character): a dark red gradient. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
+		"description": "A background behind a character's avatar (the picture of the character): dark red. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.femmeThick": {
 		"defaultMessage": "Femme thick",

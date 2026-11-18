@@ -639,7 +639,7 @@ Decided:
 	- An item with no drawing for the art type, race and body type draws nothing.
 	- Layers follow the slot draw order, a list in each ruleset's `equipment.ts`. A part can set its own layer, behind the base included.
 	- A positioning tool, `client/avatar-positions.html`, works only with dev tools on (`ENABLE_DEV_TOOLS`). It chooses an art type, an item drawing, a race and a body type, and moves each part on the base by dragging or with the arrow keys, the off hand and right ring included. It shows each x/y, lists the bases a drawing still has no offsets for, and copies the drawing's offsets as TypeScript to paste into the manifest. It doesn't write files.
-- Backgrounds: a dark green gradient and a dark red gradient. They are 200x300 PNGs made from gradient stops by a script in `server/scripts/`, not drawn art. Their names are messages.
+- Backgrounds: dark green and dark red, 200x300 PNGs drawn by hand like the rest of the art. Only the drawn ones are offered, and the choice is left out until one is. Their names are messages.
 - Universe-added races and items
 	- A race the universe added has "Looks like" (`races.avatar_race_id`), a default race of the same ruleset, in the race editor. Its characters use that race's body types and art. A race with no "Looks like" has no avatar.
 	- An item the universe added has "Looks like" too (`items.avatar_item_id`), a default item of the same ruleset, in the item editor. An item with none draws nothing.
@@ -692,7 +692,7 @@ Steps:
 - [✅] The positioning tool
 - [✅] The license page's credit
 - [✅] Pirate translation of the new messages
-- [ ] Draw the art: human bases and a few item drawings in the Lucia art type and stick figures, added as `shared/assets/avatars/README.md` describes
+- [ ] Draw the art: the dark green and dark red backgrounds, and human bases and a few item drawings in the Lucia art type and stick figures, added as `shared/assets/avatars/README.md` describes
 - [ ] Check the new step, the sheet, the dialogs and the positioning tool with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
 
 **Done when:** with human bases and a few item drawings in place, a player makes a femme thin human with the Lucia art type and the dark red background, seeing the preview as they choose. Her sheet shows her avatar in her equipped leather armor, holding a short sword in each hand, the off hand's flipped. Wearing a cloak socially draws it over her armor. Hiding the shoulders slot leaves the cloak off. Switching to the stick figure redraws her. Another player sees her avatar beside her name in the lobby, and only a creator can change her body type.
