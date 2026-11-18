@@ -1163,9 +1163,9 @@
 		"message": "Hand it to",
 		"source": "Give to"
 	},
-	"characterSheet.giveToOwn": {
-		"message": "{name} (yer own)",
-		"source": "{name} (yours)"
+	"characterSheet.giveToCharacter": {
+		"message": "{name} ({description})",
+		"source": "{name} ({description})"
 	},
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",

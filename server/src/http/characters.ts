@@ -422,23 +422,22 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 {
 	// Only the character's own items and their names' translations, of the thousands a universe can have
 	const itemIds = character.items.map((item) => item.itemId);
-	const membership = await findMembership(character.id);
-	const [members, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
-		((membership === undefined) ? Promise.resolve([]) : listGroupMembers(membership.groupId)),
-		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
-		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
-		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
-		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
-		findSiteSettings(),
-		loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, itemIds),
-		loadTexts([
+	const groupLoad = findMembership(character.id)
+		.then(async (membership) => ({
+			membership,
+			members: ((membership === undefined) ? [] : await listGroupMembers(membership.groupId))
+		}));
+
+	// The group's characters are listed with their races and classes, so their translations wait for the members
+	const textsLoad = groupLoad
+		.then(({ members }) => loadTexts([
 			{
 				kind: 'race',
-				thingIds: [character.raceId]
+				thingIds: [...new Set([character.raceId, ...members.map((member) => member.raceId)])]
 			},
 			{
 				kind: 'class',
-				thingIds: [character.classId]
+				thingIds: [...new Set([character.classId, ...members.map((member) => member.classId)])]
 			},
 			{
 				kind: 'theme',
@@ -449,8 +448,50 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 				thingIds: itemIds
 			},
 			'coin'
-		])
+		]));
+	const [{ membership, members }, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
+		groupLoad,
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
+		findSiteSettings(),
+		loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, itemIds),
+		textsLoad
 	]);
+
+	/**
+	 * A race's name as the sheet shows it
+	 *
+	 * @param raceId The race's ID
+	 * @return The name, in the player's language
+	 */
+	const raceNameOf = (raceId: number): OptionName =>
+	{
+		const option = races.find((candidate) => (candidate.id === raceId));
+
+		return(translator.name('race', raceId, {
+			key: (option?.key ?? null),
+			name: (option?.name ?? null)
+		}));
+	};
+
+	/**
+	 * A class's name as the sheet shows it
+	 *
+	 * @param classId The class's ID
+	 * @return The name, in the player's language
+	 */
+	const classNameOf = (classId: number): OptionName =>
+	{
+		const option = classes.find((candidate) => (candidate.id === classId));
+
+		return(translator.name('class', classId, {
+			key: (option?.key ?? null),
+			name: (option?.name ?? null)
+		}));
+	};
+
 	const race = races.find((option) => (option.id === character.raceId));
 	const characterClass = classes.find((option) => (option.id === character.classId));
 	const theme = themes.find((option) => (option.id === character.themeId));
@@ -462,14 +503,8 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 		ruleset: universe.ruleset,
 		id: character.id,
 		name: character.name,
-		race: translator.name('race', character.raceId, {
-			key: (race?.key ?? null),
-			name: (race?.name ?? null)
-		}),
-		characterClass: translator.name('class', character.classId, {
-			key: (characterClass?.key ?? null),
-			name: (characterClass?.name ?? null)
-		}),
+		race: raceNameOf(character.raceId),
+		characterClass: classNameOf(character.classId),
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
 		group: ((membership === undefined)
@@ -482,7 +517,8 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 					.map((member) => ({
 						characterId: member.characterId,
 						name: member.name,
-						own: (member.playerId === character.playerId)
+						race: raceNameOf(member.raceId),
+						characterClass: classNameOf(member.classId)
 					}))
 					.sort((a, b) => a.name.localeCompare(b.name))
 			}),

@@ -599,7 +599,8 @@ describe('group routes', () =>
 					members: [{
 						characterId: ada.characterId,
 						name: 'Ada',
-						own: false
+						race: { key: 'dwarf', name: null },
+						characterClass: { key: 'fighter', name: null }
 					}]
 				},
 				barredBy: 'race'
@@ -637,7 +638,8 @@ describe('group routes', () =>
 					members: [{
 						characterId: other.characterId,
 						name: ((other === ada) ? 'Ada' : 'Grace'),
-						own: false
+						race: { key: 'dwarf', name: null },
+						characterClass: { key: 'fighter', name: null }
 					}]
 				});
 			}

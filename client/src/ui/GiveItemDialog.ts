@@ -7,6 +7,7 @@ import { unequipNote } from './equipmentText';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
 import { itemName } from './itemNames';
+import { characterDescription } from './raceAndClassNames';
 
 /**
  * Gives some of an item to another character; rejects when it couldn't
@@ -30,8 +31,9 @@ interface Giving
 
 /**
  * The dialog opened by Give in an item's menu on a character's sheet (pages that use it include
- * partials/character-sheet.html): "Give [item]", choosing another character in the group, the player's
- * own included, and for more than one of the item, how many, all of it to start with. It says which
+ * partials/character-sheet.html): "Give [item]", choosing another character in the group, by name, race
+ * and class, the player's own included, and for more than one of the item, how many, all of it to start
+ * with. It says which
  * equipped ones giving them unequips. The items arrive at once, wherever the other character is
  */
 export class GiveItemDialog
@@ -126,15 +128,14 @@ export class GiveItemDialog
 			const option = document.createElement('option');
 
 			option.value = member.characterId;
-			option.textContent = (member.own
-				? t({
-					id: 'characterSheet.giveToOwn',
-					defaultMessage: '{name} (yours)',
-					description: 'A choice in the dialog that gives an item to another character in the group, for a character of the same player; {name} is the character\'s name'
-				}, {
-					name: member.name
-				})
-				: member.name);
+			option.textContent = t({
+				id: 'characterSheet.giveToCharacter',
+				defaultMessage: '{name} ({description})',
+				description: 'A choice in the dialog that gives an item to another character in the group; {name} is the character\'s name and {description} their race and class, e.g. "Dwarf Fighter"'
+			}, {
+				name: member.name,
+				description: characterDescription(member, sheet.ruleset)
+			});
 
 			return(option);
 		}));

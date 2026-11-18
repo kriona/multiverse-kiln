@@ -463,11 +463,8 @@ export interface CharacterSheetGroupMember
 {
 	characterId: string;
 	name: string;
-
-	/**
-	 * Whether the character is one of the same player's
-	 */
-	own: boolean;
+	race: OptionName;
+	characterClass: OptionName;
 }
 
 /**

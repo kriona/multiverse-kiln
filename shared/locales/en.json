@@ -953,7 +953,7 @@
 	},
 	"character.raceAndClass": {
 		"defaultMessage": "{race} {class}",
-		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles, and in the world editor's list of every character in the universe. Reorder them as your language needs"
+		"description": "A character's race and class, e.g. \"Dwarf Fighter\": under the name at the top of their sheet, after their name in the lists of the player's characters in the lobby, on a universe's page, on an invite and on profiles, in the world editor's list of every character in the universe, and in brackets after each character's name in the Give dialog on a character's sheet. Reorder them as your language needs"
 	},
 	"character.review.class": {
 		"defaultMessage": "Class",
@@ -1163,9 +1163,9 @@
 		"defaultMessage": "Give to",
 		"description": "Label of the field, in the dialog opened by Give in an item's menu on a character's sheet, for which character in the group to give the item to"
 	},
-	"characterSheet.giveToOwn": {
-		"defaultMessage": "{name} (yours)",
-		"description": "A choice in the dialog that gives an item to another character in the group, for a character of the same player; {name} is the character's name"
+	"characterSheet.giveToCharacter": {
+		"defaultMessage": "{name} ({description})",
+		"description": "A choice in the dialog that gives an item to another character in the group; {name} is the character's name and {description} their race and class, e.g. \"Dwarf Fighter\""
 	},
 	"characterSheet.hitPoints": {
 		"defaultMessage": "Hit points",

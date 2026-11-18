@@ -330,7 +330,14 @@ describe('Equipment routes', () =>
 				const daggerId = (await sheetOf(brokkId)).items.find((item) => (item.key === 'dagger'))?.id;
 
 				assert.ok(daggerId !== undefined);
-				assert.deepStrictEqual((await sheetOf(brokkId)).group?.members, [{ characterId: graceCharacterId, name: 'Mara', own: false }]);
+				assert.deepStrictEqual((await sheetOf(brokkId)).group?.members, [
+					{
+						characterId: graceCharacterId,
+						name: 'Mara',
+						race: { key: 'dwarf', name: null },
+						characterClass: { key: 'fighter', name: null }
+					}
+				]);
 
 				const answer = await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/give`, {
 					characterId: graceCharacterId,

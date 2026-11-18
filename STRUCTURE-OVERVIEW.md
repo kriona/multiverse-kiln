@@ -218,7 +218,7 @@ Equipping:
 - Create Character equips the starting items, the class's, then the race's, then the universe's, each list by name. Each worn item goes in its slot while it is free. Only the first weapon is equipped, in the main hand, so no character starts out dual-wielding. A shield goes in the off hand while it is free, and a buckler in the off arm. Other held items, such as torches, stay unequipped
 - Each change to a character's items or equipment is sent to the player's windows through the session room, so an open sheet shows it wherever it is
 
-Give opens "Give [item]". It chooses another character in the group, the player's own included, online or not, and for more than one of the item, how many. The items arrive at once. The receiving player's open windows show a toast saying who gave them what, and a line in the group's chat records it. It is offered only while the character is in a group.
+Give opens "Give [item]". It chooses another character in the group, listed by name, race and class ("Mara (Dwarf Fighter)"), the player's own included, online or not, and for more than one of the item, how many. The items arrive at once. The receiving player's open windows show a toast saying who gave them what, and a line in the group's chat records it. It is offered only while the character is in a group.
 
 Inspect opens a dialog with the item's name, kind, types, book, where it equips and description. Rules details such as weight and damage aren't tracked yet. Inspect will show them once items have them. Inspect is also in [item selection](#selection-item).
 
