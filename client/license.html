@@ -21,8 +21,18 @@
 							<li><a href="#assets" data-message="license.assets" data-translation-context="Heading of the license page's section about the game's art, audio and story, and its link in the page's contents">Art and other assets</a></li>
 							<li><a href="#artwork" data-message="license.artwork" data-translation-context="Heading of the license page's section crediting the artist who made the game's logo and default tilesets, and its link in the page's contents">Logo and tilesets</a></li>
 							<li><a href="#fonts" data-message="license.fonts" data-translation-context="Heading of the license page's section crediting the fonts the pages use, and its link in the page's contents">Fonts</a></li>
-							<li><a href="#icons" data-message="license.icons" data-translation-context="Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents">Icons</a></li>
-							<li><a href="#code" data-message="license.code" data-translation-context="Heading of the license page's section crediting code by others that the pages include, and its link in the page's contents">Code by others</a></li>
+							<li><a href="#icons" data-message="license.icons" data-translation-context="Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents">Icons</a>
+								<ul>
+									<li><a href="#phosphor-icons" translate="no">Phosphor Icons</a></li>
+									<li><a href="#game-icons" translate="no">game-icons.net</a></li>
+								</ul>
+							</li>
+							<li><a href="#code" data-message="license.code" data-translation-context="Heading of the license page's section crediting code by others that the pages include, and its link in the page's contents">Code by others</a>
+								<ul>
+									<li><a href="#qr-code" translate="no">QR Code Generator</a></li>
+									<li><a href="#tiptap" translate="no">Tiptap</a></li>
+								</ul>
+							</li>
 							<li><a href="#pathfinder" data-message="license.pathfinder" data-translation-context="Heading of the license page's section about the rules of the tabletop role-playing game Pathfinder, first edition, which the game uses, and the links to that section on the page">Pathfinder First Edition rules</a></li>
 							<li><a href="#starfinder" data-message="license.starfinder" data-translation-context="Heading of the license page's section about the rules of the science fantasy tabletop role-playing game Starfinder, first edition, which the game uses, and its link in the page's contents">Starfinder First Edition rules</a></li>
 						</ul>
@@ -50,7 +60,7 @@
 					</section>
 					<section id="icons">
 						<h2 data-message="license.icons" data-translation-context="Heading of the license page's section crediting the icon sets the pages use, and its link in the page's contents">Icons</h2>
-						<h3 translate="no">Phosphor Icons</h3>
+						<h3 id="phosphor-icons" translate="no">Phosphor Icons</h3>
 						<p data-message="license.phosphor" data-translation-context="On the license page, crediting the icon set the pages' buttons use; {phosphor} is a link to it, named the same in every language. The license's text follows in English">Interface icons are from <a href="https://phosphoricons.com" data-argument="phosphor" translate="no">Phosphor Icons</a>, used under the MIT License:</p>
 						<pre translate="no" lang="en">MIT License
 
@@ -73,12 +83,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.</pre>
-						<h3 translate="no">game-icons.net</h3>
+						<h3 id="game-icons" translate="no">game-icons.net</h3>
 						<p data-message="license.gameIcons" data-translation-context="On the license page, crediting the icon set for things in the game; {authors} are the artists' names, {gameIcons} is a link to the icon set and {license} is a link to its license, each the same in every language">Game icons are by <span data-argument="authors" translate="no">Lorc, Delapouite and other contributors</span> at <a href="https://game-icons.net" data-argument="gameIcons" translate="no">game-icons.net</a>, used under the <a href="https://creativecommons.org/licenses/by/3.0/" data-argument="license" translate="no">Creative Commons Attribution 3.0 Unported License (CC BY 3.0)</a>. Each icon's page on game-icons.net names its artist.</p>
 					</section>
 					<section id="code">
 						<h2 data-message="license.code" data-translation-context="Heading of the license page's section crediting code by others that the pages include, and its link in the page's contents">Code by others</h2>
-						<h3 translate="no">QR Code Generator</h3>
+						<h3 id="qr-code" translate="no">QR Code Generator</h3>
 						<p data-message="license.qrCode" data-translation-context="On the license page, crediting the code that draws the QR code for setting up two-factor authentication; {qrCode} is a link to it, named the same in every language. The license's text follows in English">The QR code for setting up two-factor authentication is drawn by <a href="https://github.com/kazuhikoarase/qrcode-generator" data-argument="qrCode" translate="no">QR Code Generator</a>, used under the MIT License:</p>
 						<pre translate="no" lang="en">MIT License
 
@@ -101,7 +111,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.</pre>
-						<h3 translate="no">Tiptap</h3>
+						<h3 id="tiptap" translate="no">Tiptap</h3>
 						<p data-message="license.tiptap" data-translation-context="On the license page, crediting the code that edits a universe's long description as rich text in the world editor; {tiptap}, {prosemirror} and {linkify} are links to it and the code it is built on, named the same in every language. The license's text follows in English">Long descriptions are edited as rich text with <a href="https://tiptap.dev" data-argument="tiptap" translate="no">Tiptap</a>, built on <a href="https://prosemirror.net" data-argument="prosemirror" translate="no">ProseMirror</a> and <a href="https://linkify.js.org" data-argument="linkify" translate="no">Linkify</a>. They are used under the MIT License:</p>
 						<pre translate="no" lang="en">MIT License
 
