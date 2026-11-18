@@ -1,4 +1,3 @@
-import '@github/markdown-toolbar-element';
 import { canEditUniverseSettings, DISALLOWED_TEXT_CHARACTERS, DISPLAY_TIME_NAMES, loadedFor, DISPLAY_TIMES, hasIdShapedSlug, hasLinkLikeText, MAX_LONG_DESCRIPTION_LENGTH, MAX_SHORT_DESCRIPTION_LENGTH, MAX_UNIVERSE_NAME_LENGTH, UNIVERSE_STAGE_DESCRIPTIONS, UNIVERSE_STAGE_NAMES, UNIVERSE_STAGES, universeSlug, type DisplayTime, type EditableUniverse, type UniverseSettingsUpdate, type UniverseStage } from '@multiverse-kiln/shared';
 
 import { formatToNodes, t } from '../../localization';
@@ -7,17 +6,9 @@ import { ChangeTracker, type FormSnapshot } from '../changeTracker';
 import { getElement, namedOptions, setOptions, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
-import { showMarkdown } from '../markdown';
+import { MarkdownEditor } from '../MarkdownEditor';
 import type { EditorSave } from './editorSave';
 import type { SavableTab } from './SaveBar';
-
-/**
- * The toolbar button each Ctrl (or Cmd) shortcut in the long description presses, by key
- */
-const FORMAT_SHORTCUTS: Partial<Record<string, string>> = {
-	b: 'md-bold',
-	i: 'md-italic'
-};
 
 /**
  * The Universe tab: the universe's name, descriptions, stage (with whether builders make their changes
@@ -30,8 +21,7 @@ export class UniverseTab implements SavableTab
 	private readonly name = getElement('universe-name-input', HTMLInputElement);
 	private readonly shortDescription = getElement('universe-short-description', HTMLInputElement);
 	private readonly longDescription = getElement('universe-long-description', HTMLTextAreaElement);
-	private readonly toolbar = getElement('universe-long-toolbar', HTMLElement);
-	private readonly preview = getElement('universe-long-preview', HTMLElement);
+	private readonly longDescriptionEditor = new MarkdownEditor(this.longDescription);
 	private readonly stage = getElement('universe-stage', HTMLFieldSetElement);
 	private readonly stageWarning = getElement('universe-stage-warning', HTMLElement);
 	private readonly builderDraftField = getElement('universe-builder-draft-field', HTMLElement);
@@ -71,16 +61,6 @@ export class UniverseTab implements SavableTab
 		this.stage.append(...UNIVERSE_STAGES.map((stage) => this.createStageChoice(stage)));
 		setOptions(this.displayTime, namedOptions(DISPLAY_TIMES, DISPLAY_TIME_NAMES));
 
-		this.longDescription.addEventListener('input', () =>
-		{
-			showMarkdown(this.preview, this.longDescription.value);
-		});
-
-		this.longDescription.addEventListener('keydown', (event) =>
-		{
-			this.applyShortcut(event);
-		});
-
 		this.stage.addEventListener('change', () =>
 		{
 			this.showStageWarning();
@@ -117,11 +97,9 @@ export class UniverseTab implements SavableTab
 		this.showBuilderDraft();
 		this.displayTime.value = universe.displayTime;
 		this.fields.disabled = !this.canSave();
-		// A disabled fieldset doesn't disable the toolbar's custom elements, so it's hidden instead
-		this.toolbar.hidden = this.fields.disabled;
+		this.longDescriptionEditor.refresh();
 		showMessage(this.error, undefined);
 		clearFieldErrors(this.form);
-		showMarkdown(this.preview, universe.longDescription);
 		this.changes.markSaved();
 	}
 
@@ -206,28 +184,6 @@ export class UniverseTab implements SavableTab
 	}
 
 	/**
-	 * Formats the long description's selection when a key press is one of the formatting shortcuts
-	 *
-	 * @param event The key press in the long description
-	 */
-	private applyShortcut(event: KeyboardEvent): void
-	{
-		if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey)
-		{
-			return;
-		}
-
-		const buttonTag = FORMAT_SHORTCUTS[event.key.toLowerCase()];
-		const button = (buttonTag ? this.toolbar.querySelector<HTMLElement>(buttonTag) : null);
-
-		if (button)
-		{
-			event.preventDefault();
-			button.click();
-		}
-	}
-
-	/**
 	 * Whether the player may change the universe's settings
 	 *
 	 * @return True for a creator
@@ -246,6 +202,8 @@ export class UniverseTab implements SavableTab
 	collect(save: EditorSave): boolean
 	{
 		const universe = this.universe;
+
+		this.longDescriptionEditor.raiseHeadings();
 
 		if (!universe || !this.checkText())
 		{
@@ -315,7 +273,15 @@ export class UniverseTab implements SavableTab
 		{
 			if (((input === this.name) && (text === '')) || DISALLOWED_TEXT_CHARACTERS.test(text))
 			{
-				reportFieldError(input, t(formMessages.invalidText));
+				if (input === this.longDescription)
+				{
+					this.longDescriptionEditor.reportError(t(formMessages.invalidText));
+				}
+				else
+				{
+					reportFieldError(input, t(formMessages.invalidText));
+				}
+
 				return(false);
 			}
 
@@ -336,6 +302,16 @@ export class UniverseTab implements SavableTab
 				reportFieldError(input, t(formMessages.universeNameLinkLike));
 				return(false);
 			}
+		}
+
+		// The field stops typing past its length, but rich text writes its formatting marks into it too
+		if (this.longDescription.value.length > MAX_LONG_DESCRIPTION_LENGTH)
+		{
+			this.longDescriptionEditor.reportError(t(formMessages.textTooLong, {
+				max: MAX_LONG_DESCRIPTION_LENGTH,
+				count: this.longDescription.value.length
+			}));
+			return(false);
 		}
 
 		return(true);

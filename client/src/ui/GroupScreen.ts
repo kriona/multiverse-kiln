@@ -1,14 +1,15 @@
 import { Callbacks } from '@colyseus/sdk';
-import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, MAX_KEPT_CHAT_MESSAGES, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type KeptChatMessage, type WelcomePayload } from '@multiverse-kiln/shared';
+import { DAY_SECONDS, defineMessages, GRID_CELL_SIZE, MAX_KEPT_CHAT_MESSAGES, secondOfDay, ServerMessageType, type AreaPayload, type CharacterListPayload, type CharacterSummary, type GroupMember, type KeptChatMessage, type UniverseSummary, type WelcomePayload } from '@multiverse-kiln/shared';
 import signOutIcon from 'virtual:icon/ph:sign-out';
 
 import { currentLocale, t } from '../localization';
 import type { GameConnection } from '../network/serverConnection';
+import { universePageUrl } from '../pages';
 import { announce } from './announcer';
 import { CharacterList } from './CharacterList';
 import { characterMessages } from './characterMessages';
 import { ChatLog } from './ChatLog';
-import { getElement, setButtonLabel, setPageTitle, showMessage } from './dom';
+import { getElement, setButtonLabel, setPageTitle, showMessage, titleLink } from './dom';
 import { describeLeaving, showLeaveButton } from './leavingGroup';
 import type { AreaView } from './AreaView';
 import { addShortcut } from './shortcuts';
@@ -141,6 +142,7 @@ export class GroupScreen
 
 	private anchorId = '';
 	private groupName = '';
+	private universeName = '';
 
 	/**
 	 * Whether the universe has reached the end of time, which locks the room; undefined until the room says
@@ -245,6 +247,17 @@ export class GroupScreen
 				}
 			}
 		});
+	}
+
+	/**
+	 * Names the universe in the toolbar, linking to its page
+	 *
+	 * @param universe The universe the page plays
+	 */
+	setUniverse(universe: UniverseSummary): void
+	{
+		this.universeName = universe.name;
+		this.title.replaceChildren(titleLink(universe.name, universePageUrl(universe.slug)));
 	}
 
 	/**
@@ -667,22 +680,17 @@ export class GroupScreen
 	}
 
 	/**
-	 * Draws the group's name, the character the window plays, the members, the player's characters,
-	 * Invite for the anchor being's player, and Leave group, which is Disband Group for the anchor being.
-	 * A locked room says so, in place of Invite, Leave group and Create Character
+	 * Draws the browser tab's title (the group's name, or the universe's when the group has none), the
+	 * character the window plays, the members, the player's characters, Invite for the anchor being's
+	 * player, and Leave group, which is Disband Group for the anchor being. A locked room says so, in
+	 * place of Invite, Leave group and Create Character
 	 */
 	private render(): void
 	{
-		const groupName = ((this.groupName !== '') ? this.groupName : t({
-			id: 'group.unnamed',
-			defaultMessage: 'Group',
-			description: 'Heading of a group\'s screen when the group has no name'
-		}));
 		const playing = this.members.get(this.characterId ?? '');
 
-		this.title.textContent = groupName;
 		this.characterName.textContent = (playing?.name ?? '');
-		setPageTitle(groupName);
+		setPageTitle(((this.groupName !== '') ? this.groupName : this.universeName));
 		this.lockedNotice.hidden = !this.locked;
 		this.inviteButton.hidden = ((this.locked ?? false) || (this.members.get(this.anchorId)?.playerId !== this.ownPlayerId));
 		this.leaveButton.hidden = (this.locked ?? false);

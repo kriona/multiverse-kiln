@@ -1,4 +1,4 @@
-// A universe's page (universe.html): its name, ruleset and descriptions, Enter Universe and Edit
+// A universe's page (universe.html): its name, ruleset and long description, Enter Universe and Edit
 // Universe, its languages and the player's characters in it
 
 @use 'shared' as *;
@@ -32,9 +32,29 @@
 	}
 }
 
-.universe-summary
+// The universe's name, with its ruleset at the top right
+.universe-heading
 {
-	font-size: 1.125rem;
+	display: flex;
+	align-items: flex-start;
+	align-self: stretch;
+	gap: 16px;
+
+	// The size of the biggest heading the long description can have
+	h1
+	{
+		flex: 1;
+		min-width: 0;
+		font-size: var(--font-size-h1);
+		line-height: 1.25;
+		overflow-wrap: anywhere;
+	}
+
+	.universe-ruleset
+	{
+		margin: 0;
+		white-space: nowrap;
+	}
 }
 
 // Enter Universe, and Edit Universe beside it for players who work on the universe

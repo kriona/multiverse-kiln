@@ -1409,7 +1409,7 @@
 	},
 	"dialog.apply": {
 		"defaultMessage": "Apply",
-		"description": "Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"
+		"description": "Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"
 	},
 	"dialog.cancel": {
 		"defaultMessage": "Cancel",
@@ -4799,10 +4799,6 @@
 		"defaultMessage": "Long description (Markdown)",
 		"description": "Label of the field for a universe's full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor's Audit tab"
 	},
-	"editor.universe.preview": {
-		"defaultMessage": "Preview",
-		"description": "Heading above the long description as players will see it"
-	},
 	"editor.universe.requireBuilderDraft": {
 		"defaultMessage": "Builders make their changes in a draft",
 		"description": "Checkbox on the editor's Universe tab, under the stage while \"let there be light\" (open to everyone) is chosen, for whether builders must make their changes in the universe's draft, a copy players don't see until a creator applies it, rather than in the live version; also names the setting in the list of what a save changed, on the editor's Audit tab"
@@ -6443,6 +6439,10 @@
 		"defaultMessage": "Saving...",
 		"description": "Shown while work is being stored, such as painting the area editor's cells, or the player's progress in the toolbar of Create Character"
 	},
+	"form.textTooLong": {
+		"defaultMessage": "Use at most {max, plural, one {# character} other {# characters}}. This has {count, number}.",
+		"description": "Shown by a Markdown field, such as a universe's long description, when its text is too long; {max} is the most allowed and {count} how many it has. Formatting made as rich text counts as the Markdown marks it is saved as"
+	},
 	"form.universeNameLikeId": {
 		"defaultMessage": "Choose a name that doesn't look like a universe's ID.",
 		"description": "Shown by the field for a universe's name when it has the form of the long code that identifies a universe (32 letters and digits in groups split by hyphens); the name is made into the universe's web address, where that form would name another universe"
@@ -6595,17 +6595,9 @@
 		"defaultMessage": "The universe's creators made groups smaller, so {name} is no longer in the group, or the group was disbanded.",
 		"description": "Shown in the lobby when the universe's creators lowered its group size, which took the character a window played out of their group or disbanded it; {name} is the character's name"
 	},
-	"group.title": {
-		"defaultMessage": "Group",
-		"description": "Heading of the screen where a group plays, until the group's name has loaded, or when it has none"
-	},
 	"group.unlockedNow": {
 		"defaultMessage": "This universe is no longer locked. You can move again.",
 		"description": "Read out by screen readers in a group when one of the universe's creators changed its stage from end of time to another while the player was in the group"
-	},
-	"group.unnamed": {
-		"defaultMessage": "Group",
-		"description": "Heading of a group's screen when the group has no name"
 	},
 	"home.create.chooseRuleset": {
 		"defaultMessage": "Choose a ruleset",
@@ -10207,6 +10199,10 @@
 		"defaultMessage": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license.",
 		"description": "On the license page, what the game's license means in plain words"
 	},
+	"license.tiptap": {
+		"defaultMessage": "Long descriptions are edited as rich text with {tiptap}, built on {prosemirror} and {linkify}. They are used under the MIT License:",
+		"description": "On the license page, crediting the code that edits a universe's long description as rich text in the world editor; {tiptap}, {prosemirror} and {linkify} are links to it and the code it is built on, named the same in every language. The license's text follows in English"
+	},
 	"license.title": {
 		"defaultMessage": "Licenses",
 		"description": "The browser tab's title for the page with the game's license and the licenses of what it uses, before the game engine's name"
@@ -10583,13 +10579,9 @@
 		"defaultMessage": "Code",
 		"description": "Short label of the Markdown toolbar button that formats text as code"
 	},
-	"markdown.heading1": {
-		"defaultMessage": "Heading 1",
-		"description": "Name of the Markdown toolbar button that makes a heading of the first level"
-	},
-	"markdown.heading1Button": {
-		"defaultMessage": "H1",
-		"description": "Short label of the Markdown toolbar button that makes a heading of the first level"
+	"markdown.formatting": {
+		"defaultMessage": "Formatting",
+		"description": "Name, for screen readers, of the row of buttons above a Markdown field, such as a universe's long description, that format its text, such as Bold and Italic"
 	},
 	"markdown.heading2": {
 		"defaultMessage": "Heading 2",
@@ -10607,6 +10599,14 @@
 		"defaultMessage": "H3",
 		"description": "Short label of the Markdown toolbar button that makes a heading of the third level"
 	},
+	"markdown.heading4": {
+		"defaultMessage": "Heading 4",
+		"description": "Name of the Markdown toolbar button that makes a heading of the fourth level"
+	},
+	"markdown.heading4Button": {
+		"defaultMessage": "H4",
+		"description": "Short label of the Markdown toolbar button that makes a heading of the fourth level"
+	},
 	"markdown.italic": {
 		"defaultMessage": "Italic",
 		"description": "Name of the Markdown toolbar button that makes text italic"
@@ -10622,6 +10622,26 @@
 	"markdown.linkButton": {
 		"defaultMessage": "Link",
 		"description": "Short label of the Markdown toolbar button that adds a link"
+	},
+	"markdown.linkDialog.address": {
+		"defaultMessage": "Address",
+		"description": "Label of the field for the web or email address a link goes to, in the dialog that adds a link to a Markdown field's rich text"
+	},
+	"markdown.linkDialog.invalid": {
+		"defaultMessage": "Enter a web or email address.",
+		"description": "Shown under the address in the dialog that adds a link to a Markdown field's rich text, such as a universe's long description, when it isn't a web or email address"
+	},
+	"markdown.linkDialog.remove": {
+		"defaultMessage": "Remove Link",
+		"description": "Button in the dialog that changes a link in a Markdown field's rich text: takes the link off the text, leaving the text"
+	},
+	"markdown.linkDialog.title": {
+		"defaultMessage": "Link",
+		"description": "Title of the dialog that adds a link to a Markdown field's rich text, such as a universe's long description, or changes the link at the cursor"
+	},
+	"markdown.markdown": {
+		"defaultMessage": "Markdown",
+		"description": "Button above a Markdown field, such as a universe's long description, that shows the text as written in Markdown, with its formatting marks, and edits it that way"
 	},
 	"markdown.numberedList": {
 		"defaultMessage": "Numbered list",
@@ -10639,6 +10659,10 @@
 		"defaultMessage": "Quote",
 		"description": "Short label of the Markdown toolbar button that makes text a quotation"
 	},
+	"markdown.richText": {
+		"defaultMessage": "Rich text",
+		"description": "Button above a Markdown field, such as a universe's long description, that shows the text formatted the way players see it, and edits it that way"
+	},
 	"markdown.strikethrough": {
 		"defaultMessage": "Strikethrough",
 		"description": "Name of the Markdown toolbar button that strikes text through"
@@ -10646,6 +10670,10 @@
 	"markdown.strikethroughButton": {
 		"defaultMessage": "S",
 		"description": "One-letter label of the Markdown toolbar button that strikes text through, shown struck through"
+	},
+	"markdown.view": {
+		"defaultMessage": "View",
+		"description": "Name, for screen readers, of the pair of buttons above a Markdown field, such as a universe's long description, that choose between editing it as rich text and as Markdown"
 	},
 	"name.reserved": {
 		"defaultMessage": "That name could be mistaken for the game's staff. Choose another.",

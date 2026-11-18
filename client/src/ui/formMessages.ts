@@ -9,6 +9,11 @@ export const formMessages = defineMessages({
 		defaultMessage: 'Use letters, numbers, spaces or punctuation.',
 		description: 'Shown by a text field when what was typed is empty or has characters that aren\'t allowed'
 	},
+	textTooLong: {
+		id: 'form.textTooLong',
+		defaultMessage: 'Use at most {max, plural, one {# character} other {# characters}}. This has {count, number}.',
+		description: 'Shown by a Markdown field, such as a universe\'s long description, when its text is too long; {max} is the most allowed and {count} how many it has. Formatting made as rich text counts as the Markdown marks it is saved as'
+	},
 	universeNameNoLetters: {
 		id: 'form.universeNameNoLetters',
 		defaultMessage: 'A universe\'s name needs at least one letter or number.',

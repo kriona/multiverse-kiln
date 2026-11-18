@@ -10,14 +10,14 @@ import { createClient, getUniverseDetails, type ServerConnection } from './netwo
 import { startPage } from './pageStart';
 import { editPageUrl, gamePageUrl, HOME_PAGE_URL, readUniverseKey, replacePagePath, universePageUrl } from './pages';
 import { CharacterSheetDialog } from './ui/CharacterSheetDialog';
-import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus } from './ui/dom';
+import { getElement, setPageTitle, showNoticeScreen, showScreen, showStatus, titleLink } from './ui/dom';
 import { showMarkdown } from './ui/markdown';
 import { pageMessages } from './ui/pageMessages';
 import { UniverseCharacters } from './ui/UniverseCharacters';
 import { reportSiteLanguageChange, UniverseLanguageChooser } from './ui/UniverseLanguageChooser';
 
 /**
- * Shows a universe: its name, ruleset and descriptions, that it is locked at the end of time, Enter
+ * Shows a universe: its name, ruleset and long description, that it is locked at the end of time, Enter
  * Universe, which goes to its lobby, or to the player's group in a locked universe, and Edit Universe,
  * which opens it in the world editor, for players who work on it (creators, builders, translators and
  * server admins with 2FA on). The address ends with the slug, so one opened by ID changes to it
@@ -26,9 +26,9 @@ import { reportSiteLanguageChange, UniverseLanguageChooser } from './ui/Universe
  */
 function showUniverse(universe: UniversePagePayload): void
 {
+	getElement('universe-toolbar-name', HTMLElement).replaceChildren(titleLink(universe.name, universePageUrl(universe.slug)));
 	getElement('universe-name', HTMLElement).textContent = universe.name;
 	getElement('universe-ruleset', HTMLElement).textContent = t(RULESET_NAMES[universe.ruleset]);
-	getElement('universe-summary', HTMLElement).textContent = universe.shortDescription;
 	showMarkdown(getElement('universe-description', HTMLElement), universe.longDescription);
 	getElement('universe-locked', HTMLElement).hidden = (universe.stage !== 'end_of_time');
 	getElement('universe-enter', HTMLAnchorElement).href = gamePageUrl(universe.slug);
