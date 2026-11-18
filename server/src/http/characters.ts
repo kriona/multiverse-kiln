@@ -639,7 +639,6 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 				category: (item?.category ?? ''),
 				types: (item?.types ?? []),
 				equips: (item?.equips ?? 'none'),
-				rulebook: (item?.rulebook ?? null),
 				quantity
 			}));
 		}),

@@ -413,7 +413,7 @@ describe('Character routes', () =>
 			avatarHash: null
 		});
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
-		assert.deepStrictEqual(items.map(({ key, category, types, equips, rulebook, quantity }) => ({ key, category, types, equips, rulebook, quantity })), [{ key: 'dagger', category: 'weapon', types: ['blades_light', 'thrown'], equips: 'oneHand', rulebook: 'core', quantity: 1 }]);
+		assert.deepStrictEqual(items.map(({ key, category, types, equips, quantity }) => ({ key, category, types, equips, quantity })), [{ key: 'dagger', category: 'weapon', types: ['blades_light', 'thrown'], equips: 'oneHand', quantity: 1 }]);
 
 		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'prologue' } });
 

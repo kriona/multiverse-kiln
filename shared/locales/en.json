@@ -1421,7 +1421,7 @@
 	},
 	"characterSheet.inspect": {
 		"defaultMessage": "Inspect",
-		"description": "Item in the menu beside an item on a character's sheet, and button beside an item in the dialog for choosing items, that opens a dialog showing what the item is: its kind, types, book, where it equips and description"
+		"description": "Item in the menu beside an item on a character's sheet, and button beside an item in the dialog for choosing items, that opens a dialog showing what the item is: its kind, types, where it equips and description"
 	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
@@ -10391,17 +10391,9 @@
 		"defaultMessage": "A rifle that fires a blast of supercooled gas, chilling its target and slowing it down.",
 		"description": "Description of every model of zero rifle, such as the frostbite-class zero rifle, an item in Starfinder, shown in the item editor, when choosing items, on a character's sheet, in the Inspect dialog and on the Audit tab"
 	},
-	"itemInspect.book": {
-		"defaultMessage": "Book",
-		"description": "In the Inspect dialog, which shows what an item is, the label of the book of game rules it comes from, such as the Core Rulebook"
-	},
 	"itemInspect.noTypes": {
 		"defaultMessage": "None",
 		"description": "In the Inspect dialog, which shows what an item is, in place of its types when it has none"
-	},
-	"itemInspect.universeItem": {
-		"defaultMessage": "Made for this universe",
-		"description": "In the Inspect dialog, which shows what an item is, in place of the book it comes from, for an item the universe's creators added rather than one from a book of game rules"
 	},
 	"itemsReceived.toast": {
 		"defaultMessage": "{giver} gave {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.",

@@ -262,7 +262,6 @@ describe('Equipment routes', () =>
 			category: 'weapon',
 			types: ['blades_heavy'],
 			equips: 'twoHands',
-			rulebook: null,
 			quantity: 1
 		});
 		assert.strictEqual(sheet.hasTail, false);

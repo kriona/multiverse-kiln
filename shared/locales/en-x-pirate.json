@@ -10391,17 +10391,9 @@
 		"message": "A rifle that fires a blast o' supercooled gas, chillin' its target an' slowin' it down.",
 		"source": "A rifle that fires a blast of supercooled gas, chilling its target and slowing it down."
 	},
-	"itemInspect.book": {
-		"message": "Tome",
-		"source": "Book"
-	},
 	"itemInspect.noTypes": {
 		"message": "None",
 		"source": "None"
-	},
-	"itemInspect.universeItem": {
-		"message": "Forged fer this universe",
-		"source": "Made for this universe"
 	},
 	"itemsReceived.toast": {
 		"message": "{giver} handed {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.",

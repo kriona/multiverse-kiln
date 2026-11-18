@@ -522,11 +522,6 @@ export interface CharacterSheetItem extends OptionName
 	equips: string;
 
 	/**
-	 * The book a default item comes from (RULESET_RULEBOOKS); null for an item the universe added
-	 */
-	rulebook: string | null;
-
-	/**
 	 * How many the character carries, the equipped ones included
 	 */
 	quantity: number;
