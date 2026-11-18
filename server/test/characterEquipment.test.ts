@@ -422,7 +422,7 @@ describe('Equipment routes', () =>
 			await inTransaction((transaction) => addGroupMember(groupId, graceCharacterId, transaction));
 		});
 
-		it('gives a dagger to another character in the group, telling their player and the group\'s chat', async () =>
+		it('gives a dagger and a universe\'s own item to another character in the group, telling their player and the group\'s chat', async () =>
 		{
 			const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: grace.cookie } });
 			const room = await sdk.joinOrCreate(SESSION_ROOM_NAME);
@@ -456,11 +456,13 @@ describe('Equipment routes', () =>
 
 				assert.deepStrictEqual(received, {
 					universeId,
-					ruleset: 'pf1e',
 					characterId: graceCharacterId,
 					giver: 'Brokk',
 					receiver: 'Mara',
-					item: { key: 'dagger', name: null },
+					item: {
+						id: 'item.pf1e.dagger',
+						defaultMessage: 'dagger'
+					},
 					quantity: 1
 				});
 				assert.deepStrictEqual(await inbox.take<CharacterItemsPayload>(SessionServerMessageType.CharacterItems), {
@@ -480,6 +482,15 @@ describe('Equipment routes', () =>
 					item: { key: 'dagger', name: null },
 					quantity: 1
 				});
+
+				const longsword = await send(ada, 'POST', `${characterPath(universeId, brokkId)}/items/give`, {
+					characterId: graceCharacterId,
+					itemId: longswordId,
+					quantity: 1
+				});
+
+				assert.strictEqual(longsword.status, 204, JSON.stringify(longsword.body));
+				assert.strictEqual((await inbox.take<ItemsReceivedPayload>(SessionServerMessageType.ItemsReceived)).item, 'Longsword');
 			}
 			finally
 			{

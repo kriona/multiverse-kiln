@@ -1,8 +1,7 @@
 import { SessionServerMessageType, type CharacterItemsPayload, type ItemsReceivedPayload } from '@multiverse-kiln/shared';
 
-import { t } from '../localization';
+import { localizedText, t } from '../localization';
 import type { ServerConnection } from '../network/serverConnection';
-import { optionItemName } from './itemNames';
 import { showToast } from './toast';
 
 /**
@@ -37,7 +36,7 @@ export function startItemNotices(server: Promise<ServerConnection>): void
 			}, {
 				giver: payload.giver,
 				receiver: payload.receiver,
-				item: optionItemName(payload.item, payload.ruleset),
+				item: ((typeof payload.item === 'string') ? payload.item : localizedText(payload.item)),
 				quantity: payload.quantity
 			}));
 		});

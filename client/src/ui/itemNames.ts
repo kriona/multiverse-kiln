@@ -57,8 +57,8 @@ export function itemName(item: Pick<EditorItem, 'key' | 'name'>, ruleset: Rulese
 }
 
 /**
- * An item's name as the player reads it, where its universe's ruleset may not be known, such as a toast
- * or a chat notice telling of a gift: the universe's name for it, or a default item's name in the
+ * An item's name as the player reads it, where its universe's ruleset may not be known, such as a chat
+ * notice telling of a gift: the universe's name for it, or a default item's name in the
  * player's language, looked up in the ruleset given or else the first ruleset with that key
  *
  * @param item The item

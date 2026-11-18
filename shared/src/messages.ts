@@ -1,6 +1,7 @@
 import type { AreaBounds } from './areaCells.js';
 import type { OptionName } from './characters.js';
 import type { AreaNeighbors } from './areaNeighbors.js';
+import type { LocalizedMessage } from './localization.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
 import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode, UniverseStage } from './universes.js';
@@ -555,12 +556,6 @@ export interface CharacterItemsPayload
 export interface ItemsReceivedPayload
 {
 	universeId: string;
-
-	/**
-	 * The universe's ruleset, whose default items' keys name their items
-	 */
-	ruleset: Ruleset;
-
 	characterId: string;
 
 	/**
@@ -570,9 +565,10 @@ export interface ItemsReceivedPayload
 	receiver: string;
 
 	/**
-	 * The item given, by the universe's name for it or a default item's key
+	 * The item's name: the universe's name for it, or a default item's name as a message for the page to
+	 * show in the player's language, so a page needn't load every default item's name to show it
 	 */
-	item: OptionName;
+	item: string | LocalizedMessage;
 
 	quantity: number;
 }
