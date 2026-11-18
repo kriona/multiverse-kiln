@@ -145,20 +145,6 @@ button.character-sheet-delete
 	}
 }
 
-// An item's name, with its description under it
-.character-sheet-item-text
-{
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.character-sheet-item-description
-{
-	@include small-text;
-	color: $text-faint;
-}
-
 // As wide as how many of the item the character carries, the most they can discard or give, plus room
 // for its arrows; the script sets --digits to how many digits that is
 #character-discard-quantity,
@@ -167,10 +153,18 @@ button.character-sheet-delete
 	max-width: calc((var(--digits, 3) * 1ch) + 4ch);
 }
 
-// A slot with nothing in it, which says Empty in faint text
+// A slot with nothing in it, which says empty in faint italics
 .character-sheet-equipped .character-sheet-empty-slot
 {
 	color: $text-faint;
+	font-style: italic;
+}
+
+// The crossed out eye beside a slot hidden from the avatar
+.character-sheet-hidden-mark
+{
+	margin-inline-start: 6px;
+	color: $text-muted;
 }
 
 .item-inspect-dialog
@@ -210,36 +204,16 @@ button.character-sheet-delete
 	gap: 8px;
 }
 
-// A slot's name, which chooses its item
-.character-sheet-slot-button
-{
-	color: $text-muted;
-	text-align: start;
-}
-
-// The Equipped and Social lists keep each slot's Hide toggle at the end of its row
+// The Equipped and Social lists keep each slot's menu at the end of its row
 .character-sheet-equipped dd
 {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: 8px;
 
 	> span
 	{
 		flex: 1;
-	}
-}
-
-// A pressed toggle has a thicker, brighter border, so it doesn't show by color alone
-button.character-sheet-hide
-{
-	@include small-text;
-	padding: 2px 8px;
-
-	&[aria-pressed="true"]
-	{
-		border: 2px solid $text;
-		background-color: $background-secondary-hover;
 	}
 }
 

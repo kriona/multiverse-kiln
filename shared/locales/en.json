@@ -1275,6 +1275,10 @@
 		"defaultMessage": "Delete Character",
 		"description": "Title of the dialog that asks whether to delete a character"
 	},
+	"characterSheet.allEquipped": {
+		"defaultMessage": "Carries nothing else.",
+		"description": "Shown on a character's sheet under the Equipment heading when everything they carry is equipped, so it is all in the Equipped list above"
+	},
 	"characterSheet.appearance": {
 		"defaultMessage": "Appearance",
 		"description": "Button under a character's avatar (the picture of the character) on their sheet that opens the dialog changing how it is drawn: its art type and background, and for the universe's creators its body type"
@@ -1297,11 +1301,11 @@
 	},
 	"characterSheet.chooseSlotItem": {
 		"defaultMessage": "Equip in {slot}",
-		"description": "Title of the dialog, opened by a slot's name in the Equipped list of a character's sheet, that chooses the item equipped there; {slot} is the slot's name, such as Main hand"
+		"description": "Title of the dialog, opened by Choose item in the menu beside a slot in the Equipped list of a character's sheet, that chooses the item equipped there; {slot} is the slot's name, such as Main hand"
 	},
 	"characterSheet.chooseSocialItem": {
 		"defaultMessage": "Wear on {slot} for its look",
-		"description": "Title of the dialog, opened by a slot's name in the Social list of a character's sheet, that chooses the item worn there only for how it looks on the character's avatar (the picture of the character); {slot} is the slot's name, such as Shoulders"
+		"description": "Title of the dialog, opened by Choose item in the menu beside a slot in the Social list of a character's sheet, that chooses the item worn there only for how it looks on the character's avatar (the picture of the character); {slot} is the slot's name, such as Shoulders"
 	},
 	"characterSheet.delete": {
 		"defaultMessage": "Delete",
@@ -1333,7 +1337,7 @@
 	},
 	"characterSheet.emptySlot": {
 		"defaultMessage": "Empty",
-		"description": "On a character's sheet, in the Equipped and Social lists, beside a slot with nothing in it; also the choice in the dialog choosing a slot's item that takes the item out"
+		"description": "The choice in the dialog choosing the item in one of a character's slots, from their sheet, that takes the item out"
 	},
 	"characterSheet.equip": {
 		"defaultMessage": "Equip",
@@ -1403,13 +1407,9 @@
 		"defaultMessage": "Give to",
 		"description": "Label of the field, in the dialog opened by Give in an item's menu on a character's sheet, for which character in the group to give the item to"
 	},
-	"characterSheet.hide": {
-		"defaultMessage": "Hide",
-		"description": "Toggle button beside each slot in the Equipped and Social lists of a character's sheet; while pressed, the slot is left off the character's avatar (the picture of the character), whatever is in it"
-	},
-	"characterSheet.hideSlot": {
-		"defaultMessage": "Hide {slot}",
-		"description": "Name for screen readers of the Hide toggle beside a slot in the Equipped and Social lists of a character's sheet; while pressed, the slot is left off the character's avatar (the picture of the character), whatever is in it. {slot} is the slot's name, such as Shoulders"
+	"characterSheet.hiddenOnAvatar": {
+		"defaultMessage": "Hidden on the avatar",
+		"description": "Name for screen readers, and tooltip, of the crossed out eye beside a slot in the Equipped and Social lists of a character's sheet that is left off the character's avatar (the picture of the character), whatever is in it"
 	},
 	"characterSheet.hitPoints": {
 		"defaultMessage": "Hit points",
@@ -1425,11 +1425,7 @@
 	},
 	"characterSheet.item": {
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
-		"description": "On a character's sheet, an item they carry, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
-	},
-	"characterSheet.itemEquipped": {
-		"defaultMessage": "{quantity, plural, =1 {{item} (equipped)} other {{item} x# ({equipped, number} equipped)}}",
-		"description": "On a character's sheet, an item they carry that they have equipped, with how many they carry when there is more than one and how many of those are equipped; {item} is the item's name, e.g. \"Dagger x3 (2 equipped)\""
+		"description": "On a character's sheet, an item they carry and haven't equipped, with how many when there is more than one; {item} is the item's name, e.g. \"Arrow x20\""
 	},
 	"characterSheet.itemMenu": {
 		"defaultMessage": "Actions for {item}",
@@ -1517,7 +1513,27 @@
 	},
 	"characterSheet.slotHiddenAnnouncement": {
 		"defaultMessage": "{hidden, select, true {{slot} is hidden on {name}'s avatar.} other {{slot} shows on {name}'s avatar again.}}",
-		"description": "Read out by screen readers once the Hide toggle beside a slot on a character's sheet was pressed or released; {slot} is the slot's name, such as Shoulders, and {name} the character's name"
+		"description": "Read out by screen readers once Hide on avatar or Show on avatar was chosen in the menu beside a slot on a character's sheet; {slot} is the slot's name, such as Shoulders, and {name} the character's name"
+	},
+	"characterSheet.slotIsEmpty": {
+		"defaultMessage": "empty",
+		"description": "On a character's sheet, in the Equipped and Social lists, beside a slot with nothing in it. Shown in lowercase italics"
+	},
+	"characterSheet.slotMenu": {
+		"defaultMessage": "Actions for {slot}",
+		"description": "Name for screen readers, and tooltip, of the button of three vertical dots beside a slot in the Equipped and Social lists of a character's sheet, which opens a menu such as Choose item, Unequip, Inspect and Hide on avatar; {slot} is the slot's name, such as Shoulders"
+	},
+	"characterSheet.slotMenu.choose": {
+		"defaultMessage": "Choose item",
+		"description": "Item in the menu beside a slot in the Equipped and Social lists of a character's sheet that opens a dialog choosing the item in the slot, or taking it out"
+	},
+	"characterSheet.slotMenu.hide": {
+		"defaultMessage": "Hide on avatar",
+		"description": "Item in the menu beside a slot in the Equipped and Social lists of a character's sheet that leaves the slot off the character's avatar (the picture of the character), whatever is in it"
+	},
+	"characterSheet.slotMenu.show": {
+		"defaultMessage": "Show on avatar",
+		"description": "Item in the menu beside a slot in the Equipped and Social lists of a character's sheet, while the slot is hidden, that shows it on the character's avatar (the picture of the character) again"
 	},
 	"characterSheet.social": {
 		"defaultMessage": "Social",
@@ -1541,7 +1557,7 @@
 	},
 	"characterSheet.unequip": {
 		"defaultMessage": "Unequip",
-		"description": "Item in the menu beside an item on a character's sheet that unequips it everywhere it is equipped. The character still carries it"
+		"description": "Item in the menu beside a slot in the Equipped list of a character's sheet that takes the item out of the slot. The character still carries it"
 	},
 	"characterSheet.unequipNote": {
 		"defaultMessage": "This unequips it from {slots}.",
@@ -1549,7 +1565,7 @@
 	},
 	"characterSheet.unequipped": {
 		"defaultMessage": "{name} unequipped {item}.",
-		"description": "Read out by screen readers once an item was unequipped from its menu on a character's sheet; {name} is the character's name and {item} the item's name. The character still carries it"
+		"description": "Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipped list of a character's sheet; {name} is the character's name and {item} the item's name. The character still carries it"
 	},
 	"characterSheet.wearSocially": {
 		"defaultMessage": "Wear socially",

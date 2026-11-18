@@ -1275,6 +1275,10 @@
 		"message": "Throw Hand Overboard",
 		"source": "Delete Character"
 	},
+	"characterSheet.allEquipped": {
+		"message": "Naught else in the hold.",
+		"source": "Carries nothing else."
+	},
 	"characterSheet.appearance": {
 		"message": "Rig an' Colors",
 		"source": "Appearance"
@@ -1403,13 +1407,9 @@
 		"message": "Hand it to",
 		"source": "Give to"
 	},
-	"characterSheet.hide": {
-		"message": "Stash",
-		"source": "Hide"
-	},
-	"characterSheet.hideSlot": {
-		"message": "Stash {slot}",
-		"source": "Hide {slot}"
+	"characterSheet.hiddenOnAvatar": {
+		"message": "Stashed from the likeness",
+		"source": "Hidden on the avatar"
 	},
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",
@@ -1426,10 +1426,6 @@
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
-	},
-	"characterSheet.itemEquipped": {
-		"message": "{quantity, plural, =1 {{item} (strapped on)} other {{item} x# ({equipped, number} strapped on)}}",
-		"source": "{quantity, plural, =1 {{item} (equipped)} other {{item} x# ({equipped, number} equipped)}}"
 	},
 	"characterSheet.itemMenu": {
 		"message": "What to do with {item}",
@@ -1518,6 +1514,26 @@
 	"characterSheet.slotHiddenAnnouncement": {
 		"message": "{hidden, select, true {{slot} be stashed from {name}'s likeness.} other {{slot} shows on {name}'s likeness again.}}",
 		"source": "{hidden, select, true {{slot} is hidden on {name}'s avatar.} other {{slot} shows on {name}'s avatar again.}}"
+	},
+	"characterSheet.slotIsEmpty": {
+		"message": "bare",
+		"source": "empty"
+	},
+	"characterSheet.slotMenu": {
+		"message": "What to do with {slot}",
+		"source": "Actions for {slot}"
+	},
+	"characterSheet.slotMenu.choose": {
+		"message": "Pick the booty",
+		"source": "Choose item"
+	},
+	"characterSheet.slotMenu.hide": {
+		"message": "Stash from likeness",
+		"source": "Hide on avatar"
+	},
+	"characterSheet.slotMenu.show": {
+		"message": "Unstash on likeness",
+		"source": "Show on avatar"
 	},
 	"characterSheet.social": {
 		"message": "Finery",
