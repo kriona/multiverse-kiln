@@ -14,13 +14,15 @@
 			<section id="universe-screen" class="screen" hidden>
 				<header class="toolbar">
 					<!-- include site-name.html -->
-					<h1 id="universe-name"></h1>
+					<span id="universe-toolbar-name" class="toolbar-title"></span>
 					<!-- include account.html -->
 				</header>
 				<div class="universe-page">
 					<article class="panel universe-overview">
-						<p id="universe-ruleset" class="universe-ruleset"></p>
-						<p id="universe-summary" class="universe-summary"></p>
+						<header class="universe-heading">
+							<h1 id="universe-name"></h1>
+							<p id="universe-ruleset" class="universe-ruleset"></p>
+						</header>
 						<div id="universe-description" class="markdown"></div>
 						<p id="universe-locked" class="notice" data-message="universePage.locked" data-translation-context="On the page of a universe in the stage end of time, above Enter Universe: what being locked means" hidden>This universe has reached the end of time, so it is locked. Its lobby can't be entered and no characters can be made, but characters in a group can still open it to look around.</p>
 						<div class="universe-actions">

@@ -6595,17 +6595,9 @@
 		"defaultMessage": "The universe's creators made groups smaller, so {name} is no longer in the group, or the group was disbanded.",
 		"description": "Shown in the lobby when the universe's creators lowered its group size, which took the character a window played out of their group or disbanded it; {name} is the character's name"
 	},
-	"group.title": {
-		"defaultMessage": "Group",
-		"description": "Heading of the screen where a group plays, until the group's name has loaded, or when it has none"
-	},
 	"group.unlockedNow": {
 		"defaultMessage": "This universe is no longer locked. You can move again.",
 		"description": "Read out by screen readers in a group when one of the universe's creators changed its stage from end of time to another while the player was in the group"
-	},
-	"group.unnamed": {
-		"defaultMessage": "Group",
-		"description": "Heading of a group's screen when the group has no name"
 	},
 	"home.create.chooseRuleset": {
 		"defaultMessage": "Choose a ruleset",

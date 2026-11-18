@@ -338,6 +338,7 @@ export class GamePage
 
 			this.universe = { id, name, slug, shortDescription, ruleset, sourceLanguage, translationLanguages };
 			this.universeLocked = (stage === 'end_of_time');
+			this.groupScreen.setUniverse(this.universe);
 
 			// The rooms name areas and tiles by ID, so the area view looks their names up in this
 			const text = new UniverseText(this.server.client, id);

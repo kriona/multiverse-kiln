@@ -217,7 +217,7 @@ h2
 	margin: 0;
 }
 
-// A page's h1 is its title in the toolbar, the same size as the site's name beside it and the page's h2s
+// An h1 in the toolbar is the page's title, the same size as the site's name beside it and the page's h2s
 h1
 {
 	font-size: var(--font-size-h2);
@@ -557,6 +557,28 @@ button.sort-button
 {
 	color: inherit;
 	text-decoration: none;
+}
+
+// A toolbar's title that isn't the page's h1, such as the universe's name on its page, drawn like the
+// toolbar's h1
+.toolbar-title
+{
+	font-family: var(--font-heading);
+	font-size: var(--font-size-h2);
+	font-weight: bold;
+
+	// Until the name has loaded, so its line doesn't sit beside the site name's
+	&:empty
+	{
+		display: none;
+	}
+}
+
+// A page's own heading after the universe's name, such as Create Character, set apart by a line like the site name's
+.toolbar > .toolbar-title:not(:empty) + h1
+{
+	padding-inline-start: 12px;
+	border-inline-start: 1px solid $border;
 }
 
 .toolbar > .site-name

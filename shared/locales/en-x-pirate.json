@@ -4799,10 +4799,6 @@
 		"message": "Long tale (Markdown)",
 		"source": "Long description (Markdown)"
 	},
-	"editor.universe.preview": {
-		"message": "Peek",
-		"source": "Preview"
-	},
 	"editor.universe.requireBuilderDraft": {
 		"message": "Shipwrights make their changes in a draft",
 		"source": "Builders make their changes in a draft"
@@ -6599,17 +6595,9 @@
 		"message": "The universe's captains made crews smaller, so {name} no longer sails with the crew, or the crew was scuttled.",
 		"source": "The universe's creators made groups smaller, so {name} is no longer in the group, or the group was disbanded."
 	},
-	"group.title": {
-		"message": "Crew",
-		"source": "Group"
-	},
 	"group.unlockedNow": {
 		"message": "This universe be locked no more. Ye can move again.",
 		"source": "This universe is no longer locked. You can move again."
-	},
-	"group.unnamed": {
-		"message": "Crew",
-		"source": "Group"
 	},
 	"home.create.chooseRuleset": {
 		"message": "Choose yer ship's articles",
