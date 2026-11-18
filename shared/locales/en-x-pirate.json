@@ -1369,7 +1369,7 @@
 	},
 	"characterSheet.equipped": {
 		"message": "Strapped On",
-		"source": "Equipped"
+		"source": "Equipment"
 	},
 	"characterSheet.equippedAnnouncement": {
 		"message": "{name} strapped on {item}.",
@@ -1432,8 +1432,8 @@
 		"source": "Actions for {item}"
 	},
 	"characterSheet.items": {
-		"message": "Kit",
-		"source": "Equipment"
+		"message": "The Hold",
+		"source": "Inventory"
 	},
 	"characterSheet.itemsChanged": {
 		"message": "{name}'s booty has shifted in the hold.",
@@ -1537,7 +1537,7 @@
 	},
 	"characterSheet.social": {
 		"message": "Finery",
-		"source": "Social"
+		"source": "Social Equipment"
 	},
 	"characterSheet.socialAbout": {
 		"message": "Booty worn only for show. It shows on the likeness in place o' what be strapped on.",

@@ -149,12 +149,12 @@ export const HELD_EQUIPMENT_NAMES = defineMessages({
 	mainHand: {
 		id: 'equipment.slot.mainHand',
 		defaultMessage: 'Main hand',
-		description: 'Equipment slot: the hand a character holds their main weapon or other item in. A row of the Equipped list on a character\'s sheet. The "Equip in main hand" item in an item\'s menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
+		description: 'Equipment slot: the hand a character holds their main weapon or other item in. A row of the Equipment list on a character\'s sheet. The "Equip in main hand" item in an item\'s menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	},
 	offHand: {
 		id: 'equipment.slot.offHand',
 		defaultMessage: 'Off hand',
-		description: 'Equipment slot: a character\'s other hand, for a second weapon, a shield or a torch. A row of the Equipped list on a character\'s sheet. The "Equip in off hand" item in an item\'s menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
+		description: 'Equipment slot: a character\'s other hand, for a second weapon, a shield or a torch. A row of the Equipment list on a character\'s sheet. The "Equip in off hand" item in an item\'s menu there equips an item in this slot. In the Discard and Give dialogs, it can appear in "This unequips it from {slots}."'
 	},
 	bothHands: {
 		id: 'equipment.slot.bothHands',
