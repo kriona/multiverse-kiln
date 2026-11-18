@@ -68,28 +68,8 @@
 									<input id="universe-short-description" />
 								</label>
 								<div class="markdown-editor">
-									<div class="field-label">
-										<label for="universe-long-description" data-message="editor.universe.longDescription" data-translation-context="Label of the field for a universe's full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor's Audit tab">Long description (Markdown)</label>
-										<markdown-toolbar id="universe-long-toolbar" class="markdown-toolbar" for="universe-long-description">
-											<!-- role is set here because the md-* elements don't set it themselves -->
-											<md-header level="1" role="button" title="Heading 1" aria-label="Heading 1" data-message="markdown.heading1Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the first level" data-message-title="markdown.heading1" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the first level" data-message-aria-label="markdown.heading1" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the first level">H1</md-header>
-											<md-header level="2" role="button" title="Heading 2" aria-label="Heading 2" data-message="markdown.heading2Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the second level" data-message-title="markdown.heading2" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the second level" data-message-aria-label="markdown.heading2" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the second level">H2</md-header>
-											<md-header level="3" role="button" title="Heading 3" aria-label="Heading 3" data-message="markdown.heading3Button" data-translation-context="Short label of the Markdown toolbar button that makes a heading of the third level" data-message-title="markdown.heading3" data-translation-context-title="Name of the Markdown toolbar button that makes a heading of the third level" data-message-aria-label="markdown.heading3" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a heading of the third level">H3</md-header>
-											<md-bold role="button" title="Bold" aria-label="Bold" data-message-title="markdown.bold" data-translation-context-title="Name of the Markdown toolbar button that makes text bold" data-message-aria-label="markdown.bold" data-translation-context-aria-label="Name of the Markdown toolbar button that makes text bold"><strong data-message="markdown.boldButton" data-translation-context="One-letter label of the Markdown toolbar button that makes text bold, shown in bold">B</strong></md-bold>
-											<md-italic role="button" title="Italic" aria-label="Italic" data-message-title="markdown.italic" data-translation-context-title="Name of the Markdown toolbar button that makes text italic" data-message-aria-label="markdown.italic" data-translation-context-aria-label="Name of the Markdown toolbar button that makes text italic"><em data-message="markdown.italicButton" data-translation-context="One-letter label of the Markdown toolbar button that makes text italic, shown in italics">I</em></md-italic>
-											<md-strikethrough role="button" title="Strikethrough" aria-label="Strikethrough" data-message-title="markdown.strikethrough" data-translation-context-title="Name of the Markdown toolbar button that strikes text through" data-message-aria-label="markdown.strikethrough" data-translation-context-aria-label="Name of the Markdown toolbar button that strikes text through"><del data-message="markdown.strikethroughButton" data-translation-context="One-letter label of the Markdown toolbar button that strikes text through, shown struck through">S</del></md-strikethrough>
-											<md-link role="button" title="Link" aria-label="Link" data-message="markdown.linkButton" data-translation-context="Short label of the Markdown toolbar button that adds a link" data-message-title="markdown.link" data-translation-context-title="Name of the Markdown toolbar button that adds a link" data-message-aria-label="markdown.link" data-translation-context-aria-label="Name of the Markdown toolbar button that adds a link">Link</md-link>
-											<md-quote role="button" title="Quote" aria-label="Quote" data-message="markdown.quoteButton" data-translation-context="Short label of the Markdown toolbar button that makes text a quotation" data-message-title="markdown.quote" data-translation-context-title="Name of the Markdown toolbar button that makes text a quotation" data-message-aria-label="markdown.quote" data-translation-context-aria-label="Name of the Markdown toolbar button that makes text a quotation">Quote</md-quote>
-											<md-code role="button" title="Code" aria-label="Code" data-message="markdown.codeButton" data-translation-context="Short label of the Markdown toolbar button that formats text as code" data-message-title="markdown.code" data-translation-context-title="Name of the Markdown toolbar button that formats text as code" data-message-aria-label="markdown.code" data-translation-context-aria-label="Name of the Markdown toolbar button that formats text as code">Code</md-code>
-											<md-unordered-list role="button" title="Bulleted list" aria-label="Bulleted list" data-message="markdown.bulletedListButton" data-translation-context="Short label of the Markdown toolbar button that makes a bulleted list" data-message-title="markdown.bulletedList" data-translation-context-title="Name of the Markdown toolbar button that makes a bulleted list" data-message-aria-label="markdown.bulletedList" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a bulleted list">&bull; List</md-unordered-list>
-											<md-ordered-list role="button" title="Numbered list" aria-label="Numbered list" data-message="markdown.numberedListButton" data-translation-context="Short label of the Markdown toolbar button that makes a numbered list" data-message-title="markdown.numberedList" data-translation-context-title="Name of the Markdown toolbar button that makes a numbered list" data-message-aria-label="markdown.numberedList" data-translation-context-aria-label="Name of the Markdown toolbar button that makes a numbered list">1. List</md-ordered-list>
-										</markdown-toolbar>
-										<textarea id="universe-long-description" rows="12"></textarea>
-									</div>
-									<div>
-										<span class="field-label" data-message="editor.universe.preview" data-translation-context="Heading above the long description as players will see it">Preview</span>
-										<div id="universe-long-preview" class="markdown markdown-preview"></div>
-									</div>
+									<label for="universe-long-description" data-message="editor.universe.longDescription" data-translation-context="Label of the field for a universe's full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor's Audit tab">Long description (Markdown)</label>
+									<textarea id="universe-long-description" rows="12"></textarea>
 								</div>
 								<fieldset id="universe-stage" class="choice stacked">
 									<legend data-message="editor.universe.stage" data-translation-context="Heading of the choice of how far along a universe is, from being built to being retired; also names the setting in the list of what a save changed, on the editor's Audit tab">Stage</legend>
@@ -960,18 +940,31 @@
 								Translation
 								<input id="translation-text" />
 							</label>
-							<div id="translation-long-field" class="field-label" hidden>
+							<div id="translation-long-field" class="markdown-editor" hidden>
 								<label for="translation-long" data-message="editor.translations.translationMarkdown" data-translation-context="Label of the field in the dialog that translates a universe's long description, which is written in Markdown">Translation (Markdown)</label>
 								<textarea id="translation-long" rows="8"></textarea>
-								<div id="translation-preview" class="markdown markdown-preview"></div>
 							</div>
 							<p id="translation-dialog-error" class="form-error" role="alert" hidden></p>
 							<div class="form-buttons">
 								<button id="translation-confirm" type="button" class="secondary" data-shortcut="Alt+C" aria-describedby="translation-out-of-date" data-message="editor.translations.confirm" data-translation-context="Button in the dialog that translates a piece of universe text, shown when the source text changed since it was translated: keeps the translation and marks it up to date, when the editor is saved"><!-- icon ph:check-circle -->Still Correct</button>
 								<button id="translation-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="translation-apply" type="submit" aria-describedby="translation-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="translation-apply" type="submit" aria-describedby="translation-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
+					</form>
+				</dialog>
+				<dialog id="markdown-link-dialog" class="panel dialog" aria-labelledby="markdown-link-title">
+					<form id="markdown-link-form" class="form" novalidate>
+						<h2 id="markdown-link-title" data-message="markdown.linkDialog.title" data-translation-context="Title of the dialog that adds a link to a Markdown field's rich text, such as a universe's long description, or changes the link at the cursor">Link</h2>
+						<label data-message="markdown.linkDialog.address" data-translation-context="Label of the field for the web or email address a link goes to, in the dialog that adds a link to a Markdown field's rich text">
+							Address
+							<input id="markdown-link-address" type="url" required />
+						</label>
+						<div class="dialog-buttons">
+							<button id="markdown-link-remove" type="button" class="secondary" data-message="markdown.linkDialog.remove" data-translation-context="Button in the dialog that changes a link in a Markdown field's rich text: takes the link off the text, leaving the text"><!-- icon ph:link-break -->Remove Link</button>
+							<button id="markdown-link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
+							<button id="markdown-link-apply" type="submit" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+						</div>
 					</form>
 				</dialog>
 				<dialog id="editor-dialog" class="panel dialog option-dialog" aria-labelledby="editor-dialog-title">
@@ -1024,7 +1017,7 @@
 							<div class="form-buttons">
 								<button id="editor-remove" type="button" class="danger" aria-describedby="editor-dialog-error"></button>
 								<button id="editor-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="editor-apply" type="submit" aria-describedby="editor-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="editor-apply" type="submit" aria-describedby="editor-dialog-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1063,7 +1056,7 @@
 							<div class="form-buttons">
 								<button id="item-remove" type="button" class="danger" aria-describedby="item-error"></button>
 								<button id="item-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="item-save" type="submit" aria-describedby="item-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1163,7 +1156,7 @@
 							<div class="form-buttons">
 								<button id="race-remove" type="button" class="danger" aria-describedby="race-error"></button>
 								<button id="race-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="race-save" type="submit" aria-describedby="race-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1240,7 +1233,7 @@
 							<div class="form-buttons">
 								<button id="class-remove" type="button" class="danger" aria-describedby="class-error"></button>
 								<button id="class-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="class-save" type="submit" aria-describedby="class-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1271,7 +1264,7 @@
 							<div class="form-buttons">
 								<button id="theme-remove" type="button" class="danger" aria-describedby="theme-error"></button>
 								<button id="theme-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="theme-save" type="submit" aria-describedby="theme-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1303,7 +1296,7 @@
 							<div class="form-buttons">
 								<button id="difficulty-remove" type="button" class="danger" aria-describedby="difficulty-error"></button>
 								<button id="difficulty-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="difficulty-save" type="submit" aria-describedby="difficulty-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1383,7 +1376,7 @@
 							<div class="form-buttons">
 								<button id="tile-remove" type="button" class="danger" aria-describedby="tile-error"></button>
 								<button id="tile-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="tile-save" type="submit" aria-describedby="tile-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>
@@ -1581,7 +1574,7 @@
 						<p id="tile-replace-error" class="form-error" role="alert" hidden></p>
 						<div class="dialog-buttons">
 							<button id="tile-replace-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-							<button id="tile-replace-submit" type="submit" aria-describedby="tile-replace-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+							<button id="tile-replace-submit" type="submit" aria-describedby="tile-replace-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 						</div>
 					</form>
 				</dialog>
@@ -1862,7 +1855,7 @@
 							<div class="form-buttons">
 								<button id="link-delete" type="button" class="danger" aria-describedby="link-error" data-message="editor.link.delete" data-translation-context="Button that deletes the area link being edited"><!-- icon ph:trash -->Delete Link</button>
 								<button id="link-cancel" type="button" class="secondary" data-message="dialog.cancel" data-translation-context="Button that closes a dialog without making any changes">Cancel</button>
-								<button id="link-save" type="submit" aria-describedby="link-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile or area link) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
+								<button id="link-save" type="submit" aria-describedby="link-error" data-shortcut="Alt+A" data-message="dialog.apply" data-translation-context="Button in an editor dialog (race, class, theme, difficulty level, item, tile, area link, translation, or a link in a long description) that keeps its changes on the tab, to be saved with the Save button at the bottom of the editor"><!-- icon ph:check -->Apply</button>
 							</div>
 						</fieldset>
 					</form>

@@ -341,7 +341,10 @@ This lets you change anything about a universe. It will be a whole suite of tool
 - logo
 - banner image
 - 1-sentence description
-- long description, written in markdown
+- long description, written in markdown. A Markdown field (`client/src/ui/MarkdownEditor.ts`) is edited as rich text or as the Markdown itself; buttons above it switch views and format the text in either. The browser remembers the last view chosen. A field that can't be changed shows as rich text, the way players see it
+	- the field stores Markdown. Rich text writes it its own way, such as `*` for italics where `_` was written, so the Markdown as written is kept until the rich text is changed, and comes back if the change is undone
+	- rich text has only what a description can show: no images or raw HTML. Editing it as rich text drops them, as the universe page already does
+	- Link in rich text opens a dialog for the address. An address without a scheme is taken as a web page, or as an email address when it has an @
 - dropdown for "Stage"
 	- `in the beginning` - still being created. Only creators and builders can play. Not listed on [Home](#home)
 	- `prologue` - open for beta testers and every other editor. Not listed on [Home](#home) for everyone: its editors, beta testers included, see it in Home's section for universes in testing
@@ -908,7 +911,7 @@ Lets the universe be played in more than one language. See [Localization](#local
 - export and import, for translators working outside the editor (`shared/src/translationFiles.ts`), as Gettext PO, XLIFF 2.0, CSV or JSON, one language a file:
 	- Export (Alt+X) saves the language chosen, as the table shows it with the changes not saved yet, in the format chosen, made in the browser from every piece of text (`GET /:universeId/translations/all`). Each entry is named by its key (`area:<id>:name`, by the ID in the live version: the live row a draft row was copied from, or the draft row's own ID for something the draft added, which it keeps when the draft is applied), so a file exported from the draft imports into the draft or, once the draft is applied, into the live version, and one exported from the live version imports into a draft started since. Each comes with where it comes from and its note for translators (PO comments, XLIFF notes, CSV columns, JSON fields), the source text and the translation. Out-of-date translations are fuzzy in PO and in the initial state in XLIFF. Text that needs no translation is left out
 	- Import (Alt+I, for those who may translate into the language) reads a file in the format its name says, or the format chosen, and keeps its translations on the tab until Save, like the dialog's. Each keeps the hash of the source text the file holds, so one made from text that has changed since is out of date. A file naming another language is refused. Translations marked fuzzy, too long or holding characters that aren't allowed, or for text the universe doesn't have or that needs no translation, are skipped, and one that comes back as the table shows it is left alone, so an out-of-date translation returned unchanged stays out of date. The tab says how many were imported and skipped. Notes aren't imported
-- long descriptions are translated as markdown, with a preview below the field, rendered and sanitized the same way as the source
+- long descriptions are translated in a Markdown field, as rich text or as Markdown, like the Universe tab's long description
 - the Audit tab counts a save's translations per language ("Added, changed or deleted 3 translations into Deutsch"), its notes ("Wrote or deleted 1 note for translators") and its marks ("Marked 2 pieces of text as needing no translation")
 
 # Gameplay

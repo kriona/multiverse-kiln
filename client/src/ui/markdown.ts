@@ -45,7 +45,7 @@ const ALLOWED_ATTRIBUTES = [
 /**
  * Links may only go to web pages or email addresses
  */
-const ALLOWED_LINK = /^(?:https?:|mailto:)/i;
+export const ALLOWED_LINK = /^(?:https?:|mailto:)/i;
 
 const purifier = DOMPurify(window);
 

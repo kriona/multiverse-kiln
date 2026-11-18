@@ -6443,6 +6443,10 @@
 		"message": "Stowin'...",
 		"source": "Saving..."
 	},
+	"form.textTooLong": {
+		"message": "Keep it to {max, plural, one {# character} other {# characters}}, matey. This one has {count, number}.",
+		"source": "Use at most {max, plural, one {# character} other {# characters}}. This has {count, number}."
+	},
 	"form.unsavedChanges": {
 		"message": "Not yet stowed",
 		"source": "Unsaved changes"
@@ -10207,6 +10211,10 @@
 		"message": "In plain speak: ye may use, change an' share the game's code. If ye share a changed version, or run one on a server that players connect to, ye must offer its source code under the same license.",
 		"source": "In short: you may use, change and share the game engine's code. If you share a changed version, or run one on a server that players connect to, you must offer its source code under the same license."
 	},
+	"license.tiptap": {
+		"message": "Long descriptions be scribbled as rich text with {tiptap}, built on {prosemirror} an' {linkify}. They be used under the MIT License:",
+		"source": "Long descriptions are edited as rich text with {tiptap}, built on {prosemirror} and {linkify}. They are used under the MIT License:"
+	},
 	"license.title": {
 		"message": "The Ship's Articles",
 		"source": "Licenses"
@@ -10583,6 +10591,10 @@
 		"message": "Code",
 		"source": "Code"
 	},
+	"markdown.formatting": {
+		"message": "Trimmin's",
+		"source": "Formatting"
+	},
 	"markdown.heading1": {
 		"message": "Headin' 1",
 		"source": "Heading 1"
@@ -10623,6 +10635,26 @@
 		"message": "Link",
 		"source": "Link"
 	},
+	"markdown.linkDialog.address": {
+		"message": "Address",
+		"source": "Address"
+	},
+	"markdown.linkDialog.invalid": {
+		"message": "Give a web or email address, matey.",
+		"source": "Enter a web or email address."
+	},
+	"markdown.linkDialog.remove": {
+		"message": "Cut the Link",
+		"source": "Remove Link"
+	},
+	"markdown.linkDialog.title": {
+		"message": "Link",
+		"source": "Link"
+	},
+	"markdown.markdown": {
+		"message": "Markdown",
+		"source": "Markdown"
+	},
 	"markdown.numberedList": {
 		"message": "Numbered list",
 		"source": "Numbered list"
@@ -10639,6 +10671,10 @@
 		"message": "Quote",
 		"source": "Quote"
 	},
+	"markdown.richText": {
+		"message": "Fancy scroll",
+		"source": "Rich text"
+	},
 	"markdown.strikethrough": {
 		"message": "Strikethrough",
 		"source": "Strikethrough"
@@ -10646,6 +10682,10 @@
 	"markdown.strikethroughButton": {
 		"message": "S",
 		"source": "S"
+	},
+	"markdown.view": {
+		"message": "Spyglass",
+		"source": "View"
 	},
 	"name.reserved": {
 		"message": "That name could pass fer one o' the ship's officers. Choose another.",

@@ -6,6 +6,7 @@ import { getElement, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
 import { showMarkdown } from '../markdown';
+import { MarkdownEditor } from '../MarkdownEditor';
 import { coinAbbreviationMessages } from '../moneyField';
 
 /**
@@ -52,8 +53,8 @@ export interface TranslationEdit
 
 /**
  * The dialog that translates one piece of universe text into one language on the Translations tab: the
- * source text (rendered, for a long description, with a preview of the translation), the note for
- * translators, and the translation. Apply keeps the changes on the tab; Still Correct keeps an
+ * source text (rendered, for a long description, whose translation can be edited as rich text or as
+ * Markdown), the note for translators, and the translation. Apply keeps the changes on the tab; Still Correct keeps an
  * out-of-date translation as it is, marked up to date
  */
 export class TranslationDialog
@@ -69,7 +70,7 @@ export class TranslationDialog
 	private readonly text = getElement('translation-text', HTMLInputElement);
 	private readonly longField = getElement('translation-long-field', HTMLElement);
 	private readonly long = getElement('translation-long', HTMLTextAreaElement);
-	private readonly preview = getElement('translation-preview', HTMLElement);
+	private readonly longEditor = new MarkdownEditor(this.long);
 	private readonly error = getElement('translation-dialog-error', HTMLElement);
 	private readonly confirmButton = getElement('translation-confirm', HTMLButtonElement);
 	private readonly applyButton = getElement('translation-apply', HTMLButtonElement);
@@ -88,11 +89,6 @@ export class TranslationDialog
 	{
 		this.note.maxLength = MAX_TRANSLATOR_NOTE_LENGTH;
 		this.changes.guardDialog(this.dialog);
-
-		this.long.addEventListener('input', () =>
-		{
-			showMarkdown(this.preview, this.long.value);
-		});
 
 		this.noTranslation.addEventListener('change', () =>
 		{
@@ -157,7 +153,6 @@ export class TranslationDialog
 		input.maxLength = maxUniverseTextLength(row.kind, row.field);
 		input.value = (edit.translation ?? '');
 		input.readOnly = !edit.mayTranslate;
-		showMarkdown(this.preview, this.long.value);
 		this.note.value = (edit.note ?? '');
 		this.note.readOnly = !edit.mayWriteNote;
 		this.noTranslation.checked = edit.noTranslation;
@@ -168,7 +163,19 @@ export class TranslationDialog
 		clearFieldErrors(this.dialog);
 		this.dialog.showModal();
 		this.changes.markSaved();
-		(edit.mayTranslate ? input : this.note).focus();
+
+		if (!edit.mayTranslate)
+		{
+			this.note.focus();
+		}
+		else if (markdown)
+		{
+			this.longEditor.focus();
+		}
+		else
+		{
+			input.focus();
+		}
 	}
 
 	/**
@@ -188,6 +195,7 @@ export class TranslationDialog
 
 		this.text.disabled = !needed;
 		this.long.disabled = !needed;
+		this.longEditor.refresh();
 		this.outOfDate.hidden = !(needed && edit.outOfDate);
 		this.confirmButton.hidden = !(needed && edit.outOfDate && edit.mayTranslate);
 	}
@@ -206,7 +214,7 @@ export class TranslationDialog
 
 	/**
 	 * Keeps the dialog's changes on the tab and closes it, unless a field holds characters that aren't
-	 * allowed, or a coin's abbreviation is one a money field couldn't read
+	 * allowed, a long description is too long, or a coin's abbreviation is one a money field couldn't read
 	 *
 	 * @param confirm Whether to keep the translation even when it hasn't changed, marking it up to date
 	 */
@@ -229,9 +237,27 @@ export class TranslationDialog
 		{
 			if (DISALLOWED_TEXT_CHARACTERS.test(((field === input) && !markdown) ? text : text.replace(/[\t\n\r]/g, '')))
 			{
-				reportFieldError(field, t(formMessages.invalidText));
+				if (field === this.long)
+				{
+					this.longEditor.reportError(t(formMessages.invalidText));
+				}
+				else
+				{
+					reportFieldError(field, t(formMessages.invalidText));
+				}
+
 				return;
 			}
+		}
+
+		// The field stops typing past its length, but rich text writes its formatting marks into it too
+		if (markdown && (typed.length > input.maxLength))
+		{
+			this.longEditor.reportError(t(formMessages.textTooLong, {
+				max: input.maxLength,
+				count: typed.length
+			}));
+			return;
 		}
 
 		// A coin's abbreviation is written after amounts, which a money field reads back
