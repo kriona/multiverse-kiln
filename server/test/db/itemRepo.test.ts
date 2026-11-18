@@ -376,8 +376,8 @@ describe('itemRepo', () =>
 			const torchId = await createCustomItem(liveVersion(universeId), 'pf1e', torch);
 			const theirsId = await createCustomItem(liveVersion(otherId), 'pf1e', torch);
 
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true, rulebook: 'core', types: daggerKind.types, equips: 'oneHand' });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true, rulebook: null, types: torch.types, equips: 'oneHand' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', await daggerId()), { kind: 'default', enabled: true, rulebook: 'core', category: 'weapon', types: daggerKind.types, equips: 'oneHand' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', torchId), { kind: 'custom', enabled: true, rulebook: null, category: 'gear', types: torch.types, equips: 'oneHand' });
 			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', theirsId), undefined);
 			assert.strictEqual(await findItem(liveVersion(universeId), 'pf1e', 2147483647), undefined);
 		});
@@ -390,11 +390,11 @@ describe('itemRepo', () =>
 			const dagger = await daggerId();
 
 			await saveEditedDefaultItem(liveVersion(otherId), 'pf1e', dagger, { name: null, ...daggerKind, enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true, rulebook: 'core', types: daggerKind.types, equips: 'oneHand' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: true, rulebook: 'core', category: 'weapon', types: daggerKind.types, equips: 'oneHand' });
 
-			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, ...daggerKind, equips: 'twoHands', enabled: false });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false, rulebook: 'core', types: daggerKind.types, equips: 'twoHands' });
-			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false, rulebook: null, types: longswordKind.types, equips: 'oneHand' });
+			await saveEditedDefaultItem(liveVersion(universeId), 'pf1e', dagger, { name: null, ...daggerKind, category: 'gear', equips: 'twoHands', enabled: false });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', dagger), { kind: 'default', enabled: false, rulebook: 'core', category: 'gear', types: daggerKind.types, equips: 'twoHands' });
+			assert.deepStrictEqual(await findItem(liveVersion(universeId), 'pf1e', swordId), { kind: 'custom', enabled: false, rulebook: null, category: 'weapon', types: longswordKind.types, equips: 'oneHand' });
 		});
 	});
 

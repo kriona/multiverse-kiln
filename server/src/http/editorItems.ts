@@ -131,7 +131,7 @@ export async function createItemChange(context: ChangeContext, ref: NewRef, sett
  * Changes one of the universe's items, or stores its edited copy of a default item. Once the save has
  * saved every change, an item it disables with remove is taken from the characters carrying it, and one
  * it enables gives back what was taken, and an item that equips somewhere else, or became or stopped
- * being a shield, is unequipped (see editorDisablings.ts)
+ * being a shield or a weapon, is unequipped (see editorDisablings.ts)
  *
  * @param context The save
  * @param id The item

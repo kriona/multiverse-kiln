@@ -196,6 +196,13 @@ describe('Unequipping when the world editor changes how items equip', () =>
 		assert.deepStrictEqual(await equippedSlots(), []);
 	});
 
+	it('unequips an item a save changes from a weapon to another kind, which no longer goes in both hands', async () =>
+	{
+		await equipItems(characterId, [{ ...at('mainHand', dagger), bothHands: true }]);
+		await saveAll(ada, universe.universeId, [{ kind: 'saveItem', id: dagger.id, settings: itemSettings(dagger, { category: 'gear', types: [] }) }]);
+		assert.deepStrictEqual(await equippedSlots(), ['tail']);
+	});
+
 	it('unequips an item taken from characters while disabled', async () =>
 	{
 		await saveAll(ada, universe.universeId, [{ kind: 'saveItem', id: dagger.id, settings: itemSettings(dagger, { enabled: false }), whenDisabled: 'remove' }]);

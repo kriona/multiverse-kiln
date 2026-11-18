@@ -42,8 +42,9 @@ export interface FoundItem
 	rulebook: string | null;
 
 	/**
-	 * Its types and where it equips, a default item's from the universe's edited copy when it has one
+	 * Its kind, types and where it equips, a default item's from the universe's edited copy when it has one
 	 */
+	category: string;
 	types: string[];
 	equips: string;
 }
@@ -367,9 +368,11 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 			universeId: items.universeId,
 			rulebook: items.rulebook,
 			enabled: items.enabled,
+			category: items.category,
 			types: items.types,
 			equips: items.equips,
 			copyEnabled: copies.enabled,
+			copyCategory: copies.category,
 			copyTypes: copies.types,
 			copyEquips: copies.equips
 		})
@@ -398,6 +401,7 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 		kind: ((row.universeId === null) ? 'default' : 'custom'),
 		enabled: (row.copyEnabled ?? row.enabled),
 		rulebook: row.rulebook,
+		category: (row.copyCategory ?? row.category),
 		types: (row.copyTypes ?? row.types),
 		equips: (row.copyEquips ?? row.equips)
 	});

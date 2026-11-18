@@ -6,13 +6,13 @@
  * affects nobody, and something disabled more than once does what the last change chose, once. The
  * impact route (editorImpact.ts) warns about the same things, at the change whose choice is used
  */
-import { isRulebookOn, isSf1eRaceRules, isShield, isUsable, RULESET_EQUIPMENT, type AreaEvacuation, type AreaEvacuations, type GroupSizeLowering, type ItemDisabling, type RaceRules, type Ruleset } from '@multiverse-kiln/shared';
+import { isRulebookOn, isSf1eRaceRules, isShield, isUsable, RULESET_EQUIPMENT, type AreaEvacuation, type AreaEvacuations, type EditorItem, type GroupSizeLowering, type ItemDisabling, type RaceRules, type Ruleset } from '@multiverse-kiln/shared';
 
 import { listAreas } from '../db/areaRepo.js';
 import { setCarriedItemsHidden } from '../db/characterRepo.js';
 import { unequipItemsInUniverse, unequipSlotsOfRaces, type EquipmentOwner } from '../db/equipmentRepo.js';
 import { clearGroupStartingAreas, deleteGroups, listGroupsLargerThan, listMembersInAreas, moveMembers, removeGroupMembers, type GroupCharacter, type LargerGroup } from '../db/groupRepo.js';
-import { listEditorItems } from '../db/itemRepo.js';
+import { loadEditorItemsIn } from '../db/itemRepo.js';
 import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadRulebookSettings } from '../db/rulesetRepo.js';
 import { areasById, areasInTree, evacuatedPlaces, membersOverSize, type LinkInto } from '../logic/disabling.js';
@@ -66,6 +66,7 @@ interface ItemState
 interface ItemEquipping
 {
 	id: number;
+	category: string;
 	types: readonly string[];
 	equips: string;
 }
@@ -119,7 +120,7 @@ interface Evacuation
 /**
  * The items, areas and group size one save enables, disables or lowers, and what happens to the players
  * using them once every change is saved. It also unequips the items whose place to equip, or whether they
- * are shields, the save changes, and the tail slots of the races it takes the tail from
+ * are shields or weapons, the save changes, and the tail slots of the races it takes the tail from
  */
 export class SaveDisablings
 {
@@ -136,10 +137,10 @@ export class SaveDisablings
 	private groupSize: { before: number; choice: GroupSizeLowering | undefined } | undefined;
 
 	/**
-	 * Where each item the save changes or restores equipped, and whether it was a shield, as the save
-	 * found it, by the item's ID
+	 * Where each item the save changes or restores equipped, and whether it was a shield and whether a
+	 * weapon, as the save found it, by the item's ID. Only a one-handed weapon can be held in both hands
 	 */
-	private readonly equipping = new Map<number, { equips: string; shield: boolean }>();
+	private readonly equipping = new Map<number, { equips: string; shield: boolean; weapon: boolean }>();
 
 	/**
 	 * The races the save changes or restores that had a tail as the save found them, by ID; false for
@@ -149,8 +150,8 @@ export class SaveDisablings
 
 	/**
 	 * Notes how a change finds an item it changes or restores, for unequipping it once every change is
-	 * saved if where it equips, or whether it is a shield, changed. How the save found it comes from the
-	 * first change to it
+	 * saved if where it equips, or whether it is a shield or a weapon, changed. How the save found it comes
+	 * from the first change to it
 	 *
 	 * @param ruleset The universe's ruleset
 	 * @param item The item before the change
@@ -161,7 +162,8 @@ export class SaveDisablings
 		{
 			this.equipping.set(item.id, {
 				equips: item.equips,
-				shield: isShield(ruleset, item.types)
+				shield: isShield(ruleset, item.types),
+				weapon: (item.category === 'weapon')
 			});
 		}
 	}
@@ -251,9 +253,10 @@ export class SaveDisablings
 			return;
 		}
 
+		const items = await this.loadNotedItems(context);
 		const unequipped = [
-			...await this.finishItems(context),
-			...await this.finishEquipping(context),
+			...await this.finishItems(context, items),
+			...await this.finishEquipping(context, items),
 			...await this.finishTails(context)
 		];
 
@@ -273,31 +276,39 @@ export class SaveDisablings
 	}
 
 	/**
-	 * Unequips the items the save changed where they equip, or whether they are shields, from every
-	 * character, without asking: their players equip them again
+	 * The items the save enables, disables, restores or changes, as the save leaves them, in one load for
+	 * finishItems() and finishEquipping()
 	 *
 	 * @param context The save
-	 * @return The characters who had one equipped
+	 * @return The items, by ID. An item the save deleted isn't listed, and nobody carries it
 	 */
-	private async finishEquipping(context: ChangeContext): Promise<EquipmentOwner[]>
+	private async loadNotedItems(context: ChangeContext): Promise<Map<number, EditorItem>>
 	{
 		const { universe, transaction } = context;
+		const items = await loadEditorItemsIn(context.version, universe.ruleset, [...this.items.keys(), ...this.equipping.keys()], transaction);
 
-		if (this.equipping.size === 0)
-		{
-			return([]);
-		}
+		return(new Map(items.map((item) => [item.id, item])));
+	}
 
-		// An item the save deleted isn't listed, and nobody carries it
-		const { items } = await listEditorItems(context.version, universe.ruleset, { ids: [...this.equipping.keys()] }, transaction);
-		const changed = items
-			.filter((item) =>
+	/**
+	 * Unequips the items the save changed where they equip, or whether they are shields or weapons, from
+	 * every character, without asking: their players equip them again
+	 *
+	 * @param context The save
+	 * @param items The items the save notes, as it leaves them, by ID
+	 * @return The characters who had one equipped
+	 */
+	private async finishEquipping(context: ChangeContext, items: ReadonlyMap<number, EditorItem>): Promise<EquipmentOwner[]>
+	{
+		const { universe, transaction } = context;
+		const changed = [...this.equipping]
+			.filter(([itemId, before]) =>
 			{
-				const before = this.equipping.get(item.id);
+				const item = items.get(itemId);
 
-				return((before !== undefined) && ((before.equips !== item.equips) || (before.shield !== isShield(universe.ruleset, item.types))));
+				return((item !== undefined) && ((before.equips !== item.equips) || (before.shield !== isShield(universe.ruleset, item.types)) || (before.weapon !== (item.category === 'weapon'))));
 			})
-			.map((item) => item.id);
+			.map(([itemId]) => itemId);
 
 		return(unequipItemsInUniverse(universe.id, changed, transaction));
 	}
@@ -340,9 +351,10 @@ export class SaveDisablings
 	 * unequipped too, and comes back unequipped
 	 *
 	 * @param context The save
+	 * @param items The items the save notes, as it leaves them, by ID
 	 * @return The characters who had a taken item equipped
 	 */
-	private async finishItems(context: ChangeContext): Promise<EquipmentOwner[]>
+	private async finishItems(context: ChangeContext, items: ReadonlyMap<number, EditorItem>): Promise<EquipmentOwner[]>
 	{
 		const { universe, transaction } = context;
 
@@ -351,17 +363,15 @@ export class SaveDisablings
 			return([]);
 		}
 
-		// An item the save deleted isn't listed, and nobody carries it
-		const { items } = await listEditorItems(context.version, universe.ruleset, { ids: [...this.items.keys()] }, transaction);
 		const { rulebooks } = await loadRulebookSettings(context.version, universe.ruleset, transaction);
 		const taken: number[] = [];
 		const givenBack: number[] = [];
 
-		for (const item of items)
+		for (const [itemId, noted] of this.items)
 		{
-			const noted = this.items.get(item.id);
+			const item = items.get(itemId);
 
-			if (noted === undefined)
+			if (item === undefined)
 			{
 				continue;
 			}

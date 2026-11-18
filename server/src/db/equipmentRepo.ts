@@ -126,8 +126,8 @@ export async function unequipSlots(characterId: string, slots: readonly string[]
 
 /**
  * Unequips some items from every character of a universe who has them equipped, in one statement, as a
- * save changing where they equip or whether they are shields does, and taking them while disabled. The
- * IDs go in one array parameter, since a save can change thousands of items
+ * save changing where they equip, or whether they are shields or weapons, does, and taking them while
+ * disabled. The IDs go in one array parameter, since a save can change thousands of items
  *
  * @param universeId The universe's ID
  * @param itemIds The items, by the IDs characters hold
