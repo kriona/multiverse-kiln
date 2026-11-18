@@ -1195,6 +1195,10 @@
 		"message": "Kit",
 		"source": "Equipment"
 	},
+	"characterSheet.itemsChanged": {
+		"message": "{name}'s booty has shifted in the hold.",
+		"source": "{name}'s items have changed."
+	},
 	"characterSheet.itemsDiscarded": {
 		"message": "{name} tossed {quantity, plural, =1 {{item}} other {{item} x#}} overboard.",
 		"source": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}."

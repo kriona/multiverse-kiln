@@ -1195,6 +1195,10 @@
 		"defaultMessage": "Equipment",
 		"description": "Heading on a character's sheet of the items they carry"
 	},
+	"characterSheet.itemsChanged": {
+		"defaultMessage": "{name}'s items have changed.",
+		"description": "Read out by screen readers when what a character carries or has equipped changed somewhere other than their open sheet, such as in another window, by a universe's creator or by a gift, and the sheet shows the change; {name} is the character's name"
+	},
 	"characterSheet.itemsDiscarded": {
 		"defaultMessage": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}.",
 		"description": "Read out by screen readers once items a character carried were discarded from their sheet; {name} is the character's name, {item} the item's name and {quantity} how many were discarded, written as the sheet writes it, e.g. \"Arrow x20\""

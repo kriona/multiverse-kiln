@@ -111,6 +111,7 @@ const EQUIP_IN_HAND: Record<EquipHand, MessageDescriptor> = defineMessages({
  * group, asking whom and how many), Inspect and Discard (asking how many), or only Inspect for those who
  * can't change the character. Discard and Give say which equipped ones they unequip. A change to the
  * character's items made anywhere else, such as in another window or by a gift, shows on the open sheet
+ * and is read out
  */
 export class CharacterSheetDialog
 {
@@ -170,6 +171,26 @@ export class CharacterSheetDialog
 	 * Whether a deletion or restoration has been sent and the server hasn't answered
 	 */
 	private busy = false;
+
+	/**
+	 * How many of the sheet's own changes to the character's items are being sent, or loading the
+	 * character again after they were made. News of a change that arrives meanwhile waits for them to
+	 * finish (finishChangingItems()), since the server tells every window of the player about a change,
+	 * this one included, and the sheet's own load already shows it
+	 */
+	private changingItems = 0;
+
+	/**
+	 * Whether news of a change to the character's items arrived while the sheet's own changes were
+	 * being made, after the sheet's last load was sent
+	 */
+	private itemsChanged = false;
+
+	/**
+	 * Counts the loads of the character shown, so a load that finishes after a later one doesn't show
+	 * what it found
+	 */
+	private loads = 0;
 
 	/**
 	 * Whether the question about leaving the group was asked from Delete, which goes on to ask whether to
@@ -234,7 +255,14 @@ export class CharacterSheetDialog
 
 			if (current && (current.universeId === universeId) && (current.sheet.id === characterId))
 			{
-				void this.reload(current);
+				if (this.changingItems > 0)
+				{
+					this.itemsChanged = true;
+				}
+				else
+				{
+					void this.showItemsChanged(current);
+				}
 			}
 		});
 
@@ -403,6 +431,8 @@ export class CharacterSheetDialog
 	 */
 	private show(sheet: CharacterSheet, canChange: boolean): void
 	{
+		const focusedItemId = this.focusedItemId();
+
 		this.title.textContent = sheet.name;
 		this.summary.textContent = characterDescription(sheet, sheet.ruleset);
 		this.status.textContent = '';
@@ -412,6 +442,31 @@ export class CharacterSheetDialog
 		this.showItems(sheet, canChange);
 		this.showDeletion(sheet, canChange);
 		this.body.hidden = false;
+
+		// The item rows are made again, so focus on one goes back to its new menu button
+		if (focusedItemId !== undefined)
+		{
+			this.focusItemMenu(focusedItemId);
+		}
+	}
+
+	/**
+	 * The item whose row has focus, on its menu button or in its menu
+	 *
+	 * @return The item's ID, or undefined when focus isn't on an item's row
+	 */
+	private focusedItemId(): number | undefined
+	{
+		const focused = document.activeElement;
+
+		if (!focused || !this.items.contains(focused))
+		{
+			return(undefined);
+		}
+
+		const itemId = focused.closest('.action-menu')?.querySelector('.action-menu-button')?.getAttribute('data-item-id');
+
+		return((itemId ? Number(itemId) : undefined));
 	}
 
 	/**
@@ -767,6 +822,7 @@ export class CharacterSheetDialog
 		let count: number;
 
 		this.busy = true;
+		this.changingItems++;
 		this.giveButton.disabled = true;
 
 		try
@@ -780,6 +836,7 @@ export class CharacterSheetDialog
 				defaultMessage: 'Could not give the items.',
 				description: 'Shown on a character\'s sheet, from the editor\'s Character List tab, when the items chosen with Give Items couldn\'t be added to what the character carries'
 			}));
+			this.finishChangingItems();
 			return;
 		}
 		finally
@@ -792,10 +849,12 @@ export class CharacterSheetDialog
 
 		if (count === 0)
 		{
+			this.finishChangingItems();
 			return;
 		}
 
 		await this.reload(current);
+		this.finishChangingItems();
 		announce(t({
 			id: 'characterSheet.itemsGiven',
 			defaultMessage: '{name} has been given {count, plural, one {# item} other {# different items}}.',
@@ -913,6 +972,7 @@ export class CharacterSheetDialog
 		}
 
 		this.busy = true;
+		this.changingItems++;
 		this.discardConfirm.disabled = true;
 		this.discardCancel.disabled = true;
 
@@ -932,6 +992,7 @@ export class CharacterSheetDialog
 				defaultMessage: 'Could not discard the items.',
 				description: 'Shown in the dialog that discards an item a character carries, opened from their sheet, when the items couldn\'t be discarded'
 			}));
+			this.finishChangingItems();
 			return;
 		}
 		finally
@@ -943,6 +1004,7 @@ export class CharacterSheetDialog
 
 		this.discardDialog.close();
 		await this.reload(current);
+		this.finishChangingItems();
 		this.focusItemMenu(item.id);
 		announce(t({
 			id: 'characterSheet.itemsDiscarded',
@@ -985,6 +1047,7 @@ export class CharacterSheetDialog
 		}
 
 		this.busy = true;
+		this.changingItems++;
 
 		try
 		{
@@ -993,6 +1056,7 @@ export class CharacterSheetDialog
 		catch (error)
 		{
 			showMessage(this.error, describeEditorError(error, sheetMessages.equipFailed));
+			this.finishChangingItems();
 			return;
 		}
 		finally
@@ -1002,6 +1066,7 @@ export class CharacterSheetDialog
 
 		showMessage(this.error, undefined);
 		await this.reload(current);
+		this.finishChangingItems();
 		this.focusItemMenu(item.id);
 		announce(t({
 			id: 'characterSheet.equippedAnnouncement',
@@ -1029,6 +1094,7 @@ export class CharacterSheetDialog
 		}
 
 		this.busy = true;
+		this.changingItems++;
 
 		try
 		{
@@ -1037,6 +1103,7 @@ export class CharacterSheetDialog
 		catch (error)
 		{
 			showMessage(this.error, describeEditorError(error, sheetMessages.equipFailed));
+			this.finishChangingItems();
 			return;
 		}
 		finally
@@ -1046,6 +1113,7 @@ export class CharacterSheetDialog
 
 		showMessage(this.error, undefined);
 		await this.reload(current);
+		this.finishChangingItems();
 		this.focusItemMenu(item.id);
 		announce(t({
 			id: 'characterSheet.unequipped',
@@ -1072,15 +1140,29 @@ export class CharacterSheetDialog
 			return;
 		}
 
-		giveItemDialog().open(current.sheet, item, (receiverId, quantity) => this.api.giveItemsTo(current.universeId, current.sheet.id, receiverId, [
+		giveItemDialog().open(current.sheet, item, async (receiverId, quantity) =>
+		{
+			this.changingItems++;
+
+			try
 			{
-				itemId: item.id,
-				quantity
+				await this.api.giveItemsTo(current.universeId, current.sheet.id, receiverId, [
+					{
+						itemId: item.id,
+						quantity
+					}
+				]);
 			}
-		]), (receiver, quantity) =>
+			catch (error)
+			{
+				this.finishChangingItems();
+				throw error;
+			}
+		}, (receiver, quantity) =>
 		{
 			void this.reload(current).then(() =>
 			{
+				this.finishChangingItems();
 				this.focusItemMenu(item.id);
 			});
 			announce(t({
@@ -1097,13 +1179,18 @@ export class CharacterSheetDialog
 	}
 
 	/**
-	 * Loads the character shown again and shows them, unless the dialog has moved on to another
+	 * Loads the character shown again and shows them, unless the dialog has moved on to another or a
+	 * later load has been sent. The load shows every change whose news arrived before it was sent
 	 *
 	 * @param current The character shown
+	 * @return Whether it showed the character
 	 */
-	private async reload(current: ShownCharacter): Promise<void>
+	private async reload(current: ShownCharacter): Promise<boolean>
 	{
+		const load = ++this.loads;
 		let sheet: CharacterSheet;
+
+		this.itemsChanged = false;
 
 		try
 		{
@@ -1116,13 +1203,54 @@ export class CharacterSheetDialog
 				showMessage(this.error, describeEditorError(error, sheetMessages.loadFailed));
 			}
 
-			return;
+			return(false);
 		}
 
-		if (this.current === current)
+		if ((this.current !== current) || (load !== this.loads))
 		{
-			current.sheet = sheet;
-			this.show(sheet, current.canChange);
+			return(false);
+		}
+
+		current.sheet = sheet;
+		this.show(sheet, current.canChange);
+
+		return(true);
+	}
+
+	/**
+	 * Shows a change to the character's items made somewhere else, such as in another window, by a
+	 * creator or by a gift, and reads out that it happened
+	 *
+	 * @param current The character shown
+	 */
+	private async showItemsChanged(current: ShownCharacter): Promise<void>
+	{
+		if (await this.reload(current))
+		{
+			announce(t({
+				id: 'characterSheet.itemsChanged',
+				defaultMessage: '{name}\'s items have changed.',
+				description: 'Read out by screen readers when what a character carries or has equipped changed somewhere other than their open sheet, such as in another window, by a universe\'s creator or by a gift, and the sheet shows the change; {name} is the character\'s name'
+			}, {
+				name: current.sheet.name
+			}));
+		}
+	}
+
+	/**
+	 * Ends one of the sheet's own changes to the character's items. Once none are left, news of a change
+	 * that arrived after the sheet's last load was sent, or while a change that failed was being sent,
+	 * loads the character again
+	 */
+	private finishChangingItems(): void
+	{
+		const current = this.current;
+
+		this.changingItems--;
+
+		if ((this.changingItems === 0) && this.itemsChanged && current)
+		{
+			void this.reload(current);
 		}
 	}
 

@@ -216,7 +216,7 @@ Equipping:
 - Disabled items, and items of [rulebooks](#rulebooks) that are off, can still be equipped, unequipped and given. An item [removed from characters](#disabling-things-players-are-using) is unequipped
 - A save that changes where an item equips, or whether it is a shield, unequips it from every character once it reaches the live version. A save that turns off a race's tail unequips the tail items of that race's characters
 - Create Character equips the starting items, the class's, then the race's, then the universe's, each list by name. Each worn item goes in its slot while it is free. Only the first weapon is equipped, in the main hand, so no character starts out dual-wielding. A shield goes in the off hand while it is free, and a buckler in the off arm. Other held items, such as torches, stay unequipped
-- Each change to a character's items or equipment is sent to the player's windows through the session room, so an open sheet shows it wherever it is
+- Each change to a character's items or equipment is sent to the player's windows through the session room, so an open sheet shows it wherever it is. A sheet reads out a change made somewhere else, and keeps focus on the item it was on. For its own change it loads the character once, after the change is made, and reads out only what it did
 
 Give opens "Give [item]". It chooses another character in the group, listed by name, race and class ("Mara (Dwarf Fighter)"), the player's own included, online or not, and for more than one of the item, how many, 1 to start with. The items arrive at once. The receiving player's open windows show a toast saying who gave them what, and a line in the group's chat records it. It is offered only while the character is in a group.
 
