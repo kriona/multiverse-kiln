@@ -10583,14 +10583,6 @@
 		"message": "Trimmin's",
 		"source": "Formatting"
 	},
-	"markdown.heading1": {
-		"message": "Headin' 1",
-		"source": "Heading 1"
-	},
-	"markdown.heading1Button": {
-		"message": "H1",
-		"source": "H1"
-	},
 	"markdown.heading2": {
 		"message": "Headin' 2",
 		"source": "Heading 2"
@@ -10606,6 +10598,14 @@
 	"markdown.heading3Button": {
 		"message": "H3",
 		"source": "H3"
+	},
+	"markdown.heading4": {
+		"message": "Headin' 4",
+		"source": "Heading 4"
+	},
+	"markdown.heading4Button": {
+		"message": "H4",
+		"source": "H4"
 	},
 	"markdown.italic": {
 		"message": "Italic",

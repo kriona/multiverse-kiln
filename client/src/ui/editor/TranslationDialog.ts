@@ -228,6 +228,12 @@ export class TranslationDialog
 		}
 
 		const markdown = (edit.row.field === 'longDescription');
+
+		if (markdown)
+		{
+			this.longEditor.raiseHeadings();
+		}
+
 		const input = this.translationInput(markdown);
 		const typed = (markdown ? input.value : input.value.trim());
 		const translation = ((typed.trim() === '') ? null : typed);

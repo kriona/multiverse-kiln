@@ -344,6 +344,7 @@ This lets you change anything about a universe. It will be a whole suite of tool
 - long description, written in markdown. A Markdown field (`client/src/ui/MarkdownEditor.ts`) is edited as rich text or as the Markdown itself; buttons above it switch views and format the text in either. The browser remembers the last view chosen. A field that can't be changed shows as rich text, the way players see it
 	- the field stores Markdown. Rich text writes it its own way, such as `*` for italics where `_` was written, so the Markdown as written is kept until the rich text is changed, and comes back if the change is undone
 	- rich text has only what a description can show: no images or raw HTML. Editing it as rich text drops them, as the universe page already does
+	- headings start at level 2, since the universe page's own title is its level 1 heading. The buttons make levels 2 to 4. A level 1 heading written in Markdown becomes level 2 when the rich text shows it or the form saves: `# ` becomes `## `, and a title underlined with `=` is underlined with `-`. Typing in the Markdown view changes nothing, so a `#` can be typed and deleted freely
 	- Link in rich text opens a dialog for the address. An address without a scheme is taken as a web page, or as an email address when it has an @
 - dropdown for "Stage"
 	- `in the beginning` - still being created. Only creators and builders can play. Not listed on [Home](#home)

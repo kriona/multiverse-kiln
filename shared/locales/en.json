@@ -10583,14 +10583,6 @@
 		"defaultMessage": "Formatting",
 		"description": "Name, for screen readers, of the row of buttons above a Markdown field, such as a universe's long description, that format its text, such as Bold and Italic"
 	},
-	"markdown.heading1": {
-		"defaultMessage": "Heading 1",
-		"description": "Name of the Markdown toolbar button that makes a heading of the first level"
-	},
-	"markdown.heading1Button": {
-		"defaultMessage": "H1",
-		"description": "Short label of the Markdown toolbar button that makes a heading of the first level"
-	},
 	"markdown.heading2": {
 		"defaultMessage": "Heading 2",
 		"description": "Name of the Markdown toolbar button that makes a heading of the second level"
@@ -10606,6 +10598,14 @@
 	"markdown.heading3Button": {
 		"defaultMessage": "H3",
 		"description": "Short label of the Markdown toolbar button that makes a heading of the third level"
+	},
+	"markdown.heading4": {
+		"defaultMessage": "Heading 4",
+		"description": "Name of the Markdown toolbar button that makes a heading of the fourth level"
+	},
+	"markdown.heading4Button": {
+		"defaultMessage": "H4",
+		"description": "Short label of the Markdown toolbar button that makes a heading of the fourth level"
 	},
 	"markdown.italic": {
 		"defaultMessage": "Italic",

@@ -1,10 +1,12 @@
 import '@github/markdown-toolbar-element';
 import { defineMessages, type MessageDescriptor } from '@multiverse-kiln/shared';
 import { Editor } from '@tiptap/core';
+import { Heading } from '@tiptap/extension-heading';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import { Markdown } from '@tiptap/markdown';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { StarterKit } from '@tiptap/starter-kit';
+import { Lexer } from 'marked';
 
 import { t } from '../localization';
 import { readRemembered, remember } from '../rememberedValues';
@@ -47,16 +49,6 @@ const markdownMessages = defineMessages({
 		defaultMessage: 'Formatting',
 		description: 'Name, for screen readers, of the row of buttons above a Markdown field, such as a universe\'s long description, that format its text, such as Bold and Italic'
 	},
-	heading1: {
-		id: 'markdown.heading1',
-		defaultMessage: 'Heading 1',
-		description: 'Name of the Markdown toolbar button that makes a heading of the first level'
-	},
-	heading1Button: {
-		id: 'markdown.heading1Button',
-		defaultMessage: 'H1',
-		description: 'Short label of the Markdown toolbar button that makes a heading of the first level'
-	},
 	heading2: {
 		id: 'markdown.heading2',
 		defaultMessage: 'Heading 2',
@@ -76,6 +68,16 @@ const markdownMessages = defineMessages({
 		id: 'markdown.heading3Button',
 		defaultMessage: 'H3',
 		description: 'Short label of the Markdown toolbar button that makes a heading of the third level'
+	},
+	heading4: {
+		id: 'markdown.heading4',
+		defaultMessage: 'Heading 4',
+		description: 'Name of the Markdown toolbar button that makes a heading of the fourth level'
+	},
+	heading4Button: {
+		id: 'markdown.heading4Button',
+		defaultMessage: 'H4',
+		description: 'Short label of the Markdown toolbar button that makes a heading of the fourth level'
 	},
 	bold: {
 		id: 'markdown.bold',
@@ -195,7 +197,7 @@ interface FormatButton
  * The formatting buttons, in the order they show
  */
 const FORMAT_BUTTONS: readonly FormatButton[] = [
-	...([1, 2, 3] as const).map((level): FormatButton => ({
+	...([2, 3, 4] as const).map((level): FormatButton => ({
 		style: `header-${level}`,
 		label: markdownMessages[`heading${level}Button`],
 		name: markdownMessages[`heading${level}`],
@@ -340,6 +342,98 @@ const TableWithTabOut = Table.extend({
 });
 
 /**
+ * Headings of levels 2 to 6. The page a description shows on has its own level 1 heading, so a level 1
+ * heading pasted into the rich text becomes level 2
+ */
+const DescriptionHeading = Heading.extend({
+	parseHTML()
+	{
+		return([
+			{
+				tag: 'h1',
+				attrs: { level: 2 }
+			},
+			...(this.parent?.() ?? [])
+		]);
+	}
+}).configure({ levels: [2, 3, 4, 5, 6] });
+
+/**
+ * A change to a Markdown field's text: the text from start to end is replaced
+ */
+interface MarkdownEdit
+{
+	start: number;
+	end: number;
+	text: string;
+}
+
+/**
+ * The edits that make the level 1 headings in Markdown level 2, since the page a description shows on
+ * has its own level 1 heading: "# Title" becomes "## Title", and a title underlined with = is
+ * underlined with - instead. Only headings outside quotes and lists are found
+ *
+ * @param markdown The Markdown
+ * @return The edits, first to last
+ */
+function levelOneHeadingEdits(markdown: string): MarkdownEdit[]
+{
+	const edits: MarkdownEdit[] = [];
+	let offset = 0;
+
+	for (const token of Lexer.lex(markdown, { gfm: true }))
+	{
+		if ((token.type === 'heading') && (token.depth === 1))
+		{
+			const hashes = /^ {0,3}#/.exec(token.raw);
+			const underline = /\n {0,3}(=+)[ \t]*\n?$/.exec(token.raw);
+
+			if (hashes)
+			{
+				edits.push({
+					start: (offset + hashes[0].length),
+					end: (offset + hashes[0].length),
+					text: '#'
+				});
+			}
+			else if (underline)
+			{
+				const start = (offset + underline.index + underline[0].indexOf('='));
+
+				edits.push({
+					start,
+					end: (start + underline[1].length),
+					text: '-'.repeat(underline[1].length)
+				});
+			}
+		}
+
+		offset += token.raw.length;
+	}
+
+	return(edits);
+}
+
+/**
+ * Makes edits to text
+ *
+ * @param text The text
+ * @param edits The edits, first to last, none overlapping
+ * @return The text with the edits made
+ */
+function applyEdits(text: string, edits: readonly MarkdownEdit[]): string
+{
+	let edited = text;
+
+	for (const edit of [...edits].reverse())
+	{
+		edited = (edited.slice(0, edit.start) + edit.text + edited.slice(edit.end));
+	}
+
+	return(edited);
+}
+
+/**
  * The dialog that asks for a link's address, shared by every Markdown field on the page
  */
 let linkDialog: MarkdownLinkDialog | undefined;
@@ -416,6 +510,7 @@ export class MarkdownEditor
 					// Markdown has no underline, and an empty paragraph kept at the end would be written as blank lines
 					underline: false,
 					trailingNode: false,
+					heading: false,
 					link: {
 						openOnClick: false,
 						defaultProtocol: 'https',
@@ -426,6 +521,7 @@ export class MarkdownEditor
 						}
 					}
 				}),
+				DescriptionHeading,
 				TableWithTabOut.configure({ resizable: false }),
 				TableRow,
 				TableHeader,
@@ -480,6 +576,21 @@ export class MarkdownEditor
 		this.editor.setEditable(this.editable, false);
 		this.bar.hidden = !this.editable;
 		this.showView((this.editable ? preferredView() : 'rich'));
+	}
+
+	/**
+	 * Makes the level 1 headings written in the Markdown level 2, telling the form when that changes the
+	 * text. The rich text does it as it fills, and forms do it as they save
+	 */
+	raiseHeadings(): void
+	{
+		const edits = levelOneHeadingEdits(this.field.value);
+
+		if (this.editable && (edits.length > 0))
+		{
+			this.field.value = applyEdits(this.field.value, edits);
+			this.field.dispatchEvent(new Event('input', { bubbles: true }));
+		}
 	}
 
 	/**
@@ -661,6 +772,8 @@ export class MarkdownEditor
 	 */
 	private fillRich(): void
 	{
+		this.raiseHeadings();
+
 		const markdown = this.field.value;
 
 		if (markdown === this.shown)

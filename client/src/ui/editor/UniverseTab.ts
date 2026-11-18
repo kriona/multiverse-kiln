@@ -203,6 +203,8 @@ export class UniverseTab implements SavableTab
 	{
 		const universe = this.universe;
 
+		this.longDescriptionEditor.raiseHeadings();
+
 		if (!universe || !this.checkText())
 		{
 			return(false);
