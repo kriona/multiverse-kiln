@@ -16,7 +16,7 @@
  * changes before them are saved (PendingChange)
  */
 import { isDeepStrictEqual } from 'util';
-import { isNewRef, singleItemTypeKind, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
+import { DEFAULT_ITEM_EQUIPS, PF1E_RACES, pf1eRaceRules, type Pf1eRaceKey, isNewRef, currentItemTypes, singleItemTypeKind, NEIGHBOR_SIDES, NO_NEIGHBORS, PlaceGraph, type EditorRegion, type PlaceRef, ADMIN_ROLE, canEditUniverseSettings, canEditWorld, canMarkNoTranslation, canTranslate, CHUNK_SIZE, chunkKey, DEFAULT_TILE_CELL, defineMessages, hasLinkLikeText, isInBounds, NEW_AREA_BOUNDS, parseChunkKey, type AreaBounds, DIFFICULTY_LEVEL_NAMES, MAX_CELL_CHANGES, MAX_UNIVERSE_NAME_LENGTH, MAX_UPLOADED_TILE_GRAPHICS, RULESET_COINS, UNIVERSE_IMPORT_LEFT_OUT, type Translator, UNIVERSE_TEXT_KIND_FIELDS, VOID_CELL, type DifficultyLevel, type EditableUniverseDetails, type EditorAccess, type EditorArea, type EditorAreaLink, type EditorChange, type EditorClass, type EditorItem, type EditorRace, type EditorTheme, type EditorTile, type NewRef, type Ruleset, type UniverseImportCounts, type UniverseImportLeftOut, type UniverseImportPart, type UniverseImportPreview, type UniverseTextKind, type UniverseTextRef, type UploadedTileGraphic } from '@multiverse-kiln/shared';
 
 import { findAreasUsingTile, listEditorAreas, listStartingAreaIds, listVersionAreaLinks, loadChunkPage } from '../db/areaRepo.js';
 import { listRegions } from '../db/regionRepo.js';
@@ -55,7 +55,7 @@ type SavedIds = ReadonlyMap<NewRef, number | string>;
  * finds in the draft
  */
 const TILE_FIELDS = ['name', 'indoors', 'outdoors', 'color', 'graphic', 'visionCost', 'walkSeconds', 'enabled'] as const;
-const ITEM_FIELDS = ['name', 'category', 'types', 'enabled'] as const;
+const ITEM_FIELDS = ['name', 'category', 'types', 'equips', 'enabled'] as const;
 const OPTION_FIELDS = ['name', 'enabled', 'keepPlaying', 'rules', 'startingMoney', 'startingColumn', 'startingRow'] as const;
 const THEME_FIELDS = ['name', 'enabled', 'rules'] as const;
 const LEVEL_FIELDS = ['name', 'isDefault', 'mobScale', 'permadeath'] as const;
@@ -569,7 +569,8 @@ function pickDescribed(thing: Record<string, unknown>, fields: readonly string[]
 
 /**
  * An item as a file holds it, with a category and types in place of the one type an item had in a file
- * exported before items had several (singleItemTypeKind())
+ * exported before items had several (singleItemTypeKind()), and types renamed since the file was exported
+ * brought up to date (currentItemTypes())
  *
  * @param ruleset The universe's ruleset
  * @param item The item, as the file holds it
@@ -579,7 +580,17 @@ function withItemKind(ruleset: Ruleset, item: Record<string, unknown>): Record<s
 {
 	const { type, ...others } = item;
 
-	if ((typeof type !== 'string') || ('category' in item))
+	if ('category' in item)
+	{
+		const { types } = item;
+
+		return((Array.isArray(types) && types.every((key) => (typeof key === 'string'))) ? {
+			...item,
+			types: currentItemTypes(ruleset, types)
+		} : item);
+	}
+
+	if (typeof type !== 'string')
 	{
 		return(item);
 	}
@@ -594,6 +605,58 @@ function withItemKind(ruleset: Ruleset, item: Record<string, unknown>): Record<s
 		...others,
 		category: kind.category,
 		types: [...kind.types]
+	});
+}
+
+/**
+ * An item as a file holds it, with where it equips when the file was exported before items had that: a
+ * default item's own place (DEFAULT_ITEM_EQUIPS), and nowhere for an item the universe added
+ *
+ * @param ruleset The universe's ruleset
+ * @param item The item, as the file holds it
+ * @return The item to save, which the save checks
+ */
+function withItemEquips(ruleset: Ruleset, item: Record<string, unknown>): Record<string, unknown>
+{
+	if ('equips' in item)
+	{
+		return(item);
+	}
+
+	const defaults = DEFAULT_ITEM_EQUIPS[ruleset];
+	const { key } = item;
+
+	return({
+		...item,
+		equips: (((typeof key === 'string') && Object.hasOwn(defaults, key)) ? defaults[key] : 'none')
+	});
+}
+
+/**
+ * A race as a file holds it, with whether it has a tail when the file was exported before Pathfinder 1E
+ * races had that: a default race's own setting (PF1E_RACES), and none for a race the universe added
+ *
+ * @param ruleset The universe's ruleset
+ * @param race The race, as the file holds it
+ * @return The race to save, which the save checks
+ */
+function withRaceTail(ruleset: Ruleset, race: Record<string, unknown>): Record<string, unknown>
+{
+	const { rules, key } = race;
+
+	if ((ruleset !== 'pf1e') || (typeof rules !== 'object') || (rules === null) || ('hasTail' in rules))
+	{
+		return(race);
+	}
+
+	const hasTail = (((typeof key === 'string') && Object.hasOwn(PF1E_RACES, key)) ? pf1eRaceRules(PF1E_RACES[key as Pf1eRaceKey]).hasTail : false);
+
+	return({
+		...race,
+		rules: {
+			...rules,
+			hasTail
+		}
 	});
 }
 
@@ -1087,7 +1150,7 @@ class ImportPlanner
 
 		for (const item of (this.manifest.items ?? []))
 		{
-			const settings = pickDescribed(withItemKind(this.ruleset, item), ITEM_FIELDS);
+			const settings = pickDescribed(withItemEquips(this.ruleset, withItemKind(this.ruleset, item)), ITEM_FIELDS);
 			const where = `item ${item.id}`;
 
 			if (item.key !== null)
@@ -1660,7 +1723,7 @@ class ImportPlanner
 	private planRaces(): void
 	{
 		this.planOptions('Race', 'race', (this.manifest.races ?? []), this.target.races, this.matchers.races, this.raceTargets, (race, ids) => ({
-			...pickDescribed(race, OPTION_FIELDS),
+			...pickDescribed(withRaceTail(this.ruleset, race), OPTION_FIELDS),
 			...this.startingExtras(race, `race ${race.id}`, ids)
 		}));
 	}

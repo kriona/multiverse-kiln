@@ -6,7 +6,7 @@
  */
 import { sql, type SQL } from 'drizzle-orm';
 import { bigint, boolean, check, customType, doublePrecision, foreignKey, index, integer, jsonb, pgEnum, pgTable, primaryKey, smallint, text, timestamp, unique, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
-import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS,EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES,GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS,FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS,MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, EDITOR_ROLES, MAX_REGION_NAME_LENGTH, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { CHAT_NOTICES, CHUNK_SIZE, DARKVISIONS, EMAIL_CODE_PURPOSES, LOGIN_PROVIDERS, MAX_LOCALE_LENGTH, MAX_LOCATION_LENGTH, MAX_PROFILE_LANGUAGES, MAX_PRONOUNS_LENGTH, PROFILE_LANGUAGES, MAX_SOCIAL_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH, DEFAULT_LOBBY_DAY_HOURS, DISPLAY_TIMES, GROUP_START_SECONDS, LOBBY_PASSAGES_OF_TIME, MAX_LOBBY_DAY_HOURS, MIN_LOBBY_DAY_HOURS, MAX_CHAT_MESSAGE_LENGTH, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_INDOOR_WALK_SECONDS, FAERIE_MORNINGS, MAX_COINS, MAX_COIN_ABBREVIATION_LENGTH, MAX_COIN_NAME_LENGTH, MAX_GROUP_PLAYERS, MAX_CHARACTER_DELETION_DAYS, MAX_DISABLED_REASON_LENGTH, MAX_EMAIL_LENGTH, MAX_SITE_SOCIAL_URL_LENGTH, MAX_ITEM_QUANTITY, MAX_AREA_SIDE, MAX_MOB_SCALE, MAX_TILE_GRAPHIC_DRAW_ORDER, MIN_MOB_SCALE, MIN_TILE_GRAPHIC_DRAW_ORDER, MAX_UNIVERSES_PER_CREATOR, MAX_WALK_SECONDS, MIN_GROUP_SIZE, MIN_UNIVERSES_PER_CREATOR, MAX_AREAS_PER_UNIVERSE, MIN_AREAS_PER_UNIVERSE, MAX_CHARACTERS_PER_UNIVERSE, MIN_CHARACTERS_PER_UNIVERSE, PASSAGES_OF_TIME, PF1E_ABILITIES, PF1E_CASTING_STYLES, PF1E_MAGIC_TRADITIONS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_MIN_POINT_BUY_BUDGET, PF1E_MIN_RACE_ABILITY_MODIFIER, PF1E_SIZES, PF1E_STAT_METHODS, RULESETS, SF1E_ABILITIES, SF1E_MAX_ABILITY_POINTS, SF1E_MAX_CLASS_POINTS, SF1E_MAX_RACE_ABILITY_MODIFIER, SF1E_MAX_RACE_HIT_POINTS, SF1E_MIN_ABILITY_POINTS, SF1E_MIN_CLASS_POINTS, SF1E_MIN_RACE_ABILITY_MODIFIER, SF1E_MIN_RACE_HIT_POINTS, SF1E_SIZES, TILE_GRAPHIC_FORMATS, MAX_TRANSLATOR_LANGUAGES, MAX_LONG_DESCRIPTION_LENGTH, MAX_TRANSLATOR_NOTE_LENGTH, MAX_UNIVERSE_LANGUAGES, UNIVERSE_TEXT_FIELDS, UNIVERSE_TEXT_KINDS, UNIVERSE_ROLES, UNIVERSE_STAGES, AREA_LIGHT_LEVELS, AREA_LINK_MODES, EDITOR_ROLES, MAX_REGION_NAME_LENGTH, type ChatNoticeDetails, type DismissibleNotice, type ProfileLanguage, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { SEEN_CHUNK_BYTES } from '../logic/seenCells.js';
 
@@ -796,6 +796,12 @@ export const items = pgTable('items', {
 	types: text('types').array().notNull().default(sql`'{}'`),
 
 	/**
+	 * Where the item equips: none, oneHand, twoHands or one of the ruleset's worn places
+	 * (itemEquipsChoices() in /shared), apart from its kind
+	 */
+	equips: text('equips').notNull().default('none'),
+
+	/**
 	 * The book a default item comes from (RULESET_RULEBOOKS in /shared); null on a universe's rows
 	 */
 	rulebook: text('rulebook'),
@@ -940,6 +946,11 @@ export const pf1eRaces = pgTable('pf1e_races', {
 	 * Whether bright light dazzles the race's characters, shortening their vision
 	 */
 	lightSensitivity: boolean('light_sensitivity').notNull().default(false),
+
+	/**
+	 * Whether the race's characters have a tail, which gives them the tail slot for tail weapons
+	 */
+	hasTail: boolean('has_tail').notNull().default(false),
 
 	size: pf1eSize('size').notNull().default('medium')
 }, (table) => [
@@ -1582,6 +1593,34 @@ export const characterItems = pgTable('character_items', {
 ]);
 
 /**
+ * What each character has equipped: one row per slot holding an item (equipmentSlots() in /shared)
+ *
+ * Each row is one of the items the character carries, so discarding the last of an item deletes its rows;
+ * the code keeps no more of an item equipped than the character carries. A two-handed item, and a
+ * one-handed weapon held in both hands, is one row in the main hand with both_hands set. Keyed by character
+ * and slot, so a layer for slots worn only for their look can join the key later
+ */
+export const characterEquipment = pgTable('character_equipment', {
+	characterId: uuid('character_id').notNull(),
+	slot: text('slot').notNull(),
+	itemId: integer('item_id').notNull(),
+
+	/**
+	 * Whether the item is held in both hands, taking the off hand too
+	 */
+	bothHands: boolean('both_hands').notNull().default(false)
+}, (table) => [
+	primaryKey({ columns: [table.characterId, table.slot] }),
+	foreignKey({
+		name: 'character_equipment_carried_item_fk',
+		columns: [table.characterId, table.itemId],
+		foreignColumns: [characterItems.characterId, characterItems.itemId]
+	}).onDelete('cascade'),
+	index('character_equipment_item_index').on(table.itemId, table.characterId),
+	check('character_equipment_both_hands_in_main_hand', sql`NOT ${table.bothHands} OR ${table.slot} = 'mainHand'`)
+]);
+
+/**
  * Each player's progress in Create Character in a universe, until they make the character or start over
  *
  * The progress is a CharacterDraft (shared/src/characters.ts) as JSON, so steps can be added to Create
@@ -1837,6 +1876,11 @@ export const chatMessages = pgTable('chat_messages', {
 	 * empty; null for a message a player wrote
 	 */
 	notice: chatNotice('notice'),
+
+	/**
+	 * What a gave notice says beyond who it is about (ChatNoticeDetails in /shared); null otherwise
+	 */
+	noticeDetails: jsonb('notice_details').$type<ChatNoticeDetails>(),
 
 	text: text('text').notNull(),
 	sentAt: timestamp('sent_at', { withTimezone: true }).notNull()

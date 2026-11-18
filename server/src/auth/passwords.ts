@@ -1,10 +1,10 @@
 /**
  * Password hashing: the one place that knows the current algorithm and its settings
  *
- * Hashes are stored as self-describing strings ($argon2id$v=19$m=19456,p=1,t=2$<salt>$<hash>), so a
- * stored hash says how to check it. When the settings here are raised, or the algorithm replaced, a
- * player's hash is replaced at their next login (checkLoginPassword()), and old hashes keep working
- * until then
+ * Hashes are stored as self-describing strings ($argon2id$v=19$m=19456,t=2,p=1$<salt>$<hash>), so a
+ * stored hash says how to check it. Its settings are read by name, so stored hashes written m,p,t and
+ * m,t,p check alike. When the settings here are raised, or the algorithm replaced, a player's hash is
+ * replaced at their next login (checkLoginPassword()), and old hashes keep working until then
  */
 import argon2 from 'argon2';
 

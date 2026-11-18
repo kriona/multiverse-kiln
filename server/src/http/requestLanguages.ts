@@ -9,7 +9,7 @@ import { MAX_LOCALE_LENGTH } from '@multiverse-kiln/shared';
 import { resolveSession } from '../auth/sessions.js';
 
 /**
- * Most languages read from an Accept-Language header
+ * Most languages read from an Accept-Language header, or from the languages a window sends a room
  */
 const MAX_ACCEPTED_LANGUAGES = 10;
 
@@ -109,4 +109,25 @@ export async function requestLanguages(request: Request): Promise<string[]>
 	const accepted = acceptedLanguages(request.headers['accept-language']);
 
 	return(((profileLocale === null) ? accepted : [profileLocale, ...accepted]));
+}
+
+/**
+ * The languages a window in a room wants universe text in, most wanted first, as requestLanguages()
+ * finds them for a request: its player's profile language, when they have chosen one, then those the
+ * window sent as it joined, which the pages send as they send Accept-Language. Tags that aren't language
+ * tags are left out
+ *
+ * @param profileLocale The language on the player's profile, or null when they haven't chosen one
+ * @param sent The languages the window sent, or undefined when it sent none
+ * @return The languages in canonical form, which may be empty
+ */
+export function windowLanguages(profileLocale: string | null, sent: readonly string[] | undefined): string[]
+{
+	const languages = (sent ?? [])
+		.slice(0, (MAX_ACCEPTED_LANGUAGES * 2))
+		.map(canonicalTag)
+		.filter((tag) => (tag !== undefined))
+		.slice(0, MAX_ACCEPTED_LANGUAGES);
+
+	return(((profileLocale === null) ? languages : [profileLocale, ...languages]));
 }

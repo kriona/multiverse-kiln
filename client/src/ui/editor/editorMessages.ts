@@ -28,6 +28,16 @@ export const editorMessages = defineMessages({
 		id: 'editor.restore',
 		defaultMessage: 'Restore Default',
 		description: 'Button in the editor of a tile, item, race, class or theme that undoes this universe\'s changes to one of the ruleset\'s'
+	},
+	name: {
+		id: 'form.name',
+		defaultMessage: 'Name',
+		description: 'Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor\'s lists of them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	description: {
+		id: 'form.description',
+		defaultMessage: 'Description',
+		description: 'Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook\'s Contents dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	}
 });
 

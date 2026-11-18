@@ -13,6 +13,9 @@
  * - GET invitePath(token): what an invite link leads to (InviteDetails)
  * - POST invitePath(token): puts one of the player's characters in the invite's group
  *   (GroupCharacterRequest), answering GroupJoinedPayload, or 409 when the group is full
+ *
+ * Joining and leaving (but not disbanding) each write a line in the group's chat, as giving items does,
+ * so they answer 429 when the player's characters write them in the group faster than allowed
  */
 import { UNIVERSES_PATH } from './constants.js';
 import type { DifficultyLevel } from './difficulty.js';

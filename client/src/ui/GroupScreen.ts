@@ -491,6 +491,7 @@ export class GroupScreen
 	showCharacters(list: CharacterListPayload): void
 	{
 		this.characters = list;
+		this.chat.setRuleset(list.ruleset);
 		this.render();
 	}
 

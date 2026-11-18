@@ -4,6 +4,7 @@ import type { CharacterDraft } from '@multiverse-kiln/shared';
 import { adminDb } from '../../src/db/adminClient.js';
 import { carriedItems, classesWithCharacters, countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findPf1eAbilityRoll, giveCharacterItems, hasCharactersOfClass, hasCharactersOfRace, isCarriedItem, keepPf1eAbilityRoll, listCharacterDetails, listCharacters, listPlayableCharacters, listProfileCharacters, listUniverseCharacters, markCharacterPlayed, purgeExpiredCharacters, racesWithCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, setCharacterVisibility, takeCharacterItems, themesWithCharacters, type UniverseCharacterFilter } from '../../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../../src/db/classRepo.js';
+import { equipItems } from '../../src/db/equipmentRepo.js';
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
 import { addPlayer } from '../players.js';
 import { findDefaultRaceIds } from '../../src/db/raceRepo.js';
@@ -205,8 +206,14 @@ describe('characterRepo', () =>
 		const brokk = await dwarfFighter(playerId, universeId);
 		const characterId = await inTransaction((transaction) => createCharacter(brokk, transaction));
 
+		await equipItems(characterId, [{
+			slot: 'mainHand',
+			itemId: brokk.items[0].itemId,
+			bothHands: false
+		}]);
 		assert.deepStrictEqual(await findCharacterDetails(playerId, universeId, 'pf1e', characterId), {
 			id: characterId,
+			playerId,
 			name: 'Brokk',
 			raceId: brokk.raceId,
 			classId: brokk.classId,
@@ -214,7 +221,12 @@ describe('characterRepo', () =>
 			themeId: null,
 			abilityScores: brokk.abilityScores,
 			money: brokk.money,
-			items: brokk.items
+			items: brokk.items,
+			equipment: [{
+				slot: 'mainHand',
+				itemId: brokk.items[0].itemId,
+				bothHands: false
+			}]
 		});
 		assert.strictEqual(await findCharacterDetails(otherPlayerId, universeId, 'pf1e', characterId), undefined);
 		assert.strictEqual(await findCharacterDetails(playerId, otherUniverseId, 'pf1e', characterId), undefined);
@@ -232,7 +244,7 @@ describe('characterRepo', () =>
 			{ itemId: thirdId, quantity: 2 }
 		]);
 
-		assert.strictEqual(await inTransaction((transaction) => takeCharacterItems(characterId, [
+		assert.strictEqual(await inTransaction((transaction) => takeCharacterItems(characterId, 'pf1e', [
 			{ itemId: firstId, quantity: 1 },
 			{ itemId: secondId, quantity: 3 },
 			{ itemId: thirdId, quantity: 1 }
@@ -242,7 +254,7 @@ describe('characterRepo', () =>
 			{ itemId: thirdId, quantity: 1 }
 		]);
 
-		assert.strictEqual(await inTransaction((transaction) => takeCharacterItems(characterId, [
+		assert.strictEqual(await inTransaction((transaction) => takeCharacterItems(characterId, 'pf1e', [
 			{ itemId: firstId, quantity: 1 },
 			{ itemId: fourthId, quantity: 1 }
 		], transaction)), false);

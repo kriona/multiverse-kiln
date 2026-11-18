@@ -12,7 +12,7 @@ import { inVersion, type UniverseVersion } from './universeVersions.js';
 /**
  * What a new item needs
  */
-export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'enabled'>;
+export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'equips' | 'enabled'>;
 
 /**
  * The settings of an item a universe added, which always has a name of its own
@@ -40,6 +40,13 @@ export interface FoundItem
 	 * The book a default item comes from; null for an item the universe added
 	 */
 	rulebook: string | null;
+
+	/**
+	 * Its kind, types and where it equips, a default item's from the universe's edited copy when it has one
+	 */
+	category: string;
+	types: string[];
+	equips: string;
 }
 
 /**
@@ -203,6 +210,7 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 			description: items.description,
 			category: items.category,
 			types: items.types,
+			equips: items.equips,
 			rulebook: items.rulebook,
 			enabled: items.enabled
 		})
@@ -239,11 +247,12 @@ async function loadNamedItems(version: UniverseVersion, ruleset: Ruleset, execut
 				description: (custom ? row.description : (copy?.description ?? null)),
 				category: settings.category,
 				types: settings.types,
+				equips: settings.equips,
 				enabled: settings.enabled,
 				rulebook: row.rulebook,
 				custom,
 				edited: (copy !== undefined),
-				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.category !== row.category) || !sameValue(copy.types, row.types)))
+				editedSettings: ((copy !== undefined) && (((copy.name !== null) && (copy.name !== row.name)) || (copy.description !== null) || (copy.category !== row.category) || !sameValue(copy.types, row.types) || (copy.equips !== row.equips)))
 			};
 
 			return({
@@ -286,25 +295,48 @@ function notesSortKey(item: EditorItem): number
  * @param ruleset The universe's ruleset
  * @param query The filters, the order, and which page
  * @param executor The database, or a transaction
- * @return The page, and how many items match in all
+ * @return The page, how many items match in all, the types of the items the filters but name, kind and
+ * type match, and where the items the filters but name, kind, type and equips match equip
  */
 export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset, query: ItemListQuery, executor: Executor = db): Promise<ItemListPayload>
 {
 	const name = query.name?.toLowerCase();
 	const ids = ((query.ids === undefined) ? undefined : new Set(query.ids));
+	const types = new Set<string>();
+	const equips = new Set<string>();
 
 	// A default item that kept its name matches by its English name, since the server doesn't have the translations
 	const matching = (await loadNamedItems(version, ruleset, executor)).filter(({ item, englishName }) =>
 	{
-		return(
-			((name === undefined) || englishName.toLowerCase().includes(name))
-			&& ((query.enabled === undefined) || (item.enabled === query.enabled))
+		const offered = (
+			((query.enabled === undefined) || (item.enabled === query.enabled))
 			&& ((query.custom === undefined) || (item.custom === query.custom))
 			&& ((query.edited === undefined) || (item.editedSettings === query.edited))
-			&& ((query.category === undefined) || (item.category === query.category))
-			&& ((query.type === undefined) || item.types.includes(query.type))
 			&& ((ids === undefined) || ids.has(item.id))
 			&& ((query.rulebooks === undefined) || isRulebookOn(query.rulebooks, item.rulebook))
+		);
+
+		if (!offered)
+		{
+			return(false);
+		}
+
+		equips.add(item.equips);
+
+		if ((query.equips !== undefined) && (item.equips !== query.equips))
+		{
+			return(false);
+		}
+
+		for (const type of item.types)
+		{
+			types.add(type);
+		}
+
+		return(
+			((name === undefined) || englishName.toLowerCase().includes(name))
+			&& ((query.category === undefined) || (item.category === query.category))
+			&& ((query.type === undefined) || item.types.includes(query.type))
 		);
 	});
 	const offset = (query.offset ?? 0);
@@ -319,7 +351,9 @@ export async function listEditorItems(version: UniverseVersion, ruleset: Ruleset
 		items: sorted
 			.slice(offset, offset + (query.limit ?? matching.length))
 			.map(({ item }) => item),
-		total: matching.length
+		total: matching.length,
+		types: [...types],
+		equips: [...equips]
 	});
 }
 
@@ -343,7 +377,13 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 			universeId: items.universeId,
 			rulebook: items.rulebook,
 			enabled: items.enabled,
-			copyEnabled: copies.enabled
+			category: items.category,
+			types: items.types,
+			equips: items.equips,
+			copyEnabled: copies.enabled,
+			copyCategory: copies.category,
+			copyTypes: copies.types,
+			copyEquips: copies.equips
 		})
 		.from(items)
 		.leftJoin(copies, and(
@@ -369,7 +409,10 @@ export async function findItem(version: UniverseVersion, ruleset: Ruleset, itemI
 	return({
 		kind: ((row.universeId === null) ? 'default' : 'custom'),
 		enabled: (row.copyEnabled ?? row.enabled),
-		rulebook: row.rulebook
+		rulebook: row.rulebook,
+		category: (row.copyCategory ?? row.category),
+		types: (row.copyTypes ?? row.types),
+		equips: (row.copyEquips ?? row.equips)
 	});
 }
 

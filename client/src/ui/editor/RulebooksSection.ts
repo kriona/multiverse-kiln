@@ -8,6 +8,7 @@ import { classDescription, className, raceDescription, raceName, themeDescriptio
 import { rulebookName } from '../rulebookNames';
 import { createToggleSwitch } from '../toggleSwitch';
 import { describeClass } from './ClassesSection';
+import { editorMessages } from './editorMessages';
 import { optionTags } from './optionRows';
 import { describeRace } from './RacesSection';
 import type { RulebookChoice } from './rulebookChoice';
@@ -46,16 +47,6 @@ const messages = defineMessages({
 		id: 'editor.rulebook.themes',
 		defaultMessage: 'Themes',
 		description: 'Heading of the list of themes (a Starfinder character\'s background) in the dialog listing what a book of game rules brings'
-	},
-	name: {
-		id: 'form.name',
-		defaultMessage: 'Name',
-		description: 'Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor\'s lists of them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	description: {
-		id: 'form.description',
-		defaultMessage: 'Description',
-		description: 'Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook\'s Contents dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	summary: {
 		id: 'editor.summary',
@@ -397,7 +388,7 @@ function contentsList(list: string, heading: string, rows: readonly ContentsRow[
 
 	const described = rows.some((row) => (row.description !== ''));
 
-	for (const message of [messages.name, ...(described ? [messages.description] : []), messages.summary, messages.notes])
+	for (const message of [editorMessages.name, ...(described ? [editorMessages.description] : []), messages.summary, messages.notes])
 	{
 		const cell = document.createElement('th');
 

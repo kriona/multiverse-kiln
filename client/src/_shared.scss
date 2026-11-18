@@ -1064,6 +1064,19 @@ fieldset.choice.stacked
 	}
 }
 
+// A choice of item with an Inspect button beside it, in item selection
+.item-select-choice
+{
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+
+	label
+	{
+		flex: 1;
+	}
+}
+
 .choice-text
 {
 	display: flex;

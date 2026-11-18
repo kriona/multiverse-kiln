@@ -1,4 +1,4 @@
-import { MAX_KEPT_CHAT_MESSAGES, type ChatNotice, type KeptChatHistoryPayload, type KeptChatMessage } from '@multiverse-kiln/shared';
+import { MAX_KEPT_CHAT_MESSAGES, type ChatNotice, type ChatNoticeDetails, type KeptChatHistoryPayload, type KeptChatMessage } from '@multiverse-kiln/shared';
 
 import { addChatMessages, findChatRead, listChatMessages, saveChatReads, type KeptChat, type NewChatMessage } from '../db/chatRepo.js';
 
@@ -35,6 +35,12 @@ export interface NoticeSubject
 	 */
 	name: string;
 }
+
+/**
+ * A notice's details as a window shows them, in the languages it wants universe text in, most wanted
+ * first (windowLanguages()), such as a gave notice's with the item's name translated
+ */
+export type NoticeDetailsIn = (languages: readonly string[]) => ChatNoticeDetails;
 
 /**
  * Who wrote a message to a kept chat
@@ -103,10 +109,11 @@ export class KeptChatLog
 	private saving: Promise<void> = Promise.resolve();
 
 	/**
-	 * @param onNotice Called with each notice the log takes in, for the room to send its windows; a log
-	 * without it takes in no notices
+	 * @param onNotice Called with each notice the log takes in, for the room to send its windows, and
+	 * its details in each window's languages when they depend on them; a log without it takes in no
+	 * notices
 	 */
-	constructor(private readonly onNotice?: (message: KeptChatMessage) => void)
+	constructor(private readonly onNotice?: (message: KeptChatMessage, detailsIn: NoticeDetailsIn | undefined) => void)
 	{
 	}
 
@@ -284,6 +291,7 @@ export class KeptChatLog
 			name: author.name,
 			username: author.username,
 			notice: null,
+			details: null,
 			text,
 			sentAt: Date.now()
 		};
@@ -293,6 +301,7 @@ export class KeptChatLog
 			playerId: author.playerId,
 			authorName: ((this.chat.kind === 'group') ? author.name : null),
 			notice: null,
+			noticeDetails: null,
 			text,
 			sentAt: new Date(message.sentAt)
 		});
@@ -306,14 +315,16 @@ export class KeptChatLog
 	 *
 	 * @param notice What it says
 	 * @param subject Who it is about
+	 * @param details What a gave notice says beyond who it is about; null for other notices
+	 * @param detailsIn The details in each window's languages, when they depend on them
 	 */
-	addNotice(notice: ChatNotice, subject: NoticeSubject): void
+	addNotice(notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null, detailsIn?: NoticeDetailsIn): void
 	{
-		const message = noticeMessage(notice, subject);
+		const message = noticeMessage(notice, subject, details);
 
 		this.messages = [...this.messages, message].slice(-MAX_KEPT_CHAT_MESSAGES);
 		this.unsaved.push(keptNotice(message));
-		this.onNotice?.(message);
+		this.onNotice?.(message, detailsIn);
 	}
 
 	/**
@@ -459,19 +470,22 @@ export class KeptChatLog
  * @param chat The chat
  * @param notice What it says
  * @param subject Who it is about
+ * @param details What a gave notice says beyond who it is about; null for other notices
+ * @param detailsIn The details in each window's languages, when they depend on them, for the windows of
+ * a room that has the chat open
  * @return Resolves once a log has taken it in, or it is written to the database or has failed to be
  */
-export function postNotice(chat: KeptChat, notice: ChatNotice, subject: NoticeSubject): Promise<void>
+export function postNotice(chat: KeptChat, notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null = null, detailsIn?: NoticeDetailsIn): Promise<void>
 {
 	const log = openLogs.get(chatKey(chat));
 
 	if (log)
 	{
-		log.addNotice(notice, subject);
+		log.addNotice(notice, subject, details, detailsIn);
 		return(Promise.resolve());
 	}
 
-	return(writeNotice(chat, keptNotice(noticeMessage(notice, subject))));
+	return(writeNotice(chat, keptNotice(noticeMessage(notice, subject, details))));
 }
 
 /**
@@ -508,15 +522,17 @@ function writeNotice(chat: KeptChat, notice: NewChatMessage): Promise<void>
  *
  * @param notice What it says
  * @param subject Who it is about
+ * @param details What a gave notice says beyond who it is about; null for other notices
  * @return The message
  */
-function noticeMessage(notice: ChatNotice, subject: NoticeSubject): KeptChatMessage
+function noticeMessage(notice: ChatNotice, subject: NoticeSubject, details: ChatNoticeDetails | null): KeptChatMessage
 {
 	return({
 		playerId: subject.playerId,
 		name: subject.name,
 		username: null,
 		notice,
+		details,
 		text: '',
 		sentAt: Date.now()
 	});
@@ -534,6 +550,7 @@ function keptNotice(message: KeptChatMessage): NewChatMessage
 		playerId: message.playerId,
 		authorName: message.name,
 		notice: message.notice,
+		noticeDetails: message.details,
 		text: '',
 		sentAt: new Date(message.sentAt)
 	});

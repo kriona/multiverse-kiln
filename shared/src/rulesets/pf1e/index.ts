@@ -4,6 +4,7 @@
  */
 export * from './abilities.js';
 export * from './classes.js';
+export * from './equipment.js';
 export * from './items.js';
 export * from './money.js';
 export * from './races.js';

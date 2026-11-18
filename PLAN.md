@@ -109,7 +109,7 @@ Built in four steps: the server API, the editor pages, the area editor's cells, 
 
 - [✅] Editor API as REST routes in `server/src/http/` backed by repositories (editing isn't real-time, so it doesn't need a room). Every request checks the user may edit that universe, and validates against the same limits as the UI. Who may edit is stored in `universe_editors` (creator, builder, beta tester; Phase 15 adds the Editors tab), and until logins exist (Phase 14) a request's player is the one its browser ID cookie is logged in as
 - [✅] Create Universe modal (name, 1-sentence description, ruleset), up to 5 per user. Creates a lobby area and a default area as every race's starting area, and makes the user its creator. Home lists the universes the user has a role in, which opens them in the editor
-- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 21). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
+- [✅] Edit Universe page: name, descriptions (markdown rendered sanitized with `marked` and DOMPurify, also on Home's overview), stage, ruleset, passage of time. Logo and banner wait for image storage (Phase 22). A Lobby tab opens the lobby's area until the rest of the tab arrives (Phase 12)
 - [✅] Tilesets tab (filters for name, passable, custom and edited; pagination) and tile editor (name, indoors, color, vision cost, walk time)
 - [✅] Areas tab with the single-area drill-down, and the area editor's settings. Its cells are the next item
 - [✅] Area cells editor: grid centered on 0,0, expand buttons, edit-size dialog with its warning, draw tool (a tile or Void; size 1-100; circle or square), undo/redo with a drag counted as one step. It loads chunks as the view reaches them, pans with the right or middle mouse button and zooms with the wheel. Undo covers painting; resizing to a smaller area clears the undo history
@@ -215,7 +215,7 @@ Decided:
 - Impassable tiles with graphics, such as mountains 1.5 cells tall, are drawn again in a layer over players, cut down to what they draw over the cell north of them. No player can stand on them, so this puts a player north of a mountain behind its peaks without the hiding and uncovering that ruled out the forest canopy. The fog is drawn over that layer.
 - Distinctive buildings and lone trees are placed objects, not tiles (see Later).
 - Graphics only change what the client draws: movement, vision and the server don't change.
-- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 21. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
+- The engine ships default graphics as files in the client (`client/src/assets/tilesets/`), and a universe's editors can upload their own tilesets: PNG Dual-Grid sheets 128x128, each with a name and a draw order. Uploads go to S3-compatible object storage (SeaweedFS locally, any S3-compatible service in production), which pulls image storage forward from Phase 22. Uploading and deleting tilesets wait for the Tilesets tab's Save like every editor change. The server checks and re-encodes each upload, the uploader confirms they have the rights to use it, and the game server serves it to anyone at `/tile-graphics/<ID>.png`, cached for good since an upload never changes.
 
 - [✅] Cells are 32 world units; a step takes 0.16 seconds
 - [✅] A sample Dual-Grid grass sheet (`client/src/assets/tilesets/grass.png`)
@@ -241,14 +241,14 @@ Decided:
 
 Decided:
 - Built in-house, not with a hosted provider or `@colyseus/auth`: the email code rules in `STRUCTURE-OVERVIEW.md` are more specific than a provider offers. A small OAuth library (such as `arctic`) handles Google and Discord, and passwords are hashed with Argon2id.
-- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 19's hosting choice has to keep.
+- Sessions live on the server (a `sessions` table) and reach the browser as an HttpOnly `__Host-` cookie, in place of today's browser ID cookie; there are no JWTs. `onAuth` looks the session up, a lifecycle boundary. Logging out, or changing the password, deletes sessions on the server, so a password change signs the account out everywhere. Production therefore needs the client and game server on the same site (e.g. `play.<domain>` and `api.<domain>`), which Phase 20's hosting choice has to keep.
 - Session lifetimes (see Login in `STRUCTURE-OVERVIEW.md`): 1 hour idle and 24 hours in all without "Remember me"; with it, 30 days idle and 90 days in all. An open connection to a room counts as activity.
 - An account can be logged in from several browsers at once, each with its own session; every window of the player, in any browser, acts as that player.
 - Sessions arrive with the first real login (local accounts, then Google and Discord), so the name-only login never starts one.
 - Every account has a unique username, for finding users and invites, and a display name that needn't be unique. The name-only login's data is dropped rather than carried over, and the seed script's `--creator` names a username.
 - Linking: a provider login whose email matches a local account is never linked automatically. The player proves they own the local account (its password, or an email code) to link them; providers can also be linked from the profile.
-- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 19), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
-- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 19 sets them for the host.
+- Email is sent over SMTP with `nodemailer`, so the service is configuration (chosen in Phase 20), and caught by Mailpit in `docker-compose.yml` locally. Emails are HTML, with a plain text part, in the recipient's language.
+- Rate limits and the email code counters are Postgres rows updated atomically, so they hold across several server processes. The client's network comes from one function, which reads the connection's address, or behind a proxy the one forwarding header configured as trusted (`CLIENT_ADDRESS_HEADER`, `TRUSTED_PROXY_HOPS`); Phase 20 sets them for the host.
 - Passwords are 15 to 256 characters (NIST SP 800-63B rev. 4's minimum for a password that is the only factor, which it is without 2FA; the same for every account, so turning 2FA off never leaves a shorter one), with no composition rules, and are checked against HaveIBeenPwned's k-anonymity API (only the first 5 characters of the password's SHA-1 hash leave the server).
 - Password hashes are stored as self-describing strings (`$argon2id$v=19$m=...,p=...,t=...$<salt>$<hash>`), and one module (`server/src/auth/passwords.ts`) holds the current algorithm and settings, starting at OWASP's Argon2id minimum (19 MiB, 2 iterations, 1 thread). After a correct password, a hash made with older settings or an older algorithm is replaced with a current one, and the replacement is logged without ending the account's sessions. `verifyPassword()` picks the checker by the hash's prefix, so old hashes keep working when the algorithm changes. If an old algorithm is ever found weak, hashes of accounts that don't log in can be wrapped in the new one (`newAlgorithm(oldHash)`, marked by its prefix). Tests: a hash with old settings still verifies, and is replaced at login.
 - 2FA is TOTP with recovery codes, for local accounts only; provider logins rely on the provider's 2FA. Passkeys can come later. No CAPTCHA for now; Phase 17 adds bot checks for suspicious logins.
@@ -474,7 +474,7 @@ The login and email code limits (Phase 14) stop guessing, but their only answer 
 
 Decided:
 - Cloudflare Turnstile, not reCAPTCHA: it has no image puzzles, so it works with a keyboard and a screen reader (Cloudflare states WCAG 2.1 AA), it is free without a monthly limit, and it doesn't send players to Google. It is a widget and one server-side check, so it doesn't need the site behind Cloudflare's proxy.
-- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 19); it would change `CLIENT_ADDRESS_HEADER`.
+- Not Cloudflare's proxy (Bot Fight Mode, its firewall rules) for this: it can't see what makes a login suspicious (failed tries for an address, a browser that hasn't logged in to the account), its free bot blocking is blunt and can block WebSocket and API clients, and adjustable bot scores are a paid plan. Whether to put the site behind it for DDoS protection is a separate decision, with the hosting (Phase 20); it would change `CLIENT_ADDRESS_HEADER`.
 - What a check promises: a request past the soft limit goes through only once a check has been passed, so every guess costs something. It doesn't promise to stop every bot: services that solve checks for money exist, so the limits stay the real defense, and a check only slows guessing and makes it cost more.
 - Only suspicious requests are checked: past a soft limit, below the hard limit that refuses them today. Most players never see one, and their browser never contacts Cloudflare: the page loads Turnstile's script only when the server asks for a check.
 - Which requests: logging in with a password, the wrong passwords typed while logged in that count against the same limits (a logged-in player is asked too, once someone else's guesses have passed the address's soft limit), and sending an email code (registering, resetting a password, changing an email address, linking a login). Google and Discord logins aren't checked: the provider checks them. A dormant account's code isn't checked on its own: only someone who has just given the right password gets one, in a login that was checked if it needed to be, and "send another code" sends the password again, so it is a login try.
@@ -561,7 +561,60 @@ Steps:
 
 **Done when:** a new universe offers only the core races and classes; turning on the Advanced Player's Guide and saving adds the witch and the guide's other classes to the Classes table and Create Character, where each can be disabled on its own, and its items to the Items tab; turning the guide off again asks once what happens to the players using it; and each book's Contents dialog shows its races and classes.
 
-## Phase 19: Cloud deployment
+## Phase 19: Equipment
+
+Characters equip items to the slots their ruleset has, give items to other characters in their group, and inspect an item's details. Every book the engine supports gets its basic items. See Equipment in `STRUCTURE-OVERVIEW.md`.
+
+Decided:
+- Each ruleset lists its slots in `/shared` (`shared/src/rulesets/<ruleset>/equipment.ts`): a key and a name message for each, in the order the character sheet shows them.
+	- PF1E: the Core Rulebook's item slots (head, headband, eyes, shoulders, neck, chest, body, armor, belt, wrists, hands, two rings and feet), a tail for the tail weapons, the off arm for a buckler, and the main hand and off hand. Magic items will use the same slots.
+	- Only a character whose race has a tail has the tail slot. PF1E races get a "Has a tail" checkbox in the race editor, on for the default catfolk, kitsune, kobold, ratfolk, tiefling and vanara. Equipping a tail item to a character without a tail is refused. A save turning a race's tail off unequips its characters' tail items once it reaches the live version.
+	- SF1E: armor, clothing, and the main hand and off hand. Worn magic items, armor upgrades and augmentations add slots later.
+- Each item has where it equips: nowhere, one of the ruleset's worn slots, one hand or two hands. This is a setting of its own, apart from the item's kind. A dwarven boulder helmet is a weapon worn on the head. Gauntlets are weapons worn on the hands. A torch is gear held in a hand. The default items get it from `/shared`, and the item editor sets it.
+- Hands:
+	- The main hand and the off hand each hold one item. A one-handed item goes in either hand. A one-handed weapon can also go in both, like a longsword held in two hands. Other one-handed items, such as shields and torches, don't offer Both hands. A two-handed item takes both hands.
+	- Dual-wielding is a one-handed item in each hand. A double weapon, such as a quarterstaff, is one two-handed item. Combat will let it attack as two weapons.
+	- A shield takes a hand. A character holds one shield at most. An item is a shield by its types (PF1E's `shields`).
+	- PF1E's buckler is worn in the off arm slot and takes no hand. It goes with a two-handed weapon, or with a weapon in each hand. It counts as the character's one shield, so equipping it unequips a shield in a hand, and the other way round.
+- Equipping an item into a slot or hand in use unequips what was there. It doesn't ask, since equipping it again is easy. A two-handed item unequips both hands. A one-handed item unequips a two-handed one.
+- A ring goes in the first free ring slot, with one Equip in its menu. When both ring slots are full, the menu offers Equip as left ring and Equip as right ring instead, which replace what is there.
+- The menu offers equipping only where it changes something. It leaves out a hand or ring slot that already holds the item the same way, and Equip for a worn item whose slot already holds it.
+- An equipped item is one of the items the character carries. A character with 3 daggers and one in each hand has 3 daggers, 2 of them equipped. Discarding or giving more than the unequipped ones unequips the rest: the off hand first, then the main hand, then worn slots. The dialog says which. An item hidden because it was disabled with remove is unequipped too.
+- Disabled items, and items of books that are off, can still be equipped, unequipped and given. Characters keep using them, as they do now.
+- Equipment is a table of its own, `character_equipment` (character, slot, item). Its rows reference the character's carried items, so discarding the last of an item deletes its rows. A two-handed item is one row, in the main hand.
+- A save that changes where an item equips, or whether it is a shield or a weapon, unequips it from every character, once it reaches the live version. It doesn't warn: players equip it again.
+- Equipping changes no rules yet. Combat, armor class and the like come later and read the equipment. Equipping, unequipping and giving are HTTP routes, like Discard, used from the character sheet in the lobby, the game, the universe page and the player's profile. Each change to a character's items or equipment, Discard's included, is published to the player's windows through the session room, so an open sheet shows it wherever it is.
+- Giving: a character gives items to another character in their group, including the player's own characters there. It works whether the other character is online or not, and wherever they are. The items arrive at once. The receiving player's open windows show a toast saying who gave them what, and a line in the group's chat records it, so a player who was offline sees it there.
+- Inspect shows what an item has now: its name, kind, types, book, where it equips and description. Rules details such as weight and damage come in a later phase, and Inspect shows them once items have them.
+- Create Character equips the starting items: the class's, then the race's, then the universe's, each list by name. Each worn item goes in its slot while the slot is free. Only the first weapon is equipped, in the main hand (both hands for a two-handed one), so no character starts out dual-wielding. A shield goes in the off hand while it is free, and a buckler in the off arm. Other held items, such as torches, stay unequipped.
+- The universe's creators change a character's sheet from the Character List as the player can: the same item menu, with Equip, Unequip, Give, Inspect and Discard. Items creators give with Give Items arrive unequipped.
+- The default items are the basic (non-magic) items of each supported book, reviewed in `scratchpad/equipment-items.md`. Items with no use, such as an iron pot, are left out. Special materials are left out. They will be a property of an item later. Masterwork is never an item of its own: it will be a flag on an item, so there is no masterwork longsword, thieves' tools or instrument. A generic item is listed as the things it stands for: the Core Rulebook's "musical instrument" is a lute, a mandolin, a flute and the other instruments its Perform skill names. Meals, ale and wine are left out of both rulesets until it is decided whether characters must eat (Open decisions); SF1E's rations stay.
+- The Core Rulebook's adventuring gear (backpacks, rope, torches, tents, trail rations and the like) is left out. Each piece is added once the code supports what it does (Later, below). PF1E's alchemical items (acid, alchemist's fire, sunrods and the like) are left out for the time being too.
+- Types: PF1E gear gets new types (alchemical, clothing, food and drink, light source, poison, tool), and its torch type becomes light source. Both rulesets get an ammunition weapon type. SF1E's types, which are each one item now, become its weapon categories, ammunition, light and heavy armor, and the same gear types, plus drug and medicinal.
+- SF1E's items with tiers are one item per tier, named with the tier first, in the engine's lowercase style: "tactical longsword", "frag grenade I".
+- Later, not in this phase (Later, below): a second set of slots for appearance only, and hiding an equipped item from the avatar. This phase keeps the way open:
+	- Slot keys belong to the ruleset, not to a set of slots, so the appearance slots reuse them (all but the hands).
+	- `character_equipment` is keyed by character and slot. A `layer` column (stats or appearance) and a `hidden` flag can join it later without moving rows.
+	- Whether an item fits a slot is one pure function in `/shared`. The appearance slots reuse it. The rules for hands and shields are separate, and only the stats slots use them.
+	- Rules read only the stats slots. Nothing in this phase draws equipment.
+
+Steps (the equipment first, then the default items in their own commits):
+- [✅] Slots and where items equip in `/shared` for each ruleset, with names as messages, and pure functions with unit tests: whether an item fits a slot, the hands, ring and shield rules, what equipping something unequips, and which equipped ones discarding or giving unequips
+- [✅] Where an item equips: a column on items, set from `/shared` for the default items by the migration, a field in the item editor, the Items tab's summary, the audit, export and import. A save changing it, or whether the item is a shield, unequips the item from characters
+- [✅] "Has a tail" on PF1E races: a column set for the default races by the migration, a checkbox in the race editor, the audit, export and import. A save turning it off unequips the race's characters' tail items
+- [✅] `character_equipment` and its repository, with tests against the test database: equipping, unequipping, and discarding or hiding items that are equipped
+- [✅] Routes to equip, unequip and give items, for the character's player and the universe's creators, checking the rules on the server. Each change to a character's items, Discard's included, is published through the session room. Create Character equips the starting items
+- [✅] The character sheet's Equipment section: each slot with what is in it. Each item's menu gets Equip (Main hand, Off hand or Both hands for a one-handed weapon), Unequip, Give, Inspect and Discard. An open sheet updates when the character's items change, on every page that shows it
+- [✅] The Give dialog: which character in the group, and how many. The receiving player gets a toast, and the group's chat a line
+- [✅] The Inspect dialog, from the item menu and from item selection
+- [✅] The Character List's sheet: equipment, with the same item menu as the player's
+- [✅] The default items from the reviewed list: names, descriptions, kinds, types, books and where each equips in `/shared`, and custom migrations adding their rows. The new gear and ammunition types, a migration converting PF1E's torch type and SF1E's types (and an import converting an older export's)
+- [✅] Pirate translation of the new messages
+- [✅] Check the sheet and the dialogs with only a keyboard, with a screen reader and in the pseudo-language (`?locale=en-XA`)
+
+**Done when:** a PF1E fighter equips a longsword and a heavy steel shield, then a greatsword, which unequips both. A rogue holds a short sword in each hand. An SF1E soldier wears armor and holds a laser rifle. The fighter gives a dagger to another character in the group, and that character's player sees it arrive. Inspecting the greatsword shows that it is a two-handed heavy blade from the Core Rulebook.
+
+## Phase 20: Cloud deployment
 
 Neon and Colyseus Cloud cost money, so this waits until the game is worth testing with outside players.
 The first deploy tends to surface WebSocket, TLS and environment issues, so leave time for it.
@@ -584,7 +637,7 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** two players on different networks can join the same room in the cloud.
 
-## Phase 20: Robustness and polish
+## Phase 21: Robustness and polish
 
 - [ ] Reconnection with `allowReconnection` for unexpected disconnects
 - [ ] Graceful handling of server restarts during deploys
@@ -598,11 +651,11 @@ The first deploy tends to surface WebSocket, TLS and environment issues, so leav
 
 **Done when:** players survive brief network drops and a redeploy without data loss.
 
-## Phase 21: Images and moderation
+## Phase 22: Images and moderation
 
 Needed before universes are open to the public.
 
-- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 19)
+- [✅] Image storage: S3-compatible object storage (`server/src/storage/`), with uploads validated and re-encoded to strip metadata and anything that isn't an image (`server/src/images/`); done for tilesets in Phase 13. The production service is chosen with the deployment (Phase 20)
 - [ ] "I have the rights to use this image" on every upload (tilesets have it)
 - [ ] Profile photos, universe logos and banners (tilesets are uploaded since Phase 13)
 - [ ] Stock graphics for each ruleset
@@ -610,7 +663,7 @@ Needed before universes are open to the public.
 
 **Done when:** universes can use uploaded art, and anything inappropriate can be reported and taken down.
 
-## Phase 22: Messages
+## Phase 23: Messages
 
 - [ ] Private messages with blocking, reporting and rules for who can message whom
 - [ ] Group invites sent by private message
@@ -629,6 +682,10 @@ Needed before universes are open to the public.
 - The overworld map and its scale
 - Cross-universe play: the portal room, the Connect to the Multiverse tab, "[Name] of [Universe]"
 - Character sprites and avatars, and art for each item
+- Appearance slots: a second set of each ruleset's slots, all but the hands, for items worn only for how they look. They give no rules benefit. The avatar draws an item in an appearance slot over the item in the same stats slot. A Hide option on an equipped item skips it when the avatar is drawn. Phase 19 leaves room for both
+- PF1E's adventuring gear, added case by case as the code supports each piece: tents, bedrolls and blankets with the sleep setting, torches, candles and lanterns once they light an area, rope and grappling hooks with climbing, manacles with capturing, and so on (`scratchpad/equipment-items.md` lists them)
+- PF1E's alchemical items from the Core Rulebook, the Advanced Player's Guide and the Advanced Race Guide (`scratchpad/equipment-items.md` lists them)
+- Items' rules details (price, weight, damage, armor), for the default items from their books and in the item editor for every item, shown by Inspect, with combat. Special materials (mithral, adamantine) as a property of an item, and masterwork as a flag on an item
 - Placed objects for distinctive buildings and lone trees: made once and placed in any number of areas, each with an image, the cells it covers (each with its own walk time and vision cost, read by the server), the part drawn above players, and door cells for area links. Placements are a list per area, not cells in its chunks. An Objects tab and a place tool in the area editor. Building interiors are indoor areas, as now
 - Walls as a layer of their own, so a cell holds a ground tile and a wall over it, rather than walls drawn over the area's default tile
 - Tall walls with a front face: blob frames 32x64 drawn over the row south of the wall, and over players standing there
@@ -653,21 +710,22 @@ Needed before universes are open to the public.
 - How groups are listed in the lobby (Phase 11)
 - How the lobby shows who is online, when it may hold many more players than a group or a universe's editors
 - Auth approach, account linking and the email sending service (Phase 14)
-- Which S3-compatible service stores uploads in production, and its bucket (Phase 19)
-- Telling users with the same name apart (Phase 22)
+- Which S3-compatible service stores uploads in production, and its bucket (Phase 20)
+- Telling users with the same name apart (Phase 23)
 - Whether a universe can rename engine terms, such as calling gold "crowns" (Phase 15)
-- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 20)
+- Fonts for text drawn in the game's areas in scripts the default font doesn't cover (Phase 21)
 - Whether to offer machine translation of chat (later)
+- Whether characters must eat and drink, and so whether meals, ale, wine and the like become items (Phase 19 has only SF1E's rations)
 - Whether to add client-side prediction (after Phase 7, if movement feels laggy)
 - Whether players are shown the name of the area they are in (on screen, or when they go into another area or cross a seam into a neighbor); it is only read out to screen readers so far
-- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 19). The host's proxies decide which forwarding header the server trusts for clients' addresses
-- Client host, and a subdomain or separate domain for QA/staging (Phase 19)
+- Game server host (Colyseus Cloud or another), and its deployment location(s) (Phase 20). The host's proxies decide which forwarding header the server trusts for clients' addresses
+- Client host, and a subdomain or separate domain for QA/staging (Phase 20)
 
 ---
 
 ## TODO
 
-- [ ] Confirm the client address header on the game server's host (Phase 19; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
+- [ ] Confirm the client address header on the game server's host (Phase 20; finding 4 in `SECURITY-FINDINGS.md`). The code trusts only the header `CLIENT_ADDRESS_HEADER` names, but which one is safe depends on the host's proxies, which aren't chosen yet:
 	- Find out which header the host's proxy sets, and whether it overwrites X-Real-IP or only adds to X-Forwarded-For. Prefer X-Forwarded-For unless the proxy is known to overwrite X-Real-IP
 	- Count the proxies that add to X-Forwarded-For (a load balancer or CDN in front of the host's proxy is a second one) and set `TRUSTED_PROXY_HOPS`
 	- Once deployed, log in from one network twice: once plainly, and once with a forged `X-Real-IP` and a padded `X-Forwarded-For` (`X-Forwarded-For: 203.0.113.9, 198.51.100.8`). Both auth events should have the same network hash; a different one means the server trusted the forged header

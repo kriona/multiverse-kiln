@@ -1,26 +1,23 @@
-import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, singleItemTypeKind, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, AREA_LIGHT_LEVEL_NAMES, CORE_RULEBOOK, DARKVISION_NAMES, defineMessages, DISPLAY_TIME_NAMES, FAERIE_MORNING_NAMES, languageName, PASSAGE_OF_TIME_NAMES, PF1E_CASTING_STYLE_NAMES, PF1E_MAGIC_TRADITION_NAMES, PF1E_STAT_METHOD_NAMES, REAL_TIME_NAME, RULESET_ABILITIES, RULESET_COINS, currentItemTypes, singleItemTypeKind, SIZE_NAMES, UNIVERSE_ROLE_NAMES, UNIVERSE_STAGE_NAMES, type AuditField, type AuditFieldChange, type AuditFieldValues, type AuditPassageOfTime, type AuditPlace, type AuditSubject, type Coin, type MessageDescriptor, type OptionName, type Ruleset, type UniverseEditDetail } from '@multiverse-kiln/shared';
 
 import { capitalized, currentLocale, formatList, signedNumber, t } from '../../localization';
+import { VISION_LABELS } from '../CharacterSheetDialog';
 import { difficultyName } from '../difficultyNames';
-import { itemCategoryName, itemDescription, itemName, itemTypeName } from '../itemNames';
+import { ITEM_SETTING_NAMES, itemCategoryName, itemDescription, itemEquipsText, itemName, itemTypeName } from '../itemNames';
 import { engineCoinName, formatMoney } from '../moneyField';
 import { classDescription, className, raceDescription, raceName, themeDescription, themeName } from '../raceAndClassNames';
 import { rulebookName } from '../rulebookNames';
 import { tileName } from '../tileNames';
 import { colorToHex } from './colors';
-import { BUILDER_PERMISSION_NAMES } from './editorMessages';
-import { FAERIE_TIME_MESSAGE, FOG_OF_WAR_NAMES } from './places';
+import { BUILDER_PERMISSION_NAMES, editorMessages } from './editorMessages';
+import { FAERIE_TIME_MESSAGE, FOG_OF_WAR_NAMES, INDOORS_NAMES } from './places';
 import { tileGraphicName } from './tileSwatches';
 
 /**
- * Each setting's name in the Audit tab's list of what a save changed: the name its field has in the editor
+ * Each setting's name in the Audit tab's list of what a save changed, but those declared beside other
+ * code that shows them (see AUDIT_FIELD_NAMES): the name its field has in the editor
  */
-const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defineMessages({
-	name: {
-		id: 'form.name',
-		defaultMessage: 'Name',
-		description: 'Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor\'s lists of them; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
+const EDITOR_FIELD_NAMES = defineMessages({
 	shortDescription: {
 		id: 'universe.shortDescription',
 		defaultMessage: '1-sentence description',
@@ -30,11 +27,6 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		id: 'editor.universe.longDescription',
 		defaultMessage: 'Long description (Markdown)',
 		description: 'Label of the field for a universe\'s full description, which is written in Markdown; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	description: {
-		id: 'form.description',
-		defaultMessage: 'Description',
-		description: 'Label of the field for a sentence or two describing an item, race, class or theme, in the item, race, class and theme editors, and the heading of the column of descriptions in a rulebook\'s Contents dialog; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	sourceLanguage: {
 		id: 'editor.translations.sourceLanguage',
@@ -166,16 +158,6 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Languages',
 		description: 'Label of the field in the dialog for an editor on the editor\'s Editors tab with the languages a translator may translate the universe into; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
-	indoors: {
-		id: 'form.indoors',
-		defaultMessage: 'Indoors',
-		description: 'Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	outdoors: {
-		id: 'form.outdoors',
-		defaultMessage: 'Outdoors',
-		description: 'Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
 	color: {
 		id: 'editor.tile.color',
 		defaultMessage: 'Color',
@@ -206,16 +188,6 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Existing characters keep playing while disabled',
 		description: 'Names a race\'s or class\'s setting in the list of what a save changed, on the editor\'s Audit tab: whether characters already of it can keep playing while it is disabled (yes), or can\'t play until it is enabled again (no). Chosen in the dialog the editor\'s Save opens when disabling a race or class characters are'
 	},
-	category: {
-		id: 'editor.items.category',
-		defaultMessage: 'Kind',
-		description: 'An item\'s broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab\'s filter for it; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	types: {
-		id: 'editor.item.types',
-		defaultMessage: 'Types',
-		description: 'Heading of the item editor\'s checkboxes for an item\'s types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
 	abilityModifiers: {
 		id: 'editor.race.abilityModifiers',
 		defaultMessage: 'Ability modifiers',
@@ -226,15 +198,10 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		defaultMessage: 'Floating ability bonus',
 		description: 'Checkbox for whether the player chooses one ability score for the race to raise; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
-	darkvision: {
-		id: 'character.darkvision',
-		defaultMessage: 'Darkvision',
-		description: 'How far a character can see in the dark, if at all: the label on a character\'s sheet, and of the race editor\'s field for how far the race\'s characters can; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-	},
-	lightSensitivity: {
-		id: 'character.lightSensitivity',
-		defaultMessage: 'Light sensitivity',
-		description: 'Whether bright light dazzles a character: the label on a character\'s sheet, and the race editor\'s checkbox for whether it dazzles the race\'s characters; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	hasTail: {
+		id: 'editor.race.hasTail',
+		defaultMessage: 'Has a tail',
+		description: 'Checkbox in the race editor, in Pathfinder, for whether the race\'s characters have a tail; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
 	},
 	size: {
 		id: 'editor.race.size',
@@ -357,6 +324,18 @@ const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = defin
 		description: 'Names an area\'s neighboring area (walked across without a link) in the list of what a save changed, on the editor\'s Audit tab; its value says which side and which area, e.g. "East: Forest"'
 	}
 });
+
+/**
+ * Each setting's name in the Audit tab's list of what a save changed: the name its field has in the editor
+ */
+const AUDIT_FIELD_NAMES: Readonly<Record<AuditField, MessageDescriptor>> = {
+	...EDITOR_FIELD_NAMES,
+	...ITEM_SETTING_NAMES,
+	...INDOORS_NAMES,
+	...VISION_LABELS,
+	name: editorMessages.name,
+	description: editorMessages.description
+};
 
 /**
  * How the Audit tab says what a save did to each kind of thing. {name} is the thing's name and {count}
@@ -563,7 +542,8 @@ export function describeFieldChange(change: AuditFieldChange, detail: UniverseEd
 /**
  * A setting a save recorded, as the settings the editor has now. The Audit tab lists saves for 90 days
  * (universe_edits), so it reads settings that saves recorded before they changed: an item's one type
- * becomes its category and types, and a setting the Audit tab has no name for is left out
+ * becomes its category and types, types renamed since become the types that replaced them, and a setting
+ * the Audit tab has no name for is left out
  *
  * @param change The setting and its value, as the save recorded it
  * @param ruleset The universe's ruleset
@@ -595,6 +575,14 @@ function currentFieldChanges(change: AuditFieldChange, ruleset: Ruleset): AuditF
 				value: [...kind.types]
 			}
 		]);
+	}
+
+	if ((recorded.field === 'types') && Array.isArray(recorded.value))
+	{
+		return([{
+			field: 'types',
+			value: currentItemTypes(ruleset, recorded.value)
+		}]);
 	}
 
 	return((Object.hasOwn(AUDIT_FIELD_NAMES, recorded.field) ? [change] : []));
@@ -676,6 +664,8 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 			return(itemCategoryName(change.value, ruleset));
 		case 'types':
 			return(listOrNone(change.value.map((type) => itemTypeName(type, ruleset))));
+		case 'equips':
+			return(itemEquipsText(change.value, ruleset));
 		case 'abilityModifiers':
 		{
 			const modifiers = change.value;
@@ -747,6 +737,7 @@ export function describeValue(change: AuditFieldChange, detail: UniverseEditDeta
 		case 'keepPlaying':
 		case 'floatingBonus':
 		case 'lightSensitivity':
+		case 'hasTail':
 		case 'isDefault':
 		case 'permadeath':
 		case 'loopsEastWest':

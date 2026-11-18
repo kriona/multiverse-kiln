@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { areasChangedByDeleting, areasWithMisalignedLoops, canSee, carriedResizes, chainLoops, chainOf, changedSeams, createVisionArea, halfLoopingEnd, locateCell, loopPlace, misalignedLoops, neighborProblems, neighborRefusal, newNeighbor, NO_NEIGHBORS, otherChainEnd, overallMapLayout,seamSides, seamSlots, visibleCells, windowsAcrossSeams, withNeighbors, withoutAreas, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type SeamLookup } from '@multiverse-kiln/shared';
+import { areasChangedByDeleting, areasWithMisalignedLoops, canSee, carriedResizes, chainLoops, chainOf, changedSeams, createVisionArea, halfLoopingEnd, locateCell, loopPlace, misalignedLoops, neighborProblems, neighborRefusal, newNeighbor, NO_NEIGHBORS, otherChainEnd, overallMapLayout, seamSides, seamSlots, visibleCells, windowsAcrossSeams, withNeighbors, withoutAreas, type AreaBounds, type AreaNeighbors, type GridArea, type NeighborGrid, type SeamLookup } from '@multiverse-kiln/shared';
 
 /**
  * A square area of 32 x 32 cells, the smallest that can have neighbors, centered on column 0, row 0

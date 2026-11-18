@@ -20,7 +20,7 @@ import { ParentsField, type ParentChoice } from './ParentsField';
 import { PlaceFields, type InheritedView } from './PlaceFields';
 import { describeProblem, placeNamer, problemPlaces, type PlaceNames } from './places';
 import { PlacesList, type ListedPlace } from './PlacesList';
-import { RegionEditorView } from './RegionEditorView';
+import { REGION_NAME_TAKEN, RegionEditorView } from './RegionEditorView';
 import { combineChanges, type SavableTab } from './SaveBar';
 import { isNewAreaId, isNewPlace, StagedAreas, withoutParent } from './stagedAreas';
 import { CheckedChanges, labelRemoveButton, stagedTag, type StagedTiles } from './stagedChanges';
@@ -4700,11 +4700,7 @@ export class AreasTab implements SavableTab, FollowsOtherSaves, PlacesHost, Tile
 
 		if (this.regions().some((region) => (region.name.toLowerCase() === lower)))
 		{
-			reportFieldError(this.regionName, t({
-				id: 'editor.regionAdd.nameTaken',
-				defaultMessage: 'Another region is already named that.',
-				description: 'Shown under the name field of the Add Region dialog or region editor when another region has the name, not counting capitals'
-			}));
+			reportFieldError(this.regionName, t(REGION_NAME_TAKEN));
 			return;
 		}
 

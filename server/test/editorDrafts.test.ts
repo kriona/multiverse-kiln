@@ -298,8 +298,8 @@ describe('Universe drafts', () =>
 	it('keeps the items the draft deleted that characters carry, disabled, and deletes the rest', async () =>
 	{
 		const created = await saveAll(ada, universe.universeId, [
-			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['torch'], enabled: true } },
-			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', description: null, category: 'gear', types: ['rope'], enabled: true } }
+			{ kind: 'createItem', ref: 'new:torch', settings: { name: 'Torch', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } },
+			{ kind: 'createItem', ref: 'new:rope', settings: { name: 'Rope', description: null, category: 'gear', types: ['rope'], equips: 'none', enabled: true } }
 		]);
 		const torchId = Number(created['new:torch']);
 		const ropeId = Number(created['new:rope']);
@@ -372,7 +372,7 @@ describe('Universe drafts', () =>
 		await saveAll(ada, universe.universeId, [{ kind: 'startDraft' }]);
 		assert.strictEqual((await saveToDraft([
 			await rulebooksChange('draft', ['apg']),
-			{ kind: 'saveItem', id: cestus.id, settings: { name: null, description: null, category: cestus.category, types: cestus.types, enabled: false }, whenDisabled: 'remove' }
+			{ kind: 'saveItem', id: cestus.id, settings: { name: null, description: null, category: cestus.category, types: cestus.types, equips: cestus.equips, enabled: false }, whenDisabled: 'remove' }
 		])).status, 200);
 
 		const apply: EditorChange = { kind: 'applyDraft', choices: { races: {}, classes: {}, items: { [cestus.id]: 'remove' }, areas: {} } };

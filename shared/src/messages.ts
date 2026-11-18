@@ -1,5 +1,7 @@
 import type { AreaBounds } from './areaCells.js';
+import type { OptionName } from './characters.js';
 import type { AreaNeighbors } from './areaNeighbors.js';
+import type { LocalizedMessage } from './localization.js';
 import type { TileGraphicFormat } from './tileGraphics.js';
 import type { AreaTime } from './time.js';
 import type { DisplayTime, Ruleset, AreaLightLevel, AreaLinkMode, UniverseStage } from './universes.js';
@@ -156,6 +158,25 @@ export interface GameJoinOptions
 	 * The character the window controls: one of the player's characters in the group
 	 */
 	characterId: string;
+
+	/**
+	 * The languages the player wants universe text in, most wanted first, as the client sends them in
+	 * Accept-Language: the room names the items in the group's chat in them, after the language on the
+	 * player's profile. Left out, it uses only the profile's
+	 */
+	languages?: string[];
+}
+
+/**
+ * Options a client joins the session room with
+ */
+export interface SessionJoinOptions
+{
+	/**
+	 * The languages the player wants universe text in, as in GameJoinOptions: the room names the items
+	 * in the toasts telling the player of gifts in them
+	 */
+	languages?: string[];
 }
 
 /**
@@ -395,7 +416,19 @@ export enum SessionServerMessageType
 	/**
 	 * Who the window's player is, sent on joining and when the window's session ends (payload: AccountPayload)
 	 */
-	Account = 'account'
+	Account = 'account',
+
+	/**
+	 * One of the player's characters' items or equipment changed, so a sheet showing them loads them again
+	 * (payload: CharacterItemsPayload)
+	 */
+	CharacterItems = 'characterItems',
+
+	/**
+	 * Another character gave one of the player's characters items, for a toast saying who gave them what
+	 * (payload: ItemsReceivedPayload)
+	 */
+	ItemsReceived = 'itemsReceived'
 }
 
 /**
@@ -528,6 +561,40 @@ export interface AccountPayload
 }
 
 /**
+ * Payload of SessionServerMessageType.CharacterItems
+ */
+export interface CharacterItemsPayload
+{
+	universeId: string;
+	characterId: string;
+}
+
+/**
+ * Payload of SessionServerMessageType.ItemsReceived: who gave which of the player's characters what
+ */
+export interface ItemsReceivedPayload
+{
+	universeId: string;
+	characterId: string;
+
+	/**
+	 * The names of the character who gave the items and the one who got them
+	 */
+	giver: string;
+	receiver: string;
+
+	/**
+	 * The item's name: the universe's name for it, translated into the window's language when the
+	 * universe has a translation (SessionJoinOptions.languages), or a default item's name as a message
+	 * for the page to show in the player's language, so a page needn't load every default item's name to
+	 * show it
+	 */
+	item: string | LocalizedMessage;
+
+	quantity: number;
+}
+
+/**
  * One lobby chat message
  */
 export interface ChatMessage
@@ -569,14 +636,42 @@ export const MAX_KEPT_CHAT_MESSAGES = 200;
  * - created: a character created the group, as its anchor being
  * - joined: a character joined the group
  * - left: a character left the group
+ * - gave: a character gave another items (ChatNoticeDetails)
  */
 export const CHAT_NOTICES = [
 	'created',
 	'joined',
-	'left'
+	'left',
+	'gave'
 ] as const;
 
 export type ChatNotice = typeof CHAT_NOTICES[number];
+
+/**
+ * What a gave notice says beyond the character it is about, who gave the items
+ */
+export interface ChatNoticeDetails
+{
+	/**
+	 * The name of the character given the items, as it was then
+	 */
+	receiver: string;
+
+	/**
+	 * The item given, by the universe's name for it or a default item's key. The chat keeps its name as
+	 * it was when it was given; the group's room sends each window the item's name as it is now, in the
+	 * window's language (GameJoinOptions.languages), and this one once the item is deleted
+	 */
+	item: OptionName;
+
+	/**
+	 * The item's ID, which the group's room finds its name as it is now by; a notice without one shows
+	 * the name it keeps
+	 */
+	itemId?: number;
+
+	quantity: number;
+}
 
 /**
  * One message of a chat that is kept: a group's or the editors'
@@ -601,6 +696,11 @@ export interface KeptChatMessage
 	 * with text empty; null for a message a player wrote
 	 */
 	notice: ChatNotice | null;
+
+	/**
+	 * What a gave notice says beyond who it is about; null for other notices and for messages
+	 */
+	details: ChatNoticeDetails | null;
 
 	/**
 	 * In the editors' chat, the writer's username; null in a group's chat, and once their account is deleted

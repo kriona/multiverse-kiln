@@ -151,7 +151,10 @@ async function exportCharacters(playerId: string, records: readonly ProfileChara
 			money: character.money,
 			items: character.items.map(({ itemId, quantity }) => ({
 				name: nameOf(itemNames.get(record.universeId)?.get(itemId), DEFAULT_ITEM_NAMES[ruleset], translator),
-				quantity
+				quantity,
+				equipped: character.equipment
+					.filter((equipped) => (equipped.itemId === itemId))
+					.map((equipped) => equipped.slot)
 			})),
 			group: (membership
 				? {

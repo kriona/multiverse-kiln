@@ -1,15 +1,16 @@
-import { canEditWorld, canEditItemsOpen, categoryItemTypes, differsBeyondEnabling, ITEM_KINDS, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
+import { canEditWorld, canEditItemsOpen, differsBeyondEnabling, ITEM_SORT_COLUMNS, loadedFrom, MAX_ITEMS_PER_PAGE, type EditableUniverse, type EditorItem, type ItemListPayload, type ItemListQuery, type ItemSettings, type ItemSortColumn, type Ruleset } from '@multiverse-kiln/shared';
 
 import { t } from '../../localization';
 import { describeEditorError, type EditorApi } from '../../network/editorApi';
-import { getElement, setOptions, showMessage, type SelectOption } from '../dom';
+import { getElement, setOptions, showMessage } from '../dom';
 import { formMessages } from '../formMessages';
-import { createItemIcon, itemCategoryName, itemName, itemTypeName, itemTypesText } from '../itemNames';
+import { createItemIcon, itemEquipsText, itemName, itemTypesText } from '../itemNames';
 import { announceListPage, showPageRange } from '../pager';
 import { TableSorter } from '../tableSorter';
 import { afterSwitchSlides } from '../toggleSwitch';
 import { editorMessages } from './editorMessages';
 import { ItemDialog } from './ItemDialog';
+import { showCategoryOptions, showEquipsOptions, showTypeOptions } from './itemFilters';
 import { createEnabledSwitch } from './optionRows';
 import type { EditorSave, SavedIds } from './editorSave';
 import { ChangedSinceNotes, DialogFollower, type FollowsOtherSaves, type OtherSave } from './otherSaves';
@@ -32,6 +33,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	private readonly nameFilter = getElement('item-filter-name', HTMLInputElement);
 	private readonly categoryFilter = getElement('item-filter-category', HTMLSelectElement);
 	private readonly typeFilter = getElement('item-filter-type', HTMLSelectElement);
+	private readonly equipsFilter = getElement('item-filter-equips', HTMLSelectElement);
 	private readonly enabledFilter = getElement('item-filter-enabled', HTMLSelectElement);
 	private readonly customFilter = getElement('item-filter-custom', HTMLSelectElement);
 	private readonly editedFilter = getElement('item-filter-edited', HTMLSelectElement);
@@ -71,6 +73,11 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	 * The page of items shown, as it was last loaded
 	 */
 	private items: EditorItem[] = [];
+
+	/**
+	 * The types some item has, as the page last loaded says, which the type filter offers
+	 */
+	private typesWithItems = new Set<string>();
 
 	/**
 	 * Every item loaded since the universe was opened, by ID, to name an item whose change failed to save
@@ -128,7 +135,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			]);
 		}
 
-		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter, this.typeFilter])
+		for (const filter of [this.enabledFilter, this.customFilter, this.editedFilter, this.typeFilter, this.equipsFilter])
 		{
 			filter.addEventListener('change', () =>
 			{
@@ -141,7 +148,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		{
 			if (this.universe)
 			{
-				this.showTypeOptions(this.universe.ruleset);
+				showTypeOptions(this.categoryFilter, this.typeFilter, this.universe.ruleset, this.typesWithItems);
 			}
 
 			this.offset = 0;
@@ -177,14 +184,12 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Lists a universe's items from the first page, with no filters
+	 * Lists a universe's enabled items from the first page, with no other filters
 	 *
 	 * @param universe The universe
 	 */
 	open(universe: EditableUniverse): void
 	{
-		const kinds = ITEM_KINDS[universe.ruleset];
-
 		this.universe = universe;
 		this.offset = 0;
 		this.items = [];
@@ -193,16 +198,12 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		this.changedSince.clear();
 		showMessage(this.error, undefined);
 		this.nameFilter.value = '';
-		setOptions(this.categoryFilter, [
-			anyOption(),
-			...kinds.categories.map((category) => ({
-				value: category,
-				label: itemCategoryName(category, universe.ruleset)
-			}))
-		]);
-		this.categoryFilter.value = '';
-		this.showTypeOptions(universe.ruleset);
-		this.enabledFilter.value = '';
+		this.typesWithItems = new Set();
+		showCategoryOptions(this.categoryFilter, universe.ruleset);
+		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
+		this.equipsFilter.value = '';
+		showEquipsOptions(this.equipsFilter, universe.ruleset, new Set());
+		this.enabledFilter.value = 'true';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();
@@ -288,28 +289,6 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Offers the types in the category chosen, or every type when none is, keeping the type chosen if it
-	 * is still offered
-	 *
-	 * @param ruleset The universe's ruleset
-	 */
-	private showTypeOptions(ruleset: Ruleset): void
-	{
-		const category = this.categoryFilter.value;
-		const chosen = this.typeFilter.value;
-		const types = ((category === '') ? Object.keys(ITEM_KINDS[ruleset].types) : categoryItemTypes(ruleset, category));
-
-		setOptions(this.typeFilter, [
-			anyOption(),
-			...types.map((type) => ({
-				value: type,
-				label: itemTypeName(type, ruleset)
-			}))
-		]);
-		this.typeFilter.value = (types.includes(chosen) ? chosen : '');
-	}
-
-	/**
 	 * Loads the page of items the filters and offset ask for, then shows it with the changes made since.
 	 * It waits for the books on to be known, which loads the page once they are
 	 *
@@ -330,6 +309,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			name: (this.nameFilter.value.trim() || undefined),
 			category: (this.categoryFilter.value || undefined),
 			type: (this.typeFilter.value || undefined),
+			equips: (this.equipsFilter.value || undefined),
 			enabled: filterValue(this.enabledFilter),
 			custom: filterValue(this.customFilter),
 			edited: filterValue(this.editedFilter),
@@ -378,6 +358,9 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		}
 
 		this.items = page.items;
+		this.typesWithItems = new Set(page.types);
+		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
+		showEquipsOptions(this.equipsFilter, universe.ruleset, new Set(page.equips));
 
 		for (const item of page.items)
 		{
@@ -494,7 +477,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			createItemIcon(item.category, universe.ruleset),
 			nameButton,
 			enabledSwitch,
-			itemTypesText(item.types, universe.ruleset),
+			describeItem(item, universe.ruleset),
 			joinTags(...tags)
 		];
 
@@ -545,6 +528,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 			description: item.description,
 			category: item.category,
 			types: item.types,
+			equips: item.equips,
 			enabled
 		});
 		afterSwitchSlides(() =>
@@ -579,19 +563,6 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 }
 
 /**
- * The choice of a kind or type filter that shows every item
- *
- * @return The choice
- */
-function anyOption(): SelectOption
-{
-	return({
-		value: '',
-		label: t(formMessages.filterAny)
-	});
-}
-
-/**
  * A yes/no/any filter's value
  *
  * @param select The filter
@@ -600,6 +571,39 @@ function anyOption(): SelectOption
 function filterValue(select: HTMLSelectElement): boolean | undefined
 {
 	return(((select.value === '') ? undefined : (select.value === 'true')));
+}
+
+/**
+ * An item's summary in the list: its types, and where it equips when it equips somewhere
+ *
+ * @param item The item
+ * @param ruleset The universe's ruleset
+ * @return The summary, or an empty string for an item of no type that equips nowhere
+ */
+function describeItem(item: ItemSettings, ruleset: Ruleset): string
+{
+	const types = itemTypesText(item.types, ruleset);
+
+	if (item.equips === 'none')
+	{
+		return(types);
+	}
+
+	const equips = itemEquipsText(item.equips, ruleset);
+
+	if (types === '')
+	{
+		return(equips);
+	}
+
+	return(t({
+		id: 'editor.items.summary',
+		defaultMessage: '{types}; {equips}',
+		description: 'An item\'s summary in the editor\'s Items tab: {types} is the list of its types, such as "light blades and thrown", and {equips} where it equips, such as "One hand" or "Head"'
+	}, {
+		types,
+		equips
+	}));
 }
 
 /**
@@ -635,6 +639,7 @@ function settingsOf(item: ItemSettings): ItemSettings
 		description: item.description,
 		category: item.category,
 		types: item.types,
+		equips: item.equips,
 		enabled: item.enabled
 	});
 }

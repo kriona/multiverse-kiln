@@ -3,7 +3,7 @@ import assert from 'assert';
 import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACE_RULEBOOKS, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findEditorRace, findRaceKind, findRaceStart, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findEditorRace, findRaceHasTail, findRaceKind, findRaceStart, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
@@ -124,6 +124,7 @@ describe('raceRepo', () =>
 				...lizardfolk.rules,
 				darkvision: 'superior',
 				lightSensitivity: true,
+				hasTail: true,
 				size: 'large'
 			}
 		};
@@ -254,6 +255,36 @@ describe('raceRepo', () =>
 		assert.deepStrictEqual((await findEditorRace(liveVersion(universeId), 'pf1e', lizardfolkId))?.startingItems, [{ itemId: daggerId, quantity: 2 }]);
 		assert.strictEqual(await findEditorRace(liveVersion(universeId), 'pf1e', otherLizardfolkId), undefined);
 		assert.strictEqual(await findEditorRace(liveVersion(universeId), 'sf1e', dwarfId), undefined);
+	});
+
+	it('finds whether a race has a tail as it lists the race', async () =>
+	{
+		const universeId = await addUniverse();
+		const otherId = await addUniverse('Other');
+		const dwarfId = await defaultRaceId('dwarf');
+		const dwarf = await findRace(universeId, dwarfId) as EditorRace;
+		const tailed = { ...lizardfolk, rules: { ...lizardfolk.rules, hasTail: true } };
+		const lizardfolkId = await inTransaction((transaction) => createCustomRace(liveVersion(universeId), 'pf1e', tailed, transaction));
+		const otherLizardfolkId = await inTransaction((transaction) => createCustomRace(liveVersion(otherId), 'pf1e', tailed, transaction));
+
+		await inTransaction((transaction) => saveEditedDefaultRace(liveVersion(universeId), 'pf1e', dwarfId, { ...dwarf, rules: { ...dwarf.rules, hasTail: true } }, transaction));
+		await inTransaction((transaction) => startDraft(universeId, transaction));
+		await inTransaction((transaction) => saveEditedDefaultRace(draftVersion(universeId), 'pf1e', dwarfId, dwarf, transaction));
+
+		for (const version of [liveVersion(universeId), draftVersion(universeId)])
+		{
+			for (const race of await loadEditorRaces(version, 'pf1e'))
+			{
+				assert.strictEqual(await findRaceHasTail(version, 'pf1e', race.id), (('hasTail' in race.rules) && race.rules.hasTail), `race ${race.id}`);
+			}
+		}
+
+		assert.strictEqual(await findRaceHasTail(liveVersion(universeId), 'pf1e', dwarfId), true);
+		assert.strictEqual(await findRaceHasTail(draftVersion(universeId), 'pf1e', dwarfId), false);
+		assert.strictEqual(await findRaceHasTail(liveVersion(otherId), 'pf1e', dwarfId), false);
+		assert.strictEqual(await findRaceHasTail(liveVersion(universeId), 'pf1e', lizardfolkId), true);
+		assert.strictEqual(await findRaceHasTail(liveVersion(universeId), 'pf1e', otherLizardfolkId), false);
+		assert.strictEqual(await findRaceHasTail(liveVersion(otherId), 'sf1e', otherLizardfolkId), false);
 	});
 
 	it('names the races of several universes\' live versions at once, as it names one', async () =>

@@ -1099,21 +1099,101 @@
 		"message": "Be ye sure ye want to toss {item} overboard?",
 		"source": "Are you sure you want to discard {item}?"
 	},
+	"characterSheet.emptySlot": {
+		"message": "Bare",
+		"source": "Empty"
+	},
+	"characterSheet.equip": {
+		"message": "Strap On",
+		"source": "Equip"
+	},
+	"characterSheet.equipBothHands": {
+		"message": "Grip wi' both hands",
+		"source": "Equip in both hands"
+	},
+	"characterSheet.equipFailed": {
+		"message": "Couldn't change what this hand has strapped on.",
+		"source": "Could not change what the character has equipped."
+	},
+	"characterSheet.equipLeftRing": {
+		"message": "Strap on as port ring",
+		"source": "Equip as left ring"
+	},
+	"characterSheet.equipMainHand": {
+		"message": "Strap on in sword hand",
+		"source": "Equip in main hand"
+	},
+	"characterSheet.equipOffHand": {
+		"message": "Strap on in hook hand",
+		"source": "Equip in off hand"
+	},
+	"characterSheet.equipRightRing": {
+		"message": "Strap on as starboard ring",
+		"source": "Equip as right ring"
+	},
+	"characterSheet.equipped": {
+		"message": "Strapped On",
+		"source": "Equipped"
+	},
+	"characterSheet.equippedAnnouncement": {
+		"message": "{name} strapped on {item}.",
+		"source": "{name} equipped {item}."
+	},
+	"characterSheet.give": {
+		"message": "Hand Over",
+		"source": "Give"
+	},
+	"characterSheet.giveConfirm": {
+		"message": "Hand Over",
+		"source": "Give"
+	},
 	"characterSheet.giveFailed": {
 		"message": "The booty couldn't be handed o'er.",
 		"source": "Could not give the items."
+	},
+	"characterSheet.giveItemFailed": {
+		"message": "The booty couldn't be handed over.",
+		"source": "Could not give the items."
+	},
+	"characterSheet.giveItemTitle": {
+		"message": "Hand Over {item}",
+		"source": "Give {item}"
 	},
 	"characterSheet.giveItems": {
 		"message": "Give Booty",
 		"source": "Give Items"
 	},
+	"characterSheet.giveQuantity": {
+		"message": "Pick how many to hand over, up to {max, number}",
+		"source": "Choose how many to give, up to {max, number}"
+	},
+	"characterSheet.giveTo": {
+		"message": "Hand it to",
+		"source": "Give to"
+	},
+	"characterSheet.giveToCharacter": {
+		"message": "{name} ({description})",
+		"source": "{name} ({description})"
+	},
 	"characterSheet.hitPoints": {
 		"message": "Lifeblood",
 		"source": "Hit points"
 	},
+	"characterSheet.inBothHands": {
+		"message": "{item} (both hands)",
+		"source": "{item} (both hands)"
+	},
+	"characterSheet.inspect": {
+		"message": "Eyeball",
+		"source": "Inspect"
+	},
 	"characterSheet.item": {
 		"message": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"source": "{quantity, plural, =1 {{item}} other {{item} x#}}"
+	},
+	"characterSheet.itemEquipped": {
+		"message": "{quantity, plural, =1 {{item} (strapped on)} other {{item} x# ({equipped, number} strapped on)}}",
+		"source": "{quantity, plural, =1 {{item} (equipped)} other {{item} x# ({equipped, number} equipped)}}"
 	},
 	"characterSheet.itemMenu": {
 		"message": "What to do with {item}",
@@ -1123,6 +1203,10 @@
 		"message": "Kit",
 		"source": "Equipment"
 	},
+	"characterSheet.itemsChanged": {
+		"message": "{name}'s booty has shifted in the hold.",
+		"source": "{name}'s items have changed."
+	},
 	"characterSheet.itemsDiscarded": {
 		"message": "{name} tossed {quantity, plural, =1 {{item}} other {{item} x#}} overboard.",
 		"source": "{name} discarded {quantity, plural, =1 {{item}} other {{item} x#}}."
@@ -1130,6 +1214,10 @@
 	"characterSheet.itemsGiven": {
 		"message": "{name} has been handed {count, plural, one {# piece o' booty} other {# different pieces o' booty}}.",
 		"source": "{name} has been given {count, plural, one {# item} other {# different items}}."
+	},
+	"characterSheet.itemsGivenTo": {
+		"message": "{name} handed {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.",
+		"source": "{name} gave {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}."
 	},
 	"characterSheet.leftGroup": {
 		"message": "{name} has jumped ship.",
@@ -1154,6 +1242,10 @@
 	"characterSheet.noItems": {
 		"message": "Empty-handed, savvy?",
 		"source": "Carries nothing."
+	},
+	"characterSheet.offHandTaken": {
+		"message": "Grippin' {item} wi' the sword hand",
+		"source": "Holding {item} with the main hand"
 	},
 	"characterSheet.pending": {
 		"message": "{name} has had their last rites and goes to Davy Jones on {deleteAt, date, long}.",
@@ -1186,6 +1278,18 @@
 	"characterSheet.traits": {
 		"message": "Marks o' the hand",
 		"source": "Traits"
+	},
+	"characterSheet.unequip": {
+		"message": "Unstrap",
+		"source": "Unequip"
+	},
+	"characterSheet.unequipNote": {
+		"message": "This unstraps it from {slots}.",
+		"source": "This unequips it from {slots}."
+	},
+	"characterSheet.unequipped": {
+		"message": "{name} unstrapped {item}.",
+		"source": "{name} unequipped {item}."
 	},
 	"characters.barred": {
 		"message": "{bar, select, race {Can't sail: yer folk be closed} other {Can't sail: yer callin' be closed}}",
@@ -1226,6 +1330,10 @@
 	"chat.focusShortcut": {
 		"message": "Squawk in the chat",
 		"source": "Write in the chat"
+	},
+	"chat.gave": {
+		"message": "{name} handed {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.",
+		"source": "{name} gave {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}."
 	},
 	"chat.joined": {
 		"message": "{name} came aboard the crew.",
@@ -2819,6 +2927,14 @@
 		"message": "Crew can only be handed booty that be open to all hands.",
 		"source": "Characters can only be given enabled items."
 	},
+	"editor.item.equips": {
+		"message": "Straps on to",
+		"source": "Equips to"
+	},
+	"editor.item.equipsHint": {
+		"message": "Where hands strap on the booty, whatever its kind. Changin' it unstraps the booty from every hand once the change reaches the crews.",
+		"source": "Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players."
+	},
 	"editor.item.type": {
 		"message": "Sort",
 		"source": "Type"
@@ -2830,6 +2946,10 @@
 	"editor.itemSelect.chosen": {
 		"message": "In the hold",
 		"source": "Chosen"
+	},
+	"editor.itemSelect.inspectItem": {
+		"message": "Eyeball {item}",
+		"source": "Inspect {item}"
 	},
 	"editor.itemSelect.loadFailed": {
 		"message": "Couldn't haul up the booty.",
@@ -2879,6 +2999,10 @@
 		"message": "Kind",
 		"source": "Kind"
 	},
+	"editor.items.heading": {
+		"message": "Booty",
+		"source": "Items"
+	},
 	"editor.items.icon": {
 		"message": "Picture",
 		"source": "Icon"
@@ -2894,6 +3018,10 @@
 	"editor.items.searchLabel": {
 		"message": "Search booty by name",
 		"source": "Search items by name"
+	},
+	"editor.items.summary": {
+		"message": "{types}; {equips}",
+		"source": "{types}; {equips}"
 	},
 	"editor.link.addReturn": {
 		"message": "Add a return passage that leads back to this cell",
@@ -3402,6 +3530,18 @@
 	"editor.presence.label": {
 		"message": "Also aboard:",
 		"source": "Also here:"
+	},
+	"editor.race.hasTail": {
+		"message": "Has a tail",
+		"source": "Has a tail"
+	},
+	"editor.race.hasTailHint": {
+		"message": "This folk's hands get a tail slot fer tail weapons. Turnin' it off unstraps their tail booty once the change reaches the crews.",
+		"source": "The race's characters get a tail slot for tail weapons. Turning it off unequips their tail items once the change reaches players."
+	},
+	"editor.races.hasTail": {
+		"message": "tailed",
+		"source": "tail"
 	},
 	"editor.region.assignBuilder": {
 		"message": "Post a shipwright",
@@ -5307,6 +5447,30 @@
 		"message": "Wrong codes were tried on yer account on {siteName}",
 		"source": "Wrong codes were typed for your account on {siteName}"
 	},
+	"equipment.equips.none": {
+		"message": "Nowhere",
+		"source": "Nowhere"
+	},
+	"equipment.equips.oneHand": {
+		"message": "One hand",
+		"source": "One hand"
+	},
+	"equipment.equips.twoHands": {
+		"message": "Two hands",
+		"source": "Two hands"
+	},
+	"equipment.slot.bothHands": {
+		"message": "Both hands",
+		"source": "Both hands"
+	},
+	"equipment.slot.mainHand": {
+		"message": "Sword hand",
+		"source": "Main hand"
+	},
+	"equipment.slot.offHand": {
+		"message": "Hook hand",
+		"source": "Off hand"
+	},
 	"error.alreadyEditor": {
 		"message": "{username} already serves aboard this universe.",
 		"source": "{username} already has a role in this universe."
@@ -5579,6 +5743,18 @@
 		"message": "That hand be lost at sea.",
 		"source": "The character doesn't exist any more."
 	},
+	"error.equipItemNotCarried": {
+		"message": "That hand don't carry that booty no more.",
+		"source": "The character doesn't carry that item any more."
+	},
+	"error.equipNoTail": {
+		"message": "That hand has no tail to strap it on.",
+		"source": "The character has no tail to wear that on."
+	},
+	"error.equipRingSlotsFull": {
+		"message": "Both ring fingers be taken. Pick which ring walks the plank.",
+		"source": "Both ring slots are full. Choose which ring to replace."
+	},
 	"error.faerieCantLoop": {
 		"message": "An area where the hours pass the faerie way can't loop.",
 		"source": "An area whose passage of time is faerie can't loop."
@@ -5591,9 +5767,25 @@
 		"message": "Choose the knack that gets the folk's gift, an' only fer folk that have one.",
 		"source": "Choose the ability that gets the race's bonus, and only for a race that has one."
 	},
+	"error.giveItemNotCarried": {
+		"message": "That hand don't carry that booty no more.",
+		"source": "The character doesn't carry that item any more."
+	},
 	"error.giveItemsUnavailable": {
 		"message": "Some o' that booty can't be handed o'er: it were sunk or stowed away, or its rulebook be shut. Pick the booty again.",
 		"source": "Some of those items can't be given: they were deleted or disabled, or their rulebook is off. Choose the items again."
+	},
+	"error.giveNotInGroup": {
+		"message": "Booty can only be handed to another hand in the same crew.",
+		"source": "Items can only be given to another character in the same group."
+	},
+	"error.giveToSelf": {
+		"message": "Pick another hand to give the booty to.",
+		"source": "Choose another character to give the items to."
+	},
+	"error.giveTooFast": {
+		"message": "Ye be handin' out booty too fast. Wait a moment and try again.",
+		"source": "You are giving items too quickly. Wait a moment and try again."
 	},
 	"error.groupCharacterBarred": {
 		"message": "{bar, select, race {That hand's folk be closed, so they can't sail.} other {That hand's callin' be closed, so they can't sail.}}",
@@ -5671,6 +5863,10 @@
 		"message": "Booty needs a name.",
 		"source": "An item needs a name."
 	},
+	"error.joinGroupTooFast": {
+		"message": "Ye be boardin' this crew too fast. Wait a moment and try again.",
+		"source": "You are joining this group too quickly. Wait a moment and try again."
+	},
 	"error.lastCreator": {
 		"message": "Every universe needs a captain. Make another hand a captain first.",
 		"source": "A universe needs at least one creator. Make another editor a creator first."
@@ -5682,6 +5878,10 @@
 	"error.lastServerAdmin": {
 		"message": "The ship needs at least one officer, so the last can't be demoted.",
 		"source": "The site needs at least one admin, so the last can't be removed."
+	},
+	"error.leaveGroupTooFast": {
+		"message": "Ye be jumpin' ship from this crew too fast. Wait a moment and try again.",
+		"source": "You are leaving this group too quickly. Wait a moment and try again."
 	},
 	"error.linkOutOfBounds": {
 		"message": "The passage's cell must be inside the area.",
@@ -5838,6 +6038,10 @@
 	"error.notAnAdminToRemove": {
 		"message": "They ain't one o' the ship's officers.",
 		"source": "They aren't one of the site's admins."
+	},
+	"error.notEquippable": {
+		"message": "That booty can't be strapped on that way.",
+		"source": "That item can't be equipped that way."
 	},
 	"error.notServerAdmin": {
 		"message": "Only the ship's officers can set foot here.",
@@ -6046,6 +6250,10 @@
 	"error.universeNotDisabled": {
 		"message": "That universe ain't laid up.",
 		"source": "The universe isn't disabled."
+	},
+	"error.unknownItemEquips": {
+		"message": "The universe's ruleset knows nowhere like that to strap on booty.",
+		"source": "The universe's ruleset has nowhere like that to equip an item."
 	},
 	"error.unknownItemType": {
 		"message": "The universe's ruleset knows no such kind or sort o' booty.",
@@ -6607,6 +6815,54 @@
 		"message": "Who can use the summons",
 		"source": "Who can use the link"
 	},
+	"item.pf1e.agile_breastplate": {
+		"message": "agile breastplate",
+		"source": "agile breastplate"
+	},
+	"item.pf1e.agile_half_plate": {
+		"message": "agile half-plate",
+		"source": "agile half-plate"
+	},
+	"item.pf1e.armored_coat": {
+		"message": "armored coat",
+		"source": "armored coat"
+	},
+	"item.pf1e.arrows": {
+		"message": "arrows",
+		"source": "arrows"
+	},
+	"item.pf1e.artisans_tools": {
+		"message": "artisan's tools",
+		"source": "artisan's tools"
+	},
+	"item.pf1e.banded_mail": {
+		"message": "banded mail",
+		"source": "banded mail"
+	},
+	"item.pf1e.bastard_sword": {
+		"message": "bastard sword",
+		"source": "bastard sword"
+	},
+	"item.pf1e.battleaxe": {
+		"message": "battleaxe",
+		"source": "battleaxe"
+	},
+	"item.pf1e.bells": {
+		"message": "bells",
+		"source": "bells"
+	},
+	"item.pf1e.blowgun": {
+		"message": "blowpipe",
+		"source": "blowgun"
+	},
+	"item.pf1e.blowgun_darts": {
+		"message": "blowpipe darts",
+		"source": "blowgun darts"
+	},
+	"item.pf1e.bolas": {
+		"message": "bolas",
+		"source": "bolas"
+	},
 	"item.pf1e.book_of_puzzles": {
 		"message": "book o' riddles",
 		"source": "book of puzzles"
@@ -6615,53 +6871,2113 @@
 		"message": "book o' battle prayers",
 		"source": "book of war prayers"
 	},
+	"item.pf1e.breastplate": {
+		"message": "breastplate",
+		"source": "breastplate"
+	},
+	"item.pf1e.buckler": {
+		"message": "buckler",
+		"source": "buckler"
+	},
 	"item.pf1e.cestus": {
 		"message": "knuckle-duster",
 		"source": "cestus"
+	},
+	"item.pf1e.chain_shirt": {
+		"message": "chain shirt",
+		"source": "chain shirt"
+	},
+	"item.pf1e.chainmail": {
+		"message": "chainmail",
+		"source": "chainmail"
+	},
+	"item.pf1e.chimes": {
+		"message": "chimes",
+		"source": "chimes"
+	},
+	"item.pf1e.claw_blades": {
+		"message": "claw blades",
+		"source": "claw blades"
+	},
+	"item.pf1e.climbers_kit": {
+		"message": "riggin' kit",
+		"source": "climber's kit"
+	},
+	"item.pf1e.club": {
+		"message": "cudgel",
+		"source": "club"
+	},
+	"item.pf1e.composite_longbow": {
+		"message": "composite longbow",
+		"source": "composite longbow"
+	},
+	"item.pf1e.composite_shortbow": {
+		"message": "composite shortbow",
+		"source": "composite shortbow"
+	},
+	"item.pf1e.crossbow_bolts": {
+		"message": "crossbow quarrels",
+		"source": "crossbow bolts"
 	},
 	"item.pf1e.dagger": {
 		"message": "dirk",
 		"source": "dagger"
 	},
+	"item.pf1e.dart": {
+		"message": "dart",
+		"source": "dart"
+	},
+	"item.pf1e.dire_flail": {
+		"message": "dire flail",
+		"source": "dire flail"
+	},
+	"item.pf1e.disguise_kit": {
+		"message": "disguise kit",
+		"source": "disguise kit"
+	},
+	"item.pf1e.drum": {
+		"message": "drum",
+		"source": "drum"
+	},
+	"item.pf1e.dwarven_boulder_helmet": {
+		"message": "dwarven boulder helmet",
+		"source": "dwarven boulder helmet"
+	},
+	"item.pf1e.dwarven_double_waraxe": {
+		"message": "dwarven double waraxe",
+		"source": "dwarven double waraxe"
+	},
+	"item.pf1e.dwarven_longaxe": {
+		"message": "dwarven longaxe",
+		"source": "dwarven longaxe"
+	},
+	"item.pf1e.dwarven_longhammer": {
+		"message": "dwarven longhammer",
+		"source": "dwarven longhammer"
+	},
+	"item.pf1e.dwarven_urgrosh": {
+		"message": "dwarven urgrosh",
+		"source": "dwarven urgrosh"
+	},
+	"item.pf1e.dwarven_waraxe": {
+		"message": "dwarven waraxe",
+		"source": "dwarven waraxe"
+	},
+	"item.pf1e.elven_curve_blade": {
+		"message": "elven curve blade",
+		"source": "elven curve blade"
+	},
+	"item.pf1e.falchion": {
+		"message": "falchion",
+		"source": "falchion"
+	},
+	"item.pf1e.fiddle": {
+		"message": "fiddle",
+		"source": "fiddle"
+	},
+	"item.pf1e.flail": {
+		"message": "flail",
+		"source": "flail"
+	},
+	"item.pf1e.flute": {
+		"message": "flute",
+		"source": "flute"
+	},
 	"item.pf1e.footprints_cast": {
 		"message": "bootprint cast",
 		"source": "footprints cast"
+	},
+	"item.pf1e.full_plate": {
+		"message": "full plate",
+		"source": "full plate"
+	},
+	"item.pf1e.gauntlet": {
+		"message": "gauntlet",
+		"source": "gauntlet"
+	},
+	"item.pf1e.glaive": {
+		"message": "glaive",
+		"source": "glaive"
+	},
+	"item.pf1e.gnome_hooked_hammer": {
+		"message": "gnome hooked hammer",
+		"source": "gnome hooked hammer"
+	},
+	"item.pf1e.greataxe": {
+		"message": "greataxe",
+		"source": "greataxe"
+	},
+	"item.pf1e.greatclub": {
+		"message": "great cudgel",
+		"source": "greatclub"
+	},
+	"item.pf1e.greatsword": {
+		"message": "greatsword",
+		"source": "greatsword"
+	},
+	"item.pf1e.guisarme": {
+		"message": "guisarme",
+		"source": "guisarme"
+	},
+	"item.pf1e.halberd": {
+		"message": "halberd",
+		"source": "halberd"
+	},
+	"item.pf1e.half_plate": {
+		"message": "half-plate",
+		"source": "half-plate"
+	},
+	"item.pf1e.halfling_sling_staff": {
+		"message": "halfling sling staff",
+		"source": "halfling sling staff"
+	},
+	"item.pf1e.hand_crossbow": {
+		"message": "hand crossbow",
+		"source": "hand crossbow"
+	},
+	"item.pf1e.handaxe": {
+		"message": "handaxe",
+		"source": "handaxe"
+	},
+	"item.pf1e.harp": {
+		"message": "harp",
+		"source": "harp"
+	},
+	"item.pf1e.healers_kit": {
+		"message": "surgeon's kit",
+		"source": "healer's kit"
+	},
+	"item.pf1e.heartstake_bolt": {
+		"message": "heartstake quarrel",
+		"source": "heartstake bolt"
+	},
+	"item.pf1e.heavy_crossbow": {
+		"message": "heavy crossbow",
+		"source": "heavy crossbow"
+	},
+	"item.pf1e.heavy_flail": {
+		"message": "heavy flail",
+		"source": "heavy flail"
+	},
+	"item.pf1e.heavy_mace": {
+		"message": "heavy mace",
+		"source": "heavy mace"
+	},
+	"item.pf1e.heavy_pick": {
+		"message": "heavy pick",
+		"source": "heavy pick"
+	},
+	"item.pf1e.heavy_repeating_crossbow": {
+		"message": "heavy repeatin' crossbow",
+		"source": "heavy repeating crossbow"
+	},
+	"item.pf1e.heavy_steel_shield": {
+		"message": "heavy steel shield",
+		"source": "heavy steel shield"
+	},
+	"item.pf1e.heavy_wooden_shield": {
+		"message": "heavy wooden shield",
+		"source": "heavy wooden shield"
+	},
+	"item.pf1e.hide_armor": {
+		"message": "hide armor",
+		"source": "hide armor"
+	},
+	"item.pf1e.holly_and_mistletoe": {
+		"message": "holly and mistletoe",
+		"source": "holly and mistletoe"
+	},
+	"item.pf1e.javelin": {
+		"message": "javelin",
+		"source": "javelin"
+	},
+	"item.pf1e.jolting_dart": {
+		"message": "jolting dart",
+		"source": "jolting dart"
+	},
+	"item.pf1e.kama": {
+		"message": "kama",
+		"source": "kama"
 	},
 	"item.pf1e.kobold_long_lash": {
 		"message": "long lash tail rig",
 		"source": "long lash tail attachment"
 	},
+	"item.pf1e.kobold_pounder_tail": {
+		"message": "pounder tail rig",
+		"source": "pounder tail attachment"
+	},
+	"item.pf1e.kobold_razored_tail": {
+		"message": "razored tail rig",
+		"source": "razored tail attachment"
+	},
 	"item.pf1e.kobold_spiked_tail": {
 		"message": "spiked tail rig",
 		"source": "spiked tail attachment"
+	},
+	"item.pf1e.kobold_sweeper_tail": {
+		"message": "sweeper tail rig",
+		"source": "sweeper tail attachment"
+	},
+	"item.pf1e.kukri": {
+		"message": "kukri",
+		"source": "kukri"
+	},
+	"item.pf1e.lance": {
+		"message": "lance",
+		"source": "lance"
+	},
+	"item.pf1e.lasso": {
+		"message": "lasso",
+		"source": "lasso"
+	},
+	"item.pf1e.leather_armor": {
+		"message": "leather armor",
+		"source": "leather armor"
+	},
+	"item.pf1e.light_crossbow": {
+		"message": "light crossbow",
+		"source": "light crossbow"
 	},
 	"item.pf1e.light_fire_ink": {
 		"message": "flash-fire ink",
 		"source": "light fire ink"
 	},
+	"item.pf1e.light_hammer": {
+		"message": "light hammer",
+		"source": "light hammer"
+	},
+	"item.pf1e.light_mace": {
+		"message": "light mace",
+		"source": "light mace"
+	},
+	"item.pf1e.light_pick": {
+		"message": "light pick",
+		"source": "light pick"
+	},
+	"item.pf1e.light_repeating_crossbow": {
+		"message": "light repeatin' crossbow",
+		"source": "light repeating crossbow"
+	},
+	"item.pf1e.light_steel_shield": {
+		"message": "light steel shield",
+		"source": "light steel shield"
+	},
+	"item.pf1e.light_wooden_shield": {
+		"message": "light wooden shield",
+		"source": "light wooden shield"
+	},
+	"item.pf1e.locked_gauntlet": {
+		"message": "locked gauntlet",
+		"source": "locked gauntlet"
+	},
+	"item.pf1e.longbow": {
+		"message": "longbow",
+		"source": "longbow"
+	},
+	"item.pf1e.longspear": {
+		"message": "longspear",
+		"source": "longspear"
+	},
+	"item.pf1e.longsword": {
+		"message": "longsword",
+		"source": "longsword"
+	},
+	"item.pf1e.lute": {
+		"message": "lute",
+		"source": "lute"
+	},
+	"item.pf1e.mandolin": {
+		"message": "mandolin",
+		"source": "mandolin"
+	},
+	"item.pf1e.morningstar": {
+		"message": "morningstar",
+		"source": "morningstar"
+	},
+	"item.pf1e.net": {
+		"message": "net",
+		"source": "net"
+	},
+	"item.pf1e.nunchaku": {
+		"message": "nunchaku",
+		"source": "nunchaku"
+	},
+	"item.pf1e.orc_double_axe": {
+		"message": "orc double axe",
+		"source": "orc double axe"
+	},
+	"item.pf1e.padded_armor": {
+		"message": "padded armor",
+		"source": "padded armor"
+	},
+	"item.pf1e.pan_pipes": {
+		"message": "pan pipes",
+		"source": "pan pipes"
+	},
+	"item.pf1e.punching_dagger": {
+		"message": "punchin' dirk",
+		"source": "punching dagger"
+	},
+	"item.pf1e.quarterstaff": {
+		"message": "quarterstaff",
+		"source": "quarterstaff"
+	},
+	"item.pf1e.quickdraw_light_steel_shield": {
+		"message": "quickdraw light steel shield",
+		"source": "quickdraw light steel shield"
+	},
+	"item.pf1e.quickdraw_light_wooden_shield": {
+		"message": "quickdraw light wooden shield",
+		"source": "quickdraw light wooden shield"
+	},
 	"item.pf1e.quilted_cloth": {
 		"message": "quilted sailcloth",
 		"source": "quilted cloth"
+	},
+	"item.pf1e.ranseur": {
+		"message": "ranseur",
+		"source": "ranseur"
+	},
+	"item.pf1e.rapier": {
+		"message": "rapier",
+		"source": "rapier"
 	},
 	"item.pf1e.ratfolk_tailblade": {
 		"message": "bilge rat tailblade",
 		"source": "ratfolk tailblade"
 	},
+	"item.pf1e.recorder": {
+		"message": "recorder",
+		"source": "recorder"
+	},
+	"item.pf1e.repeating_crossbow_bolts": {
+		"message": "repeatin' crossbow quarrels",
+		"source": "repeating crossbow bolts"
+	},
+	"item.pf1e.sai": {
+		"message": "sai",
+		"source": "sai"
+	},
+	"item.pf1e.sap": {
+		"message": "sap",
+		"source": "sap"
+	},
+	"item.pf1e.scale_mail": {
+		"message": "scale mail",
+		"source": "scale mail"
+	},
+	"item.pf1e.scimitar": {
+		"message": "cutlass",
+		"source": "scimitar"
+	},
+	"item.pf1e.scythe": {
+		"message": "scythe",
+		"source": "scythe"
+	},
+	"item.pf1e.sea_knife": {
+		"message": "sea-knife",
+		"source": "sea-knife"
+	},
+	"item.pf1e.shawm": {
+		"message": "shawm",
+		"source": "shawm"
+	},
+	"item.pf1e.short_sword": {
+		"message": "short sword",
+		"source": "short sword"
+	},
+	"item.pf1e.shortbow": {
+		"message": "shortbow",
+		"source": "shortbow"
+	},
+	"item.pf1e.shortspear": {
+		"message": "shortspear",
+		"source": "shortspear"
+	},
+	"item.pf1e.shuriken": {
+		"message": "shuriken",
+		"source": "shuriken"
+	},
+	"item.pf1e.siangham": {
+		"message": "siangham",
+		"source": "siangham"
+	},
+	"item.pf1e.sickle": {
+		"message": "sickle",
+		"source": "sickle"
+	},
+	"item.pf1e.silver_holy_symbol": {
+		"message": "silver holy charm",
+		"source": "silver holy symbol"
+	},
+	"item.pf1e.sling": {
+		"message": "sling",
+		"source": "sling"
+	},
+	"item.pf1e.sling_bullets": {
+		"message": "sling shot",
+		"source": "sling bullets"
+	},
+	"item.pf1e.snag_net": {
+		"message": "snag net",
+		"source": "snag net"
+	},
+	"item.pf1e.spear": {
+		"message": "spear",
+		"source": "spear"
+	},
+	"item.pf1e.spiked_chain": {
+		"message": "spiked chain",
+		"source": "spiked chain"
+	},
+	"item.pf1e.spiked_gauntlet": {
+		"message": "spiked gauntlet",
+		"source": "spiked gauntlet"
+	},
+	"item.pf1e.splint_mail": {
+		"message": "splint mail",
+		"source": "splint mail"
+	},
+	"item.pf1e.starknife": {
+		"message": "starknife",
+		"source": "starknife"
+	},
+	"item.pf1e.studded_leather": {
+		"message": "studded leather",
+		"source": "studded leather"
+	},
 	"item.pf1e.sword_cane": {
 		"message": "sword cane",
 		"source": "sword cane"
+	},
+	"item.pf1e.thieves_tools": {
+		"message": "pickpocket's tools",
+		"source": "thieves' tools"
+	},
+	"item.pf1e.throwing_axe": {
+		"message": "throwin' axe",
+		"source": "throwing axe"
 	},
 	"item.pf1e.tome_of_epics": {
 		"message": "tome o' legends",
 		"source": "tome of epics"
 	},
+	"item.pf1e.tower_shield": {
+		"message": "tower shield",
+		"source": "tower shield"
+	},
+	"item.pf1e.trident": {
+		"message": "trident",
+		"source": "trident"
+	},
+	"item.pf1e.trumpet": {
+		"message": "trumpet",
+		"source": "trumpet"
+	},
+	"item.pf1e.two_bladed_sword": {
+		"message": "two-bladed sword",
+		"source": "two-bladed sword"
+	},
+	"item.pf1e.warhammer": {
+		"message": "warhammer",
+		"source": "warhammer"
+	},
+	"item.pf1e.whip": {
+		"message": "whip",
+		"source": "whip"
+	},
 	"item.pf1e.wooden_armor": {
 		"message": "plank armor",
 		"source": "wooden armor"
 	},
+	"item.pf1e.wooden_holy_symbol": {
+		"message": "wooden holy charm",
+		"source": "wooden holy symbol"
+	},
+	"item.sf1e.accelerated_starknife": {
+		"message": "accelerated starknife",
+		"source": "accelerated starknife"
+	},
+	"item.sf1e.advanced_arc_emitter": {
+		"message": "advanced arc emitter",
+		"source": "advanced arc emitter"
+	},
+	"item.sf1e.advanced_autobeam_artillery": {
+		"message": "advanced autobeam artillery",
+		"source": "advanced autobeam artillery"
+	},
+	"item.sf1e.advanced_autobeam_rifle": {
+		"message": "advanced autobeam musket",
+		"source": "advanced autobeam rifle"
+	},
+	"item.sf1e.advanced_baton": {
+		"message": "advanced belayin' pin",
+		"source": "advanced baton"
+	},
+	"item.sf1e.advanced_crossbolter": {
+		"message": "advanced crossbolter",
+		"source": "advanced crossbolter"
+	},
+	"item.sf1e.advanced_cryopike": {
+		"message": "advanced cryopike",
+		"source": "advanced cryopike"
+	},
+	"item.sf1e.advanced_doshko": {
+		"message": "advanced doshko",
+		"source": "advanced doshko"
+	},
+	"item.sf1e.advanced_gyrojet_pistol": {
+		"message": "advanced gyrojet pistol",
+		"source": "advanced gyrojet pistol"
+	},
+	"item.sf1e.advanced_gyrojet_rifle": {
+		"message": "advanced gyrojet musket",
+		"source": "advanced gyrojet rifle"
+	},
+	"item.sf1e.advanced_iridishell": {
+		"message": "advanced iridishell",
+		"source": "advanced iridishell"
+	},
+	"item.sf1e.advanced_lashunta_tempweave": {
+		"message": "advanced lashunta tempweave",
+		"source": "advanced lashunta tempweave"
+	},
+	"item.sf1e.advanced_magnetar_rifle": {
+		"message": "advanced magnetar musket",
+		"source": "advanced magnetar rifle"
+	},
+	"item.sf1e.advanced_missile": {
+		"message": "advanced rocket",
+		"source": "advanced missile"
+	},
+	"item.sf1e.advanced_pike": {
+		"message": "advanced pike",
+		"source": "advanced pike"
+	},
+	"item.sf1e.advanced_reaction_cannon": {
+		"message": "advanced reaction cannon",
+		"source": "advanced reaction cannon"
+	},
+	"item.sf1e.advanced_seeker_rifle": {
+		"message": "advanced seeker musket",
+		"source": "advanced seeker rifle"
+	},
+	"item.sf1e.advanced_semi_auto_pistol": {
+		"message": "advanced repeatin' pistol",
+		"source": "advanced semi-auto pistol"
+	},
+	"item.sf1e.advanced_shirren_eye_rifle": {
+		"message": "advanced shirren-eye musket",
+		"source": "advanced shirren-eye rifle"
+	},
+	"item.sf1e.advanced_swoop_hammer": {
+		"message": "advanced swoop hammer",
+		"source": "advanced swoop hammer"
+	},
+	"item.sf1e.advanced_x_gen_gun": {
+		"message": "advanced X-gen gun",
+		"source": "advanced X-gen gun"
+	},
+	"item.sf1e.advanced_zero_cannon": {
+		"message": "advanced zero cannon",
+		"source": "advanced zero cannon"
+	},
+	"item.sf1e.aphelion_artillery_laser": {
+		"message": "aphelion artillery ray",
+		"source": "aphelion artillery laser"
+	},
+	"item.sf1e.aphelion_laser_pistol": {
+		"message": "aphelion ray pistol",
+		"source": "aphelion laser pistol"
+	},
+	"item.sf1e.aphelion_laser_rifle": {
+		"message": "aphelion ray musket",
+		"source": "aphelion laser rifle"
+	},
+	"item.sf1e.apocalypse_devastation_blade": {
+		"message": "apocalypse devastation blade",
+		"source": "apocalypse devastation blade"
+	},
+	"item.sf1e.arrows": {
+		"message": "arrows",
+		"source": "arrows"
+	},
+	"item.sf1e.assault_hammer": {
+		"message": "assault hammer",
+		"source": "assault hammer"
+	},
+	"item.sf1e.aurora_arc_pistol": {
+		"message": "aurora arc pistol",
+		"source": "aurora arc pistol"
+	},
+	"item.sf1e.aurora_arc_rifle": {
+		"message": "aurora arc musket",
+		"source": "aurora arc rifle"
+	},
+	"item.sf1e.aurora_shock_caster": {
+		"message": "aurora shock caster",
+		"source": "aurora shock caster"
+	},
+	"item.sf1e.aurora_shock_truncheon": {
+		"message": "aurora shock truncheon",
+		"source": "aurora shock truncheon"
+	},
+	"item.sf1e.autotarget_rifle": {
+		"message": "autotarget musket",
+		"source": "autotarget rifle"
+	},
+	"item.sf1e.avalanche_class_zero_pistol": {
+		"message": "avalanche-class zero pistol",
+		"source": "avalanche-class zero pistol"
+	},
+	"item.sf1e.avalanche_class_zero_rifle": {
+		"message": "avalanche-class zero musket",
+		"source": "avalanche-class zero rifle"
+	},
+	"item.sf1e.azimuth_artillery_laser": {
+		"message": "azimuth artillery ray",
+		"source": "azimuth artillery laser"
+	},
+	"item.sf1e.azimuth_laser_pistol": {
+		"message": "azimuth ray pistol",
+		"source": "azimuth laser pistol"
+	},
+	"item.sf1e.azimuth_laser_rifle": {
+		"message": "azimuth ray musket",
+		"source": "azimuth laser rifle"
+	},
+	"item.sf1e.banshee_pulse_gauntlet": {
+		"message": "banshee pulse gauntlet",
+		"source": "banshee pulse gauntlet"
+	},
+	"item.sf1e.banshee_sonic_pistol": {
+		"message": "banshee sonic pistol",
+		"source": "banshee sonic pistol"
+	},
+	"item.sf1e.banshee_sonic_rifle": {
+		"message": "banshee sonic musket",
+		"source": "banshee sonic rifle"
+	},
+	"item.sf1e.basic_iridishell": {
+		"message": "basic iridishell",
+		"source": "basic iridishell"
+	},
+	"item.sf1e.basic_lashunta_tempweave": {
+		"message": "basic lashunta tempweave",
+		"source": "basic lashunta tempweave"
+	},
+	"item.sf1e.battery": {
+		"message": "powder charge",
+		"source": "battery"
+	},
+	"item.sf1e.battle_staff": {
+		"message": "battle staff",
+		"source": "battle staff"
+	},
+	"item.sf1e.bespoke_echelon_fashion": {
+		"message": "bespoke echelon fashion",
+		"source": "bespoke echelon fashion"
+	},
+	"item.sf1e.blaze_flame_doshko": {
+		"message": "blaze flame doshko",
+		"source": "blaze flame doshko"
+	},
+	"item.sf1e.blizzard_class_zero_pistol": {
+		"message": "blizzard-class zero pistol",
+		"source": "blizzard-class zero pistol"
+	},
+	"item.sf1e.blizzard_class_zero_rifle": {
+		"message": "blizzard-class zero musket",
+		"source": "blizzard-class zero rifle"
+	},
+	"item.sf1e.blue_star_plasma_cannon": {
+		"message": "blue star plasma cannon",
+		"source": "blue star plasma cannon"
+	},
+	"item.sf1e.blue_star_plasma_caster": {
+		"message": "blue star plasma caster",
+		"source": "blue star plasma caster"
+	},
+	"item.sf1e.blue_star_plasma_doshko": {
+		"message": "blue star plasma doshko",
+		"source": "blue star plasma doshko"
+	},
+	"item.sf1e.blue_star_plasma_pistol": {
+		"message": "blue star plasma pistol",
+		"source": "blue star plasma pistol"
+	},
+	"item.sf1e.blue_star_plasma_rifle": {
+		"message": "blue star plasma musket",
+		"source": "blue star plasma rifle"
+	},
+	"item.sf1e.blue_star_plasma_sword": {
+		"message": "blue star plasma sword",
+		"source": "blue star plasma sword"
+	},
+	"item.sf1e.boardroom_attire": {
+		"message": "boardroom attire",
+		"source": "boardroom attire"
+	},
+	"item.sf1e.bow": {
+		"message": "bow",
+		"source": "bow"
+	},
+	"item.sf1e.business_stationwear": {
+		"message": "business stationwear",
+		"source": "business stationwear"
+	},
+	"item.sf1e.buzzblade_curve_blade": {
+		"message": "buzzblade curve blade",
+		"source": "buzzblade curve blade"
+	},
+	"item.sf1e.buzzblade_dueling_sword": {
+		"message": "buzzblade dueling sword",
+		"source": "buzzblade dueling sword"
+	},
+	"item.sf1e.buzzblade_spear": {
+		"message": "buzzblade spear",
+		"source": "buzzblade spear"
+	},
+	"item.sf1e.carbon_staff": {
+		"message": "carbon staff",
+		"source": "carbon staff"
+	},
+	"item.sf1e.carbon_steel_curve_blade": {
+		"message": "carbon steel curve blade",
+		"source": "carbon steel curve blade"
+	},
+	"item.sf1e.carbonedge_shuriken": {
+		"message": "carbonedge shuriken",
+		"source": "carbonedge shuriken"
+	},
+	"item.sf1e.casual_stationwear": {
+		"message": "casual stationwear",
+		"source": "casual stationwear"
+	},
+	"item.sf1e.cestus_battleglove": {
+		"message": "cestus battleglove",
+		"source": "cestus battleglove"
+	},
+	"item.sf1e.club": {
+		"message": "club",
+		"source": "club"
+	},
+	"item.sf1e.combat_rifle": {
+		"message": "combat musket",
+		"source": "combat rifle"
+	},
+	"item.sf1e.comet_hammer": {
+		"message": "comet hammer",
+		"source": "comet hammer"
+	},
+	"item.sf1e.commander_ceremonial_plate": {
+		"message": "commander ceremonial plate",
+		"source": "commander ceremonial plate"
+	},
+	"item.sf1e.complex_acid_dart_rifle": {
+		"message": "complex acid dart musket",
+		"source": "complex acid dart rifle"
+	},
+	"item.sf1e.corona_artillery_laser": {
+		"message": "corona artillery ray",
+		"source": "corona artillery laser"
+	},
+	"item.sf1e.corona_laser_pistol": {
+		"message": "corona ray pistol",
+		"source": "corona laser pistol"
+	},
+	"item.sf1e.corona_laser_rifle": {
+		"message": "corona ray musket",
+		"source": "corona laser rifle"
+	},
+	"item.sf1e.cryo_grenade_1": {
+		"message": "cryo grenado I",
+		"source": "cryo grenade I"
+	},
+	"item.sf1e.cryo_grenade_2": {
+		"message": "cryo grenado II",
+		"source": "cryo grenade II"
+	},
+	"item.sf1e.cryo_grenade_3": {
+		"message": "cryo grenado III",
+		"source": "cryo grenade III"
+	},
+	"item.sf1e.cryo_grenade_4": {
+		"message": "cryo grenado IV",
+		"source": "cryo grenade IV"
+	},
+	"item.sf1e.d_suit_1": {
+		"message": "D-suit I",
+		"source": "D-suit I"
+	},
+	"item.sf1e.d_suit_2": {
+		"message": "D-suit II",
+		"source": "D-suit II"
+	},
+	"item.sf1e.d_suit_3": {
+		"message": "D-suit III",
+		"source": "D-suit III"
+	},
+	"item.sf1e.d_suit_4": {
+		"message": "D-suit IV",
+		"source": "D-suit IV"
+	},
+	"item.sf1e.d_suit_5": {
+		"message": "D-suit V",
+		"source": "D-suit V"
+	},
+	"item.sf1e.d_suit_6": {
+		"message": "D-suit VI",
+		"source": "D-suit VI"
+	},
+	"item.sf1e.darts": {
+		"message": "darts",
+		"source": "darts"
+	},
+	"item.sf1e.defrex_hide": {
+		"message": "defrex hide",
+		"source": "defrex hide"
+	},
+	"item.sf1e.diamond_carbon_skin": {
+		"message": "diamond carbon skin",
+		"source": "diamond carbon skin"
+	},
+	"item.sf1e.dimensional_blade_doshko": {
+		"message": "dimensional blade doshko",
+		"source": "dimensional blade doshko"
+	},
+	"item.sf1e.dimensional_slice_curve_blade": {
+		"message": "dimensional slice curve blade",
+		"source": "dimensional slice curve blade"
+	},
+	"item.sf1e.dimensional_slice_longsword": {
+		"message": "dimensional slice longsword",
+		"source": "dimensional slice longsword"
+	},
+	"item.sf1e.dimensional_slice_starknife": {
+		"message": "dimensional slice starknife",
+		"source": "dimensional slice starknife"
+	},
+	"item.sf1e.dominion_quantum_entangler": {
+		"message": "dominion quantum entangler",
+		"source": "dominion quantum entangler"
+	},
+	"item.sf1e.dual_acid_dart_rifle": {
+		"message": "dual acid dart musket",
+		"source": "dual acid dart rifle"
+	},
+	"item.sf1e.dual_crossbolter": {
+		"message": "dual crossbolter",
+		"source": "dual crossbolter"
+	},
+	"item.sf1e.elite_aegis_series": {
+		"message": "elite aegis series",
+		"source": "elite aegis series"
+	},
+	"item.sf1e.elite_autobeam_artillery": {
+		"message": "elite autobeam artillery",
+		"source": "elite autobeam artillery"
+	},
+	"item.sf1e.elite_autobeam_rifle": {
+		"message": "elite autobeam musket",
+		"source": "elite autobeam rifle"
+	},
+	"item.sf1e.elite_crossbolter": {
+		"message": "elite crossbolter",
+		"source": "elite crossbolter"
+	},
+	"item.sf1e.elite_defiance_series": {
+		"message": "elite defiance series",
+		"source": "elite defiance series"
+	},
+	"item.sf1e.elite_gyrojet_pistol": {
+		"message": "elite gyrojet pistol",
+		"source": "elite gyrojet pistol"
+	},
+	"item.sf1e.elite_gyrojet_rifle": {
+		"message": "elite gyrojet musket",
+		"source": "elite gyrojet rifle"
+	},
+	"item.sf1e.elite_hardlight_series": {
+		"message": "elite hardlight series",
+		"source": "elite hardlight series"
+	},
+	"item.sf1e.elite_magnetar_rifle": {
+		"message": "elite magnetar musket",
+		"source": "elite magnetar rifle"
+	},
+	"item.sf1e.elite_pike": {
+		"message": "elite pike",
+		"source": "elite pike"
+	},
+	"item.sf1e.elite_reaction_cannon": {
+		"message": "elite reaction cannon",
+		"source": "elite reaction cannon"
+	},
+	"item.sf1e.elite_seeker_rifle": {
+		"message": "elite seeker musket",
+		"source": "elite seeker rifle"
+	},
+	"item.sf1e.elite_semi_auto_pistol": {
+		"message": "elite repeatin' pistol",
+		"source": "elite semi-auto pistol"
+	},
+	"item.sf1e.elite_shirren_eye_rifle": {
+		"message": "elite shirren-eye musket",
+		"source": "elite shirren-eye rifle"
+	},
+	"item.sf1e.elite_stationwear": {
+		"message": "elite stationwear",
+		"source": "elite stationwear"
+	},
+	"item.sf1e.elite_x_gen_gun": {
+		"message": "elite X-gen gun",
+		"source": "elite X-gen gun"
+	},
+	"item.sf1e.elite_zero_cannon": {
+		"message": "elite zero cannon",
+		"source": "elite zero cannon"
+	},
+	"item.sf1e.ember_flame_doshko": {
+		"message": "ember flame doshko",
+		"source": "ember flame doshko"
+	},
+	"item.sf1e.enginerunner": {
+		"message": "enginerunner",
+		"source": "enginerunner"
+	},
+	"item.sf1e.estex_suit_1": {
+		"message": "estex suit I",
+		"source": "estex suit I"
+	},
+	"item.sf1e.estex_suit_2": {
+		"message": "estex suit II",
+		"source": "estex suit II"
+	},
+	"item.sf1e.estex_suit_3": {
+		"message": "estex suit III",
+		"source": "estex suit III"
+	},
+	"item.sf1e.estex_suit_4": {
+		"message": "estex suit IV",
+		"source": "estex suit IV"
+	},
+	"item.sf1e.exident_skyfire_armor": {
+		"message": "exident skyfire armor",
+		"source": "exident skyfire armor"
+	},
+	"item.sf1e.explosive_heavy_rounds": {
+		"message": "explosive heavy shot",
+		"source": "explosive heavy rounds"
+	},
+	"item.sf1e.explosive_scattergun_shells": {
+		"message": "explosive scattergun shot",
+		"source": "explosive scattergun shells"
+	},
+	"item.sf1e.fangblade": {
+		"message": "fangblade",
+		"source": "fangblade"
+	},
+	"item.sf1e.firedrake_class_flamethrower": {
+		"message": "firedrake-class flamethrower",
+		"source": "firedrake-class flamethrower"
+	},
+	"item.sf1e.flame_pistol": {
+		"message": "flame pistol",
+		"source": "flame pistol"
+	},
+	"item.sf1e.flame_rifle": {
+		"message": "flame musket",
+		"source": "flame rifle"
+	},
+	"item.sf1e.flares": {
+		"message": "flares",
+		"source": "flares"
+	},
+	"item.sf1e.flash_grenade_1": {
+		"message": "flash grenado I",
+		"source": "flash grenade I"
+	},
+	"item.sf1e.flash_grenade_2": {
+		"message": "flash grenado II",
+		"source": "flash grenade II"
+	},
+	"item.sf1e.flash_grenade_3": {
+		"message": "flash grenado III",
+		"source": "flash grenade III"
+	},
+	"item.sf1e.flash_grenade_4": {
+		"message": "flash grenado IV",
+		"source": "flash grenade IV"
+	},
+	"item.sf1e.flight_suit_stationwear": {
+		"message": "flight suit stationwear",
+		"source": "flight suit stationwear"
+	},
+	"item.sf1e.frag_grenade_1": {
+		"message": "frag grenado I",
+		"source": "frag grenade I"
+	},
+	"item.sf1e.frag_grenade_2": {
+		"message": "frag grenado II",
+		"source": "frag grenade II"
+	},
+	"item.sf1e.frag_grenade_3": {
+		"message": "frag grenado III",
+		"source": "frag grenade III"
+	},
+	"item.sf1e.frag_grenade_4": {
+		"message": "frag grenado IV",
+		"source": "frag grenade IV"
+	},
+	"item.sf1e.frag_grenade_5": {
+		"message": "frag grenado V",
+		"source": "frag grenade V"
+	},
+	"item.sf1e.frag_grenade_6": {
+		"message": "frag grenado VI",
+		"source": "frag grenade VI"
+	},
+	"item.sf1e.frag_grenade_7": {
+		"message": "frag grenado VII",
+		"source": "frag grenade VII"
+	},
+	"item.sf1e.frag_grenade_8": {
+		"message": "frag grenado VIII",
+		"source": "frag grenade VIII"
+	},
+	"item.sf1e.freebooter_armor_1": {
+		"message": "freebooter armor I",
+		"source": "freebooter armor I"
+	},
+	"item.sf1e.freebooter_armor_2": {
+		"message": "freebooter armor II",
+		"source": "freebooter armor II"
+	},
+	"item.sf1e.freebooter_armor_3": {
+		"message": "freebooter armor III",
+		"source": "freebooter armor III"
+	},
+	"item.sf1e.freebooter_armor_4": {
+		"message": "freebooter armor IV",
+		"source": "freebooter armor IV"
+	},
+	"item.sf1e.freebooter_armor_5": {
+		"message": "freebooter armor V",
+		"source": "freebooter armor V"
+	},
+	"item.sf1e.frostbite_class_zero_pistol": {
+		"message": "frostbite-class zero pistol",
+		"source": "frostbite-class zero pistol"
+	},
+	"item.sf1e.frostbite_class_zero_rifle": {
+		"message": "frostbite-class zero musket",
+		"source": "frostbite-class zero rifle"
+	},
+	"item.sf1e.gold_abadarcorp_travel_suit": {
+		"message": "gold AbadarCorp travel suit",
+		"source": "gold AbadarCorp travel suit"
+	},
+	"item.sf1e.golemforged_plating_1": {
+		"message": "golemforged plating I",
+		"source": "golemforged plating I"
+	},
+	"item.sf1e.golemforged_plating_2": {
+		"message": "golemforged plating II",
+		"source": "golemforged plating II"
+	},
+	"item.sf1e.golemforged_plating_3": {
+		"message": "golemforged plating III",
+		"source": "golemforged plating III"
+	},
+	"item.sf1e.golemforged_plating_4": {
+		"message": "golemforged plating IV",
+		"source": "golemforged plating IV"
+	},
+	"item.sf1e.golemforged_plating_5": {
+		"message": "golemforged plating V",
+		"source": "golemforged plating V"
+	},
+	"item.sf1e.grapeshot_scattergun": {
+		"message": "grapeshot scattergun",
+		"source": "grapeshot scattergun"
+	},
+	"item.sf1e.graphite_carbon_skin": {
+		"message": "graphite carbon skin",
+		"source": "graphite carbon skin"
+	},
+	"item.sf1e.gravity_battleglove": {
+		"message": "gravity battleglove",
+		"source": "gravity battleglove"
+	},
+	"item.sf1e.gravity_spear": {
+		"message": "gravity spear",
+		"source": "gravity spear"
+	},
+	"item.sf1e.gravity_well_hammer": {
+		"message": "gravity well hammer",
+		"source": "gravity well hammer"
+	},
+	"item.sf1e.grenade_arrows_2": {
+		"message": "grenado arrows II",
+		"source": "grenade arrows II"
+	},
+	"item.sf1e.grenade_arrows_3": {
+		"message": "grenado arrows III",
+		"source": "grenade arrows III"
+	},
+	"item.sf1e.grenade_arrows_4": {
+		"message": "grenado arrows IV",
+		"source": "grenade arrows IV"
+	},
+	"item.sf1e.grindblade": {
+		"message": "grindblade",
+		"source": "grindblade"
+	},
+	"item.sf1e.hailstorm_class_zero_pistol": {
+		"message": "hailstorm-class zero pistol",
+		"source": "hailstorm-class zero pistol"
+	},
+	"item.sf1e.hailstorm_class_zero_rifle": {
+		"message": "hailstorm-class zero musket",
+		"source": "hailstorm-class zero rifle"
+	},
+	"item.sf1e.hardlight_staff": {
+		"message": "hardlight staff",
+		"source": "hardlight staff"
+	},
+	"item.sf1e.heavy_machine_gun": {
+		"message": "heavy rattle gun",
+		"source": "heavy machine gun"
+	},
+	"item.sf1e.heavy_reaction_cannon": {
+		"message": "heavy reaction cannon",
+		"source": "heavy reaction cannon"
+	},
+	"item.sf1e.heavy_rounds": {
+		"message": "heavy shot",
+		"source": "heavy rounds"
+	},
+	"item.sf1e.heavy_stellar_cannon": {
+		"message": "heavy stellar cannon",
+		"source": "heavy stellar cannon"
+	},
+	"item.sf1e.hellhound_class_flamethrower": {
+		"message": "hellhound-class flamethrower",
+		"source": "hellhound-class flamethrower"
+	},
+	"item.sf1e.hfd_pulse_gauntlet": {
+		"message": "HFD pulse gauntlet",
+		"source": "HFD pulse gauntlet"
+	},
+	"item.sf1e.hfd_screamer": {
+		"message": "HFD screamer",
+		"source": "HFD screamer"
+	},
+	"item.sf1e.hfd_sonic_pistol": {
+		"message": "HFD sonic pistol",
+		"source": "HFD sonic pistol"
+	},
+	"item.sf1e.hfd_sonic_rifle": {
+		"message": "HFD sonic musket",
+		"source": "HFD sonic rifle"
+	},
+	"item.sf1e.hfd_streetsweeper": {
+		"message": "HFD streetsweeper",
+		"source": "HFD streetsweeper"
+	},
+	"item.sf1e.hidden_soldier_armor": {
+		"message": "hidden soldier armor",
+		"source": "hidden soldier armor"
+	},
+	"item.sf1e.high_capacity_battery": {
+		"message": "high-capacity powder charge",
+		"source": "high-capacity battery"
+	},
+	"item.sf1e.hunting_rifle": {
+		"message": "hunting musket",
+		"source": "hunting rifle"
+	},
+	"item.sf1e.ifrit_class_flamethrower": {
+		"message": "Ifrit-class flamethrower",
+		"source": "Ifrit-class flamethrower"
+	},
+	"item.sf1e.imds_missile_launcher": {
+		"message": "IMDS rocket launcher",
+		"source": "IMDS missile launcher"
+	},
+	"item.sf1e.impact_scattergun": {
+		"message": "impact scattergun",
+		"source": "impact scattergun"
+	},
+	"item.sf1e.incapacitator": {
+		"message": "incapacitator",
+		"source": "incapacitator"
+	},
+	"item.sf1e.incendiary_grenade_1": {
+		"message": "incendiary grenado I",
+		"source": "incendiary grenade I"
+	},
+	"item.sf1e.incendiary_grenade_2": {
+		"message": "incendiary grenado II",
+		"source": "incendiary grenade II"
+	},
+	"item.sf1e.incendiary_grenade_3": {
+		"message": "incendiary grenado III",
+		"source": "incendiary grenade III"
+	},
+	"item.sf1e.incendiary_grenade_4": {
+		"message": "incendiary grenado IV",
+		"source": "incendiary grenade IV"
+	},
+	"item.sf1e.incendiary_grenade_5": {
+		"message": "incendiary grenado V",
+		"source": "incendiary grenade V"
+	},
+	"item.sf1e.incendiary_grenade_6": {
+		"message": "incendiary grenado VI",
+		"source": "incendiary grenade VI"
+	},
+	"item.sf1e.inferno_flame_doshko": {
+		"message": "inferno flame doshko",
+		"source": "inferno flame doshko"
+	},
+	"item.sf1e.inferno_skyfire_sword": {
+		"message": "inferno skyfire sword",
+		"source": "inferno skyfire sword"
+	},
+	"item.sf1e.injection_glove": {
+		"message": "injection glove",
+		"source": "injection glove"
+	},
+	"item.sf1e.kasatha_microcord_1": {
+		"message": "kasatha microcord I",
+		"source": "kasatha microcord I"
+	},
+	"item.sf1e.kasatha_microcord_2": {
+		"message": "kasatha microcord II",
+		"source": "kasatha microcord II"
+	},
+	"item.sf1e.kasatha_microcord_3": {
+		"message": "kasatha microcord III",
+		"source": "kasatha microcord III"
+	},
+	"item.sf1e.kasatha_microcord_4": {
+		"message": "kasatha microcord IV",
+		"source": "kasatha microcord IV"
+	},
+	"item.sf1e.lashunta_ringwear_1": {
+		"message": "lashunta ringwear I",
+		"source": "lashunta ringwear I"
+	},
+	"item.sf1e.lashunta_ringwear_2": {
+		"message": "lashunta ringwear II",
+		"source": "lashunta ringwear II"
+	},
+	"item.sf1e.lashunta_ringwear_3": {
+		"message": "lashunta ringwear III",
+		"source": "lashunta ringwear III"
+	},
+	"item.sf1e.lashunta_ringwear_4": {
+		"message": "lashunta ringwear IV",
+		"source": "lashunta ringwear IV"
+	},
+	"item.sf1e.lashunta_ringwear_5": {
+		"message": "lashunta ringwear V",
+		"source": "lashunta ringwear V"
+	},
+	"item.sf1e.lfd_pulse_gauntlet": {
+		"message": "LFD pulse gauntlet",
+		"source": "LFD pulse gauntlet"
+	},
+	"item.sf1e.lfd_screamer": {
+		"message": "LFD screamer",
+		"source": "LFD screamer"
+	},
+	"item.sf1e.lfd_sonic_pistol": {
+		"message": "LFD sonic pistol",
+		"source": "LFD sonic pistol"
+	},
+	"item.sf1e.lfd_sonic_rifle": {
+		"message": "LFD sonic musket",
+		"source": "LFD sonic rifle"
+	},
+	"item.sf1e.lfd_streetsweeper": {
+		"message": "LFD streetsweeper",
+		"source": "LFD streetsweeper"
+	},
+	"item.sf1e.light_reaction_cannon": {
+		"message": "light reaction cannon",
+		"source": "light reaction cannon"
+	},
+	"item.sf1e.light_stellar_cannon": {
+		"message": "light stellar cannon",
+		"source": "light stellar cannon"
+	},
+	"item.sf1e.lightspeed_starknife": {
+		"message": "lightspeed starknife",
+		"source": "lightspeed starknife"
+	},
+	"item.sf1e.longarm_and_sniper_rounds": {
+		"message": "longarm an' sniper shot",
+		"source": "longarm and sniper rounds"
+	},
+	"item.sf1e.mach_1_swoop_hammer": {
+		"message": "mach I swoop hammer",
+		"source": "mach I swoop hammer"
+	},
+	"item.sf1e.mach_2_swoop_hammer": {
+		"message": "mach II swoop hammer",
+		"source": "mach II swoop hammer"
+	},
+	"item.sf1e.mach_3_swoop_hammer": {
+		"message": "mach III swoop hammer",
+		"source": "mach III swoop hammer"
+	},
+	"item.sf1e.medium_machine_gun": {
+		"message": "medium rattle gun",
+		"source": "medium machine gun"
+	},
+	"item.sf1e.merc_nil_grenade_launcher": {
+		"message": "merc NIL grenado launcher",
+		"source": "merc NIL grenade launcher"
+	},
+	"item.sf1e.meteoric_hammer": {
+		"message": "meteoric hammer",
+		"source": "meteoric hammer"
+	},
+	"item.sf1e.microserrated_longsword": {
+		"message": "microserrated longsword",
+		"source": "microserrated longsword"
+	},
+	"item.sf1e.military_quantum_entangler": {
+		"message": "military quantum entangler",
+		"source": "military quantum entangler"
+	},
+	"item.sf1e.mini_rockets": {
+		"message": "mini-rockets",
+		"source": "mini-rockets"
+	},
+	"item.sf1e.molecular_rift_dagger": {
+		"message": "molecular rift dirk",
+		"source": "molecular rift dagger"
+	},
+	"item.sf1e.molecular_rift_doshko": {
+		"message": "molecular rift doshko",
+		"source": "molecular rift doshko"
+	},
+	"item.sf1e.molecular_rift_dueling_sword": {
+		"message": "molecular rift dueling sword",
+		"source": "molecular rift dueling sword"
+	},
+	"item.sf1e.molecular_rift_longsword": {
+		"message": "molecular rift longsword",
+		"source": "molecular rift longsword"
+	},
+	"item.sf1e.monowhip": {
+		"message": "monowhip",
+		"source": "monowhip"
+	},
+	"item.sf1e.nanotube_carbon_skin": {
+		"message": "nanotube carbon skin",
+		"source": "nanotube carbon skin"
+	},
+	"item.sf1e.needler_pistol": {
+		"message": "needler pistol",
+		"source": "needler pistol"
+	},
+	"item.sf1e.needler_rifle": {
+		"message": "needler musket",
+		"source": "needler rifle"
+	},
+	"item.sf1e.nova_battleglove": {
+		"message": "nova battleglove",
+		"source": "nova battleglove"
+	},
+	"item.sf1e.numbing_taclash": {
+		"message": "numbing taclash",
+		"source": "numbing taclash"
+	},
+	"item.sf1e.nyfiber_net": {
+		"message": "nyfiber net",
+		"source": "nyfiber net"
+	},
+	"item.sf1e.officer_ceremonial_plate": {
+		"message": "officer ceremonial plate",
+		"source": "officer ceremonial plate"
+	},
+	"item.sf1e.paragon_crossbolter": {
+		"message": "paragon crossbolter",
+		"source": "paragon crossbolter"
+	},
+	"item.sf1e.paragon_gyrojet_rifle": {
+		"message": "paragon gyrojet musket",
+		"source": "paragon gyrojet rifle"
+	},
+	"item.sf1e.paragon_magnetar_rifle": {
+		"message": "paragon magnetar musket",
+		"source": "paragon magnetar rifle"
+	},
+	"item.sf1e.paragon_reaction_cannon": {
+		"message": "paragon reaction cannon",
+		"source": "paragon reaction cannon"
+	},
+	"item.sf1e.paragon_seeker_rifle": {
+		"message": "paragon seeker musket",
+		"source": "paragon seeker rifle"
+	},
+	"item.sf1e.paragon_semi_auto_pistol": {
+		"message": "paragon repeatin' pistol",
+		"source": "paragon semi-auto pistol"
+	},
+	"item.sf1e.paragon_shirren_eye_rifle": {
+		"message": "paragon shirren-eye musket",
+		"source": "paragon shirren-eye rifle"
+	},
+	"item.sf1e.paragon_x_gen_gun": {
+		"message": "paragon X-gen gun",
+		"source": "paragon X-gen gun"
+	},
+	"item.sf1e.parallax_artillery_laser": {
+		"message": "parallax artillery ray",
+		"source": "parallax artillery laser"
+	},
+	"item.sf1e.parallax_laser_pistol": {
+		"message": "parallax ray pistol",
+		"source": "parallax laser pistol"
+	},
+	"item.sf1e.parallax_laser_rifle": {
+		"message": "parallax ray musket",
+		"source": "parallax laser rifle"
+	},
+	"item.sf1e.peacemaker": {
+		"message": "peacemaker",
+		"source": "peacemaker"
+	},
+	"item.sf1e.perihelion_artillery_laser": {
+		"message": "perihelion artillery ray",
+		"source": "perihelion artillery laser"
+	},
+	"item.sf1e.perihelion_laser_pistol": {
+		"message": "perihelion ray pistol",
+		"source": "perihelion laser pistol"
+	},
+	"item.sf1e.perihelion_laser_rifle": {
+		"message": "perihelion ray musket",
+		"source": "perihelion laser rifle"
+	},
+	"item.sf1e.phoenix_class_flamethrower": {
+		"message": "phoenix-class flamethrower",
+		"source": "phoenix-class flamethrower"
+	},
+	"item.sf1e.pinion_skyfire_armor": {
+		"message": "pinion skyfire armor",
+		"source": "pinion skyfire armor"
+	},
+	"item.sf1e.platinum_abadarcorp_travel_suit": {
+		"message": "platinum AbadarCorp travel suit",
+		"source": "platinum AbadarCorp travel suit"
+	},
+	"item.sf1e.power_battleglove": {
+		"message": "power battleglove",
+		"source": "power battleglove"
+	},
+	"item.sf1e.pulsecaster_pistol": {
+		"message": "pulsecaster pistol",
+		"source": "pulsecaster pistol"
+	},
+	"item.sf1e.pulsecaster_rifle": {
+		"message": "pulsecaster musket",
+		"source": "pulsecaster rifle"
+	},
+	"item.sf1e.ready_to_wear_echelon_fashion": {
+		"message": "ready-to-wear echelon fashion",
+		"source": "ready-to-wear echelon fashion"
+	},
+	"item.sf1e.red_star_plasma_cannon": {
+		"message": "red star plasma cannon",
+		"source": "red star plasma cannon"
+	},
+	"item.sf1e.red_star_plasma_doshko": {
+		"message": "red star plasma doshko",
+		"source": "red star plasma doshko"
+	},
+	"item.sf1e.red_star_plasma_pistol": {
+		"message": "red star plasma pistol",
+		"source": "red star plasma pistol"
+	},
+	"item.sf1e.red_star_plasma_rifle": {
+		"message": "red star plasma musket",
+		"source": "red star plasma rifle"
+	},
+	"item.sf1e.red_star_plasma_sword": {
+		"message": "red star plasma sword",
+		"source": "red star plasma sword"
+	},
+	"item.sf1e.repeller_staff": {
+		"message": "repeller staff",
+		"source": "repeller staff"
+	},
+	"item.sf1e.ripper_dueling_sword": {
+		"message": "ripper dueling sword",
+		"source": "ripper dueling sword"
+	},
+	"item.sf1e.ruin_devastation_blade": {
+		"message": "ruin devastation blade",
+		"source": "ruin devastation blade"
+	},
+	"item.sf1e.salamander_class_flamethrower": {
+		"message": "salamander-class flamethrower",
+		"source": "salamander-class flamethrower"
+	},
+	"item.sf1e.scattergun_shells": {
+		"message": "scattergun shot",
+		"source": "scattergun shells"
+	},
+	"item.sf1e.screamer_grenade_1": {
+		"message": "screamer grenado I",
+		"source": "screamer grenade I"
+	},
+	"item.sf1e.screamer_grenade_2": {
+		"message": "screamer grenado II",
+		"source": "screamer grenade II"
+	},
+	"item.sf1e.screamer_grenade_3": {
+		"message": "screamer grenado III",
+		"source": "screamer grenade III"
+	},
+	"item.sf1e.screamer_grenade_4": {
+		"message": "screamer grenado IV",
+		"source": "screamer grenade IV"
+	},
+	"item.sf1e.second_skin": {
+		"message": "second hide",
+		"source": "second skin"
+	},
+	"item.sf1e.sentinel_spear": {
+		"message": "sentinel spear",
+		"source": "sentinel spear"
+	},
+	"item.sf1e.sentinel_staff": {
+		"message": "sentinel staff",
+		"source": "sentinel staff"
+	},
+	"item.sf1e.shock_grenade_1": {
+		"message": "shock grenado I",
+		"source": "shock grenade I"
+	},
+	"item.sf1e.shock_grenade_2": {
+		"message": "shock grenado II",
+		"source": "shock grenade II"
+	},
+	"item.sf1e.shock_grenade_3": {
+		"message": "shock grenado III",
+		"source": "shock grenade III"
+	},
+	"item.sf1e.shock_grenade_4": {
+		"message": "shock grenado IV",
+		"source": "shock grenade IV"
+	},
+	"item.sf1e.shock_grenade_5": {
+		"message": "shock grenado V",
+		"source": "shock grenade V"
+	},
+	"item.sf1e.shotalashu_armor": {
+		"message": "shotalashu armor",
+		"source": "shotalashu armor"
+	},
+	"item.sf1e.silver_abadarcorp_travel_suit": {
+		"message": "silver AbadarCorp travel suit",
+		"source": "silver AbadarCorp travel suit"
+	},
+	"item.sf1e.sintered_longsword": {
+		"message": "sintered longsword",
+		"source": "sintered longsword"
+	},
+	"item.sf1e.sintered_starknife": {
+		"message": "sintered starknife",
+		"source": "sintered starknife"
+	},
+	"item.sf1e.small_arm_rounds": {
+		"message": "small arm shot",
+		"source": "small arm rounds"
+	},
+	"item.sf1e.smoke_grenade": {
+		"message": "smoke grenado",
+		"source": "smoke grenade"
+	},
+	"item.sf1e.snub_scattergun": {
+		"message": "snub scattergun",
+		"source": "snub scattergun"
+	},
+	"item.sf1e.solar_flare_flame_doshko": {
+		"message": "solar flare flame doshko",
+		"source": "solar flare flame doshko"
+	},
+	"item.sf1e.specialist_aegis_series": {
+		"message": "specialist aegis series",
+		"source": "specialist aegis series"
+	},
+	"item.sf1e.specialist_defiance_series": {
+		"message": "specialist defiance series",
+		"source": "specialist defiance series"
+	},
+	"item.sf1e.specialist_hardlight_series": {
+		"message": "specialist hardlight series",
+		"source": "specialist hardlight series"
+	},
+	"item.sf1e.squad_aegis_series": {
+		"message": "squad aegis series",
+		"source": "squad aegis series"
+	},
+	"item.sf1e.squad_defiance_series": {
+		"message": "squad defiance series",
+		"source": "squad defiance series"
+	},
+	"item.sf1e.squad_hardlight_series": {
+		"message": "squad hardlight series",
+		"source": "squad hardlight series"
+	},
+	"item.sf1e.squad_machine_gun": {
+		"message": "squad rattle gun",
+		"source": "squad machine gun"
+	},
+	"item.sf1e.squad_nil_grenade_launcher": {
+		"message": "squad NIL grenado launcher",
+		"source": "squad NIL grenade launcher"
+	},
+	"item.sf1e.standard_taclash": {
+		"message": "standard taclash",
+		"source": "standard taclash"
+	},
+	"item.sf1e.static_arc_pistol": {
+		"message": "static arc pistol",
+		"source": "static arc pistol"
+	},
+	"item.sf1e.static_arc_rifle": {
+		"message": "static arc musket",
+		"source": "static arc rifle"
+	},
+	"item.sf1e.static_shock_caster": {
+		"message": "static shock caster",
+		"source": "static shock caster"
+	},
+	"item.sf1e.static_shock_truncheon": {
+		"message": "static shock truncheon",
+		"source": "static shock truncheon"
+	},
+	"item.sf1e.steelbones": {
+		"message": "steelbones",
+		"source": "steelbones"
+	},
+	"item.sf1e.stickybomb_grenade_1": {
+		"message": "stickybomb grenado I",
+		"source": "stickybomb grenade I"
+	},
+	"item.sf1e.stickybomb_grenade_2": {
+		"message": "stickybomb grenado II",
+		"source": "stickybomb grenade II"
+	},
+	"item.sf1e.stickybomb_grenade_3": {
+		"message": "stickybomb grenado III",
+		"source": "stickybomb grenade III"
+	},
+	"item.sf1e.storm_arc_pistol": {
+		"message": "storm arc pistol",
+		"source": "storm arc pistol"
+	},
+	"item.sf1e.storm_arc_rifle": {
+		"message": "storm arc musket",
+		"source": "storm arc rifle"
+	},
+	"item.sf1e.storm_shock_caster": {
+		"message": "storm shock caster",
+		"source": "storm shock caster"
+	},
+	"item.sf1e.storm_shock_truncheon": {
+		"message": "storm shock truncheon",
+		"source": "storm shock truncheon"
+	},
+	"item.sf1e.super_capacity_battery": {
+		"message": "super-capacity powder charge",
+		"source": "super-capacity battery"
+	},
+	"item.sf1e.superior_iridishell": {
+		"message": "superior iridishell",
+		"source": "superior iridishell"
+	},
+	"item.sf1e.survival_flare_gun": {
+		"message": "survival flare gun",
+		"source": "survival flare gun"
+	},
 	"item.sf1e.survival_knife": {
 		"message": "boardin' knife",
 		"source": "survival knife"
+	},
+	"item.sf1e.swarmsuit": {
+		"message": "swarmsuit",
+		"source": "swarmsuit"
+	},
+	"item.sf1e.tactical_acid_dart_rifle": {
+		"message": "tactical acid dart musket",
+		"source": "tactical acid dart rifle"
+	},
+	"item.sf1e.tactical_arc_emitter": {
+		"message": "tactical arc emitter",
+		"source": "tactical arc emitter"
+	},
+	"item.sf1e.tactical_autobeam_artillery": {
+		"message": "tactical autobeam artillery",
+		"source": "tactical autobeam artillery"
+	},
+	"item.sf1e.tactical_autobeam_rifle": {
+		"message": "tactical autobeam musket",
+		"source": "tactical autobeam rifle"
+	},
+	"item.sf1e.tactical_baton": {
+		"message": "tactical belayin' pin",
+		"source": "tactical baton"
+	},
+	"item.sf1e.tactical_crossbolter": {
+		"message": "tactical crossbolter",
+		"source": "tactical crossbolter"
+	},
+	"item.sf1e.tactical_cryopike": {
+		"message": "tactical cryopike",
+		"source": "tactical cryopike"
+	},
+	"item.sf1e.tactical_doshko": {
+		"message": "tactical doshko",
+		"source": "tactical doshko"
+	},
+	"item.sf1e.tactical_dueling_sword": {
+		"message": "tactical dueling sword",
+		"source": "tactical dueling sword"
+	},
+	"item.sf1e.tactical_gyrojet_pistol": {
+		"message": "tactical gyrojet pistol",
+		"source": "tactical gyrojet pistol"
+	},
+	"item.sf1e.tactical_gyrojet_rifle": {
+		"message": "tactical gyrojet musket",
+		"source": "tactical gyrojet rifle"
+	},
+	"item.sf1e.tactical_knife": {
+		"message": "tactical knife",
+		"source": "tactical knife"
+	},
+	"item.sf1e.tactical_longsword": {
+		"message": "tactical longsword",
+		"source": "tactical longsword"
+	},
+	"item.sf1e.tactical_magnetar_rifle": {
+		"message": "tactical magnetar musket",
+		"source": "tactical magnetar rifle"
+	},
+	"item.sf1e.tactical_missile": {
+		"message": "tactical rocket",
+		"source": "tactical missile"
+	},
+	"item.sf1e.tactical_pike": {
+		"message": "tactical pike",
+		"source": "tactical pike"
+	},
+	"item.sf1e.tactical_plasma_sword": {
+		"message": "tactical plasma sword",
+		"source": "tactical plasma sword"
+	},
+	"item.sf1e.tactical_reaction_cannon": {
+		"message": "tactical reaction cannon",
+		"source": "tactical reaction cannon"
+	},
+	"item.sf1e.tactical_seeker_rifle": {
+		"message": "tactical seeker musket",
+		"source": "tactical seeker rifle"
+	},
+	"item.sf1e.tactical_semi_auto_pistol": {
+		"message": "tactical repeatin' pistol",
+		"source": "tactical semi-auto pistol"
+	},
+	"item.sf1e.tactical_shirren_eye_rifle": {
+		"message": "tactical shirren-eye musket",
+		"source": "tactical shirren-eye rifle"
+	},
+	"item.sf1e.tactical_skyfire_sword": {
+		"message": "tactical skyfire sword",
+		"source": "tactical skyfire sword"
+	},
+	"item.sf1e.tactical_spear": {
+		"message": "tactical spear",
+		"source": "tactical spear"
+	},
+	"item.sf1e.tactical_starknife": {
+		"message": "tactical starknife",
+		"source": "tactical starknife"
+	},
+	"item.sf1e.tactical_swoop_hammer": {
+		"message": "tactical swoop hammer",
+		"source": "tactical swoop hammer"
+	},
+	"item.sf1e.tactical_x_gen_gun": {
+		"message": "tactical X-gen gun",
+		"source": "tactical X-gen gun"
+	},
+	"item.sf1e.tactical_zero_cannon": {
+		"message": "tactical zero cannon",
+		"source": "tactical zero cannon"
+	},
+	"item.sf1e.tempest_arc_rifle": {
+		"message": "tempest arc musket",
+		"source": "tempest arc rifle"
+	},
+	"item.sf1e.tempest_shock_caster": {
+		"message": "tempest shock caster",
+		"source": "tempest shock caster"
+	},
+	"item.sf1e.tempest_shock_truncheon": {
+		"message": "tempest shock truncheon",
+		"source": "tempest shock truncheon"
+	},
+	"item.sf1e.thinplate": {
+		"message": "thinplate",
+		"source": "thinplate"
+	},
+	"item.sf1e.thunderstrike_pulse_gauntlet": {
+		"message": "thunderstrike pulse gauntlet",
+		"source": "thunderstrike pulse gauntlet"
+	},
+	"item.sf1e.thunderstrike_screamer": {
+		"message": "thunderstrike screamer",
+		"source": "thunderstrike screamer"
+	},
+	"item.sf1e.thunderstrike_sonic_pistol": {
+		"message": "thunderstrike sonic pistol",
+		"source": "thunderstrike sonic pistol"
+	},
+	"item.sf1e.thunderstrike_sonic_rifle": {
+		"message": "thunderstrike sonic musket",
+		"source": "thunderstrike sonic rifle"
+	},
+	"item.sf1e.thunderstrike_streetsweeper": {
+		"message": "thunderstrike streetsweeper",
+		"source": "thunderstrike streetsweeper"
+	},
+	"item.sf1e.troop_ceremonial_plate": {
+		"message": "troop ceremonial plate",
+		"source": "troop ceremonial plate"
+	},
+	"item.sf1e.ultra_capacity_battery": {
+		"message": "ultra-capacity powder charge",
+		"source": "ultra-capacity battery"
+	},
+	"item.sf1e.ultraserrated_longsword": {
+		"message": "ultraserrated longsword",
+		"source": "ultraserrated longsword"
+	},
+	"item.sf1e.ultrathin_curve_blade": {
+		"message": "ultrathin curve blade",
+		"source": "ultrathin curve blade"
+	},
+	"item.sf1e.ultrathin_dagger": {
+		"message": "ultrathin dirk",
+		"source": "ultrathin dagger"
+	},
+	"item.sf1e.ultrathin_doshko": {
+		"message": "ultrathin doshko",
+		"source": "ultrathin doshko"
+	},
+	"item.sf1e.ultrathin_dueling_sword": {
+		"message": "ultrathin dueling sword",
+		"source": "ultrathin dueling sword"
+	},
+	"item.sf1e.ultrathin_longsword": {
+		"message": "ultrathin longsword",
+		"source": "ultrathin longsword"
+	},
+	"item.sf1e.utility_scattergun": {
+		"message": "utility scattergun",
+		"source": "utility scattergun"
+	},
+	"item.sf1e.vesk_monolith_1": {
+		"message": "vesk monolith I",
+		"source": "vesk monolith I"
+	},
+	"item.sf1e.vesk_monolith_2": {
+		"message": "vesk monolith II",
+		"source": "vesk monolith II"
+	},
+	"item.sf1e.vesk_monolith_3": {
+		"message": "vesk monolith III",
+		"source": "vesk monolith III"
+	},
+	"item.sf1e.vesk_overplate_1": {
+		"message": "vesk overplate I",
+		"source": "vesk overplate I"
+	},
+	"item.sf1e.vesk_overplate_2": {
+		"message": "vesk overplate II",
+		"source": "vesk overplate II"
+	},
+	"item.sf1e.vesk_overplate_3": {
+		"message": "vesk overplate III",
+		"source": "vesk overplate III"
+	},
+	"item.sf1e.vesk_overplate_4": {
+		"message": "vesk overplate IV",
+		"source": "vesk overplate IV"
+	},
+	"item.sf1e.vesk_overplate_5": {
+		"message": "vesk overplate V",
+		"source": "vesk overplate V"
+	},
+	"item.sf1e.vitrum_plate": {
+		"message": "vitrum plate",
+		"source": "vitrum plate"
+	},
+	"item.sf1e.voidshield_armor": {
+		"message": "voidshield armor",
+		"source": "voidshield armor"
+	},
+	"item.sf1e.vortex_scattergun": {
+		"message": "vortex scattergun",
+		"source": "vortex scattergun"
+	},
+	"item.sf1e.warpshot_shirren_eye_rifle": {
+		"message": "warpshot shirren-eye musket",
+		"source": "warpshot shirren-eye rifle"
+	},
+	"item.sf1e.white_carbon_carbon_skin": {
+		"message": "white carbon carbon skin",
+		"source": "white carbon carbon skin"
+	},
+	"item.sf1e.white_star_plasma_cannon": {
+		"message": "white star plasma cannon",
+		"source": "white star plasma cannon"
+	},
+	"item.sf1e.white_star_plasma_caster": {
+		"message": "white star plasma caster",
+		"source": "white star plasma caster"
+	},
+	"item.sf1e.white_star_plasma_doshko": {
+		"message": "white star plasma doshko",
+		"source": "white star plasma doshko"
+	},
+	"item.sf1e.white_star_plasma_pistol": {
+		"message": "white star plasma pistol",
+		"source": "white star plasma pistol"
+	},
+	"item.sf1e.white_star_plasma_rifle": {
+		"message": "white star plasma musket",
+		"source": "white star plasma rifle"
+	},
+	"item.sf1e.white_star_plasma_sword": {
+		"message": "white star plasma sword",
+		"source": "white star plasma sword"
+	},
+	"item.sf1e.wrack_devastation_blade": {
+		"message": "wrack devastation blade",
+		"source": "wrack devastation blade"
+	},
+	"item.sf1e.yellow_star_plasma_cannon": {
+		"message": "yellow star plasma cannon",
+		"source": "yellow star plasma cannon"
+	},
+	"item.sf1e.yellow_star_plasma_doshko": {
+		"message": "yellow star plasma doshko",
+		"source": "yellow star plasma doshko"
+	},
+	"item.sf1e.yellow_star_plasma_pistol": {
+		"message": "yellow star plasma pistol",
+		"source": "yellow star plasma pistol"
+	},
+	"item.sf1e.yellow_star_plasma_rifle": {
+		"message": "yellow star plasma musket",
+		"source": "yellow star plasma rifle"
+	},
+	"item.sf1e.yellow_star_plasma_sword": {
+		"message": "yellow star plasma sword",
+		"source": "yellow star plasma sword"
+	},
+	"item.sf1e.ysoki_refractor_suit": {
+		"message": "ysoki refractor suit",
+		"source": "ysoki refractor suit"
+	},
+	"item.sf1e.zenith_artillery_laser": {
+		"message": "zenith artillery ray",
+		"source": "zenith artillery laser"
+	},
+	"item.sf1e.zenith_laser_pistol": {
+		"message": "zenith ray pistol",
+		"source": "zenith laser pistol"
+	},
+	"item.sf1e.zenith_laser_rifle": {
+		"message": "zenith ray musket",
+		"source": "zenith laser rifle"
+	},
+	"item.sf1e.zero_edge_dagger": {
+		"message": "zero-edge dirk",
+		"source": "zero-edge dagger"
+	},
+	"item.sf1e.zero_edge_doshko": {
+		"message": "zero-edge doshko",
+		"source": "zero-edge doshko"
+	},
+	"item.sf1e.zero_edge_longsword": {
+		"message": "zero-edge longsword",
+		"source": "zero-edge longsword"
+	},
+	"item.sf1e.zero_edge_spear": {
+		"message": "zero-edge spear",
+		"source": "zero-edge spear"
+	},
+	"itemDescription.pf1e.agile_breastplate": {
+		"message": "A breastplate with a jointed plate over the belly, so its wearer can climb an' jump more freely.",
+		"source": "A breastplate with a jointed plate over the belly, so its wearer can climb and jump more freely."
+	},
+	"itemDescription.pf1e.agile_half_plate": {
+		"message": "Half-plate with jointed plates that let its wearer climb an' jump more freely.",
+		"source": "Half-plate with jointed plates that let its wearer climb and jump more freely."
+	},
+	"itemDescription.pf1e.armored_coat": {
+		"message": "A sturdy leather coat with metal plates sewn into its linin'. It guards less than most medium armor, but goes on an' off in moments.",
+		"source": "A sturdy leather coat with metal plates sewn into its lining. It guards less than most medium armor, but goes on and off in moments."
+	},
+	"itemDescription.pf1e.arrows": {
+		"message": "Arrows for shortbows an' longbows. An arrow that hits be destroyed, while one that misses may be found again.",
+		"source": "Arrows for shortbows and longbows. An arrow that hits is destroyed, while one that misses may be found again."
+	},
+	"itemDescription.pf1e.artisans_tools": {
+		"message": "The special tools o' one craft, such as smithin' or woodworkin'. Without 'em, craftin' be much harder.",
+		"source": "The special tools of one craft, such as smithing or woodworking. Without them, crafting is much harder."
+	},
+	"itemDescription.pf1e.banded_mail": {
+		"message": "Overlappin' horizontal bands o' metal sewn to a backin' o' leather an' chainmail.",
+		"source": "Overlapping horizontal bands of metal sewn to a backing of leather and chainmail."
+	},
+	"itemDescription.pf1e.bastard_sword": {
+		"message": "A long, heavy sword that takes special trainin' to wield in one hand. In both hands, any trained warrior can use it.",
+		"source": "A long, heavy sword that takes special training to wield in one hand. In both hands, any trained warrior can use it."
+	},
+	"itemDescription.pf1e.battleaxe": {
+		"message": "A broad-bladed axe made for battle, heavy enough to split a shield.",
+		"source": "A broad-bladed axe made for battle, heavy enough to split a shield."
+	},
+	"itemDescription.pf1e.bells": {
+		"message": "A set o' wee bells rung by shakin' or strikin' 'em, for performin'.",
+		"source": "A set of small bells rung by shaking or striking them, for performing."
+	},
+	"itemDescription.pf1e.blowgun": {
+		"message": "A long, hollow tube that shoots wee darts with a breath. The darts do little harm alone, so they be often poisoned.",
+		"source": "A long, hollow tube that shoots small darts with a breath. The darts do little harm alone, so they are often poisoned."
+	},
+	"itemDescription.pf1e.blowgun_darts": {
+		"message": "Wee, light darts for a blowgun, often coated with poison.",
+		"source": "Small, light darts for a blowgun, often coated with poison."
+	},
+	"itemDescription.pf1e.bolas": {
+		"message": "Two or three weights joined by cords, thrown to wrap around a foe's legs an' trip 'em.",
+		"source": "Two or three weights joined by cords, thrown to wrap around a foe's legs and trip them."
 	},
 	"itemDescription.pf1e.book_of_puzzles": {
 		"message": "A book o' ten brain-teasers that whet the wits. Each riddle cracked gives a second roll on one check to disarm a device, recall knowledge or read a body that day.",
@@ -6671,53 +8987,1085 @@
 		"message": "A wee leather-bound book o' prayers read aloud afore battle. Hearin' 'em steels yer mates against fear for the next day.",
 		"source": "A small leather-bound book of prayers read aloud before battle. Hearing them steels allies against fear for the next day."
 	},
+	"itemDescription.pf1e.breastplate": {
+		"message": "A fitted metal plate coverin' the front an' back o' the torso, worn with a skirt o' hardened leather.",
+		"source": "A fitted metal plate covering the front and back of the torso, worn with a skirt of hardened leather."
+	},
+	"itemDescription.pf1e.buckler": {
+		"message": "A wee metal shield strapped to the forearm, which leaves the hand free to wield a weapon.",
+		"source": "A small metal shield strapped to the forearm, which leaves the hand free to wield a weapon."
+	},
 	"itemDescription.pf1e.cestus": {
 		"message": "A leather glove plated with metal for punchin'. The wearer counts as armed, an' the fingers stay free to grab things.",
 		"source": "A leather glove reinforced with metal plates for punching. The wearer counts as armed, and the fingers stay free to hold things."
+	},
+	"itemDescription.pf1e.chain_shirt": {
+		"message": "A shirt o' interlockin' metal rings that covers the torso, worn over paddin'.",
+		"source": "A shirt of interlocking metal rings that covers the torso, worn over padding."
+	},
+	"itemDescription.pf1e.chainmail": {
+		"message": "A suit o' interlockin' metal rings over quilted fabric, coverin' the arms an' legs as well as the torso.",
+		"source": "A suit of interlocking metal rings over quilted fabric, covering the arms and legs as well as the torso."
+	},
+	"itemDescription.pf1e.chimes": {
+		"message": "Tuned metal tubes hung from a frame an' struck to ring out notes, for performin'.",
+		"source": "Tuned metal tubes hung from a frame and struck to ring out notes, for performing."
+	},
+	"itemDescription.pf1e.claw_blades": {
+		"message": "A set o' thin blades that fit over a catfolk's claws, makin' 'em sharper an' harder to stop. Only catfolk with claws can use 'em.",
+		"source": "A set of thin blades that fit over a catfolk's claws, making them sharper and harder to stop. Only catfolk with claws can use them."
+	},
+	"itemDescription.pf1e.climbers_kit": {
+		"message": "Special pitons, boot tips, gloves an' a harness that make climbin' easier.",
+		"source": "Special pitons, boot tips, gloves and a harness that make climbing easier."
+	},
+	"itemDescription.pf1e.club": {
+		"message": "A sturdy piece o' wood, easy to find an' easy to use. It can be thrown in a pinch.",
+		"source": "A sturdy piece of wood, easy to find and easy to use. It can be thrown in a pinch."
+	},
+	"itemDescription.pf1e.composite_longbow": {
+		"message": "A longbow o' layered horn, wood an' sinew. One made for a strong archer adds their strength to its damage.",
+		"source": "A longbow of layered horn, wood and sinew. One made for a strong archer adds their strength to its damage."
+	},
+	"itemDescription.pf1e.composite_shortbow": {
+		"message": "A shortbow o' layered horn, wood an' sinew. One made for a strong archer adds their strength to its damage.",
+		"source": "A shortbow of layered horn, wood and sinew. One made for a strong archer adds their strength to its damage."
+	},
+	"itemDescription.pf1e.crossbow_bolts": {
+		"message": "Short, heavy bolts for crossbows.",
+		"source": "Short, heavy bolts for crossbows."
 	},
 	"itemDescription.pf1e.dagger": {
 		"message": "A short blade for stabbin' up close or throwin'.",
 		"source": "A short blade for stabbing up close or throwing."
 	},
+	"itemDescription.pf1e.dart": {
+		"message": "A wee, weighted spike thrown by hand.",
+		"source": "A small, weighted spike thrown by hand."
+	},
+	"itemDescription.pf1e.dire_flail": {
+		"message": "A shaft with a spiked ball on a chain at each end, so it can be fought with as two weapons. It can trip or disarm a foe.",
+		"source": "A shaft with a spiked ball on a chain at each end, so it can be fought with as two weapons. It can trip or disarm a foe."
+	},
+	"itemDescription.pf1e.disguise_kit": {
+		"message": "Makeup, hair colorin' an' wee props that make a disguise more convincin'. It be used up after ten disguises.",
+		"source": "Makeup, hair coloring and small props that make a disguise more convincing. It is used up after ten disguises."
+	},
+	"itemDescription.pf1e.drum": {
+		"message": "A drum beaten with the hands or with sticks, for performin' or keepin' a marchin' beat.",
+		"source": "A drum beaten with the hands or with sticks, for performing or keeping a marching beat."
+	},
+	"itemDescription.pf1e.dwarven_boulder_helmet": {
+		"message": "A heavy, reinforced helmet for head-buttin' foes an' shovin' 'em back.",
+		"source": "A heavy, reinforced helmet for head-butting foes and shoving them back."
+	},
+	"itemDescription.pf1e.dwarven_double_waraxe": {
+		"message": "A heavy shaft with a broad axe head at each end, so it can be fought with as two weapons.",
+		"source": "A heavy shaft with a broad axe head at each end, so it can be fought with as two weapons."
+	},
+	"itemDescription.pf1e.dwarven_longaxe": {
+		"message": "A dwarven axe on a long haft that strikes foes beyond arm's reach.",
+		"source": "A dwarven axe on a long haft that strikes foes beyond arm's reach."
+	},
+	"itemDescription.pf1e.dwarven_longhammer": {
+		"message": "A heavy dwarven hammer on a long haft that strikes foes beyond arm's reach.",
+		"source": "A heavy dwarven hammer on a long haft that strikes foes beyond arm's reach."
+	},
+	"itemDescription.pf1e.dwarven_urgrosh": {
+		"message": "A dwarven weapon with an axe head at one end an' a spearhead at the other, so it can be fought with as two weapons. The spear end can be braced against a charge.",
+		"source": "A dwarven weapon with an axe head at one end and a spearhead at the other, so it can be fought with as two weapons. The spear end can be braced against a charge."
+	},
+	"itemDescription.pf1e.dwarven_waraxe": {
+		"message": "A heavy axe that takes special trainin' to swing in one hand. In both hands, any trained warrior can use it.",
+		"source": "A heavy axe that takes special training to swing in one hand. In both hands, any trained warrior can use it."
+	},
+	"itemDescription.pf1e.elven_curve_blade": {
+		"message": "A long, slightly curved elven sword held in both hands. A nimble fighter can wield it with finesse rather than strength.",
+		"source": "A long, slightly curved elven sword held in both hands. A nimble fighter can wield it with finesse rather than strength."
+	},
+	"itemDescription.pf1e.falchion": {
+		"message": "A heavy sword with a curved blade that widens toward the tip, swung in both hands. Its cuts land critical hits often.",
+		"source": "A heavy sword with a curved blade that widens toward the tip, swung in both hands. Its cuts land critical hits often."
+	},
+	"itemDescription.pf1e.fiddle": {
+		"message": "A stringed instrument held under the chin an' played with a bow, for performin'.",
+		"source": "A stringed instrument held under the chin and played with a bow, for performing."
+	},
+	"itemDescription.pf1e.flail": {
+		"message": "A spiked metal ball swung on a chain from a handle. The chain can wrap around a foe's legs or weapon to trip or disarm 'em.",
+		"source": "A spiked metal ball swung on a chain from a handle. The chain can wrap around a foe's legs or weapon to trip or disarm them."
+	},
+	"itemDescription.pf1e.flute": {
+		"message": "A wind instrument played by blowin' across a hole near one end, for performin'.",
+		"source": "A wind instrument played by blowing across a hole near one end, for performing."
+	},
 	"itemDescription.pf1e.footprints_cast": {
 		"message": "A quick-dryin' plaster for takin' a copy o' bootprints. The cast can be studied later or elsewhere, safe from time an' weather.",
 		"source": "A quick-drying plaster for taking a copy of footprints. The cast can be studied later or somewhere else, safe from time and weather."
+	},
+	"itemDescription.pf1e.full_plate": {
+		"message": "A suit o' shaped, interlockin' metal plates coverin' the whole body, fitted to its wearer. It guards best o' all armor, but slows its wearer the most.",
+		"source": "A suit of shaped, interlocking metal plates covering the whole body, fitted to its wearer. It guards best of all armor, but slows its wearer the most."
+	},
+	"itemDescription.pf1e.gauntlet": {
+		"message": "A metal glove that protects the hand an' turns a punch into a lethal blow.",
+		"source": "A metal glove that protects the hand and turns a punch into a lethal blow."
+	},
+	"itemDescription.pf1e.glaive": {
+		"message": "A single-edged blade on a pole about seven feet long, which strikes foes beyond arm's reach.",
+		"source": "A single-edged blade on a pole about seven feet long, which strikes foes beyond arm's reach."
+	},
+	"itemDescription.pf1e.gnome_hooked_hammer": {
+		"message": "A gnome weapon with a hammer head at one end an' a long, curved pick at the other, so it can be fought with as two weapons. It can trip a foe.",
+		"source": "A gnome weapon with a hammer head at one end and a long, curved pick at the other, so it can be fought with as two weapons. It can trip a foe."
+	},
+	"itemDescription.pf1e.greataxe": {
+		"message": "A massive axe swung in both hands, whose blows can cleave a foe in two.",
+		"source": "A massive axe swung in both hands, whose blows can cleave a foe in two."
+	},
+	"itemDescription.pf1e.greatclub": {
+		"message": "A great length o' wood, often banded with iron, swung in both hands.",
+		"source": "A great length of wood, often banded with iron, swung in both hands."
+	},
+	"itemDescription.pf1e.greatsword": {
+		"message": "A massive sword over five feet long, swung in both hands in great sweepin' strokes.",
+		"source": "A massive sword over five feet long, swung in both hands in great sweeping strokes."
+	},
+	"itemDescription.pf1e.guisarme": {
+		"message": "A long pole topped with a curved blade an' a hook for pullin' foes off their feet. It strikes foes beyond arm's reach.",
+		"source": "A long pole topped with a curved blade and a hook for pulling foes off their feet. It strikes foes beyond arm's reach."
+	},
+	"itemDescription.pf1e.halberd": {
+		"message": "A long pole topped with an axe blade, a spike an' a hook. It can trip foes, an' braced against a charge it deals double damage.",
+		"source": "A long pole topped with an axe blade, a spike and a hook. It can trip foes, and braced against a charge it deals double damage."
+	},
+	"itemDescription.pf1e.half_plate": {
+		"message": "Chainmail with shaped metal plates over the vital areas, worn with gauntlets an' a helmet.",
+		"source": "Chainmail with shaped metal plates over the vital areas, worn with gauntlets and a helmet."
+	},
+	"itemDescription.pf1e.halfling_sling_staff": {
+		"message": "A short staff with a sling at one end, which hurls stones harder than a sling. It can also be swung as a club.",
+		"source": "A short staff with a sling at one end, which hurls stones harder than a sling. It can also be swung as a club."
+	},
+	"itemDescription.pf1e.hand_crossbow": {
+		"message": "A tiny crossbow, drawn back by hand an' shot with one hand.",
+		"source": "A tiny crossbow, drawn back by hand and shot with one hand."
+	},
+	"itemDescription.pf1e.handaxe": {
+		"message": "A wee axe light enough to swing in one hand, as useful for choppin' wood as for fightin'.",
+		"source": "A small axe light enough to swing in one hand, as useful for chopping wood as for fighting."
+	},
+	"itemDescription.pf1e.harp": {
+		"message": "A frame o' strings plucked with the fingers, for performin'.",
+		"source": "A frame of strings plucked with the fingers, for performing."
+	},
+	"itemDescription.pf1e.healers_kit": {
+		"message": "Herbs, salves, bandages an' splints that help treat wounds an' illness. It be used up after ten uses.",
+		"source": "Herbs, salves, bandages and splints that help treat wounds and illness. It is used up after ten uses."
+	},
+	"itemDescription.pf1e.heartstake_bolt": {
+		"message": "A crossbow bolt o' solid darkwood made to slay vampires, which can pierce one's heart.",
+		"source": "A crossbow bolt of solid darkwood made to slay vampires, which can pierce one's heart."
+	},
+	"itemDescription.pf1e.heavy_crossbow": {
+		"message": "A powerful crossbow drawn back with a wee winch. It hits hard, but takes a while to load.",
+		"source": "A powerful crossbow drawn back with a small winch. It hits hard, but takes a while to load."
+	},
+	"itemDescription.pf1e.heavy_flail": {
+		"message": "A large flail with spiked balls on chains, swung in both hands. It can trip or disarm a foe.",
+		"source": "A large flail with spiked balls on chains, swung in both hands. It can trip or disarm a foe."
+	},
+	"itemDescription.pf1e.heavy_mace": {
+		"message": "A long club with a heavy metal head that crushes armor an' bone, still light enough to swing in one hand.",
+		"source": "A long club with a heavy metal head that crushes armor and bone, still light enough to swing in one hand."
+	},
+	"itemDescription.pf1e.heavy_pick": {
+		"message": "A war pick with a long spike that punches through armor, dealin' terrible critical hits.",
+		"source": "A war pick with a long spike that punches through armor, dealing terrible critical hits."
+	},
+	"itemDescription.pf1e.heavy_repeating_crossbow": {
+		"message": "A heavy crossbow with a case holdin' five bolts, so it shoots again without reloadin' until the case be empty.",
+		"source": "A heavy crossbow with a case holding five bolts, so it shoots again without reloading until the case is empty."
+	},
+	"itemDescription.pf1e.heavy_steel_shield": {
+		"message": "A large steel shield strapped to the forearm an' gripped in one hand, too big to hold anything else in that hand.",
+		"source": "A large steel shield strapped to the forearm and gripped in one hand, too big to hold anything else in that hand."
+	},
+	"itemDescription.pf1e.heavy_wooden_shield": {
+		"message": "A large wooden shield strapped to the forearm an' gripped in one hand, too big to hold anything else in that hand.",
+		"source": "A large wooden shield strapped to the forearm and gripped in one hand, too big to hold anything else in that hand."
+	},
+	"itemDescription.pf1e.hide_armor": {
+		"message": "Several layers o' thick animal hide an' fur. It be warm an' sturdy, but stiff.",
+		"source": "Several layers of thick animal hide and fur. It is warm and sturdy, but stiff."
+	},
+	"itemDescription.pf1e.holly_and_mistletoe": {
+		"message": "Sprigs o' holly an' mistletoe that druids an' other priests o' nature hold as the divine focus o' their spells.",
+		"source": "Sprigs of holly and mistletoe that druids and other priests of nature hold as the divine focus of their spells."
+	},
+	"itemDescription.pf1e.javelin": {
+		"message": "A thin spear balanced for throwin'. It be clumsy to fight with in hand.",
+		"source": "A thin spear balanced for throwing. It is clumsy to fight with in hand."
+	},
+	"itemDescription.pf1e.jolting_dart": {
+		"message": "A crystal dart grown by alchemy that builds up a charge in flight, shockin' whoever it hits. It shatters once thrown.",
+		"source": "A crystal dart grown by alchemy that builds up a charge in flight, shocking whoever it hits. It shatters once thrown."
+	},
+	"itemDescription.pf1e.kama": {
+		"message": "A short sickle with a hooked blade, used by monks. It can trip a foe.",
+		"source": "A short sickle with a hooked blade, used by monks. It can trip a foe."
 	},
 	"itemDescription.pf1e.kobold_long_lash": {
 		"message": "A whip-like lash a kobold slips over the tip o' its tail, lettin' its tail slap reach farther. Only kobolds trained to fight with their tails can wield it.",
 		"source": "A whip-like lash a kobold slips over the tip of its tail, letting its tail slap reach farther. Only kobolds trained to fight with their tails can use it."
 	},
+	"itemDescription.pf1e.kobold_pounder_tail": {
+		"message": "A squat ball o' dull metal a kobold slips over the tip o' its tail, turnin' its tail slap into a crushin' blow. Only kobolds trained to fight with their tails can use it.",
+		"source": "A squat ball of dull metal a kobold slips over the tip of its tail, turning its tail slap into a crushing blow. Only kobolds trained to fight with their tails can use it."
+	},
+	"itemDescription.pf1e.kobold_razored_tail": {
+		"message": "A sharp blade a kobold slips over the tip o' its tail, turnin' its tail slap into a slashin' blow. Only kobolds trained to fight with their tails can use it.",
+		"source": "A sharp blade a kobold slips over the tip of its tail, turning its tail slap into a slashing blow. Only kobolds trained to fight with their tails can use it."
+	},
 	"itemDescription.pf1e.kobold_spiked_tail": {
 		"message": "A spiked weight a kobold slips over the tip o' its tail, turnin' its tail slap into a piercin' blow with deadly critical hits. Only kobolds trained to fight with their tails can wield it.",
 		"source": "A spiked weight a kobold slips over the tip of its tail, turning its tail slap into a piercing blow with deadly critical hits. Only kobolds trained to fight with their tails can use it."
+	},
+	"itemDescription.pf1e.kobold_sweeper_tail": {
+		"message": "A sharply curved piece o' metal a kobold slips over the tip o' its tail to knock foes off their feet. Only kobolds trained to fight with their tails can use it.",
+		"source": "A sharply curved piece of metal a kobold slips over the tip of its tail to knock foes off their feet. Only kobolds trained to fight with their tails can use it."
+	},
+	"itemDescription.pf1e.kukri": {
+		"message": "A heavy knife whose inward-curvin' blade bites deep, landin' critical hits often.",
+		"source": "A heavy knife whose inward-curving blade bites deep, landing critical hits often."
+	},
+	"itemDescription.pf1e.lance": {
+		"message": "A long, heavy spear for chargin' on horseback, where it deals double damage. It strikes foes beyond arm's reach.",
+		"source": "A long, heavy spear for charging on horseback, where it deals double damage. It strikes foes beyond arm's reach."
+	},
+	"itemDescription.pf1e.lasso": {
+		"message": "A rope with a slidin' loop, thrown to snare an' entangle a foe.",
+		"source": "A rope with a sliding loop, thrown to snare and entangle a foe."
+	},
+	"itemDescription.pf1e.leather_armor": {
+		"message": "A breastplate an' shoulder guards o' leather hardened by boilin' in oil, with softer, more flexible leather elsewhere.",
+		"source": "A breastplate and shoulder guards of leather hardened by boiling in oil, with softer, more flexible leather elsewhere."
+	},
+	"itemDescription.pf1e.light_crossbow": {
+		"message": "A crossbow drawn back with a lever an' loaded with one bolt at a time. Anyone can use it without much trainin'.",
+		"source": "A crossbow drawn back with a lever and loaded with one bolt at a time. Anyone can use it without much training."
 	},
 	"itemDescription.pf1e.light_fire_ink": {
 		"message": "An alchemical ink for secret messages. Once dry, it bursts into a wee flame soon after light falls on it, so a note burns up once it be read.",
 		"source": "An alchemical ink for secret messages. Once dry, it bursts into a small flame soon after light falls on it, so a note burns up after it is read."
 	},
+	"itemDescription.pf1e.light_hammer": {
+		"message": "A wee hammer, handy up close an' balanced for throwin'.",
+		"source": "A small hammer, handy up close and balanced for throwing."
+	},
+	"itemDescription.pf1e.light_mace": {
+		"message": "A short club with a heavy metal head, easy to swing in one hand.",
+		"source": "A short club with a heavy metal head, easy to swing in one hand."
+	},
+	"itemDescription.pf1e.light_pick": {
+		"message": "A wee war pick whose pointed head punches through armor, dealin' deadly critical hits.",
+		"source": "A small war pick whose pointed head punches through armor, dealing deadly critical hits."
+	},
+	"itemDescription.pf1e.light_repeating_crossbow": {
+		"message": "A light crossbow with a case holdin' five bolts, so it shoots again without reloadin' until the case be empty.",
+		"source": "A light crossbow with a case holding five bolts, so it shoots again without reloading until the case is empty."
+	},
+	"itemDescription.pf1e.light_steel_shield": {
+		"message": "A wee steel shield strapped to the forearm an' gripped in one hand, sturdier than a wooden one.",
+		"source": "A small steel shield strapped to the forearm and gripped in one hand, sturdier than a wooden one."
+	},
+	"itemDescription.pf1e.light_wooden_shield": {
+		"message": "A wee wooden shield strapped to the forearm an' gripped in one hand. That hand can still carry things, but not wield a weapon.",
+		"source": "A small wooden shield strapped to the forearm and gripped in one hand. That hand can still carry things, but not wield a weapon."
+	},
+	"itemDescription.pf1e.locked_gauntlet": {
+		"message": "An armored glove with straps an' wee chains that lock a weapon in its grip, so it be hard to knock away. It can punch as a gauntlet does.",
+		"source": "An armored glove with straps and small chains that lock a weapon in its grip, so it is hard to knock away. It can punch as a gauntlet does."
+	},
+	"itemDescription.pf1e.longbow": {
+		"message": "A bow about as tall as its archer, which shoots arrows far. It can't be shot on horseback.",
+		"source": "A bow about as tall as its archer, which shoots arrows far. It can't be shot on horseback."
+	},
+	"itemDescription.pf1e.longspear": {
+		"message": "A spear over eight feet long that strikes foes beyond arm's reach. Braced against a charge, it deals double damage.",
+		"source": "A spear over eight feet long that strikes foes beyond arm's reach. Braced against a charge, it deals double damage."
+	},
+	"itemDescription.pf1e.longsword": {
+		"message": "A straight, double-edged sword about three an' a half feet long, the favorite o' many warriors.",
+		"source": "A straight, double-edged sword about three and a half feet long, the favorite of many warriors."
+	},
+	"itemDescription.pf1e.lute": {
+		"message": "A stringed instrument with a rounded back, plucked or strummed, for performin'.",
+		"source": "A stringed instrument with a rounded back, plucked or strummed, for performing."
+	},
+	"itemDescription.pf1e.mandolin": {
+		"message": "A wee, bright-soundin' stringed instrument plucked with a pick, for performin'.",
+		"source": "A small, bright-sounding stringed instrument plucked with a pick, for performing."
+	},
+	"itemDescription.pf1e.morningstar": {
+		"message": "A heavy club topped with a spiked metal ball, so each blow both crushes an' pierces.",
+		"source": "A heavy club topped with a spiked metal ball, so each blow both crushes and pierces."
+	},
+	"itemDescription.pf1e.net": {
+		"message": "A weighted net thrown over a foe to entangle 'em, held by a trailin' rope.",
+		"source": "A weighted net thrown over a foe to entangle them, held by a trailing rope."
+	},
+	"itemDescription.pf1e.nunchaku": {
+		"message": "Two short sticks joined by a chain or cord, whirled by monks to strike an' to disarm.",
+		"source": "Two short sticks joined by a chain or cord, whirled by monks to strike and to disarm."
+	},
+	"itemDescription.pf1e.orc_double_axe": {
+		"message": "A cruel weapon with an axe head at each end o' its shaft, so it can be fought with as two weapons.",
+		"source": "A cruel weapon with an axe head at each end of its shaft, so it can be fought with as two weapons."
+	},
+	"itemDescription.pf1e.padded_armor": {
+		"message": "Quilted layers o' cloth an' battin'. It guards little, but barely hinders its wearer.",
+		"source": "Quilted layers of cloth and batting. It guards little, but barely hinders its wearer."
+	},
+	"itemDescription.pf1e.pan_pipes": {
+		"message": "Reed or wooden pipes o' different lengths bound side by side an' blown across, for performin'.",
+		"source": "Reed or wooden pipes of different lengths bound side by side and blown across, for performing."
+	},
+	"itemDescription.pf1e.punching_dagger": {
+		"message": "A short, wide blade with a grip across the fist, driven forward like a punch. The weight behind the thrust makes for deadly critical hits.",
+		"source": "A short, wide blade with a grip across the fist, driven forward like a punch. The weight behind the thrust makes for deadly critical hits."
+	},
+	"itemDescription.pf1e.quarterstaff": {
+		"message": "A simple wooden staff about five feet long. Either end can strike, so it can be fought with as two weapons.",
+		"source": "A simple wooden staff about five feet long. Either end can strike, so it can be fought with as two weapons."
+	},
+	"itemDescription.pf1e.quickdraw_light_steel_shield": {
+		"message": "A light steel shield with special straps, so it can be readied as quickly as drawin' a weapon.",
+		"source": "A light steel shield with special straps, so it can be readied as quickly as drawing a weapon."
+	},
+	"itemDescription.pf1e.quickdraw_light_wooden_shield": {
+		"message": "A light wooden shield with special straps, so it can be readied as quickly as drawin' a weapon.",
+		"source": "A light wooden shield with special straps, so it can be readied as quickly as drawing a weapon."
+	},
 	"itemDescription.pf1e.quilted_cloth": {
 		"message": "Light, padded armor with inner layers that snag arrows, bolts, darts an' thrown dirks. Against other blows it guards no better than paddin'.",
 		"source": "Light, padded armor with inner layers that snag arrows, bolts, darts and thrown daggers. Against other attacks it guards no better than padding."
+	},
+	"itemDescription.pf1e.ranseur": {
+		"message": "A pole with a spearhead flanked by two curved blades, good for disarmin' foes beyond arm's reach.",
+		"source": "A pole with a spearhead flanked by two curved blades, good for disarming foes beyond arm's reach."
+	},
+	"itemDescription.pf1e.rapier": {
+		"message": "A slender sword built for quick thrusts. A nimble fighter can wield it with finesse rather than strength.",
+		"source": "A slender sword built for quick thrusts. A nimble fighter can wield it with finesse rather than strength."
 	},
 	"itemDescription.pf1e.ratfolk_tailblade": {
 		"message": "A wee knife strapped to the tip o' a bilge rat's tail, so the rat can slash at foes with its tail.",
 		"source": "A small knife strapped to the tip of a ratfolk's tail, so the ratfolk can slash at foes with its tail."
 	},
+	"itemDescription.pf1e.recorder": {
+		"message": "A simple wooden pipe with finger holes, blown at one end, for performin'.",
+		"source": "A simple wooden pipe with finger holes, blown at one end, for performing."
+	},
+	"itemDescription.pf1e.repeating_crossbow_bolts": {
+		"message": "Bolts in a case o' five, which loads a repeatin' crossbow all at once.",
+		"source": "Bolts in a case of five, which loads a repeating crossbow all at once."
+	},
+	"itemDescription.pf1e.sai": {
+		"message": "A blunt metal spike with two curved prongs that catch an enemy's blade. Monks use it to disarm foes an' to strike.",
+		"source": "A blunt metal spike with two curved prongs that catch an enemy's blade. Monks use it to disarm foes and to strike."
+	},
+	"itemDescription.pf1e.sap": {
+		"message": "A wee leather bag filled with lead. It knocks foes out rather than killin' 'em.",
+		"source": "A small leather bag filled with lead. It knocks foes out rather than killing them."
+	},
+	"itemDescription.pf1e.scale_mail": {
+		"message": "A coat an' leggings o' leather covered with overlappin' pieces o' metal, like the scales o' a fish.",
+		"source": "A coat and leggings of leather covered with overlapping pieces of metal, like the scales of a fish."
+	},
+	"itemDescription.pf1e.scimitar": {
+		"message": "A curved sword whose long edge makes its cuts land critical hits often.",
+		"source": "A curved sword whose long edge makes its cuts land critical hits often."
+	},
+	"itemDescription.pf1e.scythe": {
+		"message": "A long, curved blade on a pole, made for reapin' grain. Its deep cuts deal terrible critical hits an' can trip a foe.",
+		"source": "A long, curved blade on a pole, made for reaping grain. Its deep cuts deal terrible critical hits and can trip a foe."
+	},
+	"itemDescription.pf1e.sea_knife": {
+		"message": "A short blade on a long handle, made for fightin' while swimmin'. Its wielder takes a penalty to hit with it.",
+		"source": "A short blade on a long handle, made for fighting while swimming. Its wielder takes a penalty to hit with it."
+	},
+	"itemDescription.pf1e.shawm": {
+		"message": "A loud, piercin' wind instrument with a double reed, for performin' outdoors.",
+		"source": "A loud, piercing wind instrument with a double reed, for performing outdoors."
+	},
+	"itemDescription.pf1e.short_sword": {
+		"message": "A short, straight blade, quick an' easy to handle.",
+		"source": "A short, straight blade, quick and easy to handle."
+	},
+	"itemDescription.pf1e.shortbow": {
+		"message": "A wee bow that shoots arrows, easy to use on horseback.",
+		"source": "A small bow that shoots arrows, easy to use on horseback."
+	},
+	"itemDescription.pf1e.shortspear": {
+		"message": "A spear about three feet long, light enough to wield in one hand or to throw.",
+		"source": "A spear about three feet long, light enough to wield in one hand or to throw."
+	},
+	"itemDescription.pf1e.shuriken": {
+		"message": "A wee, flat metal star with sharp points, thrown by hand. Monks train with it.",
+		"source": "A small, flat metal star with sharp points, thrown by hand. Monks train with it."
+	},
+	"itemDescription.pf1e.siangham": {
+		"message": "A thin, arrow-like shaft o' metal that monks use to stab.",
+		"source": "A thin, arrow-like shaft of metal that monks use to stab."
+	},
+	"itemDescription.pf1e.sickle": {
+		"message": "A farmin' tool with a curved blade on a short handle. Its hooked edge can trip a foe.",
+		"source": "A farming tool with a curved blade on a short handle. Its hooked edge can trip a foe."
+	},
+	"itemDescription.pf1e.silver_holy_symbol": {
+		"message": "A silver emblem o' a god, worn on a chain. Clerics present it to cast their spells an' channel their god's energy.",
+		"source": "A silver emblem of a god, worn on a chain. Clerics present it to cast their spells and channel their god's energy."
+	},
+	"itemDescription.pf1e.sling": {
+		"message": "A leather strap that hurls stones or lead bullets with a whirl o' the arm.",
+		"source": "A leather strap that hurls stones or lead bullets with a whirl of the arm."
+	},
+	"itemDescription.pf1e.sling_bullets": {
+		"message": "Wee lead balls for slings an' sling staffs. Stones can be slung too, but do less harm.",
+		"source": "Small lead balls for slings and sling staffs. Stones can be slung too, but do less harm."
+	},
+	"itemDescription.pf1e.snag_net": {
+		"message": "A short, wide net covered in barbed loops. It entangles like a net, an' a tug on its rope can trip the foe caught in it.",
+		"source": "A short, wide net covered in barbed loops. It entangles like a net, and a tug on its rope can trip the foe caught in it."
+	},
+	"itemDescription.pf1e.spear": {
+		"message": "A spear about five feet long, held in both hands or thrown. Braced against a charge, it deals double damage.",
+		"source": "A spear about five feet long, held in both hands or thrown. Braced against a charge, it deals double damage."
+	},
+	"itemDescription.pf1e.spiked_chain": {
+		"message": "A chain about four feet long, covered in spikes an' swung in both hands. It can trip or disarm a foe.",
+		"source": "A chain about four feet long, covered in spikes and swung in both hands. It can trip or disarm a foe."
+	},
+	"itemDescription.pf1e.spiked_gauntlet": {
+		"message": "A metal glove covered in spikes, so a punch pierces as well as bruises.",
+		"source": "A metal glove covered in spikes, so a punch pierces as well as bruises."
+	},
+	"itemDescription.pf1e.splint_mail": {
+		"message": "Narrow upright strips o' metal riveted to a leather backin', worn over paddin'.",
+		"source": "Narrow upright strips of metal riveted to a leather backing, worn over padding."
+	},
+	"itemDescription.pf1e.starknife": {
+		"message": "A metal ring with four tapered blades pointin' outward like a star. It can be swung up close or thrown.",
+		"source": "A metal ring with four tapered blades pointing outward like a star. It can be swung up close or thrown."
+	},
+	"itemDescription.pf1e.studded_leather": {
+		"message": "Tough but flexible leather reinforced with close-set metal rivets.",
+		"source": "Tough but flexible leather reinforced with close-set metal rivets."
+	},
 	"itemDescription.pf1e.sword_cane": {
 		"message": "A thin blade hid inside a walkin' stick. It be hard to spot as a weapon an' quick to draw.",
 		"source": "A thin blade hidden inside a walking stick. It is hard to spot as a weapon and quick to draw."
+	},
+	"itemDescription.pf1e.thieves_tools": {
+		"message": "Picks, probes, a wee mirror an' pliers for openin' locks an' disarmin' traps. Without 'em, both be much harder.",
+		"source": "Picks, probes, a small mirror and pliers for opening locks and disarming traps. Without them, both are much harder."
+	},
+	"itemDescription.pf1e.throwing_axe": {
+		"message": "A wee axe weighted to fly true when thrown.",
+		"source": "A small axe weighted to fly true when thrown."
 	},
 	"itemDescription.pf1e.tome_of_epics": {
 		"message": "A heavy, painted book o' heroic yarns. An hour spent readin' it helps with speeches, shanties an' the lore o' heroic bloodlines for the next day.",
 		"source": "A heavy, illustrated book of heroic tales. An hour spent reading it helps with speeches, songs and the lore of heroic bloodlines for the next day."
 	},
+	"itemDescription.pf1e.tower_shield": {
+		"message": "A massive wooden shield almost as tall as its bearer. It can be planted to hide behind completely, but it hinders its bearer's attacks.",
+		"source": "A massive wooden shield almost as tall as its bearer. It can be planted to hide behind completely, but it hinders its bearer's attacks."
+	},
+	"itemDescription.pf1e.trident": {
+		"message": "A three-pronged spear, thrust with one hand or thrown. Braced against a charge, it deals double damage.",
+		"source": "A three-pronged spear, thrust with one hand or thrown. Braced against a charge, it deals double damage."
+	},
+	"itemDescription.pf1e.trumpet": {
+		"message": "A brass horn whose notes carry far, for performin' an' for signals.",
+		"source": "A brass horn whose notes carry far, for performing and for signals."
+	},
+	"itemDescription.pf1e.two_bladed_sword": {
+		"message": "A sword blade at each end o' a central grip, so it can be fought with as two weapons.",
+		"source": "A sword blade at each end of a central grip, so it can be fought with as two weapons."
+	},
+	"itemDescription.pf1e.warhammer": {
+		"message": "A heavy hammer whose blows crush armor an' deal deadly critical hits.",
+		"source": "A heavy hammer whose blows crush armor and deal deadly critical hits."
+	},
+	"itemDescription.pf1e.whip": {
+		"message": "A long leather lash that reaches foes up to 15 feet away to trip or disarm 'em. Its sting hurts but don't kill.",
+		"source": "A long leather lash that reaches foes up to 15 feet away to trip or disarm them. Its sting hurts but doesn't kill."
+	},
 	"itemDescription.pf1e.wooden_armor": {
 		"message": "Leather armor with planks o' fire-treated wood over the vitals. It guards better than plain leather, an' the wood floats, so it don't hinder swimmin'.",
 		"source": "Leather armor with plates of fire-treated wood over vital spots. It guards better than plain leather, and the wood floats, so it doesn't hinder swimming."
 	},
+	"itemDescription.pf1e.wooden_holy_symbol": {
+		"message": "A carved wooden emblem o' a god, worn on a cord. Clerics present it to cast their spells an' channel their god's energy.",
+		"source": "A carved wooden emblem of a god, worn on a cord. Clerics present it to cast their spells and channel their god's energy."
+	},
+	"itemDescription.sf1e.abadarcorp_travel_suit": {
+		"message": "A stylish suit made by AbadarCorp for travelers, which works as light armor.",
+		"source": "A stylish suit made by AbadarCorp for travelers, which works as light armor."
+	},
+	"itemDescription.sf1e.acid_dart_rifle": {
+		"message": "A rifle that fires darts which burst an' spray acid when they hit.",
+		"source": "A rifle that fires darts which burst and spray acid when they hit."
+	},
+	"itemDescription.sf1e.advanced_staff": {
+		"message": "A fightin' staff fitted with emitters that turn aside blows aimed at its wielder.",
+		"source": "A fighting staff fitted with emitters that turn aside blows aimed at its wielder."
+	},
+	"itemDescription.sf1e.aegis_series": {
+		"message": "Military heavy armor built to protect its wearer above all.",
+		"source": "Military heavy armor built to protect its wearer above all."
+	},
+	"itemDescription.sf1e.arc_emitter": {
+		"message": "A long gun that sprays a cracklin' cone o' electricity over everything in front o' it.",
+		"source": "A long gun that sprays a crackling cone of electricity over everything in front of it."
+	},
+	"itemDescription.sf1e.arc_pistol": {
+		"message": "A pistol that fires an arc o' electricity, which can leap to a second target nearby.",
+		"source": "A pistol that fires an arc of electricity, which can leap to a second target nearby."
+	},
+	"itemDescription.sf1e.arc_rifle": {
+		"message": "A rifle that fires an arc o' electricity, which can leap to a second target nearby.",
+		"source": "A rifle that fires an arc of electricity, which can leap to a second target nearby."
+	},
+	"itemDescription.sf1e.arrows": {
+		"message": "Arrows for a bow.",
+		"source": "Arrows for a bow."
+	},
+	"itemDescription.sf1e.artillery_laser": {
+		"message": "A massive ray carried in two hands, which fires beams o' light that burn through cover.",
+		"source": "A massive laser carried in two hands, which fires beams of light that burn through cover."
+	},
+	"itemDescription.sf1e.autobeam_artillery": {
+		"message": "A heavy ray that fires rapid bursts o' beams, sweepin' a whole area.",
+		"source": "A heavy laser that fires rapid bursts of beams, sweeping a whole area."
+	},
+	"itemDescription.sf1e.autobeam_rifle": {
+		"message": "A ray rifle that fires beams in rapid bursts, rakin' a whole area.",
+		"source": "A laser rifle that fires beams in rapid bursts, raking a whole area."
+	},
+	"itemDescription.sf1e.autotarget_rifle": {
+		"message": "A rifle with a smart sight that finds its target for the shooter, so even the untrained can hit with it.",
+		"source": "A rifle with a smart sight that finds its target for the shooter, so even the untrained can hit with it."
+	},
+	"itemDescription.sf1e.basic_staff": {
+		"message": "A long fightin' staff o' sturdy alloy, carbon or solid light, swung in two hands to strike an' block.",
+		"source": "A long fighting staff of sturdy alloy, carbon or solid light, swung in two hands to strike and block."
+	},
+	"itemDescription.sf1e.baton": {
+		"message": "A short, weighted club o' the kind guards an' police carry, for knockin' foes down without killin' 'em.",
+		"source": "A short, weighted club of the kind guards and police carry, for knocking foes down without killing them."
+	},
+	"itemDescription.sf1e.battery": {
+		"message": "A rechargeable battery that powers energy weapons an' many devices.",
+		"source": "A rechargeable battery that powers energy weapons and many devices."
+	},
+	"itemDescription.sf1e.battleglove": {
+		"message": "An armored glove that makes a punch hit like a hammer. Better models drive the blow with servos, energy or gravity.",
+		"source": "An armored glove that makes a punch hit like a hammer. Better models drive the blow with servos, energy or gravity."
+	},
+	"itemDescription.sf1e.boardroom_attire": {
+		"message": "An elegant business suit with protective layers hidden in its weave.",
+		"source": "An elegant business suit with protective layers hidden in its weave."
+	},
+	"itemDescription.sf1e.bow": {
+		"message": "A bow o' modern materials that shoots arrows, a weapon o' hunters an' o' worlds without guns.",
+		"source": "A bow of modern materials that shoots arrows, a weapon of hunters and of worlds without guns."
+	},
+	"itemDescription.sf1e.carbon_skin": {
+		"message": "Light armor o' thin carbon plates that be tough yet flexible.",
+		"source": "Light armor of thin carbon plates that are tough yet flexible."
+	},
+	"itemDescription.sf1e.carbonedge_shuriken": {
+		"message": "A wee, sharp throwin' star with carbon edges.",
+		"source": "A small, sharp throwing star with carbon edges."
+	},
+	"itemDescription.sf1e.ceremonial_plate": {
+		"message": "Polished heavy armor worn by soldiers an' officers for parades an' ceremonies, an' in battle.",
+		"source": "Polished heavy armor worn by soldiers and officers for parades and ceremonies, and in battle."
+	},
+	"itemDescription.sf1e.club": {
+		"message": "A plain length o' wood, pipe or bone swung to bludgeon, found or made almost anywhere.",
+		"source": "A plain length of wood, pipe or bone swung to bludgeon, found or made almost anywhere."
+	},
+	"itemDescription.sf1e.combat_rifle": {
+		"message": "A rugged military rifle that fires heavy rounds, built to keep workin' in the worst conditions.",
+		"source": "A rugged military rifle that fires heavy rounds, built to keep working in the worst conditions."
+	},
+	"itemDescription.sf1e.crossbolter": {
+		"message": "A modern crossbow that hurls heavy metal bolts with great force. The heaviest models be carried as heavy weapons.",
+		"source": "A modern crossbow that hurls heavy metal bolts with great force. The heaviest models are carried as heavy weapons."
+	},
+	"itemDescription.sf1e.cryo_grenade": {
+		"message": "A grenado that bursts into a cloud o' freezin' cold, chillin' everyone nearby.",
+		"source": "A grenade that bursts into a cloud of freezing cold, chilling everyone nearby."
+	},
+	"itemDescription.sf1e.cryopike": {
+		"message": "A pike whose head be chilled far below freezin', so each thrust leaves frost an' numbin' cold behind.",
+		"source": "A pike whose head is chilled far below freezing, so each thrust leaves frost and numbing cold behind."
+	},
+	"itemDescription.sf1e.curve_blade": {
+		"message": "A long, curvin' two-handed sword that cuts in wide, flowin' arcs.",
+		"source": "A long, curving two-handed sword that cuts in wide, flowing arcs."
+	},
+	"itemDescription.sf1e.d_suit": {
+		"message": "Light armor o' layered protective plates, made for defense.",
+		"source": "Light armor of layered protective plates, made for defense."
+	},
+	"itemDescription.sf1e.dagger": {
+		"message": "A short blade honed to a far finer edge than any steel can hold, which slips through armor.",
+		"source": "A short blade honed to a far finer edge than any steel can hold, which slips through armor."
+	},
+	"itemDescription.sf1e.darts": {
+		"message": "Darts for needler pistols, needler rifles an' acid dart rifles.",
+		"source": "Darts for needler pistols, needler rifles and acid dart rifles."
+	},
+	"itemDescription.sf1e.defiance_series": {
+		"message": "Military heavy armor made for frontline troops.",
+		"source": "Military heavy armor made for frontline troops."
+	},
+	"itemDescription.sf1e.defrex_hide": {
+		"message": "Light armor made from the tough hide o' the defrex, a large beast.",
+		"source": "Light armor made from the tough hide of the defrex, a large beast."
+	},
+	"itemDescription.sf1e.devastation_blade": {
+		"message": "A massive, jagged sword built by an ancient cult, whose strikes tear at the life o' whatever they wound.",
+		"source": "A massive, jagged sword built by an ancient cult, whose strikes tear at the life of whatever they wound."
+	},
+	"itemDescription.sf1e.doshko": {
+		"message": "The vesk's traditional war polearm: a long haft endin' in a heavy, cleaver-like blade.",
+		"source": "The vesk's traditional war polearm: a long haft ending in a heavy, cleaver-like blade."
+	},
+	"itemDescription.sf1e.dueling_sword": {
+		"message": "A light, slender sword for quick thrusts an' parries, favored by duelists an' officers.",
+		"source": "A light, slender sword for quick thrusts and parries, favored by duelists and officers."
+	},
+	"itemDescription.sf1e.echelon_fashion": {
+		"message": "Fashionable clothin' for the elite, with protective layers hidden in its weave.",
+		"source": "Fashionable clothing for the elite, with protective layers hidden in its weave."
+	},
+	"itemDescription.sf1e.enginerunner": {
+		"message": "Heavy armor made for workin' around engines an' machinery.",
+		"source": "Heavy armor made for working around engines and machinery."
+	},
+	"itemDescription.sf1e.estex_suit": {
+		"message": "Light armor o' padded, interlockin' plates, common among explorers an' mercenaries.",
+		"source": "Light armor of padded, interlocking plates, common among explorers and mercenaries."
+	},
+	"itemDescription.sf1e.explosive_heavy_rounds": {
+		"message": "Large bullets for heavy weapons that explode where they hit.",
+		"source": "Large bullets for heavy weapons that explode where they hit."
+	},
+	"itemDescription.sf1e.explosive_scattergun_shells": {
+		"message": "Scattergun shells that explode where they hit.",
+		"source": "Scattergun shells that explode where they hit."
+	},
+	"itemDescription.sf1e.fangblade": {
+		"message": "A sword whose edge be a row o' serrated teeth, made to tear flesh an' leave bleedin' wounds.",
+		"source": "A sword whose edge is a row of serrated teeth, made to tear flesh and leave bleeding wounds."
+	},
+	"itemDescription.sf1e.flame_doshko": {
+		"message": "A doshko whose blade be wreathed in fire, settin' its targets alight.",
+		"source": "A doshko whose blade is wreathed in fire, setting its targets alight."
+	},
+	"itemDescription.sf1e.flame_pistol": {
+		"message": "A pistol that sprays a short burst o' burnin' fuel.",
+		"source": "A pistol that sprays a short burst of burning fuel."
+	},
+	"itemDescription.sf1e.flame_rifle": {
+		"message": "A rifle that sprays a line o' burnin' fuel, settin' its targets alight.",
+		"source": "A rifle that sprays a line of burning fuel, setting its targets alight."
+	},
+	"itemDescription.sf1e.flamethrower": {
+		"message": "A heavy weapon fed by a tank o' fuel, which sprays a wide stream o' fire.",
+		"source": "A heavy weapon fed by a tank of fuel, which sprays a wide stream of fire."
+	},
+	"itemDescription.sf1e.flares": {
+		"message": "Flares for a survival flare gun.",
+		"source": "Flares for a survival flare gun."
+	},
+	"itemDescription.sf1e.flash_grenade": {
+		"message": "A grenado that bursts into a blindin' flash o' light.",
+		"source": "A grenade that bursts into a blinding flash of light."
+	},
+	"itemDescription.sf1e.frag_grenade": {
+		"message": "A grenado that explodes into a burst o' sharp shrapnel.",
+		"source": "A grenade that explodes into a burst of sharp shrapnel."
+	},
+	"itemDescription.sf1e.freebooter_armor": {
+		"message": "Light armor o' leather an' metal plates, favored by space pirates an' smugglers.",
+		"source": "Light armor of leather and metal plates, favored by space pirates and smugglers."
+	},
+	"itemDescription.sf1e.golemforged_plating": {
+		"message": "Heavy armor o' thick plates forged by golems.",
+		"source": "Heavy armor of thick plates forged by golems."
+	},
+	"itemDescription.sf1e.grenade_arrows": {
+		"message": "Arrows tipped with a grenado, which goes off where the arrow lands.",
+		"source": "Arrows tipped with a grenade, which goes off where the arrow lands."
+	},
+	"itemDescription.sf1e.grindblade": {
+		"message": "A sword whose edge be a whirrin' saw chain that chews through armor.",
+		"source": "A sword whose edge is a whirring saw chain that chews through armor."
+	},
+	"itemDescription.sf1e.gyrojet_pistol": {
+		"message": "A pistol that fires wee self-propelled rockets, which hit hard against armored foes.",
+		"source": "A pistol that fires small self-propelled rockets, which hit hard against armored foes."
+	},
+	"itemDescription.sf1e.gyrojet_rifle": {
+		"message": "A rifle that fires wee self-propelled rockets, which hit hard against armored foes.",
+		"source": "A rifle that fires small self-propelled rockets, which hit hard against armored foes."
+	},
+	"itemDescription.sf1e.hammer": {
+		"message": "A war hammer with a dense head that crushes armor. Better models add thrusters or gravity to each blow.",
+		"source": "A war hammer with a dense head that crushes armor. Better models add thrusters or gravity to each blow."
+	},
+	"itemDescription.sf1e.hardlight_series": {
+		"message": "Light armor that projects plates o' solid light over its wearer.",
+		"source": "Light armor that projects plates of solid light over its wearer."
+	},
+	"itemDescription.sf1e.heavy_rounds": {
+		"message": "Large bullets for machine guns an' other heavy weapons.",
+		"source": "Large bullets for machine guns and other heavy weapons."
+	},
+	"itemDescription.sf1e.hidden_soldier_armor": {
+		"message": "Heavy armor that shifts its color to match its surroundings, hidin' its wearer.",
+		"source": "Heavy armor that shifts its color to match its surroundings, hiding its wearer."
+	},
+	"itemDescription.sf1e.high_capacity_battery": {
+		"message": "A battery that holds more charges than a standard one, for powerful energy weapons an' devices.",
+		"source": "A battery that holds more charges than a standard one, for powerful energy weapons and devices."
+	},
+	"itemDescription.sf1e.hunting_rifle": {
+		"message": "A simple, accurate rifle that fires one bullet at a time, made for huntin' game.",
+		"source": "A simple, accurate rifle that fires one bullet at a time, made for hunting game."
+	},
+	"itemDescription.sf1e.imds_missile_launcher": {
+		"message": "A launcher carried on the shoulder that fires guided missiles, which explode where they land.",
+		"source": "A launcher carried on the shoulder that fires guided missiles, which explode where they land."
+	},
+	"itemDescription.sf1e.incapacitator": {
+		"message": "A baton whose tip releases a charge that numbs nerves, for subduin' someone without lastin' harm.",
+		"source": "A baton whose tip releases a charge that numbs nerves, for subduing someone without lasting harm."
+	},
+	"itemDescription.sf1e.incendiary_grenade": {
+		"message": "A grenado that bursts into flames, settin' everyone nearby alight.",
+		"source": "A grenade that bursts into flames, setting everyone nearby alight."
+	},
+	"itemDescription.sf1e.injection_glove": {
+		"message": "A glove with a needle in its palm that injects whatever drug, medicine or poison be loaded into it.",
+		"source": "A glove with a needle in its palm that injects whatever drug, medicine or poison is loaded into it."
+	},
+	"itemDescription.sf1e.iridishell": {
+		"message": "Heavy armor o' shimmerin', iridescent plates like an insect's shell.",
+		"source": "Heavy armor of shimmering, iridescent plates like an insect's shell."
+	},
+	"itemDescription.sf1e.kasatha_microcord": {
+		"message": "Light armor woven from fine, strong cord in the kasathas' tradition, made to keep the wearer cool.",
+		"source": "Light armor woven from fine, strong cord in the kasathas' tradition, made to keep the wearer cool."
+	},
+	"itemDescription.sf1e.laser_pistol": {
+		"message": "A common sidearm that fires beams o' focused light, burnin' what they hit. It runs on batteries.",
+		"source": "A common sidearm that fires beams of focused light, burning what they hit. It runs on batteries."
+	},
+	"itemDescription.sf1e.laser_rifle": {
+		"message": "A rifle that fires beams o' focused light farther an' harder than a ray pistol. It runs on batteries.",
+		"source": "A rifle that fires beams of focused light farther and harder than a laser pistol. It runs on batteries."
+	},
+	"itemDescription.sf1e.lashunta_ringwear": {
+		"message": "Heavy armor o' interlockin' metal rings in the lashuntas' tradition.",
+		"source": "Heavy armor of interlocking metal rings in the lashuntas' tradition."
+	},
+	"itemDescription.sf1e.lashunta_tempweave": {
+		"message": "Light armor woven in the lashuntas' tradition, which keeps its wearer comfortable in heat an' cold.",
+		"source": "Light armor woven in the lashuntas' tradition, which keeps its wearer comfortable in heat and cold."
+	},
+	"itemDescription.sf1e.longarm_and_sniper_rounds": {
+		"message": "Bullets for rifles an' sniper rifles.",
+		"source": "Bullets for rifles and sniper rifles."
+	},
+	"itemDescription.sf1e.longsword": {
+		"message": "A straight, double-edged sword, the classic weapon o' knights an' soldiers, forged with ever finer edges in its better models.",
+		"source": "A straight, double-edged sword, the classic weapon of knights and soldiers, forged with ever finer edges in its better models."
+	},
+	"itemDescription.sf1e.machine_gun": {
+		"message": "A heavy gun that fires a stream o' bullets, rakin' a whole area.",
+		"source": "A heavy gun that fires a stream of bullets, raking a whole area."
+	},
+	"itemDescription.sf1e.magnetar_rifle": {
+		"message": "A rifle that hurls bullets with magnetic coils, firin' 'em in long bursts.",
+		"source": "A rifle that hurls bullets with magnetic coils, firing them in long bursts."
+	},
+	"itemDescription.sf1e.mini_rockets": {
+		"message": "Wee rockets for gyrojet pistols an' rifles.",
+		"source": "Small rockets for gyrojet pistols and rifles."
+	},
+	"itemDescription.sf1e.missile": {
+		"message": "A guided missile for a missile launcher.",
+		"source": "A guided missile for a missile launcher."
+	},
+	"itemDescription.sf1e.monowhip": {
+		"message": "A whip o' a single wire so thin it be nearly invisible, which slices through whatever it lashes.",
+		"source": "A whip of a single wire so thin it is nearly invisible, which slices through whatever it lashes."
+	},
+	"itemDescription.sf1e.needler_pistol": {
+		"message": "A quiet pistol that fires darts, each o' which can carry a dose o' a drug or poison.",
+		"source": "A quiet pistol that fires darts, each of which can carry a dose of a drug or poison."
+	},
+	"itemDescription.sf1e.needler_rifle": {
+		"message": "A quiet rifle that fires darts, each o' which can carry a dose o' a drug or poison.",
+		"source": "A quiet rifle that fires darts, each of which can carry a dose of a drug or poison."
+	},
+	"itemDescription.sf1e.nil_grenade_launcher": {
+		"message": "A weapon that lobs grenadoes much farther than they can be thrown.",
+		"source": "A weapon that lobs grenades much farther than they can be thrown."
+	},
+	"itemDescription.sf1e.nyfiber_net": {
+		"message": "A net o' tough fiber that be thrown to entangle a foe.",
+		"source": "A net of tough fiber that is thrown to entangle a foe."
+	},
+	"itemDescription.sf1e.peacemaker": {
+		"message": "A heavy riot baton that stuns with each blow, used by peacekeepers to end fights quickly.",
+		"source": "A heavy riot baton that stuns with each blow, used by peacekeepers to end fights quickly."
+	},
+	"itemDescription.sf1e.pike": {
+		"message": "A very long spear with a reinforced head, held in two hands to strike foes afore they come close.",
+		"source": "A very long spear with a reinforced head, held in two hands to strike foes before they come close."
+	},
+	"itemDescription.sf1e.plasma_cannon": {
+		"message": "A heavy gun that fires a line o' superheated plasma, which burns an' shocks.",
+		"source": "A heavy gun that fires a line of superheated plasma, which burns and shocks."
+	},
+	"itemDescription.sf1e.plasma_caster": {
+		"message": "A long gun that fires a beam o' plasma, burnin' everything in a line.",
+		"source": "A long gun that fires a beam of plasma, burning everything in a line."
+	},
+	"itemDescription.sf1e.plasma_doshko": {
+		"message": "A doshko whose blade be a field o' superheated plasma that burns an' shocks.",
+		"source": "A doshko whose blade is a field of superheated plasma that burns and shocks."
+	},
+	"itemDescription.sf1e.plasma_pistol": {
+		"message": "A pistol that fires bolts o' superheated plasma, which burn an' shock.",
+		"source": "A pistol that fires bolts of superheated plasma, which burn and shock."
+	},
+	"itemDescription.sf1e.plasma_rifle": {
+		"message": "A rifle that fires bolts o' superheated plasma, which burn an' shock.",
+		"source": "A rifle that fires bolts of superheated plasma, which burn and shock."
+	},
+	"itemDescription.sf1e.plasma_sword": {
+		"message": "A hilt that projects a blade o' glowin' plasma, which burns an' shocks what it touches.",
+		"source": "A hilt that projects a blade of glowing plasma, which burns and shocks what it touches."
+	},
+	"itemDescription.sf1e.pulse_gauntlet": {
+		"message": "A heavy gauntlet that releases a burst o' sound with each punch, knockin' foes off their feet.",
+		"source": "A heavy gauntlet that releases a burst of sound with each punch, knocking foes off their feet."
+	},
+	"itemDescription.sf1e.pulsecaster_pistol": {
+		"message": "A pistol that fires pulses o' electricity meant to stun rather than kill.",
+		"source": "A pistol that fires pulses of electricity meant to stun rather than kill."
+	},
+	"itemDescription.sf1e.pulsecaster_rifle": {
+		"message": "A rifle that fires pulses o' electricity meant to stun rather than kill.",
+		"source": "A rifle that fires pulses of electricity meant to stun rather than kill."
+	},
+	"itemDescription.sf1e.quantum_entangler": {
+		"message": "A two-handed weapon that disrupts matter at its smallest scale, staggerin' whatever it hits.",
+		"source": "A two-handed weapon that disrupts matter at its smallest scale, staggering whatever it hits."
+	},
+	"itemDescription.sf1e.reaction_cannon": {
+		"message": "A heavy gun that fires large shells with a kick that can knock its user back.",
+		"source": "A heavy gun that fires large shells with a kick that can knock its user back."
+	},
+	"itemDescription.sf1e.scattergun": {
+		"message": "A shotgun that fires a spray o' pellets in a cone, hittin' everything in front o' it.",
+		"source": "A shotgun that fires a spray of pellets in a cone, hitting everything in front of it."
+	},
+	"itemDescription.sf1e.scattergun_shells": {
+		"message": "Shells full o' pellets for a scattergun.",
+		"source": "Shells full of pellets for a scattergun."
+	},
+	"itemDescription.sf1e.screamer": {
+		"message": "A heavy weapon that unleashes a deafenin' blast o' sound over everything in front o' it.",
+		"source": "A heavy weapon that unleashes a deafening blast of sound over everything in front of it."
+	},
+	"itemDescription.sf1e.screamer_grenade": {
+		"message": "A grenado that bursts with a deafenin' shriek o' sound.",
+		"source": "A grenade that bursts with a deafening shriek of sound."
+	},
+	"itemDescription.sf1e.second_skin": {
+		"message": "A thin, tight bodysuit o' protective fiber, light enough to wear under clothes.",
+		"source": "A thin, tight bodysuit of protective fiber, light enough to wear under clothes."
+	},
+	"itemDescription.sf1e.seeker_rifle": {
+		"message": "A long-range rifle with a scope that helps the shooter pick out distant targets.",
+		"source": "A long-range rifle with a scope that helps the shooter pick out distant targets."
+	},
+	"itemDescription.sf1e.semi_auto_pistol": {
+		"message": "A dependable handgun that fires one bullet for each pull o' the trigger.",
+		"source": "A dependable handgun that fires one bullet for each pull of the trigger."
+	},
+	"itemDescription.sf1e.shirren_eye_rifle": {
+		"message": "A long sniper rifle designed by the shirren, deadly from great distances.",
+		"source": "A long sniper rifle designed by the shirren, deadly from great distances."
+	},
+	"itemDescription.sf1e.shock_caster": {
+		"message": "A heavy weapon that fires a line o' electricity, shockin' everything in its path.",
+		"source": "A heavy weapon that fires a line of electricity, shocking everything in its path."
+	},
+	"itemDescription.sf1e.shock_grenade": {
+		"message": "A grenado that releases a burst o' electricity, shockin' everyone nearby.",
+		"source": "A grenade that releases a burst of electricity, shocking everyone nearby."
+	},
+	"itemDescription.sf1e.shock_truncheon": {
+		"message": "A metal club that discharges a jolt o' electricity with each blow.",
+		"source": "A metal club that discharges a jolt of electricity with each blow."
+	},
+	"itemDescription.sf1e.shotalashu_armor": {
+		"message": "Light armor made for riders o' shotalashus, the lashuntas' mounts.",
+		"source": "Light armor made for riders of shotalashus, the lashuntas' mounts."
+	},
+	"itemDescription.sf1e.skyfire_armor": {
+		"message": "Heavy armor made for the Skyfire Legion, with plates shaped like wings.",
+		"source": "Heavy armor made for the Skyfire Legion, with plates shaped like wings."
+	},
+	"itemDescription.sf1e.skyfire_sword": {
+		"message": "A sword made for the Skyfire Legion, whose blade glows with heat an' burns as it cuts.",
+		"source": "A sword made for the Skyfire Legion, whose blade glows with heat and burns as it cuts."
+	},
+	"itemDescription.sf1e.small_arm_rounds": {
+		"message": "Bullets for pistols an' other wee arms.",
+		"source": "Bullets for pistols and other small arms."
+	},
+	"itemDescription.sf1e.smoke_grenade": {
+		"message": "A grenado that fills the area with thick smoke, hidin' anyone inside it.",
+		"source": "A grenade that fills the area with thick smoke, hiding anyone inside it."
+	},
+	"itemDescription.sf1e.sonic_pistol": {
+		"message": "A pistol that fires a focused blast o' sound that can deafen its target.",
+		"source": "A pistol that fires a focused blast of sound that can deafen its target."
+	},
+	"itemDescription.sf1e.sonic_rifle": {
+		"message": "A rifle that fires a focused blast o' sound that can deafen its target.",
+		"source": "A rifle that fires a focused blast of sound that can deafen its target."
+	},
+	"itemDescription.sf1e.spear": {
+		"message": "A long shaft with a sharp head, held in two hands to keep foes at a distance.",
+		"source": "A long shaft with a sharp head, held in two hands to keep foes at a distance."
+	},
+	"itemDescription.sf1e.starknife": {
+		"message": "A ring with four blades juttin' out like the points o' a star, wielded up close or thrown. It be sacred to the sun goddess Sarenrae.",
+		"source": "A ring with four blades jutting out like the points of a star, wielded up close or thrown. It is sacred to the sun goddess Sarenrae."
+	},
+	"itemDescription.sf1e.stationwear": {
+		"message": "Everyday clothes o' a space station, with protective layers woven in so they work as light armor.",
+		"source": "Everyday clothes of a space station, with protective layers woven in so they work as light armor."
+	},
+	"itemDescription.sf1e.steelbones": {
+		"message": "Heavy armor built on a metal frame that braces its wearer's bones.",
+		"source": "Heavy armor built on a metal frame that braces its wearer's bones."
+	},
+	"itemDescription.sf1e.stellar_cannon": {
+		"message": "A heavy gun that fires bursts o' concentrated stellar energy, which burn an' can blind.",
+		"source": "A heavy gun that fires bursts of concentrated stellar energy, which burn and can blind."
+	},
+	"itemDescription.sf1e.stickybomb_grenade": {
+		"message": "A grenado that bursts into a spray o' sticky goo, gluin' anyone nearby in place.",
+		"source": "A grenade that bursts into a spray of sticky goo, gluing anyone nearby in place."
+	},
+	"itemDescription.sf1e.streetsweeper": {
+		"message": "A riot gun that fires a wide wave o' sound to knock crowds down an' drive 'em back.",
+		"source": "A riot gun that fires a wide wave of sound to knock crowds down and drive them back."
+	},
+	"itemDescription.sf1e.survival_flare_gun": {
+		"message": "A pistol for launchin' bright signal flares, which also burn when fired at a foe.",
+		"source": "A pistol for launching bright signal flares, which also burn when fired at a foe."
+	},
 	"itemDescription.sf1e.survival_knife": {
 		"message": "A sturdy blade for everyday work an' for fightin'. It be light, easy to lug an' treated against rust an' corrosion.",
 		"source": "A sturdy blade for everyday work and for fighting. It is light, easy to carry and treated against rust and corrosion."
+	},
+	"itemDescription.sf1e.swarmsuit": {
+		"message": "Light armor sealed against stingin' insects an' other swarms.",
+		"source": "Light armor sealed against stinging insects and other swarms."
+	},
+	"itemDescription.sf1e.swoop_hammer": {
+		"message": "A huge two-handed hammer whose head has thrusters that drive it in sweepin' blows.",
+		"source": "A huge two-handed hammer whose head has thrusters that drive it in sweeping blows."
+	},
+	"itemDescription.sf1e.taclash": {
+		"message": "A whip o' tough cable that lashes foes from a step away an' can trip 'em.",
+		"source": "A whip of tough cable that lashes foes from a step away and can trip them."
+	},
+	"itemDescription.sf1e.tactical_knife": {
+		"message": "A balanced combat knife o' hardened alloy, made for soldiers who want a blade that be quick to draw an' hard to break.",
+		"source": "A balanced combat knife of hardened alloy, made for soldiers who want a blade that is quick to draw and hard to break."
+	},
+	"itemDescription.sf1e.thinplate": {
+		"message": "Heavy armor o' thin, strong plates, lighter than most heavy armor.",
+		"source": "Heavy armor of thin, strong plates, lighter than most heavy armor."
+	},
+	"itemDescription.sf1e.vesk_monolith": {
+		"message": "Massive heavy armor o' the vesk, nearly impenetrable.",
+		"source": "Massive heavy armor of the vesk, nearly impenetrable."
+	},
+	"itemDescription.sf1e.vesk_overplate": {
+		"message": "Heavy armor o' thick overlappin' plates in the vesk's style.",
+		"source": "Heavy armor of thick overlapping plates in the vesk's style."
+	},
+	"itemDescription.sf1e.vitrum_plate": {
+		"message": "Heavy armor o' plates o' strong, clear glass.",
+		"source": "Heavy armor of plates of strong, clear glass."
+	},
+	"itemDescription.sf1e.voidshield_armor": {
+		"message": "Heavy armor that shields its wearer even in the void o' space.",
+		"source": "Heavy armor that shields its wearer even in the void of space."
+	},
+	"itemDescription.sf1e.x_gen_gun": {
+		"message": "A heavy gun with spinnin' barrels that fires bullets at a furious rate.",
+		"source": "A heavy gun with spinning barrels that fires bullets at a furious rate."
+	},
+	"itemDescription.sf1e.ysoki_refractor_suit": {
+		"message": "Light armor made by the ysoki, which bends light to make its wearer harder to see.",
+		"source": "Light armor made by the ysoki, which bends light to make its wearer harder to see."
+	},
+	"itemDescription.sf1e.zero_cannon": {
+		"message": "A heavy gun that fires a blast o' supercooled gas, freezin' what it hits.",
+		"source": "A heavy gun that fires a blast of supercooled gas, freezing what it hits."
+	},
+	"itemDescription.sf1e.zero_pistol": {
+		"message": "A pistol that fires a blast o' supercooled gas, chillin' its target an' slowin' it down.",
+		"source": "A pistol that fires a blast of supercooled gas, chilling its target and slowing it down."
+	},
+	"itemDescription.sf1e.zero_rifle": {
+		"message": "A rifle that fires a blast o' supercooled gas, chillin' its target an' slowin' it down.",
+		"source": "A rifle that fires a blast of supercooled gas, chilling its target and slowing it down."
+	},
+	"itemInspect.book": {
+		"message": "Tome",
+		"source": "Book"
+	},
+	"itemInspect.noTypes": {
+		"message": "None",
+		"source": "None"
+	},
+	"itemInspect.universeItem": {
+		"message": "Forged fer this universe",
+		"source": "Made for this universe"
+	},
+	"itemsReceived.toast": {
+		"message": "{giver} handed {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}.",
+		"source": "{giver} gave {receiver} {quantity, plural, =1 {{item}} other {{item} x#}}."
 	},
 	"keys.alt": {
 		"message": "Alt",
@@ -7687,6 +11035,14 @@
 		"message": "Armament",
 		"source": "Weapon"
 	},
+	"pf1e.itemType.alchemical": {
+		"message": "alchemist's brew",
+		"source": "alchemical"
+	},
+	"pf1e.itemType.ammunition": {
+		"message": "shot",
+		"source": "ammunition"
+	},
 	"pf1e.itemType.axes": {
 		"message": "hatchets",
 		"source": "axes"
@@ -7707,6 +11063,10 @@
 		"message": "close quarters",
 		"source": "close"
 	},
+	"pf1e.itemType.clothing": {
+		"message": "togs",
+		"source": "clothing"
+	},
 	"pf1e.itemType.crossbows": {
 		"message": "crossbows",
 		"source": "crossbows"
@@ -7718,6 +11078,10 @@
 	"pf1e.itemType.flails": {
 		"message": "flails",
 		"source": "flails"
+	},
+	"pf1e.itemType.food_and_drink": {
+		"message": "grub an' grog",
+		"source": "food and drink"
 	},
 	"pf1e.itemType.hammers": {
 		"message": "cudgels",
@@ -7731,6 +11095,10 @@
 		"message": "light armor",
 		"source": "light armor"
 	},
+	"pf1e.itemType.light_source": {
+		"message": "lamplight",
+		"source": "light source"
+	},
 	"pf1e.itemType.medium_armor": {
 		"message": "middlin' armor",
 		"source": "medium armor"
@@ -7742,6 +11110,10 @@
 	"pf1e.itemType.natural": {
 		"message": "fists an' claws",
 		"source": "natural"
+	},
+	"pf1e.itemType.poison": {
+		"message": "poison",
+		"source": "poison"
 	},
 	"pf1e.itemType.polearms": {
 		"message": "long poles",
@@ -7763,9 +11135,9 @@
 		"message": "throwin'",
 		"source": "thrown"
 	},
-	"pf1e.itemType.torch": {
-		"message": "torch",
-		"source": "torch"
+	"pf1e.itemType.tool": {
+		"message": "tools o' the trade",
+		"source": "tool"
 	},
 	"pf1e.race.aasimar": {
 		"message": "Aasimar",
@@ -8114,6 +11486,74 @@
 	"pf1e.size.tiny": {
 		"message": "Wee",
 		"source": "Tiny"
+	},
+	"pf1e.slot.armor": {
+		"message": "Armor",
+		"source": "Armor"
+	},
+	"pf1e.slot.belt": {
+		"message": "Belt",
+		"source": "Belt"
+	},
+	"pf1e.slot.body": {
+		"message": "Body",
+		"source": "Body"
+	},
+	"pf1e.slot.chest": {
+		"message": "Chest",
+		"source": "Chest"
+	},
+	"pf1e.slot.eyes": {
+		"message": "Peepers",
+		"source": "Eyes"
+	},
+	"pf1e.slot.feet": {
+		"message": "Feet",
+		"source": "Feet"
+	},
+	"pf1e.slot.hands": {
+		"message": "Mitts",
+		"source": "Hands"
+	},
+	"pf1e.slot.head": {
+		"message": "Noggin",
+		"source": "Head"
+	},
+	"pf1e.slot.headband": {
+		"message": "Brow",
+		"source": "Headband"
+	},
+	"pf1e.slot.neck": {
+		"message": "Neck",
+		"source": "Neck"
+	},
+	"pf1e.slot.offArm": {
+		"message": "Hook arm",
+		"source": "Off arm"
+	},
+	"pf1e.slot.ring": {
+		"message": "Ring",
+		"source": "Ring"
+	},
+	"pf1e.slot.ringLeft": {
+		"message": "Port ring",
+		"source": "Left ring"
+	},
+	"pf1e.slot.ringRight": {
+		"message": "Starboard ring",
+		"source": "Right ring"
+	},
+	"pf1e.slot.shoulders": {
+		"message": "Shoulders",
+		"source": "Shoulders"
+	},
+	"pf1e.slot.tail": {
+		"message": "Tail",
+		"source": "Tail"
+	},
+	"pf1e.slot.wrists": {
+		"message": "Wrists",
+		"source": "Wrists"
 	},
 	"pf1e.statMethod.point_buy_custom": {
 		"message": "point buy: name yer own price",
@@ -9263,57 +12703,81 @@
 		"message": "Armament",
 		"source": "Weapon"
 	},
-	"sf1e.itemType.battery": {
-		"message": "powder charge",
-		"source": "battery"
+	"sf1e.itemType.advanced_melee": {
+		"message": "fancy close fightin'",
+		"source": "advanced melee"
 	},
-	"sf1e.itemType.comm_unit": {
-		"message": "speakin' shell",
-		"source": "comm unit"
+	"sf1e.itemType.alchemical": {
+		"message": "alchemist's brew",
+		"source": "alchemical"
 	},
-	"sf1e.itemType.flashlight": {
-		"message": "lantern",
-		"source": "flashlight"
+	"sf1e.itemType.ammunition": {
+		"message": "shot",
+		"source": "ammunition"
 	},
-	"sf1e.itemType.frag_grenade": {
-		"message": "grenado",
-		"source": "frag grenade"
+	"sf1e.itemType.basic_melee": {
+		"message": "plain close fightin'",
+		"source": "basic melee"
+	},
+	"sf1e.itemType.clothing": {
+		"message": "togs",
+		"source": "clothing"
+	},
+	"sf1e.itemType.drug": {
+		"message": "draught",
+		"source": "drug"
+	},
+	"sf1e.itemType.food_and_drink": {
+		"message": "grub an' grog",
+		"source": "food and drink"
+	},
+	"sf1e.itemType.grenades": {
+		"message": "grenadoes",
+		"source": "grenades"
 	},
 	"sf1e.itemType.heavy_armor": {
 		"message": "heavy armor",
 		"source": "heavy armor"
 	},
-	"sf1e.itemType.laser_pistol": {
-		"message": "ray pistol",
-		"source": "laser pistol"
-	},
-	"sf1e.itemType.laser_rifle": {
-		"message": "ray musket",
-		"source": "laser rifle"
+	"sf1e.itemType.heavy_weapons": {
+		"message": "great guns",
+		"source": "heavy weapons"
 	},
 	"sf1e.itemType.light_armor": {
 		"message": "light armor",
 		"source": "light armor"
 	},
-	"sf1e.itemType.second_skin": {
-		"message": "second hide",
-		"source": "second skin"
+	"sf1e.itemType.light_source": {
+		"message": "lamplight",
+		"source": "light source"
 	},
-	"sf1e.itemType.semi_auto_pistol": {
-		"message": "repeatin' pistol",
-		"source": "semi-auto pistol"
+	"sf1e.itemType.longarms": {
+		"message": "muskets",
+		"source": "longarms"
 	},
-	"sf1e.itemType.small_arm_rounds": {
-		"message": "pistol shot",
-		"source": "small arm rounds"
+	"sf1e.itemType.medicinal": {
+		"message": "physic",
+		"source": "medicinal"
 	},
-	"sf1e.itemType.survival_knife": {
-		"message": "boardin' knife",
-		"source": "survival knife"
+	"sf1e.itemType.poison": {
+		"message": "poison",
+		"source": "poison"
 	},
-	"sf1e.itemType.tactical_baton": {
-		"message": "belayin' pin",
-		"source": "tactical baton"
+	"sf1e.itemType.small_arms": {
+		"message": "pistols",
+		"source": "small arms"
+	},
+	"sf1e.itemType.sniper_weapons": {
+		"message": "long guns",
+		"source": "sniper weapons"
+	},
+	"sf1e.itemType.special_weapons": {
+		"message": "odd arms",
+		"source": "special weapons"
+	},
+	"sf1e.itemType.tool": {
+		"message": "tools o' the trade",
+		"source": "tool"
 	},
 	"sf1e.race.android": {
 		"message": "Clockwork Hand",
@@ -9410,6 +12874,14 @@
 	"sf1e.size.tiny": {
 		"message": "Wee",
 		"source": "Tiny"
+	},
+	"sf1e.slot.armor": {
+		"message": "Armor",
+		"source": "Armor"
+	},
+	"sf1e.slot.clothing": {
+		"message": "Togs",
+		"source": "Clothing"
 	},
 	"sf1e.theme.ace_pilot": {
 		"message": "Ace Helmsman",

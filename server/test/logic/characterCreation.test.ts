@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { emptySf1eAbilityScores, NEW_PF1E_RACE_RULES, pf1eRaceRules, PF1E_RACES, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, type Pf1eAbilityScores, type Sf1eAbilityScores } from '@multiverse-kiln/shared';
 
-import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility } from '../../src/logic/characterCreation.js';
+import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, startingEquipmentOrder } from '../../src/logic/characterCreation.js';
 
 const rolls = [15, 12, 9, 17, 10, 13];
 
@@ -179,5 +179,26 @@ describe('combineStartingItems', () =>
 		const items = combineStartingItems([[{ itemId: 5, quantity: 1 }, { itemId: 7, quantity: 1 }]], new Set([7]));
 
 		assert.deepStrictEqual(items, [{ itemId: 7, quantity: 1 }]);
+	});
+});
+
+describe('startingEquipmentOrder', () =>
+{
+	it('lists the class\'s items, then the race\'s, then the universe\'s, each by name, each once with all of it given', () =>
+	{
+		const names = new Map([[1, 'torch'], [2, 'longsword'], [3, 'chain shirt'], [4, 'dagger'], [5, 'arrows']]);
+		const items = new Map([...names.keys()].map((id) => [id, {
+			id,
+			category: 'weapon',
+			types: [],
+			equips: 'oneHand'
+		}]));
+		const ordered = startingEquipmentOrder([
+			[{ itemId: 2, quantity: 1 }, { itemId: 3, quantity: 1 }],
+			[{ itemId: 1, quantity: 1 }, { itemId: 4, quantity: 1 }],
+			[{ itemId: 4, quantity: 1 }, { itemId: 5, quantity: 20 }]
+		], [{ itemId: 1, quantity: 1 }, { itemId: 2, quantity: 1 }, { itemId: 3, quantity: 1 }, { itemId: 4, quantity: 2 }], items, (id) => (names.get(id) ?? ''));
+
+		assert.deepStrictEqual(ordered.map(({ item, quantity }) => [item.id, quantity]), [[3, 1], [2, 1], [4, 2], [1, 1]]);
 	});
 });

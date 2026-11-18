@@ -5,7 +5,7 @@
 import { chooseUniverseLanguage, translationLanguagesFor, universeText, type OptionName, type UniverseTextField, type UniverseTextKind } from '@multiverse-kiln/shared';
 
 import type { Executor } from '../db/client.js';
-import { listTranslationsIn, type WantedText } from '../db/universeTextRepo.js';
+import { listTranslationsIn, type UniverseTranslationRecord, type WantedText } from '../db/universeTextRepo.js';
 
 /**
  * The languages of a universe
@@ -28,6 +28,26 @@ export interface UniverseLanguages
 function textKey(kind: UniverseTextKind, thingId: number | string, field: UniverseTextField): string
 {
 	return(`${kind}:${thingId}:${field}`);
+}
+
+/**
+ * Translations of a universe's text, as a translator holds them
+ *
+ * @param rows The translations
+ * @return Each piece of text's translations, by textKey(), then by language
+ */
+function translationsByKey(rows: readonly UniverseTranslationRecord[]): Map<string, Record<string, string>>
+{
+	const translations = new Map<string, Record<string, string>>();
+
+	for (const row of rows)
+	{
+		const key = textKey(row.kind, row.thingId, row.field);
+
+		translations.set(key, { ...translations.get(key), [row.language]: row.text });
+	}
+
+	return(translations);
 }
 
 /**
@@ -91,18 +111,32 @@ export class UniverseTextTranslator
 				languages: ((language === undefined) ? [] : translationLanguagesFor(language, universe.translationLanguages))
 			});
 		}), kinds, executor);
-		const byUniverse = new Map<string, Map<string, Record<string, string>>>();
+		const byUniverse = Map.groupBy(rows, (row) => row.universeId);
 
-		for (const row of rows)
-		{
-			const translations = (byUniverse.get(row.universeId) ?? new Map<string, Record<string, string>>());
-			const key = textKey(row.kind, row.thingId, row.field);
+		return(new Map(universes.map((universe) => [universe.id, new UniverseTextTranslator(chosen.get(universe.id), translationsByKey(byUniverse.get(universe.id) ?? []))])));
+	}
 
-			translations.set(key, { ...translations.get(key), [row.language]: row.text });
-			byUniverse.set(row.universeId, translations);
-		}
+	/**
+	 * Loads one universe's translations in every language it is translated into, for text shown to
+	 * players whose languages aren't known as it loads, such as a gift's item in the windows of every
+	 * player who sees it
+	 *
+	 * @param universe The universe and its languages
+	 * @param kinds The kinds of text that will be shown, each whole or only some things', or undefined for every kind
+	 * @param executor The database, or a transaction
+	 * @return Gives the translator for the languages a player asks for, most wanted first (requestLanguages(), windowLanguages())
+	 */
+	static async loadEveryLanguage(universe: UniverseLanguages, kinds?: readonly WantedText[], executor?: Executor): Promise<(requested: readonly string[]) => UniverseTextTranslator>
+	{
+		const rows = await listTranslationsIn([
+			{
+				universeId: universe.id,
+				languages: universe.translationLanguages
+			}
+		], kinds, executor);
+		const translations = translationsByKey(rows);
 
-		return(new Map(universes.map((universe) => [universe.id, new UniverseTextTranslator(chosen.get(universe.id), (byUniverse.get(universe.id) ?? new Map()))])));
+		return((requested) => new UniverseTextTranslator(chooseUniverseLanguage(requested, universe.sourceLanguage, universe.translationLanguages), translations));
 	}
 
 	/**

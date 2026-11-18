@@ -3,14 +3,41 @@ import argon2 from 'argon2';
 
 import { checkLoginPassword, checkPasswordForMissingAccount, hashPassword, passwordNeedsRehash, verifyPassword } from '../../src/auth/passwords.js';
 
+/**
+ * The settings a new hash is made with, read by name: the order a hash writes them in depends on the
+ * argon2 library's version
+ */
+const CURRENT_SETTINGS = {
+	memoryCost: 19456,
+	timeCost: 2,
+	parallelism: 1
+};
+
 describe('passwords', () =>
 {
 	it('hashes with Argon2id at the current settings', async () =>
 	{
 		const hash = await hashPassword('correct horse battery staple');
 
-		assert.match(hash, /^\$argon2id\$v=19\$m=19456,p=1,t=2\$/);
+		assert.ok(hash.startsWith('$argon2id$v=19$'), hash);
+		assert.strictEqual(argon2.needsRehash(hash, CURRENT_SETTINGS), false, hash);
 		assert.strictEqual(passwordNeedsRehash(hash), false);
+	});
+
+	it('checks and keeps a hash whatever order its settings are written in', async () =>
+	{
+		const parts = (await hashPassword('correct horse battery staple')).split('$');
+
+		parts[3] = parts[3]
+			.split(',')
+			.reverse()
+			.join(',');
+
+		const reordered = parts.join('$');
+
+		assert.strictEqual(await verifyPassword(reordered, 'correct horse battery staple'), true);
+		assert.strictEqual(await verifyPassword(reordered, 'Correct horse battery staple'), false);
+		assert.strictEqual(passwordNeedsRehash(reordered), false);
 	});
 
 	it('verifies the right password and rejects others', async () =>

@@ -33,6 +33,23 @@ export const FOG_OF_WAR_NAMES: Record<'on' | 'off', MessageDescriptor> = defineM
 });
 
 /**
+ * Indoors and outdoors: the value a region's or area's setting inherits or gives, and the names of
+ * those settings in the Audit tab's list of what a save changed
+ */
+export const INDOORS_NAMES: Record<'indoors' | 'outdoors', MessageDescriptor> = defineMessages({
+	indoors: {
+		id: 'form.indoors',
+		defaultMessage: 'Indoors',
+		description: 'Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	},
+	outdoors: {
+		id: 'form.outdoors',
+		defaultMessage: 'Outdoors',
+		description: 'Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
+	}
+});
+
+/**
  * A faerie passage of time with where morning is, as the region and area editors and the Audit tab show it
  */
 export const FAERIE_TIME_MESSAGE: MessageDescriptor = defineMessages({
@@ -57,17 +74,7 @@ export function describeValue<Setting extends InheritedSetting>(setting: Setting
 	switch (setting)
 	{
 		case 'indoors':
-			return((value
-				? t({
-					id: 'form.indoors',
-					defaultMessage: 'Indoors',
-					description: 'Choice in the region and area editors for a region or area that is indoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile indoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-				})
-				: t({
-					id: 'form.outdoors',
-					defaultMessage: 'Outdoors',
-					description: 'Choice in the region and area editors for a region or area that is outdoors, also shown as the value one inherits or gives, and the tile editor\'s checkbox for a tile outdoor areas can paint with; also names the setting in the list of what a save changed, on the editor\'s Audit tab'
-				})));
+			return(t(INDOORS_NAMES[(value ? 'indoors' : 'outdoors')]));
 
 		case 'lightLevel':
 			return(t(AREA_LIGHT_LEVEL_NAMES[value as AreaLightLevel]));

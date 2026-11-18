@@ -9,27 +9,31 @@
 import { randomInt } from 'crypto';
 import express, { type Application, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, defineMessages, DISALLOWED_TEXT_CHARACTERS, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
+import { addMoney, barredOptionsOf, characterBar, canPlayUniverse, canViewUniverse, CHARACTER_STEPS, DEFAULT_ITEM_NAMES, defineMessages, DISALLOWED_TEXT_CHARACTERS, EQUIP_HANDS, EQUIP_RINGS, equipmentSlots, planEquip, startingEquipment, type EditorItem, type EquippedItem, type EquipRefusal, type EquipRequest, type GiveItemsRequest, type Ruleset, type UnequipRequest, isPf1eRollMethod, isReservedName, isSf1eClassRules, isUsable, isSf1eRaceRules, localize, type LocalizedMessage, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, NEW_RACE_RULES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, pf1ePointBuyBudget, rulesetHasThemes, SF1E_MAX_BOUGHT_SCORE, sf1eAbilityModifier, UNIVERSES_PATH, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type ChatNoticeDetails, type CreatedPayload, MAX_ITEMS_PER_CHARACTER_CHANGE, type CharacterItemsRequest, type EditableUniverseDetails, type EditorClass, type EditorRace, type ItemQuantity, type MessageDescriptor, type NewCharacterOptions, type NewCharacterRequest, type OptionName, type UniverseRole, type UniverseStage } from '@multiverse-kiln/shared';
 
-import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findCharacterPlayerId, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, keepPf1eAbilityRoll, listCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails } from '../db/characterRepo.js';
+import { countCharacters, createCharacter, deleteCharacter, deleteCharacterDraft, deletePf1eAbilityRoll, findCharacterDetails, findCharacterDraft, findLastPlayedCharacterId, findOwnCharacter, findPf1eAbilityRoll, giveCharacterItems, keepPf1eAbilityRoll, listCharacters, lockCarriedItems, lockCharacters, restoreCharacter, saveCharacterDraft, scheduleCharacterDeletion, takeCharacterItems, type CharacterDetails, type LockedCharacter } from '../db/characterRepo.js';
 import { findEditorClass, loadEditorClasses } from '../db/classRepo.js';
 import type { Executor } from '../db/client.js';
-import { findMembership } from '../db/groupRepo.js';
+import { equipItems, listEquipment, unequipSlots } from '../db/equipmentRepo.js';
+import { findMembership, listGroupMembers } from '../db/groupRepo.js';
 import { lockPlayer } from '../db/playerRepo.js';
 import { loadEditorItemsIn } from '../db/itemRepo.js';
-import { findEditorRace, loadEditorRaces } from '../db/raceRepo.js';
+import { findEditorRace, findRaceHasTail, loadEditorRaces } from '../db/raceRepo.js';
 import { findPf1eSettings, findSf1eSettings, loadRulebookSettings } from '../db/rulesetRepo.js';
 import { findSiteSettings } from '../db/siteSettingsRepo.js';
 import { findEditorTheme, loadEditorThemes } from '../db/themeRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findUniverseRole } from '../db/universeEditorRepo.js';
-import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
+import { findEditableUniverse, findUniverse, lockUniverseShared } from '../db/universeRepo.js';
 import type { WantedText } from '../db/universeTextRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
 import { rollPf1eAbilityScores } from '../logic/abilityRolls.js';
 import { characterChanges } from '../players/characterChanges.js';
-import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, type ScoreSource } from '../logic/characterCreation.js';
+import { characterItemChanges } from '../players/characterItemChanges.js';
+import { abilityBonuses, areValidBaseScores, combineStartingItems, finalAbilityScores, isValidFloatingAbility, startingEquipmentOrder, type ScoreSource } from '../logic/characterCreation.js';
+import { groupNoticeRates, postGiftNotice, tryTakeGroupNotice } from '../rooms/groupChatNotices.js';
 import { displayText } from '../rooms/payloads.js';
+import type { RateLimiter } from '../rooms/rateLimiter.js';
 import { playerIdOf, refuseWritesFromOtherOrigins, requireLogin } from './editorAccess.js';
 import { errorMessages, requestRoute, sendError, sendInvalidRequest, type Refusal } from './errors.js';
 import { requestLanguages } from './requestLanguages.js';
@@ -93,6 +97,34 @@ export const characterItemsRequest = z.object({
 }) satisfies z.ZodType<CharacterItemsRequest>;
 
 /**
+ * EquipRequest. Whether the character carries the item, and whether it can be held as asked, is
+ * checked by the route
+ */
+export const equipRequest = z.object({
+	itemId: z.number().int().min(1).max(2147483647),
+	hand: z.enum(EQUIP_HANDS).nullable(),
+	ring: z.enum(EQUIP_RINGS).nullable()
+}) satisfies z.ZodType<EquipRequest>;
+
+/**
+ * UnequipRequest
+ */
+export const unequipRequest = z.object({
+	itemId: z.number().int().min(1).max(2147483647),
+	slot: z.string().min(1).max(40).nullable()
+}) satisfies z.ZodType<UnequipRequest>;
+
+/**
+ * GiveItemsRequest. Whether the other character is in the group, and the item is carried, is checked
+ * by the route
+ */
+export const giveItemsRequest = z.object({
+	characterId: z.uuid(),
+	itemId: z.number().int().min(1).max(2147483647),
+	quantity: z.number().int().min(1).max(2147483647)
+}) satisfies z.ZodType<GiveItemsRequest>;
+
+/**
  * Reasons the character routes give (see shared/src/localization.ts)
  */
 const messages = defineMessages({
@@ -150,6 +182,52 @@ const messages = defineMessages({
 		id: 'error.discardItemsNotCarried',
 		defaultMessage: 'The character doesn\'t carry that item any more.',
 		description: 'Why items weren\'t discarded from a character\'s sheet: the character no longer carries one of them, perhaps because it was discarded in another window first'
+	},
+	itemNotCarried: {
+		id: 'error.equipItemNotCarried',
+		defaultMessage: 'The character doesn\'t carry that item any more.',
+		description: 'Why an item wasn\'t equipped from a character\'s sheet: the character no longer carries it, perhaps because it was discarded or given away in another window first'
+	},
+	giveItemNotCarried: {
+		id: 'error.giveItemNotCarried',
+		defaultMessage: 'The character doesn\'t carry that item any more.',
+		description: 'Why an item wasn\'t given to another character from a character\'s sheet, by their player or from the editor\'s Character List tab: the character no longer carries it, perhaps because it was discarded or given away in another window first'
+	},
+	giveTooFast: {
+		id: 'error.giveTooFast',
+		defaultMessage: 'You are giving items too quickly. Wait a moment and try again.',
+		description: 'Why an item wasn\'t given to another character from a character\'s sheet, by their player or from the editor\'s Character List tab: the player\'s characters gave items in, joined or left their group faster than allowed, since each gift, join and leave writes a line in the group\'s chat'
+	},
+	giveToSelf: {
+		id: 'error.giveToSelf',
+		defaultMessage: 'Choose another character to give the items to.',
+		description: 'Why items weren\'t given from a character\'s sheet: the character chosen to get them was the one giving them'
+	},
+	notInGroupWith: {
+		id: 'error.giveNotInGroup',
+		defaultMessage: 'Items can only be given to another character in the same group.',
+		description: 'Why items weren\'t given from a character\'s sheet: the giving character isn\'t in a group, or the character chosen to get them isn\'t in it any more'
+	}
+});
+
+/**
+ * Why an item can't be equipped as asked, by planEquip()'s refusal
+ */
+const EQUIP_REFUSALS: Record<EquipRefusal, MessageDescriptor> = defineMessages({
+	notEquippable: {
+		id: 'error.notEquippable',
+		defaultMessage: 'That item can\'t be equipped that way.',
+		description: 'Why an item wasn\'t equipped from a character\'s sheet: it can\'t be equipped at all, or not in the hands chosen, perhaps because the universe\'s creators changed where it equips'
+	},
+	noTail: {
+		id: 'error.equipNoTail',
+		defaultMessage: 'The character has no tail to wear that on.',
+		description: 'Why an item wasn\'t equipped from a character\'s sheet: it is worn on the tail, such as a tail blade, and the character\'s race has no tail'
+	},
+	ringSlotsFull: {
+		id: 'error.equipRingSlotsFull',
+		defaultMessage: 'Both ring slots are full. Choose which ring to replace.',
+		description: 'Why a ring wasn\'t equipped from a character\'s sheet: both of the character\'s ring slots filled up before it was equipped, so the item\'s menu now asks whether to equip it as the left or the right ring'
 	}
 });
 
@@ -185,6 +263,9 @@ export function addCharacterRoutes(app: Application, allowedOrigins: Set<string>
 	router.put('/:characterId/deletion', loadPlayableUniverse, scheduleDeletionRoute);
 	router.delete('/:characterId/deletion', loadPlayableUniverse, restoreRoute);
 	router.post('/:characterId/items/discard', loadPlayableUniverse, discardRoute);
+	router.post('/:characterId/items/equip', loadPlayableUniverse, equipRoute);
+	router.post('/:characterId/items/unequip', loadPlayableUniverse, unequipRoute);
+	router.post('/:characterId/items/give', loadPlayableUniverse, giveRoute);
 	router.use(handleCharacterError);
 
 	app.use(`${UNIVERSES_PATH}/:universeId/characters`, router);
@@ -359,22 +440,22 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 {
 	// Only the character's own items and their names' translations, of the thousands a universe can have
 	const itemIds = character.items.map((item) => item.itemId);
-	const [membership, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
-		findMembership(character.id),
-		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
-		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
-		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
-		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
-		findSiteSettings(),
-		loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, itemIds),
-		loadTexts([
+	const groupLoad = findMembership(character.id)
+		.then(async (membership) => ({
+			membership,
+			members: ((membership === undefined) ? [] : await listGroupMembers(membership.groupId))
+		}));
+
+	// The group's characters are listed with their races and classes, so their translations wait for the members
+	const textsLoad = groupLoad
+		.then(({ members }) => loadTexts([
 			{
 				kind: 'race',
-				thingIds: [character.raceId]
+				thingIds: [...new Set([character.raceId, ...members.map((member) => member.raceId)])]
 			},
 			{
 				kind: 'class',
-				thingIds: [character.classId]
+				thingIds: [...new Set([character.classId, ...members.map((member) => member.classId)])]
 			},
 			{
 				kind: 'theme',
@@ -385,8 +466,50 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 				thingIds: itemIds
 			},
 			'coin'
-		])
+		]));
+	const [{ membership, members }, races, classes, themes, rulebooks, siteSettings, items, translator] = await Promise.all([
+		groupLoad,
+		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
+		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
+		loadEditorThemes(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
+		findSiteSettings(),
+		loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, itemIds),
+		textsLoad
 	]);
+
+	/**
+	 * A race's name as the sheet shows it
+	 *
+	 * @param raceId The race's ID
+	 * @return The name, in the player's language
+	 */
+	const raceNameOf = (raceId: number): OptionName =>
+	{
+		const option = races.find((candidate) => (candidate.id === raceId));
+
+		return(translator.name('race', raceId, {
+			key: (option?.key ?? null),
+			name: (option?.name ?? null)
+		}));
+	};
+
+	/**
+	 * A class's name as the sheet shows it
+	 *
+	 * @param classId The class's ID
+	 * @return The name, in the player's language
+	 */
+	const classNameOf = (classId: number): OptionName =>
+	{
+		const option = classes.find((candidate) => (candidate.id === classId));
+
+		return(translator.name('class', classId, {
+			key: (option?.key ?? null),
+			name: (option?.name ?? null)
+		}));
+	};
+
 	const race = races.find((option) => (option.id === character.raceId));
 	const characterClass = classes.find((option) => (option.id === character.classId));
 	const theme = themes.find((option) => (option.id === character.themeId));
@@ -398,21 +521,24 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 		ruleset: universe.ruleset,
 		id: character.id,
 		name: character.name,
-		race: translator.name('race', character.raceId, {
-			key: (race?.key ?? null),
-			name: (race?.name ?? null)
-		}),
-		characterClass: translator.name('class', character.classId, {
-			key: (characterClass?.key ?? null),
-			name: (characterClass?.name ?? null)
-		}),
+		race: raceNameOf(character.raceId),
+		characterClass: classNameOf(character.classId),
 		deleteAt: (character.deleteAt?.toISOString() ?? null),
 		deletionDays: siteSettings.characterDeletionDays,
 		group: ((membership === undefined)
 			? null
 			: {
 				groupId: membership.groupId,
-				isAnchor: membership.isAnchor
+				isAnchor: membership.isAnchor,
+				members: members
+					.filter((member) => (member.characterId !== character.id))
+					.map((member) => ({
+						characterId: member.characterId,
+						name: member.name,
+						race: raceNameOf(member.raceId),
+						characterClass: classNameOf(member.classId)
+					}))
+					.sort((a, b) => a.name.localeCompare(b.name))
 			}),
 		barredBy: characterBar(character, barredOptionsOf(races, classes, rulebooks)),
 		size: (race?.rules.size ?? NEW_RACE_RULES[universe.ruleset].size),
@@ -442,12 +568,43 @@ export async function characterSheetOf(universe: PlayableUniverse, character: Ch
 				name: (item?.name ?? null),
 				description: (item?.description ?? null),
 				category: (item?.category ?? ''),
+				types: (item?.types ?? []),
+				equips: (item?.equips ?? 'none'),
+				rulebook: (item?.rulebook ?? null),
 				quantity
 			}));
-		})
+		}),
+		hasTail: raceHasTail(race),
+		equipment: sortedEquipment(universe.ruleset, character.equipment)
 	};
 
 	return(payload);
+}
+
+/**
+ * Whether a race's characters have a tail, which gives them the tail slot
+ *
+ * @param race The race as the universe sets it now, or undefined when it can't be found
+ * @return True for a race with a tail; false for one without, one of a ruleset without tails, and one
+ * that can't be found
+ */
+export function raceHasTail(race: EditorRace | undefined): boolean
+{
+	return(((race !== undefined) && !isSf1eRaceRules(race.rules) && race.rules.hasTail));
+}
+
+/**
+ * Equipped items in the order the character sheet lists their slots
+ *
+ * @param ruleset The universe's ruleset
+ * @param equipment The equipped items
+ * @return The same items, sorted
+ */
+function sortedEquipment(ruleset: Ruleset, equipment: readonly EquippedItem[]): EquippedItem[]
+{
+	const slots = equipmentSlots(ruleset);
+
+	return([...equipment].sort((a, b) => (slots.indexOf(a.slot) - slots.indexOf(b.slot))));
 }
 
 /**
@@ -734,7 +891,7 @@ async function discardRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const refusal = await discardItems(universeOf(request).id, characterId, body.data.items, playerIdOf(request), messages.noSuchCharacter);
+	const refusal = await discardItems(universeOf(request), characterId, body.data.items, playerIdOf(request), messages.noSuchCharacter);
 
 	if (refusal)
 	{
@@ -746,10 +903,11 @@ async function discardRoute(request: Request, response: Response): Promise<void>
 }
 
 /**
- * Discards items a character carries, all of an item when asked for as many as they carry or more.
- * Any item they carry can be discarded, disabled ones included
+ * Discards items a character carries, all of an item when asked for as many as they carry or more, and
+ * tells their player's windows. Discarding more than are unequipped unequips the rest. Any item they
+ * carry can be discarded, disabled ones included
  *
- * @param universeId The universe's ID
+ * @param universe The universe's ID and ruleset
  * @param characterId The character's ID
  * @param items The items, each listed once, and how many of each to discard
  * @param playerId The player the character must belong to, or undefined for any player's, as the
@@ -757,23 +915,415 @@ async function discardRoute(request: Request, response: Response): Promise<void>
  * @param noSuchCharacter Why a character who isn't there can't have items discarded
  * @return Why nothing was discarded, or undefined once the items are
  */
-export async function discardItems(universeId: string, characterId: string, items: readonly ItemQuantity[], playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+export async function discardItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, items: readonly ItemQuantity[], playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
 {
-	return(inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	let changed: LockedCharacter | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
-		const owner = await findCharacterPlayerId(universeId, characterId, transaction);
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
 
-		if ((owner === undefined) || ((playerId !== undefined) && (owner !== playerId)))
+		if ('status' in character)
 		{
-			return({ status: 404, message: noSuchCharacter });
+			return(character);
 		}
 
-		if (!await takeCharacterItems(characterId, items, transaction))
+		if (!await takeCharacterItems(characterId, universe.ruleset, items, transaction))
 		{
 			return({ status: 409, message: messages.itemsNotCarried });
 		}
 
+		changed = character;
 		return(undefined);
+	});
+
+	if (changed)
+	{
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Makes a route that changes one of the player's characters' items or equipment
+ *
+ * @param body The request's validator
+ * @param change Makes the change, given the universe, the character, the body and the player
+ * @return The route, answering 204 once the change is made
+ */
+function itemRoute<Body>(body: z.ZodType<Body>, change: (universe: PlayableUniverse, characterId: string, request: Body, playerId: string, noSuchCharacter: MessageDescriptor) => Promise<Refusal | undefined>): (request: Request, response: Response) => Promise<void>
+{
+	return(async (request, response) =>
+	{
+		const characterId = characterIdOf(request, response);
+
+		if (characterId === undefined)
+		{
+			return;
+		}
+
+		const parsed = body.safeParse(request.body);
+
+		if (!parsed.success)
+		{
+			sendInvalidRequest(response, parsed.error);
+			return;
+		}
+
+		const refusal = await change(universeOf(request), characterId, parsed.data, playerIdOf(request), messages.noSuchCharacter);
+
+		if (refusal)
+		{
+			sendError(response, refusal.status, refusal.message, refusal.values);
+			return;
+		}
+
+		response.sendStatus(204);
+	});
+}
+
+/**
+ * POST /:characterId/items/equip: equips an item one of the player's characters carries
+ */
+const equipRoute = itemRoute(equipRequest, equipItem);
+
+/**
+ * POST /:characterId/items/unequip: unequips an item one of the player's characters has equipped
+ */
+const unequipRoute = itemRoute(unequipRequest, unequipItem);
+
+/**
+ * POST /:characterId/items/give: gives items one of the player's characters carries to another
+ * character in their group
+ */
+const giveRoute = itemRoute(giveItemsRequest, giveItems);
+
+/**
+ * Locks a character while their items or equipment change, refusing one who isn't there or isn't the
+ * player's. The universe's shared lock comes first, so a world editor save changing where items equip or
+ * taking them waits for the change, or the change waits for the save and reads what it saved. The
+ * character's lock makes two changes to their items wait for each other
+ *
+ * @param universeId The universe's ID
+ * @param characterId The character's ID
+ * @param playerId The player the character must belong to, or undefined for any player's
+ * @param noSuchCharacter Why a character who isn't there can't be changed
+ * @param transaction The transaction making the change
+ * @return The character, or why they can't be changed
+ */
+async function lockOwnCharacter(universeId: string, characterId: string, playerId: string | undefined, noSuchCharacter: MessageDescriptor, transaction: Executor): Promise<LockedCharacter | Refusal>
+{
+	await lockUniverseShared(universeId, transaction);
+
+	const character = (await lockCharacters(universeId, [characterId], transaction)).get(characterId);
+
+	if (!character || ((playerId !== undefined) && (character.playerId !== playerId)))
+	{
+		return({ status: 404, message: noSuchCharacter });
+	}
+
+	return(character);
+}
+
+/**
+ * Equips an item a character carries, unequipping what was in its slots (planEquip()). Any item they
+ * carry can be equipped, disabled ones and those whose book is off included
+ *
+ * @param universe The universe's ID and ruleset; its live version's items are used
+ * @param characterId The character's ID
+ * @param request The item, the hands to hold it in and the ring slot to put it in
+ * @param playerId The player the character must belong to, or undefined for any player's, as the
+ * universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't equip items
+ * @return Why nothing was equipped, or undefined once it is
+ */
+export async function equipItem(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: EquipRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+{
+	let changed: LockedCharacter | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
+
+		if ('status' in character)
+		{
+			return(character);
+		}
+
+		// Locked, so none can be taken between counting them and equipping them
+		const quantity = ((await lockCarriedItems(characterId, [request.itemId], transaction)).get(request.itemId) ?? 0);
+
+		if (quantity === 0)
+		{
+			return({ status: 409, message: messages.itemNotCarried });
+		}
+
+		const equipment = await listEquipment(characterId, transaction);
+		const items = new Map((await loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, [request.itemId, ...equipment.map((equipped) => equipped.itemId)], transaction))
+			.map((item) => [item.id, item]));
+		const item = items.get(request.itemId);
+
+		if (!item)
+		{
+			return({ status: 409, message: messages.itemNotCarried });
+		}
+
+		const hasTail = await findRaceHasTail(liveVersion(universe.id), universe.ruleset, character.raceId, transaction);
+		const plan = planEquip(universe.ruleset, equipment, items, item, quantity, request.hand, hasTail, request.ring);
+
+		if (typeof plan === 'string')
+		{
+			return({ status: 409, message: EQUIP_REFUSALS[plan] });
+		}
+
+		if (plan.added === null)
+		{
+			return(undefined);
+		}
+
+		await unequipSlots(characterId, plan.removed.map((equipped) => equipped.slot), transaction);
+		await equipItems(characterId, [plan.added], transaction);
+		changed = character;
+		return(undefined);
+	});
+
+	if (changed)
+	{
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Unequips an item from one of a character's slots, or from everywhere it is equipped. An item that
+ * isn't equipped there changes nothing
+ *
+ * @param universe The universe's ID and ruleset
+ * @param characterId The character's ID
+ * @param request The item and the slot
+ * @param playerId The player the character must belong to, or undefined for any player's, as the
+ * universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't unequip items
+ * @return Why nothing was unequipped, or undefined once it is
+ */
+export async function unequipItem(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: UnequipRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor): Promise<Refusal | undefined>
+{
+	let changed: LockedCharacter | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		const character = await lockOwnCharacter(universe.id, characterId, playerId, noSuchCharacter, transaction);
+
+		if ('status' in character)
+		{
+			return(character);
+		}
+
+		const slots = (await listEquipment(characterId, transaction))
+			.filter((equipped) => ((equipped.itemId === request.itemId) && ((request.slot === null) || (equipped.slot === request.slot))))
+			.map((equipped) => equipped.slot);
+
+		if (slots.length > 0)
+		{
+			await unequipSlots(characterId, slots, transaction);
+			changed = character;
+		}
+
+		return(undefined);
+	});
+
+	if (changed)
+	{
+		characterItemChanges.publishChanged(universe.id, [{ characterId, playerId: changed.playerId }]);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Gives an item a character carries to another character in their group, the same player's included,
+ * online or not: all of it when asked for as many as they carry or more. Those given that were equipped
+ * are unequipped (unequippedByRemoval()), and they arrive unequipped. Once given, both players' windows
+ * hear of it, and the group's chat says who gave whom what. Any item the character carries can be given,
+ * disabled ones and those whose book is off included. Each gift is a line in the group's chat, so it
+ * counts toward the limit on the notices the giving character's player's characters write in their
+ * group (tryTakeGroupNotice()), whether their player or the universe's creators give it
+ *
+ * @param universe The universe's ID and ruleset; its live version's items name what is given, in each
+ * player's language
+ * @param characterId The giving character's ID
+ * @param request Who gets the item, and how many
+ * @param playerId The player the giving character must belong to, or undefined for any player's, as
+ * the universe's creators may
+ * @param noSuchCharacter Why a character who isn't there can't give items
+ * @param notices How fast each player's characters write notices in each group's chat
+ * @return Why nothing was given, or undefined once it is
+ */
+export async function giveItems(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, characterId: string, request: GiveItemsRequest, playerId: string | undefined, noSuchCharacter: MessageDescriptor, notices: RateLimiter = groupNoticeRates): Promise<Refusal | undefined>
+{
+	if (request.characterId === characterId)
+	{
+		return({ status: 400, message: messages.giveToSelf });
+	}
+
+	let gift: Gift | undefined;
+	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
+	{
+		// Disabling items with remove waits for the universe's lock, so none is taken while it is given
+		await lockUniverseShared(universe.id, transaction);
+
+		const locked = await lockCharacters(universe.id, [characterId, request.characterId], transaction);
+		const giver = locked.get(characterId);
+		const receiver = locked.get(request.characterId);
+
+		if (!giver || ((playerId !== undefined) && (giver.playerId !== playerId)))
+		{
+			return({ status: 404, message: noSuchCharacter });
+		}
+
+		const membership = await findMembership(characterId, transaction);
+
+		if (!membership || !receiver || ((await findMembership(receiver.id, transaction))?.groupId !== membership.groupId))
+		{
+			return({ status: 409, message: messages.notInGroupWith });
+		}
+
+		// Before anything is written, since a refusal still commits the transaction
+		if (!tryTakeGroupNotice(membership.groupId, giver.playerId, notices))
+		{
+			return({ status: 429, message: messages.giveTooFast });
+		}
+
+		const carried = ((await lockCarriedItems(characterId, [request.itemId], transaction)).get(request.itemId) ?? 0);
+		const given: ItemQuantity = {
+			itemId: request.itemId,
+			quantity: Math.min(request.quantity, carried)
+		};
+
+		if ((given.quantity === 0) || !await takeCharacterItems(characterId, universe.ruleset, [given], transaction))
+		{
+			return({ status: 409, message: messages.giveItemNotCarried });
+		}
+
+		await giveCharacterItems(receiver.id, [given], transaction);
+
+		const item = (await loadEditorItemsIn(liveVersion(universe.id), universe.ruleset, [given.itemId], transaction))
+			.find((found) => (found.id === given.itemId));
+
+		gift = {
+			groupId: membership.groupId,
+			giver,
+			receiver,
+			itemId: given.itemId,
+			item: {
+				key: (item?.key ?? null),
+				name: (item?.name ?? null)
+			},
+			quantity: given.quantity
+		};
+
+		return(undefined);
+	});
+
+	if (gift)
+	{
+		await announceGift(universe, characterId, gift);
+	}
+
+	return(refusal);
+}
+
+/**
+ * Items one character gave another, as given
+ */
+interface Gift
+{
+	groupId: string;
+	giver: LockedCharacter;
+	receiver: LockedCharacter;
+	itemId: number;
+
+	/**
+	 * The item given, named as the universe names it
+	 */
+	item: OptionName;
+
+	quantity: number;
+}
+
+/**
+ * Tells both players' windows that the characters' items changed, the receiver's who gave them what,
+ * and the group's chat, naming the item in each window's language with the translations of the
+ * universe's live version, which characters play. The gift is saved by then, so when the translations
+ * can't be loaded the item is named in the universe's source language
+ *
+ * @param universe The universe's ID and ruleset
+ * @param giverId The giving character's ID
+ * @param gift What was given
+ */
+async function announceGift(universe: Pick<PlayableUniverse, 'id' | 'ruleset'>, giverId: string, gift: Gift): Promise<void>
+{
+	const { giver, receiver, itemId, item, quantity } = gift;
+	const universeId = universe.id;
+	let translatorFor: (languages: readonly string[]) => UniverseTextTranslator = () => UniverseTextTranslator.sourceText();
+
+	try
+	{
+		// The universe the editor's route passes has the languages of the version the editor has open
+		const live = await findUniverse(universeId);
+
+		if (live)
+		{
+			translatorFor = await UniverseTextTranslator.loadEveryLanguage(live, [{ kind: 'item', thingIds: [itemId] }]);
+		}
+	}
+	catch (error)
+	{
+		console.error('Could not load the translations of item', itemId, 'given in universe', universeId, error);
+	}
+
+	/**
+	 * The item's name in a window's language
+	 *
+	 * @param languages The languages the window wants universe text in, most wanted first
+	 * @return The name
+	 */
+	const itemIn = (languages: readonly string[]): OptionName => translatorFor(languages).name('item', itemId, item);
+	const details: ChatNoticeDetails = {
+		receiver: receiver.name,
+		item,
+		itemId,
+		quantity
+	};
+
+	characterItemChanges.publishChanged(universeId, [
+		{
+			characterId: giverId,
+			playerId: giver.playerId
+		},
+		{
+			characterId: receiver.id,
+			playerId: receiver.playerId
+		}
+	]);
+
+	characterItemChanges.publish({
+		kind: 'received',
+		playerId: receiver.playerId,
+		received: (languages) => ({
+			universeId,
+			characterId: receiver.id,
+			giver: giver.name,
+			receiver: receiver.name,
+			item: receivedItemName(universe.ruleset, itemIn(languages)),
+			quantity
+		})
+	});
+	void postGiftNotice(universeId, gift.groupId, {
+		playerId: giver.playerId,
+		name: giver.name
+	}, details, (languages) => ({
+		...details,
+		item: itemIn(languages)
 	}));
 }
 
@@ -1015,9 +1565,10 @@ async function createRoute(request: Request, response: Response): Promise<void>
 		}
 
 		const startingItems = [universe.startingItems, race.startingItems, characterClass.startingItems];
-		const enabledItemIds = new Set((await loadEditorItemsIn(liveVersion(universeId), universe.ruleset, startingItems.flat().map((item) => item.itemId), transaction))
+		const usableItems = new Map((await loadEditorItemsIn(liveVersion(universeId), universe.ruleset, startingItems.flat().map((item) => item.itemId), transaction))
 			.filter((item) => isUsable(item, rulebooks))
-			.map((item) => item.id));
+			.map((item) => [item.id, item]));
+		const items = combineStartingItems(startingItems, new Set(usableItems.keys()));
 		const characterId = await createCharacter({
 			playerId,
 			universeId,
@@ -1028,8 +1579,11 @@ async function createRoute(request: Request, response: Response): Promise<void>
 			themeId: (theme?.id ?? null),
 			abilityScores: finalAbilityScores(universe.ruleset, baseScores, bonuses),
 			money: addMoney([universe.startingMoney, race.startingMoney, characterClass.startingMoney]),
-			items: combineStartingItems(startingItems, enabledItemIds)
+			items
 		}, transaction);
+		const equipmentOrder = startingEquipmentOrder([characterClass.startingItems, race.startingItems, universe.startingItems], items, usableItems, (itemId) => itemName(universe.ruleset, usableItems.get(itemId)));
+
+		await equipItems(characterId, startingEquipment(universe.ruleset, equipmentOrder, raceHasTail(race)), transaction);
 
 		if (source.kind === 'roll')
 		{
@@ -1050,6 +1604,50 @@ async function createRoute(request: Request, response: Response): Promise<void>
 	const payload: CreatedPayload = { id: result };
 
 	response.status(201).json(payload);
+}
+
+/**
+ * An item's name as the universe names it, in the universe's own words or a default item's English
+ *
+ * @param ruleset The universe's ruleset
+ * @param item The item, or undefined when it can't be found
+ * @return The name, or an empty string for an item that can't be found
+ */
+function itemName(ruleset: Ruleset, item: EditorItem | undefined): string
+{
+	if (!item)
+	{
+		return('');
+	}
+
+	if (item.name !== null)
+	{
+		return(item.name);
+	}
+
+	const names = DEFAULT_ITEM_NAMES[ruleset];
+
+	return((((item.key !== null) && Object.hasOwn(names, item.key)) ? names[item.key].defaultMessage : ''));
+}
+
+/**
+ * A given item's name for the toast telling the receiving player of the gift: the universe's name for it,
+ * or a default item's name as a message, which the page shows in the player's language
+ *
+ * @param ruleset The universe's ruleset
+ * @param item The item's name, translated into the window's language, or its key
+ * @return The name or message, or the key of a default item the ruleset doesn't have
+ */
+function receivedItemName(ruleset: Ruleset, item: OptionName): string | LocalizedMessage
+{
+	if (item.name !== null)
+	{
+		return(item.name);
+	}
+
+	const names = DEFAULT_ITEM_NAMES[ruleset];
+
+	return((((item.key !== null) && Object.hasOwn(names, item.key)) ? localize(names[item.key]) : (item.key ?? '')));
 }
 
 /**

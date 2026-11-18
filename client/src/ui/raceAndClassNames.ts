@@ -130,7 +130,7 @@ export function characterDescription(character: { race: Named; characterClass: N
 	return(t({
 		id: 'character.raceAndClass',
 		defaultMessage: '{race} {class}',
-		description: 'A character\'s race and class, e.g. "Dwarf Fighter": under the name at the top of their sheet, after their name in the lists of the player\'s characters in the lobby, on a universe\'s page, on an invite and on profiles, and in the world editor\'s list of every character in the universe. Reorder them as your language needs'
+		description: 'A character\'s race and class, e.g. "Dwarf Fighter": under the name at the top of their sheet, after their name in the lists of the player\'s characters in the lobby, on a universe\'s page, on an invite and on profiles, in the world editor\'s list of every character in the universe, and in brackets after each character\'s name in the Give dialog on a character\'s sheet. Reorder them as your language needs'
 	}, {
 		race: raceName(character.race, ruleset),
 		class: className(character.characterClass, ruleset)

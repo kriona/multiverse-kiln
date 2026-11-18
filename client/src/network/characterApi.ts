@@ -1,5 +1,5 @@
 import type { Client } from '@colyseus/sdk';
-import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type ItemQuantity, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, type CharacterDeletionPayload, type CharacterDraft, type CharacterItemsRequest, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EquipHand, type EquipRequest, type EquipRing, type GiveItemsRequest, type ItemQuantity, type UnequipRequest, type NewCharacterOptions, type NewCharacterRequest } from '@multiverse-kiln/shared';
 
 import { sendRequest } from './editorApi';
 
@@ -133,5 +133,62 @@ export class CharacterApi
 		const request: CharacterItemsRequest = { items };
 
 		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/discard`, request);
+	}
+
+	/**
+	 * Equips an item one of the player's characters carries, unequipping what was in its slots
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param itemId The item
+	 * @param hand The hands to hold it in, or null for an item that is worn
+	 * @param ring The ring slot to put a ring in, or null for a free one
+	 */
+	async equipItem(universeId: string, characterId: string, itemId: number, hand: EquipHand | null, ring: EquipRing | null): Promise<void>
+	{
+		const request: EquipRequest = {
+			itemId,
+			hand,
+			ring
+		};
+
+		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/equip`, request);
+	}
+
+	/**
+	 * Unequips an item one of the player's characters has equipped
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character's ID
+	 * @param itemId The item
+	 * @param slot The slot to unequip it from, or null for everywhere it is equipped
+	 */
+	async unequipItem(universeId: string, characterId: string, itemId: number, slot: string | null): Promise<void>
+	{
+		const request: UnequipRequest = {
+			itemId,
+			slot
+		};
+
+		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/unequip`, request);
+	}
+
+	/**
+	 * Gives an item one of the player's characters carries to another character in their group
+	 *
+	 * @param universeId The universe's ID
+	 * @param characterId The character giving it
+	 * @param receiverId The character given it
+	 * @param item The item, with how many to give
+	 */
+	async giveItemsTo(universeId: string, characterId: string, receiverId: string, item: ItemQuantity): Promise<void>
+	{
+		const request: GiveItemsRequest = {
+			characterId: receiverId,
+			itemId: item.itemId,
+			quantity: item.quantity
+		};
+
+		await sendRequest(this.client, 'POST', `${characterPath(universeId, characterId)}/items/give`, request);
 	}
 }

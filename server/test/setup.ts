@@ -13,7 +13,9 @@
  * src/db/adminClient.ts, which read them when they are first imported. When
  * the tests run in parallel, each worker process loads this file and uses a test database of its own
  * (workerDatabaseUrl(), testWorker.ts). The kiln-review skill's repro tests run in a review slot, with a
- * database of the slot's own (reviewDatabaseUrl(), reviewSlot.ts)
+ * database of the slot's own (reviewDatabaseUrl(), reviewSlot.ts). Every test process's pools are
+ * smaller than the server's defaults, whatever server/.env says, so all the workers' pools fit in the
+ * local Postgres at once (TEST_POOL_SIZE)
  *
  * Keyed hashes and authenticator secrets use fixed test keys (AUTH_HMAC_KEY, TOTP_ENCRYPTION_KEY),
  * whatever server/.env says
@@ -68,6 +70,20 @@ export const allowedTestOrigin = 'https://allowed.example';
  */
 export const testSiteUrl = 'https://site.example';
 
+/**
+ * The most connections each test process's shared pool opens (DATABASE_POOL_SIZE). Every parallel worker
+ * opens pools of its own on the one local Postgres, whose max_connections of 100 leaves 97 for roles
+ * that aren't superusers. A worker opens at most this, the bulk pool's, the admin pool's 2 and the test
+ * database's 1, so `npm test`'s 6 workers take at most 66, leaving room for the dev server and review
+ * slots. Loads that run their queries at once (runIndependent()) queue for the pool's connections
+ */
+const TEST_POOL_SIZE = 6;
+
+/**
+ * The most connections each test process's bulk pool opens (DATABASE_BULK_POOL_SIZE)
+ */
+const TEST_BULK_POOL_SIZE = 2;
+
 // Colyseus loads .env too, but only once the server is imported, which is too late for the test
 // database settings. Neither load replaces a variable that is already set
 if (existsSync('.env'))
@@ -88,6 +104,8 @@ process.env.ALLOWED_ORIGINS = allowedTestOrigin;
 process.env.SITE_URL = testSiteUrl;
 process.env.DATABASE_URL = processDatabaseUrl('TEST_DATABASE_URL');
 process.env.ADMIN_DATABASE_URL = processDatabaseUrl('TEST_ADMIN_DATABASE_URL');
+process.env.DATABASE_POOL_SIZE = String(TEST_POOL_SIZE);
+process.env.DATABASE_BULK_POOL_SIZE = String(TEST_BULK_POOL_SIZE);
 
 // Fixed keys, so tests don't depend on the developer's own (32 bytes of 0x2a and of 0x2b in base64)
 process.env.AUTH_HMAC_KEY = Buffer.alloc(32, 0x2a).toString('base64');

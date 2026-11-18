@@ -144,6 +144,12 @@ export interface UniverseRecord
 	ruleset: Ruleset;
 
 	/**
+	 * The language its text is written in, and those it is translated into
+	 */
+	sourceLanguage: string;
+	translationLanguages: string[];
+
+	/**
 	 * The area of the lobby's starting square: undefined until the universe's areas exist, and while the
 	 * lobby has none
 	 */
@@ -279,6 +285,8 @@ export async function findUniverse(universeId: string, executor: Executor = db):
 		shortDescription: row.shortDescription,
 		stage: row.stage,
 		ruleset: row.ruleset,
+		sourceLanguage: row.sourceLanguage,
+		translationLanguages: row.translationLanguages,
 		lobbyAreaId: row.lobbyAreaId ?? undefined,
 		lobbyColumn: row.lobbyColumn,
 		lobbyRow: row.lobbyRow,

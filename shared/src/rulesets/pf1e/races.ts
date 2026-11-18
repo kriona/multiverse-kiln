@@ -42,29 +42,42 @@ export interface Pf1eRaceDefaults
 	 */
 	lightSensitivity: boolean;
 
+	/**
+	 * Whether the race's characters have a tail, which gives them the tail slot for tail weapons (see
+	 * equipment.ts); left out for a race without one
+	 */
+	hasTail?: boolean;
+
 	size: Pf1eSize;
 }
 
 /**
  * A race's rules as a universe stores and edits them, with a modifier for every ability
  */
-export interface Pf1eRaceRules extends Omit<Pf1eRaceDefaults, 'abilityModifiers'>
+export interface Pf1eRaceRules extends Omit<Pf1eRaceDefaults, 'abilityModifiers' | 'hasTail'>
 {
 	/**
 	 * Added to the character's ability scores, each from PF1E_MIN_RACE_ABILITY_MODIFIER to
 	 * PF1E_MAX_RACE_ABILITY_MODIFIER
 	 */
 	abilityModifiers: Pf1eAbilityScores;
+
+	/**
+	 * Whether the race's characters have a tail, which gives them the tail slot for tail weapons
+	 */
+	hasTail: boolean;
 }
 
 /**
- * The rules a race the universe adds starts with: no modifiers, no darkvision, no light sensitivity, medium
+ * The rules a race the universe adds starts with: no modifiers, no darkvision, no light sensitivity, no
+ * tail, medium
  */
 export const NEW_PF1E_RACE_RULES: Readonly<Pf1eRaceRules> = {
 	abilityModifiers: emptyPf1eAbilityScores(),
 	floatingBonus: false,
 	darkvision: 'none',
 	lightSensitivity: false,
+	hasTail: false,
 	size: 'medium'
 };
 
@@ -81,7 +94,8 @@ export function pf1eRaceRules(race: Pf1eRaceDefaults): Pf1eRaceRules
 		abilityModifiers: {
 			...emptyPf1eAbilityScores(),
 			...race.abilityModifiers
-		}
+		},
+		hasTail: (race.hasTail ?? false)
 	});
 }
 
@@ -99,6 +113,7 @@ export const PF1E_RACES = {
 		floatingBonus: false,
 		darkvision: 'none',
 		lightSensitivity: false,
+		hasTail: true,
 		size: 'medium'
 	},
 	drow: {
@@ -207,6 +222,7 @@ export const PF1E_RACES = {
 		floatingBonus: false,
 		darkvision: 'normal',
 		lightSensitivity: false,
+		hasTail: true,
 		size: 'small'
 	},
 	aasimar: {
@@ -305,6 +321,7 @@ export const PF1E_RACES = {
 		floatingBonus: false,
 		darkvision: 'none',
 		lightSensitivity: false,
+		hasTail: true,
 		size: 'medium'
 	},
 	kobold: {
@@ -316,6 +333,7 @@ export const PF1E_RACES = {
 		floatingBonus: false,
 		darkvision: 'normal',
 		lightSensitivity: true,
+		hasTail: true,
 		size: 'small'
 	},
 	merfolk: {
@@ -438,6 +456,7 @@ export const PF1E_RACES = {
 		floatingBonus: false,
 		darkvision: 'normal',
 		lightSensitivity: false,
+		hasTail: true,
 		size: 'medium'
 	},
 	undine: {
@@ -460,6 +479,7 @@ export const PF1E_RACES = {
 		floatingBonus: false,
 		darkvision: 'none',
 		lightSensitivity: false,
+		hasTail: true,
 		size: 'medium'
 	},
 	vishkanya: {

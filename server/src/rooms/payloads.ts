@@ -6,7 +6,7 @@
  * Unknown keys are stripped rather than rejected
  */
 import { z } from 'zod';
-import { DISALLOWED_TEXT_CHARACTERS, EDITOR_TABS, MAX_CHAT_MESSAGE_LENGTH, UNIVERSE_VERSIONS, type ChatPayload, type ChatReadPayload, type ChooseCharacterPayload, type ControlPayload, type EditorJoinOptions, type EditorPlacePayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload } from '@multiverse-kiln/shared';
+import { DISALLOWED_TEXT_CHARACTERS, EDITOR_TABS, MAX_CHAT_MESSAGE_LENGTH, UNIVERSE_VERSIONS, type ChatPayload, type ChatReadPayload, type ChooseCharacterPayload, type ControlPayload, type EditorJoinOptions, type EditorPlacePayload, type GameJoinOptions, type LobbyJoinOptions, type MovePayload, type SessionJoinOptions } from '@multiverse-kiln/shared';
 
 const direction = z.literal([-1, 0, 1]);
 
@@ -77,13 +77,28 @@ export const editorPlacePayload = z.object({
 }) satisfies z.ZodType<EditorPlacePayload>;
 
 /**
- * Options a group's game room is created and joined with: which group, and which character the window
- * plays. The group's ID must be lowercase, like the universe's in roomOptions
+ * The languages a window wants universe text in, as it sent them as it joined (windowLanguages() checks
+ * each). Anything but a list of strings counts as none rather than turning the window away
+ */
+const sentLanguages = z.array(z.string()).optional().catch(undefined);
+
+/**
+ * Options a group's game room is created and joined with: which group, which character the window
+ * plays, and the languages it wants universe text in. The group's ID must be lowercase, like the
+ * universe's in roomOptions
  */
 export const gameJoinOptions = z.object({
 	groupId: z.uuid().lowercase(),
-	characterId: z.uuid()
+	characterId: z.uuid(),
+	languages: sentLanguages
 }) satisfies z.ZodType<GameJoinOptions>;
+
+/**
+ * Options a window joins the session room with: the languages it wants universe text in
+ */
+export const sessionJoinOptions = z.object({
+	languages: sentLanguages
+}) satisfies z.ZodType<SessionJoinOptions>;
 
 /**
  * Summarizes why a payload failed validation, for logging

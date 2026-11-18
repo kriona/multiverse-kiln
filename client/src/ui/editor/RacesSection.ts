@@ -73,7 +73,7 @@ export class RacesSection extends OptionList<EditorRace, RaceSettings>
 
 /**
  * A race's rules in a few words: its size, ability modifiers, floating bonus, darkvision, light
- * sensitivity and, in a ruleset that has them, hit points
+ * sensitivity and, in a ruleset that has them, hit points and a tail
  *
  * @param race The race
  * @param ruleset The universe's ruleset
@@ -136,6 +136,15 @@ export function describeRace(race: EditorRace, ruleset: Ruleset): string
 			id: 'editor.races.lightSensitivity',
 			defaultMessage: 'light sensitivity',
 			description: 'In a race\'s summary on the editor\'s Characters tab, for a race whose characters bright light dazzles'
+		}));
+	}
+
+	if (!isSf1eRaceRules(rules) && rules.hasTail)
+	{
+		parts.push(t({
+			id: 'editor.races.hasTail',
+			defaultMessage: 'tail',
+			description: 'In a race\'s summary on the editor\'s Characters tab, in Pathfinder, for a race whose characters have a tail, which they can wear tail weapons on'
 		}));
 	}
 

@@ -99,6 +99,7 @@ describe('Rulebooks', () =>
 				description: null,
 				category: item.category,
 				types: item.types,
+				equips: item.equips,
 				enabled
 			},
 			whenDisabled

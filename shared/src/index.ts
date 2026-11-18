@@ -9,6 +9,7 @@ export * from './difficulty.js';
 export * from './editor.js';
 export * from './editorChanges.js';
 export * from './editorRoom.js';
+export * from './equipment.js';
 export * from './fieldMerge.js';
 export * from './groups.js';
 export * from './items.js';

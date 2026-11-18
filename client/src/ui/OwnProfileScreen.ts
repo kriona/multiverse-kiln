@@ -41,6 +41,17 @@ const SHOW_NOTICES_FAILED: MessageDescriptor = defineMessages({
 }).failed;
 
 /**
+ * Shown in place of the player's email address, or of their linked logins, when they have none
+ */
+const NO_EMAIL: MessageDescriptor = defineMessages({
+	noEmail: {
+		id: 'profile.noEmail',
+		defaultMessage: 'None',
+		description: 'Shown on the player\'s own profile page in place of their email address, or of their linked logins, when they have none'
+	}
+}).noEmail;
+
+/**
  * The player's own profile (the profile screen of profile.html): what others see about them, which they
  * change and save, how they log in (with their 2FA), all of their characters, each of which they can
  * show or hide when the profile doesn't show them all, and the notices they dismissed, which they can
@@ -774,11 +785,7 @@ export class OwnProfileScreen
 	 */
 	private showAccount(profile: OwnProfilePayload): void
 	{
-		this.email.textContent = (profile.email ?? t({
-			id: 'profile.noEmail',
-			defaultMessage: 'None',
-			description: 'Shown on the player\'s own profile page in place of their email address, or of their linked logins, when they have none'
-		}));
+		this.email.textContent = (profile.email ?? t(NO_EMAIL));
 		this.passwordState.textContent = (profile.hasPassword
 			? t({
 				id: 'profile.hasPassword',
@@ -793,11 +800,7 @@ export class OwnProfileScreen
 		this.changePasswordButton.hidden = !profile.hasPassword;
 		this.showTwoFactor(profile);
 		this.providers.textContent = ((profile.providers.length === 0)
-			? t({
-				id: 'profile.noEmail',
-				defaultMessage: 'None',
-				description: 'Shown on the player\'s own profile page in place of their email address, or of their linked logins, when they have none'
-			})
+			? t(NO_EMAIL)
 			: formatList(profile.providers.map((provider) => LOGIN_PROVIDER_NAMES[provider]), 'conjunction'));
 
 		for (const [provider, button] of Object.entries(this.linkButtons) as [LoginProvider, HTMLButtonElement][])

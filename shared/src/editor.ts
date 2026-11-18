@@ -44,6 +44,9 @@ import { canEditItems, canEditTiles, canEditWorld, mustEditInDraft, type Builder
  * - DELETE /:universeId/characters/:characterId/deletion  restores a character given their last rites (canManageCharacters())
  * - POST   /:universeId/characters/:characterId/items     CharacterItemsRequest: adds enabled items of the live version to what the character carries (canManageCharacters())
  * - POST   /:universeId/characters/:characterId/items/discard  CharacterItemsRequest: discards items the character carries, as their player can, all of an item when asked for as many as they carry or more (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items/equip    EquipRequest: equips an item the character carries, as their player can (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items/unequip  UnequipRequest: unequips an item, as their player can (canManageCharacters())
+ * - POST   /:universeId/characters/:characterId/items/give     GiveItemsRequest: gives an item the character carries to another character in their group, as their player can (canManageCharacters())
  * - POST   /:universeId/groups/:groupId/leave      GroupCharacterRequest: takes any player's character out of their group, disbanding it for the anchor being (canManageCharacters())
  * - GET    /:universeId/audit                      UniverseEditListQuery as query parameters -> UniverseEditListPayload: the saves made in the editor, newest first (canManageEditors())
  * - GET    /:universeId/ruleset                    RulesetSettings (canEditWorld())
@@ -946,10 +949,12 @@ export const AUDIT_FIELDS = [
 	'keepPlaying',
 	'category',
 	'types',
+	'equips',
 	'abilityModifiers',
 	'floatingBonus',
 	'darkvision',
 	'lightSensitivity',
+	'hasTail',
 	'size',
 	'hitPoints',
 	'raceAreas',
@@ -1111,10 +1116,16 @@ export interface AuditFieldValues
 	 * Item types' keys (ITEM_KINDS)
 	 */
 	types: string[];
+
+	/**
+	 * Where an item equips (itemEquipsChoices())
+	 */
+	equips: string;
 	abilityModifiers: Partial<Record<Ability, number>>;
 	floatingBonus: boolean;
 	darkvision: Darkvision;
 	lightSensitivity: boolean;
+	hasTail: boolean;
 	size: Size;
 	hitPoints: number;
 	raceAreas: {
@@ -1572,6 +1583,12 @@ export interface ItemSettings
 	types: string[];
 
 	/**
+	 * Where the item equips: nowhere, one hand, two hands or one of the ruleset's worn places
+	 * (itemEquipsChoices()), apart from its kind
+	 */
+	equips: string;
+
+	/**
 	 * Whether characters can be given the item
 	 */
 	enabled: boolean;
@@ -1651,6 +1668,11 @@ export interface ItemListQuery
 	type?: string;
 
 	/**
+	 * Where items equip (itemEquipsChoices()), e.g. head: only items that equip there
+	 */
+	equips?: string;
+
+	/**
 	 * Only these items, by ID, up to MAX_STARTING_ITEMS of them (a comma-separated list in the query string)
 	 */
 	ids?: number[];
@@ -1696,6 +1718,18 @@ export interface ItemListPayload
 	 * How many items match, on every page
 	 */
 	total: number;
+
+	/**
+	 * Every type some item has among the items every filter but name, kind and type matches, so a type
+	 * filter offers only types with items, whatever is typed and whichever kind is chosen
+	 */
+	types: string[];
+
+	/**
+	 * Everywhere some item equips among the items every filter but name, kind, type and equips matches, so
+	 * an equips filter offers only places with items, whatever is typed and whichever kind and type are chosen
+	 */
+	equips: string[];
 }
 
 /**

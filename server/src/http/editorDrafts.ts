@@ -11,12 +11,14 @@ import { carriedItems, classesWithCharacters, racesWithCharacters, themesWithCha
 import { findDefaultDifficultyLevel } from '../db/difficultyRepo.js';
 import { moveGroupsToDifficultyLevel } from '../db/groupRepo.js';
 import { loadEditorItems } from '../db/itemRepo.js';
+import { loadEditorRaces } from '../db/raceRepo.js';
 import { loadRulebookSettings, loadRulesetSettings, storeRulesetSettings } from '../db/rulesetRepo.js';
 import { applyDraft, deleteRemovedRows, disableLiveRows, discardDraft, setLiveKeepPlaying, startDraft, type RemovedRows } from '../db/universeDraftRepo.js';
 import { findEditableUniverse, hasDraft, updateUniverseSettings } from '../db/universeRepo.js';
 import { areas, classes, items, races, themes } from '../db/schema.js';
 import { draftVersion, liveVersion } from '../db/universeVersions.js';
 import { universeAccessChanges } from '../players/universeAccess.js';
+import { raceHasTail } from './characters.js';
 import { refuse, type ChangeContext } from './editorChangeContext.js';
 import { SaveDisablings } from './editorDisablings.js';
 import { arrivalRefusal, findBlockedArrivals } from './editorPlaces.js';
@@ -64,7 +66,9 @@ export async function discardDraftChange(context: ChangeContext): Promise<void>
 /**
  * Applies the universe's draft to its live version for good, then does to the players using what it
  * disables or deletes what the choices say, as a save to the live version disabling them would. What it
- * deletes that characters still use is kept, disabled. Once the save commits, the rooms load the new world
+ * deletes that characters still use is kept, disabled. Items that equip differently, and races that lose
+ * their tail, are unequipped as a save to the live version would. Once the save commits, the rooms load
+ * the new world
  *
  * @param context The save
  * @param choices What happens to the players using what the draft disables or deletes
@@ -101,6 +105,12 @@ export async function applyDraftChange(context: ChangeContext, choices: DraftApp
 			whenDisabled: choices.items[String(item.id)],
 			whenRulebookOff: rulebookChoice(item.rulebook)?.items
 		});
+		disablings.itemEquipping(universe.ruleset, item);
+	}
+
+	for (const race of await loadEditorRaces(live, universe.ruleset, transaction))
+	{
+		disablings.raceTail(race.id, raceHasTail(race));
 	}
 
 	disablings.areas(choices.areas);

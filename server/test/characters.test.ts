@@ -1,13 +1,15 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload,type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceListPayload, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
+import { characterPath, charactersPath, DEFAULT_SITE_SETTINGS, EDITOR_UNIVERSES_PATH, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_ABILITIES, sourceTextHash, type CharacterDeletionPayload, type CharacterDraft, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type EditorChange, type ErrorPayload, type ItemSettings, type NewCharacterOptions, type NewCharacterRequest, type Pf1eAbilityScores, type RaceListPayload, type RaceSettings, type SaveChangesPayload } from '@multiverse-kiln/shared';
 
 import { adminDb, inAdminTransaction } from '../src/db/adminClient.js';
 import { countCharacters } from '../src/db/characterRepo.js';
 import { findDefaultClassIds } from '../src/db/classRepo.js';
-import { findDefaultItemIds } from '../src/db/itemRepo.js';
+import { createCustomItem, findDefaultItemIds } from '../src/db/itemRepo.js';
 import { findDefaultRaceIds } from '../src/db/raceRepo.js';
 import { saveSiteSettings } from '../src/db/siteSettingsRepo.js';
+import { replaceStartingItems } from '../src/db/startingItemRepo.js';
+import { inTransaction } from '../src/db/transactions.js';
 import { removeUniverseEditor, setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { setUniverseDisabled, updateUniverseSettings } from '../src/db/universeRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
@@ -384,10 +386,16 @@ describe('Character routes', () =>
 				charisma: (baseScores.charisma - 2)
 			},
 			coinNames: {},
-			coinAbbreviations: {}
+			coinAbbreviations: {},
+			hasTail: false,
+			equipment: [{
+				slot: 'mainHand',
+				itemId: items[0].id,
+				bothHands: false
+			}]
 		});
 		assert.deepStrictEqual(Object.keys(money), Object.keys(emptyMoney()));
-		assert.deepStrictEqual(items.map(({ key, category, quantity }) => ({ key, category, quantity })), [{ key: 'dagger', category: 'weapon', quantity: 1 }]);
+		assert.deepStrictEqual(items.map(({ key, category, types, equips, rulebook, quantity }) => ({ key, category, types, equips, rulebook, quantity })), [{ key: 'dagger', category: 'weapon', types: ['blades_light', 'thrown'], equips: 'oneHand', rulebook: 'core', quantity: 1 }]);
 
 		await saveEditorChange(ada, universeId, { kind: 'universe', update: { stage: 'prologue' } });
 
@@ -650,6 +658,51 @@ describe('Character routes', () =>
 
 		assert.strictEqual(answer.status, 409);
 		assert.ok(!(await newOptions()).races.some((race) => (race.id === raceId)));
+	});
+
+	it('equips the starting items: worn ones, then the first weapon by name, leaving no hand for a shield after a two-handed one', async () =>
+	{
+		await usePointBuy();
+
+		const item = (name: string, settings: Pick<ItemSettings, 'category' | 'types' | 'equips'>): Promise<number> => createCustomItem(liveVersion(universeId), 'pf1e', {
+			name,
+			description: null,
+			enabled: true,
+			...settings
+		});
+		const chainShirtId = await item('Chain shirt', { category: 'armor', types: ['light_armor'], equips: 'armor' });
+		const greatswordId = await item('Greatsword', { category: 'weapon', types: ['blades_heavy'], equips: 'twoHands' });
+		const shieldId = await item('Heavy steel shield', { category: 'armor', types: ['shields'], equips: 'oneHand' });
+		const longswordId = await item('Longsword', { category: 'weapon', types: ['blades_heavy'], equips: 'oneHand' });
+		const torchId = await item('Torch', { category: 'gear', types: [], equips: 'oneHand' });
+
+		await inTransaction((transaction) => replaceStartingItems(liveVersion(universeId), [torchId, longswordId, shieldId, greatswordId, chainShirtId].map((itemId) => ({ itemId, quantity: 1 })), transaction));
+
+		const created = await send<CreatedPayload>(ada, 'POST', charactersPath(universeId), {
+			name: 'Brokk',
+			raceId: dwarfId,
+			classId: fighterId,
+			baseScores: standardBuy,
+			themeId: null,
+			floatingAbility: null
+		});
+
+		assert.strictEqual(created.status, 201, JSON.stringify(created.body));
+
+		const sheet = await send<CharacterSheet>(ada, 'GET', characterPath(universeId, created.body.id));
+
+		assert.deepStrictEqual(sheet.body.equipment, [
+			{
+				slot: 'armor',
+				itemId: chainShirtId,
+				bothHands: false
+			},
+			{
+				slot: 'mainHand',
+				itemId: greatswordId,
+				bothHands: true
+			}
+		]);
 	});
 
 	it('won\'t delete a race characters are', async () =>

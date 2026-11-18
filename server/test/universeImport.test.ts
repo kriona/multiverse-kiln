@@ -371,7 +371,7 @@ describe('importing a universe', () =>
 			{ kind: 'createTile', ref: 'new:moss', settings: { ...moss, uploadedGraphicId: 'new:mossy' } },
 			{ kind: 'editCells', areaId: caveId, changes: [[0, 0, 'new:moss'], [12, -3, VOID_CELL]] },
 			{ kind: 'saveLink', areaId: startingAreaId, column: 1, row: 0, target: { targetAreaId: caveId, targetColumn: 0, targetRow: 0, mode: 'manual', requiresWholeGroup: true } },
-			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', description: null, category: 'gear', types: ['torch'], enabled: true } },
+			{ kind: 'createItem', ref: 'new:lantern', settings: { name: 'Lantern', description: null, category: 'gear', types: ['light_source'], equips: 'oneHand', enabled: true } },
 			{ kind: 'saveTranslatorNote', text: { kind: 'area', thingId: caveId, field: 'name' }, note: 'A dark place' },
 			{ kind: 'saveNoTranslation', text: { kind: 'universe', thingId: kilnhavenId, field: 'name' }, noTranslation: true }
 		]);
@@ -830,7 +830,74 @@ describe('importing a universe', () =>
 		assert.deepStrictEqual([lantern?.category, lantern?.types], ['weapon', ['double', 'monk']]);
 	});
 
+	it('brings the item types of a file exported before they were renamed up to date', async () =>
+	{
+		const starfinderId = await createUniverse(ada, 'Starfall', 'sf1e');
+
+		await saveAll(ada, starfinderId, [
+			{ kind: 'createItem', ref: 'new:blaster', settings: { name: 'Blaster', description: null, category: 'weapon', types: ['small_arms'], equips: 'oneHand', enabled: true } },
+			{ kind: 'createItem', ref: 'new:beacon', settings: { name: 'Beacon', description: null, category: 'gear', types: ['light_source'], equips: 'none', enabled: true } }
+		]);
+
+		const contents = await contentsOf(await exportArchive(ada, starfinderId));
+		const otherId = await createUniverse(ada, 'Starfall Two', 'sf1e');
+
+		contents.items = contents.items?.map((item) =>
+		{
+			switch (item.name)
+			{
+				case 'Blaster':
+					return({ ...item, types: ['semi_auto_pistol', 'laser_pistol'] });
+
+				case 'Beacon':
+					return({ ...item, types: ['comm_unit', 'flashlight'] });
+
+				default:
+					return(item);
+			}
+		});
+
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const imported = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const items = (await draftOf(ada, otherId)).items;
+
+		assert.deepStrictEqual(items?.find((item) => (item.name === 'Blaster'))?.types, ['small_arms']);
+		assert.deepStrictEqual(items?.find((item) => (item.name === 'Beacon'))?.types, ['light_source']);
+	});
+
+	it('gives the items and races of a file exported before they had them where items equip and whether races have a tail', async () =>
+	{
+		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
+		const otherId = await createUniverse(ada, 'Otherhaven');
+		const withoutEquips = ({ equips: _equips, ...item }: EditorItem): EditorItem => item as EditorItem;
+		const withoutTail = (race: EditorRace): EditorRace => ({ ...race, rules: Object.fromEntries(Object.entries(race.rules).filter(([field]) => (field !== 'hasTail'))) as EditorRace['rules'] });
+
+		// An edited dagger and kobold, as an export holds them
+		contents.items = contents.items?.map((item) => withoutEquips((item.key === 'dagger') ? { ...item, name: 'Shiv', edited: true, editedSettings: true } : item));
+		contents.races = contents.races?.map((race) => withoutTail((race.key === 'kobold') ? { ...race, name: 'Scale Folk', edited: true, editedSettings: true } : race));
+		assert.ok(!contents.items?.some((item) => ('equips' in item)));
+
+		await saveAll(ada, otherId, [{ kind: 'startDraft' }]);
+
+		const imported = await importArchive(ada, otherId, await archiveOf(contents));
+
+		assert.strictEqual(imported.status, 204, JSON.stringify(imported.body));
+
+		const draft = await draftOf(ada, otherId);
+		const tailOf = (race: EditorRace | undefined): unknown => ((race && ('hasTail' in race.rules)) ? race.rules.hasTail : undefined);
+
+		assert.strictEqual(draft.items?.find((item) => (item.key === 'dagger'))?.equips, 'oneHand');
+		assert.strictEqual(draft.items?.find((item) => (item.name === 'Lantern'))?.equips, 'none');
+		assert.strictEqual(tailOf(draft.races?.find((race) => (race.key === 'kobold'))), true);
+		assert.strictEqual(tailOf(draft.races?.find((race) => (race.name === 'Molefolk'))), false);
+	});
+
 	it('imports the descriptions of items, races and classes with their translations, and none from a file exported before they had them', async () =>
+
 	{
 		const contents = await contentsOf(await exportArchive(ada, kilnhavenId));
 		const otherId = await createUniverse(ada, 'Otherhaven');

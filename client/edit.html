@@ -765,15 +765,23 @@
 					</section>
 
 					<section id="editor-panel-items" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-items" hidden>
+						<div class="panel-heading">
+							<h2 data-message="editor.items.heading" data-translation-context="Heading of the editor's Items tab, listing the items the universe can give characters">Items</h2>
+							<button id="item-add" type="button" data-shortcut="Alt+N" data-message="editor.items.add" data-translation-context="Button that opens the dialog for making a new item"><!-- icon ph:plus -->Add Item</button>
+						</div>
 						<div class="filters">
 							<input id="item-filter-name" type="search" placeholder="Search by name" aria-label="Search items by name" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
-							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item's kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Kind
 								<select id="item-filter-category"></select>
 							</label>
-							<label data-message="editor.item.type" data-translation-context="Label of the Items tab's filter for items of one type, such as light blades or light armor">
+							<label data-message="editor.item.type" data-translation-context="Label of the filter for items of one type, such as light blades or light armor, on the Items tab and in the dialog for choosing items">
 								Type
 								<select id="item-filter-type"></select>
+							</label>
+							<label data-message="editor.item.equips" data-translation-context="Label of the item editor's field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, of the filter for it on the Items tab, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Equips to
+								<select id="item-filter-equips"></select>
 							</label>
 							<label data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Enabled
@@ -787,7 +795,6 @@
 								Edited from default
 								<select id="item-filter-edited"></select>
 							</label>
-							<button id="item-add" type="button" data-shortcut="Alt+N" data-message="editor.items.add" data-translation-context="Button that opens the dialog for making a new item"><!-- icon ph:plus -->Add Item</button>
 						</div>
 						<p id="item-list-error" class="form-error" role="alert" hidden></p>
 						<table id="item-table" class="item-table">
@@ -1034,14 +1041,19 @@
 								Description
 								<textarea id="item-description" class="description-field" rows="2"></textarea>
 							</label>
-							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, and of the Items tab's filter for it; also names the setting in the list of what a save changed, on the editor's Audit tab">
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item's kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Kind
 								<select id="item-category"></select>
 							</label>
 							<fieldset id="item-types-field" class="choice">
-								<legend data-message="editor.item.types" data-translation-context="Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none; also names the setting in the list of what a save changed, on the editor's Audit tab">Types</legend>
+								<legend data-message="editor.item.types" data-translation-context="Heading of the item editor's checkboxes for an item's types, such as light blades and thrown for a dagger, of which an item can have several or none, and the label of an item's types in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">Types</legend>
 								<div id="item-types" class="item-types"></div>
 							</fieldset>
+							<label data-message="editor.item.equips" data-translation-context="Label of the item editor's field for where an item equips: nowhere, one hand, two hands, or a place it is worn such as the head, of the filter for it on the Items tab, and of where an item equips in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Equips to
+								<select id="item-equips" aria-describedby="item-equips-hint"></select>
+							</label>
+							<p id="item-equips-hint" class="hint" data-message="editor.item.equipsHint" data-translation-context="Explains the item editor's Equips to field">Where characters equip the item, whatever its kind. Changing it unequips the item from every character once the change reaches players.</p>
 							<label class="checkbox" data-message="form.enabled" data-translation-context="Checkbox or field for whether something can be used: players going into a region or area, characters being given an item, new characters choosing a race, class or theme, or areas being painted with a tile. Also the label of the Items and Tilesets tabs' filters for it, and the heading of the column of on/off switches for it in the editor's tables of races, classes, themes and items; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								<input id="item-enabled" type="checkbox" />
 								Enabled
@@ -1059,7 +1071,17 @@
 				<dialog id="item-select-dialog" class="panel dialog item-select-dialog" aria-labelledby="item-select-title">
 					<form id="item-select-form" class="form" novalidate>
 						<h2 id="item-select-title" data-message="editor.itemSelect.title" data-translation-context="Title of the dialog for choosing items and how many of each, e.g. for the equipment characters start with">Choose Items</h2>
-						<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
+						<div class="filters">
+							<input id="item-select-search" type="search" placeholder="Search by name" aria-label="Search items by name" autocomplete="off" data-message-placeholder="editor.searchByName" data-translation-context-placeholder="Shown in the empty field that narrows a list of tiles, items or areas down by name" data-message-aria-label="editor.items.searchLabel" data-translation-context-aria-label="Name of the field that narrows the items down by name, on the Items tab and in the dialog for choosing items, for screen readers" />
+							<label data-message="editor.items.category" data-translation-context="An item's broad kind, such as weapons or armor: the label of its field in the item editor, of the filter for it on the Items tab and in the dialog for choosing items, and of an item's kind in the Inspect dialog, which shows what an item is; also names the setting in the list of what a save changed, on the editor's Audit tab">
+								Kind
+								<select id="item-select-category"></select>
+							</label>
+							<label data-message="editor.item.type" data-translation-context="Label of the filter for items of one type, such as light blades or light armor, on the Items tab and in the dialog for choosing items">
+								Type
+								<select id="item-select-type"></select>
+							</label>
+						</div>
 						<fieldset id="item-select-results" class="choice stacked item-select-results" aria-label="Items" data-message-aria-label="editor.itemSelect.results" data-translation-context-aria-label="Name of the list of items to choose from, for screen readers"></fieldset>
 						<p id="item-select-none" class="universe-empty" data-message="editor.items.none" data-translation-context="Shown instead of the list of items when no item matches the search or filters: on the Items tab and in the dialog for choosing items" hidden>No items match.</p>
 						<h3 data-message="editor.itemSelect.chosen" data-translation-context="Heading of the list of items chosen so far in the dialog for choosing items, each with how many">Chosen</h3>
@@ -1107,6 +1129,11 @@
 								Light sensitivity
 							</label>
 							<p class="hint" data-message="editor.race.lightSensitivityHint" data-translation-context="Explains the race editor's Light sensitivity checkbox">Bright light dazzles the race's characters, so they see only half as far in full daylight.</p>
+							<label id="race-has-tail-field" class="checkbox" data-message="editor.race.hasTail" data-translation-context="Checkbox in the race editor, in Pathfinder, for whether the race's characters have a tail; also names the setting in the list of what a save changed, on the editor's Audit tab" hidden>
+								<input id="race-has-tail" type="checkbox" aria-describedby="race-has-tail-hint" />
+								Has a tail
+							</label>
+							<p id="race-has-tail-hint" class="hint" data-message="editor.race.hasTailHint" data-translation-context="Explains the race editor's Has a tail checkbox, in Pathfinder" hidden>The race's characters get a tail slot for tail weapons. Turning it off unequips their tail items once the change reaches players.</p>
 							<label data-message="editor.race.size" data-translation-context="Label of the field for a race's size, such as small or medium; also names the setting in the list of what a save changed, on the editor's Audit tab">
 								Size
 								<select id="race-size"></select>

@@ -1,16 +1,17 @@
 /**
  * The world editor's routes for the characters made in a universe (listed in shared/src/editor.ts), for
  * the Character List tab: listing them and showing their sheets, and for creators, deleting them, giving
- * them their last rites, restoring them, taking them out of their groups, and giving and discarding items.
+ * them their last rites, restoring them, taking them out of their groups, giving and discarding items,
+ * and equipping, unequipping and giving away what they carry.
  * Characters belong to their players rather than the universe, so these change them immediately, as
  * their players' own routes do
  */
 import type express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
-import { canEditWorld, canManageCharacters, defineMessages, isUsable, MAX_ITEM_QUANTITY, parsePlayerSearch, type CharacterDeletionPayload, type EditorCharacterListPayload, type GroupCharacterRequest, type OptionName } from '@multiverse-kiln/shared';
+import { canEditWorld, canManageCharacters, defineMessages, isUsable, MAX_ITEM_QUANTITY, parsePlayerSearch, type CharacterDeletionPayload, type EditableUniverseDetails, type EditorCharacterListPayload, type GroupCharacterRequest, type MessageDescriptor, type OptionName } from '@multiverse-kiln/shared';
 
-import { findCharacterPlayerId, findUniverseCharacterDetails, giveCharacterItems, listUniverseCharacters } from '../db/characterRepo.js';
+import { findCharacterPlayerId, findUniverseCharacterDetails, giveCharacterItems, listUniverseCharacters, lockCharacters } from '../db/characterRepo.js';
 import { loadClassNames } from '../db/classRepo.js';
 import { loadEditorItemsIn } from '../db/itemRepo.js';
 import { loadRaceNames } from '../db/raceRepo.js';
@@ -18,7 +19,8 @@ import { loadRulebookSettings } from '../db/rulesetRepo.js';
 import { inTransaction } from '../db/transactions.js';
 import { findEditableUniverse, lockUniverseShared } from '../db/universeRepo.js';
 import { liveVersion } from '../db/universeVersions.js';
-import { characterItemsRequest, characterSheetOf, deleteCharacterNow, discardItems, giveLastRites, restoreCharacterOf } from './characters.js';
+import { characterItemChanges } from '../players/characterItemChanges.js';
+import { characterItemsRequest, characterSheetOf, deleteCharacterNow, discardItems, equipItem, equipRequest, giveItems, giveItemsRequest as giveToCharacterRequest, giveLastRites, restoreCharacterOf, unequipItem, unequipRequest } from './characters.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { editorCharacterListQuery } from './editorPayloads.js';
 import { sendError, sendInvalidRequest, type Refusal } from './errors.js';
@@ -74,6 +76,9 @@ export function addCharacterListRoutes(router: express.Router): void
 	router.delete('/characters/:characterId/deletion', ...manage, restoreRoute);
 	router.post('/characters/:characterId/items', ...manage, giveItemsRoute);
 	router.post('/characters/:characterId/items/discard', ...manage, discardRoute);
+	router.post('/characters/:characterId/items/equip', ...manage, itemRoute(equipRequest, equipItem));
+	router.post('/characters/:characterId/items/unequip', ...manage, itemRoute(unequipRequest, unequipItem));
+	router.post('/characters/:characterId/items/give', ...manage, itemRoute(giveToCharacterRequest, giveItems));
 	router.post('/groups/:groupId/leave', ...manage, leaveGroupRoute);
 }
 
@@ -290,12 +295,14 @@ async function giveItemsRoute(request: Request, response: Response): Promise<voi
 
 	const { id: universeId, ruleset } = universeContextOf(request).universe;
 	const { items } = body.data;
+	let playerId: string | undefined;
 	const refusal = await inTransaction(async (transaction): Promise<Refusal | undefined> =>
 	{
 		// Deleting and disabling items wait for the universe's lock, so none goes while it is given
 		await lockUniverseShared(universeId, transaction);
+		playerId = (await lockCharacters(universeId, [characterId], transaction)).get(characterId)?.playerId;
 
-		if (await findCharacterPlayerId(universeId, characterId, transaction) === undefined)
+		if (playerId === undefined)
 		{
 			return({ status: 404, message: messages.noSuchCharacter });
 		}
@@ -319,6 +326,11 @@ async function giveItemsRoute(request: Request, response: Response): Promise<voi
 	{
 		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
+	}
+
+	if (playerId !== undefined)
+	{
+		characterItemChanges.publishChanged(universeId, [{ characterId, playerId }]);
 	}
 
 	response.sendStatus(204);
@@ -348,7 +360,7 @@ async function discardRoute(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	const refusal = await discardItems(universeContextOf(request).universe.id, characterId, body.data.items, undefined, messages.noSuchCharacter);
+	const refusal = await discardItems(universeContextOf(request).universe, characterId, body.data.items, undefined, messages.noSuchCharacter);
 
 	if (refusal)
 	{
@@ -360,8 +372,50 @@ async function discardRoute(request: Request, response: Response): Promise<void>
 }
 
 /**
+ * Makes a route that changes a player's character's items or equipment, as their player can: POST
+ * /:universeId/characters/:characterId/items/equip, .../unequip and .../give. Characters play the live
+ * version, so its items are used, whatever version the editor has open
+ *
+ * @param body The request's validator
+ * @param change Makes the change, given the universe, the character, the body, undefined for any
+ * player's character, and why a character who isn't there can't be changed
+ * @return The route, answering 204 once the change is made
+ */
+function itemRoute<Body>(body: z.ZodType<Body>, change: (universe: Pick<EditableUniverseDetails, 'id' | 'ruleset'>, characterId: string, request: Body, playerId: undefined, noSuchCharacter: MessageDescriptor) => Promise<Refusal | undefined>): (request: Request, response: Response) => Promise<void>
+{
+	return(async (request, response) =>
+	{
+		const characterId = characterIdOf(request, response);
+
+		if (characterId === undefined)
+		{
+			return;
+		}
+
+		const parsed = body.safeParse(request.body);
+
+		if (!parsed.success)
+		{
+			sendInvalidRequest(response, parsed.error);
+			return;
+		}
+
+		const refusal = await change(universeContextOf(request).universe, characterId, parsed.data, undefined, messages.noSuchCharacter);
+
+		if (refusal)
+		{
+			sendError(response, refusal.status, refusal.message, refusal.values);
+			return;
+		}
+
+		response.sendStatus(204);
+	});
+}
+
+/**
  * POST /:universeId/groups/:groupId/leave: takes a player's character out of their group, disbanding it
- * when they are its anchor being
+ * when they are its anchor being. It isn't limited by how fast the player's characters write notices in
+ * the group, so creators can always take out the character of a player who is flooding the group's chat
  *
  * @param request The request, with a GroupCharacterRequest
  * @param response The response
@@ -379,10 +433,16 @@ async function leaveGroupRoute(request: Request, response: Response): Promise<vo
 
 	const universeId = universeContextOf(request).universe.id;
 	const playerId = await findCharacterPlayerId(universeId, body.data.characterId);
+	const refusal: Refusal | undefined = ((groupId.success && (playerId !== undefined))
+		? await takeOutOfGroup(playerId, universeId, groupId.data, body.data.characterId, null)
+		: {
+			status: 404,
+			message: noSuchGroupMessage
+		});
 
-	if (!groupId.success || (playerId === undefined) || !await takeOutOfGroup(playerId, universeId, groupId.data, body.data.characterId))
+	if (refusal)
 	{
-		sendError(response, 404, noSuchGroupMessage);
+		sendError(response, refusal.status, refusal.message, refusal.values);
 		return;
 	}
 

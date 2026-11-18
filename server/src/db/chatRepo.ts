@@ -3,7 +3,7 @@
  * Each chat holds its newest MAX_KEPT_CHAT_MESSAGES messages, and remembers how far each player has read it
  */
 import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
-import { MAX_KEPT_CHAT_MESSAGES, type ChatNotice, type KeptChatMessage } from '@multiverse-kiln/shared';
+import { MAX_KEPT_CHAT_MESSAGES, type ChatNotice, type ChatNoticeDetails, type KeptChatMessage } from '@multiverse-kiln/shared';
 
 import { db, type Executor } from './client.js';
 import { chatMessages, chatReads, groups, players, universes } from './schema.js';
@@ -42,6 +42,11 @@ export interface NewChatMessage
 	 * For a notice the server wrote, what it says, with text empty; null for a message a player wrote
 	 */
 	notice: ChatNotice | null;
+
+	/**
+	 * What a gave notice says beyond who it is about; null or left out for other notices and for messages
+	 */
+	noticeDetails?: ChatNoticeDetails | null;
 
 	text: string;
 	sentAt: Date;
@@ -114,6 +119,7 @@ export async function listChatMessages(chat: KeptChat, executor: Executor = db):
 			displayName: players.displayName,
 			username: players.username,
 			notice: chatMessages.notice,
+			noticeDetails: chatMessages.noticeDetails,
 			text: chatMessages.text,
 			sentAt: chatMessages.sentAt
 		})
@@ -130,6 +136,7 @@ export async function listChatMessages(chat: KeptChat, executor: Executor = db):
 			name: ((chat.kind === 'editors') ? (row.displayName ?? '') : (row.authorName ?? '')),
 			username: ((chat.kind === 'editors') ? row.username : null),
 			notice: row.notice,
+			details: row.noticeDetails,
 			text: row.text,
 			sentAt: row.sentAt.getTime()
 		})));
@@ -247,6 +254,7 @@ async function saveChatMessages(chat: KeptChat, messages: readonly NewChatMessag
 				playerId: message.playerId,
 				authorName: message.authorName,
 				notice: message.notice,
+				noticeDetails: (message.noticeDetails ?? null),
 				text: message.text,
 				sentAt: message.sentAt
 			})));

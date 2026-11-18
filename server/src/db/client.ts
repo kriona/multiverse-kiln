@@ -10,7 +10,7 @@
  * they can't take every connection the short queries need
  */
 import { drizzle, type NodePgQueryResultHKT } from 'drizzle-orm/node-postgres';
-import type { PgDatabase } from 'drizzle-orm/pg-core';
+import { PgTransaction, type PgDatabase } from 'drizzle-orm/pg-core';
 import pg from 'pg';
 
 import { parsePoolSizes } from './poolSettings.js';
@@ -91,3 +91,31 @@ export const bulkDb = drizzle(bulkPool, { schema });
  * db.transaction() when several calls must succeed or fail together
  */
 export type Executor = PgDatabase<NodePgQueryResultHKT, typeof schema>;
+
+/**
+ * Runs queries that don't depend on each other's results. On a pool they all run at once, each on a
+ * connection of its own, so they take one round trip to the database; in a transaction they run one
+ * after another, since its one connection runs one query at a time
+ *
+ * @param executor The database, or a transaction
+ * @param queries Starts each query
+ * @return What each query resolves with, in the same order
+ */
+export async function runIndependent<T extends readonly unknown[]>(executor: Executor, queries: { readonly [K in keyof T]: () => Promise<T[K]> }): Promise<T>
+{
+	const starts = queries as readonly (() => Promise<unknown>)[];
+
+	if (executor instanceof PgTransaction)
+	{
+		const results: unknown[] = [];
+
+		for (const start of starts)
+		{
+			results.push(await start());
+		}
+
+		return(results as unknown as T);
+	}
+
+	return((await Promise.all(starts.map((start) => start()))) as unknown as T);
+}

@@ -120,8 +120,8 @@ describe('The editor\'s audit of saves', () =>
 
 		// Each listing's own fields, such as its ID, are left out of the settings as the save reads them
 		assert.strictEqual((await saveChanges(ada, universeId, [
-			{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, rules: { ...dwarf.rules, size: 'large' } } },
-			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, name: 'Shiv', enabled: false } },
+			{ kind: 'saveRace', id: dwarf.id, settings: { ...dwarf, rules: { ...dwarf.rules, size: 'large', hasTail: true } } },
+			{ kind: 'saveItem', id: dagger.id, settings: { ...dagger, name: 'Shiv', equips: 'twoHands', enabled: false } },
 			{ kind: 'saveTile', id: grass.id, settings: { ...grass, visionCost: 50, walkSeconds: 9 } },
 			{ kind: 'createArea', ref: 'new:cave', area: { name: 'Cave', parents: [{ kind: 'region', id: await worldRegionId(ada, universeId) }] } },
 			{ kind: 'editCells', areaId: 'new:cave', changes: [[0, 0, grass.id], [1, 0, grass.id]] },
@@ -133,13 +133,23 @@ describe('The editor\'s audit of saves', () =>
 		const [restored, saved] = (await send<UniverseEditListPayload>(ada, 'GET', `/${universeId}/audit`)).body.edits;
 
 		assert.deepStrictEqual(saved.details, [
-			{ subject: 'race', action: 'changed', target: { key: 'dwarf', name: null }, fields: [{ field: 'size', value: 'large' }], count: 1 },
+			{
+				subject: 'race',
+				action: 'changed',
+				target: { key: 'dwarf', name: null },
+				fields: [
+					{ field: 'hasTail', value: true },
+					{ field: 'size', value: 'large' }
+				],
+				count: 1
+			},
 			{
 				subject: 'item',
 				action: 'changed',
 				target: { key: 'dagger', name: 'Shiv' },
 				fields: [
 					{ field: 'name', value: 'Shiv' },
+					{ field: 'equips', value: 'twoHands' },
 					{ field: 'enabled', value: false }
 				],
 				count: 1

@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { randomUUID } from 'crypto';
-import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, NO_NEIGHBORS, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS,DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_DESCRIPTION_LENGTH, MAX_THEME_DESCRIPTION_LENGTH, MAX_ITEM_QUANTITY, MAX_RACE_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
+import { chunkKey, DEFAULT_DIFFICULTY_LEVELS, DEFAULT_ITEM_NAMES, PF1E_DEFAULT_ITEM_KINDS, PF1E_ITEM_RULEBOOKS, type Pf1eDefaultItemKey, MAX_AREA_SIDE, MAX_MOB_SCALE, MIN_MOB_SCALE, NO_NEIGHBORS, type DifficultyLevel, type DifficultyLevelListPayload, type DifficultyLevelSettings, DEFAULT_LOBBY_DAY_HOURS, MAX_LOBBY_DAY_HOURS, MAX_WALK_SECONDS, DEFAULT_PF1E_SETTINGS, DEFAULT_SF1E_SETTINGS, DEFAULT_SITE_SETTINGS, DEFAULT_TILE_CELL, DEFAULT_TILE_NAMES, emptyMoney, isLocalizedMessage, MAX_GROUP_PLAYERS, MAX_ITEM_DESCRIPTION_LENGTH, MAX_THEME_DESCRIPTION_LENGTH, MAX_ITEM_QUANTITY, MAX_RACE_DESCRIPTION_LENGTH, MAX_STARTING_ITEMS, NEW_PF1E_CLASS_RULES, NEW_PF1E_RACE_RULES, NEW_AREA_BOUNDS, PF1E_CLASSES, MAX_COINS, PF1E_MAX_POINT_BUY_BUDGET, PF1E_MAX_RACE_ABILITY_MODIFIER, PF1E_RACES, SF1E_CLASSES, SF1E_MAX_ABILITY_POINTS, SF1E_RACES, SF1E_THEMES, sf1eRaceRules, VOID_CELL, type ThemeListPayload, type ThemeSettings, type ClassListPayload, type ClassSettings, type EditableUniverse, type ErrorPayload, type EditableUniverseListPayload, type EditorClass, type EditorRace, type EditorArea, type ItemListPayload, type ItemSettings, type RaceListPayload, type RaceSettings, type RulesetSettings, TILE_GRAPHIC_SIZES, TILE_GRAPHICS_PATH, type TileGraphicListPayload, type TileListPayload, type TileSettings, type TileUsagePayload, type UniverseRole, type AreaListPayload } from '@multiverse-kiln/shared';
 import sharp from 'sharp';
 
 import { adminDb } from '../src/db/adminClient.js';
@@ -39,7 +39,8 @@ const torch: ItemSettings = {
 	name: 'torch',
 	description: null,
 	category: 'gear',
-	types: ['torch'],
+	types: ['light_source'],
+	equips: 'oneHand',
 	enabled: true
 };
 
@@ -1113,17 +1114,23 @@ describe('World editor API', () =>
 			const custom = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?custom=true`)).body;
 			const weapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon&rulebooks=`)).body;
 			const apgWeapons = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?category=weapon&rulebooks=apg`)).body;
-			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=1&rulebooks=`)).body;
+			const coreKeys = Object.keys(PF1E_ITEM_RULEBOOKS).filter((key) => (PF1E_ITEM_RULEBOOKS[key as Pf1eDefaultItemKey] === 'core'));
+			const weaponKeys = (rulebooks: readonly string[]): string[] => (Object.keys(PF1E_ITEM_RULEBOOKS) as Pf1eDefaultItemKey[])
+				.filter((key) => ((PF1E_DEFAULT_ITEM_KINDS[key].category === 'weapon') && rulebooks.includes(PF1E_ITEM_RULEBOOKS[key])))
+				.sort();
+			const page = (await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?limit=1&offset=${coreKeys.length}&rulebooks=`)).body;
+			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
 
 			assert.deepStrictEqual(custom.items, [{ id: created.body.id, key: null, ...torch, rulebook: null, custom: true, edited: false, editedSettings: false }]);
 
 			// Default items that keep their names are named by their keys, in the player's language
-			assert.deepStrictEqual(weapons.items.map((item) => (item.name ?? item.key)), ['dagger']);
-			assert.deepStrictEqual(apgWeapons.items.map((item) => (item.name ?? item.key)), ['dagger', 'cestus', 'sword_cane']);
-			assert.strictEqual(page.total, 2);
+			assert.deepStrictEqual(weapons.items.map((item) => (item.name ?? item.key)).sort(), weaponKeys(['core']));
+			assert.deepStrictEqual(apgWeapons.items.map((item) => (item.name ?? item.key)).sort(), weaponKeys(['core', 'apg']));
+			assert.ok(apgWeapons.items.some((item) => (item.key === 'cestus')));
+			assert.strictEqual(page.total, (coreKeys.length + 1));
 			assert.deepStrictEqual(page.items.map((item) => item.id), [created.body.id]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?enabled=yes`)).status, 400);
-			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending&rulebooks=`)).body.items.map((item) => item.id), [created.body.id, (await findDefaultItemIds('pf1e')).get('dagger')]);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?sort=name&direction=descending&rulebooks=&ids=${daggerId},${created.body.id}`)).body.items.map((item) => item.id), [created.body.id, daggerId]);
 			assert.strictEqual((await send(ada, 'GET', `/${universeId}/items?sort=summary`)).status, 400);
 		});
 
@@ -1132,11 +1139,13 @@ describe('World editor API', () =>
 			const universeId = await createUniverse(ada);
 			const otherId = await createUniverse(ada, 'Other');
 			const daggerId = (await findDefaultItemIds('pf1e')).get('dagger');
-			const rusty = { name: 'rusty dagger', description: null, category: 'weapon', types: ['blades_light'], enabled: false };
+			const rusty = { name: 'rusty dagger', description: null, category: 'weapon', types: ['blades_light'], equips: 'oneHand', enabled: false };
 
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', daggerId, rusty)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, [{ id: daggerId, key: 'dagger', ...rusty, rulebook: 'core', custom: false, edited: true, editedSettings: true }]);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${otherId}/items?edited=true`)).body.items, []);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true&equips=oneHand`)).body.items.map((item) => item.id), [daggerId]);
+			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true&equips=twoHands`)).body.items, []);
 
 			assert.strictEqual((await removeFrom(ada, universeId, 'Item', daggerId)).status, 200);
 			assert.deepStrictEqual((await send<ItemListPayload>(ada, 'GET', `/${universeId}/items?edited=true`)).body.items, []);
@@ -1163,7 +1172,7 @@ describe('World editor API', () =>
 				{ ...torch, category: 'spaceship' },
 				{ ...torch, types: ['lightsaber'] },
 				{ ...torch, types: ['bows'] },
-				{ ...torch, types: ['torch', 'torch'] },
+				{ ...torch, types: ['light_source', 'light_source'] },
 				{ ...torch, category: 'weapon', types: ['thrown', 'blades_light'] },
 				{ ...torch, types: 'torch' },
 				{ ...torch, name: null },
@@ -1171,7 +1180,11 @@ describe('World editor API', () =>
 				{ ...torch, description: '' },
 				{ ...torch, description: 'a'.repeat(MAX_ITEM_DESCRIPTION_LENGTH + 1) },
 				{ ...torch, description: undefined },
-				{ ...torch, enabled: 'yes' }
+				{ ...torch, enabled: 'yes' },
+				{ ...torch, equips: 'ringLeft' },
+				{ ...torch, equips: 'clothing' },
+				{ ...torch, equips: 'toString' },
+				{ ...torch, equips: undefined }
 			];
 
 			for (const body of invalid)
@@ -1189,6 +1202,11 @@ describe('World editor API', () =>
 			// An item can have no type, or several of its category's
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, types: [] })).status, 200);
 			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, category: 'weapon', types: ['blades_light', 'thrown'] })).status, 200);
+
+			// An item equips anywhere the ruleset has, whatever its kind, but not in one ring slot of the two
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, equips: 'ringLeft' })).status, 400);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, equips: 'ring' })).status, 200);
+			assert.strictEqual((await saveIn(ada, universeId, 'Item', itemId, { ...torch, category: 'weapon', types: [], equips: 'head' })).status, 200);
 		});
 
 		it('lets builders with the permission change items, but not beta testers', async () =>
@@ -1875,8 +1893,8 @@ describe('World editor API', () =>
 			assert.deepStrictEqual(classes.map(({ key, rules }) => ({ key, rules })), Object.entries(SF1E_CLASSES).map(([key, rules]) => ({ key, rules })));
 			assert.deepStrictEqual(themes.map(({ key, rules }) => ({ key, rules })), Object.entries(SF1E_THEMES).map(([key, rules]) => ({ key, rules })));
 			assert.deepStrictEqual(tiles.map(({ key }) => key), Object.keys(DEFAULT_TILE_NAMES.sf1e));
-			assert.deepStrictEqual(items.map(({ key }) => key), ['survival_knife']);
-			assert.deepStrictEqual(universe.startingItems, [{ itemId: items[0].id, quantity: 1 }]);
+			assert.deepStrictEqual(items.map(({ key }) => key).sort(), Object.keys(DEFAULT_ITEM_NAMES.sf1e).sort());
+			assert.deepStrictEqual(universe.startingItems, [{ itemId: items.find((item) => (item.key === 'survival_knife'))?.id, quantity: 1 }]);
 		});
 
 		it('saves its settings, and refuses Pathfinder\'s', async () =>

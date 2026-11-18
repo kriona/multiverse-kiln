@@ -1,4 +1,5 @@
-import { isRulebookOn, MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem } from '@multiverse-kiln/shared';
+import { isRulebookOn, MAX_ITEM_QUANTITY, type EditableUniverse, type EditorItem, type ItemListPayload } from '@multiverse-kiln/shared';
+import inspectIcon from 'virtual:icon/ph:magnifying-glass';
 import removeIcon from 'virtual:icon/ph:x';
 
 import { t } from '../../localization';
@@ -7,8 +8,10 @@ import { ChangeTracker } from '../changeTracker';
 import { getElement, setButtonLabel, showMessage } from '../dom';
 import { clearFieldErrors, reportFieldError, setFieldError } from '../fieldErrors';
 import { formMessages } from '../formMessages';
+import { INSPECT_MESSAGES, inspectItem } from '../ItemInspectDialog';
 import { createItemIcon, itemDescription, itemName, itemTypesText } from '../itemNames';
 import { editorMessages } from './editorMessages';
+import { showCategoryOptions, showTypeOptions } from './itemFilters';
 import type { RulebookChoice } from './rulebookChoice';
 
 /**
@@ -55,7 +58,7 @@ export interface ItemSelectOptions
 
 /**
  * Selection: Item (see STRUCTURE-OVERVIEW.md): a dialog for choosing items by typing part of their
- * names, each with a quantity (for example, 20 arrows)
+ * names and filtering them by kind and type, each with a quantity (for example, 20 arrows)
  *
  * Disabled items can be chosen, and are marked; characters are only given enabled items. Choosing items
  * to give a character, it finds only the live version's enabled items
@@ -66,6 +69,8 @@ export class ItemSelectDialog
 	private readonly title = getElement('item-select-title', HTMLElement);
 	private readonly form = getElement('item-select-form', HTMLFormElement);
 	private readonly search = getElement('item-select-search', HTMLInputElement);
+	private readonly categoryFilter = getElement('item-select-category', HTMLSelectElement);
+	private readonly typeFilter = getElement('item-select-type', HTMLSelectElement);
 	private readonly results = getElement('item-select-results', HTMLFieldSetElement);
 	private readonly none = getElement('item-select-none', HTMLElement);
 	private readonly chosenList = getElement('item-select-chosen', HTMLUListElement);
@@ -98,6 +103,11 @@ export class ItemSelectDialog
 	private defaultTitle: string | undefined;
 
 	/**
+	 * The types some item to choose from has, as the last results say, which the type filter offers
+	 */
+	private typesWithItems = new Set<string>();
+
+	/**
 	 * Each chosen item's quantity field, by the item's ID
 	 */
 	private readonly quantityFields = new Map<number, HTMLInputElement>();
@@ -120,7 +130,10 @@ export class ItemSelectDialog
 	 */
 	constructor(private readonly api: EditorApi, private readonly rulebooks: RulebookChoice)
 	{
-		this.search.setAttribute('data-untracked', '');
+		for (const filter of [this.search, this.categoryFilter, this.typeFilter])
+		{
+			filter.setAttribute('data-untracked', '');
+		}
 
 		this.search.addEventListener('input', () =>
 		{
@@ -129,6 +142,21 @@ export class ItemSelectDialog
 			{
 				void this.showResults();
 			}, SEARCH_DELAY_MS);
+		});
+
+		this.categoryFilter.addEventListener('change', () =>
+		{
+			if (this.universe)
+			{
+				showTypeOptions(this.categoryFilter, this.typeFilter, this.universe.ruleset, this.typesWithItems);
+			}
+
+			this.searchNow();
+		});
+
+		this.typeFilter.addEventListener('change', () =>
+		{
+			this.searchNow();
 		});
 
 		this.changes.guardDialog(this.dialog);
@@ -171,6 +199,9 @@ export class ItemSelectDialog
 		this.universe = universe;
 		this.chosen = chosen.map((choice) => ({ ...choice }));
 		this.search.value = '';
+		this.typesWithItems = new Set();
+		showCategoryOptions(this.categoryFilter, universe.ruleset);
+		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
 		this.results.replaceChildren();
 		this.none.hidden = true;
 		showMessage(this.error, undefined);
@@ -204,7 +235,17 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * Lists the items whose names hold what is typed in the search field, up to MAX_RESULTS
+	 * Lists the items the filters ask for at once, dropping a search still waiting for typing to stop
+	 */
+	private searchNow(): void
+	{
+		window.clearTimeout(this.searchTimer);
+		void this.showResults();
+	}
+
+	/**
+	 * Lists the items of the kind and type chosen whose names hold what is typed in the search field, up
+	 * to MAX_RESULTS
 	 */
 	private async showResults(): Promise<void>
 	{
@@ -217,16 +258,18 @@ export class ItemSelectDialog
 		}
 
 		const live = this.options?.liveRulebooks;
-		let items: EditorItem[];
+		let page: ItemListPayload;
 
 		try
 		{
-			items = (await this.api.listItems(universe.id, {
+			page = (await this.api.listItems(universe.id, {
 				name: (this.search.value.trim() || undefined),
+				category: (this.categoryFilter.value || undefined),
+				type: (this.typeFilter.value || undefined),
 				rulebooks: [...(live ?? this.rulebooks.rulebooks())],
 				enabled: ((live === undefined) ? undefined : true),
 				limit: MAX_RESULTS
-			}, ((live === undefined) ? undefined : 'live'))).items;
+			}, ((live === undefined) ? undefined : 'live')));
 		}
 		catch (error)
 		{
@@ -247,6 +290,10 @@ export class ItemSelectDialog
 			return;
 		}
 
+		const { items } = page;
+
+		this.typesWithItems = new Set(page.types);
+		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
 		showMessage(this.error, undefined);
 		this.results.replaceChildren(...items.map((item) => this.createChoice(item, universe)));
 		this.results.hidden = (items.length === 0);
@@ -254,13 +301,47 @@ export class ItemSelectDialog
 	}
 
 	/**
-	 * One item's choice: a checkbox with the item's icon, name, type, whether it is disabled and its description
+	 * One item's choice: a checkbox with the item's icon, name, type, whether it is disabled and its
+	 * description, and beside it an Inspect button showing what the item is
 	 *
 	 * @param item The item
 	 * @param universe The universe whose item it is
-	 * @return The choice's label, holding its checkbox
+	 * @return The choice: its label, holding its checkbox, and its Inspect button
 	 */
-	private createChoice(item: EditorItem, universe: EditableUniverse): HTMLLabelElement
+	private createChoice(item: EditorItem, universe: EditableUniverse): HTMLElement
+	{
+		const choice = document.createElement('div');
+		const inspectButton = document.createElement('button');
+		const displayName = itemName(item, universe.ruleset);
+
+		choice.className = 'item-select-choice';
+		inspectButton.type = 'button';
+		inspectButton.className = 'secondary';
+		setButtonLabel(inspectButton, inspectIcon, t(INSPECT_MESSAGES.inspect));
+		inspectButton.setAttribute('aria-label', t({
+			id: 'editor.itemSelect.inspectItem',
+			defaultMessage: 'Inspect {item}',
+			description: 'Name of the Inspect button beside an item in the dialog for choosing items, for screen readers; {item} is the item\'s name'
+		}, {
+			item: displayName
+		}));
+		inspectButton.addEventListener('click', () =>
+		{
+			inspectItem(item, universe.ruleset);
+		});
+		choice.append(this.createChoiceLabel(item, universe), inspectButton);
+
+		return(choice);
+	}
+
+	/**
+	 * One item's checkbox, with the item's icon, name, type, whether it is disabled and its description
+	 *
+	 * @param item The item
+	 * @param universe The universe whose item it is
+	 * @return The label, holding the checkbox
+	 */
+	private createChoiceLabel(item: EditorItem, universe: EditableUniverse): HTMLLabelElement
 	{
 		const label = document.createElement('label');
 		const input = document.createElement('input');

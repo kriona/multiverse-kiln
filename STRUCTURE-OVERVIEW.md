@@ -179,7 +179,8 @@ A modal dialog showing one of the player's characters, opened from the [lobby](#
 - each ability score (with the race's modifiers added) and the modifier it gives
 - size, darkvision and light sensitivity, from the race as the universe sets it now
 - money, as a [money field](#field-money) writes it
-- equipment, sorted by name, with how many of each and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it, which will grow; for now it offers Discard, which opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
+- what the character has equipped: each of the ruleset's slots with the item in it, or Empty (see [Equipment](#equipment))
+- equipment, sorted by name, with how many of each, how many are equipped, and each item's description under its name. Each item has a menu, opened by a button of three vertical dots, of what can be done with it: Equip (Main hand, Off hand or Both hands for a weapon held in one hand), Unequip, Give, Inspect and Discard (see [Equipment](#equipment)). Discard opens "Discard [item]", asking "Are you sure you want to discard [item]?" (the name in italics, as a name rather than a word inflected in the sentence). For more than one of the item, a field below asks "Choose how many to discard, up to [count]", all of it to start with. It discards them at once. Any item the character carries can be discarded, disabled ones included
 
 For SF1E it also shows the theme, hit points (the race's and the class's) and stamina points (the class's plus the Constitution modifier, at least 0), from the race and class as the universe sets them now.
 
@@ -192,6 +193,39 @@ The sheet's Delete button asks twice. "Delete Character" asks "Do you want to de
 A character in a group can't be deleted either way, and the server refuses. Their sheet's Delete button says so instead, in the dialog that asks whether to leave the group (Disband the Group? for the anchor being), and once they have left goes on to the questions above; a window playing them in the group goes to the lobby with them, as the group's Leave group does. A character in a group who can't play because their race or class is disabled (see [Disabling things players are using](#disabling-things-players-are-using)) can't reach the group's Leave group button, so their sheet offers it instead, asking first like the group's (Disband Group for the anchor being).
 
 The server deletes characters whose days are over once an hour, and hides them until it does.
+
+## Equipment
+A character equips items they carry to their ruleset's slots. Equipping changes no rules yet: combat, armor class and the like will read it.
+
+Each ruleset lists its slots in `/shared` (`shared/src/rulesets/<ruleset>/equipment.ts`):
+- PF1E: head, headband, eyes, shoulders, neck, chest, body, armor, belt, wrists, hands, two rings, feet, tail, off arm, main hand and off hand. These are the Core Rulebook's item slots, which magic items will use, plus a tail for tail weapons, the off arm for a buckler, and the hands. Only characters whose race has a tail (a setting of the [race](#races)) have the tail slot
+- SF1E: armor, clothing, main hand and off hand. Worn magic items, armor upgrades and augmentations add slots later
+
+Each item has where it equips: nowhere, one worn slot, one hand or two hands. It is set apart from the item's kind: a dwarven boulder helmet is a weapon worn on the head, and a torch is gear held in a hand.
+
+Hands:
+- The main hand and the off hand each hold one item. A one-handed item goes in either hand. A one-handed weapon can also go in both. A two-handed item takes both hands
+- A one-handed item in each hand is dual-wielding. A double weapon, such as a quarterstaff, is one two-handed item
+- A shield takes a hand, and a character holds one shield at most. PF1E's buckler is worn in the off arm slot and takes no hand. It counts as the character's one shield
+
+Equipping:
+- Equip and Unequip are in each item's menu on the [character sheet](#character-sheet), in the lobby, the game, on the universe page and on the player's profile
+- Equipping into a slot or hand in use unequips what was there, without asking. A two-handed item unequips both hands. A one-handed item unequips a two-handed one. A second shield unequips the first
+- A ring goes in the first free ring slot, with one Equip in its menu. When both ring slots are full, the menu offers Equip as left ring and Equip as right ring instead, which replace what is there
+- The menu offers equipping only where it changes something. It leaves out a hand or ring slot that already holds the item the same way, and Equip for a worn item whose slot already holds it
+- An equipped item is one of the items the character carries: 3 daggers with one in each hand are 3 daggers, 2 of them equipped. Discarding or giving more than the unequipped ones unequips the rest, the off hand first, then the main hand, then worn slots, and the dialog says which
+- Disabled items, and items of [rulebooks](#rulebooks) that are off, can still be equipped, unequipped and given. An item [removed from characters](#disabling-things-players-are-using) is unequipped
+- A save that changes where an item equips, or whether it is a shield or a weapon, unequips it from every character once it reaches the live version. A save that turns off a race's tail unequips the tail items of that race's characters
+- Create Character equips the starting items, the class's, then the race's, then the universe's, each list by name. Each worn item goes in its slot while it is free. Only the first weapon is equipped, in the main hand, so no character starts out dual-wielding. A shield goes in the off hand while it is free, and a buckler in the off arm. Other held items, such as torches, stay unequipped
+- Each change to a character's items or equipment is sent to the player's windows through the session room, so an open sheet shows it wherever it is. A sheet reads out a change made somewhere else, and keeps focus on the item it was on. For its own change it loads the character once, after the change is made, and reads out only what it did
+
+Give opens "Give [item]". It chooses another character in the group, listed by name, race and class ("Mara (Dwarf Fighter)"), the player's own included, online or not, and for more than one of the item, how many, 1 to start with. The items arrive at once. The receiving player's open windows show a toast saying who gave them what, and a line in the group's chat records it. Both name a universe's own item in each window's language when the universe has a translation (see [Finding a translation](#finding-a-translation)), whoever gave it. The chat's line names the item as it is now each time a window opens the chat, so renaming the item renames it in old lines too; a line about an item since deleted keeps the name the item had when it was given. Since each gift is a line in the chat, it counts toward the limit on the lines a player's characters write in their group by giving items, joining and leaving (at most 5 in 3 seconds, as many as the chat messages they can send there; see [Chat](#chat)); past that, the dialog says to wait. It is offered only while the character is in a group.
+
+Inspect opens a dialog with the item's name, kind, types, book, where it equips and description. Rules details such as weight and damage aren't tracked yet. Inspect will show them once items have them. Inspect is also in [item selection](#selection-item).
+
+The universe's creators change a character's sheet from the [Character List](#tab-character-list) as the player can, with the same item menu. Items they give with Give Items arrive unequipped.
+
+Later, appearance slots will repeat the stats slots, all but the hands, for items worn only for how they look. The avatar draws them over the stats items, and a Hide option skips an equipped item when drawing it. So slot keys belong to the ruleset rather than to a set of slots, `character_equipment` is keyed by character and slot so a layer column can join the key, and whether an item fits a slot is one pure function the appearance slots reuse. The hands and shield rules apply only to the stats slots.
 
 ## Create Group
 The character creating the group is the "anchor being". This shows you a landing page for your new group. It explains that your character is the anchor being for this universe, and that the game is centered around them.
@@ -227,7 +261,8 @@ A lobby, each group and each universe's editors have a chat. Chat is text player
 - Lobby chat isn't kept: it lives in the lobby's room, and a window joining sees the last 50 messages since the room opened.
 - The editors' chat and each group's chat are kept, with their newest 200 messages: writing another deletes the oldest. A window joining sees all of them. The room writes new messages to the database every few seconds and as it closes; a room opening for the same chat while one closes loads it once that last write is done. A group's chat is deleted when the group disbands, and the editors' chat with the universe. Deleting an account leaves its messages where they were written, shown as written by "[deleted user]", and the data download includes the messages the player wrote that are still kept. The open rooms take the name off at once, in the lobby's chat too: in what they hold, in messages not yet written to the database, and in the windows open, which show "[deleted user]" in its place (`server/src/players/accountDeletions.ts`).
 - The editors' chat remembers how far each player has read it (`chat_reads`: one row per player and kept chat, the chat being its universe and group, with the group empty for the editors' chat), so messages written while they were away count as new when they come back, in any browser. A player new to a chat starts with what it held as they first joined read. A window tells the room each time the player sees newer messages, the room tells the player's other windows, and writes the records with its messages. The records go with the player, the universe or the group, and are in the data download. Group chats can use the same records; a group's chat is always on screen, so it doesn't yet.
-- A group's chat says who is in the group as it changes, each in a sentence all in blue, set apart from players' messages: "[character] created the group." as its first line, "[character] joined the group." when a character joins through an invite link, and "[character] has left this group." when one leaves, however they leave (from the group or their sheet, because the [group size](#tab-characters) was lowered, or because their player deleted their account). Each is a notice the server writes, kept with the chat's messages (`chat_messages.notice`, with no text), and each window writes it in its player's language. The room that has the chat open sends it to its windows and writes it with its messages; with no room open, it goes to the database as it happens (`server/src/rooms/groupChatNotices.ts`). A disbanded group's chat is deleted with it, so disbanding writes none. Notices aren't in the data download's messages the player wrote.
+- A group's chat says who is in the group as it changes, each in a sentence all in blue, set apart from players' messages: "[character] created the group." as its first line, "[character] joined the group." when a character joins through an invite link, and "[character] has left this group." when one leaves, however they leave (from the group or their sheet, because the [group size](#tab-characters) was lowered, or because their player deleted their account). A character [giving items](#character-sheet) gets a line in the same way, "[character] gave [character] [item]." ("[item] x20" for more than one), which keeps who got what: the receiver's name and the item's ID, with its name as it was then (`chat_messages.notice_details`). Each is a notice the server writes, kept with the chat's messages (`chat_messages.notice`, with no text), and each window writes it in its player's language. The room that has the chat open sends it to its windows and writes it with its messages; with no room open, it goes to the database as it happens (`server/src/rooms/groupChatNotices.ts`). A disbanded group's chat is deleted with it, so disbanding writes none. Notices aren't in the data download's messages the player wrote.
+- Each notice a player can set off again at will pushes older messages out of the kept chat, so the notices a player's characters write in a group by joining, leaving and [giving items](#character-sheet) share one limit: at most 5 in 3 seconds, as many as the chat messages they can send there (`tryTakeGroupNotice()`). Past that, the server refuses the join, leave or gift before changing anything, and the invite, the group's leave dialog, the sheet's or the Give dialog says to wait. Notices the server writes on its own (a group size lowered, an account deleted) and a group's "created" line, which starts a new chat, don't count, and neither does the anchor being leaving, since disbanding writes none. A creator taking a character out from the Character List tab isn't limited either, so creators can always take out the character of a player who is flooding the chat.
 - A line above a kept chat names who is here: for the editors' chat, every player with the universe's editor open; for a group's, the members with a window in its game. A lobby may hold many more players, so how it shows who is online is still open (see [Open questions](#open-questions)); its list of who's here stays as it is.
 
 ## Messages
@@ -622,6 +657,7 @@ You can edit each race:
 	- floating ability bonus? a checkbox. When checked, the player chooses which ability gets the bonus (in PF1E, humans, half elves and half orcs get +2 to one ability of their choice)
 	- darkvision: `none`, `darkvision (60 feet)` or `superior darkvision (120 feet)`. A default race starts with what its book gives it: drow have superior darkvision, and dwarves have darkvision
 	- light sensitivity? a checkbox. Bright light dazzles the race's characters (see [Vision](#vision)). A default race starts with what its book gives it: drow have it
+	- has a tail? a checkbox. The race's characters get a tail slot for tail weapons (see [Equipment](#equipment)). A default race starts with it on for catfolk, kitsune, kobolds, ratfolk, tieflings and vanara
 	- size
 		- `fine`
 		- `diminutive`
@@ -795,9 +831,10 @@ shows you a table of all items in the game, populated from the default for your 
 
 It needs a filter control that includes:
 - name search
-- "is enabled" toggle
+- "is enabled" toggle, set to Yes when the tab opens
 - "is custom" toggle
 - "is edited from default" toggle
+- where items equip ("Equips to"): nowhere, one hand, two hands or one of the ruleset's worn slots, offering only those some item has among the items the Enabled, Custom and Edited from default filters and the books on match
 - toggles for each property
 	- for example, a toggle for `weapons`, and then a toggle for `light blades`
 	- note that these toggles will be based on the ruleset
@@ -816,7 +853,7 @@ For PF1E, the Core Rulebook's only default item for now is a dagger; for SF1E, a
 
 Default items work like default tiles: an edit applies to your universe only and can be undone to restore the default, and an item you created can be deleted.
 
-Each item is in one of the ruleset's categories (its kind), and has any number of that category's types, or none. The filters use both: the Kind filter matches an item's category, and the Type filter matches an item with that type among its others. For PF1E:
+Each item is in one of the ruleset's categories (its kind), and has any number of that category's types, or none. The filters use both: the Kind filter matches an item's category, and the Type filter matches an item with that type among its others. The Type filter offers only the chosen kind's types, and only those some item has among the items the other filters (Enabled, Custom, Edited from default, Equips to and the books on) match. For PF1E:
 - `weapons`: the fighter's weapon groups from the Core Rulebook's Weapon Training: axes, heavy blades, light blades, bows, close, crossbows, double, flails, hammers, monk, natural, polearms, spears and thrown. A weapon has every group it is in, such as light blades and thrown for a dagger. A weapon in no group, such as a kobold's tail attachment, and ammunition have no type. Firearms, siege engines and tribal come from books the engine doesn't have yet
 - `armor`: light armor, medium armor, heavy armor and shields
 - `gear`: rope, torch. Other gear has no type
@@ -964,13 +1001,14 @@ Money is kept as individual pieces of each coin, the way a purse holds them, and
 A checkbox drawn as a pill-shaped switch, with On or Off inside it in the player's language (`createToggleSwitch()` in `client/src/ui/toggleSwitch.ts`, styled by `.toggle-switch` in `client/src/_shared.scss`). It is still a checkbox, so Space toggles it and screen readers announce it as one, named by a label of its own or by the element it belongs to. Used for the [rulebooks](#rulebooks) and for the Enabled switches in the tables of races, classes, themes and items. A list drawn again when a switch changes waits for the knob to finish sliding (`afterSwitchSlides()`), and gives focus back to the switch.
 
 ## Selection: Item
-modal dialog, lets you type to search, shows you the top results, with name + stats + description + picture. Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Up to 50 different items can be selected, for starting equipment and for giving a character items; selecting one more says so under it and leaves it unselected. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
+modal dialog, lets you type to search and filter by kind and type (as on the [Items tab](#tab-items); the type filter offers only the kind's types that some item to choose from has), shows you the top results, with name + stats + description + picture, and Inspect (see [Equipment](#equipment)). Each selected item has a quantity (for example, 20 arrows), from 1 to 999. Up to 50 different items can be selected, for starting equipment and for giving a character items; selecting one more says so under it and leaves it unselected. Disabled items can be selected and are marked as disabled; characters are only given enabled items. Items of [rulebooks](#rulebooks) that are off aren't found, and ones already selected are marked as disabled.
 
 ## Editor: Item
 - name
 - description, as for [races](#races), shown in [item selection](#selection-item) and on the [character sheet](#character-sheet)
 - kind (e.g., "Weapon"), one of the ruleset's item categories
 - types: a checkbox for each of the kind's types (e.g., "light blades" and "thrown" for a dagger). Any number can be checked, or none. Changing the kind clears them
+- equips to: nowhere, one of the ruleset's worn slots, one hand or two hands (see [Equipment](#equipment))
 - a checkbox for "Enabled?", checked by default
 
 ## Selection: Area
@@ -1124,6 +1162,8 @@ Universe text uses the first of these that exists:
 (`findTranslation()` and `universeText()` in `shared/src/universeText.ts`.)
 
 The player's language here is the first of the languages they want that the universe has, as it is or without its region (`chooseUniverseLanguage()`): the language on their profile, then those the pages send in Accept-Language (the one chosen with the picker, then the browser's), whether or not the engine has them. Every page players read universe text on shows it this way; the editor always shows the source text. The rooms send every player the same messages, so they name areas and tiles by ID, and the game looks the names up in the universe's text in the player's language (`GET /universes/:key/text`), which it fetches again, cheaply with its ETag, when a save in the editor changes it. Every window of the universe hears of the change at once, so each waits a random few seconds before fetching, and the server keeps the text it builds for each universe and language until it changes.
+
+Gifts are the exception: the toast telling a player of a gift (sent by the session room) and the gift's line in the group's chat (sent by its room) name the item in each window's own language. A window sends the rooms the languages its pages send in Accept-Language as it joins, which come after the language on the player's profile (`windowLanguages()` in `server/src/http/requestLanguages.ts`). A new gift arrives with the item's translations into every language the universe has, and a window opening the group's chat is sent the names of the items it mentions as they are now, looked up once for the whole chat (`server/src/rooms/giftItemNames.ts`).
 
 A ruleset default the universe hasn't renamed (such as a default tile whose color was edited but not its name) is engine text instead.
 

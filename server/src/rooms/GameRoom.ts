@@ -12,6 +12,7 @@ import { startingCellOn } from '../logic/startingArea.js';
 import { loadRaceSight } from '../db/raceRepo.js';
 import { findUniverse } from '../db/universeRepo.js';
 import { loadChunksAt, loadArea } from '../db/areaRepo.js';
+import { windowLanguages } from '../http/requestLanguages.js';
 import { accountDeletions } from '../players/accountDeletions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
@@ -22,6 +23,7 @@ import { areaOccupants } from '../world/areaOccupants.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { ChangesWhileCreating } from './changesWhileCreating.js';
+import { loadGiftItemNames, type GiftItemNamer } from './giftItemNames.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { isLoggedInToMatchmake } from './matchmakingAuth.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
@@ -51,6 +53,12 @@ interface GameIdentity
 	 * The character the client asked to play
 	 */
 	characterId: string;
+
+	/**
+	 * The languages the client wants universe text in, most wanted first, as of when it joined
+	 * (windowLanguages()): the group's chat names the items given in them
+	 */
+	languages: string[];
 }
 
 type GameClient = Client<{ auth: GameIdentity }>;
@@ -129,7 +137,10 @@ const gameRooms = new OneRoomPerKey<GameRoom>('group');
  *
  * The group's chat is kept (server/src/db/chatRepo.ts), written as the character each window controls:
  * the room loads its messages as it starts, and writes new ones every CHAT_SAVE_INTERVAL_MS and as it
- * closes, never inside a tick. It works while the room is locked too
+ * closes, never inside a tick. It works while the room is locked too. The chat's lines about gifts name
+ * the item in each window's language (GameJoinOptions.languages): a joining window is sent the names as
+ * they are now, looked up as it joins, and a new gift arrives with its translations
+ * (UniverseTextTranslator.loadEveryLanguage())
  *
  * The group routes (http/groups.ts) decide who is in the group, and the room follows them (groupChanges)
  */
@@ -251,11 +262,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * The group's chat, loaded in onCreate. It takes in the notices written in it, such as a character
-	 * leaving, and sends them to the room's windows
+	 * leaving, and sends them to the room's windows, a gift's to each in its own language
 	 */
-	private readonly chat = new KeptChatLog((message) =>
+	private readonly chat = new KeptChatLog((message, detailsIn) =>
 	{
-		this.broadcast(GameServerMessageType.Chat, message);
+		if (!detailsIn)
+		{
+			this.broadcast(GameServerMessageType.Chat, message);
+			return;
+		}
+
+		for (const client of this.clients)
+		{
+			client.send(GameServerMessageType.Chat, { ...message, details: detailsIn(identityOf(client).languages) });
+		}
 	});
 
 	private readonly stopListening: (() => void)[] = [];
@@ -656,7 +676,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		return({
 			sessionId: session.sessionId,
 			playerId: session.playerId,
-			characterId: member.characterId
+			characterId: member.characterId,
+			languages: windowLanguages(session.locale, joinOptions.data.languages)
 		});
 	}
 
@@ -672,9 +693,10 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 	/**
 	 * Puts every playable character of the joining client's player into play, if they aren't already,
-	 * gives the client the character it asked for, and sends it the group's chat. A window that may have
-	 * missed a change while it joined looks itself up again first (recheckJoining()), and one whose group
-	 * is no more is turned away
+	 * gives the client the character it asked for, and sends it the group's chat, with the items given
+	 * in it named as they are now, in the client's language. A window that may have missed a change while
+	 * it joined looks itself up again first (recheckJoining()), and one whose group is no more is turned
+	 * away
 	 *
 	 * @param client The joining client
 	 */
@@ -689,7 +711,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		await this.recheckJoining(client);
 
-		const { playerId, characterId } = identityOf(client);
+		const { playerId, characterId, languages } = identityOf(client);
 		let clients = this.windows.get(playerId);
 
 		if (!clients)
@@ -712,7 +734,19 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 
 		// bringIn() has put the character in play, so join() has no area to place them in
 		this.areaPlayers.join(client, characterId, this.appearanceOf(member), undefined);
-		client.send(GameServerMessageType.ChatHistory, this.chat.history());
+
+		// The chat as it is once the names have loaded: the client is among the room's windows, so the
+		// messages written meanwhile reach it too, and the history it is sent last replaces them. Names
+		// that can't be loaded leave the lines with the names they keep
+		const nameGiftItem = await loadGiftItemNames(this.universeId, this.chat.history().messages, languages)
+			.catch((error: unknown): GiftItemNamer =>
+			{
+				console.error('Could not name the items given in the chat of group', this.groupId, error);
+				return((message) => message);
+			});
+		const history = this.chat.history();
+
+		client.send(GameServerMessageType.ChatHistory, { ...history, messages: history.messages.map(nameGiftItem) });
 		connectedSessions.connect(client, identityOf(client).sessionId);
 
 		console.log(client.sessionId, 'joined group', this.groupId, 'as character', characterId);
