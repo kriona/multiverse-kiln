@@ -183,7 +183,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 	}
 
 	/**
-	 * Lists a universe's items from the first page, with no filters
+	 * Lists a universe's enabled items from the first page, with no other filters
 	 *
 	 * @param universe The universe
 	 */
@@ -200,7 +200,7 @@ export class ItemsTab implements SavableTab, FollowsOtherSaves
 		this.typesWithItems = new Set();
 		showCategoryOptions(this.categoryFilter, universe.ruleset);
 		showTypeOptions(this.categoryFilter, this.typeFilter, universe.ruleset, this.typesWithItems);
-		this.enabledFilter.value = '';
+		this.enabledFilter.value = 'true';
 		this.customFilter.value = '';
 		this.editedFilter.value = '';
 		this.sorter.reset();

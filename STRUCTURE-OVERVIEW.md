@@ -831,7 +831,7 @@ shows you a table of all items in the game, populated from the default for your 
 
 It needs a filter control that includes:
 - name search
-- "is enabled" toggle
+- "is enabled" toggle, set to Yes when the tab opens
 - "is custom" toggle
 - "is edited from default" toggle
 - toggles for each property
