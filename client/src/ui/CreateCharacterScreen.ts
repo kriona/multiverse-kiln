@@ -602,23 +602,22 @@ export class CreateCharacterScreen
 
 		for (const ability of PF1E_ABILITIES)
 		{
-			this.rows[ability].name.textContent = ((classAbility === ability)
-				? t({
-					id: 'character.create.primaryAbility',
-					defaultMessage: '{ability} (main ability)',
-					description: 'An ability\'s name in Create Character\'s table of scores when the chosen class relies on it most; {ability} is its name, e.g. Strength'
-				}, {
-					ability: this.abilityName(ability)
-				})
-				: this.abilityName(ability));
+			const cell = this.rows[ability].name;
+
+			cell.textContent = this.abilityName(ability);
+
+			if (classAbility === ability)
+			{
+				cell.append(' ', mainAbilityMark());
+			}
 		}
 
 		this.classHint.textContent = ((classAbility === undefined)
 			? ''
 			: t({
 				id: 'character.create.classHint',
-				defaultMessage: 'This class relies most on {ability}, so it is a good place for a high score.',
-				description: 'Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength'
+				defaultMessage: 'This class relies most on {ability}, so it is a good place for a high score. It is marked with ⭐ among the ability scores.',
+				description: 'Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength. The table of ability scores, on a later step, marks that ability with a star emoji, ⭐, which this names'
 			}, {
 				ability: this.abilityName(classAbility)
 			}));
@@ -1393,6 +1392,30 @@ export class CreateCharacterScreen
 
 		return(formatList(modifiers));
 	}
+}
+
+/**
+ * The star beside the ability the chosen class relies on most in the table of scores, named for screen
+ * readers and in its tooltip
+ *
+ * @return The mark
+ */
+function mainAbilityMark(): HTMLElement
+{
+	const mark = document.createElement('span');
+	const label = t({
+		id: 'character.create.mainAbility',
+		defaultMessage: 'Main ability of the class',
+		description: 'Name for screen readers, and tooltip, of the star emoji (⭐) beside an ability\'s name in Create Character\'s table of scores, marking the ability the chosen class relies on most'
+	});
+
+	mark.className = 'main-ability-mark';
+	mark.title = label;
+	mark.setAttribute('role', 'img');
+	mark.setAttribute('aria-label', label);
+	mark.textContent = '⭐';
+
+	return(mark);
 }
 
 /**

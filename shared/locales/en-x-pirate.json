@@ -988,8 +988,8 @@
 		"source": "Class"
 	},
 	"character.create.classHint": {
-		"message": "This callin' leans hardest on {ability}, so stow a high score there.",
-		"source": "This class relies most on {ability}, so it is a good place for a high score."
+		"message": "This callin' leans hardest on {ability}, so stow a high score there. It be marked with ⭐ among the knacks.",
+		"source": "This class relies most on {ability}, so it is a good place for a high score. It is marked with ⭐ among the ability scores."
 	},
 	"character.create.failed": {
 		"message": "Couldn't sign on the hand.",
@@ -1006,6 +1006,10 @@
 	"character.create.loadFailed": {
 		"message": "Couldn't haul in the folk, callin's an' knacks.",
 		"source": "Could not load the races, classes and ability scores."
+	},
+	"character.create.mainAbility": {
+		"message": "Chief knack o' the callin'",
+		"source": "Main ability of the class"
 	},
 	"character.create.name": {
 		"message": "Name",
@@ -1066,10 +1070,6 @@
 	"character.create.pointsSpent": {
 		"message": "Doubloons spent: {spent, number} o' {budget, number}",
 		"source": "Points spent: {spent, number} of {budget, number}"
-	},
-	"character.create.primaryAbility": {
-		"message": "{ability} (chief knack)",
-		"source": "{ability} (main ability)"
 	},
 	"character.create.race": {
 		"message": "Folk",

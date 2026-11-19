@@ -988,8 +988,8 @@
 		"description": "Label of the field for a new character's class, such as fighter or wizard"
 	},
 	"character.create.classHint": {
-		"defaultMessage": "This class relies most on {ability}, so it is a good place for a high score.",
-		"description": "Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength"
+		"defaultMessage": "This class relies most on {ability}, so it is a good place for a high score. It is marked with ⭐ among the ability scores.",
+		"description": "Hint under the class field of Create Character; {ability} is the ability the chosen class relies on, e.g. Strength. The table of ability scores, on a later step, marks that ability with a star emoji, ⭐, which this names"
 	},
 	"character.create.failed": {
 		"defaultMessage": "Could not make the character.",
@@ -1006,6 +1006,10 @@
 	"character.create.loadFailed": {
 		"defaultMessage": "Could not load the races, classes and ability scores.",
 		"description": "Shown on the Create Character page when what it offers couldn't be loaded"
+	},
+	"character.create.mainAbility": {
+		"defaultMessage": "Main ability of the class",
+		"description": "Name for screen readers, and tooltip, of the star emoji (⭐) beside an ability's name in Create Character's table of scores, marking the ability the chosen class relies on most"
 	},
 	"character.create.name": {
 		"defaultMessage": "Name",
@@ -1066,10 +1070,6 @@
 	"character.create.pointsSpent": {
 		"defaultMessage": "Points spent: {spent, number} of {budget, number}",
 		"description": "Under the ability scores in Create Character when buying them with points; {spent} is how many the chosen scores cost and {budget} how many the player has"
-	},
-	"character.create.primaryAbility": {
-		"defaultMessage": "{ability} (main ability)",
-		"description": "An ability's name in Create Character's table of scores when the chosen class relies on it most; {ability} is its name, e.g. Strength"
 	},
 	"character.create.race": {
 		"defaultMessage": "Race",
