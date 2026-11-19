@@ -605,6 +605,13 @@ button.sort-button
 	}
 }
 
+// The toolbar of a page whose screens each have their own, shown while none of those is, such as while the
+// page loads or shows a notice, so going from page to page never leaves the top of the window empty
+body:has(.screen:not([hidden]) > .toolbar) > .waiting-toolbar
+{
+	display: none;
+}
+
 // The game engine's name at the start of every toolbar, linking to Home. A line sets it apart from the page's own heading
 .site-name
 {
