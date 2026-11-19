@@ -5,7 +5,9 @@ import { Client as SDKClient, type Room as ClientRoom } from '@colyseus/sdk';
 
 import { cellIndexInChunk, chunkCoordinate, chunkKey, DARKVISION_SQUARES, GRID_CELL_SIZE, LOBBY_ROOM_NAME, LobbyMessageType, LobbyServerMessageType, LobbyState, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, ServerCloseCode, ServerMessageType, type ChatAuthorDeletedPayload, type ChatHistoryPayload, type ChatMessage, type ChunksPayload, type LobbyJoinOptions, type NoticePayload, type Player, type PlayingAsPayload, type WelcomePayload, type AreaPayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { avatarHashOf } from '../src/avatars/characterAvatars.js';
 import { adminDb } from '../src/db/adminClient.js';
+import { setCharacterAppearance } from '../src/db/avatarRepo.js';
 import { deleteCharacter, listPlayableCharacters } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
 import { saveEditedDefaultTile } from '../src/db/tileRepo.js';
@@ -15,6 +17,7 @@ import { createAreaLink, deleteArea, editCells, resizeArea } from '../src/db/are
 import { cellCenter } from '../src/logic/movement.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
+import { characterItemChanges } from '../src/players/characterItemChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
@@ -22,6 +25,7 @@ import { setUniverseRole } from '../src/db/universeEditorRepo.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { CHAT_HISTORY_LENGTH, LobbyRoom } from '../src/rooms/LobbyRoom.js';
 import { areaChanges } from '../src/world/areaChanges.js';
+import { useTestAvatarArt } from './avatarArt.js';
 import { addCharacter, addGroup, addPlayableUniverse, addArea, defaultClassId, defaultRaceId, defaultTileId, setWorkedOut, testLobbyRegionId, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
@@ -454,6 +458,34 @@ describe('LobbyRoom', () =>
 
 			await grace.room.leave();
 			await waitUntil(() => (ada.room.state.members.size === 1));
+		});
+
+		it('gives each member their avatar hash, and a new one when their look changes', async () =>
+		{
+			const stopUsingArt = await useTestAvatarArt();
+
+			try
+			{
+				const ada = await joinAsNewPlayer(universe.universeId, 'Ada');
+				const grace = await joinAsNewPlayer(universe.universeId, 'Grace');
+
+				await waitUntil(() => ((ada.room.state.members?.get(grace.playerId)?.avatarHash ?? '') !== ''));
+
+				const characterId = (ada.room.state.members.get(grace.playerId)?.characterId ?? '');
+				const firstHash = ada.room.state.members.get(grace.playerId)?.avatarHash;
+
+				assert.strictEqual(firstHash, await avatarHashOf(characterId));
+
+				await setCharacterAppearance(characterId, { background: 'darkRed' });
+				characterItemChanges.publishChanged(universe.universeId, [{ characterId, playerId: grace.playerId }]);
+
+				await waitUntil(() => (ada.room.state.members.get(grace.playerId)?.avatarHash !== firstHash));
+				assert.strictEqual(ada.room.state.members.get(grace.playerId)?.avatarHash, await avatarHashOf(characterId));
+			}
+			finally
+			{
+				await stopUsingArt();
+			}
 		});
 
 		it('gives every window of a browser the same player', async () =>

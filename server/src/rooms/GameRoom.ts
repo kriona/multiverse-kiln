@@ -15,6 +15,7 @@ import { loadChunksAt, loadArea } from '../db/areaRepo.js';
 import { windowLanguages } from '../http/requestLanguages.js';
 import { accountDeletions } from '../players/accountDeletions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
+import { characterItemChanges, type CharacterItemChange } from '../players/characterItemChanges.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
@@ -26,6 +27,7 @@ import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { loadGiftItemNames, type GiftItemNamer } from './giftItemNames.js';
 import { CHAT_SAVE_INTERVAL_MS, KeptChatLog } from './keptChat.js';
 import { isLoggedInToMatchmake } from './matchmakingAuth.js';
+import { MemberAvatars } from './memberAvatars.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { unexplainedRoomError, withoutErrorDetails } from './roomErrors.js';
 import { entryRefusalCode, findViewRefusal, type EntryRefusal } from './universePlay.js';
@@ -222,6 +224,19 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	private readonly members = new Map<string, GroupMemberRecord>();
 
 	/**
+	 * The avatar hashes of the members, in state.members
+	 */
+	private readonly avatars = new MemberAvatars((characterId, avatarHash) =>
+	{
+		const shown = this.state.members.get(characterId);
+
+		if (shown)
+		{
+			shown.avatarHash = (avatarHash ?? '');
+		}
+	}, () => `the room of group ${this.groupId}`);
+
+	/**
 	 * Each of the universe's races' darkvision and light sensitivity, by race ID, as the room found them
 	 * on starting
 	 */
@@ -367,11 +382,11 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Loads the group, its members, its chat and its starting area, starts the simulation loop, the
-	 * loading of chunks near players and the writing of new chat messages, and starts following changes to
-	 * the group, its characters and the world. Fails for options that aren't GameJoinOptions, a group that
-	 * doesn't exist, or one whose universe has no starting area, with the same error (unexplainedRoomError())
-	 * for each, which isn't logged
+	 * Loads the group, its members and their avatar hashes, its chat and its starting area, starts the
+	 * simulation loop, the loading of chunks near players and the writing of new chat messages, and starts
+	 * following changes to the group, its characters and their looks, and the world. Fails for options that
+	 * aren't GameJoinOptions, a group that doesn't exist, or one whose universe has no starting area, with
+	 * the same error (unexplainedRoomError()) for each, which isn't logged
 	 *
 	 * @param options The group, from the first client's GameJoinOptions
 	 */
@@ -440,6 +455,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			this.addMember(member);
 		}
 
+		await this.avatars.refresh([...this.members.keys()]);
+
 		this.seen.load(await loadSeenChunks(group.id));
 		await this.chat.load({
 			kind: 'group',
@@ -475,9 +492,9 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 	}
 
 	/**
-	 * Starts following changes to the group, its characters, the world, sessions and who may open the
-	 * universe's groups. Called before onCreate's first read, so none published while it loads are
-	 * missed: until it has loaded, they are held (whileCreating)
+	 * Starts following changes to the group, its characters and their looks, the world, sessions and who
+	 * may open the universe's groups. Called before onCreate's first read, so none published while it loads
+	 * are missed: until it has loaded, they are held (whileCreating)
 	 */
 	private followChanges(): void
 	{
@@ -485,6 +502,10 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			groupChanges.onChange((change) =>
 			{
 				this.whileCreating.apply(() => this.applyGroupChange(change));
+			}),
+			characterItemChanges.onChange((change) =>
+			{
+				this.whileCreating.apply(() => this.applyItemChange(change));
 			}),
 			accountDeletions.onDeleted((playerId) =>
 			{
@@ -1294,7 +1315,8 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 		this.state.members.set(member.characterId, new GroupMember({
 			name: member.name,
 			playerId: member.playerId,
-			present: false
+			present: false,
+			avatarHash: ''
 		}));
 	}
 
@@ -1478,6 +1500,7 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			...change.character,
 			position: null
 		});
+		void this.avatars.refresh([change.character.characterId]);
 
 		if (this.windows.has(change.character.playerId))
 		{
@@ -1485,6 +1508,20 @@ export class GameRoom extends Room<{ state: GameState; client: GameClient }>
 			{
 				console.error('Could not bring character', change.character.characterId, 'into group', this.groupId, error);
 			});
+		}
+	}
+
+	/**
+	 * Follows a change to a character's items, equipment or look, which can change their avatar: a
+	 * member has their avatar hash looked up again
+	 *
+	 * @param change The change
+	 */
+	private applyItemChange(change: CharacterItemChange): void
+	{
+		if ((change.kind === 'changed') && this.members.has(change.characterId))
+		{
+			void this.avatars.refresh([change.characterId]);
 		}
 	}
 

@@ -85,9 +85,10 @@ export class LobbyScreen
 	private readonly members = new Map<string, string>();
 
 	/**
-	 * The characters the players in the lobby play, by player ID, to show their avatars
+	 * The characters the players in the lobby play, with their avatar hashes (empty when unknown or none),
+	 * by player ID, to show their avatars
 	 */
-	private readonly memberCharacters = new Map<string, string>();
+	private readonly memberCharacters = new Map<string, { characterId: string; avatarHash: string }>();
 
 	/**
 	 * The lobby the screen is drawing, if any
@@ -241,8 +242,23 @@ export class LobbyScreen
 		this.unbinds.push(callbacks.onAdd('members', (member: LobbyMember, playerId: string) =>
 		{
 			this.members.set(playerId, member.name);
-			this.memberCharacters.set(playerId, member.characterId);
+			this.memberCharacters.set(playerId, {
+				characterId: member.characterId,
+				avatarHash: member.avatarHash
+			});
 			this.queueMemberList();
+
+			// The room looks the hash up once the member is listed, and again when their look changes
+			this.unbinds.push(callbacks.listen(member, 'avatarHash', (avatarHash: string) =>
+			{
+				const shown = this.memberCharacters.get(playerId);
+
+				if (shown && (shown.characterId === member.characterId) && (shown.avatarHash !== avatarHash))
+				{
+					shown.avatarHash = avatarHash;
+					this.queueMemberList();
+				}
+			}));
 		}));
 
 		this.unbinds.push(callbacks.onRemove('members', (_member: LobbyMember, playerId: string) =>
@@ -541,11 +557,11 @@ export class LobbyScreen
 		this.memberList.replaceChildren(...listed.map(({ name, playerId }, index) =>
 		{
 			const item = document.createElement('li');
-			const characterId = ((playerId === undefined) ? undefined : this.memberCharacters.get(playerId));
+			const character = ((playerId === undefined) ? undefined : this.memberCharacters.get(playerId));
 
-			if (characterId)
+			if (character)
 			{
-				item.append(avatarFrame(characterId, undefined, '', 'portrait'));
+				item.append(avatarFrame(character.characterId, ((character.avatarHash === '') ? null : character.avatarHash), '', 'portrait'));
 			}
 
 			item.append(name);

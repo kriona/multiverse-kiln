@@ -11,6 +11,7 @@ import type { Cell } from '../logic/movement.js';
 import { accountDeletions } from '../players/accountDeletions.js';
 import { connectedSessions } from '../players/connectedSessions.js';
 import { characterChanges, type CharacterChange } from '../players/characterChanges.js';
+import { characterItemChanges, type CharacterItemChange } from '../players/characterItemChanges.js';
 import { groupChanges, type GroupChange } from '../players/groupChanges.js';
 import { universeAccessChanges, type BarredChange, type StageChange } from '../players/universeAccess.js';
 import { areaChanges, type AreaChange } from '../world/areaChanges.js';
@@ -19,6 +20,7 @@ import { ChangesWhileCreating } from './changesWhileCreating.js';
 import { InvalidMessages } from './invalidMessages.js';
 import { JoinChanges } from './joinChanges.js';
 import { isLoggedInToMatchmake } from './matchmakingAuth.js';
+import { MemberAvatars } from './memberAvatars.js';
 import { OneRoomPerKey } from './oneRoomPerKey.js';
 import { unexplainedRoomError, withoutErrorDetails } from './roomErrors.js';
 import { entryRefusalCode, findPlayRefusal, type EntryRefusal } from './universePlay.js';
@@ -165,6 +167,8 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 	private stopFollowingCharacters?: () => void;
 
+	private stopFollowingItems?: () => void;
+
 	private stopFollowingGroups?: () => void;
 
 	private stopFollowingSessions?: () => void;
@@ -197,6 +201,14 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	 * The character each player is playing; a player with none is a ghost
 	 */
 	private readonly playing = new Map<string, PlayableCharacter>();
+
+	/**
+	 * The avatar hashes of the characters played, in their members
+	 */
+	private readonly avatars = new MemberAvatars((characterId, avatarHash) =>
+	{
+		this.showAvatarHash(characterId, avatarHash);
+	}, () => `the lobby of universe ${this.universeId}`);
 
 	/**
 	 * How many changes to characters and groups in the universe the room has heard of, so a joining window
@@ -354,9 +366,10 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * Starts following changes to the world, to players' characters, to groups, to sessions, to who may
-	 * play, to the universe's stage and to what bars characters. Called before onCreate's first read, so
-	 * none published while it loads are missed: until it has loaded, they are held (whileCreating)
+	 * Starts following changes to the world, to players' characters and their looks, to groups, to
+	 * sessions, to who may play, to the universe's stage and to what bars characters. Called before
+	 * onCreate's first read, so none published while it loads are missed: until it has loaded, they are
+	 * held (whileCreating)
 	 */
 	private followChanges(): void
 	{
@@ -379,6 +392,11 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		this.stopFollowingCharacters = characterChanges.onChange((change) =>
 		{
 			this.whileCreating.apply(() => this.applyCharacterChange(change));
+		});
+
+		this.stopFollowingItems = characterItemChanges.onChange((change) =>
+		{
+			this.whileCreating.apply(() => this.applyItemChange(change));
 		});
 
 		this.stopFollowingGroups = groupChanges.onChange((change) =>
@@ -487,14 +505,16 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 	}
 
 	/**
-	 * Stops following changes to the world, to players' characters, to groups, to sessions, to who may
-	 * play, to the universe's stage and to what bars characters, and stops listing its characters' areas
+	 * Stops following changes to the world, to players' characters and their looks, to groups, to
+	 * sessions, to who may play, to the universe's stage and to what bars characters, and stops listing its
+	 * characters' areas
 	 */
 	onDispose(): void
 	{
 		lobbyRooms.release(this);
 		this.stopFollowingChanges?.();
 		this.stopFollowingCharacters?.();
+		this.stopFollowingItems?.();
 		this.stopFollowingGroups?.();
 		this.stopFollowingSessions?.();
 		this.stopFollowingAccess?.();
@@ -624,10 +644,7 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 		if (character)
 		{
 			this.playing.set(playerId, character);
-			this.state.members.set(playerId, new LobbyMember({
-				name: character.name,
-				characterId: character.id
-			}));
+			this.listMember(playerId, character);
 		}
 		else if (!isNewPlayer && !this.playing.has(playerId) && choosable)
 		{
@@ -745,14 +762,60 @@ export class LobbyRoom extends Room<{ state: LobbyState; client: LobbyClient }>
 
 		this.playing.set(playerId, character);
 		this.areaPlayers.setAppearance(playerId, this.appearanceOf(character));
-		this.state.members.set(playerId, new LobbyMember({
-			name: character.name,
-			characterId: character.id
-		}));
+		this.listMember(playerId, character);
 
 		for (const client of this.areaPlayers.getClients(playerId))
 		{
 			client.send(LobbyServerMessageType.PlayingAs, playingAs);
+		}
+	}
+
+	/**
+	 * Lists a player as a member playing a character, and looks up the character's avatar hash for it
+	 *
+	 * @param playerId The player's ID
+	 * @param character The character
+	 */
+	private listMember(playerId: string, character: PlayableCharacter): void
+	{
+		this.state.members.set(playerId, new LobbyMember({
+			name: character.name,
+			characterId: character.id,
+			avatarHash: ''
+		}));
+		void this.avatars.refresh([character.id]);
+	}
+
+	/**
+	 * Shows a character's avatar hash in their player's member, while the player is playing them
+	 *
+	 * @param characterId The character's ID
+	 * @param avatarHash The hash, or null when they have no avatar
+	 */
+	private showAvatarHash(characterId: string, avatarHash: string | null): void
+	{
+		for (const [playerId, character] of this.playing)
+		{
+			const member = ((character.id === characterId) ? this.state.members.get(playerId) : undefined);
+
+			if (member)
+			{
+				member.avatarHash = (avatarHash ?? '');
+			}
+		}
+	}
+
+	/**
+	 * Follows a change to a character's items, equipment or look, which can change their avatar: a
+	 * character being played here has their avatar hash looked up again
+	 *
+	 * @param change The change
+	 */
+	private applyItemChange(change: CharacterItemChange): void
+	{
+		if ((change.kind === 'changed') && (change.universeId === this.universeId) && (this.playing.get(change.playerId)?.id === change.characterId))
+		{
+			void this.avatars.refresh([change.characterId]);
 		}
 	}
 

@@ -6,7 +6,9 @@ import { matchMaker } from 'colyseus';
 
 import { cellIndexInChunk, CHUNK_SIZE, DARKVISION_SQUARES, DEFAULT_OUTDOOR_WALK_SECONDS, DEFAULT_TILE_CELL, GAME_ROOM_NAME, GameMessageType, GameServerMessageType, GameState, GRID_CELL_SIZE, GROUP_START_SECONDS, MAX_CHAT_MESSAGE_LENGTH, MessageType, NOTHING_BARRED, NoticeReason, PLAYER_RADIUS, ServerCloseCode, ServerMessageType, UNSEEN_CELL, type AreaPayload, type CellsSeenPayload, type ChatAuthorDeletedPayload, type GameJoinOptions, type KeptChatHistoryPayload, type KeptChatMessage, type NeighborAreasPayload, type NoticePayload, type Player, type WelcomePayload } from '@multiverse-kiln/shared';
 import type appConfig from '../src/app.config.js';
+import { avatarHashOf } from '../src/avatars/characterAvatars.js';
 import { adminDb } from '../src/db/adminClient.js';
+import { setCharacterAppearance } from '../src/db/avatarRepo.js';
 import { listChatMessages } from '../src/db/chatRepo.js';
 import { createCharacter, scheduleCharacterDeletion } from '../src/db/characterRepo.js';
 import { pool } from '../src/db/client.js';
@@ -20,12 +22,14 @@ import { cellCenter } from '../src/logic/movement.js';
 import { SeenCells } from '../src/logic/seenCells.js';
 import { accountDeletions } from '../src/players/accountDeletions.js';
 import { characterChanges } from '../src/players/characterChanges.js';
+import { characterItemChanges } from '../src/players/characterItemChanges.js';
 import { connectedSessions } from '../src/players/connectedSessions.js';
 import { groupChanges } from '../src/players/groupChanges.js';
 import { universeAccessChanges } from '../src/players/universeAccess.js';
 import type { GameRoom } from '../src/rooms/GameRoom.js';
 import { KeptChatLog } from '../src/rooms/keptChat.js';
 import { areaChanges } from '../src/world/areaChanges.js';
+import { useTestAvatarArt } from './avatarArt.js';
 import { addArea, addCharacter, addGroup, addPlayableUniverse, defaultClassId, defaultRaceId, dwarfFighter, setWorkedOut, withoutLobby, type PlayableUniverse } from './db/fixtures.js';
 import { Inbox } from './inbox.js';
 import { changeDuringNextLookup, refusedWith } from './joinRaces.js';
@@ -629,8 +633,38 @@ describe('GameRoom', () =>
 
 		assert.strictEqual(client.state.name, 'The Fellowship');
 		assert.strictEqual(client.state.anchorId, anchor.characterId);
-		assert.deepStrictEqual(client.state.members.get(anchor.characterId)?.toJSON(), { name: 'Anchor', playerId: anchor.playerId, present: false });
-		assert.deepStrictEqual(client.state.members.get(ada.characterId)?.toJSON(), { name: 'Ada', playerId: ada.playerId, present: true });
+		// The engine's art draws no dwarf yet, so they have no avatar
+		assert.deepStrictEqual(client.state.members.get(anchor.characterId)?.toJSON(), { name: 'Anchor', playerId: anchor.playerId, present: false, avatarHash: '' });
+		assert.deepStrictEqual(client.state.members.get(ada.characterId)?.toJSON(), { name: 'Ada', playerId: ada.playerId, present: true, avatarHash: '' });
+	});
+
+	it('gives each member their avatar hash, and a new one when their look changes', async () =>
+	{
+		const stopUsingArt = await useTestAvatarArt();
+
+		try
+		{
+			const room = await createGameRoom();
+			const { client } = await joinFromBrowser(room, browserIdA, 'Ada');
+			const ada = browserMembers.get(browserIdA) as Member;
+
+			await waitUntil(() => ((client.state.members?.get(ada.characterId)?.avatarHash ?? '') !== ''));
+
+			const firstHash = client.state.members.get(anchor.characterId)?.avatarHash;
+
+			assert.strictEqual(firstHash, await avatarHashOf(anchor.characterId));
+			assert.strictEqual(client.state.members.get(ada.characterId)?.avatarHash, await avatarHashOf(ada.characterId));
+
+			await setCharacterAppearance(anchor.characterId, { background: 'darkRed' });
+			characterItemChanges.publishChanged(universe.universeId, [{ characterId: anchor.characterId, playerId: anchor.playerId }]);
+
+			await waitUntil(() => (client.state.members.get(anchor.characterId)?.avatarHash !== firstHash));
+			assert.strictEqual(client.state.members.get(anchor.characterId)?.avatarHash, await avatarHashOf(anchor.characterId));
+		}
+		finally
+		{
+			await stopUsingArt();
+		}
 	});
 
 	it('cannot be created for a group that does not exist, or with no group', async () =>

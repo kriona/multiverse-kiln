@@ -137,9 +137,10 @@ export class GroupScreen
 	private characters: CharacterListPayload | undefined;
 
 	/**
-	 * The group's members, by character ID, from the room's state
+	 * The group's members, by character ID, from the room's state; avatarHash is empty when it isn't known
+	 * yet or they have no avatar
 	 */
-	private readonly members = new Map<string, { name: string; playerId: string; present: boolean }>();
+	private readonly members = new Map<string, { name: string; playerId: string; present: boolean; avatarHash: string }>();
 
 	private anchorId = '';
 	private groupName = '';
@@ -345,7 +346,12 @@ export class GroupScreen
 		// Fires for members already in the group too
 		this.unbinds.push(callbacks.onAdd('members', (member: GroupMember, characterId: string) =>
 		{
-			this.members.set(characterId, { name: member.name, playerId: member.playerId, present: member.present });
+			this.members.set(characterId, {
+				name: member.name,
+				playerId: member.playerId,
+				present: member.present,
+				avatarHash: member.avatarHash
+			});
 			this.queueRender();
 
 			if ((member.playerId === this.ownPlayerId) && this.isListedOutsideGroup(characterId))
@@ -360,6 +366,18 @@ export class GroupScreen
 				if (shown)
 				{
 					shown.present = present;
+					this.queueRender();
+				}
+			}));
+
+			// The room looks the hash up as it starts, and again when the member's look changes
+			this.unbinds.push(callbacks.listen(member, 'avatarHash', (avatarHash: string) =>
+			{
+				const shown = this.members.get(characterId);
+
+				if (shown && (shown.avatarHash !== avatarHash))
+				{
+					shown.avatarHash = avatarHash;
 					this.queueRender();
 				}
 			}));
@@ -835,7 +853,7 @@ export class GroupScreen
 					notes: new Intl.ListFormat(currentLocale(), { style: 'short', type: 'unit' }).format(notes)
 				})
 				: member.name);
-			item.prepend(avatarFrame(characterId, undefined, '', 'portrait'));
+			item.prepend(avatarFrame(characterId, ((member.avatarHash === '') ? null : member.avatarHash), '', 'portrait'));
 			item.classList.toggle('member-own', (member.playerId === this.ownPlayerId));
 			item.classList.toggle('member-away', !member.present);
 

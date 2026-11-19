@@ -29,10 +29,9 @@ export interface AvatarCharacter
 	characterClass: { key: string | null; name: string | null };
 
 	/**
-	 * The hash of their avatar now, or null when they have none; undefined when it isn't known, as for
-	 * others in a room, whose avatar is checked with the server each time
+	 * The hash of their avatar now, or null when they have none
 	 */
-	avatarHash: string | null | undefined;
+	avatarHash: string | null;
 }
 
 /**
@@ -52,15 +51,16 @@ export function avatarElement(character: AvatarCharacter, ruleset: Ruleset, size
 }
 
 /**
- * A character's avatar, for a list that knows only their ID, such as of others in a room
+ * A character's avatar, for a list that knows only their ID and avatar hash, such as of others in a room
  *
  * @param characterId The character's ID
- * @param avatarHash The hash of their avatar now, null when they have none, or undefined when it isn't known
+ * @param avatarHash The hash of their avatar now, which the address asks for it with, so the browser keeps
+ * it for good; null when they have none
  * @param alt The image's alt text: empty beside the character's name
  * @param size How it is shown
  * @return The element
  */
-export function avatarFrame(characterId: string, avatarHash: string | null | undefined, alt: string, size: AvatarSize): HTMLElement
+export function avatarFrame(characterId: string, avatarHash: string | null, alt: string, size: AvatarSize): HTMLElement
 {
 	const frame = document.createElement('span');
 
@@ -74,7 +74,7 @@ export function avatarFrame(characterId: string, avatarHash: string | null | und
 
 	const image = document.createElement('img');
 
-	image.src = serverHttpUrl(avatarPath(characterId, (avatarHash ?? null)));
+	image.src = serverHttpUrl(avatarPath(characterId, avatarHash));
 	image.alt = alt;
 	image.width = 200;
 	image.height = 300;

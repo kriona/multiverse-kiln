@@ -176,9 +176,9 @@ export function characterBar(character: { raceId: number; classId: number }, bar
  * The path of a character's avatar, drawn as their look is now
  *
  * @param characterId The character's ID
- * @param avatarHash The hash of their look now, which the server sends with the character, so browsers
- * keep it for good; null when it isn't known, such as for others in a room, which browsers check with the
- * server each time they show it
+ * @param avatarHash The hash of their look now, which the server sends with the character (and the rooms
+ * with each member), so browsers keep it for good; null when it isn't known, for an address browsers
+ * check with the server each time they load it
  * @return The path, on the server
  */
 export function avatarPath(characterId: string, avatarHash: string | null): string

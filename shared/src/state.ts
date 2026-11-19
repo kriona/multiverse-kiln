@@ -50,7 +50,13 @@ export const GroupMember = schema({
 	 * Whether the character is in the room: their player has a window in it. Links that need the whole
 	 * group can't be taken while any member isn't
 	 */
-	present: t.boolean()
+	present: t.boolean(),
+
+	/**
+	 * The hash of the character's avatar now, to ask for it with (avatarPath()), so a changed look is a new
+	 * address. Empty when they have none, and while the room is still looking it up
+	 */
+	avatarHash: t.string()
 }, 'GroupMember');
 export type GroupMember = SchemaType<typeof GroupMember>;
 
@@ -101,7 +107,12 @@ export const LobbyMember = schema({
 	/**
 	 * The character's ID, to show their avatar (avatarPath())
 	 */
-	characterId: t.string()
+	characterId: t.string(),
+
+	/**
+	 * The hash of the character's avatar now, as in GroupMember
+	 */
+	avatarHash: t.string()
 }, 'LobbyMember');
 export type LobbyMember = SchemaType<typeof LobbyMember>;
 
