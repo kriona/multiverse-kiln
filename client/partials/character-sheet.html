@@ -51,8 +51,12 @@
 				</section>
 			</div>
 			<section class="panel character-sheet-card" aria-labelledby="character-sheet-items-heading">
-				<h3 id="character-sheet-items-heading" data-message="characterSheet.items" data-translation-context="Heading on a character's sheet of the items they carry that aren't equipped or worn for their look">Inventory</h3>
+				<div class="character-sheet-card-heading">
+					<h3 id="character-sheet-items-heading" data-message="characterSheet.items" data-translation-context="Heading on a character's sheet of the items they carry that aren't equipped or worn for their look">Inventory</h3>
+					<input id="character-sheet-item-search" class="character-sheet-item-search" type="search" placeholder="Search by name" aria-label="Search the inventory by name" autocomplete="off" data-untracked hidden data-message-placeholder="characterSheet.itemSearch" data-translation-context-placeholder="Shown in the empty field beside the Inventory heading on a character's sheet, which narrows the items down by name" data-message-aria-label="characterSheet.itemSearchLabel" data-translation-context-aria-label="Name of the field beside the Inventory heading on a character's sheet that narrows the items down by name, for screen readers" />
+				</div>
 				<ul id="character-sheet-items" class="character-sheet-items"></ul>
+				<p id="character-sheet-no-matches" class="character-sheet-none" data-message="characterSheet.noItemMatches" data-translation-context="Shown on a character's sheet under the Inventory search field when no item they carry has a name containing what was typed" hidden>No items match the search.</p>
 				<p id="character-sheet-no-items" class="character-sheet-none" data-message="characterSheet.noItems" data-translation-context="Shown on a character's sheet under the Inventory heading when they carry no items" hidden>Carries nothing.</p>
 				<p id="character-sheet-all-equipped" class="character-sheet-none" data-message="characterSheet.allEquipped" data-translation-context="Shown on a character's sheet under the Inventory heading when everything they carry is equipped or worn for its look, so it is all in the Equipment and Social Equipment lists" hidden>Carries nothing else.</p>
 			</section>

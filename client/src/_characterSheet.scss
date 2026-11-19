@@ -234,6 +234,33 @@ button.character-sheet-delete
 	}
 }
 
+// A card's heading with a control at its far end, such as Inventory with its search field
+.character-sheet-card-heading
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px 12px;
+	margin: 0 0 8px;
+
+	h3
+	{
+		margin: 0;
+	}
+}
+
+// The small field narrowing the Inventory list down by name, beside its heading
+.character-sheet-item-search
+{
+	box-sizing: border-box;
+	width: 18ch;
+	min-width: 0;
+	max-width: 100%;
+	padding: 2px 6px;
+	@include small-text;
+}
+
 // As wide as how many of the item the character carries, the most they can discard or give, plus room
 // for its arrows; the script sets --digits to how many digits that is
 #character-discard-quantity,

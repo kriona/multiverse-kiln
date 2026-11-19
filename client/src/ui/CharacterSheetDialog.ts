@@ -223,6 +223,13 @@ export class CharacterSheetDialog
 	private readonly items = getElement('character-sheet-items', HTMLUListElement);
 	private readonly noItems = getElement('character-sheet-no-items', HTMLElement);
 	private readonly allEquipped = getElement('character-sheet-all-equipped', HTMLElement);
+	private readonly itemSearch = getElement('character-sheet-item-search', HTMLInputElement);
+	private readonly noItemMatches = getElement('character-sheet-no-matches', HTMLElement);
+
+	/**
+	 * Waits for typing in the Inventory search to pause before saying how many items match
+	 */
+	private searchTimer: number | undefined;
 	private readonly deleteButton = getElement('character-sheet-delete', HTMLButtonElement);
 	private readonly restoreButton = getElement('character-sheet-restore', HTMLButtonElement);
 	private readonly leaveButton = getElement('character-sheet-leave', HTMLButtonElement);
@@ -318,6 +325,22 @@ export class CharacterSheetDialog
 	{
 		this.leaveGroup = (leaveGroup ?? ((universeId, groupId, characterId) => takeOutOfGroup(groupApi, universeId, groupId, characterId)));
 		setUpInfoTip(getElement('character-sheet-social-info', HTMLButtonElement), getElement('character-sheet-social-about', HTMLElement));
+		this.itemSearch.addEventListener('input', () =>
+		{
+			const count = this.filterItems();
+
+			window.clearTimeout(this.searchTimer);
+			this.searchTimer = window.setTimeout(() =>
+			{
+				announce(t({
+					id: 'characterSheet.itemMatches',
+					defaultMessage: '{count, plural, =0 {No items match.} one {# item matches.} other {# items match.}}',
+					description: 'Read out by screen readers once typing in the search field beside the Inventory heading on a character\'s sheet pauses: how many of the items they carry have a name containing what was typed'
+				}, {
+					count
+				}));
+			}, 500);
+		});
 		this.appearanceChoices = new AppearanceChoices(getElement('character-appearance-choices', HTMLElement), () =>
 		{
 			this.appearanceTracker.check();
@@ -536,6 +559,8 @@ export class CharacterSheetDialog
 		this.giveButton.hidden = true;
 		this.appearanceButton.hidden = true;
 		this.current = undefined;
+		this.itemSearch.value = '';
+		window.clearTimeout(this.searchTimer);
 		showMessage(this.error, undefined);
 		this.dialog.showModal();
 		this.title.focus();
@@ -2166,7 +2191,8 @@ export class CharacterSheetDialog
 	 * player's language sorts them, with how many of each, and a menu beside each of what can be done with
 	 * it: everything for those who may change the character, and Inspect for others. Equipped and worn
 	 * items show in the Equipment and Social Equipment lists instead, so an item of which some are in slots lists how
-	 * many are left
+	 * many are left. The search field beside the Inventory heading shows while it has items, and keeps narrowing it as
+	 * the sheet loads again
 	 *
 	 * @param sheet The character
 	 * @param canChange Whether the sheet offers to change the character
@@ -2195,12 +2221,38 @@ export class CharacterSheetDialog
 				quantity: left
 			}), inspect);
 
+			row.dataset.name = name.toLocaleLowerCase(currentLocale());
 			row.append(createItemIcon(item.category, sheet.ruleset), text, menu);
 
 			return(row);
 		}));
 		this.noItems.hidden = (sheet.items.length > 0);
 		this.allEquipped.hidden = ((items.length > 0) || (sheet.items.length === 0));
+		this.itemSearch.hidden = ((items.length === 0) && (this.itemSearch.value === ''));
+		this.filterItems();
+	}
+
+	/**
+	 * Shows only the items in the Inventory list whose names contain what is typed in its search field,
+	 * ignoring capitals, and says so when none do
+	 *
+	 * @return How many items are shown
+	 */
+	private filterItems(): number
+	{
+		const query = this.itemSearch.value.trim().toLocaleLowerCase(currentLocale());
+		const rows = [...this.items.children].filter((row) => (row instanceof HTMLElement));
+		let shown = 0;
+
+		for (const row of rows)
+		{
+			row.hidden = !(row.dataset.name ?? '').includes(query);
+			shown += (row.hidden ? 0 : 1);
+		}
+
+		this.noItemMatches.hidden = ((shown > 0) || (rows.length === 0));
+
+		return(shown);
 	}
 
 	/**

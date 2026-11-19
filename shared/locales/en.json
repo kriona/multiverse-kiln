@@ -1455,9 +1455,21 @@
 		"defaultMessage": "{quantity, plural, =1 {{item}} other {{item} x#}}",
 		"description": "On a character's sheet, an item they carry that isn't equipped or worn for its look, with how many when there is more than one, as a link that inspects it; {item} is the item's name, e.g. \"Arrow x20\""
 	},
+	"characterSheet.itemMatches": {
+		"defaultMessage": "{count, plural, =0 {No items match.} one {# item matches.} other {# items match.}}",
+		"description": "Read out by screen readers once typing in the search field beside the Inventory heading on a character's sheet pauses: how many of the items they carry have a name containing what was typed"
+	},
 	"characterSheet.itemMenu": {
 		"defaultMessage": "Actions for {item}",
 		"description": "Name for screen readers, and tooltip, of the button of three vertical dots beside an item on a character's sheet, and beside its name in the Inspect dialog opened from the sheet, which opens a menu of what can be done with the item, such as Equip, Give and Discard; {item} is the item's name"
+	},
+	"characterSheet.itemSearch": {
+		"defaultMessage": "Search by name",
+		"description": "Shown in the empty field beside the Inventory heading on a character's sheet, which narrows the items down by name"
+	},
+	"characterSheet.itemSearchLabel": {
+		"defaultMessage": "Search the inventory by name",
+		"description": "Name of the field beside the Inventory heading on a character's sheet that narrows the items down by name, for screen readers"
 	},
 	"characterSheet.items": {
 		"defaultMessage": "Inventory",
@@ -1502,6 +1514,10 @@
 	"characterSheet.money": {
 		"defaultMessage": "Money",
 		"description": "On a character's sheet, the label of the coins they carry, such as 15gp 5sp"
+	},
+	"characterSheet.noItemMatches": {
+		"defaultMessage": "No items match the search.",
+		"description": "Shown on a character's sheet under the Inventory search field when no item they carry has a name containing what was typed"
 	},
 	"characterSheet.noItems": {
 		"defaultMessage": "Carries nothing.",
