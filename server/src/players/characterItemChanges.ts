@@ -3,7 +3,8 @@ import type { ItemsReceivedPayload } from '@multiverse-kiln/shared';
 /**
  * A change to a character's items or equipment, for their player's windows
  *
- * - changed: the character's items or equipment changed, so a sheet showing them loads them again
+ * - changed: the character's items, equipment or look changed, so a sheet showing them loads them again,
+ *   and a list showing their avatar shows it again
  * - received: another character gave the character items, for a toast saying who gave them what, with
  *   the item named in each window's language: received() gives the toast for the languages a window
  *   wants universe text in, most wanted first (windowLanguages())

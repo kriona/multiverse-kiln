@@ -419,8 +419,8 @@ export enum SessionServerMessageType
 	Account = 'account',
 
 	/**
-	 * One of the player's characters' items or equipment changed, so a sheet showing them loads them again
-	 * (payload: CharacterItemsPayload)
+	 * One of the player's characters' items, equipment or look changed, so a sheet showing them loads them
+	 * again, and a list showing their avatar shows it again (payload: CharacterItemsPayload)
 	 */
 	CharacterItems = 'characterItems',
 

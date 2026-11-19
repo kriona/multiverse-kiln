@@ -17,6 +17,7 @@ import { showNoticeScreen, showScreen, showStatus } from './ui/dom';
 import { GroupScreen } from './ui/GroupScreen';
 import { InviteDialog } from './ui/InviteDialog';
 import { InviteScreen } from './ui/InviteScreen';
+import { reloadOnCharacterItems } from './ui/itemNotices';
 import { takeOutOfGroup } from './ui/leavingGroup';
 import { LobbyScreen } from './ui/LobbyScreen';
 import { AreaView } from './ui/AreaView';
@@ -168,6 +169,8 @@ export class GamePage
 			// The window playing them in the group goes to the lobby with them, as the group's Leave group does
 			return((playingThem ? this.leaveGroup(characterId) : takeOutOfGroup(this.groupApi, universeId, groupId, characterId)));
 		});
+
+		reloadOnCharacterItems((change) => (change.universeId === this.universe?.id), () => this.reloadAvatars());
 
 		this.createGroupDialog = new CreateGroupDialog(this.groupApi, (groupId, characterId) =>
 		{
@@ -415,6 +418,29 @@ export class GamePage
 			this.lobbyScreen.showCharacterError(describeEditorError(error, characterMessages.loadFailed));
 
 			return(undefined);
+		}
+	}
+
+	/**
+	 * Loads the player's characters again after one's items or appearance changed, and shows each one's
+	 * avatar now in the lobby's and group's lists, in place, since nothing else they show changes
+	 */
+	private async reloadAvatars(): Promise<void>
+	{
+		const universe = this.universe;
+
+		if (!universe)
+		{
+			return;
+		}
+
+		const list = await this.characterApi.listCharacters(universe.id);
+
+		if ((this.universe === universe) && this.characters)
+		{
+			this.characters = list;
+			this.lobbyScreen.showAvatars(list);
+			this.groupScreen.showAvatars(list);
 		}
 	}
 

@@ -9,6 +9,7 @@ import { profileFieldOf, type ProfileApi } from '../network/profileApi';
 import { currentPageAddress, loginPageUrl, NEXT_PARAMETER, playerPageUrl, PROVIDER_LINKED_PARAMETER, readNextPage, readPageParameter, rememberLoginAddress, replacePageParameters, takeProviderLinkError, TWO_FACTOR_SETUP_PARAMETER } from '../pages';
 import { AccountDeleteDialog } from './AccountDeleteDialog';
 import { showAccountName } from './accountMenu';
+import { updateAvatars } from './avatarImages';
 import { ChangeTracker } from './changeTracker';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { ChipCombobox } from './ChipCombobox';
@@ -17,6 +18,7 @@ import { getElement, setButtonLabel, setPageTitle, showMessage, showScreen } fro
 import { EmailChangeDialog } from './EmailChangeDialog';
 import { clearFieldErrors, reportFieldError, setFieldError } from './fieldErrors';
 import { formMessages } from './formMessages';
+import { reloadOnCharacterItems } from './itemNotices';
 import { languageChoices } from './languagePicker';
 import { PasswordChangeDialog } from './PasswordChangeDialog';
 import { profileCharacterLabel, showProfileCharacters } from './profileCharacters';
@@ -191,6 +193,8 @@ export class OwnProfileScreen
 	constructor(private readonly api: ProfileApi, private readonly authApi: AuthApi, private readonly sheet: CharacterSheetDialog, accountDeleted: () => void)
 	{
 		const numbers = new Intl.NumberFormat(currentLocale());
+
+		reloadOnCharacterItems(() => (this.profile !== undefined), () => this.reloadAvatars());
 
 		this.deleteDialog = new AccountDeleteDialog(api, authApi, () =>
 		{
@@ -717,6 +721,17 @@ export class OwnProfileScreen
 				description: 'Shown on the player\'s own profile page when their characters couldn\'t be loaded again'
 			}));
 		}
+	}
+
+	/**
+	 * Loads the player's characters again after one's items or appearance changed, and shows each one's
+	 * avatar now in the list, in place, since nothing else it shows changes
+	 */
+	private async reloadAvatars(): Promise<void>
+	{
+		const profile = await this.api.getOwnProfile();
+
+		updateAvatars(this.characterList, profile.characters);
 	}
 
 	/**

@@ -4,7 +4,8 @@ import os from 'os';
 import path from 'path';
 import sharp from 'sharp';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { avatarPath, avatarPreviewPath, characterPath, EDITOR_UNIVERSES_PATH, type AvatarManifest, type CharacterSheet, type CreatedPayload, type ItemSettings } from '@multiverse-kiln/shared';
+import { Client as SDKClient } from '@colyseus/sdk';
+import { avatarPath, avatarPreviewPath, characterPath, charactersPath, EDITOR_UNIVERSES_PATH, PROFILE_PATH, SESSION_ROOM_NAME, SessionServerMessageType, type AvatarManifest, type CharacterItemsPayload, type CharacterListPayload, type CharacterSheet, type CreatedPayload, type ItemSettings, type OwnProfilePayload } from '@multiverse-kiln/shared';
 
 import { avatarStorageKey, useAvatarArt } from '../src/avatars/characterAvatars.js';
 import { saveAvatarHash } from '../src/db/avatarRepo.js';
@@ -14,6 +15,7 @@ import { inTransaction } from '../src/db/transactions.js';
 import { liveVersion } from '../src/db/universeVersions.js';
 import { getObject } from '../src/storage/objectStorage.js';
 import { addCharacter, defaultRaceId, dwarfFighter } from './db/fixtures.js';
+import { Inbox } from './inbox.js';
 import { addPlayer, logInBrowser, type TestBrowser } from './players.js';
 import { getTestServer, testServerUrl } from './testServer.js';
 
@@ -584,6 +586,66 @@ describe('Avatars', () =>
 		assert.strictEqual((await request(undefined, 'GET', avatarPreviewPath('stickFigure', 'pf1e', 'human', 'femmeThin', 'darkRed'))).status, 404);
 		assert.strictEqual((await request(undefined, 'GET', avatarPreviewPath('stickFigure', 'pf1e', 'dwarf', 'femmeThin', 'plaid'))).status, 404);
 		assert.strictEqual((await request(undefined, 'GET', avatarPreviewPath('oils', 'pf1e', 'dwarf', 'femmeThin', 'darkRed'))).status, 404);
+	});
+
+	it('tells the player\'s windows each time the look changes, where the lists give the new hash', async () =>
+	{
+		/**
+		 * Brokk's avatar hash as the universe's list of Ada's characters and her own profile give it
+		 *
+		 * @return The two hashes
+		 */
+		async function listedHashes(): Promise<(string | null | undefined)[]>
+		{
+			const list = (await (await request(ada, 'GET', charactersPath(universeId))).json()) as CharacterListPayload;
+			const profile = (await (await request(ada, 'GET', PROFILE_PATH)).json()) as OwnProfilePayload;
+
+			return([
+				list.characters.find((character) => (character.id === brokkId))?.avatarHash,
+				profile.characters.find((character) => (character.id === brokkId))?.avatarHash
+			]);
+		}
+
+		const sdk = new SDKClient(testServerUrl.replace(/^http/, 'ws'), { headers: { cookie: ada.cookie } });
+		const room = await sdk.joinOrCreate(SESSION_ROOM_NAME);
+		const inbox = new Inbox(room, Object.values(SessionServerMessageType));
+		const changes: [string, string, unknown][] = [
+			['PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }],
+			['POST', 'items/equip', { itemId: leatherArmorId, hand: null, ring: null }],
+			['POST', 'hidden-slots', { slot: 'armor', hidden: true }],
+			['POST', 'hidden-slots', { slot: 'armor', hidden: false }],
+			['POST', 'social', { slot: 'armor', itemId: hideArmorId }],
+			['POST', 'social', { slot: 'armor', itemId: null }],
+			['POST', 'items/unequip', { itemId: leatherArmorId, slot: null }]
+		];
+
+		try
+		{
+			await inbox.take(SessionServerMessageType.Account);
+
+			let before = (await sheet()).avatarHash;
+
+			assert.deepStrictEqual(await listedHashes(), [before, before]);
+
+			for (const [method, route, body] of changes)
+			{
+				assert.strictEqual(await change(method, route, body), 204, route);
+				assert.deepStrictEqual(await inbox.take<CharacterItemsPayload>(SessionServerMessageType.CharacterItems), {
+					universeId,
+					characterId: brokkId
+				}, route);
+
+				const { avatarHash } = await sheet();
+
+				assert.notStrictEqual(avatarHash, before, route);
+				assert.deepStrictEqual(await listedHashes(), [avatarHash, avatarHash], route);
+				before = avatarHash;
+			}
+		}
+		finally
+		{
+			await room.leave();
+		}
 	});
 
 	it('deletes the stored avatar with the character', async () =>

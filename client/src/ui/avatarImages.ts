@@ -65,6 +65,9 @@ export function avatarFrame(characterId: string, avatarHash: string | null, alt:
 	const frame = document.createElement('span');
 
 	frame.className = `avatar avatar-${size}`;
+	frame.dataset.characterId = characterId;
+	frame.dataset.avatarHash = (avatarHash ?? '');
+	frame.dataset.size = size;
 
 	if (avatarHash === null)
 	{
@@ -87,6 +90,30 @@ export function avatarFrame(characterId: string, avatarHash: string | null, alt:
 	frame.append(image);
 
 	return(frame);
+}
+
+/**
+ * Shows the avatars of the hashes given in the portraits and thumbnails under an element, replacing only
+ * the frames whose hash changed. The buttons around them stay, so focus stays where it is, and so does a
+ * dialog's way back to the button that opened it
+ *
+ * @param container The element the avatars are under, such as a list of characters
+ * @param characters The characters, with the hash of each one's avatar now
+ */
+export function updateAvatars(container: ParentNode, characters: readonly Pick<AvatarCharacter, 'id' | 'avatarHash'>[]): void
+{
+	const hashes = new Map(characters.map((character) => [character.id, character.avatarHash]));
+
+	for (const frame of container.querySelectorAll<HTMLElement>('.avatar-portrait, .avatar-thumbnail'))
+	{
+		const characterId = (frame.dataset.characterId ?? '');
+		const avatarHash = hashes.get(characterId);
+
+		if ((avatarHash !== undefined) && ((avatarHash ?? '') !== frame.dataset.avatarHash))
+		{
+			frame.replaceWith(avatarFrame(characterId, avatarHash, '', ((frame.dataset.size === 'portrait') ? 'portrait' : 'thumbnail')));
+		}
+	}
 }
 
 /**

@@ -529,6 +529,21 @@ export class GroupScreen
 	}
 
 	/**
+	 * Shows the avatars of the player's characters as a list loaded again after a change to their items
+	 * or appearance gives them, in place, leaving focus where it is
+	 *
+	 * @param list The characters, oldest first, and the universe's ruleset
+	 */
+	showAvatars(list: CharacterListPayload): void
+	{
+		if (this.characters)
+		{
+			this.characters = list;
+			this.characterChoices.showAvatars(list);
+		}
+	}
+
+	/**
 	 * Shows a message in the toolbar
 	 *
 	 * @param message Text to show; empty to clear it

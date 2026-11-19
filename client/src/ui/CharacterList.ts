@@ -4,7 +4,7 @@ import sheetIcon from 'virtual:icon/ph:scroll';
 import { t } from '../localization';
 import { characterMessages } from './characterMessages';
 import { setButtonLabel } from './dom';
-import { avatarElement } from './avatarImages';
+import { avatarElement, updateAvatars } from './avatarImages';
 import { characterDescription } from './raceAndClassNames';
 
 /**
@@ -57,6 +57,17 @@ export class CharacterList
 
 		this.none.hidden = (characters.characters.length > 0);
 		this.list.replaceChildren(...characters.characters.map((character) => this.renderCharacter(characters, character, (character.id === playingId), groupId)));
+	}
+
+	/**
+	 * Shows each character's avatar as a list loaded again gives it, in place, for a change that changes
+	 * nothing else the list shows, such as to a character's items or appearance
+	 *
+	 * @param characters The characters, with the hash of each one's avatar now
+	 */
+	showAvatars(characters: CharacterListPayload): void
+	{
+		updateAvatars(this.list, characters.characters);
 	}
 
 	/**

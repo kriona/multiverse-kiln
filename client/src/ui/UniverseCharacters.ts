@@ -6,12 +6,14 @@ import { describeEditorError } from '../network/editorApi';
 import { characterMessages } from './characterMessages';
 import type { CharacterSheetDialog } from './CharacterSheetDialog';
 import { getElement, showMessage } from './dom';
-import { avatarElement } from './avatarImages';
+import { avatarElement, updateAvatars } from './avatarImages';
+import { reloadOnCharacterItems } from './itemNotices';
 import { characterDescription } from './raceAndClassNames';
 
 /**
  * The list of the player's characters on a universe's page: shown while the browser is logged in, and
- * hidden otherwise, since the page itself doesn't need a login
+ * hidden otherwise, since the page itself doesn't need a login. When one's items or appearance change, in
+ * any window, it shows their avatar now in place
  */
 export class UniverseCharacters
 {
@@ -32,6 +34,22 @@ export class UniverseCharacters
 	 */
 	constructor(private readonly api: CharacterApi, private readonly universeId: string, private readonly sheet: CharacterSheetDialog)
 	{
+		reloadOnCharacterItems((change) => ((change.universeId === this.universeId) && !this.panel.hidden), () => this.reloadAvatars());
+	}
+
+	/**
+	 * Loads the characters again after one's items or appearance changed, and shows each one's avatar now
+	 * in place, since nothing else the list shows changes
+	 */
+	private async reloadAvatars(): Promise<void>
+	{
+		const version = this.version;
+		const characters = await this.api.listCharacters(this.universeId);
+
+		if (version === this.version)
+		{
+			updateAvatars(this.list, characters.characters);
+		}
 	}
 
 	/**
