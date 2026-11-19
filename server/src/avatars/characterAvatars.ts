@@ -3,13 +3,16 @@
  * STRUCTURE-OVERVIEW.md)
  *
  * A character's avatar is stored once, at avatarStorageKey(), with the hash of the layers it was made from
- * in characters.avatar_hash. Pages ask for it with the hash of the character's look now, which the server
- * sends with the character, and the avatar route makes it again first when the stored one is out of date.
- * So nothing has to make an avatar as the look changes: equipping, a universe save unequipping items or
- * changing "Looks like", and new art all show the next time it is asked for
+ * in the file's metadata and in characters.avatar_hash. Pages ask for it with the hash of the character's
+ * look now, which the server sends with the character, and the avatar route makes it again first when the
+ * stored one is out of date. So nothing has to make an avatar as the look changes: equipping, a universe
+ * save unequipping items or changing "Looks like", and new art all show the next time it is asked for
  *
  * Create Character's previews (the base over the background, without items) are stored the same way,
  * one for each art type, race, body type and background, with their hash in the file's metadata
+ *
+ * Requests for an avatar or preview that is already being read or made wait for it and share it, rather
+ * than each making and storing it again
  */
 import { avatarPicture, AVATAR_MANIFEST, layersHash, type AvatarEquippedItem, type AvatarLook, type AvatarManifest, type AvatarPicture, type Ruleset } from '@multiverse-kiln/shared';
 
@@ -17,13 +20,18 @@ import { findStoredLooks, saveAvatarHash, type StoredLook } from '../db/avatarRe
 import { listLayeredEquipmentOf } from '../db/equipmentRepo.js';
 import { findAvatarItemKeys } from '../db/itemRepo.js';
 import { findAvatarRaceKeys } from '../db/raceRepo.js';
-import { getObject, getObjectWithMetadata, putObject } from '../storage/objectStorage.js';
+import { deleteObjects, getObjectWithMetadata, putObject } from '../storage/objectStorage.js';
 import { composeLayers, fileVersionsOf, useArtFolder } from './avatarArt.js';
 
 /**
- * The metadata key a stored preview keeps its hash under
+ * The metadata key a stored avatar or preview keeps its hash under
  */
-const PREVIEW_HASH_METADATA = 'look-hash';
+const LOOK_HASH_METADATA = 'look-hash';
+
+/**
+ * The PNGs being read or made now, by their storage key and hash
+ */
+const pending = new Map<string, Promise<Buffer>>();
 
 /**
  * The manifest avatars are drawn from: AVATAR_MANIFEST, but for tests
@@ -216,25 +224,82 @@ export async function characterAvatarPng(characterId: string, knownEtag?: string
 		});
 	}
 
-	const stored = ((avatar.look.avatarHash === picture.hash) ? await getObject(avatarStorageKey(characterId)) : undefined);
-
-	if (stored)
-	{
-		return({
-			png: stored,
-			hash: picture.hash
-		});
-	}
-
-	const png = await composeLayers(picture.layers);
-
-	await putObject(avatarStorageKey(characterId), png, 'image/png');
-	await saveAvatarHash(characterId, picture.hash);
-
 	return({
-		png,
+		png: await storedOrMade(avatarStorageKey(characterId), picture.hash, () => storeAvatar(characterId, picture)),
 		hash: picture.hash
 	});
+}
+
+/**
+ * Makes a character's avatar and stores it. A character deleted while it was being made had their stored
+ * avatar deleted before this one was stored, so it is deleted here
+ *
+ * @param characterId The character's ID
+ * @param picture What the avatar draws
+ * @return The PNG
+ */
+async function storeAvatar(characterId: string, picture: AvatarPicture): Promise<Buffer>
+{
+	const key = avatarStorageKey(characterId);
+	const png = await composeLayers(picture.layers);
+
+	await putObject(key, png, 'image/png', { [LOOK_HASH_METADATA]: picture.hash });
+
+	if (!(await saveAvatarHash(characterId, picture.hash)))
+	{
+		await deleteObjects([key]);
+	}
+
+	return(png);
+}
+
+/**
+ * The PNG stored under a key with a hash, or else one made and stored. Requests for the same key and hash
+ * while it is being read or made share it
+ *
+ * @param key Where it is stored
+ * @param hash The hash of what it draws, which the stored file keeps in its metadata
+ * @param make Makes and stores it
+ * @return The PNG
+ */
+function storedOrMade(key: string, hash: string, make: () => Promise<Buffer>): Promise<Buffer>
+{
+	const id = `${key}#${hash}`;
+	const shared = pending.get(id);
+
+	if (shared)
+	{
+		return(shared);
+	}
+
+	const png = readOrMake(key, hash, make)
+		.finally(() =>
+		{
+			pending.delete(id);
+		});
+
+	pending.set(id, png);
+	return(png);
+}
+
+/**
+ * The PNG stored under a key, when it has a hash, or else one made and stored
+ *
+ * @param key Where it is stored
+ * @param hash The hash of what it draws
+ * @param make Makes and stores it
+ * @return The PNG
+ */
+async function readOrMake(key: string, hash: string, make: () => Promise<Buffer>): Promise<Buffer>
+{
+	const stored = await getObjectWithMetadata(key);
+
+	if (stored && (stored.metadata[LOOK_HASH_METADATA] === hash))
+	{
+		return(stored.body);
+	}
+
+	return(make());
 }
 
 /**
@@ -275,15 +340,12 @@ export async function previewPicture(artType: string, ruleset: Ruleset, raceKey:
 export async function previewPng(picture: AvatarPicture, artType: string, ruleset: Ruleset, raceKey: string, bodyType: string, background: string): Promise<Buffer>
 {
 	const key = previewStorageKey(artType, ruleset, raceKey, bodyType, background);
-	const stored = await getObjectWithMetadata(key);
 
-	if (stored && (stored.metadata[PREVIEW_HASH_METADATA] === picture.hash))
+	return(storedOrMade(key, picture.hash, async () =>
 	{
-		return(stored.body);
-	}
+		const png = await composeLayers(picture.layers);
 
-	const png = await composeLayers(picture.layers);
-
-	await putObject(key, png, 'image/png', { [PREVIEW_HASH_METADATA]: picture.hash });
-	return(png);
+		await putObject(key, png, 'image/png', { [LOOK_HASH_METADATA]: picture.hash });
+		return(png);
+	}));
 }

@@ -42,7 +42,8 @@ describe('avatarRepo', () =>
 		});
 
 		assert.strictEqual(await setCharacterAppearance(characterId, { artType: 'lucia', background: 'darkRed' }), true);
-		await saveAvatarHash(characterId, '0123456789abcdef');
+		assert.strictEqual(await saveAvatarHash(characterId, '0123456789abcdef'), true);
+		assert.strictEqual(await saveAvatarHash('00000000-0000-4000-8000-000000000000', '0123456789abcdef'), false);
 
 		const changed = (await findStoredLooks([characterId])).get(characterId);
 

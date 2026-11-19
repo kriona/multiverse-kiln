@@ -67,6 +67,22 @@ interface ArtFile
 const files = new Map<string, ArtFile>();
 
 /**
+ * How many avatars may be composed at once. sharp works on libuv's thread pool, which reading files and
+ * hashing passwords share, so a burst of compositions waits its turn rather than taking all of it
+ */
+const MAX_COMPOSING = 2;
+
+/**
+ * How many avatars are being composed
+ */
+let composing = 0;
+
+/**
+ * The compositions waiting for a turn, first come first
+ */
+const waitingToCompose: (() => void)[] = [];
+
+/**
  * Reads a file of the art folder, or the copy kept when it hasn't changed
  *
  * @param file Its path, relative to AVATARS_FOLDER
@@ -133,13 +149,67 @@ export async function fileVersionsOf(layers: readonly AvatarLayer[]): Promise<Ma
 }
 
 /**
- * Composes an avatar's layers into a PNG the size of an avatar, each over the ones before it. A layer
- * whose file can't be read is left out and logged
+ * Composes an avatar's layers into a PNG the size of an avatar, each over the ones before it, at most
+ * MAX_COMPOSING at once. A layer whose file can't be read is left out and logged
  *
  * @param layers The layers, from the first drawn to the last
  * @return The PNG
  */
 export async function composeLayers(layers: readonly AvatarLayer[]): Promise<Buffer>
+{
+	await takeComposingTurn();
+
+	try
+	{
+		return(await drawLayers(layers));
+	}
+	finally
+	{
+		endComposingTurn();
+	}
+}
+
+/**
+ * Waits until fewer than MAX_COMPOSING avatars are being composed, then counts one more
+ */
+async function takeComposingTurn(): Promise<void>
+{
+	if (composing < MAX_COMPOSING)
+	{
+		composing++;
+		return;
+	}
+
+	await new Promise<void>((resolve) =>
+	{
+		waitingToCompose.push(resolve);
+	});
+}
+
+/**
+ * Hands a finished composition's turn to the next one waiting, or counts one fewer when none is
+ */
+function endComposingTurn(): void
+{
+	const next = waitingToCompose.shift();
+
+	if (next)
+	{
+		next();
+	}
+	else
+	{
+		composing--;
+	}
+}
+
+/**
+ * Draws an avatar's layers into a PNG the size of an avatar (composeLayers())
+ *
+ * @param layers The layers, from the first drawn to the last
+ * @return The PNG
+ */
+async function drawLayers(layers: readonly AvatarLayer[]): Promise<Buffer>
 {
 	const inputs: OverlayOptions[] = [];
 

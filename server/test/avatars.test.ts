@@ -3,9 +3,11 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import sharp from 'sharp';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { avatarPath, avatarPreviewPath, characterPath, EDITOR_UNIVERSES_PATH, type AvatarManifest, type CharacterSheet, type CreatedPayload, type ItemSettings } from '@multiverse-kiln/shared';
 
 import { avatarStorageKey, useAvatarArt } from '../src/avatars/characterAvatars.js';
+import { saveAvatarHash } from '../src/db/avatarRepo.js';
 import { createCharacter, giveCharacterItems } from '../src/db/characterRepo.js';
 import { createCustomItem, findDefaultItemIds } from '../src/db/itemRepo.js';
 import { inTransaction } from '../src/db/transactions.js';
@@ -209,6 +211,34 @@ async function request(browser: TestBrowser | undefined, method: string, pathNam
 	}));
 }
 
+/**
+ * Runs a function before each time a file is written to object storage under a key, until stopped
+ *
+ * @param key The key
+ * @param onPut Runs before each write, which waits for it
+ * @return Stops running it
+ */
+function beforePuts(key: string, onPut: () => Promise<void> | void): () => void
+{
+	const prototype = S3Client.prototype as unknown as { send: (this: S3Client, command: unknown, ...rest: unknown[]) => Promise<unknown> };
+	const originalSend = prototype.send;
+
+	prototype.send = async function watchedSend(this: S3Client, command: unknown, ...rest: unknown[]): Promise<unknown>
+	{
+		if ((command instanceof PutObjectCommand) && (command.input.Key === key))
+		{
+			await onPut();
+		}
+
+		return(originalSend.call(this, command, ...rest));
+	};
+
+	return(() =>
+	{
+		prototype.send = originalSend;
+	});
+}
+
 describe('Avatars', () =>
 {
 	let folder: string;
@@ -380,6 +410,82 @@ describe('Avatars', () =>
 		assert.deepStrictEqual(await pixelAt(png, { x: ARMOR_AT.x + 1, y: ARMOR_AT.y + 1 }), ARMOR);
 		assert.deepStrictEqual(await pixelAt(png, { x: SWORD_AT.x + 1, y: SWORD_AT.y + 1 }), SWORD);
 		assert.deepStrictEqual(await pixelAt(png, { x: OFF_HAND_SWORD_AT.x + 1, y: OFF_HAND_SWORD_AT.y + 1 }), SWORD);
+	});
+
+	it('makes an out-of-date avatar once for requests that arrive together', async () =>
+	{
+		assert.strictEqual((await request(undefined, 'GET', avatarPath(brokkId, null))).status, 200);
+		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }), 204);
+
+		let puts = 0;
+		const stopWatching = beforePuts(avatarStorageKey(brokkId), () =>
+		{
+			puts++;
+		});
+		let responses: Response[];
+
+		try
+		{
+			responses = await Promise.all(Array.from({ length: 20 }, () => request(undefined, 'GET', avatarPath(brokkId, null))));
+		}
+		finally
+		{
+			stopWatching();
+		}
+
+		assert.deepStrictEqual(responses.map((response) => response.status), Array.from({ length: 20 }, () => 200));
+		assert.deepStrictEqual(await pixelAt(Buffer.from(await responses[19].arrayBuffer()), { x: 5, y: 5 }), OTHER_BACKGROUND);
+		assert.strictEqual(puts, 1);
+	});
+
+	it('makes the avatar again when the stored one isn\'t of the hash saved for it', async () =>
+	{
+		await avatar();
+		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }), 204);
+
+		// As when two requests overlap, and the one for the old look stores its PNG after the new look's
+		// hash is saved
+		const { avatarHash } = await sheet();
+
+		assert.ok(avatarHash);
+		assert.strictEqual(await saveAvatarHash(brokkId, avatarHash), true);
+		assert.deepStrictEqual(await pixelAt(await avatar(), { x: 5, y: 5 }), OTHER_BACKGROUND);
+	});
+
+	it('deletes an avatar stored while its character was being deleted', async () =>
+	{
+		let reached = (): void => undefined;
+		let release = (): void => undefined;
+		const putReached = new Promise<void>((resolve) =>
+		{
+			reached = resolve;
+		});
+		const putReleased = new Promise<void>((resolve) =>
+		{
+			release = resolve;
+		});
+		const stopWatching = beforePuts(avatarStorageKey(brokkId), async () =>
+		{
+			reached();
+			await putReleased;
+		});
+
+		try
+		{
+			const response = request(undefined, 'GET', avatarPath(brokkId, null));
+
+			await putReached;
+			assert.strictEqual((await request(ada, 'DELETE', characterPath(universeId, brokkId))).status, 204);
+			release();
+			assert.strictEqual((await response).status, 200);
+		}
+		finally
+		{
+			release();
+			stopWatching();
+		}
+
+		assert.strictEqual(await getObject(avatarStorageKey(brokkId)), undefined);
 	});
 
 	it('answers 304 to a browser that has the avatar, and refuses one never drawn', async () =>

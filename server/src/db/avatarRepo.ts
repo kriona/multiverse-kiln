@@ -197,13 +197,19 @@ export async function listCharacterIdsOf(owner: { universeId: string } | { playe
  * @param characterId The character's ID
  * @param avatarHash The hash
  * @param executor The database, or a transaction
+ * @return Whether the character exists
  */
-export async function saveAvatarHash(characterId: string, avatarHash: string, executor: Executor = db): Promise<void>
+export async function saveAvatarHash(characterId: string, avatarHash: string, executor: Executor = db): Promise<boolean>
 {
-	await executor
+	const saved = await executor
 		.update(characters)
 		.set({
 			avatarHash
 		})
-		.where(eq(characters.id, characterId));
+		.where(eq(characters.id, characterId))
+		.returning({
+			id: characters.id
+		});
+
+	return(saved.length > 0);
 }
