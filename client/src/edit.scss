@@ -236,6 +236,8 @@ $editor-chat-inset: 16px;
 	.editor-save-bar
 	{
 		border-top-color: $draft-background;
+		border-bottom-color: $draft-background;
+		background: $background-control-hover;
 	}
 }
 
@@ -427,6 +429,7 @@ $save-bar-height: 56px;
 	min-height: $save-bar-height;
 	padding: 10px 16px;
 	border-top: 1px solid $border;
+	border-bottom: 1px solid $border;
 	background: $background-panel;
 	// The page's text size; the footer rule in _shared.scss makes text in every <footer> smaller
 	font-size: 1rem;
