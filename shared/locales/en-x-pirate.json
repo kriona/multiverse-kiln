@@ -1363,10 +1363,6 @@
 		"message": "Be ye sure ye want to toss {item} overboard?",
 		"source": "Are you sure you want to discard {item}?"
 	},
-	"characterSheet.emptySlot": {
-		"message": "Bare",
-		"source": "Empty"
-	},
 	"characterSheet.equip": {
 		"message": "Strap On",
 		"source": "Equip"
@@ -1552,8 +1548,12 @@
 		"source": "Size"
 	},
 	"characterSheet.slotChanged": {
-		"message": "{item, select, none {{slot} be bare.} other {{name} has {item} on {slot}.}}",
-		"source": "{item, select, none {{slot} is empty.} other {{name} has {item} in {slot}.}}"
+		"message": "{emptied, select, yes {{slot} be bare.} other {{name} has {item} on {slot}.}}",
+		"source": "{emptied, select, yes {{slot} is empty.} other {{name} has {item} in {slot}.}}"
+	},
+	"characterSheet.slotChoice.empty": {
+		"message": "Leave it bare",
+		"source": "Empty"
 	},
 	"characterSheet.slotHiddenAnnouncement": {
 		"message": "{hidden, select, true {{slot} be stashed from {name}'s likeness.} other {{slot} shows on {name}'s likeness again.}}",

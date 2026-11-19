@@ -98,11 +98,6 @@ const sheetMessages = defineMessages({
 		defaultMessage: 'Could not change how the character looks.',
 		description: 'Shown on a character\'s sheet, or in its Appearance dialog, when wearing an item for its look, hiding a slot from the avatar (the picture of the character) or changing the appearance failed'
 	},
-	empty: {
-		id: 'characterSheet.emptySlot',
-		defaultMessage: 'Empty',
-		description: 'The choice in the dialog choosing the item in one of a character\'s slots, from their sheet, that takes the item out'
-	},
 	itemMenu: {
 		id: 'characterSheet.itemMenu',
 		defaultMessage: 'Actions for {item}',
@@ -134,17 +129,17 @@ const EQUIP_IN_HAND: Record<EquipHand, MessageDescriptor> = defineMessages({
 	main: {
 		id: 'characterSheet.equipMainHand',
 		defaultMessage: 'Equip in main hand',
-		description: 'Item in the menu beside an item held in one hand, such as a dagger or a torch, on a character\'s sheet, that equips it in the character\'s main hand'
+		description: 'Item in the menu beside an item held in one hand, such as a dagger or a torch, on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that equips it in the character\'s main hand'
 	},
 	off: {
 		id: 'characterSheet.equipOffHand',
 		defaultMessage: 'Equip in off hand',
-		description: 'Item in the menu beside an item held in one hand, such as a dagger, a shield or a torch, on a character\'s sheet, that equips it in the character\'s other hand'
+		description: 'Item in the menu beside an item held in one hand, such as a dagger, a shield or a torch, on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that equips it in the character\'s other hand'
 	},
 	both: {
 		id: 'characterSheet.equipBothHands',
 		defaultMessage: 'Equip in both hands',
-		description: 'Item in the menu beside a weapon held in one hand, such as a longsword, on a character\'s sheet, that equips it gripped with both hands'
+		description: 'Item in the menu beside a weapon held in one hand, such as a longsword, on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that equips it gripped with both hands'
 	}
 });
 
@@ -155,12 +150,12 @@ const EQUIP_AS_RING: Record<EquipRing, MessageDescriptor> = defineMessages({
 	left: {
 		id: 'characterSheet.equipLeftRing',
 		defaultMessage: 'Equip as left ring',
-		description: 'Item in the menu beside a ring on a character\'s sheet, offered while both ring slots are full, that equips it in the left ring slot in place of what is there'
+		description: 'Item in the menu beside a ring on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, offered while both ring slots are full, that equips it in the left ring slot in place of what is there'
 	},
 	right: {
 		id: 'characterSheet.equipRightRing',
 		defaultMessage: 'Equip as right ring',
-		description: 'Item in the menu beside a ring on a character\'s sheet, offered while both ring slots are full, that equips it in the right ring slot in place of what is there'
+		description: 'Item in the menu beside a ring on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, offered while both ring slots are full, that equips it in the right ring slot in place of what is there'
 	}
 });
 
@@ -1293,7 +1288,7 @@ export class CharacterSheetDialog
 		announce(t({
 			id: 'characterSheet.equippedAnnouncement',
 			defaultMessage: '{name} equipped {item}.',
-			description: 'Read out by screen readers once an item was equipped from its menu on a character\'s sheet; {name} is the character\'s name and {item} the item\'s name. What was in its slot is unequipped, which the sheet\'s Equipment list shows'
+			description: 'Read out by screen readers once an item was equipped from its menu on a character\'s sheet, or in the Inspect dialog opened from the sheet; {name} is the character\'s name and {item} the item\'s name. What was in its slot is unequipped, which the sheet\'s Equipment list shows'
 		}, {
 			name: current.sheet.name,
 			item: itemName(item, current.sheet.ruleset)
@@ -1350,7 +1345,7 @@ export class CharacterSheetDialog
 		announce(t({
 			id: 'characterSheet.unequipped',
 			defaultMessage: '{name} unequipped {item}.',
-			description: 'Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipment or Social Equipment list of a character\'s sheet; {name} is the character\'s name and {item} the item\'s name. The character still carries it'
+			description: 'Read out by screen readers once an item was unequipped from the menu beside its slot in the Equipment or Social Equipment list of a character\'s sheet, or in the Inspect dialog opened from the slot; {name} is the character\'s name and {item} the item\'s name. The character still carries it'
 		}, {
 			name: current.sheet.name,
 			item: itemName(item, current.sheet.ruleset)
@@ -1772,7 +1767,7 @@ export class CharacterSheetDialog
 				label: t({
 					id: 'characterSheet.unequip',
 					defaultMessage: 'Unequip',
-					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet that takes the item out of the slot. The character still carries it'
+					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet, and in the menu beside the item\'s name in the Inspect dialog opened from the slot, that takes the item out of the slot. The character still carries it'
 				}),
 				icon: unequipIcon,
 				run: () =>
@@ -1794,7 +1789,7 @@ export class CharacterSheetDialog
 			label: t({
 				id: 'characterSheet.slotMenu.choose',
 				defaultMessage: 'Choose item',
-				description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet that opens a dialog choosing the item in the slot, or taking it out'
+				description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet, and in the menu beside the item\'s name in the Inspect dialog opened from the slot, that opens a dialog choosing the item in the slot, or taking it out'
 			}),
 			icon: ((layer === 'stats') ? equipIcon : wearIcon),
 			run: () =>
@@ -1807,12 +1802,12 @@ export class CharacterSheetDialog
 				? t({
 					id: 'characterSheet.slotMenu.show',
 					defaultMessage: 'Show on avatar',
-					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet, while the slot is hidden, that shows it on the character\'s avatar (the picture of the character) again'
+					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet, and in the menu beside the item\'s name in the Inspect dialog opened from the slot, while the slot is hidden, that shows it on the character\'s avatar (the picture of the character) again'
 				})
 				: t({
 					id: 'characterSheet.slotMenu.hide',
 					defaultMessage: 'Hide on avatar',
-					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet that leaves the slot off the character\'s avatar (the picture of the character), whatever is in it'
+					description: 'Item in the menu beside a slot in the Equipment and Social Equipment lists of a character\'s sheet, and in the menu beside the item\'s name in the Inspect dialog opened from the slot, that leaves the slot off the character\'s avatar (the picture of the character), whatever is in it'
 				})),
 			icon: (hidden ? showIcon : hideIcon),
 			run: () =>
@@ -1823,7 +1818,7 @@ export class CharacterSheetDialog
 				}, (current) => t({
 					id: 'characterSheet.slotHiddenAnnouncement',
 					defaultMessage: '{hidden, select, true {{slot} is hidden on {name}\'s avatar.} other {{slot} shows on {name}\'s avatar again.}}',
-					description: 'Read out by screen readers once Hide on avatar or Show on avatar was chosen in the menu beside a slot on a character\'s sheet; {slot} is the slot\'s name, such as Shoulders, and {name} the character\'s name'
+					description: 'Read out by screen readers once Hide on avatar or Show on avatar was chosen in the menu beside a slot on a character\'s sheet, or in the Inspect dialog opened from the slot; {slot} is the slot\'s name, such as Shoulders, and {name} the character\'s name'
 				}, {
 					hidden: String(!hidden),
 					slot: name,
@@ -1901,14 +1896,14 @@ export class CharacterSheetDialog
 			? t({
 				id: 'characterSheet.chooseSlotItem',
 				defaultMessage: 'Equip in {slot}',
-				description: 'Title of the dialog, opened by Choose item in the menu beside a slot in the Equipment list of a character\'s sheet, that chooses the item equipped there; {slot} is the slot\'s name, such as Main hand'
+				description: 'Title of the dialog, opened by Choose item in the menu beside a slot in the Equipment list of a character\'s sheet or in the Inspect dialog of the item in the slot, that chooses the item equipped there; {slot} is the slot\'s name, such as Main hand'
 			}, {
 				slot: name
 			})
 			: t({
 				id: 'characterSheet.chooseSocialItem',
 				defaultMessage: 'Wear on {slot} for its look',
-				description: 'Title of the dialog, opened by Choose item in the menu beside a slot in the Social Equipment list of a character\'s sheet, that chooses the item worn there only for how it looks on the character\'s avatar (the picture of the character); {slot} is the slot\'s name, such as Shoulders'
+				description: 'Title of the dialog, opened by Choose item in the menu beside a slot in the Social Equipment list of a character\'s sheet or in the Inspect dialog of the item in the slot, that chooses the item worn there only for how it looks on the character\'s avatar (the picture of the character); {slot} is the slot\'s name, such as Shoulders'
 			}, {
 				slot: name
 			}));
@@ -1953,7 +1948,11 @@ export class CharacterSheetDialog
 		};
 
 		this.slotChoices.replaceChildren(
-			choice(t(sheetMessages.empty), null, (inSlot === undefined)),
+			choice(t({
+				id: 'characterSheet.slotChoice.empty',
+				defaultMessage: 'Empty',
+				description: 'The choice in the dialog choosing the item in one of a character\'s slots, from their sheet, that takes the item out and leaves the slot empty'
+			}), null, (inSlot === undefined)),
 			...fitting.map(({ item, name: itemText }) => choice(itemText, item, (inSlot?.itemId === item.id)))
 		);
 		this.slotDialog.showModal();
@@ -2044,10 +2043,11 @@ export class CharacterSheetDialog
 		this.focusSlotMenu(chosen);
 		announce(t({
 			id: 'characterSheet.slotChanged',
-			defaultMessage: '{item, select, none {{slot} is empty.} other {{name} has {item} in {slot}.}}',
-			description: 'Read out by screen readers once the item in one of a character\'s slots was chosen from their sheet; {slot} is the slot\'s name, such as Shoulders, {name} the character\'s name, and {item} the item\'s name, or "none" when the slot was emptied'
+			defaultMessage: '{emptied, select, yes {{slot} is empty.} other {{name} has {item} in {slot}.}}',
+			description: 'Read out by screen readers once the item in one of a character\'s slots was chosen from their sheet; {emptied} is yes when the slot was emptied, {slot} is the slot\'s name, such as Shoulders, {name} the character\'s name, and {item} the item\'s name'
 		}, {
-			item: ((item === null) ? 'none' : itemName(item, current.sheet.ruleset)),
+			emptied: ((item === null) ? 'yes' : 'no'),
+			item: ((item === null) ? '' : itemName(item, current.sheet.ruleset)),
 			slot: slotText(slot, current.sheet.ruleset),
 			name: current.sheet.name
 		}));
@@ -2345,7 +2345,7 @@ export class CharacterSheetDialog
 					actions.push(this.equipAction(item, t({
 						id: 'characterSheet.equip',
 						defaultMessage: 'Equip',
-						description: 'Item in the menu beside an item on a character\'s sheet that equips it: puts on an item that is worn, or takes up one held in two hands. What was in its slot is unequipped'
+						description: 'Item in the menu beside an item on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that equips it: puts on an item that is worn, or takes up one held in two hands. What was in its slot is unequipped'
 					}), null, null));
 				}
 			}
@@ -2364,7 +2364,7 @@ export class CharacterSheetDialog
 					label: t({
 						id: 'characterSheet.wearSocially',
 						defaultMessage: 'Wear socially',
-						description: 'Item in the menu beside an item on a character\'s sheet that wears it in its social slot: only for how it looks on the character\'s avatar (the picture of the character), in place of what is equipped there. It gives nothing'
+						description: 'Item in the menu beside an item on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that wears it in its social slot: only for how it looks on the character\'s avatar (the picture of the character), in place of what is equipped there. It gives nothing'
 					}),
 					icon: wearIcon,
 					run: () =>
@@ -2375,7 +2375,7 @@ export class CharacterSheetDialog
 						}, (shown) => t({
 							id: 'characterSheet.woreSocially',
 							defaultMessage: '{name} wears {item} on {slot} for its look.',
-							description: 'Read out by screen readers once an item was worn in a social slot from its menu on a character\'s sheet; {name} is the character\'s name, {item} the item\'s name and {slot} the slot\'s name, such as Shoulders'
+							description: 'Read out by screen readers once an item was worn in a social slot from its menu on a character\'s sheet, or in the Inspect dialog opened from the sheet; {name} is the character\'s name, {item} the item\'s name and {slot} the slot\'s name, such as Shoulders'
 						}, {
 							name: shown.sheet.name,
 							item: itemName(item, shown.sheet.ruleset),
@@ -2391,7 +2391,7 @@ export class CharacterSheetDialog
 					label: t({
 						id: 'characterSheet.give',
 						defaultMessage: 'Give',
-						description: 'Item in the menu beside an item on a character\'s sheet that asks which character in the group to give it to, and how many'
+						description: 'Item in the menu beside an item on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that asks which character in the group to give it to, and how many'
 					}),
 					icon: giveIcon,
 					run: () =>
@@ -2405,7 +2405,7 @@ export class CharacterSheetDialog
 				label: t({
 					id: 'characterSheet.discard',
 					defaultMessage: 'Discard',
-					description: 'Item in the menu beside an item on a character\'s sheet that asks how many of it to discard from what the character carries'
+					description: 'Item in the menu beside an item on a character\'s sheet, and in the menu beside its name in the Inspect dialog opened from the sheet, that asks how many of it to discard from what the character carries'
 				}),
 				icon: discardIcon,
 				danger: true,
