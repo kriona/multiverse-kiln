@@ -668,11 +668,11 @@ function withRaceTail(ruleset: Ruleset, race: Record<string, unknown>): Record<s
  *
  * @param thing The race or item, as the file holds it
  * @param field Its setting, looksLikeRaceId or looksLikeItemId
- * @param fileThings The file's list it is in, which gives each default's key
+ * @param fileKeys The keys of the file's list it is in, by ID (keysById())
  * @param draftDefaults The draft's defaults, by key
  * @return The default's ID in the draft, or null for none
  */
-function looksLikeTarget(thing: Record<string, unknown>, field: 'looksLikeRaceId' | 'looksLikeItemId', fileThings: readonly { id: number; key: string | null }[], draftDefaults: ReadonlyMap<string | null, { id: number }>): number | null
+function looksLikeTarget(thing: Record<string, unknown>, field: 'looksLikeRaceId' | 'looksLikeItemId', fileKeys: ReadonlyMap<number, string | null>, draftDefaults: ReadonlyMap<string | null, { id: number }>): number | null
 {
 	const fileId = thing[field];
 
@@ -681,9 +681,30 @@ function looksLikeTarget(thing: Record<string, unknown>, field: 'looksLikeRaceId
 		return(null);
 	}
 
-	const key = (fileThings.find((each) => (each.id === fileId))?.key ?? null);
+	const key = (fileKeys.get(fileId) ?? null);
 
 	return((((key === null) ? undefined : draftDefaults.get(key))?.id ?? null));
+}
+
+/**
+ * Each of a file's races or items' keys, by its ID, the first one's when two have the same ID
+ *
+ * @param fileThings The file's list
+ * @return The keys, null for the universe's own
+ */
+function keysById(fileThings: readonly { id: number; key: string | null }[]): Map<number, string | null>
+{
+	const keys = new Map<number, string | null>();
+
+	for (const thing of fileThings)
+	{
+		if (!keys.has(thing.id))
+		{
+			keys.set(thing.id, thing.key);
+		}
+	}
+
+	return(keys);
 }
 
 /**
@@ -865,6 +886,12 @@ class ImportPlanner
 		difficultyLevels: Matcher<number>;
 	};
 
+	// The IDs of the draft's things of each kind
+	private readonly draftIds: Record<'item' | 'region' | 'area' | 'tile' | 'race' | 'class' | 'theme' | 'difficultyLevel', ReadonlySet<number | string>>;
+
+	// The IDs of the ruleset's defaults among the draft's tiles, items, races, classes and themes
+	private readonly defaultIds: Record<string, ReadonlySet<number>>;
+
 	/**
 	 * @param file The file
 	 * @param target The draft it goes into
@@ -882,6 +909,23 @@ class ImportPlanner
 		const custom = <T extends { id: number; key: string | null }>(things: readonly T[]): number[] => things
 			.filter((thing) => (thing.key === null))
 			.map((thing) => thing.id);
+		/**
+		 * The IDs of the draft's things of a kind
+		 *
+		 * @param things The things
+		 * @return Their IDs
+		 */
+		const idsOf = <Id extends number | string>(things: readonly { id: Id }[]): Set<Id> => new Set(things.map((thing) => thing.id));
+
+		/**
+		 * The IDs of the ruleset's defaults among the draft's things of a kind
+		 *
+		 * @param things The things
+		 * @return The defaults' IDs
+		 */
+		const defaultIdsOf = <T extends { id: number; key: string | null }>(things: readonly T[]): Set<number> => new Set(things
+			.filter((thing) => (thing.key !== null))
+			.map((thing) => thing.id));
 
 		this.manifest = manifest;
 		this.ruleset = target.universe.ruleset;
@@ -896,6 +940,23 @@ class ImportPlanner
 			classes: new Matcher(custom(target.classes), origins.classes, { ...source, liveIds: liveIds?.classes }),
 			themes: new Matcher(custom(target.themes), origins.themes, { ...source, liveIds: liveIds?.themes }),
 			difficultyLevels: new Matcher(custom(target.difficultyLevels), origins.difficultyLevels, { ...source, liveIds: liveIds?.difficultyLevels })
+		};
+		this.draftIds = {
+			item: idsOf(target.items),
+			region: idsOf(target.regions),
+			area: idsOf(target.areas),
+			tile: idsOf(target.tiles),
+			race: idsOf(target.races),
+			class: idsOf(target.classes),
+			theme: idsOf(target.themes),
+			difficultyLevel: idsOf(target.difficultyLevels)
+		};
+		this.defaultIds = {
+			tile: defaultIdsOf(target.tiles),
+			item: defaultIdsOf(target.items),
+			race: defaultIdsOf(target.races),
+			class: defaultIdsOf(target.classes),
+			theme: defaultIdsOf(target.themes)
 		};
 	}
 
@@ -1108,6 +1169,7 @@ class ImportPlanner
 		const defaults = new Map(this.target.tiles
 			.filter((tile) => (tile.key !== null))
 			.map((tile) => [tile.key, tile]));
+		const draftTiles = new Map(this.target.tiles.map((tile) => [tile.id, tile]));
 
 		for (const tile of (this.manifest.tiles ?? []))
 		{
@@ -1148,7 +1210,7 @@ class ImportPlanner
 
 			const matched = this.matchers.tiles.take(tile.id);
 			const ref = ((matched === undefined) ? this.newRef('tile') : undefined);
-			const current = this.target.tiles.find((each) => (each.id === matched));
+			const current = ((matched === undefined) ? undefined : draftTiles.get(matched));
 
 			if (ref !== undefined)
 			{
@@ -1174,13 +1236,15 @@ class ImportPlanner
 			.filter((item) => (item.key !== null))
 			.map((item) => [item.key, item]));
 
+		const draftItems = new Map(this.target.items.map((item) => [item.id, item]));
 		const fileItems = (this.manifest.items ?? []);
+		const fileKeys = keysById(fileItems);
 
 		for (const item of fileItems)
 		{
 			const settings = {
 				...pickDescribed(withItemEquips(this.ruleset, withItemKind(this.ruleset, item)), ITEM_FIELDS),
-				looksLikeItemId: looksLikeTarget(item, 'looksLikeItemId', fileItems, defaults)
+				looksLikeItemId: looksLikeTarget(item, 'looksLikeItemId', fileKeys, defaults)
 			};
 			const where = `item ${item.id}`;
 
@@ -1214,7 +1278,7 @@ class ImportPlanner
 
 			const matched = this.matchers.items.take(item.id);
 			const ref = ((matched === undefined) ? this.newRef('item') : undefined);
-			const current = this.target.items.find((each) => (each.id === matched));
+			const current = ((matched === undefined) ? undefined : draftItems.get(matched));
 
 			if (ref !== undefined)
 			{
@@ -1754,6 +1818,7 @@ class ImportPlanner
 	private planRaces(): void
 	{
 		const fileRaces = (this.manifest.races ?? []);
+		const fileKeys = keysById(fileRaces);
 		const defaults = new Map(this.target.races
 			.filter((race) => (race.key !== null))
 			.map((race) => [race.key, race]));
@@ -1761,7 +1826,7 @@ class ImportPlanner
 		this.planOptions('Race', 'race', fileRaces, this.target.races, this.matchers.races, this.raceTargets, (race, ids) => ({
 			...pickDescribed(withRaceTail(this.ruleset, race), OPTION_FIELDS),
 			...this.startingExtras(race, `race ${race.id}`, ids),
-			looksLikeRaceId: looksLikeTarget(race, 'looksLikeRaceId', fileRaces, defaults)
+			looksLikeRaceId: looksLikeTarget(race, 'looksLikeRaceId', fileKeys, defaults)
 		}));
 	}
 
@@ -1999,20 +2064,20 @@ class ImportPlanner
 			return(undefined);
 		}
 
-		const lists: Record<typeof kind, { ids: readonly (number | string)[]; matcher: Matcher<number> | Matcher<string> }> = {
-			item: { ids: this.target.items.map((each) => each.id), matcher: this.matchers.items },
-			region: { ids: this.target.regions.map((each) => each.id), matcher: this.matchers.regions },
-			area: { ids: this.target.areas.map((each) => each.id), matcher: this.matchers.areas },
-			tile: { ids: this.target.tiles.map((each) => each.id), matcher: this.matchers.tiles },
-			race: { ids: this.target.races.map((each) => each.id), matcher: this.matchers.races },
-			class: { ids: this.target.classes.map((each) => each.id), matcher: this.matchers.classes },
-			theme: { ids: this.target.themes.map((each) => each.id), matcher: this.matchers.themes },
-			difficultyLevel: { ids: this.target.difficultyLevels.map((each) => each.id), matcher: this.matchers.difficultyLevels }
+		const matchers: Record<typeof kind, Matcher<number> | Matcher<string>> = {
+			item: this.matchers.items,
+			region: this.matchers.regions,
+			area: this.matchers.areas,
+			tile: this.matchers.tiles,
+			race: this.matchers.races,
+			class: this.matchers.classes,
+			theme: this.matchers.themes,
+			difficultyLevel: this.matchers.difficultyLevels
 		};
-		const { ids, matcher } = lists[kind];
+		const matcher = matchers[kind];
 
 		// The ruleset's defaults have the same IDs in every version of the universe
-		if ((typeof fileId === 'number') && ids.includes(fileId) && ((kind === 'area') || this.isDefault(kind, fileId)))
+		if ((typeof fileId === 'number') && this.draftIds[kind].has(fileId) && ((kind === 'area') || this.isDefault(kind, fileId)))
 		{
 			return(fileId);
 		}
@@ -2029,15 +2094,7 @@ class ImportPlanner
 	 */
 	private isDefault(kind: string, id: number): boolean
 	{
-		const lists: Record<string, readonly { id: number; key: string | null }[]> = {
-			tile: this.target.tiles,
-			item: this.target.items,
-			race: this.target.races,
-			class: this.target.classes,
-			theme: this.target.themes
-		};
-
-		return((lists[kind] ?? []).some((thing) => ((thing.id === id) && (thing.key !== null))));
+		return(this.defaultIds[kind]?.has(id) ?? false);
 	}
 
 	/**
