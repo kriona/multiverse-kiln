@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { artTypesFor, artTypesForRace, avatarPicture, drawnBodyType, fitsSocialSlot, matchingDrawing, socialSlotFor, socialSlots, type AvatarEquippedItem, type AvatarLook, type AvatarManifest, type ItemDrawing } from '@multiverse-kiln/shared';
+import { artTypesFor, artTypesForRace, avatarDrawing, avatarPicture, drawnBodyType, fitsSocialSlot, layersHash, matchingDrawing, socialSlotFor, socialSlots, type AvatarEquippedItem, type AvatarLayer, type AvatarLook, type AvatarManifest, type ItemDrawing } from '@multiverse-kiln/shared';
 
 /**
  * A manifest of made-up files: the stick figure has every human base and a dwarf base, and Lucia only
@@ -362,6 +362,47 @@ describe('avatars', () =>
 			assert.strictEqual(avatarPicture(manifest, lookOf())?.hash, plain?.hash);
 			assert.notStrictEqual(equipped?.hash, plain?.hash);
 			assert.notStrictEqual(redrawn?.hash, plain?.hash);
+		});
+
+		it('draws the same layers as avatarDrawing, which leaves the hash out', () =>
+		{
+			const look = lookOf([inSlot('armor', 'leather_armor')]);
+			const picture = avatarPicture(manifest, look);
+
+			assert.deepStrictEqual(avatarDrawing(manifest, look), {
+				artType: picture?.artType,
+				bodyType: picture?.bodyType,
+				layers: picture?.layers
+			});
+			assert.strictEqual(avatarDrawing(manifest, {
+				...look,
+				raceKey: null
+			}), null);
+		});
+	});
+
+	describe('layersHash', () =>
+	{
+		it('gives the 64-bit FNV-1a hashes stored avatars were made with', () =>
+		{
+			const layers: AvatarLayer[] = [
+				{
+					file: 'backgrounds/darkRed.png',
+					x: 0,
+					y: 0,
+					flipped: false
+				},
+				{
+					file: 'stickFigure/items/pf1e/épée/human-mascThick.png',
+					x: -3,
+					y: 12.5,
+					flipped: true
+				}
+			];
+
+			assert.strictEqual(layersHash([]), '09612b07b5ecb5a5');
+			assert.strictEqual(layersHash(layers), 'b90a8bb21c8caf1d');
+			assert.strictEqual(layersHash(layers, new Map([['backgrounds/darkRed.png', '0123456789abcdef']])), '71fb606c2e690301');
 		});
 	});
 

@@ -224,8 +224,9 @@ async function nameCharacters(request: Request, records: ProfileCharacterRecord[
 		sourceLanguage: record.sourceLanguage,
 		translationLanguages: record.translationLanguages
 	}]));
-	const translators = await UniverseTextTranslator.loadAll([...universes.values()], await requestLanguages(request), ['universe', 'race', 'class']);
-	const [raceNames, classNames, avatarHashes] = await Promise.all([
+	const [translators, raceNames, classNames, avatarHashes] = await Promise.all([
+		requestLanguages(request)
+			.then((languages) => UniverseTextTranslator.loadAll([...universes.values()], languages, ['universe', 'race', 'class'])),
 		loadLiveRaceNames([...universes.values()]),
 		loadLiveClassNames([...universes.values()]),
 		avatarHashesOf(records.map((record) => record.id))

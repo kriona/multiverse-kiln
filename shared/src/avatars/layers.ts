@@ -96,9 +96,9 @@ export interface AvatarLayer
 }
 
 /**
- * What an avatar draws
+ * What an avatar draws, without its hash
  */
-export interface AvatarPicture
+export interface AvatarDrawing
 {
 	/**
 	 * The art type and body type it is drawn in, after falling back
@@ -111,7 +111,13 @@ export interface AvatarPicture
 	 * then the items' parts in layer order
 	 */
 	layers: AvatarLayer[];
+}
 
+/**
+ * What an avatar draws, with its hash
+ */
+export interface AvatarPicture extends AvatarDrawing
+{
 	/**
 	 * A hash of the layers and the versions of their files, which changes whenever the picture does
 	 */
@@ -302,7 +308,7 @@ function drawnItems(look: AvatarLook): Map<string, AvatarEquippedItem>
 }
 
 /**
- * What a character's avatar draws
+ * What a character's avatar draws, with its hash
  *
  * @param manifest The manifest
  * @param look The character's look
@@ -313,6 +319,30 @@ function drawnItems(look: AvatarLook): Map<string, AvatarEquippedItem>
  * type has a base for them
  */
 export function avatarPicture(manifest: AvatarManifest, look: AvatarLook, fileVersions?: ReadonlyMap<string, string>): AvatarPicture | null
+{
+	const drawing = avatarDrawing(manifest, look);
+
+	if (drawing === null)
+	{
+		return(null);
+	}
+
+	return({
+		...drawing,
+		hash: layersHash(drawing.layers, fileVersions)
+	});
+}
+
+/**
+ * What a character's avatar draws, without hashing it: for a caller that hashes the layers itself, such
+ * as with versions of their files it reads once it knows the layers
+ *
+ * @param manifest The manifest
+ * @param look The character's look
+ * @return The drawing, or null when the character has no avatar: their race looks like none, or no art
+ * type has a base for them
+ */
+export function avatarDrawing(manifest: AvatarManifest, look: AvatarLook): AvatarDrawing | null
 {
 	const { ruleset, raceKey } = look;
 	const bodyType = drawnBodyType(ruleset, raceKey, look.bodyType);
@@ -405,8 +435,7 @@ export function avatarPicture(manifest: AvatarManifest, look: AvatarLook, fileVe
 	return({
 		artType,
 		bodyType,
-		layers,
-		hash: layersHash(layers, fileVersions)
+		layers
 	});
 }
 
@@ -427,19 +456,38 @@ export function layersHash(layers: readonly AvatarLayer[], fileVersions?: Readon
 /**
  * A 64-bit FNV-1a hash of some text, which changes when the text does. Not for anything secret
  *
+ * The hash is kept in four 16-bit pieces, lowest first, so each step's products stay well inside the
+ * integers a number holds exactly
+ *
  * @param text The text
  * @return 16 hexadecimal digits
  */
 function hashText(text: string): string
 {
-	const prime = 0x100000001b3n;
-	const mask = 0xffffffffffffffffn;
-	let hash = 0xcbf29ce484222325n;
+	// The offset basis, 0xcbf29ce484222325, from piece0 (the lowest 16 bits) to piece3 (the highest)
+	let piece0 = 0x2325;
+	let piece1 = 0x8422;
+	let piece2 = 0x9ce4;
+	let piece3 = 0xcbf2;
 
 	for (const byte of new TextEncoder().encode(text))
 	{
-		hash = (((hash ^ BigInt(byte)) * prime) & mask);
+		piece0 ^= byte;
+
+		// Times the prime, 0x100000001b3: each piece times 0x1b3, plus the hash moved up 40 bits. Each
+		// product carries what passes 16 bits into the next piece's product
+		const product0 = (piece0 * 0x1b3);
+		const product1 = ((piece1 * 0x1b3) + (product0 >>> 16));
+		const product2 = ((piece2 * 0x1b3) + (product1 >>> 16) + (piece0 << 8));
+		const product3 = ((piece3 * 0x1b3) + (product2 >>> 16) + (piece1 << 8));
+
+		piece0 = (product0 & 0xffff);
+		piece1 = (product1 & 0xffff);
+		piece2 = (product2 & 0xffff);
+		piece3 = (product3 & 0xffff);
 	}
 
-	return(hash.toString(16).padStart(16, '0'));
+	return([piece3, piece2, piece1, piece0]
+		.map((piece) => piece.toString(16).padStart(4, '0'))
+		.join(''));
 }

@@ -431,18 +431,31 @@ async function listRoute(request: Request, response: Response): Promise<void>
 {
 	const universe = universeOf(request);
 	const playerId = playerIdOf(request);
-	const [characters, races, classes, rulebooks, translator] = await Promise.all([
-		listCharacters(playerId, universe.id),
+	const charactersLoad = listCharacters(playerId, universe.id);
+	const optionsLoad = Promise.all([
 		loadEditorRaces(liveVersion(universe.id), universe.ruleset),
 		loadEditorClasses(liveVersion(universe.id), universe.ruleset),
-		loadRulebookSettings(liveVersion(universe.id), universe.ruleset),
+		loadRulebookSettings(liveVersion(universe.id), universe.ruleset)
+	])
+		.then(([races, classes, rulebooks]) => ({
+			races,
+			classes,
+			barred: barredOptionsOf(races, classes, rulebooks)
+		}));
+	// The last played character waits for the races and classes barred, and the avatars only for the characters
+	const lastPlayedLoad = optionsLoad
+		.then(({ barred }) => findLastPlayedCharacterId(playerId, universe.id, barred));
+	const avatarHashesLoad = charactersLoad
+		.then((characters) => avatarHashesOf(characters.map((character) => character.id)));
+	const [characters, { races, classes, barred }, lastPlayedId, avatarHashes, translator] = await Promise.all([
+		charactersLoad,
+		optionsLoad,
+		lastPlayedLoad,
+		avatarHashesLoad,
 		loadTranslator(request, universe, ['race', 'class'])
 	]);
-	const barred = barredOptionsOf(races, classes, rulebooks);
-	const lastPlayedId = await findLastPlayedCharacterId(playerId, universe.id, barred);
 	const raceNames = new Map(races.map(({ id, key, name }) => [id, translator.name('race', id, { key, name })]));
 	const classNames = new Map(classes.map(({ id, key, name }) => [id, translator.name('class', id, { key, name })]));
-	const avatarHashes = await avatarHashesOf(characters.map((character) => character.id));
 	const unnamed: OptionName = { key: null, name: null };
 	const payload: CharacterListPayload = {
 		ruleset: universe.ruleset,

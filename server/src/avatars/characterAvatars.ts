@@ -14,7 +14,7 @@
  * Requests for an avatar or preview that is already being read or made wait for it and share it, rather
  * than each making and storing it again
  */
-import { avatarPicture, AVATAR_MANIFEST, layersHash, type AvatarEquippedItem, type AvatarLook, type AvatarManifest, type AvatarPicture, type Ruleset } from '@multiverse-kiln/shared';
+import { avatarDrawing, AVATAR_MANIFEST, layersHash, type AvatarEquippedItem, type AvatarLook, type AvatarManifest, type AvatarPicture, type Ruleset } from '@multiverse-kiln/shared';
 
 import { findStoredLooks, saveAvatarHash, type StoredLook } from '../db/avatarRepo.js';
 import { listLayeredEquipmentOf } from '../db/equipmentRepo.js';
@@ -104,24 +104,21 @@ function previewStorageKey(artType: string, ruleset: Ruleset, raceKey: string, b
 }
 
 /**
- * What a picture draws, with its hash counting its files' versions
+ * What some looks draw, each with its hash counting its files' versions. The files are read once for all
+ * of them, together, however many looks share them
  *
- * @param look The look
- * @return The picture, or null for no avatar
+ * @param looks The looks
+ * @return Each look's picture, in the same order; null for no avatar
  */
-async function versionedPicture(look: AvatarLook): Promise<AvatarPicture | null>
+async function versionedPictures(looks: readonly AvatarLook[]): Promise<(AvatarPicture | null)[]>
 {
-	const picture = avatarPicture(manifest, look);
+	const drawings = looks.map((look) => avatarDrawing(manifest, look));
+	const fileVersions = await fileVersionsOf(drawings.flatMap((drawing) => (drawing?.layers ?? [])));
 
-	if (picture === null)
-	{
-		return(null);
-	}
-
-	return({
-		...picture,
-		hash: layersHash(picture.layers, await fileVersionsOf(picture.layers))
-	});
+	return(drawings.map((drawing) => ((drawing === null) ? null : {
+		...drawing,
+		hash: layersHash(drawing.layers, fileVersions)
+	})));
 }
 
 /**
@@ -141,35 +138,28 @@ export async function findCharacterAvatars(characterIds: readonly string[]): Pro
 		findAvatarRaceKeys([...looks.values()].map((look) => look.raceId)),
 		findAvatarItemKeys(itemIds)
 	]);
-	const avatars = new Map<string, CharacterAvatar>();
-
-	for (const look of looks.values())
-	{
-		const equipped: AvatarEquippedItem[] = (equipment.get(look.characterId) ?? []).map(({ layer, slot, itemId, bothHands }) => ({
+	const stored = [...looks.values()];
+	const avatarLooks = stored.map((look): AvatarLook => ({
+		ruleset: look.ruleset,
+		raceKey: (raceKeys.get(look.raceId) ?? null),
+		bodyType: look.bodyType,
+		artType: look.artType,
+		background: look.background,
+		equipment: (equipment.get(look.characterId) ?? []).map(({ layer, slot, itemId, bothHands }): AvatarEquippedItem => ({
 			layer,
 			slot,
 			itemKey: (itemKeys.get(itemId) ?? null),
 			bothHands
-		}));
+		})),
+		hiddenSlots: look.hiddenSlots
+	}));
+	const pictures = await versionedPictures(avatarLooks);
 
-		const raceKey = (raceKeys.get(look.raceId) ?? null);
-
-		avatars.set(look.characterId, {
-			look,
-			raceKey,
-			picture: await versionedPicture({
-				ruleset: look.ruleset,
-				raceKey,
-				bodyType: look.bodyType,
-				artType: look.artType,
-				background: look.background,
-				equipment: equipped,
-				hiddenSlots: look.hiddenSlots
-			})
-		});
-	}
-
-	return(avatars);
+	return(new Map(stored.map((look, index): [string, CharacterAvatar] => [look.characterId, {
+		look,
+		raceKey: avatarLooks[index].raceKey,
+		picture: pictures[index]
+	}])));
 }
 
 /**
@@ -314,7 +304,7 @@ async function readOrMake(key: string, hash: string, make: () => Promise<Buffer>
  */
 export async function previewPicture(artType: string, ruleset: Ruleset, raceKey: string, bodyType: string, background: string): Promise<AvatarPicture | null>
 {
-	return(versionedPicture({
+	const [picture] = await versionedPictures([{
 		ruleset,
 		raceKey,
 		bodyType,
@@ -322,7 +312,9 @@ export async function previewPicture(artType: string, ruleset: Ruleset, raceKey:
 		background,
 		equipment: [],
 		hiddenSlots: []
-	}));
+	}]);
+
+	return(picture);
 }
 
 /**
