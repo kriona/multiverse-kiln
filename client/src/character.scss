@@ -47,6 +47,12 @@
 	max-width: 720px;
 }
 
+// About as wide as the longest name it takes (MAX_CHARACTER_NAME_LENGTH in shared/src/characters.ts)
+#character-name
+{
+	max-width: 42ch;
+}
+
 .character-step
 {
 	display: flex;
