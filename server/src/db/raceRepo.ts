@@ -77,31 +77,6 @@ export async function findAvatarRaceKeys(raceIds: readonly number[], executor: E
 }
 
 /**
- * Whether an ID is one of a ruleset's default races, which a race a universe added can "look like"
- *
- * @param ruleset The ruleset
- * @param raceId The ID
- * @param executor The database, or a transaction
- * @return True when it is
- */
-export async function isDefaultRace(ruleset: Ruleset, raceId: number, executor: Executor = db): Promise<boolean>
-{
-	const rows = await executor
-		.select({
-			id: races.id
-		})
-		.from(races)
-		.where(and(
-			eq(races.id, raceId),
-			eq(races.ruleset, ruleset),
-			isNull(races.universeId)
-		))
-		.limit(1);
-
-	return(rows.length > 0);
-}
-
-/**
  * The columns the race names are made from
  */
 const raceNameColumns = {

@@ -39,31 +39,6 @@ export async function findAvatarItemKeys(itemIds: readonly number[], executor: E
 }
 
 /**
- * Whether an ID is one of a ruleset's default items, which an item a universe added can "look like"
- *
- * @param ruleset The ruleset
- * @param itemId The ID
- * @param executor The database, or a transaction
- * @return True when it is
- */
-export async function isDefaultItem(ruleset: Ruleset, itemId: number, executor: Executor = db): Promise<boolean>
-{
-	const rows = await executor
-		.select({
-			id: items.id
-		})
-		.from(items)
-		.where(and(
-			eq(items.id, itemId),
-			eq(items.ruleset, ruleset),
-			isNull(items.universeId)
-		))
-		.limit(1);
-
-	return(rows.length > 0);
-}
-
-/**
  * What a new item needs
  */
 export type NewItem = Pick<typeof items.$inferInsert, 'ruleset' | 'universeId' | 'draft' | 'key' | 'name' | 'category' | 'types' | 'equips' | 'enabled'> & Partial<Pick<typeof items.$inferInsert, 'description' | 'avatarItemId'>>;

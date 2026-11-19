@@ -7,7 +7,7 @@ import type { Request, Response } from 'express';
 import { canEditWorld, defineMessages, isUsable, MAX_CUSTOM_RACES, type NewRef, type NumberRef, type RaceListPayload, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { hasCharactersOfRace } from '../db/characterRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findRaceHasTail, findRaceKind, isDefaultRace, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findDefaultRaceIds, findRaceHasTail, findRaceKind, loadEditorRaces, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace } from '../db/raceRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
 import { requireRole, universeContextOf } from './editorAccess.js';
 import { recordRef, refuse, resolveNumberRef, type ChangeContext } from './editorChangeContext.js';
@@ -200,6 +200,19 @@ async function noteRaceTail(context: ChangeContext, raceId: number): Promise<voi
 }
 
 /**
+ * The IDs of the universe's ruleset's default races, read once per save and kept on the context
+ *
+ * @param context The save
+ * @return The IDs
+ */
+async function defaultRaceIdsOf(context: ChangeContext): Promise<ReadonlySet<number>>
+{
+	context.defaultRaceIds ??= new Set((await findDefaultRaceIds(context.universe.ruleset, context.transaction)).values());
+
+	return(context.defaultRaceIds);
+}
+
+/**
  * Refuses a race's "Looks like" unless it is none, or a default race of the universe's ruleset chosen for
  * a race the universe added
  *
@@ -211,7 +224,7 @@ async function checkRaceLooksLike(context: ChangeContext, custom: boolean, setti
 {
 	const { looksLikeRaceId } = settings;
 
-	if ((looksLikeRaceId !== null) && (!custom || !await isDefaultRace(context.universe.ruleset, looksLikeRaceId, context.transaction)))
+	if ((looksLikeRaceId !== null) && (!custom || !(await defaultRaceIdsOf(context)).has(looksLikeRaceId)))
 	{
 		refuse(400, messages.invalidRaceLooksLike);
 	}

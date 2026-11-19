@@ -3,7 +3,7 @@ import assert from 'assert';
 import { DEFAULT_RACE_NAMES, emptyMoney, NEW_PF1E_RACE_RULES, PF1E_RACE_RULEBOOKS, PF1E_RACES, pf1eRaceRules, type EditorRace, type RaceSettings } from '@multiverse-kiln/shared';
 
 import { findDefaultItemIds } from '../../src/db/itemRepo.js';
-import { countCustomRaces, createCustomRace, deleteCustomRace, findAvatarRaceKeys, findDefaultRaceIds, findEditorRace, findRaceHasTail, findRaceKind, findRaceStart, isDefaultRace, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
+import { countCustomRaces, createCustomRace, deleteCustomRace, findAvatarRaceKeys, findDefaultRaceIds, findEditorRace, findRaceHasTail, findRaceKind, findRaceStart, isRaceStartingItem, loadEditorRaces, loadLiveRaceNames, loadRaceNames, restoreDefaultRace, saveEditedDefaultRace, updateCustomRace, type CustomRaceSettings } from '../../src/db/raceRepo.js';
 import { inTransaction } from '../../src/db/transactions.js';
 import { startDraft } from '../../src/db/universeDraftRepo.js';
 import { createUniverse } from '../../src/db/universeRepo.js';
@@ -212,9 +212,6 @@ describe('raceRepo', () =>
 
 		assert.strictEqual((await findRace(universeId, raceId))?.looksLikeRaceId, dwarfId);
 		assert.deepStrictEqual(await findAvatarRaceKeys([raceId, elfId]), new Map([[raceId, 'dwarf'], [elfId, 'elf']]));
-		assert.strictEqual(await isDefaultRace('pf1e', dwarfId), true);
-		assert.strictEqual(await isDefaultRace('sf1e', dwarfId), false);
-		assert.strictEqual(await isDefaultRace('pf1e', raceId), false);
 
 		await inTransaction((transaction) => updateCustomRace(liveVersion(universeId), 'pf1e', raceId, lizardfolk, transaction));
 		assert.strictEqual((await findRace(universeId, raceId))?.looksLikeRaceId, null);

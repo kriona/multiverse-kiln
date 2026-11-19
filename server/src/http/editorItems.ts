@@ -8,7 +8,7 @@ import { canEditWorld, defineMessages, isItemEquips, isItemKind, MAX_CUSTOM_ITEM
 
 import { isCarriedItem } from '../db/characterRepo.js';
 import { isClassStartingItem } from '../db/classRepo.js';
-import { countCustomItems, createCustomItem, deleteCustomItem, findItem, isDefaultItem, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findDefaultItemIds, findItem, listEditorItems, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem } from '../db/itemRepo.js';
 import { isRaceStartingItem } from '../db/raceRepo.js';
 import { isStartingItem } from '../db/startingItemRepo.js';
 import { deleteUniverseTextOf } from '../db/universeTextRepo.js';
@@ -50,6 +50,19 @@ const messages = defineMessages({
 });
 
 /**
+ * The IDs of the universe's ruleset's default items, read once per save and kept on the context
+ *
+ * @param context The save
+ * @return The IDs
+ */
+async function defaultItemIdsOf(context: ChangeContext): Promise<ReadonlySet<number>>
+{
+	context.defaultItemIds ??= new Set((await findDefaultItemIds(context.universe.ruleset, context.transaction)).values());
+
+	return(context.defaultItemIds);
+}
+
+/**
  * Refuses an item's "Looks like" unless it is none, or a default item of the universe's ruleset chosen
  * for an item the universe added
  *
@@ -61,7 +74,7 @@ async function checkItemLooksLike(context: ChangeContext, custom: boolean, setti
 {
 	const { looksLikeItemId } = settings;
 
-	if ((looksLikeItemId !== null) && (!custom || !await isDefaultItem(context.universe.ruleset, looksLikeItemId, context.transaction)))
+	if ((looksLikeItemId !== null) && (!custom || !(await defaultItemIdsOf(context)).has(looksLikeItemId)))
 	{
 		refuse(400, messages.invalidItemLooksLike);
 	}

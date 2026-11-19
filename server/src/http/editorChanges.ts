@@ -384,6 +384,8 @@ export async function saveChanges(base: UniverseContext, changes: readonly Pendi
 				places,
 				deletedImages: [],
 				rulebooks: undefined,
+				defaultItemIds: undefined,
+				defaultRaceIds: undefined,
 				draftApplied: false
 			};
 

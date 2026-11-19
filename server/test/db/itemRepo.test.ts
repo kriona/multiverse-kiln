@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { DEFAULT_ITEM_EQUIPS, DEFAULT_ITEM_KINDS, DEFAULT_ITEM_NAMES, isItemKind, PF1E_DEFAULT_ITEM_NAMES, PF1E_ITEM_RULEBOOKS, type EditorItem, type ItemListQuery, type ItemSettings } from '@multiverse-kiln/shared';
 
-import { countCustomItems, createCustomItem, deleteCustomItem, findAvatarItemKeys, findDefaultItemIds, findItem, isDefaultItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
+import { countCustomItems, createCustomItem, deleteCustomItem, findAvatarItemKeys, findDefaultItemIds, findItem, listEditorItems, loadEditorItems, loadEditorItemsIn, loadLiveItemNames, restoreDefaultItem, saveEditedDefaultItem, updateCustomItem, type CustomItemSettings } from '../../src/db/itemRepo.js';
 import { liveVersion } from '../../src/db/universeVersions.js';
 import { addUniverse } from './fixtures.js';
 
@@ -489,9 +489,6 @@ describe('itemRepo', () =>
 
 			assert.strictEqual((await findTorch())?.looksLikeItemId, dagger);
 			assert.deepStrictEqual(await findAvatarItemKeys([torchId, dagger]), new Map([[torchId, 'dagger'], [dagger, 'dagger']]));
-			assert.strictEqual(await isDefaultItem('pf1e', dagger), true);
-			assert.strictEqual(await isDefaultItem('sf1e', dagger), false);
-			assert.strictEqual(await isDefaultItem('pf1e', torchId), false);
 
 			await updateCustomItem(liveVersion(universeId), torchId, torch);
 			assert.strictEqual((await findTorch())?.looksLikeItemId, null);

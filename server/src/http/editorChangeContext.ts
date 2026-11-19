@@ -104,6 +104,18 @@ export interface ChangeContext
 	rulebooks: readonly string[] | undefined;
 
 	/**
+	 * The IDs of the ruleset's default items, which an item the universe added can "look like", once a
+	 * change has read them (defaultItemIdsOf() in editorItems.ts). No save changes them
+	 */
+	defaultItemIds: ReadonlySet<number> | undefined;
+
+	/**
+	 * The IDs of the ruleset's default races, which a race the universe added can "look like", once a
+	 * change has read them (defaultRaceIdsOf() in editorRaces.ts). No save changes them
+	 */
+	defaultRaceIds: ReadonlySet<number> | undefined;
+
+	/**
 	 * Set once the save applies the universe's draft, which reaches the rooms then as a save to the live
 	 * version does
 	 */
