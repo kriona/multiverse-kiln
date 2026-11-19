@@ -209,10 +209,12 @@ export class CharacterSheetDialog
 	private readonly slotAbout = getElement('character-slot-about', HTMLElement);
 	private readonly slotChoices = getElement('character-slot-choices', HTMLUListElement);
 	private readonly slotError = getElement('character-slot-error', HTMLElement);
+	private readonly slotCancel = getElement('character-slot-cancel', HTMLButtonElement);
 	private readonly appearanceDialog = getElement('character-appearance-dialog', HTMLDialogElement);
 	private readonly appearanceForm = getElement('character-appearance-form', HTMLFormElement);
 	private readonly appearanceError = getElement('character-appearance-error', HTMLElement);
 	private readonly appearanceSave = getElement('character-appearance-save', HTMLButtonElement);
+	private readonly appearanceCancel = getElement('character-appearance-cancel', HTMLButtonElement);
 	private readonly appearanceChoices: AppearanceChoices;
 	private readonly appearanceTracker: ChangeTracker;
 
@@ -240,6 +242,7 @@ export class CharacterSheetDialog
 	private readonly leaveQuestion = getElement('character-leave-question', HTMLElement);
 	private readonly leaveError = getElement('character-leave-error', HTMLElement);
 	private readonly leaveConfirm = getElement('character-leave-confirm', HTMLButtonElement);
+	private readonly leaveCancel = getElement('character-leave-cancel', HTMLButtonElement);
 	private readonly deleteDialog = getElement('character-delete-dialog', HTMLDialogElement);
 	private readonly deleteQuestion = getElement('character-delete-question', HTMLElement);
 	private readonly farewellDialog = getElement('character-farewell-dialog', HTMLDialogElement);
@@ -271,7 +274,8 @@ export class CharacterSheetDialog
 	private discarding: CharacterSheetItem | undefined;
 
 	/**
-	 * Whether a deletion or restoration has been sent and the server hasn't answered
+	 * Whether a change the sheet sends (deleting, restoring, leaving the group, giving, discarding or
+	 * equipping items, or changing how the character looks) has been sent and the server hasn't answered
 	 */
 	private busy = false;
 
@@ -349,6 +353,17 @@ export class CharacterSheetDialog
 			root: this.appearanceForm,
 			state: () => this.appearanceChoices.value()
 		});
+
+		// Escape doesn't close the dialog while its choices are being saved, nor ask about discarding them.
+		// Added before guardDialog()'s listener so it can stop that one
+		this.appearanceDialog.addEventListener('cancel', (event) =>
+		{
+			if (this.busy)
+			{
+				event.preventDefault();
+				event.stopImmediatePropagation();
+			}
+		});
 		this.appearanceTracker.guardDialog(this.appearanceDialog);
 
 		this.appearanceButton.addEventListener('click', () =>
@@ -356,7 +371,7 @@ export class CharacterSheetDialog
 			this.openAppearance();
 		});
 
-		getElement('character-appearance-cancel', HTMLButtonElement).addEventListener('click', () =>
+		this.appearanceCancel.addEventListener('click', () =>
 		{
 			if (this.appearanceTracker.confirmDiscard())
 			{
@@ -370,9 +385,18 @@ export class CharacterSheetDialog
 			void this.saveAppearance();
 		});
 
-		getElement('character-slot-cancel', HTMLButtonElement).addEventListener('click', () =>
+		this.slotCancel.addEventListener('click', () =>
 		{
 			this.slotDialog.close();
+		});
+
+		// Escape doesn't close the dialog while the item chosen is being sent
+		this.slotDialog.addEventListener('cancel', (event) =>
+		{
+			if (this.busy)
+			{
+				event.preventDefault();
+			}
 		});
 
 		this.slotDialog.addEventListener('close', () =>
@@ -475,7 +499,7 @@ export class CharacterSheetDialog
 			void this.give();
 		});
 
-		getElement('character-leave-cancel', HTMLButtonElement).addEventListener('click', () =>
+		this.leaveCancel.addEventListener('click', () =>
 		{
 			this.leaveDialog.close();
 		});
@@ -732,6 +756,7 @@ export class CharacterSheetDialog
 
 		this.busy = true;
 		this.leaveConfirm.disabled = true;
+		this.leaveCancel.disabled = true;
 
 		try
 		{
@@ -739,13 +764,15 @@ export class CharacterSheetDialog
 		}
 		catch (error)
 		{
-			showMessage(this.leaveError, ((error instanceof Error) ? error.message : String(error)));
+			// Shown on the sheet when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.leaveDialog.open ? this.leaveError : this.error), ((error instanceof Error) ? error.message : String(error)));
 			this.leaveConfirm.disabled = false;
 			return;
 		}
 		finally
 		{
 			this.busy = false;
+			this.leaveCancel.disabled = false;
 		}
 
 		this.leaveDialog.close();
@@ -857,7 +884,9 @@ export class CharacterSheetDialog
 		catch (error)
 		{
 			this.setBusy(false);
-			showMessage(this.farewellError, describeEditorError(error, {
+
+			// Shown on the sheet when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.farewellDialog.open ? this.farewellError : this.error), describeEditorError(error, {
 				id: 'characterDelete.failed',
 				defaultMessage: 'Could not delete the character.',
 				description: 'Shown in the last dialog before deleting a character when the deletion failed'
@@ -901,7 +930,9 @@ export class CharacterSheetDialog
 		catch (error)
 		{
 			this.setBusy(false);
-			showMessage(this.farewellError, describeEditorError(error, {
+
+			// Shown on the sheet when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.farewellDialog.open ? this.farewellError : this.error), describeEditorError(error, {
 				id: 'characterDelete.lastRitesFailed',
 				defaultMessage: 'Could not give the character their last rites.',
 				description: 'Shown in the last dialog before deleting a character when scheduling the deletion failed'
@@ -1161,7 +1192,8 @@ export class CharacterSheetDialog
 		}
 		catch (error)
 		{
-			showMessage(this.discardError, describeEditorError(error, {
+			// Shown on the sheet when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.discardDialog.open ? this.discardError : this.error), describeEditorError(error, {
 				id: 'characterSheet.discardFailed',
 				defaultMessage: 'Could not discard the items.',
 				description: 'Shown in the dialog that discards an item a character carries, opened from their sheet, when the items couldn\'t be discarded'
@@ -1373,7 +1405,7 @@ export class CharacterSheetDialog
 				item: itemName(item, current.sheet.ruleset),
 				quantity
 			}));
-		});
+		}, this.error);
 	}
 
 	/**
@@ -1955,7 +1987,12 @@ export class CharacterSheetDialog
 	{
 		const current = this.current;
 
-		if (!current || this.busy || ((item?.id ?? null) === inSlot))
+		if (this.busy)
+		{
+			return;
+		}
+
+		if (!current || ((item?.id ?? null) === inSlot))
 		{
 			this.slotDialog.close();
 			return;
@@ -1980,6 +2017,7 @@ export class CharacterSheetDialog
 		};
 
 		this.busy = true;
+		this.slotCancel.disabled = true;
 		this.changingItems++;
 
 		try
@@ -1988,13 +2026,15 @@ export class CharacterSheetDialog
 		}
 		catch (error)
 		{
-			showMessage(this.slotError, describeEditorError(error, ((layer === 'stats') ? sheetMessages.equipFailed : sheetMessages.lookFailed)));
+			// Shown on the sheet when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.slotDialog.open ? this.slotError : this.error), describeEditorError(error, ((layer === 'stats') ? sheetMessages.equipFailed : sheetMessages.lookFailed)));
 			this.finishChangingItems();
 			return;
 		}
 		finally
 		{
 			this.busy = false;
+			this.slotCancel.disabled = false;
 		}
 
 		this.slotDialog.close();
@@ -2154,6 +2194,7 @@ export class CharacterSheetDialog
 
 		this.busy = true;
 		this.appearanceSave.disabled = true;
+		this.appearanceCancel.disabled = true;
 		this.changingItems++;
 
 		try
@@ -2162,7 +2203,8 @@ export class CharacterSheetDialog
 		}
 		catch (error)
 		{
-			showMessage(this.appearanceError, describeEditorError(error, sheetMessages.lookFailed));
+			// Shown on the sheet when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.appearanceDialog.open ? this.appearanceError : this.error), describeEditorError(error, sheetMessages.lookFailed));
 			this.finishChangingItems();
 			return;
 		}
@@ -2170,6 +2212,7 @@ export class CharacterSheetDialog
 		{
 			this.busy = false;
 			this.appearanceSave.disabled = false;
+			this.appearanceCancel.disabled = false;
 		}
 
 		this.appearanceTracker.markSaved();

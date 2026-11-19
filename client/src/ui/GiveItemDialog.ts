@@ -27,6 +27,12 @@ interface Giving
 	 * Called once the items are given, with the name of the character given them and how many
 	 */
 	given: (receiver: string, quantity: number) => void;
+
+	/**
+	 * Where a failure shows when the dialog was closed while the items were being sent, such as the
+	 * sheet's own error
+	 */
+	pageError: HTMLElement;
 }
 
 /**
@@ -103,8 +109,9 @@ export class GiveItemDialog
 	 * @param item The item, as the sheet lists it
 	 * @param give Gives the items
 	 * @param given Called once they are given
+	 * @param pageError Where a failure shows when the dialog was closed while the items were being sent
 	 */
-	open(sheet: CharacterSheet, item: CharacterSheetItem, give: GiveItem, given: (receiver: string, quantity: number) => void): void
+	open(sheet: CharacterSheet, item: CharacterSheetItem, give: GiveItem, given: (receiver: string, quantity: number) => void, pageError: HTMLElement): void
 	{
 		const members = (sheet.group?.members ?? []);
 		const several = (item.quantity > 1);
@@ -113,7 +120,8 @@ export class GiveItemDialog
 			sheet,
 			item,
 			give,
-			given
+			given,
+			pageError
 		};
 		this.title.textContent = t({
 			id: 'characterSheet.giveItemTitle',
@@ -214,7 +222,8 @@ export class GiveItemDialog
 		}
 		catch (error)
 		{
-			showMessage(this.error, describeEditorError(error, {
+			// Shown on the page when the dialog was closed anyway, such as by a browser that lets Escape close it
+			showMessage((this.dialog.open ? this.error : giving.pageError), describeEditorError(error, {
 				id: 'characterSheet.giveItemFailed',
 				defaultMessage: 'Could not give the items.',
 				description: 'Shown in the dialog, opened by Give in an item\'s menu on a character\'s sheet, when the item couldn\'t be given to the character chosen'

@@ -108,6 +108,7 @@ export class GroupScreen
 	private readonly leaveQuestion = getElement('leave-group-question', HTMLElement);
 	private readonly leaveError = getElement('leave-group-error', HTMLElement);
 	private readonly leaveConfirm = getElement('leave-group-confirm', HTMLButtonElement);
+	private readonly leaveCancel = getElement('leave-group-cancel', HTMLButtonElement);
 	private readonly chatHere = getElement('group-chat-here', HTMLElement);
 	private readonly characterChoices: CharacterList;
 	private readonly chat: ChatLog;
@@ -216,7 +217,7 @@ export class GroupScreen
 			this.askToLeave();
 		});
 
-		getElement('leave-group-cancel', HTMLButtonElement).addEventListener('click', () =>
+		this.leaveCancel.addEventListener('click', () =>
 		{
 			this.leaveDialog.close();
 		});
@@ -660,6 +661,7 @@ export class GroupScreen
 
 		this.leaving = true;
 		this.leaveConfirm.disabled = true;
+		this.leaveCancel.disabled = true;
 		this.leaveButton.disabled = true;
 
 		try
@@ -669,13 +671,25 @@ export class GroupScreen
 		}
 		catch (error)
 		{
-			showMessage(this.leaveError, ((error instanceof Error) ? error.message : String(error)));
+			const message = ((error instanceof Error) ? error.message : String(error));
+
+			// Shown in the toolbar when the dialog was closed anyway, such as by a browser that lets Escape close it
+			if (this.leaveDialog.open)
+			{
+				showMessage(this.leaveError, message);
+			}
+			else
+			{
+				this.setStatus(message);
+			}
+
 			this.leaveConfirm.disabled = false;
 			this.leaveButton.disabled = false;
 		}
 		finally
 		{
 			this.leaving = false;
+			this.leaveCancel.disabled = false;
 		}
 	}
 
