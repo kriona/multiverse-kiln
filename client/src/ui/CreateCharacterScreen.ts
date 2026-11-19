@@ -1,4 +1,4 @@
-import { ABILITY_NAMES, characterSteps, DISALLOWED_TEXT_CHARACTERS, FLOATING_ABILITY_BONUSES, isReservedName, mainAbility, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, SF1E_BASE_ABILITY_SCORE, SF1E_MAX_BOUGHT_SCORE, SF1E_THEME_ABILITY_BONUS, sf1eAbilityPointsSpent, sf1eOverraisedAbilities, type Ability, type AbilityScores, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type CharacterThemeOption, type NewCharacterOptions, type Ruleset } from '@multiverse-kiln/shared';
+import { ABILITY_NAMES, characterSteps, DISALLOWED_TEXT_CHARACTERS, FLOATING_ABILITY_BONUSES, isReservedName, mainAbility, MAX_CHARACTER_NAME_LENGTH, NAME_MESSAGES, nameKey, PF1E_ABILITIES, PF1E_MAX_POINT_BUY_SCORE, PF1E_MIN_POINT_BUY_SCORE, PF1E_STAT_METHOD_NAMES, pf1eAbilityModifier, pf1ePointBuyCost, pf1ePointBuyTotal, SF1E_BASE_ABILITY_SCORE, SF1E_MAX_BOUGHT_SCORE, SF1E_THEME_ABILITY_BONUS, sf1eAbilityPointsSpent, sf1eOverraisedAbilities, type Ability, type AbilityScores, type CharacterClassOption, type CharacterDraft, type CharacterRaceOption, type CharacterStep, type CharacterThemeOption, type NewCharacterOptions, type Ruleset } from '@multiverse-kiln/shared';
 
 import { currentLocale, formatList, signedNumber, t } from '../localization';
 import type { CharacterApi } from '../network/characterApi';
@@ -143,10 +143,10 @@ export class CreateCharacterScreen
 			});
 		}
 
-		// Says immediately when a name can't be taken; the server checks it again
+		// Says immediately when a name can't be taken; the server checks again that it isn't reserved
 		this.name.addEventListener('input', () =>
 		{
-			setFieldError(this.name, (isReservedName(this.name.value) ? t(NAME_MESSAGES.reserved) : undefined));
+			setFieldError(this.name, nameProblem(this.name.value));
 		});
 
 		this.race.addEventListener('change', () =>
@@ -1122,10 +1122,12 @@ export class CreateCharacterScreen
 			return;
 		}
 
-		if (isReservedName(name))
+		const problem = nameProblem(name);
+
+		if (problem !== undefined)
 		{
 			this.goToStep('name');
-			reportFieldError(this.name, t(NAME_MESSAGES.reserved));
+			reportFieldError(this.name, problem);
 			return;
 		}
 
@@ -1391,6 +1393,73 @@ export class CreateCharacterScreen
 
 		return(formatList(modifiers));
 	}
+}
+
+/**
+ * Why a character can't take a name, if it can't: it could pass as the game's staff, or it is a word from
+ * the prompt above the field (character.create.namePrompt) or from the refusals, which gets a joke instead.
+ * Each language names its own words to joke about, so the jokes follow its prompt. Names are compared the
+ * way nameKey() compares them, so capitals, spacing and punctuation don't count. Words that are only
+ * punctuation, such as the hyphen a translation leaves a joke out with, match no name
+ *
+ * @param name The name, as typed
+ * @return The refusal, or undefined when the name can be taken
+ */
+function nameProblem(name: string): string | undefined
+{
+	if (isReservedName(name))
+	{
+		return(t(NAME_MESSAGES.reserved));
+	}
+
+	const key = nameKey(name);
+
+	if (key === '')
+	{
+		return(undefined);
+	}
+
+	const jokes: Array<[string, string]> = [
+		[
+			t({
+				id: 'character.create.nameJoke.wisely',
+				defaultMessage: 'Wisely',
+				description: 'A name that gets a joke refusal on Create Character: the word "wisely" from the prompt above the Name field ("Choose a name for your character. Choose wisely, as it can\'t be changed later."). Translate it as the word the player would type from your translation of that prompt. Capitals, spaces and punctuation don\'t count. To leave this joke out, translate it as a hyphen (-)'
+			}),
+			t({
+				id: 'character.create.nameJoke.wiselyReply',
+				defaultMessage: 'Ha-ha. Very funny.',
+				description: 'Joke refusal under the Name field of Create Character when the player names their character "Wisely" (character.create.nameJoke.wisely), taking the prompt "Choose wisely" literally'
+			})
+		],
+		[
+			t({
+				id: 'character.create.nameJoke.changedLater',
+				defaultMessage: 'Changed Later',
+				description: 'A name that gets a joke refusal on Create Character: the words "changed later" from the prompt above the Name field ("Choose a name for your character. Choose wisely, as it can\'t be changed later."). Translate it as the words the player would type from your translation of that prompt. Capitals, spaces and punctuation don\'t count. To leave this joke out, translate it as a hyphen (-)'
+			}),
+			t({
+				id: 'character.create.nameJoke.changedLaterReply',
+				defaultMessage: 'It can\'t be changed later, please type another name.',
+				description: 'Joke refusal under the Name field of Create Character when the player names their character "Changed Later" (character.create.nameJoke.changedLater), taking the prompt literally. Its words "another name" are the next joke (character.create.nameJoke.anotherName)'
+			})
+		],
+		[
+			t({
+				id: 'character.create.nameJoke.anotherName',
+				defaultMessage: 'Another Name',
+				description: 'A name that gets a joke refusal on Create Character: the words "another name" from the refusals "It can\'t be changed later, please type another name." (character.create.nameJoke.changedLaterReply) and "Choose another name." (name.reserved). Translate it as the words the player would type from your translation of those. Capitals, spaces and punctuation don\'t count. To leave this joke out, translate it as a hyphen (-)'
+			}),
+			t({
+				id: 'character.create.nameJoke.anotherNameReply',
+				defaultMessage: 'I\'m getting sick of you.',
+				description: 'Joke refusal under the Name field of Create Character when the player names their character "Another Name" (character.create.nameJoke.anotherName), after being told to type another name'
+			})
+		]
+	];
+	const joke = jokes.find(([words]) => (nameKey(words) === key));
+
+	return(joke?.[1]);
 }
 
 /**

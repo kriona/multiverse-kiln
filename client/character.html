@@ -37,9 +37,10 @@
 						<fieldset id="character-fields" class="plain">
 							<section id="character-step-name" class="character-step" aria-labelledby="character-heading-name">
 								<h2 id="character-heading-name" data-message="character.heading.name" data-translation-context="Heading of the Create Character step where the player names the character">Name your character</h2>
+								<p id="character-name-prompt" data-message="character.create.namePrompt" data-translation-context="On Create Character's name step, above the Name field. A joke follows from it: typing a word from it as the name, such as Wisely or Changed Later, gets a cheeky refusal (character.create.nameJoke.*). When translating, keep words that make sense typed as a name, and translate those messages to match">Choose a name for your character. Choose wisely, as it can't be changed later.</p>
 								<label data-message="character.create.name" data-translation-context="Label of the field for a new character's name">
 									Name
-									<input id="character-name" autocomplete="off" />
+									<input id="character-name" autocomplete="off" aria-describedby="character-name-prompt" />
 								</label>
 							</section>
 							<section id="character-step-race" class="character-step" aria-labelledby="character-heading-race" hidden>

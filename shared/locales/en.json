@@ -1011,6 +1011,34 @@
 		"defaultMessage": "Name",
 		"description": "Label of the field for a new character's name"
 	},
+	"character.create.nameJoke.anotherName": {
+		"defaultMessage": "Another Name",
+		"description": "A name that gets a joke refusal on Create Character: the words \"another name\" from the refusals \"It can't be changed later, please type another name.\" (character.create.nameJoke.changedLaterReply) and \"Choose another name.\" (name.reserved). Translate it as the words the player would type from your translation of those. Capitals, spaces and punctuation don't count. To leave this joke out, translate it as a hyphen (-)"
+	},
+	"character.create.nameJoke.anotherNameReply": {
+		"defaultMessage": "I'm getting sick of you.",
+		"description": "Joke refusal under the Name field of Create Character when the player names their character \"Another Name\" (character.create.nameJoke.anotherName), after being told to type another name"
+	},
+	"character.create.nameJoke.changedLater": {
+		"defaultMessage": "Changed Later",
+		"description": "A name that gets a joke refusal on Create Character: the words \"changed later\" from the prompt above the Name field (\"Choose a name for your character. Choose wisely, as it can't be changed later.\"). Translate it as the words the player would type from your translation of that prompt. Capitals, spaces and punctuation don't count. To leave this joke out, translate it as a hyphen (-)"
+	},
+	"character.create.nameJoke.changedLaterReply": {
+		"defaultMessage": "It can't be changed later, please type another name.",
+		"description": "Joke refusal under the Name field of Create Character when the player names their character \"Changed Later\" (character.create.nameJoke.changedLater), taking the prompt literally. Its words \"another name\" are the next joke (character.create.nameJoke.anotherName)"
+	},
+	"character.create.nameJoke.wisely": {
+		"defaultMessage": "Wisely",
+		"description": "A name that gets a joke refusal on Create Character: the word \"wisely\" from the prompt above the Name field (\"Choose a name for your character. Choose wisely, as it can't be changed later.\"). Translate it as the word the player would type from your translation of that prompt. Capitals, spaces and punctuation don't count. To leave this joke out, translate it as a hyphen (-)"
+	},
+	"character.create.nameJoke.wiselyReply": {
+		"defaultMessage": "Ha-ha. Very funny.",
+		"description": "Joke refusal under the Name field of Create Character when the player names their character \"Wisely\" (character.create.nameJoke.wisely), taking the prompt \"Choose wisely\" literally"
+	},
+	"character.create.namePrompt": {
+		"defaultMessage": "Choose a name for your character. Choose wisely, as it can't be changed later.",
+		"description": "On Create Character's name step, above the Name field. A joke follows from it: typing a word from it as the name, such as Wisely or Changed Later, gets a cheeky refusal (character.create.nameJoke.*). When translating, keep words that make sense typed as a name, and translate those messages to match"
+	},
 	"character.create.noClass": {
 		"defaultMessage": "Choose a class.",
 		"description": "Shown under the class field of Create Character when the player tries to make the character without choosing a class"
@@ -11016,8 +11044,8 @@
 		"description": "Name, for screen readers, of the pair of buttons above a Markdown field, such as a universe's long description, that choose between editing it as rich text and as Markdown"
 	},
 	"name.reserved": {
-		"defaultMessage": "That name could be mistaken for the game's staff. Choose another.",
-		"description": "Why a player or character name was refused: it contains a word such as \"admin\" or \"moderator\" that would let someone pass as the people running the game"
+		"defaultMessage": "That name could be mistaken for the game's staff. Choose another name.",
+		"description": "Why a player or character name was refused: it contains a word such as \"admin\" or \"moderator\" that would let someone pass as the people running the game. On Create Character, typing its words \"another name\" as the name gets a joke refusal (character.create.nameJoke.anotherName)"
 	},
 	"page.backToHome": {
 		"defaultMessage": "Back to Home",

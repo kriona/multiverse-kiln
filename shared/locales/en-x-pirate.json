@@ -1011,6 +1011,34 @@
 		"message": "Name",
 		"source": "Name"
 	},
+	"character.create.nameJoke.anotherName": {
+		"message": "Another Name",
+		"source": "Another Name"
+	},
+	"character.create.nameJoke.anotherNameReply": {
+		"message": "I be growin' sick o' ye.",
+		"source": "I'm getting sick of you."
+	},
+	"character.create.nameJoke.changedLater": {
+		"message": "Changed Later",
+		"source": "Changed Later"
+	},
+	"character.create.nameJoke.changedLaterReply": {
+		"message": "It can't be changed later, matey. Type another name.",
+		"source": "It can't be changed later, please type another name."
+	},
+	"character.create.nameJoke.wisely": {
+		"message": "Wisely",
+		"source": "Wisely"
+	},
+	"character.create.nameJoke.wiselyReply": {
+		"message": "Har-har. Very funny, ye bilge rat.",
+		"source": "Ha-ha. Very funny."
+	},
+	"character.create.namePrompt": {
+		"message": "Choose a name fer yer buccaneer. Choose wisely, fer it can't be changed later.",
+		"source": "Choose a name for your character. Choose wisely, as it can't be changed later."
+	},
 	"character.create.noClass": {
 		"message": "Pick a callin', matey.",
 		"source": "Choose a class."
@@ -11016,8 +11044,8 @@
 		"source": "View"
 	},
 	"name.reserved": {
-		"message": "That name could pass fer one o' the ship's officers. Choose another.",
-		"source": "That name could be mistaken for the game's staff. Choose another."
+		"message": "That name could pass fer one o' the ship's officers. Choose another name.",
+		"source": "That name could be mistaken for the game's staff. Choose another name."
 	},
 	"page.backToHome": {
 		"message": "Back to Port",

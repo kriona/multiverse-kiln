@@ -16,8 +16,8 @@ import { defineMessages } from './localization.js';
 export const NAME_MESSAGES = defineMessages({
 	reserved: {
 		id: 'name.reserved',
-		defaultMessage: 'That name could be mistaken for the game\'s staff. Choose another.',
-		description: 'Why a player or character name was refused: it contains a word such as "admin" or "moderator" that would let someone pass as the people running the game'
+		defaultMessage: 'That name could be mistaken for the game\'s staff. Choose another name.',
+		description: 'Why a player or character name was refused: it contains a word such as "admin" or "moderator" that would let someone pass as the people running the game. On Create Character, typing its words "another name" as the name gets a joke refusal (character.create.nameJoke.anotherName)'
 	}
 });
 
