@@ -1277,7 +1277,7 @@
 	},
 	"characterSheet.allEquipped": {
 		"defaultMessage": "Carries nothing else.",
-		"description": "Shown on a character's sheet under the Inventory heading when everything they carry is equipped or worn for its look, so it is all in the Equipment and Social Equipment lists above"
+		"description": "Shown on a character's sheet under the Inventory heading when everything they carry is equipped or worn for its look, so it is all in the Equipment and Social Equipment lists"
 	},
 	"characterSheet.appearance": {
 		"defaultMessage": "Appearance",

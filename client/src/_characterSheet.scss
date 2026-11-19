@@ -3,8 +3,31 @@
 
 @use 'shared' as *;
 
+// Fills the window but for a gutter, so the page shows behind it. The name, notices and buttons stay put
+// while the cards between them scroll
 .character-sheet-dialog
 {
+	--gutter: clamp(12px, 3vw, 32px);
+	width: calc(100dvw - (2 * var(--gutter)));
+	max-width: none;
+	height: calc(100dvh - (2 * var(--gutter)));
+	max-height: none;
+	overflow: hidden;
+	overscroll-behavior: contain;
+	background: $background-page;
+
+	&[open]
+	{
+		display: flex;
+		flex-direction: column;
+	}
+
+	&::backdrop
+	{
+		overflow: hidden;
+		overscroll-behavior: contain;
+	}
+
 	h2
 	{
 		margin: 0;
@@ -68,18 +91,73 @@ button.character-sheet-delete
 	margin-inline-end: auto;
 }
 
+// The name with what the character is after it, such as Dwarf Fighter, on one line when they fit
+.character-sheet-header
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 4px 12px;
+	margin: 0 0 12px;
+}
+
 .character-sheet-summary
 {
-	margin: 4px 0 12px;
+	margin: 0;
 	color: $text-faint;
 }
 
+// Three columns of cards, as many side by side as fit, so short cards stack under each other rather than
+// leaving gaps beside tall ones. A little padding keeps focus rings at the cards' edges from being cut
+// off by the scrolling
 .character-sheet
+{
+	display: grid;
+	flex: 1;
+	grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+	align-content: start;
+	align-items: start;
+	gap: 16px;
+	min-height: 0;
+	margin: 0 -4px 16px;
+	padding: 4px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.character-sheet-column
 {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
-	margin-bottom: 16px;
+	min-width: 0;
+}
+
+// A card of related parts of the sheet, such as the ability scores and traits. It holds the headings
+// read only by screen readers, so they don't overflow the scrolling cards
+.character-sheet-card
+{
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+
+	> section + section
+	{
+		margin-top: 20px;
+	}
+}
+
+// Nothing is said while the sheet shows, so the empty status takes no room under the name
+#character-sheet-status:empty
+{
+	margin: 0;
+}
+
+// The buttons stay at the bottom while the sheet loads, with nothing above them yet
+.character-sheet-buttons
+{
+	margin-top: auto;
 }
 
 // Each ability's score and modifier
@@ -225,12 +303,12 @@ button.character-sheet-item-link
 	color: $text-faint;
 }
 
-// The avatar, with the Appearance button under it
+// The avatar, with the Appearance button under it, at the top of its card
 .character-sheet-avatar-section
 {
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: center;
 	gap: 8px;
 }
 
