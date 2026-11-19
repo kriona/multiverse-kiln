@@ -47,10 +47,11 @@ A base is one race in one body type, with nothing equipped.
 - PNG, exactly 200 pixels wide and 300 tall, with a transparent background.
 - Keep every base of a body type in the same pose and place, so one item drawing fits them all with
   small shifts.
-- The body types are masc thick, masc thin, femme thick and femme thin (`mascThick`, `mascThin`,
-  `femmeThick`, `femmeThin`). A race's list is in its ruleset's races file
+- The body types are femme thicc, femme thin, masc thicc and masc thin (`femmeThicc`, `femmeThin`,
+  `mascThicc`, `mascThin`). A race's list is in its ruleset's races file
   (`PF1E_RACE_BODY_TYPES` in `shared/src/rulesets/pf1e/races.ts`, `SF1E_RACE_BODY_TYPES` in
   `shared/src/rulesets/sf1e/races.ts`). Change a race's list there if it needs other body types.
+  Create Character starts on the first body type in a race's list.
 
 Save it as, for example, `lucia/bases/pf1e/human-femmeThin.png`, and list it in `lucia.ts`:
 

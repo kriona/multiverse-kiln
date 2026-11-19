@@ -33,7 +33,7 @@ describe('avatarRepo', () =>
 			ruleset: look?.ruleset,
 			universeId: look?.universeId
 		}, {
-			bodyType: 'mascThick',
+			bodyType: 'femmeThicc',
 			artType: 'stickFigure',
 			background: 'darkGreen',
 			avatarHash: null,
@@ -47,7 +47,7 @@ describe('avatarRepo', () =>
 
 		const changed = (await findStoredLooks([characterId])).get(characterId);
 
-		assert.strictEqual(changed?.bodyType, 'mascThick');
+		assert.strictEqual(changed?.bodyType, 'femmeThicc');
 		assert.strictEqual(changed?.artType, 'lucia');
 		assert.strictEqual(changed?.background, 'darkRed');
 		assert.strictEqual(changed?.avatarHash, '0123456789abcdef');

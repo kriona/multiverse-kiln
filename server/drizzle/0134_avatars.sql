@@ -7,7 +7,7 @@ CREATE TABLE "character_hidden_slots" (
 ALTER TABLE "character_equipment" ADD COLUMN "layer" text DEFAULT 'stats' NOT NULL;--> statement-breakpoint
 ALTER TABLE "character_equipment" DROP CONSTRAINT "character_equipment_character_id_slot_pk";--> statement-breakpoint
 ALTER TABLE "character_equipment" ADD CONSTRAINT "character_equipment_character_id_layer_slot_pk" PRIMARY KEY("character_id","layer","slot");--> statement-breakpoint
-ALTER TABLE "characters" ADD COLUMN "body_type" text DEFAULT 'mascThick' NOT NULL;--> statement-breakpoint
+ALTER TABLE "characters" ADD COLUMN "body_type" text DEFAULT 'femmeThicc' NOT NULL;--> statement-breakpoint
 ALTER TABLE "characters" ADD COLUMN "art_type" text DEFAULT 'stickFigure' NOT NULL;--> statement-breakpoint
 ALTER TABLE "characters" ADD COLUMN "background" text DEFAULT 'darkGreen' NOT NULL;--> statement-breakpoint
 ALTER TABLE "characters" ADD COLUMN "avatar_hash" text;--> statement-breakpoint

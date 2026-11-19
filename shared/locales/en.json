@@ -767,16 +767,16 @@
 		"defaultMessage": "Dark red",
 		"description": "A background behind a character's avatar (the picture of the character): dark red. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
-	"avatar.bodyType.femmeThick": {
-		"defaultMessage": "Femme thick",
+	"avatar.bodyType.femmeThicc": {
+		"defaultMessage": "femme thicc",
 		"description": "A body type for a character's avatar (the picture of the character): feminine and heavily built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.femmeThin": {
 		"defaultMessage": "Femme thin",
 		"description": "A body type for a character's avatar (the picture of the character): feminine and slightly built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
-	"avatar.bodyType.mascThick": {
-		"defaultMessage": "Masc thick",
+	"avatar.bodyType.mascThicc": {
+		"defaultMessage": "masc thicc",
 		"description": "A body type for a character's avatar (the picture of the character): masculine and heavily built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.mascThin": {
@@ -793,7 +793,7 @@
 	},
 	"avatarPositions.bodyType": {
 		"defaultMessage": "Body type",
-		"description": "Label of the avatar positioning tool's choice of body type, such as masc thick, whose base the drawing is placed on"
+		"description": "Label of the avatar positioning tool's choice of body type, such as femme thicc, whose base the drawing is placed on"
 	},
 	"avatarPositions.canvas": {
 		"defaultMessage": "The drawing's parts on the base",

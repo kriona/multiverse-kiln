@@ -7,7 +7,7 @@ import type { AvatarManifest } from '@multiverse-kiln/shared';
 import { useAvatarArt } from '../src/avatars/characterAvatars.js';
 
 /**
- * Made-up art for tests that need characters to have avatars: the stick figure has a dwarf's masc thick
+ * Made-up art for tests that need characters to have avatars: the stick figure has a dwarf's femme thicc
  * and femme thin bases, and there are two backgrounds
  */
 const manifest: AvatarManifest = {
@@ -17,7 +17,7 @@ const manifest: AvatarManifest = {
 			bases: {
 				pf1e: {
 					dwarf: {
-						mascThick: 'bases/dwarf-mascThick.png',
+						femmeThicc: 'bases/dwarf-femmeThicc.png',
 						femmeThin: 'bases/dwarf-femmeThin.png'
 					}
 				},
@@ -81,7 +81,7 @@ export async function useTestAvatarArt(): Promise<() => Promise<void>>
 	const folder = await fs.mkdtemp(path.join(os.tmpdir(), 'kiln-avatar-art-'));
 	const picture = await grayPicture();
 
-	for (const file of ['backgrounds/darkGreen.png', 'backgrounds/darkRed.png', 'stickFigure/bases/dwarf-mascThick.png', 'stickFigure/bases/dwarf-femmeThin.png'])
+	for (const file of ['backgrounds/darkGreen.png', 'backgrounds/darkRed.png', 'stickFigure/bases/dwarf-femmeThicc.png', 'stickFigure/bases/dwarf-femmeThin.png'])
 	{
 		await fs.mkdir(path.dirname(path.join(folder, file)), { recursive: true });
 		await fs.writeFile(path.join(folder, file), picture);

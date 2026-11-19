@@ -767,17 +767,17 @@
 		"message": "Blood red",
 		"source": "Dark red"
 	},
-	"avatar.bodyType.femmeThick": {
+	"avatar.bodyType.femmeThicc": {
 		"message": "Lass, stout",
-		"source": "Femme thick"
+		"source": "femme thicc"
 	},
 	"avatar.bodyType.femmeThin": {
 		"message": "Lass, lean",
 		"source": "Femme thin"
 	},
-	"avatar.bodyType.mascThick": {
+	"avatar.bodyType.mascThicc": {
 		"message": "Lad, stout",
-		"source": "Masc thick"
+		"source": "masc thicc"
 	},
 	"avatar.bodyType.mascThin": {
 		"message": "Lad, lean",

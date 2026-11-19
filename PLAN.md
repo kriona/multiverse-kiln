@@ -627,7 +627,7 @@ Decided:
 	- Lucia Pan's credit on the license page (`license.artworkCredit`) names the avatar art too.
 - Bases and body types
 	- A base is a race and body type drawn in one art type: a PNG 200 pixels wide and 300 tall.
-	- Each default race, in both rulesets, has one list of body types in its ruleset's races data in `/shared`, the same for every art type. Every race starts with masc thick, masc thin, femme thick and femme thin, and the lists change as the art is drawn. Body type names are messages.
+	- Each default race, in both rulesets, has one list of body types in its ruleset's races data in `/shared`, the same for every art type. Every race starts with femme thicc, femme thin, masc thicc and masc thin, and the lists change as the art is drawn. Create Character starts on a race's first body type. Body type names are messages.
 	- An art type may not have drawn every base yet.
 - Item drawings
 	- An item drawing is a PNG cropped to the item. Each art type maps a default item's key to its drawings.
@@ -646,7 +646,7 @@ Decided:
 	- Default races and items, and their edited copies, use their own art and don't have "Looks like".
 	- Both are staged until Save like the rest of the editor, and go into the audit, export and import. An export made before this phase imports with neither set.
 - A character's look
-	- `characters` gets `body_type`, `art_type` and `background` columns. Existing characters get masc thick, the stick figure and the dark green background.
+	- `characters` gets `body_type`, `art_type` and `background` columns. Existing characters get femme thicc, the stick figure and the dark green background.
 	- Create Character gets an Appearance step after the race step: body type, art type and background, with a preview. It is saved in the character draft like the other steps.
 	- The player chooses the body type only in Create Character. The universe's creators can change it afterward from the Character List's sheet. The server refuses the change from anyone else.
 	- The art type and background can be changed afterward in the character sheet's Appearance dialog, by the player and by creators from the Character List.

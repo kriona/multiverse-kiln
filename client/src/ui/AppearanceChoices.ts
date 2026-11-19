@@ -8,7 +8,7 @@
  * while none are. The preview is drawn by the server and shared by everyone who
  * chooses the same
  */
-import { artTypesFor, AVATAR_MANIFEST, avatarPreviewPath, BACKGROUND_NAMES, BACKGROUNDS, BODY_TYPE_NAMES, drawnArtType, drawnBodyType, raceBodyTypes, type CharacterAppearance, type Ruleset } from '@multiverse-kiln/shared';
+import { artTypesFor, AVATAR_MANIFEST, avatarPreviewPath, BACKGROUND_NAMES, BACKGROUNDS, BODY_TYPE_NAMES, DEFAULT_BODY_TYPE, drawnArtType, drawnBodyType, raceBodyTypes, type CharacterAppearance, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../localization';
 import { serverHttpUrl } from '../network/serverConnection';
@@ -33,7 +33,7 @@ export class AppearanceChoices
 	private raceKey: string | null = null;
 	private chooseBodyType = true;
 	private appearance: CharacterAppearance = {
-		bodyType: 'mascThick',
+		bodyType: DEFAULT_BODY_TYPE,
 		artType: 'stickFigure',
 		background: 'darkGreen'
 	};
@@ -93,7 +93,7 @@ export class AppearanceChoices
 	{
 		const bodyTypes = raceBodyTypes(ruleset, raceKey);
 		const start = (appearance ?? {
-			bodyType: (bodyTypes[0] ?? 'mascThick'),
+			bodyType: (bodyTypes[0] ?? DEFAULT_BODY_TYPE),
 			artType: 'stickFigure',
 			background: BACKGROUNDS[0]
 		});

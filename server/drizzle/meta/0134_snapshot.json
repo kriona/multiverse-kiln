@@ -1576,7 +1576,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'mascThick'"
+          "default": "'femmeThicc'"
         },
         "art_type": {
           "name": "art_type",

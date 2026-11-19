@@ -148,7 +148,7 @@ describe('HTTP responses', () =>
 
 	it('answers an avatar or preview that isn\'t there with a message, not sniffable', async () =>
 	{
-		for (const route of [`${AVATARS_PATH}/00000000-0000-4000-8000-000000000000.png`, `${AVATAR_PREVIEWS_PATH}/stickFigure/pf1e/dwarf-mascThick-darkGreen.png`, `${AVATAR_PREVIEWS_PATH}/nothing/pf1e/dwarf-mascThick-darkGreen.png`])
+		for (const route of [`${AVATARS_PATH}/00000000-0000-4000-8000-000000000000.png`, `${AVATAR_PREVIEWS_PATH}/stickFigure/pf1e/dwarf-femmeThicc-darkGreen.png`, `${AVATAR_PREVIEWS_PATH}/nothing/pf1e/dwarf-femmeThicc-darkGreen.png`])
 		{
 			const response = await fetch(`${testServerUrl}${route}`);
 			const body = await response.text();

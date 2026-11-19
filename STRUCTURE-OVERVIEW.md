@@ -247,7 +247,7 @@ Art types:
 
 Bases:
 - a base is a race and body type drawn in one art type, a PNG 200 pixels wide and 300 tall
-- each default race has one list of body types in `/shared`, the same for every art type: masc thick, masc thin, femme thick and femme thin for now, changed as the art is drawn. Body type names are messages. An art type may not have drawn every base yet
+- each default race has one list of body types in `/shared`, the same for every art type: femme thicc, femme thin, masc thicc and masc thin for now, changed as the art is drawn. Body type names are messages. An art type may not have drawn every base yet
 - a universe's own race has "Looks like", a default race of the same ruleset (see [Races](#races)). Its characters use that race's body types and art. A race with no "Looks like" has no avatar
 
 Item drawings:

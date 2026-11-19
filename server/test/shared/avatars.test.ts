@@ -12,13 +12,13 @@ const manifest: AvatarManifest = {
 			bases: {
 				pf1e: {
 					human: {
-						mascThick: 'bases/human-mascThick.png',
+						mascThicc: 'bases/human-mascThicc.png',
 						mascThin: 'bases/human-mascThin.png',
-						femmeThick: 'bases/human-femmeThick.png',
+						femmeThicc: 'bases/human-femmeThicc.png',
 						femmeThin: 'bases/human-femmeThin.png'
 					},
 					dwarf: {
-						mascThick: 'bases/dwarf-mascThick.png'
+						femmeThicc: 'bases/dwarf-femmeThicc.png'
 					}
 				},
 				sf1e: {}
@@ -327,17 +327,17 @@ describe('avatars', () =>
 		{
 			assert.deepStrictEqual(filesOf({
 				...lookOf([inSlot('armor', 'leather_armor')]),
-				bodyType: 'mascThick'
-			}), ['backgrounds/darkRed.png', 'stickFigure/bases/human-mascThick.png']);
+				bodyType: 'femmeThicc'
+			}), ['backgrounds/darkRed.png', 'stickFigure/bases/human-femmeThicc.png']);
 		});
 
 		it('draws a body type the race\'s list doesn\'t have as its first', () =>
 		{
-			assert.strictEqual(drawnBodyType('pf1e', 'human', 'notABodyType'), 'mascThick');
+			assert.strictEqual(drawnBodyType('pf1e', 'human', 'notABodyType'), 'femmeThicc');
 			assert.strictEqual(avatarPicture(manifest, {
 				...lookOf(),
 				bodyType: 'notABodyType'
-			})?.bodyType, 'mascThick');
+			})?.bodyType, 'femmeThicc');
 		});
 
 		it('has no avatar for a race that looks like none, or one no art type has drawn', () =>
@@ -393,7 +393,7 @@ describe('avatars', () =>
 					flipped: false
 				},
 				{
-					file: 'stickFigure/items/pf1e/épée/human-mascThick.png',
+					file: 'stickFigure/items/pf1e/épée/human-femmeThicc.png',
 					x: -3,
 					y: 12.5,
 					flipped: true
@@ -401,14 +401,14 @@ describe('avatars', () =>
 			];
 
 			assert.strictEqual(layersHash([]), '09612b07b5ecb5a5');
-			assert.strictEqual(layersHash(layers), 'b90a8bb21c8caf1d');
-			assert.strictEqual(layersHash(layers, new Map([['backgrounds/darkRed.png', '0123456789abcdef']])), '71fb606c2e690301');
+			assert.strictEqual(layersHash(layers), '61c502e2cf65e691');
+			assert.strictEqual(layersHash(layers, new Map([['backgrounds/darkRed.png', '0123456789abcdef']])), 'c3cf0a5aca82cecd');
 		});
 	});
 
 	describe('matchingDrawing', () =>
 	{
-		const drawing = (races: string[], bodyTypes?: ('mascThick' | 'femmeThin')[], slots?: string[]): ItemDrawing => ({
+		const drawing = (races: string[], bodyTypes?: ('femmeThicc' | 'femmeThin')[], slots?: string[]): ItemDrawing => ({
 			races,
 			bodyTypes,
 			slots,
@@ -424,9 +424,9 @@ describe('avatars', () =>
 
 			assert.strictEqual(matchingDrawing([anyone, bySlot, byBody, both], 'human', 'femmeThin', 'mainHand'), both);
 			assert.strictEqual(matchingDrawing([anyone, bySlot, byBody], 'human', 'femmeThin', 'mainHand'), byBody);
-			assert.strictEqual(matchingDrawing([anyone, bySlot], 'human', 'mascThick', 'mainHand'), bySlot);
-			assert.strictEqual(matchingDrawing([anyone, bySlot], 'elf', 'mascThick', 'mainHand'), anyone);
-			assert.strictEqual(matchingDrawing([anyone], 'halfling', 'mascThick', 'mainHand'), undefined);
+			assert.strictEqual(matchingDrawing([anyone, bySlot], 'human', 'femmeThicc', 'mainHand'), bySlot);
+			assert.strictEqual(matchingDrawing([anyone, bySlot], 'elf', 'femmeThicc', 'mainHand'), anyone);
+			assert.strictEqual(matchingDrawing([anyone], 'halfling', 'femmeThicc', 'mainHand'), undefined);
 		});
 	});
 
@@ -435,8 +435,8 @@ describe('avatars', () =>
 		it('offers the art types with a base for the race and body type', () =>
 		{
 			assert.deepStrictEqual(artTypesFor(manifest, 'pf1e', 'human', 'femmeThin'), ['stickFigure', 'lucia']);
-			assert.deepStrictEqual(artTypesFor(manifest, 'pf1e', 'human', 'mascThick'), ['stickFigure']);
-			assert.deepStrictEqual(artTypesFor(manifest, 'pf1e', null, 'mascThick'), []);
+			assert.deepStrictEqual(artTypesFor(manifest, 'pf1e', 'human', 'femmeThicc'), ['stickFigure']);
+			assert.deepStrictEqual(artTypesFor(manifest, 'pf1e', null, 'femmeThicc'), []);
 			assert.deepStrictEqual(artTypesForRace(manifest, 'pf1e', 'dwarf'), ['stickFigure']);
 			assert.deepStrictEqual(artTypesForRace(manifest, 'pf1e', 'elf'), []);
 		});

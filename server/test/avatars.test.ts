@@ -26,8 +26,8 @@ type Color = [number, number, number];
 
 const BACKGROUND: Color = [10, 80, 10];
 const OTHER_BACKGROUND: Color = [90, 10, 10];
-const MASC_BASE: Color = [200, 200, 200];
-const FEMME_BASE: Color = [220, 180, 200];
+const THICK_BASE: Color = [200, 200, 200];
+const THIN_BASE: Color = [220, 180, 200];
 const ARMOR: Color = [139, 69, 19];
 const SWORD: Color = [180, 180, 255];
 
@@ -40,7 +40,7 @@ const SWORD_AT = { x: 150, y: 120 };
 const OFF_HAND_SWORD_AT = { x: 40, y: 120 };
 
 /**
- * Made-up art: the stick figure has a dwarf's masc thick and femme thin bases, leather armor and a short
+ * Made-up art: the stick figure has a dwarf's femme thicc and femme thin bases, leather armor and a short
  * sword, which the off hand draws flipped
  */
 const manifest: AvatarManifest = {
@@ -50,7 +50,7 @@ const manifest: AvatarManifest = {
 			bases: {
 				pf1e: {
 					dwarf: {
-						mascThick: 'bases/dwarf-mascThick.png',
+						femmeThicc: 'bases/dwarf-femmeThicc.png',
 						femmeThin: 'bases/dwarf-femmeThin.png'
 					}
 				},
@@ -66,7 +66,7 @@ const manifest: AvatarManifest = {
 									file: 'items/leather_armor.png',
 									offsets: {
 										dwarf: {
-											mascThick: ARMOR_AT,
+											femmeThicc: ARMOR_AT,
 											femmeThin: ARMOR_AT
 										}
 									}
@@ -82,12 +82,12 @@ const manifest: AvatarManifest = {
 									file: 'items/short_sword.png',
 									offsets: {
 										dwarf: {
-											mascThick: SWORD_AT
+											femmeThicc: SWORD_AT
 										}
 									},
 									mirroredOffsets: {
 										dwarf: {
-											mascThick: OFF_HAND_SWORD_AT
+											femmeThicc: OFF_HAND_SWORD_AT
 										}
 									}
 								}
@@ -260,8 +260,8 @@ describe('Avatars', () =>
 		const files: [string, Buffer][] = [
 			['backgrounds/darkGreen.png', await rectangle(200, 300, BACKGROUND)],
 			['backgrounds/darkRed.png', await rectangle(200, 300, OTHER_BACKGROUND)],
-			['stickFigure/bases/dwarf-mascThick.png', await base(MASC_BASE)],
-			['stickFigure/bases/dwarf-femmeThin.png', await base(FEMME_BASE)],
+			['stickFigure/bases/dwarf-femmeThicc.png', await base(THICK_BASE)],
+			['stickFigure/bases/dwarf-femmeThin.png', await base(THIN_BASE)],
 			['stickFigure/items/leather_armor.png', await rectangle(60, 80, ARMOR)],
 			['stickFigure/items/short_sword.png', await rectangle(10, 60, SWORD)]
 		];
@@ -380,7 +380,7 @@ describe('Avatars', () =>
 		const { avatarHash, appearance, avatarKey } = await sheet();
 
 		assert.deepStrictEqual(appearance, {
-			bodyType: 'mascThick',
+			bodyType: 'femmeThicc',
 			artType: 'stickFigure',
 			background: 'darkGreen'
 		});
@@ -394,7 +394,7 @@ describe('Avatars', () =>
 		assert.strictEqual(response.headers.get('x-content-type-options'), 'nosniff');
 		assert.deepStrictEqual([width, height], [200, 300]);
 		assert.deepStrictEqual(await pixelAt(png, { x: 5, y: 5 }), BACKGROUND);
-		assert.deepStrictEqual(await pixelAt(png, { x: BASE_SQUARE.x + 1, y: BASE_SQUARE.y + 1 }), MASC_BASE);
+		assert.deepStrictEqual(await pixelAt(png, { x: BASE_SQUARE.x + 1, y: BASE_SQUARE.y + 1 }), THICK_BASE);
 		assert.ok(await getObject(avatarStorageKey(brokkId)));
 	});
 
@@ -417,7 +417,7 @@ describe('Avatars', () =>
 	it('makes an out-of-date avatar once for requests that arrive together', async () =>
 	{
 		assert.strictEqual((await request(undefined, 'GET', avatarPath(brokkId, null))).status, 200);
-		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }), 204);
+		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'femmeThicc', artType: 'stickFigure', background: 'darkRed' }), 204);
 
 		let puts = 0;
 		const stopWatching = beforePuts(avatarStorageKey(brokkId), () =>
@@ -443,7 +443,7 @@ describe('Avatars', () =>
 	it('makes the avatar again when the stored one isn\'t of the hash saved for it', async () =>
 	{
 		await avatar();
-		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }), 204);
+		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'femmeThicc', artType: 'stickFigure', background: 'darkRed' }), 204);
 
 		// As when two requests overlap, and the one for the old look stores its PNG after the new look's
 		// hash is saved
@@ -549,7 +549,7 @@ describe('Avatars', () =>
 
 	it('lets the player change the art type and background, and only creators the body type', async () =>
 	{
-		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }), 204);
+		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'femmeThicc', artType: 'stickFigure', background: 'darkRed' }), 204);
 		assert.deepStrictEqual(await pixelAt(await avatar(), { x: 5, y: 5 }), OTHER_BACKGROUND);
 
 		assert.strictEqual(await change('PUT', 'appearance', { bodyType: 'femmeThin', artType: 'stickFigure', background: 'darkRed' }), 403);
@@ -569,7 +569,7 @@ describe('Avatars', () =>
 		});
 
 		// Lucia hasn't drawn dwarves, so the stick figure draws her
-		assert.deepStrictEqual(await pixelAt(await avatar(), { x: BASE_SQUARE.x + 1, y: BASE_SQUARE.y + 1 }), FEMME_BASE);
+		assert.deepStrictEqual(await pixelAt(await avatar(), { x: BASE_SQUARE.x + 1, y: BASE_SQUARE.y + 1 }), THIN_BASE);
 	});
 
 	it('serves previews of a base over a background, and 304 while they are the same', async () =>
@@ -581,7 +581,7 @@ describe('Avatars', () =>
 
 		assert.strictEqual(first.status, 200);
 		assert.deepStrictEqual(await pixelAt(png, { x: 5, y: 5 }), OTHER_BACKGROUND);
-		assert.deepStrictEqual(await pixelAt(png, { x: BASE_SQUARE.x + 1, y: BASE_SQUARE.y + 1 }), FEMME_BASE);
+		assert.deepStrictEqual(await pixelAt(png, { x: BASE_SQUARE.x + 1, y: BASE_SQUARE.y + 1 }), THIN_BASE);
 		assert.strictEqual((await request(undefined, 'GET', previewPath, undefined, { 'If-None-Match': etag })).status, 304);
 		assert.strictEqual((await request(undefined, 'GET', avatarPreviewPath('stickFigure', 'pf1e', 'human', 'femmeThin', 'darkRed'))).status, 404);
 		assert.strictEqual((await request(undefined, 'GET', avatarPreviewPath('stickFigure', 'pf1e', 'dwarf', 'femmeThin', 'plaid'))).status, 404);
@@ -610,7 +610,7 @@ describe('Avatars', () =>
 		const room = await sdk.joinOrCreate(SESSION_ROOM_NAME);
 		const inbox = new Inbox(room, Object.values(SessionServerMessageType));
 		const changes: [string, string, unknown][] = [
-			['PUT', 'appearance', { bodyType: 'mascThick', artType: 'stickFigure', background: 'darkRed' }],
+			['PUT', 'appearance', { bodyType: 'femmeThicc', artType: 'stickFigure', background: 'darkRed' }],
 			['POST', 'items/equip', { itemId: leatherArmorId, hand: null, ring: null }],
 			['POST', 'hidden-slots', { slot: 'armor', hidden: true }],
 			['POST', 'hidden-slots', { slot: 'armor', hidden: false }],
