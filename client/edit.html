@@ -111,7 +111,7 @@
 								<button id="editors-add" type="button" data-shortcut="Alt+N" data-message="editor.editors.add" data-translation-context="Button on the editor's Editors tab that opens the dialog for giving a player a role in the universe"><!-- icon ph:user-plus -->Add Editor</button>
 							</div>
 							<p id="editors-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table">
+							<table class="item-table hover-rows">
 								<caption class="visually-hidden" data-message="editor.editors.caption" data-translation-context="Name of the table on the editor's Editors tab listing the players with a role in the universe, read out by screen readers">Editors</caption>
 								<thead>
 									<tr>
@@ -181,7 +181,7 @@
 						<section id="ruleset-rulebooks" class="panel rulebooks" aria-labelledby="rulebooks-heading">
 							<h2 id="rulebooks-heading" data-message="editor.rulebooks.heading" data-translation-context="Heading of the part of the editor's Ruleset tab listing the books of game rules the universe uses, such as the Core Rulebook; also names the setting in the list of what a save changed, on the editor's Audit tab">Rulebooks</h2>
 							<p id="rulebooks-hint" class="hint" data-message="editor.rulebooks.hint" data-translation-context="Explains the Rulebooks table on the editor's Ruleset tab">The books the universe's races, classes and items come from. While a book is on, what it brings shows on the Characters and Items tabs. You can still disable each one there.</p>
-							<table class="item-table rulebook-table" aria-labelledby="rulebooks-heading" aria-describedby="rulebooks-hint">
+							<table class="item-table rulebook-table hover-rows" aria-labelledby="rulebooks-heading" aria-describedby="rulebooks-hint">
 								<thead>
 									<tr>
 										<th scope="col" data-message="editor.rulebooks.bookColumn" data-translation-context="Heading of the column of book names in the Rulebooks table on the editor's Ruleset tab">Book</th>
@@ -220,7 +220,7 @@
 								<button id="difficulty-add" type="button" data-shortcut="Alt+I" data-message="editor.difficulty.add" data-translation-context="Button that opens the dialog for making a new difficulty level"><!-- icon ph:plus -->Add Difficulty</button>
 							</div>
 							<p id="difficulty-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table" aria-labelledby="ruleset-difficulty-heading">
+							<table class="item-table hover-rows" aria-labelledby="ruleset-difficulty-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</th>
@@ -313,7 +313,7 @@
 								<button id="race-add" type="button" data-shortcut="Alt+R" data-message="editor.races.add" data-translation-context="Button that opens the dialog for making a new race"><!-- icon ph:plus -->Add Race</button>
 							</div>
 							<p id="race-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table" aria-labelledby="characters-races-heading">
+							<table class="item-table hover-rows" aria-labelledby="characters-races-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
@@ -333,7 +333,7 @@
 								<button id="class-add" type="button" data-shortcut="Alt+L" data-message="editor.classes.add" data-translation-context="Button that opens the dialog for making a new character class"><!-- icon ph:plus -->Add Class</button>
 							</div>
 							<p id="class-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table" aria-labelledby="characters-classes-heading">
+							<table class="item-table hover-rows" aria-labelledby="characters-classes-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
@@ -353,7 +353,7 @@
 								<button id="theme-add" type="button" data-shortcut="Alt+T" data-message="editor.themes.add" data-translation-context="Button that opens the dialog for making a new theme (a character background, such as ace pilot)"><!-- icon ph:plus -->Add Theme</button>
 							</div>
 							<p id="theme-list-error" class="form-error" role="alert" hidden></p>
-							<table class="item-table" aria-labelledby="characters-themes-heading">
+							<table class="item-table hover-rows" aria-labelledby="characters-themes-heading">
 								<thead>
 									<tr>
 										<th scope="col" data-sort="name"><button type="button" class="sort-button" data-message="form.name" data-translation-context="Label of the field for the name of something being made or edited, such as a universe, region, area, tile, item, race, class, theme or difficulty level, and the heading of the column of names in the editor's lists of them; also names the setting in the list of what a save changed, on the editor's Audit tab">Name</button></th>
@@ -383,7 +383,7 @@
 								<select id="character-list-in-group"></select>
 							</label>
 						</div>
-						<table id="character-list-table" class="item-table">
+						<table id="character-list-table" class="item-table hover-rows">
 							<caption class="visually-hidden" data-message="editor.characterList.caption" data-translation-context="Name of the table of the universe's characters on the editor's Character List tab, read out by screen readers">Characters</caption>
 							<thead>
 								<tr>
@@ -430,7 +430,7 @@
 							<button id="tile-add" type="button" data-shortcut="Alt+N" data-message="editor.tiles.add" data-translation-context="Button that opens the dialog for making a new tile"><!-- icon ph:plus -->Add Tile</button>
 						</div>
 						<p id="tile-list-error" class="form-error" role="alert" hidden></p>
-						<table id="tile-table" class="tile-table">
+						<table id="tile-table" class="tile-table hover-rows">
 							<caption class="visually-hidden" data-message="editor.tiles.caption" data-translation-context="Name of the table of tiles on the editor's Tilesets tab, read out by screen readers">Tiles</caption>
 							<thead>
 								<tr>
@@ -777,7 +777,7 @@
 							</label>
 						</div>
 						<p id="item-list-error" class="form-error" role="alert" hidden></p>
-						<table id="item-table" class="item-table">
+						<table id="item-table" class="item-table hover-rows">
 							<caption class="visually-hidden" data-message="editor.items.caption" data-translation-context="Name of the table of items on the editor's Items tab, read out by screen readers">Items</caption>
 							<thead>
 								<tr>
@@ -800,7 +800,7 @@
 
 					<section id="editor-panel-audit" class="panel editor-panel" role="tabpanel" aria-labelledby="editor-tab-audit" hidden>
 						<p id="audit-hint" class="hint"></p>
-						<table id="audit-table" class="item-table">
+						<table id="audit-table" class="item-table hover-rows">
 							<caption class="visually-hidden" data-message="editor.audit.caption" data-translation-context="Name of the table on the editor's Audit tab listing the saves made in the universe's editor, read out by screen readers">Saves</caption>
 							<thead>
 								<tr>

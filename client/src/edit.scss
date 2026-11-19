@@ -46,7 +46,7 @@
 	button:hover
 	{
 		border-color: $accent;
-		background: $background-control-hover;
+		background: $button-background-hover;
 	}
 
 	button[aria-pressed="true"]:hover
@@ -754,6 +754,25 @@ form > .changed-since,
 	{
 		padding: 6px 8px;
 		border-bottom: 1px solid $border-subtle;
+	}
+}
+
+// A table whose rows light up under the pointer, while a menu in them is open and while the keyboard is
+// on them, so it is clear which row the buttons at its far end belong to
+.hover-rows tbody tr
+{
+	&:has(:focus-visible),
+	&:has(:popover-open)
+	{
+		background: $background-control-hover;
+	}
+
+	@media (hover: hover)
+	{
+		&:hover
+		{
+			background: $background-control-hover;
+		}
 	}
 }
 

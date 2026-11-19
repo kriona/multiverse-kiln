@@ -1539,7 +1539,8 @@ export class CharacterSheetDialog
 	 * Lists each of the character's slots of a layer with the item in it, or empty: the equipment slots in
 	 * the Equipment list, and the social slots in the Social Equipment list. An item held in both hands shows in the
 	 * main hand, and the off hand says it is taken. A slot hidden from the avatar is marked with a crossed
-	 * out eye. Each slot has a menu (see slotMenu())
+	 * out eye. Each slot has a menu (see slotMenu()). Each slot's name and item are in a row of their own,
+	 * which the page highlights under the pointer so it is clear which slot a menu belongs to
 	 *
 	 * @param sheet The character
 	 * @param layer Which slots
@@ -1553,8 +1554,9 @@ export class CharacterSheetDialog
 		const slots = ((layer === 'stats') ? characterSlots(sheet.ruleset, sheet.hasTail) : socialSlots(sheet.ruleset));
 		const list = ((layer === 'stats') ? this.equipped : this.social);
 
-		list.replaceChildren(...slots.flatMap((slot) =>
+		list.replaceChildren(...slots.map((slot) =>
 		{
+			const row = document.createElement('div');
 			const term = document.createElement('dt');
 			const value = document.createElement('dd');
 			const valueText = document.createElement('span');
@@ -1613,7 +1615,10 @@ export class CharacterSheetDialog
 				value.append(menu);
 			}
 
-			return([term, value]);
+			row.className = 'character-sheet-slot-row';
+			row.append(term, value);
+
+			return(row);
 		}));
 	}
 

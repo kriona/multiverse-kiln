@@ -208,8 +208,7 @@ button.character-sheet-delete
 {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
-	margin: 0;
+	margin: 0 -6px;
 	padding: 0;
 	list-style: none;
 	overflow-wrap: anywhere;
@@ -219,6 +218,8 @@ button.character-sheet-delete
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		padding: 2px 6px;
+		border-radius: 4px;
 	}
 
 	.item-icon
@@ -291,6 +292,26 @@ button.character-sheet-item-link
 	text-align: start;
 }
 
+// A slot's or item's row lights up under the pointer, while its menu is open and while the keyboard is on
+// it, so it is clear which row the menu at its far end belongs to
+.character-sheet-slot-row,
+.character-sheet-items li
+{
+	&:has(:focus-visible),
+	&:has(:popover-open)
+	{
+		background: $background-control-hover;
+	}
+
+	@media (hover: hover)
+	{
+		&:hover
+		{
+			background: $background-control-hover;
+		}
+	}
+}
+
 // Each item's menu sits at the far end of its row
 .character-sheet-item-menu
 {
@@ -312,16 +333,35 @@ button.character-sheet-item-link
 	gap: 8px;
 }
 
-// The Equipment and Social Equipment lists keep each slot's menu at the end of its row
-.character-sheet-equipped dd
+// The Equipment and Social Equipment lists keep each slot's menu at the end of its row. Each slot's name
+// and item share a row on the list's grid, so the names line up in one column. The menu's button makes a
+// row taller than its text, so the slot's name lines up with the text of its item rather than the top of
+// the row
+.character-sheet-equipped
 {
-	display: flex;
-	align-items: center;
-	gap: 8px;
+	gap: 0 16px;
+	margin: 0 -6px;
 
-	> span
+	.character-sheet-slot-row
 	{
-		flex: 1;
+		display: grid;
+		grid-column: 1 / -1;
+		grid-template-columns: subgrid;
+		align-items: baseline;
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	dd
+	{
+		display: flex;
+		align-items: center;
+		gap: 8px;
+
+		> span
+		{
+			flex: 1;
+		}
 	}
 }
 
