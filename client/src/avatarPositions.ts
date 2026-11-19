@@ -402,10 +402,12 @@ class PositioningTool
 	 */
 	private fillBodyTypes(): void
 	{
-		const options: SelectOption[] = this.baseBodyTypes(this.raceSelect.value).map((bodyType) => ({
-			value: bodyType,
-			label: t(BODY_TYPE_NAMES[bodyType])
-		}));
+		const options: SelectOption[] = this
+			.baseBodyTypes(this.raceSelect.value)
+			.map((bodyType) => ({
+				value: bodyType,
+				label: t(BODY_TYPE_NAMES[bodyType])
+			}));
 
 		setOptions(this.bodyTypeSelect, options);
 		this.showBase();
@@ -531,16 +533,18 @@ class PositioningTool
 	{
 		const mirrored = (this.mirroredSlot() !== undefined);
 
-		return(this.parts().flatMap((_part, index) => [
-			{
-				index,
-				mirrored: false
-			},
-			...(mirrored ? [{
-				index,
-				mirrored: true
-			}] : [])
-		]));
+		return(this
+			.parts()
+			.flatMap((_part, index) => [
+				{
+					index,
+					mirrored: false
+				},
+				...(mirrored ? [{
+					index,
+					mirrored: true
+				}] : [])
+			]));
 	}
 
 	/**
@@ -565,7 +569,13 @@ class PositioningTool
 	private fillParts(): void
 	{
 		this.rows.clear();
-		this.partList.replaceChildren(...((this.bodyType === undefined) ? [] : this.partRefs().map((ref) => this.partRow(ref))));
+		const rows = ((this.bodyType === undefined)
+			? []
+			: this
+				.partRefs()
+				.map((ref) => this.partRow(ref)));
+
+		this.partList.replaceChildren(...rows);
 		this.showOffsets();
 	}
 
@@ -860,7 +870,8 @@ class PositioningTool
 					const element = new Image();
 
 					element.src = url;
-					element.decode()
+					element
+						.decode()
 						.then(() => resolve(element))
 						.catch(() => resolve(null));
 				}));
@@ -1007,11 +1018,11 @@ class PositioningTool
 		 */
 		const pointOf = (event: PointerEvent): AvatarPoint =>
 		{
-			const rect = this.canvas.getBoundingClientRect();
+			const bounds = this.canvas.getBoundingClientRect();
 
 			return({
-				x: ((event.clientX - rect.left) * (AVATAR_WIDTH / rect.width)),
-				y: ((event.clientY - rect.top) * (AVATAR_HEIGHT / rect.height))
+				x: ((event.clientX - bounds.left) * (AVATAR_WIDTH / bounds.width)),
+				y: ((event.clientY - bounds.top) * (AVATAR_HEIGHT / bounds.height))
 			});
 		};
 
@@ -1023,7 +1034,9 @@ class PositioningTool
 			}
 
 			const point = pointOf(event);
-			const hit = [...this.drawn].reverse().find((part) =>((point.x >= part.x) && (point.x < (part.x + part.width)) && (point.y >= part.y) && (point.y < (part.y + part.height))));
+			const hit = [...this.drawn]
+				.reverse()
+				.find((part) => ((point.x >= part.x) && (point.x < (part.x + part.width)) && (point.y >= part.y) && (point.y < (part.y + part.height))));
 
 			if (!hit)
 			{
@@ -1130,7 +1143,14 @@ function refKey(ref: PartRef): string
  */
 function stringArray(values: readonly string[]): string
 {
-	return(`[${values.map((value) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'`).join(', ')}]`);
+	const items = values
+		.map((value) => value
+			.replace(/\\/g, '\\\\')
+			.replace(/'/g, '\\\''))
+		.map((value) => `'${value}'`)
+		.join(', ');
+
+	return(`[${items}]`);
 }
 
 /**
@@ -1240,7 +1260,8 @@ async function start(): Promise<void>
 	setPageTitle(document.title);
 
 	const usable = await devToolsOn();
-	const hasDrawings = Object.values(AVATAR_MANIFEST.artTypes).some((art) => RULESETS.some((ruleset) => (Object.keys(art.items[ruleset]).length > 0)));
+	const hasDrawings = Object.values(AVATAR_MANIFEST.artTypes)
+		.some((art) => RULESETS.some((ruleset) => (Object.keys(art.items[ruleset]).length > 0)));
 
 	getElement('positions-loading', HTMLElement).hidden = true;
 	getElement('positions-unavailable', HTMLElement).hidden = usable;

@@ -488,6 +488,8 @@ function hashText(text: string): string
 	}
 
 	return([piece3, piece2, piece1, piece0]
-		.map((piece) => piece.toString(16).padStart(4, '0'))
+		.map((piece) => piece
+			.toString(16)
+			.padStart(4, '0'))
 		.join(''));
 }

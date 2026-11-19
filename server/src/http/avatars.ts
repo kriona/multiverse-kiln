@@ -82,7 +82,9 @@ async function serveAvatar(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	response.type('png').send(avatar.png);
+	response
+		.type('png')
+		.send(avatar.png);
 }
 
 /**
@@ -133,5 +135,7 @@ async function servePreview(request: Request, response: Response): Promise<void>
 		return;
 	}
 
-	response.type('png').send(await previewPng(picture, artType, ruleset as Ruleset, raceKey, bodyType, background));
+	response
+		.type('png')
+		.send(await previewPng(picture, artType, ruleset as Ruleset, raceKey, bodyType, background));
 }

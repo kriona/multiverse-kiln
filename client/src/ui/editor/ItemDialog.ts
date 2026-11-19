@@ -249,10 +249,11 @@ export class ItemDialog
 
 		if (loading === undefined)
 		{
-			loading = api.listItems(universe.id, {
-				custom: false,
-				limit: MAX_ITEMS_PER_PAGE
-			})
+			loading = api
+				.listItems(universe.id, {
+					custom: false,
+					limit: MAX_ITEMS_PER_PAGE
+				})
 				.then(({ items }) =>
 				{
 					const collator = new Intl.Collator(currentLocale());

@@ -2283,7 +2283,9 @@ export class CharacterSheetDialog
 	 */
 	private filterItems(): number
 	{
-		const query = this.itemSearch.value.trim().toLocaleLowerCase(currentLocale());
+		const query = this.itemSearch.value
+			.trim()
+			.toLocaleLowerCase(currentLocale());
 		const rows = [...this.items.children].filter((row) => (row instanceof HTMLElement));
 		let shown = 0;
 
