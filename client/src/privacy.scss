@@ -8,12 +8,31 @@
 	overflow-y: auto;
 }
 
+// When the policy last changed, above its card
+.privacy-updated
+{
+	width: min(1140px, calc(100% - 32px));
+	margin: 1em auto;
+	color: $text-muted;
+}
+
+// The policy, in a card as wide as the line above it
 .privacy-body
 {
-	max-width: 760px;
-	margin: 0 auto;
-	padding: 0 16px 16px;
+	box-sizing: border-box;
+	width: min(1140px, calc(100% - 32px));
+	margin: 0 auto 16px;
 	line-height: 1.5;
+
+	> :first-child
+	{
+		margin-top: 0;
+	}
+
+	> :last-child > :last-child
+	{
+		margin-bottom: 0;
+	}
 
 	h2
 	{
@@ -47,10 +66,5 @@
 	li
 	{
 		margin-bottom: 4px;
-	}
-
-	.privacy-updated
-	{
-		color: $text-muted;
 	}
 }

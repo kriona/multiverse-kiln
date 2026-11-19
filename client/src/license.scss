@@ -8,12 +8,25 @@
 	overflow-y: auto;
 }
 
+// The licenses, in a card
 .license-body
 {
-	max-width: 760px;
-	margin: 0 auto;
-	padding: 0 16px 16px;
+	box-sizing: border-box;
+	width: min(1140px, calc(100% - 32px));
+	margin: 16px auto;
 	line-height: 1.5;
+
+	// The contents' heading starts at the top of the card
+	> :first-child,
+	> :first-child > :first-child
+	{
+		margin-top: 0;
+	}
+
+	> :last-child > :last-child
+	{
+		margin-bottom: 0;
+	}
 
 	h2
 	{

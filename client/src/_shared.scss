@@ -118,6 +118,55 @@ body
 	color: $text;
 }
 
+// Every page's <body>
+.site-page
+{
+	background-size: 550px 550px;
+	background-image:
+		/* Bright focal stars (2px - 2.5px) */
+		radial-gradient(2.5px 2.5px at 75px 108px, #ffffff, transparent),
+		radial-gradient(2px 2px at 410px 83px, #bae6fd, transparent),
+		radial-gradient(2px 2px at 260px 338px, #82EBC4, transparent),
+		radial-gradient(2.5px 2.5px at 490px 458px, #d8b4fe, transparent),
+		radial-gradient(2px 2px at 170px 478px, #ffffff, transparent),
+		radial-gradient(2px 2px at 335px 68px, #82EBC4, transparent),
+
+		/* Medium white stars (1.5px) */
+		radial-gradient(1.5px 1.5px at 140px 238px, rgba(255, 255, 255, 0.85), transparent),
+		radial-gradient(1.5px 1.5px at 320px 148px, rgba(255, 255, 255, 0.8), transparent),
+		radial-gradient(1.5px 1.5px at 50px 408px, rgba(255, 255, 255, 0.85), transparent),
+		radial-gradient(1.5px 1.5px at 380px 288px, rgba(255, 255, 255, 0.75), transparent),
+		radial-gradient(1.5px 1.5px at 515px 188px, rgba(255, 255, 255, 0.85), transparent),
+
+		/* Medium colored stars: blue, purple & #82EBC4 (1.5px) */
+		radial-gradient(1.5px 1.5px at 95px 363px, rgba(186, 230, 253, 0.85), transparent),
+		radial-gradient(1.5px 1.5px at 445px 223px, rgba(216, 180, 254, 0.85), transparent),
+		radial-gradient(1.5px 1.5px at 235px 133px, rgba(130, 235, 196, 0.85), transparent),
+		radial-gradient(1.5px 1.5px at 295px 463px, rgba(186, 230, 253, 0.8), transparent),
+		radial-gradient(1.5px 1.5px at 190px 293px, rgba(216, 180, 254, 0.8), transparent),
+		radial-gradient(1.5px 1.5px at 475px 328px, rgba(130, 235, 196, 0.8), transparent),
+		radial-gradient(1.5px 1.5px at 120px 53px, rgba(216, 180, 254, 0.85), transparent),
+
+		/* Faint background dust stars (1px - mixed white, blue, purple & #82EBC4) */
+		radial-gradient(1px 1px at 30px 43px, rgba(255, 255, 255, 0.5), transparent),
+		radial-gradient(1px 1px at 210px 58px, rgba(186, 230, 253, 0.5), transparent),
+		radial-gradient(1px 1px at 465px 33px, rgba(130, 235, 196, 0.5), transparent),
+		radial-gradient(1px 1px at 110px 173px, rgba(216, 180, 254, 0.55), transparent),
+		radial-gradient(1px 1px at 285px 223px, rgba(255, 255, 255, 0.5), transparent),
+		radial-gradient(1px 1px at 85px 313px, rgba(130, 235, 196, 0.45), transparent),
+		radial-gradient(1px 1px at 345px 418px, rgba(255, 255, 255, 0.55), transparent),
+		radial-gradient(1px 1px at 440px 363px, rgba(216, 180, 254, 0.5), transparent),
+		radial-gradient(1px 1px at 150px 433px, rgba(255, 255, 255, 0.45), transparent),
+		radial-gradient(1px 1px at 530px 518px, rgba(186, 230, 253, 0.5), transparent),
+		radial-gradient(1px 1px at 35px 213px, rgba(216, 180, 254, 0.45), transparent),
+		radial-gradient(1px 1px at 255px 33px, rgba(130, 235, 196, 0.45), transparent),
+		radial-gradient(1px 1px at 390px 163px, rgba(186, 230, 253, 0.5), transparent),
+		radial-gradient(1px 1px at 520px 103px, rgba(255, 255, 255, 0.45), transparent),
+		radial-gradient(1px 1px at 225px 393px, rgba(216, 180, 254, 0.5), transparent),
+		radial-gradient(1px 1px at 65px 508px, rgba(255, 255, 255, 0.5), transparent),
+		radial-gradient(1px 1px at 395px 513px, rgba(130, 235, 196, 0.5), transparent);
+}
+
 // While a page shown in another language waits to be translated (public/remembered-language.js), it
 // stays hidden rather than showing its HTML's English. After a second it shows regardless, so a page whose
 // scripts fail is never left blank
@@ -530,6 +579,7 @@ button.sort-button
 	gap: 12px;
 	padding: 12px 16px;
 	border-bottom: 1px solid $border;
+	box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.75);
 
 	$tColor1: #160138;
 	$tColor2: #33125b;
@@ -1588,6 +1638,7 @@ footer
 	@include small-text;
 	text-align: center;
 	color: $text-faint;
+	background: $background-page;
 
 	a,
 	a:visited,

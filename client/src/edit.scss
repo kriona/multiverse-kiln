@@ -182,7 +182,7 @@ $editor-chat-inset: 16px;
 	scrollbar-width: none;
 	// A tab the keyboard moves to is scrolled clear of the arrows over the ends
 	scroll-padding: 0 40px;
-	background: linear-gradient(to top, $border 1px, transparent 1px);
+	background: linear-gradient(to top, $border 1px, $background-page 1px);
 
 	button
 	{
