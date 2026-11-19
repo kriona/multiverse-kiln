@@ -1683,8 +1683,8 @@ export class CharacterSheetDialog
 
 	/**
 	 * A slot's menu. For those who may change the character: Choose item, which opens the dialog choosing
-	 * its item, then Unequip for a slot with an item in it, then Inspect for an item in an equipment slot,
-	 * then Hide on avatar or Show on avatar. For others, Inspect for an item in an equipment slot. A slot
+	 * its item, then Unequip and Inspect for a slot with an item in it, then Hide on avatar or Show on
+	 * avatar. For others, Inspect for a slot with an item in it. A slot
 	 * is hidden in both layers at once, so its menus in the Equipment and Social Equipment lists agree.
 	 * Inspecting the slot's item shows the rest of the menu in the Inspect dialog
 	 *
@@ -1704,7 +1704,6 @@ export class CharacterSheetDialog
 			layer,
 			slot
 		};
-		const equipped = ((layer === 'stats') ? item : undefined);
 		const unequip: MenuAction[] = ((item === undefined)
 			? []
 			: [{
@@ -1719,7 +1718,7 @@ export class CharacterSheetDialog
 					void this.unequip(item, chosen);
 				}
 			}]);
-		const inspect: MenuAction[] = ((equipped === undefined)
+		const inspect: MenuAction[] = ((item === undefined)
 			? []
 			: [{
 				label: t(INSPECT_MESSAGES.inspect),
