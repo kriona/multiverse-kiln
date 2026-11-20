@@ -656,7 +656,7 @@
 		"description": "Label of the field on the site settings page for the most universes one player may create"
 	},
 	"appearance.artType": {
-		"defaultMessage": "Art type",
+		"defaultMessage": "Art style",
 		"description": "Heading of the choice of how a character's avatar (the picture of the character) is drawn, such as Stick figure, or in the style of an artist named after them: on Create Character's Appearance step, and in the Appearance dialog of a character's sheet"
 	},
 	"appearance.background": {
@@ -666,6 +666,10 @@
 	"appearance.bodyType": {
 		"defaultMessage": "Body type",
 		"description": "Heading of the choice of a character's body type for their avatar (the picture of the character), such as Femme thin: on Create Character's Appearance step, and in the Appearance dialog of a character's sheet for the universe's creators"
+	},
+	"appearance.noRace": {
+		"defaultMessage": "No race is selected.",
+		"description": "Shown in place of the preview of a character's avatar (the picture of the character) on Create Character's Appearance and review steps, when the player hasn't chosen a race yet"
 	},
 	"appearance.none": {
 		"defaultMessage": "Nothing is drawn for this race yet.",
@@ -757,7 +761,7 @@
 	},
 	"avatar.artType.stickFigure": {
 		"defaultMessage": "Stick figure",
-		"description": "An art type for a character's avatar (the picture of the character): drawn as a simple stick figure. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet, beside art types named after the artists who drew them"
+		"description": "An art style for a character's avatar (the picture of the character): drawn as a simple stick figure. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet, beside art styles named after the artists who drew them"
 	},
 	"avatar.background.darkGreen": {
 		"defaultMessage": "Dark green",
@@ -768,7 +772,7 @@
 		"description": "A background behind a character's avatar (the picture of the character): dark red. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.femmeThicc": {
-		"defaultMessage": "femme thicc",
+		"defaultMessage": "Femme thicc",
 		"description": "A body type for a character's avatar (the picture of the character): feminine and heavily built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.femmeThin": {
@@ -776,7 +780,7 @@
 		"description": "A body type for a character's avatar (the picture of the character): feminine and slightly built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.mascThicc": {
-		"defaultMessage": "masc thicc",
+		"defaultMessage": "Masc thicc",
 		"description": "A body type for a character's avatar (the picture of the character): masculine and heavily built. A choice on Create Character's Appearance step and in the Appearance dialog of a character's sheet"
 	},
 	"avatar.bodyType.mascThin": {
@@ -788,8 +792,8 @@
 		"description": "Shown on a character's sheet in place of their avatar (a picture of the character) when nothing is drawn yet for their race, or their race looks like no default race"
 	},
 	"avatarPositions.artType": {
-		"defaultMessage": "Art type",
-		"description": "Label of the avatar positioning tool's choice of art type, such as the stick figure or an artist's style"
+		"defaultMessage": "Art style",
+		"description": "Label of the avatar positioning tool's choice of art style, such as the stick figure or an artist's style"
 	},
 	"avatarPositions.bodyType": {
 		"defaultMessage": "Body type",
@@ -800,7 +804,7 @@
 		"description": "Accessible name of the avatar positioning tool's picture of the drawing on the chosen base. Its parts are moved from the list of parts beside it"
 	},
 	"avatarPositions.copied": {
-		"defaultMessage": "Copied. Paste it over the drawing in the art type's file.",
+		"defaultMessage": "Copied. Paste it over the drawing in the art style's file.",
 		"description": "On the avatar positioning tool, beside the Copy drawing button once the drawing has been copied as code"
 	},
 	"avatarPositions.copy": {
@@ -824,7 +828,7 @@
 		"description": "A choice in the avatar positioning tool's list of an item's drawings; {number} counts them from 1 in the order the manifest lists them"
 	},
 	"avatarPositions.empty": {
-		"defaultMessage": "Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art type's file in shared/src/avatars/, then come back to place the drawings.",
+		"defaultMessage": "Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art style's file in shared/src/avatars/, then come back to place the drawings.",
 		"description": "On the avatar positioning tool, a developer's page, while no item drawings have been added to the avatar manifest yet, so there is nothing to place"
 	},
 	"avatarPositions.every": {
@@ -836,7 +840,7 @@
 		"description": "Heading of the avatar positioning tool, a developer's page for placing item drawings on the bases of characters' avatars"
 	},
 	"avatarPositions.intro": {
-		"defaultMessage": "Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art type's file in shared/src/avatars/. Nothing is saved here.",
+		"defaultMessage": "Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art style's file in shared/src/avatars/. Nothing is saved here.",
 		"description": "Explains the avatar positioning tool at the top of the page: choose a drawing and a base, move its parts, then copy the offsets into the avatar manifest's code"
 	},
 	"avatarPositions.item": {
@@ -876,12 +880,12 @@
 		"description": "Read out by screen readers on the avatar positioning tool when a part is moved; {part} names it, and {x} and {y} are where its top left corner is on the base, in pixels"
 	},
 	"avatarPositions.noBases": {
-		"defaultMessage": "None of the races this drawing is for has a base drawn in this art type yet.",
-		"description": "On the avatar positioning tool, when no race the chosen item drawing lists has a base (the drawing of the race's body) in the chosen art type"
+		"defaultMessage": "None of the races this drawing is for has a base drawn in this art style yet.",
+		"description": "On the avatar positioning tool, when no race the chosen item drawing lists has a base (the drawing of the race's body) in the chosen art style"
 	},
 	"avatarPositions.noItems": {
-		"defaultMessage": "This art type has no item drawings for this ruleset yet.",
-		"description": "On the avatar positioning tool, when the chosen art type has no item drawings in the chosen ruleset's part of the manifest"
+		"defaultMessage": "This art style has no item drawings for this ruleset yet.",
+		"description": "On the avatar positioning tool, when the chosen art style has no item drawings in the chosen ruleset's part of the manifest"
 	},
 	"avatarPositions.noneMissing": {
 		"defaultMessage": "The drawing has offsets for every base it is for.",
@@ -952,7 +956,7 @@
 		"description": "Button under a bot check (Cloudflare Turnstile) that failed or expired, which starts a new check"
 	},
 	"character.appearanceHint": {
-		"defaultMessage": "The body type can't be changed once the character is made. The art type and background can.",
+		"defaultMessage": "The body type can't be changed once the character is made. The art style and background can.",
 		"description": "On Create Character's Appearance step, under its heading"
 	},
 	"character.back": {
@@ -1181,7 +1185,7 @@
 	},
 	"character.review.appearance": {
 		"defaultMessage": "Appearance",
-		"description": "In the review step of Create Character, the label of the body type, art type and background chosen for the character's avatar (the picture of the character), shown with a preview"
+		"description": "In the review step of Create Character, the label of the body type, art style and background chosen for the character's avatar (the picture of the character), shown with a preview"
 	},
 	"character.review.class": {
 		"defaultMessage": "Class",
@@ -1233,7 +1237,7 @@
 	},
 	"character.step.appearance": {
 		"defaultMessage": "Appearance",
-		"description": "Step of Create Character where the player chooses how the character's avatar (the picture of the character) is drawn: body type, art type and background"
+		"description": "Step of Create Character where the player chooses how the character's avatar (the picture of the character) is drawn: body type, art style and background"
 	},
 	"character.step.class": {
 		"defaultMessage": "Class",
@@ -1309,7 +1313,7 @@
 	},
 	"characterSheet.appearance": {
 		"defaultMessage": "Appearance",
-		"description": "Button under a character's avatar (the picture of the character) on their sheet that opens the dialog changing how it is drawn: its art type and background, and for the universe's creators its body type"
+		"description": "Button under a character's avatar (the picture of the character) on their sheet that opens the dialog changing how it is drawn: its art style and background, and for the universe's creators its body type"
 	},
 	"characterSheet.appearanceSaved": {
 		"defaultMessage": "{name}'s appearance has changed.",
@@ -6305,7 +6309,7 @@
 	},
 	"error.noSuchAvatarPreview": {
 		"defaultMessage": "Nothing is drawn for that appearance.",
-		"description": "Why the preview of a character's avatar on Create Character's Appearance step couldn't be loaded: no art is drawn for the race, body type and art type chosen"
+		"description": "Why the preview of a character's avatar on Create Character's Appearance step couldn't be loaded: no art is drawn for the race, body type and art style chosen"
 	},
 	"error.noSuchCharacter": {
 		"defaultMessage": "The character doesn't exist, or isn't yours.",
@@ -10501,7 +10505,7 @@
 	},
 	"license.artworkCredit": {
 		"defaultMessage": "The logo, the default tilesets and the Lucia avatar art were drawn by {artist}.",
-		"description": "On the license page, crediting the artist who made the game's logo, the default tilesets (the tile images new areas are drawn with) and the avatar art of the Lucia art type (the pictures of characters); {artist} is the artist's name, linking to their portfolio, the same in every language"
+		"description": "On the license page, crediting the artist who made the game's logo, the default tilesets (the tile images new areas are drawn with) and the avatar art of the Lucia art style (the pictures of characters); {artist} is the artist's name, linking to their portfolio, the same in every language"
 	},
 	"license.assets": {
 		"defaultMessage": "Art and other assets",

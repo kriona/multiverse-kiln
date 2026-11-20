@@ -242,6 +242,7 @@ The [character sheet](#character-sheet) has a Social Equipment section after Equ
 A character's avatar is a picture of their race and body type, wearing what they have equipped, over a background. Every piece of art is drawn by a person; none of it is AI generated. The engine ships the art, as it does the default tilesets: the files are in `shared/assets/avatars/<art type>/`, and a manifest in `/shared` (`shared/src/avatars/`) lists them. Universes uploading their own avatar art comes later.
 
 Art types:
+- players see them as "Art style"
 - `stickFigure`, named "Stick figure" (a message), and `lucia`, named "Lucia" after the artist, which isn't translated (`translate="no"`)
 - some races have only stick figures while the rest is drawn
 
@@ -262,7 +263,7 @@ Item drawings:
 Backgrounds: dark green and dark red for now, 200x300 PNGs drawn by hand like the rest of the art. Only the drawn ones are offered, and the choice is left out until one is; an avatar whose background isn't drawn has nothing behind it. Their names are messages.
 
 A character's look:
-- body type, art type and background are chosen on Create Character's Appearance step, with a preview
+- body type, art type and background are chosen on Create Character's Appearance step, with a preview. The body types show the femme ones on one line and the masc ones on the next
 - the player can't change the body type afterward. The universe's creators can, from the [Character List](#tab-character-list)'s sheet
 - the sheet's Appearance dialog changes the art type and background, for the player and for creators
 - only art types with a base for the character's race and body type are offered. A race with no art in any art type skips the art type choice

@@ -8,10 +8,15 @@
  * while none are. The preview is drawn by the server and shared by everyone who
  * chooses the same
  */
-import { artTypesFor, AVATAR_MANIFEST, avatarPreviewPath, BACKGROUND_NAMES, BACKGROUNDS, BODY_TYPE_NAMES, DEFAULT_BODY_TYPE, drawnArtType, drawnBodyType, raceBodyTypes, type CharacterAppearance, type Ruleset } from '@multiverse-kiln/shared';
+import { artTypesFor, AVATAR_MANIFEST, avatarPreviewPath, BACKGROUND_NAMES, BACKGROUNDS, BODY_TYPE_NAMES, BODY_TYPE_ROWS, DEFAULT_BODY_TYPE, drawnArtType, drawnBodyType, raceBodyTypes, type CharacterAppearance, type Ruleset } from '@multiverse-kiln/shared';
 
 import { formatList, t } from '../localization';
 import { serverHttpUrl } from '../network/serverConnection';
+
+/**
+ * One choice: its value, its text, and whether the text is a name that isn't translated
+ */
+type Choice = [string, string, boolean];
 
 /**
  * Counts the choices made, so each has radio buttons of its own names
@@ -31,6 +36,7 @@ export class AppearanceChoices
 
 	private ruleset: Ruleset = 'pf1e';
 	private raceKey: string | null = null;
+	private raceChosen = true;
 	private chooseBodyType = true;
 	private appearance: CharacterAppearance = {
 		bodyType: DEFAULT_BODY_TYPE,
@@ -86,10 +92,11 @@ export class AppearanceChoices
 	 * @param raceKey The key of the default race the race is drawn as, or null for a race with no avatar
 	 * @param appearance The choices made, or null for the first of each
 	 * @param chooseBodyType Whether the body type can be chosen: on Create Character, and for the universe's creators
+	 * @param raceChosen Whether a race is chosen: false on Create Character before the player chooses one
 	 * @return The appearance shown, as it may differ from the one given: a body type the race doesn't have
 	 * is its first, and an art type with no base for it is the first that has one
 	 */
-	show(ruleset: Ruleset, raceKey: string | null, appearance: CharacterAppearance | null, chooseBodyType: boolean): CharacterAppearance
+	show(ruleset: Ruleset, raceKey: string | null, appearance: CharacterAppearance | null, chooseBodyType: boolean, raceChosen = true): CharacterAppearance
 	{
 		const bodyTypes = raceBodyTypes(ruleset, raceKey);
 		const start = (appearance ?? {
@@ -100,6 +107,7 @@ export class AppearanceChoices
 
 		this.ruleset = ruleset;
 		this.raceKey = raceKey;
+		this.raceChosen = raceChosen;
 		this.chooseBodyType = chooseBodyType;
 		this.appearance = {
 			...start,
@@ -152,66 +160,98 @@ export class AppearanceChoices
 			id: 'appearance.bodyType',
 			defaultMessage: 'Body type',
 			description: 'Heading of the choice of a character\'s body type for their avatar (the picture of the character), such as Femme thin: on Create Character\'s Appearance step, and in the Appearance dialog of a character\'s sheet for the universe\'s creators'
-		}), bodyTypes.map((bodyType) => [bodyType, t(BODY_TYPE_NAMES[bodyType]), false]));
+		}), BODY_TYPE_ROWS
+			.map((row) => row
+				.filter((bodyType) => bodyTypes.includes(bodyType))
+				.map((bodyType): Choice => [bodyType, t(BODY_TYPE_NAMES[bodyType]), false]))
+			.filter((row) => (row.length > 0)));
 
 		this.artTypes.hidden = (artTypes.length === 0);
 		this.fill(this.artTypes, 'artType', t({
 			id: 'appearance.artType',
-			defaultMessage: 'Art type',
+			defaultMessage: 'Art style',
 			description: 'Heading of the choice of how a character\'s avatar (the picture of the character) is drawn, such as Stick figure, or in the style of an artist named after them: on Create Character\'s Appearance step, and in the Appearance dialog of a character\'s sheet'
-		}), artTypes.map((artType) =>
+		}), [artTypes.map((artType): Choice =>
 		{
 			const name = AVATAR_MANIFEST.artTypes[artType].name;
 
 			return([artType, ((typeof name === 'string') ? name : t(name)), (typeof name === 'string')]);
-		}));
+		})]);
 
 		this.backgrounds.hidden = ((bodyTypes.length === 0) || (backgrounds.length === 0));
 		this.fill(this.backgrounds, 'background', t({
 			id: 'appearance.background',
 			defaultMessage: 'Background',
 			description: 'Heading of the choice of the background behind a character\'s avatar (the picture of the character), such as Dark green: on Create Character\'s Appearance step, and in the Appearance dialog of a character\'s sheet'
-		}), backgrounds.map((background) => [background, t(BACKGROUND_NAMES[background]), false]));
+		}), [backgrounds.map((background): Choice => [background, t(BACKGROUND_NAMES[background]), false])]);
 
 		this.showPreview();
 	}
 
 	/**
-	 * Fills a fieldset with radio buttons, checking the one chosen
+	 * Fills a fieldset with radio buttons, checking the one chosen. Several rows each go on a line of their
+	 * own, and are still one group the arrow keys move through
 	 *
 	 * @param fieldset The fieldset
 	 * @param kind Which choice it is
 	 * @param legend Its legend
-	 * @param choices Each choice's value, its text, and whether the text is a name that isn't translated
+	 * @param rows The rows of choices
 	 */
-	private fill(fieldset: HTMLFieldSetElement, kind: keyof CharacterAppearance, legend: string, choices: readonly [string, string, boolean][]): void
+	private fill(fieldset: HTMLFieldSetElement, kind: keyof CharacterAppearance, legend: string, rows: readonly (readonly Choice[])[]): void
 	{
 		const legendElement = document.createElement('legend');
+		const labels = rows.map((row) => row.map((choice) => this.choiceLabel(kind, choice)));
 
 		legendElement.textContent = legend;
-		fieldset.replaceChildren(legendElement, ...choices.map(([value, text, untranslated]) =>
+		fieldset.classList.toggle('stacked', (rows.length > 1));
+
+		if (rows.length > 1)
 		{
-			const label = document.createElement('label');
-			const input = document.createElement('input');
-			const textElement = document.createElement('span');
-
-			label.className = 'checkbox';
-			input.type = 'radio';
-			input.name = `${this.name}-${kind}`;
-			input.value = value;
-			input.dataset.appearance = kind;
-			input.checked = (this.appearance[kind] === value);
-			textElement.textContent = text;
-
-			if (untranslated)
+			fieldset.replaceChildren(legendElement, ...labels.map((row) =>
 			{
-				textElement.translate = false;
-			}
+				const line = document.createElement('div');
 
-			label.append(input, textElement);
+				line.className = 'choice-row';
+				line.append(...row);
 
-			return(label);
-		}));
+				return(line);
+			}));
+		}
+		else
+		{
+			fieldset.replaceChildren(legendElement, ...labels.flat());
+		}
+	}
+
+	/**
+	 * A radio button and its text for one choice, checked when it is the one chosen
+	 *
+	 * @param kind Which choice it is
+	 * @param choice The choice
+	 * @return The label holding the radio button
+	 */
+	private choiceLabel(kind: keyof CharacterAppearance, [value, text, untranslated]: Choice): HTMLLabelElement
+	{
+		const label = document.createElement('label');
+		const input = document.createElement('input');
+		const textElement = document.createElement('span');
+
+		label.className = 'checkbox';
+		input.type = 'radio';
+		input.name = `${this.name}-${kind}`;
+		input.value = value;
+		input.dataset.appearance = kind;
+		input.checked = (this.appearance[kind] === value);
+		textElement.textContent = text;
+
+		if (untranslated)
+		{
+			textElement.translate = false;
+		}
+
+		label.append(input, textElement);
+
+		return(label);
 	}
 
 	/**
@@ -250,7 +290,8 @@ export class AppearanceChoices
 	}
 
 	/**
-	 * Fills a preview with the base and background chosen, or a note that the race has no avatar
+	 * Fills a preview with the base and background chosen, or a note that no race is chosen or the race has
+	 * no avatar
 	 *
 	 * @param preview The preview's element
 	 */
@@ -264,11 +305,17 @@ export class AppearanceChoices
 		{
 			const text = document.createElement('span');
 
-			text.textContent = t({
-				id: 'appearance.none',
-				defaultMessage: 'Nothing is drawn for this race yet.',
-				description: 'Shown in place of the preview of a character\'s avatar (the picture of the character) on Create Character\'s Appearance and review steps and in the Appearance dialog of a character\'s sheet, when no art is drawn for their race'
-			});
+			text.textContent = (this.raceChosen
+				? t({
+					id: 'appearance.none',
+					defaultMessage: 'Nothing is drawn for this race yet.',
+					description: 'Shown in place of the preview of a character\'s avatar (the picture of the character) on Create Character\'s Appearance and review steps and in the Appearance dialog of a character\'s sheet, when no art is drawn for their race'
+				})
+				: t({
+					id: 'appearance.noRace',
+					defaultMessage: 'No race is selected.',
+					description: 'Shown in place of the preview of a character\'s avatar (the picture of the character) on Create Character\'s Appearance and review steps, when the player hasn\'t chosen a race yet'
+				}));
 			preview.classList.add('avatar-none');
 			preview.replaceChildren(text);
 			return;

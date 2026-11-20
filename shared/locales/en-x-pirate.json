@@ -657,7 +657,7 @@
 	},
 	"appearance.artType": {
 		"message": "Painter's hand",
-		"source": "Art type"
+		"source": "Art style"
 	},
 	"appearance.background": {
 		"message": "Backdrop",
@@ -666,6 +666,10 @@
 	"appearance.bodyType": {
 		"message": "Build",
 		"source": "Body type"
+	},
+	"appearance.noRace": {
+		"message": "Ye've not chosen yer folk yet.",
+		"source": "No race is selected."
 	},
 	"appearance.none": {
 		"message": "No likeness be painted o' these folk yet.",
@@ -769,7 +773,7 @@
 	},
 	"avatar.bodyType.femmeThicc": {
 		"message": "Lass, stout",
-		"source": "femme thicc"
+		"source": "Femme thicc"
 	},
 	"avatar.bodyType.femmeThin": {
 		"message": "Lass, lean",
@@ -777,7 +781,7 @@
 	},
 	"avatar.bodyType.mascThicc": {
 		"message": "Lad, stout",
-		"source": "masc thicc"
+		"source": "Masc thicc"
 	},
 	"avatar.bodyType.mascThin": {
 		"message": "Lad, lean",
@@ -789,7 +793,7 @@
 	},
 	"avatarPositions.artType": {
 		"message": "Painter's hand",
-		"source": "Art type"
+		"source": "Art style"
 	},
 	"avatarPositions.bodyType": {
 		"message": "Build",
@@ -801,7 +805,7 @@
 	},
 	"avatarPositions.copied": {
 		"message": "Copied. Paste it over the drawin' in the painter's file.",
-		"source": "Copied. Paste it over the drawing in the art type's file."
+		"source": "Copied. Paste it over the drawing in the art style's file."
 	},
 	"avatarPositions.copy": {
 		"message": "Copy drawin'",
@@ -825,7 +829,7 @@
 	},
 	"avatarPositions.empty": {
 		"message": "Nothin' be drawn yet. Stow the files in shared/assets/avatars/, an' the likenesses an' booty drawin's in the painter's file in shared/src/avatars/, then come back to place the drawin's.",
-		"source": "Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art type's file in shared/src/avatars/, then come back to place the drawings."
+		"source": "Nothing has been drawn yet. Add the files to shared/assets/avatars/, and the bases and item drawings to the art style's file in shared/src/avatars/, then come back to place the drawings."
 	},
 	"avatarPositions.every": {
 		"message": "every last one",
@@ -837,7 +841,7 @@
 	},
 	"avatarPositions.intro": {
 		"message": "Pick a booty drawin' an' a likeness, haul each piece into place, then copy the drawin' an' paste it over the same drawin' in the painter's file in shared/src/avatars/. Nothin' be stowed here.",
-		"source": "Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art type's file in shared/src/avatars/. Nothing is saved here."
+		"source": "Choose an item drawing and a base, move each part into place, then copy the drawing and paste it over the same drawing in the art style's file in shared/src/avatars/. Nothing is saved here."
 	},
 	"avatarPositions.item": {
 		"message": "Booty",
@@ -877,11 +881,11 @@
 	},
 	"avatarPositions.noBases": {
 		"message": "None o' the folk this drawin' be for has a likeness drawn by this painter yet.",
-		"source": "None of the races this drawing is for has a base drawn in this art type yet."
+		"source": "None of the races this drawing is for has a base drawn in this art style yet."
 	},
 	"avatarPositions.noItems": {
 		"message": "This painter has no booty drawin's for these rules yet.",
-		"source": "This art type has no item drawings for this ruleset yet."
+		"source": "This art style has no item drawings for this ruleset yet."
 	},
 	"avatarPositions.noneMissing": {
 		"message": "The drawin' has a place on every likeness it be for.",
@@ -953,7 +957,7 @@
 	},
 	"character.appearanceHint": {
 		"message": "A hand's build be set once they sign on. The painter's hand an' backdrop can change later.",
-		"source": "The body type can't be changed once the character is made. The art type and background can."
+		"source": "The body type can't be changed once the character is made. The art style and background can."
 	},
 	"character.back": {
 		"message": "Astern",

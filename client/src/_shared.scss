@@ -1924,6 +1924,14 @@ input[type="checkbox"].toggle-switch
 		flex-wrap: wrap;
 	}
 
+	// A line of its own in a choice, such as the femme body types above the masc ones
+	.choice-row
+	{
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
 	@media (max-width: 520px)
 	{
 		grid-template-columns: 1fr;

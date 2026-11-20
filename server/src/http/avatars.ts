@@ -41,7 +41,7 @@ const messages = defineMessages({
 	noSuchPreview: {
 		id: 'error.noSuchAvatarPreview',
 		defaultMessage: 'Nothing is drawn for that appearance.',
-		description: 'Why the preview of a character\'s avatar on Create Character\'s Appearance step couldn\'t be loaded: no art is drawn for the race, body type and art type chosen'
+		description: 'Why the preview of a character\'s avatar on Create Character\'s Appearance step couldn\'t be loaded: no art is drawn for the race, body type and art style chosen'
 	}
 });
 

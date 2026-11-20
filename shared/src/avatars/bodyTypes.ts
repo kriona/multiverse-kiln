@@ -23,12 +23,20 @@ export const STARTING_BODY_TYPES: readonly BodyType[] = ['femmeThicc', 'femmeThi
 export const DEFAULT_BODY_TYPE: BodyType = 'femmeThicc';
 
 /**
+ * The rows the body type choice shows: the femme body types, then the masc ones
+ */
+export const BODY_TYPE_ROWS: readonly (readonly BodyType[])[] = [
+	['femmeThicc', 'femmeThin'],
+	['mascThicc', 'mascThin']
+];
+
+/**
  * Each body type's name
  */
 export const BODY_TYPE_NAMES: Record<BodyType, MessageDescriptor> = defineMessages({
 	femmeThicc: {
 		id: 'avatar.bodyType.femmeThicc',
-		defaultMessage: 'femme thicc',
+		defaultMessage: 'Femme thicc',
 		description: 'A body type for a character\'s avatar (the picture of the character): feminine and heavily built. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet'
 	},
 	femmeThin: {
@@ -38,7 +46,7 @@ export const BODY_TYPE_NAMES: Record<BodyType, MessageDescriptor> = defineMessag
 	},
 	mascThicc: {
 		id: 'avatar.bodyType.mascThicc',
-		defaultMessage: 'masc thicc',
+		defaultMessage: 'Masc thicc',
 		description: 'A body type for a character\'s avatar (the picture of the character): masculine and heavily built. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet'
 	},
 	mascThin: {

@@ -481,16 +481,16 @@ class PositioningTool
 		{
 			text = t({
 				id: 'avatarPositions.noItems',
-				defaultMessage: 'This art type has no item drawings for this ruleset yet.',
-				description: 'On the avatar positioning tool, when the chosen art type has no item drawings in the chosen ruleset\'s part of the manifest'
+				defaultMessage: 'This art style has no item drawings for this ruleset yet.',
+				description: 'On the avatar positioning tool, when the chosen art style has no item drawings in the chosen ruleset\'s part of the manifest'
 			});
 		}
 		else if (this.raceSelect.options.length === 0)
 		{
 			text = t({
 				id: 'avatarPositions.noBases',
-				defaultMessage: 'None of the races this drawing is for has a base drawn in this art type yet.',
-				description: 'On the avatar positioning tool, when no race the chosen item drawing lists has a base (the drawing of the race\'s body) in the chosen art type'
+				defaultMessage: 'None of the races this drawing is for has a base drawn in this art style yet.',
+				description: 'On the avatar positioning tool, when no race the chosen item drawing lists has a base (the drawing of the race\'s body) in the chosen art style'
 			});
 		}
 
@@ -1109,7 +1109,7 @@ class PositioningTool
 		this.copyStatus.textContent = (copied
 			? t({
 				id: 'avatarPositions.copied',
-				defaultMessage: 'Copied. Paste it over the drawing in the art type\'s file.',
+				defaultMessage: 'Copied. Paste it over the drawing in the art style\'s file.',
 				description: 'On the avatar positioning tool, beside the Copy drawing button once the drawing has been copied as code'
 			})
 			: t({

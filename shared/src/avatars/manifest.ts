@@ -195,6 +195,6 @@ export const ART_TYPE_MESSAGES = defineMessages({
 	stickFigure: {
 		id: 'avatar.artType.stickFigure',
 		defaultMessage: 'Stick figure',
-		description: 'An art type for a character\'s avatar (the picture of the character): drawn as a simple stick figure. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet, beside art types named after the artists who drew them'
+		description: 'An art style for a character\'s avatar (the picture of the character): drawn as a simple stick figure. A choice on Create Character\'s Appearance step and in the Appearance dialog of a character\'s sheet, beside art styles named after the artists who drew them'
 	}
 });

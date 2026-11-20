@@ -360,7 +360,7 @@ export class CreateCharacterScreen
 		this.characterClass.value = String(options.classes.find((characterClass) => (characterClass.id === draft?.classId))?.id ?? '');
 		this.theme.value = String(options.themes.find((theme) => (theme.id === draft?.themeId))?.id ?? '');
 		this.setBaseScores(draft?.baseScores ?? null);
-		this.appearance.show(options.ruleset, (this.chosenRace()?.avatarKey ?? null), (draft?.appearance ?? null), true);
+		this.appearance.show(options.ruleset, (this.chosenRace()?.avatarKey ?? null), (draft?.appearance ?? null), true, (this.chosenRace() !== undefined));
 		this.floatingLabel.hidden = true;
 		this.showClass();
 		this.showTheme();
@@ -586,7 +586,7 @@ export class CreateCharacterScreen
 		this.floatingLabel.hidden = !floatingBonus;
 		showDescription(this.raceDescription, ((race && this.options) ? raceDescription(race, this.options.ruleset) : ''));
 		this.raceSummary.textContent = (race ? this.describeRace(race) : '');
-		this.appearance.show((this.options?.ruleset ?? 'pf1e'), (race?.avatarKey ?? null), this.appearance.value(), true);
+		this.appearance.show((this.options?.ruleset ?? 'pf1e'), (race?.avatarKey ?? null), this.appearance.value(), true, (race !== undefined));
 		this.showScores();
 	}
 
@@ -920,7 +920,7 @@ export class CreateCharacterScreen
 			[t({
 				id: 'character.review.appearance',
 				defaultMessage: 'Appearance',
-				description: 'In the review step of Create Character, the label of the body type, art type and background chosen for the character\'s avatar (the picture of the character), shown with a preview'
+				description: 'In the review step of Create Character, the label of the body type, art style and background chosen for the character\'s avatar (the picture of the character), shown with a preview'
 			}), this.reviewAppearance()],
 			[t({
 				id: 'character.review.class',
